@@ -4,8 +4,12 @@ const rawUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
 // Garante https:// no início da URL caso esteja faltando
+// Remove trailing slash e qualquer path após o domínio (ex: /rest/v1 que o client já adiciona)
 const url = rawUrl
-  ? rawUrl.startsWith('http') ? rawUrl.replace(/\/$/, '') : `https://${rawUrl.replace(/\/$/, '')}`
+  ? (rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`)
+      .replace(/\/$/, '')
+      .replace(/\/rest\/v1.*$/, '')
+      .replace(/\/auth\/v1.*$/, '')
   : ''
 
 const key = rawKey ?? ''
