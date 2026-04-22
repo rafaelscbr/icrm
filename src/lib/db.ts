@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast'
 import { supabase } from './supabase'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
@@ -220,18 +221,27 @@ async function fetchAll<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> 
     .from(table)
     .select('*')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) {
+    toast.error(`Erro ao carregar ${table}: ${error.message}`)
+    throw error
+  }
   return (data as R[]).map(mapper)
 }
 
 async function upsertOne<R>(table: string, row: R): Promise<void> {
   const { error } = await supabase.from(table).upsert(row as object)
-  if (error) throw error
+  if (error) {
+    toast.error(`Erro ao salvar em ${table}: ${error.message}`)
+    throw error
+  }
 }
 
 async function deleteOne(table: string, id: string): Promise<void> {
   const { error } = await supabase.from(table).delete().eq('id', id)
-  if (error) throw error
+  if (error) {
+    toast.error(`Erro ao excluir em ${table}: ${error.message}`)
+    throw error
+  }
 }
 
 // ─── API pública ──────────────────────────────────────────────────────────────
