@@ -1,0 +1,39 @@
+import { FunnelStage, LeadSituation } from '../../types'
+
+export interface StageConfig {
+  value:   FunnelStage
+  label:   string
+  short:   string
+  color:   string
+  bg:      string
+  border:  string
+  dot:     string
+}
+
+export const FUNNEL_STAGES: StageConfig[] = [
+  { value: 'new',          label: 'Não Contactado', short: 'Pendente',    color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20', dot: 'bg-slate-500'  },
+  { value: 'sent',         label: '1ª Mensagem',    short: '1ª Msg',      color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',  dot: 'bg-blue-500'   },
+  { value: 'attended',     label: 'Atendimento',    short: 'Atendimento', color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20',  dot: 'bg-cyan-500'   },
+  { value: 'presentation', label: 'Apresentação',   short: 'Apresentação',color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20',dot: 'bg-indigo-500' },
+  { value: 'proposal',     label: 'Proposta',       short: 'Proposta',    color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20', dot: 'bg-amber-400'  },
+  { value: 'sale',         label: 'Venda',          short: 'Venda',       color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20', dot: 'bg-green-500'  },
+]
+
+export interface SituationConfig {
+  value:  LeadSituation
+  label:  string
+  color:  string
+  bg:     string
+}
+
+export const SITUATION_CONFIG: SituationConfig[] = [
+  { value: 'no_interest',   label: 'Sem Interesse',          color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  { value: 'stop_messages', label: 'Pediu para não receber', color: 'text-red-400',    bg: 'bg-red-500/10'    },
+  { value: 'invalid',       label: 'Contato Inexistente',    color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
+]
+
+export const STATUS_CONFIG = {
+  active:   { label: 'Ativa',      color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20'  },
+  paused:   { label: 'Pausada',    color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
+  finished: { label: 'Finalizada', color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20'  },
+}

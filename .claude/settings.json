@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/rafasouza/Documents/icrm && npm run dev -- --port 5175 > /tmp/icrm-dev.log 2>&1 &",
+            "async": true,
+            "statusMessage": "Iniciando servidor iCRM..."
+          }
+        ]
+      }
+    ]
+  }
+}
