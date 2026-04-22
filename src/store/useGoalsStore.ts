@@ -112,7 +112,8 @@ export function calcProgress(goal: Goal, tasks: Task[], sales: Sale[]): number {
   return tasks.filter(t => {
     if (t.status !== 'done') return false
     if (t.category !== (goal.category as GoalCategory)) return false
-    const dateStr = toDateStr(t.completedAt) || toDateStr(t.updatedAt)
+    // Prioridade: dueDate (quando a atividade ocorreu) > completedAt > updatedAt
+    const dateStr = toDateStr(t.dueDate) || toDateStr(t.completedAt) || toDateStr(t.updatedAt)
     return dateStr >= start && dateStr <= end
   }).length
 }
@@ -123,7 +124,8 @@ export function calcScheduledVisits(tasks: Task[], period: 'weekly' | 'monthly')
   return tasks.filter(t => {
     if (t.category !== 'visita') return false
     if (t.status === 'cancelled') return false
-    const dateStr = toDateStr(t.createdAt)
+    // Usa dueDate se existir, senão createdAt
+    const dateStr = toDateStr(t.dueDate) || toDateStr(t.createdAt)
     return dateStr >= start && dateStr <= end
   }).length
 }
