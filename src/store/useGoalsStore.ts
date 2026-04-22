@@ -5,6 +5,7 @@ import { db } from '../lib/db'
 
 const DEFAULT_GOALS: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>[] = [
   { name: 'Visitas semanais',        category: 'visita',       target: 2, period: 'weekly',  active: true },
+  { name: 'Visitas mensais',         category: 'visita',       target: 8, period: 'monthly', active: true },
   { name: 'Agenciamentos semanais',  category: 'agenciamento', target: 2, period: 'weekly',  active: true },
   { name: 'Propostas semanais',      category: 'proposta',     target: 1, period: 'weekly',  active: true },
   { name: 'Vendas mensais',          category: 'venda',        target: 1, period: 'monthly', active: true },
@@ -124,8 +125,46 @@ export function calcScheduledVisits(tasks: Task[], period: 'weekly' | 'monthly')
   return tasks.filter(t => {
     if (t.category !== 'visita') return false
     if (t.status === 'cancelled') return false
-    // Usa dueDate se existir, senão createdAt
     const dateStr = toDateStr(t.dueDate) || toDateStr(t.createdAt)
     return dateStr >= start && dateStr <= end
   }).length
+}
+
+// Retorna todas as métricas de visita de uma só vez
+export function getVisitMetrics(tasks: Task[]) {
+  const week  = getWeekRangeDates()
+  const month = getMonthRangeDates()
+
+  // Referência de data para realizadas: dueDate > completedAt > updatedAt
+  const realizadaDate = (t: Task) =>
+    toDateStr(t.dueDate) || toDateStr(t.completedAt) || toDateStr(t.updatedAt)
+
+  // Referência de data para agendamentos: dueDate > createdAt
+  const agendamentoDate = (t: Task) =>
+    toDateStr(t.dueDate) || toDateStr(t.createdAt)
+
+  const visitTasks = tasks.filter(t => t.category === 'visita')
+
+  return {
+    // Todas as visitas agendadas no mês (qualquer status exceto cancelado)
+    agendadasMes: visitTasks.filter(t => {
+      if (t.status === 'cancelled') return false
+      const d = agendamentoDate(t)
+      return d >= month.start && d <= month.end
+    }).length,
+
+    // Visitas realizadas (done) na semana atual — usa dueDate como referência
+    realizadasSemana: visitTasks.filter(t => {
+      if (t.status !== 'done') return false
+      const d = realizadaDate(t)
+      return d >= week.start && d <= week.end
+    }).length,
+
+    // Visitas realizadas (done) no mês — usa dueDate como referência
+    realizadasMes: visitTasks.filter(t => {
+      if (t.status !== 'done') return false
+      const d = realizadaDate(t)
+      return d >= month.start && d <= month.end
+    }).length,
+  }
 }
