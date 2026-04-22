@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   UserPlus, Phone, MessageSquare, CheckCircle2, Lock, Unlock,
-  ChevronDown, ChevronUp, StickyNote, Calendar, TrendingUp, PlusCircle, Pencil, X
+  ChevronDown, ChevronUp, StickyNote, Calendar, TrendingUp, PlusCircle, Pencil
 } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'

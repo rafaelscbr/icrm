@@ -126,7 +126,6 @@ export function ReportsTab() {
   const monthCalls  = monthLogs.reduce((a, l) => a + l.ownerCalls, 0)
   const monthFunnel = monthLogs.filter(l => l.funnelFollowup).length
   const monthDays   = monthLogs.filter(l => l.closed).length
-  const funnelRate  = monthDays > 0 ? Math.round((monthFunnel / monthDays) * 100) : 0
 
   // Targets mensais: leads = todos os dias, ligações = seg-sex, funil = seg-sáb
   function countDayTypes(year: number, month: number, weekdays: number[]): number {

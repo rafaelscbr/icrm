@@ -14,7 +14,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useGoalsStore, calcProgress } from '../../store/useGoalsStore'
-import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
+import { formatCurrency, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 import { ContactTag, GoalCategory } from '../../types'
 
 const tagConfig: Record<ContactTag, { label: string; variant: 'indigo' | 'purple' | 'green' }> = {

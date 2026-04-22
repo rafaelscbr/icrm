@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { Calendar, Clock, User, Building2, Plus, ExternalLink, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react'
+import { Calendar, User, Building2, Plus, ExternalLink, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'

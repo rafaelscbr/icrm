@@ -29,7 +29,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 export function PropertiesPage() {
   const { properties, load, remove, search, filterByStatus } = usePropertiesStore()
-  const { contacts, load: loadContacts, getById } = useContactsStore()
+  const { load: loadContacts, getById } = useContactsStore()
   const [query, setQuery] = useState('')
   const [activeStatus, setActiveStatus] = useState<PropertyStatus | null>(null)
   const [formOpen, setFormOpen] = useState(false)
