@@ -9,7 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { GoalForm } from './GoalForm'
-import { useGoalsStore, calcProgress } from '../../store/useGoalsStore'
+import { useGoalsStore, calcProgress, calcScheduledVisits } from '../../store/useGoalsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { Goal, GoalCategory } from '../../types'
@@ -100,10 +100,13 @@ export function GoalsPage() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
                 {active.map(goal => {
-                  const progress = calcProgress(goal, tasks, sales)
-                  const colors   = CATEGORY_COLOR[goal.category]
-                  const Icon     = CATEGORY_ICON[goal.category]
-                  const done     = progress >= goal.target
+                  const progress  = calcProgress(goal, tasks, sales)
+                  const scheduled = goal.category === 'visita'
+                    ? calcScheduledVisits(tasks, goal.period)
+                    : null
+                  const colors = CATEGORY_COLOR[goal.category]
+                  const Icon   = CATEGORY_ICON[goal.category]
+                  const done   = progress >= goal.target
 
                   return (
                     <Card
@@ -138,13 +141,32 @@ export function GoalsPage() {
                         </div>
                       </div>
 
-                      {/* Big number */}
-                      <div className="flex items-baseline gap-1.5 mb-4">
-                        <span className={`text-3xl font-bold tabular-nums ${done ? 'text-green-400' : 'text-slate-100'}`}>
-                          {progress}
-                        </span>
-                        <span className="text-sm text-slate-600">/ {goal.target}</span>
-                      </div>
+                      {/* Big number — para visita mostra agendadas / realizadas */}
+                      {scheduled !== null ? (
+                        <div className="mb-4">
+                          <div className="flex items-end gap-3 mb-1.5">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Agendadas</span>
+                              <span className="text-3xl font-bold tabular-nums text-indigo-400">{scheduled}</span>
+                            </div>
+                            <span className="text-slate-700 pb-1.5">/</span>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Realizadas</span>
+                              <span className={`text-3xl font-bold tabular-nums ${done ? 'text-green-400' : 'text-slate-100'}`}>
+                                {progress}
+                              </span>
+                            </div>
+                            <span className="text-slate-600 text-sm pb-1.5">meta {goal.target}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1.5 mb-4">
+                          <span className={`text-3xl font-bold tabular-nums ${done ? 'text-green-400' : 'text-slate-100'}`}>
+                            {progress}
+                          </span>
+                          <span className="text-sm text-slate-600">/ {goal.target}</span>
+                        </div>
+                      )}
 
                       <ProgressBar value={progress} target={goal.target} barClass={colors.bar} />
 

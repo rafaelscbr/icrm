@@ -116,3 +116,14 @@ export function calcProgress(goal: Goal, tasks: Task[], sales: Sale[]): number {
     return dateStr >= start && dateStr <= end
   }).length
 }
+
+// Conta visitas AGENDADAS no período (qualquer status exceto cancelado)
+export function calcScheduledVisits(tasks: Task[], period: 'weekly' | 'monthly'): number {
+  const { start, end } = period === 'weekly' ? getWeekRangeDates() : getMonthRangeDates()
+  return tasks.filter(t => {
+    if (t.category !== 'visita') return false
+    if (t.status === 'cancelled') return false
+    const dateStr = toDateStr(t.createdAt)
+    return dateStr >= start && dateStr <= end
+  }).length
+}

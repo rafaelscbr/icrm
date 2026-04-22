@@ -279,8 +279,17 @@ export const db = {
 
   dailyLogs: {
     fetchAll: () => fetchAll<DailyLogRow, DailyLog>('daily_logs', toDailyLog),
-    upsert:   (l: DailyLog) => upsertOne('daily_logs', fromDailyLog(l)),
-    delete:   (id: string)  => deleteOne('daily_logs', id),
+    upsert: async (l: DailyLog) => {
+      // onConflict: 'date' garante que duas entradas para o mesmo dia nunca conflitem
+      const { error } = await supabase
+        .from('daily_logs')
+        .upsert(fromDailyLog(l), { onConflict: 'date' })
+      if (error) {
+        toast.error(`Erro ao salvar em daily_logs: ${error.message}`)
+        throw error
+      }
+    },
+    delete: (id: string) => deleteOne('daily_logs', id),
   },
 
   campaigns: {
