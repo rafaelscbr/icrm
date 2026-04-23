@@ -113,8 +113,13 @@ export function calcProgress(goal: Goal, tasks: Task[], sales: Sale[]): number {
   return tasks.filter(t => {
     if (t.status !== 'done') return false
     if (t.category !== (goal.category as GoalCategory)) return false
-    // Prioridade: dueDate (quando a atividade ocorreu) > completedAt > updatedAt
-    const dateStr = toDateStr(t.dueDate) || toDateStr(t.completedAt) || toDateStr(t.updatedAt)
+    // Para metas semanais: usa APENAS dueDate — evita inflar com tarefas
+    // de semanas anteriores marcadas como concluídas recentemente.
+    // Para metas mensais: aceita fallback completedAt > updatedAt.
+    const dateStr = goal.period === 'weekly'
+      ? toDateStr(t.dueDate)
+      : toDateStr(t.dueDate) || toDateStr(t.completedAt) || toDateStr(t.updatedAt)
+    if (!dateStr) return false
     return dateStr >= start && dateStr <= end
   }).length
 }
@@ -153,14 +158,18 @@ export function getVisitMetrics(tasks: Task[]) {
       return d >= month.start && d <= month.end
     }).length,
 
-    // Visitas realizadas (done) na semana atual — usa dueDate como referência
+    // Visitas realizadas na semana: usa APENAS dueDate (data real da visita).
+    // Sem dueDate não conta para o semanal — evita inflar com tarefas marcadas
+    // como concluídas esta semana mas agendadas em semanas anteriores.
     realizadasSemana: visitTasks.filter(t => {
       if (t.status !== 'done') return false
-      const d = realizadaDate(t)
+      const d = toDateStr(t.dueDate)
+      if (!d) return false
       return d >= week.start && d <= week.end
     }).length,
 
-    // Visitas realizadas (done) no mês — usa dueDate como referência
+    // Visitas realizadas no mês: aceita fallback para completedAt/updatedAt
+    // quando não há dueDate.
     realizadasMes: visitTasks.filter(t => {
       if (t.status !== 'done') return false
       const d = realizadaDate(t)
