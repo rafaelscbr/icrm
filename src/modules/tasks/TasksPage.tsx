@@ -127,22 +127,23 @@ function SmartBanner({ tasks }: { tasks: Task[] }) {
 // ─── TaskRow ─────────────────────────────────────────────────────────────────
 
 interface TaskRowProps {
-  task:       Task
-  contacts:   ReturnType<typeof useContactsStore.getState>['contacts']
-  properties: ReturnType<typeof usePropertiesStore.getState>['properties']
-  isLast:     boolean
-  onToggle:   () => void
-  onEdit:     () => void
-  onDelete:   () => void
-  onCalendar: () => void
+  task:         Task
+  contacts:     ReturnType<typeof useContactsStore.getState>['contacts']
+  properties:   ReturnType<typeof usePropertiesStore.getState>['properties']
+  isLast:       boolean
+  showCategory?: boolean
+  onToggle:     () => void
+  onEdit:       () => void
+  onDelete:     () => void
+  onCalendar:   () => void
 }
 
-function TaskRow({ task: t, contacts, properties, isLast, onToggle, onEdit, onDelete, onCalendar }: TaskRowProps) {
+function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, onToggle, onEdit, onDelete, onCalendar }: TaskRowProps) {
   const contact  = contacts.find(c => c.id === t.contactId)
   const property = properties.find(p => p.id === t.propertyId)
   const { label: dateLabel, isToday, overdue } = formatDateLabel(t.dueDate, t.dueTime)
-  const isDone  = t.status === 'done'
-  const CatIcon = t.category ? CATEGORY_CONFIG[t.category].icon : null
+  const isDone   = t.status === 'done'
+  const CatIcon  = t.category ? CATEGORY_CONFIG[t.category].icon : null
   const catColor = t.category ? CATEGORY_CONFIG[t.category].color : ''
 
   return (
@@ -151,7 +152,7 @@ function TaskRow({ task: t, contacts, properties, isLast, onToggle, onEdit, onDe
       ${isDone ? 'opacity-55' : ''}
       ${isToday && !isDone ? 'bg-indigo-500/3' : ''}
     `}>
-      {/* Today accent bar */}
+      {/* Accent bar */}
       {isToday && !isDone && (
         <div className="absolute left-0 top-3 bottom-3 w-0.5 rounded-full bg-indigo-400" />
       )}
@@ -197,7 +198,7 @@ function TaskRow({ task: t, contacts, properties, isLast, onToggle, onEdit, onDe
             {dateLabel}
           </span>
 
-          {CatIcon && (
+          {showCategory && CatIcon && (
             <span className={`flex items-center gap-1 text-xs font-medium ${catColor}`}>
               <CatIcon size={11} />
               {CATEGORY_CONFIG[t.category!].label}
@@ -251,13 +252,13 @@ function TaskRow({ task: t, contacts, properties, isLast, onToggle, onEdit, onDe
 function Section({
   title, icon, count, color, tasks, contacts, properties,
   onToggle, onEdit, onDelete, onCalendar,
-  collapsible = false, defaultOpen = true,
+  collapsible = false, defaultOpen = true, showCategory = true,
 }: {
   title: string; icon: React.ReactNode; count: number; color: string
   tasks: Task[]; contacts: any[]; properties: any[]
   onToggle: (id: string) => void; onEdit: (t: Task) => void
   onDelete: (t: Task) => void; onCalendar: (t: Task) => void
-  collapsible?: boolean; defaultOpen?: boolean
+  collapsible?: boolean; defaultOpen?: boolean; showCategory?: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
   if (tasks.length === 0) return null
@@ -271,7 +272,7 @@ function Section({
         <span className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${color}`}>
           {icon} {title}
         </span>
-        <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md bg-white/8 text-slate-400`}>{count}</span>
+        <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-white/8 text-slate-400">{count}</span>
         {collapsible && (open
           ? <ChevronUp size={12} className="text-slate-600 group-hover:text-slate-400 ml-1" />
           : <ChevronDown size={12} className="text-slate-600 group-hover:text-slate-400 ml-1" />
@@ -287,6 +288,7 @@ function Section({
               contacts={contacts}
               properties={properties}
               isLast={i === tasks.length - 1}
+              showCategory={showCategory}
               onToggle={() => onToggle(t.id)}
               onEdit={() => onEdit(t)}
               onDelete={() => onDelete(t)}
@@ -315,24 +317,30 @@ export function TasksPage() {
 
   const today = todayStr()
 
-  // Partition & sort pending tasks
+  // urgency prefix: 0=overdue 1=today 2=upcoming 3=no date
+  function urgencyPrefix(t: Task): string {
+    if (t.dueDate && t.dueDate < today) return '0'
+    if (t.dueDate === today)            return '1'
+    if (t.dueDate && t.dueDate > today) return '2'
+    return '3'
+  }
+  function fullKey(t: Task) { return urgencyPrefix(t) + sortKey(t) }
+
   const pending = tasks.filter(t => t.status === 'pending')
 
-  const overdueList = pending
-    .filter(t => t.dueDate && t.dueDate < today)
-    .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+  // Stats (for strip)
+  const overdueCount  = pending.filter(t => t.dueDate && t.dueDate < today).length
+  const todayCount    = pending.filter(t => t.dueDate === today).length
+  const upcomingCount = pending.filter(t => t.dueDate && t.dueDate > today).length
 
-  const todayList = pending
-    .filter(t => t.dueDate === today)
-    .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
-
-  const upcomingList = pending
-    .filter(t => t.dueDate && t.dueDate > today)
-    .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
-
-  const noDateList = pending
-    .filter(t => !t.dueDate)
-    .sort((a, b) => a.title.localeCompare(b.title))
+  // Group pending by category, sorted by urgency then date within each group
+  const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'outro']
+  const byCategory = CATEGORY_ORDER.map(cat => ({
+    cat,
+    tasks: pending
+      .filter(t => (t.category ?? 'outro') === cat)
+      .sort((a, b) => fullKey(a).localeCompare(fullKey(b))),
+  }))
 
   const doneList = tasks
     .filter(t => t.status === 'done')
@@ -385,10 +393,10 @@ export function TasksPage() {
       {!isEmpty && (
         <div className="grid grid-cols-4 gap-3 mb-6">
           {[
-            { label: 'Hoje',       value: todayList.length,    color: 'text-indigo-400', bg: 'bg-indigo-500/10',  icon: <Flame size={13} />         },
-            { label: 'Em atraso',  value: overdueList.length,  color: 'text-red-400',    bg: 'bg-red-500/10',     icon: <AlertTriangle size={13} /> },
-            { label: 'Próximas',   value: upcomingList.length, color: 'text-cyan-400',   bg: 'bg-cyan-500/10',    icon: <TrendingUp size={13} />    },
-            { label: 'Concluídas', value: doneCount,           color: 'text-green-400',  bg: 'bg-green-500/10',   icon: <CheckCheck size={13} />    },
+            { label: 'Hoje',       value: todayCount,    color: 'text-indigo-400', bg: 'bg-indigo-500/10', icon: <Flame size={13} />         },
+            { label: 'Em atraso',  value: overdueCount,  color: 'text-red-400',    bg: 'bg-red-500/10',    icon: <AlertTriangle size={13} /> },
+            { label: 'Próximas',   value: upcomingCount, color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   icon: <TrendingUp size={13} />    },
+            { label: 'Concluídas', value: doneCount,     color: 'text-green-400',  bg: 'bg-green-500/10',  icon: <CheckCheck size={13} />    },
           ].map(s => (
             <div key={s.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl ${s.bg} border border-white/8`}>
               <span className={s.color}>{s.icon}</span>
@@ -412,10 +420,24 @@ export function TasksPage() {
         />
       ) : (
         <>
-          <Section title="Em Atraso"  icon={<AlertTriangle size={12} />} count={overdueList.length}  color="text-red-400"    tasks={overdueList}  {...sharedProps} />
-          <Section title="Hoje"       icon={<Flame size={12} />}         count={todayList.length}    color="text-indigo-400" tasks={todayList}    {...sharedProps} />
-          <Section title="Próximas"   icon={<TrendingUp size={12} />}    count={upcomingList.length} color="text-cyan-400"   tasks={upcomingList} {...sharedProps} />
-          <Section title="Sem data"   icon={<Clock size={12} />}         count={noDateList.length}   color="text-slate-500"  tasks={noDateList}   {...sharedProps} collapsible defaultOpen={false} />
+          {byCategory.map(({ cat, tasks: catTasks }) => {
+            const cfg     = CATEGORY_CONFIG[cat]
+            const CatIcon = cfg.icon
+            return (
+              <Section
+                key={cat}
+                title={cfg.label}
+                icon={<CatIcon size={12} />}
+                count={catTasks.length}
+                color={cfg.color}
+                tasks={catTasks}
+                showCategory={false}
+                collapsible
+                defaultOpen
+                {...sharedProps}
+              />
+            )
+          })}
 
           {/* Done section toggle */}
           {doneList.length > 0 && (
