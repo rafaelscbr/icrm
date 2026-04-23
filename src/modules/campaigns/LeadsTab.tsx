@@ -102,7 +102,7 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
   }
 
   function handleAdvanceFunnel(lead: CampaignLead) {
-    const STAGES: FunnelStage[] = ['new', 'contacted', 'attended', 'scheduled', 'presentation', 'proposal', 'sale']
+    const STAGES: FunnelStage[] = ['new', 'sent', 'attended', 'scheduled', 'presentation', 'proposal', 'sale']
     const currentIdx = STAGES.indexOf(lead.funnelStage)
     if (lead.funnelStage === 'attended') {
       toast('Lead já está em "Demonstrou Interesse"', { icon: '👍' })
