@@ -124,12 +124,39 @@ export function PropertiesPage() {
                       </p>
                     )}
                   </div>
-                  <p className="text-lg font-bold text-emerald-400">{formatCurrencyFull(p.value)}</p>
+                  {/* Specs: quartos · suítes · m² */}
+                  {(p.bedrooms || p.suites || p.areaSqm) && (
+                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                      {p.bedrooms && (
+                        <span className="flex items-center gap-1">🛏 {p.bedrooms} dorm{p.bedrooms > 1 ? 's' : '.'}</span>
+                      )}
+                      {p.suites && (
+                        <span className="flex items-center gap-1">🚿 {p.suites} suíte{p.suites > 1 ? 's' : ''}</span>
+                      )}
+                      {p.areaSqm && (
+                        <span className="flex items-center gap-1">📐 {p.areaSqm} m²</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Valor + condomínio */}
+                  <div>
+                    <p className="text-lg font-bold text-emerald-400">{formatCurrencyFull(p.value)}</p>
+                    {p.condoFee && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Cond: <span className="text-slate-400">{formatCurrencyFull(p.condoFee)}/mês</span>
+                      </p>
+                    )}
+                  </div>
+
                   <StatusBadge status={p.status} />
                   {owner && (
                     <p className="text-xs text-slate-500">
                       Prop: <span className="text-slate-300">{owner.name}</span>
                     </p>
+                  )}
+                  {p.notes && (
+                    <p className="text-xs text-slate-600 italic line-clamp-2">"{p.notes}"</p>
                   )}
                   <div className="flex gap-2 mt-auto pt-2 border-t border-white/5">
                     <Button

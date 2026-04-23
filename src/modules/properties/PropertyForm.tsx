@@ -44,6 +44,11 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
   const [address,         setAddress]         = useState(property?.address ?? '')
   const [complement,      setComplement]      = useState(property?.complement ?? '')
   const [unit,            setUnit]            = useState(property?.unit ?? '')
+  const [bedrooms,        setBedrooms]        = useState(property?.bedrooms ? String(property.bedrooms) : '')
+  const [suites,          setSuites]          = useState(property?.suites   ? String(property.suites)   : '')
+  const [areaSqm,         setAreaSqm]         = useState(property?.areaSqm  ? String(property.areaSqm)  : '')
+  const [condoFee,        setCondoFee]        = useState(property?.condoFee ? String(property.condoFee) : '')
+  const [notes,           setNotes]           = useState(property?.notes ?? '')
   const [value,           setValue]           = useState(property?.value ? String(property.value) : '')
   const [status,          setStatus]          = useState<PropertyStatus>(property?.status ?? 'opportunity')
   const [ownerId,         setOwnerId]         = useState(property?.ownerId ?? '')
@@ -63,6 +68,11 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     setAddress(property?.address ?? '')
     setComplement(property?.complement ?? '')
     setUnit(property?.unit ?? '')
+    setBedrooms(property?.bedrooms ? String(property.bedrooms) : '')
+    setSuites(property?.suites   ? String(property.suites)   : '')
+    setAreaSqm(property?.areaSqm  ? String(property.areaSqm)  : '')
+    setCondoFee(property?.condoFee ? String(property.condoFee) : '')
+    setNotes(property?.notes ?? '')
     setValue(property?.value ? String(property.value) : '')
     setStatus(property?.status ?? 'opportunity')
     setOwnerId(property?.ownerId ?? '')
@@ -125,6 +135,11 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
       address:         address.trim()    || undefined,
       complement:      complement.trim() || undefined,
       unit:            type === 'apartment' ? (unit.trim() || undefined) : undefined,
+      bedrooms:        bedrooms  ? Number(bedrooms)              : undefined,
+      suites:          suites    ? Number(suites)                : undefined,
+      areaSqm:         areaSqm   ? Number(areaSqm.replace(',', '.')) : undefined,
+      condoFee:        condoFee  ? parseValue(condoFee)          : undefined,
+      notes:           notes.trim() || undefined,
       value:           parseValue(value),
       status,
       ownerId:         kind === 'ready' ? ownerId : undefined,
@@ -265,6 +280,60 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
             )}
           </div>
 
+          {/* Dormitórios · Suítes · m² */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Dormitórios</label>
+              <input
+                type="number" min="0" max="20"
+                inputMode="numeric"
+                value={bedrooms}
+                onChange={e => setBedrooms(e.target.value)}
+                placeholder="0"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Suítes</label>
+              <input
+                type="number" min="0" max="20"
+                inputMode="numeric"
+                value={suites}
+                onChange={e => setSuites(e.target.value)}
+                placeholder="0"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Área (m²)</label>
+              <div className="relative">
+                <input
+                  type="text" inputMode="decimal"
+                  value={areaSqm}
+                  onChange={e => setAreaSqm(e.target.value.replace(/[^0-9,]/g, ''))}
+                  placeholder="85"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-3 pr-9 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 pointer-events-none">m²</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Valor do condomínio */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Valor do Condomínio</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 select-none pointer-events-none">R$</span>
+              <input
+                inputMode="numeric"
+                value={fmtInput(condoFee)}
+                onChange={e => setCondoFee(e.target.value.replace(/\D/g, ''))}
+                placeholder="800"
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              />
+            </div>
+          </div>
+
           {/* Value com máscara BRL */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -355,6 +424,18 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               )}
             </div>
           )}
+
+          {/* Observações */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Observações</label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Informações adicionais, diferenciais do imóvel, condições especiais…"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+            />
+          </div>
 
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>

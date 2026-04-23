@@ -30,6 +30,11 @@ export interface Property {
   address?: string          // rua / logradouro
   complement?: string       // complemento
   unit?: string             // unidade (ex: Apto 203) — aplicável a apartamentos
+  bedrooms?: number         // dormitórios
+  suites?: number           // suítes
+  areaSqm?: number          // área em m²
+  condoFee?: number         // valor do condomínio (R$)
+  notes?: string            // observações livres
   value: number             // para off_plan = ticket médio
   status: PropertyStatus
   ownerId?: string          // não aplicável para off_plan

@@ -18,6 +18,8 @@ interface ContactRow {
 interface PropertyRow {
   id: string; kind: string; name: string; type: string; neighborhood: string
   address: string | null; complement: string | null; unit: string | null
+  bedrooms: number | null; suites: number | null
+  area_sqm: number | null; condo_fee: number | null; notes: string | null
   value: number; status: string; owner_id: string | null
   development_name: string | null; images: string[]
   created_at: string; updated_at: string
@@ -92,6 +94,9 @@ function toProperty(r: PropertyRow): Property {
     type: r.type as Property['type'], neighborhood: r.neighborhood,
     address: r.address ?? undefined, complement: r.complement ?? undefined,
     unit: r.unit ?? undefined,
+    bedrooms: r.bedrooms ?? undefined, suites: r.suites ?? undefined,
+    areaSqm: r.area_sqm ?? undefined, condoFee: r.condo_fee ?? undefined,
+    notes: r.notes ?? undefined,
     value: r.value, status: r.status as Property['status'],
     ownerId: r.owner_id ?? undefined, developmentName: r.development_name ?? undefined,
     images: r.images ?? [], createdAt: r.created_at, updatedAt: r.updated_at,
@@ -103,6 +108,9 @@ function fromProperty(p: Property): PropertyRow {
     id: p.id, kind: p.kind, name: p.name, type: p.type,
     neighborhood: p.neighborhood,
     address: p.address ?? null, complement: p.complement ?? null, unit: p.unit ?? null,
+    bedrooms: p.bedrooms ?? null, suites: p.suites ?? null,
+    area_sqm: p.areaSqm ?? null, condo_fee: p.condoFee ?? null,
+    notes: p.notes ?? null,
     value: p.value, status: p.status,
     owner_id: p.ownerId ?? null, development_name: p.developmentName ?? null,
     images: p.images, created_at: p.createdAt, updated_at: p.updatedAt,
