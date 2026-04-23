@@ -182,6 +182,7 @@ export function ContactsPage() {
 
       {/* Form modal */}
       <ContactForm
+        key={editing?.id ?? 'new'}
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
         contact={editing}

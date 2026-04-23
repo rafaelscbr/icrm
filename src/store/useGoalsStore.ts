@@ -150,6 +150,15 @@ export function getVisitMetrics(tasks: Task[]) {
 
   const visitTasks = tasks.filter(t => t.category === 'visita')
 
+  // DEBUG — remover após diagnóstico
+  console.group('[getVisitMetrics] DEBUG')
+  console.log('Semana:', week.start, '→', week.end)
+  console.log('Mês:   ', month.start, '→', month.end)
+  visitTasks.filter(t => t.status === 'done').forEach(t => {
+    console.log(`  task="${t.title}" dueDate=${t.dueDate ?? 'null'} completedAt=${t.completedAt ?? 'null'} inWeek=${!!(toDateStr(t.dueDate) && toDateStr(t.dueDate)! >= week.start && toDateStr(t.dueDate)! <= week.end)}`)
+  })
+  console.groupEnd()
+
   return {
     // Todas as visitas agendadas no mês (qualquer status exceto cancelado)
     agendadasMes: visitTasks.filter(t => {
