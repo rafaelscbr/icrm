@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageCircle, FileText } from 'lucide-react'
+import { MessageCircle, FileText, ChevronDown } from 'lucide-react'
 import { LeadParecerModal } from './LeadParecerModal'
 import { CampaignLead, Campaign } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
@@ -12,7 +12,11 @@ interface KanbanTabProps {
   campaign: Campaign
 }
 
-function LeadCard({ lead, campaign, onParecer }: { lead: CampaignLead; campaign: Campaign; onParecer: (l: CampaignLead) => void }) {
+const COLUMN_PAGE = 20   // quantos cards mostrar inicialmente por coluna
+
+function LeadCard({
+  lead, campaign, onParecer,
+}: { lead: CampaignLead; campaign: Campaign; onParecer: (l: CampaignLead) => void }) {
   const { markContacted } = useCampaignLeadsStore()
   const situation = SITUATION_CONFIG.find(s => s.value === lead.situation)
 
@@ -67,48 +71,80 @@ function LeadCard({ lead, campaign, onParecer }: { lead: CampaignLead; campaign:
   )
 }
 
+// Coluna individual com paginação própria
+function KanbanColumn({
+  stage, leads, campaign, onParecer,
+}: {
+  stage: typeof FUNNEL_STAGES[number]
+  leads: CampaignLead[]
+  campaign: Campaign
+  onParecer: (l: CampaignLead) => void
+}) {
+  const [visible, setVisible] = useState(COLUMN_PAGE)
+  const shown  = leads.slice(0, visible)
+  const hasMore = visible < leads.length
+
+  return (
+    <div className="flex-shrink-0 w-60 flex flex-col">
+      {/* Cabeçalho */}
+      <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${stage.bg} border ${stage.border} mb-3`}>
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
+          <span className={`text-xs font-semibold ${stage.color}`}>{stage.label}</span>
+        </div>
+        <span className={`text-xs font-bold tabular-nums ${stage.color} opacity-70`}>
+          {leads.length.toLocaleString('pt-BR')}
+        </span>
+      </div>
+
+      {/* Cards */}
+      <div className="flex flex-col gap-2 flex-1">
+        {leads.length === 0 ? (
+          <div className="flex items-center justify-center py-8 border border-dashed border-white/8 rounded-xl">
+            <p className="text-xs text-slate-700">Nenhum lead</p>
+          </div>
+        ) : (
+          <>
+            {shown.map(lead => (
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                campaign={campaign}
+                onParecer={onParecer}
+              />
+            ))}
+
+            {hasMore && (
+              <button
+                onClick={() => setVisible(v => v + COLUMN_PAGE)}
+                className="flex items-center justify-center gap-1.5 py-2 text-xs text-slate-500 hover:text-slate-300 border border-dashed border-white/10 hover:border-white/20 rounded-xl transition-all cursor-pointer"
+              >
+                <ChevronDown size={12} />
+                Ver mais {Math.min(COLUMN_PAGE, leads.length - visible).toLocaleString('pt-BR')} de {(leads.length - visible).toLocaleString('pt-BR')}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function KanbanTab({ leads, campaign }: KanbanTabProps) {
   const [parecerLead, setParecerLead] = useState<CampaignLead | undefined>()
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Kanban board — horizontal scroll */}
       <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
-        {FUNNEL_STAGES.map(stage => {
-          const stageLeads = leads.filter(l => l.funnelStage === stage.value)
-          return (
-            <div key={stage.value} className="flex-shrink-0 w-60 flex flex-col">
-              {/* Column header */}
-              <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${stage.bg} border ${stage.border} mb-3`}>
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
-                  <span className={`text-xs font-semibold ${stage.color}`}>{stage.label}</span>
-                </div>
-                <span className={`text-xs font-bold tabular-nums ${stage.color} opacity-70`}>
-                  {stageLeads.length}
-                </span>
-              </div>
-
-              {/* Cards */}
-              <div className="flex flex-col gap-2 flex-1">
-                {stageLeads.length === 0 ? (
-                  <div className="flex items-center justify-center py-8 border border-dashed border-white/8 rounded-xl">
-                    <p className="text-xs text-slate-700">Nenhum lead</p>
-                  </div>
-                ) : (
-                  stageLeads.map(lead => (
-                    <LeadCard
-                      key={lead.id}
-                      lead={lead}
-                      campaign={campaign}
-                      onParecer={setParecerLead}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          )
-        })}
+        {FUNNEL_STAGES.map(stage => (
+          <KanbanColumn
+            key={stage.value}
+            stage={stage}
+            leads={leads.filter(l => l.funnelStage === stage.value)}
+            campaign={campaign}
+            onParecer={setParecerLead}
+          />
+        ))}
       </div>
 
       <LeadParecerModal

@@ -26,9 +26,9 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
 
   const maxCount = Math.max(...stageData.map(s => s.count), 1)
 
-  const W       = 540    // largura do viewBox
-  const STAGE_H = 54     // altura de cada etapa
-  const MIN_W   = 110    // largura mínima visível
+  const W       = 540   // largura do viewBox
+  const STAGE_H = 34    // altura compacta por etapa
+  const MIN_W   = 100   // largura mínima visível
   const TOTAL_H = stageData.length * STAGE_H
 
   const stages = stageData.map((s, i) => {
@@ -40,87 +40,61 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
   })
 
   return (
-    <svg viewBox={`0 0 ${W} ${TOTAL_H}`} width="100%" style={{ display: 'block' }}>
-      <defs>
-        {stages.map(s => (
-          <linearGradient key={s.value} id={`fg-${s.value}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stopColor={s.fill} stopOpacity={0.55} />
-            <stop offset="50%"  stopColor={s.fill} stopOpacity={0.9}  />
-            <stop offset="100%" stopColor={s.fill} stopOpacity={0.55} />
-          </linearGradient>
-        ))}
-      </defs>
+    // max-h fixo + preserveAspectRatio garante que não ultrapasse 260 px de altura
+    <div style={{ maxHeight: 260, overflow: 'hidden' }}>
+      <svg
+        viewBox={`0 0 ${W} ${TOTAL_H}`}
+        width="100%"
+        height="100%"
+        preserveAspectRatio="xMidYMid meet"
+        style={{ display: 'block', maxHeight: 260 }}
+      >
+        <defs>
+          {stages.map(s => (
+            <linearGradient key={s.value} id={`fg-${s.value}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stopColor={s.fill} stopOpacity={0.5} />
+              <stop offset="50%"  stopColor={s.fill} stopOpacity={0.85} />
+              <stop offset="100%" stopColor={s.fill} stopOpacity={0.5} />
+            </linearGradient>
+          ))}
+        </defs>
 
-      {stages.map((stage, i) => {
-        const next = stages[i + 1]
-        const cx   = W / 2
-        const cy   = stage.y + STAGE_H / 2
+        {stages.map((stage, i) => {
+          const next = stages[i + 1]
+          const cx   = W / 2
+          const cy   = stage.y + STAGE_H / 2
 
-        // Trapézio: topo desta etapa → base afinando para a próxima etapa
-        const x1 = stage.x
-        const x2 = stage.x + stage.barW
-        const y1 = stage.y
-        const y2 = stage.y + STAGE_H
-        const x3 = next ? next.x              : x1
-        const x4 = next ? next.x + next.barW  : x2
+          const x1 = stage.x
+          const x2 = stage.x + stage.barW
+          const y1 = stage.y
+          const y2 = stage.y + STAGE_H
+          const x3 = next ? next.x             : x1
+          const x4 = next ? next.x + next.barW : x2
 
-        const points = `${x1},${y1} ${x2},${y1} ${x4},${y2} ${x3},${y2}`
+          return (
+            <g key={stage.value}>
+              <polygon
+                points={`${x1},${y1} ${x2},${y1} ${x4},${y2} ${x3},${y2}`}
+                fill={`url(#fg-${stage.value})`}
+                stroke={stage.fill}
+                strokeWidth={0.5}
+                strokeOpacity={0.25}
+              />
+              <line x1={x1} y1={y1} x2={x2} y2={y1} stroke="rgba(255,255,255,0.07)" strokeWidth={0.8} />
 
-        return (
-          <g key={stage.value}>
-            {/* Trapézio da etapa */}
-            <polygon
-              points={points}
-              fill={`url(#fg-${stage.value})`}
-              stroke={stage.fill}
-              strokeWidth={0.8}
-              strokeOpacity={0.3}
-            />
-
-            {/* Linha separadora interna */}
-            <line
-              x1={x1} y1={y1} x2={x2} y2={y1}
-              stroke="rgba(255,255,255,0.08)"
-              strokeWidth={1}
-            />
-
-            {/* Nome da etapa */}
-            <text
-              x={cx} y={cy - 9}
-              textAnchor="middle"
-              fill="white"
-              fontSize={11}
-              fontWeight="600"
-              opacity={0.95}
-            >
-              {stage.label}
-            </text>
-
-            {/* Contagem · percentual */}
-            <text
-              x={cx} y={cy + 10}
-              textAnchor="middle"
-              fill="white"
-              fontSize={13}
-              fontWeight="700"
-              opacity={0.9}
-            >
-              {stage.count.toLocaleString('pt-BR')}
-            </text>
-            <text
-              x={cx} y={cy + 24}
-              textAnchor="middle"
-              fill="white"
-              fontSize={9}
-              fontWeight="400"
-              opacity={0.5}
-            >
-              {stage.pct}% do total
-            </text>
-          </g>
-        )
-      })}
-    </svg>
+              {/* Label + contagem em linha única */}
+              <text x={cx} y={cy - 4} textAnchor="middle" fill="white" fontSize={9} fontWeight="600" opacity={0.85}>
+                {stage.label}
+              </text>
+              <text x={cx} y={cy + 9} textAnchor="middle" fill="white" fontSize={11} fontWeight="700" opacity={0.9}>
+                {stage.count.toLocaleString('pt-BR')}
+                <tspan fontSize={8} opacity={0.5}> · {stage.pct}%</tspan>
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
   )
 }
 
