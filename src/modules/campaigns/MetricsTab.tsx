@@ -13,88 +13,126 @@ interface MetricsTabProps {
 
 const axisStyle = { fill: '#475569', fontSize: 11 }
 
-// ─── Funil visual SVG ─────────────────────────────────────────────────────────
+// Larguras fixas decrescentes para cada etapa (0 = mais largo, 6 = mais estreito)
+// Independente dos dados — cria o visual de funil real
+const STAGE_WIDTHS_PCT = [100, 84, 69, 55, 42, 30, 20]
+
+// ─── Funil SVG — pirâmide invertida ──────────────────────────────────────────
 
 function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
   const total = leads.length
 
-  const stageData = FUNNEL_STAGES.map(s => ({
-    ...s,
-    count: leads.filter(l => l.funnelStage === s.value).length,
-    fill:  FUNNEL_COLORS[s.value],
-  }))
+  const stageData = FUNNEL_STAGES.map((s, i) => {
+    const count   = leads.filter(l => l.funnelStage === s.value).length
+    const ofTotal = total > 0 ? Math.round((count / total) * 100) : 0
+    const widthPct = STAGE_WIDTHS_PCT[i] ?? 20
+    return { ...s, count, ofTotal, widthPct, fill: FUNNEL_COLORS[s.value] }
+  })
 
-  const maxCount = Math.max(...stageData.map(s => s.count), 1)
+  // Conversão estágio-a-estágio (em relação ao estágio anterior)
+  const convPct = stageData.map((s, i) => {
+    if (i === 0) return null
+    const prev = stageData[i - 1].count
+    return prev > 0 ? Math.round((s.count / prev) * 100) : 0
+  })
 
-  const W       = 540   // largura do viewBox
-  const STAGE_H = 34    // altura compacta por etapa
-  const MIN_W   = 100   // largura mínima visível
+  const W       = 460    // viewBox width
+  const STAGE_H = 46     // altura de cada faixa
   const TOTAL_H = stageData.length * STAGE_H
+  const BADGE_R = 18     // raio dos badges de conversão
 
   const stages = stageData.map((s, i) => {
-    const barW = Math.max(MIN_W, (s.count / maxCount) * W)
+    const barW = (s.widthPct / 100) * W
     const x    = (W - barW) / 2
     const y    = i * STAGE_H
-    const pct  = total > 0 ? Math.round((s.count / total) * 100) : 0
-    return { ...s, barW, x, y, pct }
+    return { ...s, barW, x, y }
   })
 
   return (
-    // max-h fixo + preserveAspectRatio garante que não ultrapasse 260 px de altura
-    <div style={{ maxHeight: 260, overflow: 'hidden' }}>
-      <svg
-        viewBox={`0 0 ${W} ${TOTAL_H}`}
-        width="100%"
-        height="100%"
-        preserveAspectRatio="xMidYMid meet"
-        style={{ display: 'block', maxHeight: 260 }}
-      >
-        <defs>
-          {stages.map(s => (
-            <linearGradient key={s.value} id={`fg-${s.value}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%"   stopColor={s.fill} stopOpacity={0.5} />
-              <stop offset="50%"  stopColor={s.fill} stopOpacity={0.85} />
-              <stop offset="100%" stopColor={s.fill} stopOpacity={0.5} />
-            </linearGradient>
-          ))}
-        </defs>
+    <svg
+      viewBox={`-${BADGE_R + 4} 0 ${W + (BADGE_R + 4) * 2} ${TOTAL_H}`}
+      width="100%"
+      style={{ display: 'block', maxHeight: 340 }}
+    >
+      <defs>
+        {stages.map(s => (
+          <linearGradient key={s.value} id={`mfg-${s.value}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stopColor={s.fill} stopOpacity={0.6}  />
+            <stop offset="50%"  stopColor={s.fill} stopOpacity={1.0}  />
+            <stop offset="100%" stopColor={s.fill} stopOpacity={0.6}  />
+          </linearGradient>
+        ))}
+      </defs>
 
-        {stages.map((stage, i) => {
-          const next = stages[i + 1]
-          const cx   = W / 2
-          const cy   = stage.y + STAGE_H / 2
+      {stages.map((stage, i) => {
+        const next = stages[i + 1]
+        const cx   = W / 2
+        const cy   = stage.y + STAGE_H / 2
 
-          const x1 = stage.x
-          const x2 = stage.x + stage.barW
-          const y1 = stage.y
-          const y2 = stage.y + STAGE_H
-          const x3 = next ? next.x             : x1
-          const x4 = next ? next.x + next.barW : x2
+        // Trapézio: topo desta etapa afunilando até o topo da próxima
+        const x1 = stage.x,           y1 = stage.y
+        const x2 = stage.x + stage.barW
+        const y2 = stage.y + STAGE_H
+        const x3 = next ? next.x             : cx - 2
+        const x4 = next ? next.x + next.barW : cx + 2
 
-          return (
-            <g key={stage.value}>
-              <polygon
-                points={`${x1},${y1} ${x2},${y1} ${x4},${y2} ${x3},${y2}`}
-                fill={`url(#fg-${stage.value})`}
-                stroke={stage.fill}
-                strokeWidth={0.5}
-                strokeOpacity={0.25}
-              />
-              <line x1={x1} y1={y1} x2={x2} y2={y1} stroke="rgba(255,255,255,0.07)" strokeWidth={0.8} />
+        const conv = convPct[i]
 
-              {/* Label + contagem em linha única */}
-              <text x={cx} y={cy - 4} textAnchor="middle" fill="white" fontSize={9} fontWeight="600" opacity={0.85}>
-                {stage.label}
-              </text>
-              <text x={cx} y={cy + 9} textAnchor="middle" fill="white" fontSize={11} fontWeight="700" opacity={0.9}>
-                {stage.count.toLocaleString('pt-BR')}
-                <tspan fontSize={8} opacity={0.5}> · {stage.pct}%</tspan>
-              </text>
-            </g>
-          )
-        })}
-      </svg>
-    </div>
+        return (
+          <g key={stage.value}>
+            {/* Trapézio preenchido */}
+            <polygon
+              points={`${x1},${y1} ${x2},${y1} ${x4},${y2} ${x3},${y2}`}
+              fill={`url(#mfg-${stage.value})`}
+            />
+            {/* Borda superior sutil */}
+            <line x1={x1} y1={y1} x2={x2} y2={y1} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+
+            {/* Label da etapa */}
+            <text x={cx} y={cy - 6} textAnchor="middle" fill="white" fontSize={10} fontWeight="700" opacity={0.95}
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+              {stage.label}
+            </text>
+
+            {/* Contagem */}
+            <text x={cx} y={cy + 8} textAnchor="middle" fill="white" fontSize={13} fontWeight="800">
+              {stage.count.toLocaleString('pt-BR')}
+              <tspan fontSize={9} opacity={0.6} fontWeight="400"> · {stage.ofTotal}%</tspan>
+            </text>
+
+            {/* Badge de conversão (entre etapas) — à direita */}
+            {conv !== null && (
+              <g>
+                {/* linha tracejada */}
+                <line
+                  x1={x2 + 4} y1={stage.y}
+                  x2={W / 2 + stage.barW / 2 + BADGE_R + 2} y2={stage.y}
+                  stroke="rgba(255,255,255,0.1)" strokeWidth={0.8} strokeDasharray="3 2"
+                />
+                {/* círculo badge */}
+                <circle
+                  cx={W / 2 + stage.barW / 2 + BADGE_R + 6}
+                  cy={stage.y}
+                  r={BADGE_R}
+                  fill={conv >= 50 ? '#22c55e22' : conv >= 20 ? '#f59e0b22' : '#ef444422'}
+                  stroke={conv >= 50 ? '#22c55e80' : conv >= 20 ? '#f59e0b80' : '#ef444480'}
+                  strokeWidth={1}
+                />
+                <text
+                  x={W / 2 + stage.barW / 2 + BADGE_R + 6}
+                  y={stage.y + 4}
+                  textAnchor="middle"
+                  fill={conv >= 50 ? '#4ade80' : conv >= 20 ? '#fbbf24' : '#f87171'}
+                  fontSize={9} fontWeight="700"
+                >
+                  {conv}%
+                </text>
+              </g>
+            )}
+          </g>
+        )
+      })}
+    </svg>
   )
 }
 
@@ -110,7 +148,6 @@ export function MetricsTab({ leads }: MetricsTabProps) {
   const convRate      = total     > 0 ? Math.round((sales     / total)     * 100) : 0
   const proposalValue = leads.reduce((a, l) => a + (l.proposalValue ?? 0), 0)
 
-  // Contatos por dia — últimos 21 dias
   const dailyData = useMemo(() => {
     return Array.from({ length: 21 }, (_, i) => {
       const d = new Date()
@@ -131,13 +168,13 @@ export function MetricsTab({ leads }: MetricsTabProps) {
   return (
     <div className="flex flex-col gap-6">
 
-      {/* KPIs */}
+      {/* KPIs topo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total de leads',    value: total.toLocaleString('pt-BR'),                                                            color: 'text-slate-200'  },
+          { label: 'Total de leads',    value: total.toLocaleString('pt-BR'),                                                                   color: 'text-slate-200'  },
           { label: 'Leads acionados',   value: `${contacted.toLocaleString('pt-BR')} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400'   },
-          { label: 'Taxa de resposta',  value: `${responseRate}%`,                                                                       color: 'text-cyan-400'   },
-          { label: 'Conversão (venda)', value: `${convRate}%`,                                                                           color: 'text-green-400'  },
+          { label: 'Taxa de resposta',  value: `${responseRate}%`,                                                                              color: 'text-cyan-400'   },
+          { label: 'Conversão (venda)', value: `${convRate}%`,                                                                                  color: 'text-green-400'  },
         ].map(kpi => (
           <Card key={kpi.label} className="!py-4">
             <p className="text-xs text-slate-600 mb-1">{kpi.label}</p>
@@ -146,21 +183,74 @@ export function MetricsTab({ leads }: MetricsTabProps) {
         ))}
       </div>
 
-      {/* ── Funil visual ── */}
-      <Card>
-        <h2 className="text-sm font-medium text-slate-300 mb-5">Funil de conversão</h2>
-        {total === 0 ? (
-          <div className="flex items-center justify-center h-40">
-            <p className="text-sm text-slate-600">Nenhum lead importado ainda</p>
-          </div>
-        ) : (
-          <SalesFunnel leads={leads} />
-        )}
-      </Card>
+      {/* Layout 2 colunas: funil (esq) + métricas laterais (dir) */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+        {/* ── Funil ── (ocupa 3/5 do espaço) */}
+        <Card className="lg:col-span-3">
+          <h2 className="text-sm font-semibold text-slate-300 mb-4">Funil de conversão</h2>
+          {total === 0 ? (
+            <div className="flex items-center justify-center h-52">
+              <p className="text-sm text-slate-600">Nenhum lead importado ainda</p>
+            </div>
+          ) : (
+            <div className="px-2">
+              <SalesFunnel leads={leads} />
+            </div>
+          )}
+        </Card>
+
+        {/* ── Lateral: situação + volume ── (ocupa 2/5) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <Card className="flex-1">
+            <h2 className="text-sm font-semibold text-slate-300 mb-4">Situação dos leads</h2>
+            <div className="flex flex-col gap-2">
+              {situationData.map(s => (
+                <div key={s.value} className="flex items-center gap-2 py-2 px-3 rounded-xl bg-white/3 border border-white/5">
+                  <span className={`flex-1 text-xs ${s.color}`}>{s.label}</span>
+                  <span className="text-sm font-bold tabular-nums text-slate-200">{s.count}</span>
+                  <span className="text-[10px] text-slate-600 w-8 text-right">
+                    {total > 0 ? `${Math.round(s.count / total * 100)}%` : '—'}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-white/3 border border-white/5">
+                <span className="flex-1 text-xs text-slate-400">Sem situação</span>
+                <span className="text-sm font-bold tabular-nums text-slate-200">
+                  {leads.filter(l => !l.situation).length}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="text-sm font-semibold text-slate-300 mb-4">Volume financeiro</h2>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between py-2 border-b border-white/8">
+                <span className="text-xs text-slate-400">Propostas abertas</span>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-amber-400 tabular-nums">{proposals}</p>
+                  {proposalValue > 0 && <p className="text-[10px] text-slate-500">{formatCurrency(proposalValue)}</p>}
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-white/8">
+                <span className="text-xs text-slate-400">Vendas convertidas</span>
+                <p className="text-sm font-bold text-green-400 tabular-nums">{sales}</p>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-xs text-slate-400">Proposta → Venda</span>
+                <p className="text-sm font-bold text-slate-200 tabular-nums">
+                  {proposals + sales > 0 ? `${Math.round(sales / (proposals + sales) * 100)}%` : '—'}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
 
       {/* Leads acionados por dia */}
       <Card>
-        <h2 className="text-sm font-medium text-slate-300 mb-5">Leads acionados por dia — últimos 21 dias</h2>
+        <h2 className="text-sm font-semibold text-slate-300 mb-5">Leads acionados por dia — últimos 21 dias</h2>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={dailyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <defs>
@@ -183,53 +273,6 @@ export function MetricsTab({ leads }: MetricsTabProps) {
           </AreaChart>
         </ResponsiveContainer>
       </Card>
-
-      {/* Situação + Volume financeiro */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <h2 className="text-sm font-medium text-slate-300 mb-4">Relatório de situação</h2>
-          <div className="flex flex-col gap-2">
-            {situationData.map(s => (
-              <div key={s.value} className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/3 border border-white/5">
-                <span className={`flex-1 text-sm ${s.color}`}>{s.label}</span>
-                <span className="text-lg font-bold tabular-nums text-slate-200">{s.count}</span>
-                <span className="text-xs text-slate-600 w-10 text-right">
-                  {total > 0 ? `${Math.round(s.count / total * 100)}%` : '—'}
-                </span>
-              </div>
-            ))}
-            <div className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/3 border border-white/5">
-              <span className="flex-1 text-sm text-slate-400">Sem situação definida</span>
-              <span className="text-lg font-bold tabular-nums text-slate-200">
-                {leads.filter(l => !l.situation).length}
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="text-sm font-medium text-slate-300 mb-4">Volume financeiro</h2>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between py-3 border-b border-white/8">
-              <span className="text-sm text-slate-400">Propostas abertas</span>
-              <div className="text-right">
-                <p className="text-sm font-bold text-amber-400 tabular-nums">{proposals}</p>
-                {proposalValue > 0 && <p className="text-xs text-slate-500">{formatCurrency(proposalValue)}</p>}
-              </div>
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-white/8">
-              <span className="text-sm text-slate-400">Vendas convertidas</span>
-              <p className="text-sm font-bold text-green-400 tabular-nums">{sales}</p>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-slate-400">Taxa proposta → venda</span>
-              <p className="text-sm font-bold text-slate-200 tabular-nums">
-                {proposals + sales > 0 ? `${Math.round(sales / (proposals + sales) * 100)}%` : '—'}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
     </div>
   )
 }
