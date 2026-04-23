@@ -98,6 +98,14 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     return Object.keys(errs).length === 0
   }
 
+  // Formata para exibição no input: "850000" → "850.000"
+  function fmtInput(raw: string): string {
+    const d = raw.replace(/\D/g, '')
+    if (!d) return ''
+    return parseInt(d, 10).toLocaleString('pt-BR')
+  }
+
+  // Extrai dígitos puros: "850.000" → "850000"
   function parseValue(v: string) {
     return Number(v.replace(/\D/g, ''))
   }
@@ -257,15 +265,27 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
             )}
           </div>
 
-          {/* Value — label muda conforme kind */}
-          <Input
-            label={kind === 'off_plan' ? 'Ticket Médio' : 'Valor'}
-            required
-            value={value}
-            onChange={e => setValue(e.target.value)}
-            error={errors.value}
-            placeholder={kind === 'off_plan' ? 'ex: 450000' : '850000'}
-          />
+          {/* Value com máscara BRL */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              {kind === 'off_plan' ? 'Ticket Médio' : 'Valor'} <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 select-none pointer-events-none">
+                R$
+              </span>
+              <input
+                inputMode="numeric"
+                value={fmtInput(value)}
+                onChange={e => setValue(e.target.value.replace(/\D/g, ''))}
+                placeholder="850.000"
+                className={`w-full bg-white/5 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100
+                  placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
+                  ${errors.value ? 'border-red-500/50' : 'border-white/10'}`}
+              />
+            </div>
+            {errors.value && <p className="text-xs text-red-400">{errors.value}</p>}
+          </div>
 
           {/* Status */}
           <div className="flex flex-col gap-2">

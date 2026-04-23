@@ -109,10 +109,22 @@ export function PropertiesPage() {
                 {/* Content */}
                 <div className="p-5 flex flex-col gap-3 flex-1">
                   <div>
-                    <p className="text-sm font-semibold text-slate-100 mb-0.5">{p.name}</p>
+                    <p className="text-sm font-semibold text-slate-100 mb-0.5">
+                      {p.name}
+                      {p.unit && (
+                        <span className="ml-2 text-xs font-normal text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-md">
+                          {p.unit}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-xs text-slate-500">{TYPE_LABELS[p.type]} · {p.neighborhood}</p>
+                    {p.address && (
+                      <p className="text-xs text-slate-600 mt-0.5 truncate">
+                        {p.address}{p.complement ? `, ${p.complement}` : ''}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-lg font-bold text-slate-100">{formatCurrencyFull(p.value)}</p>
+                  <p className="text-lg font-bold text-emerald-400">{formatCurrencyFull(p.value)}</p>
                   <StatusBadge status={p.status} />
                   {owner && (
                     <p className="text-xs text-slate-500">
