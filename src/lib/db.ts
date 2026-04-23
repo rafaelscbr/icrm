@@ -240,7 +240,11 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
     const { data, error } = await supabase
       .from(table)
       .select('*')
+      // Ordenação dupla garante estabilidade quando created_at é idêntico
+      // (comum em imports em massa). Sem isso, range() pode trazer o mesmo
+      // registro em duas páginas diferentes.
       .order('created_at', { ascending: false })
+      .order('id',         { ascending: true  })
       .range(from, from + PAGE - 1)
 
     if (error) {
@@ -253,7 +257,14 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
     from += PAGE
   }
 
-  return result
+  // Remove duplicatas remanescentes (segurança extra)
+  const seen = new Set<string>()
+  return result.filter(item => {
+    const id = (item as { id: string }).id
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
 }
 
 async function upsertOne<R>(table: string, row: R): Promise<void> {
