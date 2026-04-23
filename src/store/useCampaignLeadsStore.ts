@@ -27,7 +27,19 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   load: async () => {
     set({ loading: true })
     try {
-      const leads = await db.campaignLeads.fetchAll()
+      const raw = await db.campaignLeads.fetchAll()
+
+      // Deduplica por (campaignId + telefone limpo): mantém o registro mais
+      // recente (fetchAll retorna created_at DESC) e descarta os extras que
+      // entraram pelo import em massa com o mesmo número.
+      const seen = new Set<string>()
+      const leads = raw.filter(l => {
+        const key = `${l.campaignId}:${l.phone.replace(/\D/g, '')}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+
       set({ leads })
     } catch (err) {
       console.error('[campaignLeads] load:', err)
