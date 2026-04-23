@@ -45,7 +45,7 @@ export interface Property {
 
 export type TaskStatus    = 'pending' | 'done' | 'cancelled'
 export type TaskPriority  = 'low' | 'medium' | 'high'
-export type TaskCategory  = 'visita' | 'agenciamento' | 'proposta' | 'outro'
+export type TaskCategory  = 'visita' | 'agenciamento' | 'proposta' | 'busca_imovel' | 'outro'
 
 export interface Task {
   id: string

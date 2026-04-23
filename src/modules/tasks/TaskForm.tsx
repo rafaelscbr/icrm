@@ -25,10 +25,11 @@ const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
 ]
 
 const CATEGORY_OPTIONS: { value: TaskCategory; label: string }[] = [
-  { value: 'visita',      label: 'Visita'      },
-  { value: 'agenciamento',label: 'Agenciamento'},
-  { value: 'proposta',    label: 'Proposta'    },
-  { value: 'outro',       label: 'Outro'       },
+  { value: 'visita',       label: 'Visita'          },
+  { value: 'agenciamento', label: 'Agenciamento'    },
+  { value: 'proposta',     label: 'Proposta'        },
+  { value: 'busca_imovel', label: 'Busca de Imóvel' },
+  { value: 'outro',        label: 'Outro'           },
 ]
 
 export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {

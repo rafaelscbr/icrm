@@ -26,10 +26,11 @@ const PRIORITY_DOT: Record<TaskPriority, string> = {
 }
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; label: string; motto: string }> = {
-  visita:       { icon: Home,      color: 'text-cyan-400',   label: 'Visita',       motto: 'bora fechar negócio! 🏠'            },
-  agenciamento: { icon: Building2, color: 'text-indigo-400', label: 'Agenciamento', motto: 'hora de ampliar o portfólio! 📋'    },
-  proposta:     { icon: FileText,  color: 'text-amber-400',  label: 'Proposta',     motto: 'proposta enviada é venda garantida! 💰' },
-  outro:        { icon: Zap,       color: 'text-slate-400',  label: 'Outro',        motto: ''                                    },
+  visita:        { icon: Home,      color: 'text-cyan-400',    label: 'Visita',           motto: 'bora fechar negócio! 🏠'                },
+  agenciamento:  { icon: Building2, color: 'text-indigo-400',  label: 'Agenciamento',     motto: 'hora de ampliar o portfólio! 📋'        },
+  proposta:      { icon: FileText,  color: 'text-amber-400',   label: 'Proposta',         motto: 'proposta enviada é venda garantida! 💰'  },
+  busca_imovel:  { icon: TrendingUp, color: 'text-violet-400', label: 'Busca de Imóvel',  motto: 'encontre o imóvel certo para o lead! 🔍' },
+  outro:         { icon: Zap,       color: 'text-slate-400',   label: 'Outro',            motto: ''                                        },
 }
 
 function getGreeting() {
@@ -82,6 +83,10 @@ function SmartBanner({ tasks }: { tasks: Task[] }) {
   if ((counts.proposta ?? 0) > 0) {
     const n = counts.proposta!
     lines.push(`${n} proposta${n > 1 ? 's' : ''} para apresentar — ${CATEGORY_CONFIG.proposta.motto}`)
+  }
+  if ((counts.busca_imovel ?? 0) > 0) {
+    const n = counts.busca_imovel!
+    lines.push(`${n} busca${n > 1 ? 's' : ''} de imóvel — ${CATEGORY_CONFIG.busca_imovel.motto}`)
   }
 
   const greeting = getGreeting()
@@ -334,7 +339,7 @@ export function TasksPage() {
   const upcomingCount = pending.filter(t => t.dueDate && t.dueDate > today).length
 
   // Group pending by category, sorted by urgency then date within each group
-  const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'outro']
+  const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'outro']
   const byCategory = CATEGORY_ORDER.map(cat => ({
     cat,
     tasks: pending
