@@ -2,8 +2,10 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Users, Building2, TrendingUp, DollarSign, Cake, ArrowRight,
-  Gift, MessageCircle, Sparkles, CheckSquare, Circle, CheckCircle2, AlertTriangle, Clock, Target
+  Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
+  AlertTriangle, Clock, Target, CalendarCheck, Siren
 } from 'lucide-react'
+import { Task, Contact, Property } from '../../types'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
@@ -23,6 +25,186 @@ const tagConfig: Record<ContactTag, { label: string; variant: 'indigo' | 'purple
   buyer:    { label: 'Comprou',      variant: 'green'  },
 }
 
+function daysOverdue(dueDate: string): number {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const due   = new Date(dueDate + 'T00:00:00')
+  return Math.floor((today.getTime() - due.getTime()) / 86_400_000)
+}
+
+function dueDateLabel(dueDate?: string): { text: string; color: string } {
+  if (!dueDate) return { text: 'Sem prazo', color: 'text-slate-600' }
+  const today    = new Date(); today.setHours(0, 0, 0, 0)
+  const due      = new Date(dueDate + 'T00:00:00')
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86_400_000)
+  if (diffDays === 0) return { text: 'Hoje!',    color: 'text-amber-400' }
+  if (diffDays === 1) return { text: 'Amanhã',   color: 'text-yellow-400' }
+  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-slate-400' }
+  return { text: dueDate.split('-').reverse().join('/'), color: 'text-slate-500' }
+}
+
+function OverdueCard({
+  tasks, contacts, properties, onNavigate,
+}: { tasks: Task[]; contacts: Contact[]; properties: Property[]; onNavigate: () => void }) {
+  if (tasks.length === 0) return null
+  return (
+    <div className="relative rounded-2xl border border-red-500/40 bg-red-500/5 ring-1 ring-red-500/20 overflow-hidden mb-6 animate-slide-up">
+      {/* topo vermelho */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-red-500/20">
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-8 h-8 bg-red-500/20 rounded-xl flex items-center justify-center">
+            <Siren size={15} className="text-red-400 animate-pulse" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-red-300 leading-none">Tarefas em atraso</h2>
+            <p className="text-[11px] text-red-500/70 mt-0.5">Atenção imediata necessária</p>
+          </div>
+          <span className="ml-1 bg-red-500/25 text-red-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-red-500/30 tabular-nums animate-pulse">
+            {tasks.length}
+          </span>
+        </div>
+        <button
+          onClick={onNavigate}
+          className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          Resolver <ArrowRight size={12} />
+        </button>
+      </div>
+
+      <div className="flex flex-col divide-y divide-red-500/10">
+        {tasks.map(t => {
+          const days     = daysOverdue(t.dueDate!)
+          const contact  = contacts.find(c => c.id === t.contactId)
+          const property = properties.find(p => p.id === t.propertyId)
+          return (
+            <div
+              key={t.id}
+              onClick={onNavigate}
+              className="flex items-center gap-3 px-5 py-3 hover:bg-red-500/8 transition-colors cursor-pointer group"
+            >
+              <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center">
+                <AlertTriangle size={13} className="text-red-400" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-200 truncate">{t.title}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {contact && (
+                    <span className="text-xs text-slate-500 flex items-center gap-0.5">
+                      <Users size={9} /> {contact.name}
+                    </span>
+                  )}
+                  {property && (
+                    <span className="text-xs text-slate-500 flex items-center gap-0.5">
+                      <Building2 size={9} /> {property.name}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-shrink-0 text-right">
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-lg border border-red-500/20">
+                  <Clock size={10} />
+                  {days === 1 ? '1 dia' : `${days} dias`} de atraso
+                </span>
+                <p className="text-[10px] text-red-600 mt-0.5 text-right">
+                  {t.dueDate!.split('-').reverse().join('/')}
+                </p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function UpcomingCard({
+  tasks, contacts, properties, onNavigate,
+}: { tasks: Task[]; contacts: Contact[]; properties: Property[]; onNavigate: () => void }) {
+  const shown = tasks.slice(0, 6)
+  return (
+    <div className="relative rounded-2xl border border-white/8 bg-[#13151f] overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/7">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-indigo-500/15 rounded-xl flex items-center justify-center">
+            <CalendarCheck size={15} className="text-indigo-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-200">Próximas tarefas</h2>
+            {tasks.length > 0
+              ? <p className="text-[11px] text-slate-500 mt-0.5">Você tem {tasks.length} tarefa{tasks.length !== 1 ? 's' : ''} agendada{tasks.length !== 1 ? 's' : ''} — siga em frente! 💪</p>
+              : <p className="text-[11px] text-slate-500 mt-0.5">Agenda livre — aproveite para planejar! ✨</p>
+            }
+          </div>
+        </div>
+        <button
+          onClick={onNavigate}
+          className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer hover:gap-2"
+        >
+          Ver todas <ArrowRight size={12} />
+        </button>
+      </div>
+
+      {tasks.length === 0 ? (
+        <div className="flex flex-col items-center py-8 gap-2">
+          <CheckCircle2 size={30} className="text-green-500/40" />
+          <p className="text-sm text-slate-500">Nenhuma tarefa futura por enquanto</p>
+          <button
+            onClick={onNavigate}
+            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer mt-1"
+          >
+            + Criar tarefa →
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col divide-y divide-white/5">
+          {shown.map(t => {
+            const due      = dueDateLabel(t.dueDate)
+            const contact  = contacts.find(c => c.id === t.contactId)
+            const property = properties.find(p => p.id === t.propertyId)
+            return (
+              <div
+                key={t.id}
+                onClick={onNavigate}
+                className="flex items-center gap-3 px-5 py-3 hover:bg-white/4 transition-colors cursor-pointer group"
+              >
+                <Circle size={16} className="text-slate-700 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-200 truncate">{t.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {contact && (
+                      <span className="text-xs text-slate-600 flex items-center gap-0.5">
+                        <Users size={9} /> {contact.name}
+                      </span>
+                    )}
+                    {property && (
+                      <span className="text-xs text-slate-600 flex items-center gap-0.5">
+                        <Building2 size={9} /> {property.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {t.dueDate && (
+                  <span className={`flex-shrink-0 flex items-center gap-1 text-xs font-medium tabular-nums ${due.color}`}>
+                    <Clock size={10} /> {due.text}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+          {tasks.length > 6 && (
+            <div className="px-5 py-2.5 text-center">
+              <button onClick={onNavigate} className="text-xs text-slate-600 hover:text-indigo-400 transition-colors cursor-pointer">
+                +{tasks.length - 6} mais tarefas →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function DashboardPage() {
   const navigate = useNavigate()
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
@@ -39,9 +221,8 @@ export function DashboardPage() {
   const salesThisMonth  = getThisMonth()
   const recentContacts  = contacts.slice(0, 5)
   const recentSales     = sales.slice(0, 5)
-  const upcomingTasks   = getUpcoming().slice(0, 5)
+  const upcomingTasks   = getUpcoming()
   const overdueTasks    = getOverdue()
-  const pendingCount    = tasks.filter(t => t.status === 'pending').length
 
   const greeting = () => {
     const h = new Date().getHours()
@@ -204,85 +385,21 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Tasks widget */}
-      <Card className="animate-slide-up mb-6" accent="indigo">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-orange-500/15 rounded-lg flex items-center justify-center">
-              <CheckSquare size={14} className="text-orange-400" />
-            </div>
-            <h2 className="text-sm font-semibold text-slate-200">Tarefas pendentes</h2>
-            {pendingCount > 0 && (
-              <span className="bg-orange-500/20 text-orange-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-orange-500/30">
-                {pendingCount}
-              </span>
-            )}
-            {overdueTasks.length > 0 && (
-              <span className="flex items-center gap-1 bg-red-500/10 text-red-400 text-xs font-medium px-2 py-0.5 rounded-lg border border-red-500/20">
-                <AlertTriangle size={10} /> {overdueTasks.length} em atraso
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => navigate('/tarefas')}
-            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer hover:gap-2"
-          >
-            Ver todas <ArrowRight size={12} />
-          </button>
-        </div>
+      {/* Tasks — atrasadas (sempre visíveis e chamativas) */}
+      <OverdueCard
+        tasks={overdueTasks}
+        contacts={contacts}
+        properties={properties}
+        onNavigate={() => navigate('/tarefas')}
+      />
 
-        {upcomingTasks.length === 0 ? (
-          <div className="flex flex-col items-center py-6 gap-2">
-            <CheckCircle2 size={28} className="text-green-500/40" />
-            <p className="text-sm text-slate-500">Nenhuma tarefa pendente</p>
-            <button
-              onClick={() => navigate('/tarefas')}
-              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer mt-1"
-            >
-              + Criar tarefa →
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1">
-            {upcomingTasks.map(t => {
-              const today = new Date().toISOString().split('T')[0]
-              const isOverdue = t.dueDate && t.dueDate < today
-              const contact  = contacts.find(c => c.id === t.contactId)
-              const property = properties.find(p => p.id === t.propertyId)
-              return (
-                <div key={t.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/4 transition-colors -mx-3 group">
-                  <button onClick={() => navigate('/tarefas')} className="flex-shrink-0 cursor-pointer">
-                    <Circle size={17} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-200 truncate">{t.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {contact && (
-                        <span className="text-xs text-indigo-400 flex items-center gap-0.5">
-                          <Users size={10} /> {contact.name}
-                        </span>
-                      )}
-                      {property && (
-                        <span className="text-xs text-cyan-400 flex items-center gap-0.5">
-                          <Building2 size={10} /> {property.name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {t.dueDate && (
-                    <span className={`flex-shrink-0 flex items-center gap-1 text-xs font-medium tabular-nums
-                      ${isOverdue ? 'text-red-400' : 'text-slate-500'}`}>
-                      <Clock size={11} />
-                      {t.dueDate.split('-').reverse().join('/')}
-                      {t.dueTime && ` ${t.dueTime}`}
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </Card>
+      {/* Tasks — futuras (mensagem amigável) */}
+      <UpcomingCard
+        tasks={upcomingTasks}
+        contacts={contacts}
+        properties={properties}
+        onNavigate={() => navigate('/tarefas')}
+      />
 
       {/* Goals widget */}
       {goals.filter(g => g.active).length > 0 && (
