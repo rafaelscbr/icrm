@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown, UserPlus
+  MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown, UserPlus, Loader2
 } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -20,7 +20,12 @@ interface LeadsTabProps {
   campaign: Campaign
 }
 
-const stageFilterOptions = [{ value: 'all', label: 'Todas as etapas' }, ...FUNNEL_STAGES.map(s => ({ value: s.value, label: s.label }))]
+const PAGE_SIZE = 50
+
+const stageFilterOptions = [
+  { value: 'all', label: 'Todas as etapas' },
+  ...FUNNEL_STAGES.map(s => ({ value: s.value, label: s.label })),
+]
 
 function StageBadge({ stage }: { stage: FunnelStage }) {
   const cfg = FUNNEL_STAGES.find(s => s.value === stage)!
@@ -45,17 +50,50 @@ function SituationBadge({ situation }: { situation: CampaignLead['situation'] })
 export function LeadsTab({ leads, campaign }: LeadsTabProps) {
   const { remove, markContacted } = useCampaignLeadsStore()
   const { contacts, add: addContact } = useContactsStore()
+
   const [search,       setSearch]       = useState('')
   const [stageFilter,  setStageFilter]  = useState<FunnelStage | 'all'>('all')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [parecerLead,  setParecerLead]  = useState<CampaignLead | undefined>()
   const [editLead,     setEditLead]     = useState<CampaignLead | undefined>()
   const [deleteLead,   setDeleteLead]   = useState<CampaignLead | undefined>()
 
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  // Filtragem
   const filtered = leads.filter(l => {
-    const matchSearch = !search.trim() || l.name.toLowerCase().includes(search.toLowerCase()) || l.phone.includes(search)
+    const q = search.trim().toLowerCase()
+    const matchSearch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q)
     const matchStage  = stageFilter === 'all' || l.funnelStage === stageFilter
     return matchSearch && matchStage
   })
+
+  const visible = filtered.slice(0, visibleCount)
+  const hasMore = visibleCount < filtered.length
+
+  // Resetar paginação quando filtro muda
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [search, stageFilter])
+
+  // Scroll infinito via IntersectionObserver
+  const loadMore = useCallback(() => {
+    setVisibleCount(c => Math.min(c + PAGE_SIZE, filtered.length))
+  }, [filtered.length])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return
+
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore() },
+      { rootMargin: '300px' }   // carrega 300 px antes do fim
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, loadMore])
+
+  // ── Ações ────────────────────────────────────────────────────────────────────
 
   function handleWhatsApp(lead: CampaignLead) {
     const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
@@ -68,17 +106,8 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
   function handleConvertToContact(lead: CampaignLead) {
     const digits = lead.phone.replace(/\D/g, '')
     const exists = contacts.some(c => c.phone.replace(/\D/g, '') === digits)
-    if (exists) {
-      toast.error('Já existe um contato com esse telefone.')
-      return
-    }
-    addContact({
-      name: lead.name,
-      phone: lead.phone,
-      tags: [],
-      hasChildren: false,
-      isMarried: false,
-    })
+    if (exists) { toast.error('Já existe um contato com esse telefone.'); return }
+    addContact({ name: lead.name, phone: lead.phone, tags: [], hasChildren: false, isMarried: false })
     toast.success(`${lead.name} adicionado aos contatos!`)
   }
 
@@ -89,26 +118,30 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
     setDeleteLead(undefined)
   }
 
-  // Summary chips
-  const total      = leads.length
-  const contacted  = leads.filter(l => l.firstContactAt).length
-  const attending  = leads.filter(l => ['attended', 'presentation', 'proposal', 'sale'].includes(l.funnelStage)).length
-  const proposals  = leads.filter(l => l.funnelStage === 'proposal').length
-  const sales      = leads.filter(l => l.funnelStage === 'sale').length
+  // ── Summary chips ─────────────────────────────────────────────────────────────
+
+  const total     = leads.length
+  const contacted = leads.filter(l => l.firstContactAt).length
+  const engaging  = leads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
+  const proposals = leads.filter(l => l.funnelStage === 'proposal').length
+  const sales     = leads.filter(l => l.funnelStage === 'sale').length
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-4">
+
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2">
         {[
-          { label: 'Total',       value: total,     color: 'text-slate-400',  bg: 'bg-white/5'         },
-          { label: 'Acionados',   value: contacted, color: 'text-blue-400',   bg: 'bg-blue-500/10'     },
-          { label: 'Atendendo',   value: attending, color: 'text-cyan-400',   bg: 'bg-cyan-500/10'     },
-          { label: 'Propostas',   value: proposals, color: 'text-amber-400',  bg: 'bg-amber-500/10'    },
-          { label: 'Vendas',      value: sales,     color: 'text-green-400',  bg: 'bg-green-500/10'    },
+          { label: 'Total',           value: total,     color: 'text-slate-400', bg: 'bg-white/5'      },
+          { label: 'Acionados',       value: contacted, color: 'text-blue-400',  bg: 'bg-blue-500/10'  },
+          { label: 'Em andamento',    value: engaging,  color: 'text-cyan-400',  bg: 'bg-cyan-500/10'  },
+          { label: 'Propostas',       value: proposals, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+          { label: 'Vendas',          value: sales,     color: 'text-green-400', bg: 'bg-green-500/10' },
         ].map(s => (
           <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${s.bg} border border-white/8`}>
-            <span className={`text-sm font-bold tabular-nums ${s.color}`}>{s.value}</span>
+            <span className={`text-sm font-bold tabular-nums ${s.color}`}>{s.value.toLocaleString('pt-BR')}</span>
             <span className="text-xs text-slate-500">{s.label}</span>
           </div>
         ))}
@@ -128,7 +161,7 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
         <div className="relative">
           <select
             value={stageFilter}
-            onChange={e => setStageFilter(e.target.value as FunnelStage | 'all')}
+            onChange={e => { setStageFilter(e.target.value as FunnelStage | 'all') }}
             className="appearance-none bg-white/5 border border-white/10 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"
           >
             {stageFilterOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -137,7 +170,18 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Contador de resultados */}
+      {filtered.length > 0 && (
+        <p className="text-xs text-slate-600">
+          Exibindo{' '}
+          <span className="text-slate-400 font-medium">{Math.min(visibleCount, filtered.length).toLocaleString('pt-BR')}</span>
+          {' '}de{' '}
+          <span className="text-slate-400 font-medium">{filtered.length.toLocaleString('pt-BR')}</span>
+          {' '}leads{stageFilter !== 'all' || search ? ' (filtrado)' : ''}
+        </p>
+      )}
+
+      {/* Tabela */}
       {filtered.length === 0 ? (
         <EmptyState
           icon={<Search size={24} />}
@@ -147,7 +191,7 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
       ) : (
         <Card className="!p-0 overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[1fr_140px_160px_160px_120px] gap-0 px-5 py-3 border-b border-white/8 text-xs text-slate-600 uppercase tracking-wider font-medium">
+          <div className="grid grid-cols-[1fr_140px_170px_160px_120px] gap-0 px-5 py-3 border-b border-white/8 text-xs text-slate-600 uppercase tracking-wider font-medium">
             <span>Nome</span>
             <span>Telefone</span>
             <span>Etapa</span>
@@ -156,15 +200,23 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
           </div>
 
           <div className="divide-y divide-white/5">
-            {filtered.map(lead => (
-              <div key={lead.id} className="grid grid-cols-[1fr_140px_160px_160px_120px] gap-0 px-5 py-3.5 items-center hover:bg-white/3 transition-colors group">
+            {visible.map(lead => (
+              <div
+                key={lead.id}
+                className="grid grid-cols-[1fr_140px_170px_160px_120px] gap-0 px-5 py-3.5 items-center hover:bg-white/3 transition-colors group"
+              >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-200 truncate">{lead.name}</p>
                   {lead.email && <p className="text-xs text-slate-600 truncate">{lead.email}</p>}
                 </div>
                 <span className="text-sm text-slate-400 tabular-nums">{formatPhone(lead.phone)}</span>
                 <span><StageBadge stage={lead.funnelStage} /></span>
-                <span>{lead.situation ? <SituationBadge situation={lead.situation} /> : <span className="text-xs text-slate-700">—</span>}</span>
+                <span>
+                  {lead.situation
+                    ? <SituationBadge situation={lead.situation} />
+                    : <span className="text-xs text-slate-700">—</span>
+                  }
+                </span>
                 <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleWhatsApp(lead)}
@@ -205,11 +257,33 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
               </div>
             ))}
           </div>
+
+          {/* Sentinel para scroll infinito */}
+          <div ref={sentinelRef} className="h-1" />
+
+          {/* Indicador de carregando mais */}
+          {hasMore && (
+            <div className="flex items-center justify-center gap-2 py-4 border-t border-white/5">
+              <Loader2 size={14} className="animate-spin text-indigo-400" />
+              <span className="text-xs text-slate-500">
+                Carregando mais leads...
+              </span>
+            </div>
+          )}
         </Card>
       )}
 
-      <LeadParecerModal isOpen={Boolean(parecerLead)} onClose={() => setParecerLead(undefined)} lead={parecerLead} campaign={campaign} />
-      <LeadEditModal    isOpen={Boolean(editLead)}    onClose={() => setEditLead(undefined)}    lead={editLead} />
+      <LeadParecerModal
+        isOpen={Boolean(parecerLead)}
+        onClose={() => setParecerLead(undefined)}
+        lead={parecerLead}
+        campaign={campaign}
+      />
+      <LeadEditModal
+        isOpen={Boolean(editLead)}
+        onClose={() => setEditLead(undefined)}
+        lead={editLead}
+      />
 
       <Modal isOpen={Boolean(deleteLead)} onClose={() => setDeleteLead(undefined)} title="Remover lead" size="sm">
         <p className="text-sm text-slate-400 mb-6">
