@@ -41,6 +41,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
   const [developmentName, setDevelopmentName] = useState(property?.developmentName ?? '')
   const [type,            setType]            = useState<PropertyType>(property?.type ?? 'apartment')
   const [neighborhood,    setNeighborhood]    = useState(property?.neighborhood ?? '')
+  const [address,         setAddress]         = useState(property?.address ?? '')
+  const [complement,      setComplement]      = useState(property?.complement ?? '')
+  const [unit,            setUnit]            = useState(property?.unit ?? '')
   const [value,           setValue]           = useState(property?.value ? String(property.value) : '')
   const [status,          setStatus]          = useState<PropertyStatus>(property?.status ?? 'opportunity')
   const [ownerId,         setOwnerId]         = useState(property?.ownerId ?? '')
@@ -57,6 +60,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     setDevelopmentName(property?.developmentName ?? '')
     setType(property?.type ?? 'apartment')
     setNeighborhood(property?.neighborhood ?? '')
+    setAddress(property?.address ?? '')
+    setComplement(property?.complement ?? '')
+    setUnit(property?.unit ?? '')
     setValue(property?.value ? String(property.value) : '')
     setStatus(property?.status ?? 'opportunity')
     setOwnerId(property?.ownerId ?? '')
@@ -108,6 +114,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
       developmentName: kind === 'off_plan' ? developmentName.trim() : undefined,
       type,
       neighborhood:    neighborhood.trim(),
+      address:         address.trim()    || undefined,
+      complement:      complement.trim() || undefined,
+      unit:            type === 'apartment' ? (unit.trim() || undefined) : undefined,
       value:           parseValue(value),
       status,
       ownerId:         kind === 'ready' ? ownerId : undefined,
@@ -220,6 +229,32 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               error={errors.neighborhood}
               placeholder="Pinheiros"
             />
+          </div>
+
+          {/* Endereço */}
+          <Input
+            label="Rua / Logradouro"
+            value={address}
+            onChange={e => setAddress(e.target.value)}
+            placeholder="Rua das Flores, 123"
+          />
+
+          {/* Complemento + Unidade (apartamento) */}
+          <div className={`grid gap-4 ${type === 'apartment' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <Input
+              label="Complemento"
+              value={complement}
+              onChange={e => setComplement(e.target.value)}
+              placeholder="Bloco A, Torre 2…"
+            />
+            {type === 'apartment' && (
+              <Input
+                label="Unidade"
+                value={unit}
+                onChange={e => setUnit(e.target.value)}
+                placeholder="Apto 203"
+              />
+            )}
           </div>
 
           {/* Value — label muda conforme kind */}

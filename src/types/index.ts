@@ -27,6 +27,9 @@ export interface Property {
   developmentName?: string  // nome do empreendimento (off_plan)
   type: PropertyType
   neighborhood: string
+  address?: string          // rua / logradouro
+  complement?: string       // complemento
+  unit?: string             // unidade (ex: Apto 203) — aplicável a apartamentos
   value: number             // para off_plan = ticket médio
   status: PropertyStatus
   ownerId?: string          // não aplicável para off_plan
