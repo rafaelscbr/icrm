@@ -10,23 +10,16 @@ import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
 import { Avatar } from '../../components/ui/Avatar'
-import { Badge } from '../../components/ui/Badge'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useGoalsStore, calcProgress } from '../../store/useGoalsStore'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
-import { ContactTag, GoalCategory } from '../../types'
+import { GoalCategory } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { Megaphone, Zap, ThumbsUp } from 'lucide-react'
-
-const tagConfig: Record<ContactTag, { label: string; variant: 'indigo' | 'purple' | 'green' }> = {
-  owner:    { label: 'Proprietário', variant: 'indigo' },
-  investor: { label: 'Investidor',   variant: 'purple' },
-  buyer:    { label: 'Comprou',      variant: 'green'  },
-}
 
 function daysOverdue(dueDate: string): number {
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -329,8 +322,7 @@ export function DashboardPage() {
 
   const birthdays       = getBirthdaysThisMonth()
   const salesThisMonth  = getThisMonth()
-  const recentContacts  = contacts.slice(0, 5)
-  const recentSales     = sales.slice(0, 5)
+const recentSales     = sales.slice(0, 5)
   const upcomingTasks   = getUpcoming()
   const overdueTasks    = getOverdue()
 
@@ -495,9 +487,6 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Campanhas ativas */}
-      <CampaignsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
-
       {/* Tasks — atrasadas (sempre visíveis e chamativas) */}
       <OverdueCard
         tasks={overdueTasks}
@@ -513,6 +502,9 @@ export function DashboardPage() {
         properties={properties}
         onNavigate={() => navigate('/tarefas')}
       />
+
+      {/* Campanhas ativas */}
+      <CampaignsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
       {/* Goals widget */}
       {goals.filter(g => g.active).length > 0 && (
@@ -564,60 +556,6 @@ export function DashboardPage() {
         </Card>
       )}
 
-      {/* Recent contacts */}
-      <Card className="animate-slide-up">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-indigo-500/15 rounded-lg flex items-center justify-center">
-              <Users size={14} className="text-indigo-400" />
-            </div>
-            <h2 className="text-sm font-semibold text-slate-200">Últimos contatos</h2>
-          </div>
-          <button
-            onClick={() => navigate('/contatos')}
-            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer hover:gap-2"
-          >
-            Ver todos <ArrowRight size={12} />
-          </button>
-        </div>
-
-        {recentContacts.length === 0 ? (
-          <div className="flex flex-col items-center py-8 gap-2">
-            <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center">
-              <Users size={20} className="text-slate-600" />
-            </div>
-            <p className="text-sm text-slate-500">Nenhum contato cadastrado ainda</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1">
-            {recentContacts.map(c => (
-              <div key={c.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/4 transition-colors group -mx-3">
-                <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-200">{c.name}</p>
-                  {c.company && <p className="text-xs text-slate-500">{c.company}</p>}
-                </div>
-                <div className="flex gap-1.5 items-center">
-                  {c.tags.map(tag => (
-                    <Badge key={tag} variant={tagConfig[tag].variant}>{tagConfig[tag].label}</Badge>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a
-                    href={whatsappUrl(c.phone)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
-                  >
-                    <MessageCircle size={13} />
-                  </a>
-                  <span className="text-xs text-slate-600">{c.phone}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
     </PageLayout>
   )
 }

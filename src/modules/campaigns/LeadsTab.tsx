@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown, UserPlus, Loader2
+  MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown, ThumbsUp, Loader2
 } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -10,7 +10,6 @@ import { LeadParecerModal } from './LeadParecerModal'
 import { LeadEditModal } from './LeadEditModal'
 import { CampaignLead, FunnelStage, Campaign } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
-import { useContactsStore } from '../../store/useContactsStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone, whatsappUrl } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -48,8 +47,7 @@ function SituationBadge({ situation }: { situation: CampaignLead['situation'] })
 }
 
 export function LeadsTab({ leads, campaign }: LeadsTabProps) {
-  const { remove, markContacted } = useCampaignLeadsStore()
-  const { contacts, add: addContact } = useContactsStore()
+  const { remove, markContacted, update } = useCampaignLeadsStore()
 
   const [search,       setSearch]       = useState('')
   const [stageFilter,  setStageFilter]  = useState<FunnelStage | 'all'>('all')
@@ -103,12 +101,19 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
     if (wasNew) toast.success('1ª mensagem enviada e registrada no funil!')
   }
 
-  function handleConvertToContact(lead: CampaignLead) {
-    const digits = lead.phone.replace(/\D/g, '')
-    const exists = contacts.some(c => c.phone.replace(/\D/g, '') === digits)
-    if (exists) { toast.error('Já existe um contato com esse telefone.'); return }
-    addContact({ name: lead.name, phone: lead.phone, tags: [], hasChildren: false, isMarried: false })
-    toast.success(`${lead.name} adicionado aos contatos!`)
+  function handleAdvanceFunnel(lead: CampaignLead) {
+    const STAGES: FunnelStage[] = ['new', 'contacted', 'attended', 'scheduled', 'presentation', 'proposal', 'sale']
+    const currentIdx = STAGES.indexOf(lead.funnelStage)
+    if (lead.funnelStage === 'attended') {
+      toast('Lead já está em "Demonstrou Interesse"', { icon: '👍' })
+      return
+    }
+    if (currentIdx >= STAGES.indexOf('attended')) {
+      toast('Lead já está em uma etapa avançada', { icon: 'ℹ️' })
+      return
+    }
+    update(lead.id, { funnelStage: 'attended' })
+    toast.success(`${lead.name} avançou para "Demonstrou Interesse"!`)
   }
 
   function handleDelete() {
@@ -242,11 +247,15 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
                     <Pencil size={13} />
                   </button>
                   <button
-                    onClick={() => handleConvertToContact(lead)}
-                    className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-indigo-400 transition-colors cursor-pointer"
-                    title="Converter em contato"
+                    onClick={() => handleAdvanceFunnel(lead)}
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                      lead.funnelStage === 'attended' || ['scheduled','presentation','proposal','sale'].includes(lead.funnelStage)
+                        ? 'text-cyan-500/40 cursor-default'
+                        : 'hover:bg-cyan-500/10 text-slate-600 hover:text-cyan-400'
+                    }`}
+                    title="Avançar para Demonstrou Interesse"
                   >
-                    <UserPlus size={13} />
+                    <ThumbsUp size={13} />
                   </button>
                   <button
                     onClick={() => setDeleteLead(lead)}
