@@ -444,7 +444,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
         </form>
       </Modal>
 
+      {/* key garante que o ContactForm remonta do zero a cada abertura */}
       <ContactForm
+        key={newContactOpen ? 'contact-open' : 'contact-closed'}
         isOpen={newContactOpen}
         onClose={() => setNewContactOpen(false)}
         defaultTags={['owner']}

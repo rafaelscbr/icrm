@@ -182,7 +182,10 @@ export function PropertiesPage() {
         </div>
       )}
 
+      {/* key força remontagem completa ao trocar entre novo/editar,
+          garantindo estado 100% limpo — sem resquícios do cadastro anterior */}
       <PropertyForm
+        key={editing?.id ?? 'new'}
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
         property={editing}
