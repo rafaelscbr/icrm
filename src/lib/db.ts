@@ -228,6 +228,34 @@ async function fetchAll<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> 
   return (data as R[]).map(mapper)
 }
 
+// Paginação automática para tabelas grandes (ex: campaign_leads com 8000+ registros)
+// O Supabase retorna no máximo 1000 linhas por request — este helper vai buscando
+// página a página até obter todos os registros.
+async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> {
+  const PAGE = 1000
+  const result: T[] = []
+  let from = 0
+
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, from + PAGE - 1)
+
+    if (error) {
+      toast.error(`Erro ao carregar ${table}: ${error.message}`)
+      throw error
+    }
+
+    result.push(...(data as R[]).map(mapper))
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+
+  return result
+}
+
 async function upsertOne<R>(table: string, row: R): Promise<void> {
   const { error } = await supabase.from(table).upsert(row as object)
   if (error) {
@@ -299,7 +327,7 @@ export const db = {
   },
 
   campaignLeads: {
-    fetchAll: () => fetchAll<CampaignLeadRow, CampaignLead>('campaign_leads', toCampaignLead),
+    fetchAll: () => fetchAllPaginated<CampaignLeadRow, CampaignLead>('campaign_leads', toCampaignLead),
     upsert:   (l: CampaignLead)   => upsertOne('campaign_leads', fromCampaignLead(l)),
     upsertMany: async (leads: CampaignLead[]) => {
       const { error } = await supabase

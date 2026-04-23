@@ -11,13 +11,25 @@ export interface StageConfig {
 }
 
 export const FUNNEL_STAGES: StageConfig[] = [
-  { value: 'new',          label: 'Não Contactado', short: 'Pendente',    color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20', dot: 'bg-slate-500'  },
-  { value: 'sent',         label: '1ª Mensagem',    short: '1ª Msg',      color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',  dot: 'bg-blue-500'   },
-  { value: 'attended',     label: 'Atendimento',    short: 'Atendimento', color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20',  dot: 'bg-cyan-500'   },
-  { value: 'presentation', label: 'Apresentação',   short: 'Apresentação',color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20',dot: 'bg-indigo-500' },
-  { value: 'proposal',     label: 'Proposta',       short: 'Proposta',    color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20', dot: 'bg-amber-400'  },
-  { value: 'sale',         label: 'Venda',          short: 'Venda',       color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20', dot: 'bg-green-500'  },
+  { value: 'new',          label: 'Não Contactado',      short: 'Pendente',        color: 'text-slate-400',   bg: 'bg-slate-500/10',   border: 'border-slate-500/20',  dot: 'bg-slate-500'   },
+  { value: 'sent',         label: '1ª Mensagem',         short: '1ª Msg',          color: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/20',   dot: 'bg-blue-500'    },
+  { value: 'attended',     label: 'Demonstrou Interesse',short: 'Dem. Interesse',  color: 'text-cyan-400',    bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20',   dot: 'bg-cyan-500'    },
+  { value: 'scheduled',    label: 'Agendou Apresentação',short: 'Ag. Apresentação',color: 'text-violet-400',  bg: 'bg-violet-500/10',  border: 'border-violet-500/20', dot: 'bg-violet-500'  },
+  { value: 'presentation', label: 'Apresentação',        short: 'Apresentação',    color: 'text-indigo-400',  bg: 'bg-indigo-500/10',  border: 'border-indigo-500/20', dot: 'bg-indigo-500'  },
+  { value: 'proposal',     label: 'Proposta',            short: 'Proposta',        color: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/20',  dot: 'bg-amber-400'   },
+  { value: 'sale',         label: 'Venda',               short: 'Venda',           color: 'text-green-400',   bg: 'bg-green-500/10',   border: 'border-green-500/20',  dot: 'bg-green-500'   },
 ]
+
+// Hex colors for SVG rendering (must match Tailwind colors above)
+export const FUNNEL_COLORS: Record<string, string> = {
+  new:          '#475569',
+  sent:         '#3b82f6',
+  attended:     '#06b6d4',
+  scheduled:    '#8b5cf6',
+  presentation: '#6366f1',
+  proposal:     '#f59e0b',
+  sale:         '#22c55e',
+}
 
 export interface SituationConfig {
   value:  LeadSituation

@@ -72,7 +72,7 @@ export interface Sale {
 
 // ─── Campanhas de Prospecção Ativa ───────────────────────────────────────────
 
-export type FunnelStage    = 'new' | 'sent' | 'attended' | 'presentation' | 'proposal' | 'sale'
+export type FunnelStage    = 'new' | 'sent' | 'attended' | 'scheduled' | 'presentation' | 'proposal' | 'sale'
 export type LeadSituation  = 'no_interest' | 'stop_messages' | 'invalid'
 export type CampaignStatus = 'active' | 'paused' | 'finished'
 

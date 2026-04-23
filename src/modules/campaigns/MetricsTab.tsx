@@ -1,11 +1,10 @@
 import { useMemo } from 'react'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, Cell, PieChart, Pie
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { Card } from '../../components/ui/Card'
 import { CampaignLead } from '../../types'
-import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
+import { FUNNEL_STAGES, FUNNEL_COLORS, SITUATION_CONFIG } from './config'
 import { formatCurrency } from '../../lib/formatters'
 
 interface MetricsTabProps {
@@ -14,33 +13,130 @@ interface MetricsTabProps {
 
 const axisStyle = { fill: '#475569', fontSize: 11 }
 
-const STAGE_COLORS: Record<string, string> = {
-  new:          '#64748b',
-  sent:         '#3b82f6',
-  attended:     '#06b6d4',
-  presentation: '#6366f1',
-  proposal:     '#f59e0b',
-  sale:         '#22c55e',
+// ─── Funil visual SVG ─────────────────────────────────────────────────────────
+
+function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
+  const total = leads.length
+
+  const stageData = FUNNEL_STAGES.map(s => ({
+    ...s,
+    count: leads.filter(l => l.funnelStage === s.value).length,
+    fill:  FUNNEL_COLORS[s.value],
+  }))
+
+  const maxCount = Math.max(...stageData.map(s => s.count), 1)
+
+  const W       = 540    // largura do viewBox
+  const STAGE_H = 54     // altura de cada etapa
+  const MIN_W   = 110    // largura mínima visível
+  const TOTAL_H = stageData.length * STAGE_H
+
+  const stages = stageData.map((s, i) => {
+    const barW = Math.max(MIN_W, (s.count / maxCount) * W)
+    const x    = (W - barW) / 2
+    const y    = i * STAGE_H
+    const pct  = total > 0 ? Math.round((s.count / total) * 100) : 0
+    return { ...s, barW, x, y, pct }
+  })
+
+  return (
+    <svg viewBox={`0 0 ${W} ${TOTAL_H}`} width="100%" style={{ display: 'block' }}>
+      <defs>
+        {stages.map(s => (
+          <linearGradient key={s.value} id={`fg-${s.value}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stopColor={s.fill} stopOpacity={0.55} />
+            <stop offset="50%"  stopColor={s.fill} stopOpacity={0.9}  />
+            <stop offset="100%" stopColor={s.fill} stopOpacity={0.55} />
+          </linearGradient>
+        ))}
+      </defs>
+
+      {stages.map((stage, i) => {
+        const next = stages[i + 1]
+        const cx   = W / 2
+        const cy   = stage.y + STAGE_H / 2
+
+        // Trapézio: topo desta etapa → base afinando para a próxima etapa
+        const x1 = stage.x
+        const x2 = stage.x + stage.barW
+        const y1 = stage.y
+        const y2 = stage.y + STAGE_H
+        const x3 = next ? next.x              : x1
+        const x4 = next ? next.x + next.barW  : x2
+
+        const points = `${x1},${y1} ${x2},${y1} ${x4},${y2} ${x3},${y2}`
+
+        return (
+          <g key={stage.value}>
+            {/* Trapézio da etapa */}
+            <polygon
+              points={points}
+              fill={`url(#fg-${stage.value})`}
+              stroke={stage.fill}
+              strokeWidth={0.8}
+              strokeOpacity={0.3}
+            />
+
+            {/* Linha separadora interna */}
+            <line
+              x1={x1} y1={y1} x2={x2} y2={y1}
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth={1}
+            />
+
+            {/* Nome da etapa */}
+            <text
+              x={cx} y={cy - 9}
+              textAnchor="middle"
+              fill="white"
+              fontSize={11}
+              fontWeight="600"
+              opacity={0.95}
+            >
+              {stage.label}
+            </text>
+
+            {/* Contagem · percentual */}
+            <text
+              x={cx} y={cy + 10}
+              textAnchor="middle"
+              fill="white"
+              fontSize={13}
+              fontWeight="700"
+              opacity={0.9}
+            >
+              {stage.count.toLocaleString('pt-BR')}
+            </text>
+            <text
+              x={cx} y={cy + 24}
+              textAnchor="middle"
+              fill="white"
+              fontSize={9}
+              fontWeight="400"
+              opacity={0.5}
+            >
+              {stage.pct}% do total
+            </text>
+          </g>
+        )
+      })}
+    </svg>
+  )
 }
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 
 export function MetricsTab({ leads }: MetricsTabProps) {
   const total      = leads.length
   const contacted  = leads.filter(l => l.firstContactAt).length
-  const attended   = leads.filter(l => ['attended','presentation','proposal','sale'].includes(l.funnelStage)).length
+  const engaged    = leads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
   const proposals  = leads.filter(l => l.funnelStage === 'proposal').length
   const sales      = leads.filter(l => l.funnelStage === 'sale').length
-  const responseRate  = contacted > 0 ? Math.round((attended / contacted) * 100) : 0
-  const convRate      = total     > 0 ? Math.round((sales    / total)     * 100) : 0
+  const responseRate  = contacted > 0 ? Math.round((engaged   / contacted) * 100) : 0
+  const convRate      = total     > 0 ? Math.round((sales     / total)     * 100) : 0
   const proposalValue = leads.reduce((a, l) => a + (l.proposalValue ?? 0), 0)
 
-  // Funnel bar chart
-  const funnelData = FUNNEL_STAGES.slice(1).map(s => ({
-    name:  s.short,
-    leads: leads.filter(l => l.funnelStage === s.value).length,
-    fill:  STAGE_COLORS[s.value],
-  }))
-
-  // Contacts per day (last 21 days)
+  // Contatos por dia — últimos 21 dias
   const dailyData = useMemo(() => {
     return Array.from({ length: 21 }, (_, i) => {
       const d = new Date()
@@ -53,28 +149,21 @@ export function MetricsTab({ leads }: MetricsTabProps) {
     })
   }, [leads])
 
-  // Situation breakdown
   const situationData = SITUATION_CONFIG.map(s => ({
     ...s,
     count: leads.filter(l => l.situation === s.value).length,
   }))
 
-  // Stage pie chart data
-  const pieData = FUNNEL_STAGES.filter(s => s.value !== 'new').map(s => ({
-    name:  s.label,
-    value: leads.filter(l => l.funnelStage === s.value).length,
-    fill:  STAGE_COLORS[s.value],
-  })).filter(d => d.value > 0)
-
   return (
     <div className="flex flex-col gap-6">
+
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total de leads',    value: total,                       color: 'text-slate-200'  },
-          { label: 'Leads acionados',   value: `${contacted} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400' },
-          { label: 'Taxa de resposta',  value: `${responseRate}%`,           color: 'text-cyan-400'   },
-          { label: 'Conversão (venda)', value: `${convRate}%`,               color: 'text-green-400'  },
+          { label: 'Total de leads',    value: total.toLocaleString('pt-BR'),                                                            color: 'text-slate-200'  },
+          { label: 'Leads acionados',   value: `${contacted.toLocaleString('pt-BR')} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400'   },
+          { label: 'Taxa de resposta',  value: `${responseRate}%`,                                                                       color: 'text-cyan-400'   },
+          { label: 'Conversão (venda)', value: `${convRate}%`,                                                                           color: 'text-green-400'  },
         ].map(kpi => (
           <Card key={kpi.label} className="!py-4">
             <p className="text-xs text-slate-600 mb-1">{kpi.label}</p>
@@ -83,59 +172,19 @@ export function MetricsTab({ leads }: MetricsTabProps) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Funnel bar chart */}
-        <Card>
-          <h2 className="text-sm font-medium text-slate-300 mb-5">Leads por etapa do funil</h2>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={funnelData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
-              <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{ background: '#1A1D27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
-                labelStyle={{ color: '#94a3b8', fontSize: 11 }}
-                itemStyle={{ color: '#e2e8f0' }}
-                formatter={(v: number) => [v, 'Leads']}
-              />
-              <Bar dataKey="leads" radius={[6, 6, 0, 0]}>
-                {funnelData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
+      {/* ── Funil visual ── */}
+      <Card>
+        <h2 className="text-sm font-medium text-slate-300 mb-5">Funil de conversão</h2>
+        {total === 0 ? (
+          <div className="flex items-center justify-center h-40">
+            <p className="text-sm text-slate-600">Nenhum lead importado ainda</p>
+          </div>
+        ) : (
+          <SalesFunnel leads={leads} />
+        )}
+      </Card>
 
-        {/* Pie chart */}
-        <Card>
-          <h2 className="text-sm font-medium text-slate-300 mb-5">Distribuição do funil</h2>
-          {pieData.length === 0 ? (
-            <div className="flex items-center justify-center h-48">
-              <p className="text-sm text-slate-600">Nenhum lead acionado ainda</p>
-            </div>
-          ) : (
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
-                    {pieData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-col gap-2 flex-1">
-                {pieData.map(d => (
-                  <div key={d.name} className="flex items-center gap-2 text-xs">
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: d.fill }} />
-                    <span className="text-slate-400 flex-1 truncate">{d.name}</span>
-                    <span className="font-semibold text-slate-200 tabular-nums">{d.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
-      </div>
-
-      {/* Daily contacts line chart */}
+      {/* Leads acionados por dia */}
       <Card>
         <h2 className="text-sm font-medium text-slate-300 mb-5">Leads acionados por dia — últimos 21 dias</h2>
         <ResponsiveContainer width="100%" height={180}>
@@ -161,9 +210,8 @@ export function MetricsTab({ leads }: MetricsTabProps) {
         </ResponsiveContainer>
       </Card>
 
-      {/* Bottom row: situation + proposal value */}
+      {/* Situação + Volume financeiro */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Situation breakdown */}
         <Card>
           <h2 className="text-sm font-medium text-slate-300 mb-4">Relatório de situação</h2>
           <div className="flex flex-col gap-2">
@@ -185,7 +233,6 @@ export function MetricsTab({ leads }: MetricsTabProps) {
           </div>
         </Card>
 
-        {/* Proposal + Sales summary */}
         <Card>
           <h2 className="text-sm font-medium text-slate-300 mb-4">Volume financeiro</h2>
           <div className="flex flex-col gap-3">
