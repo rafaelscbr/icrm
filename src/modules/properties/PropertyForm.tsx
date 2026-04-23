@@ -41,6 +41,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
   const [developmentName, setDevelopmentName] = useState(property?.developmentName ?? '')
   const [type,            setType]            = useState<PropertyType>(property?.type ?? 'apartment')
   const [neighborhood,    setNeighborhood]    = useState(property?.neighborhood ?? '')
+  const [city,            setCity]            = useState(property?.city ?? '')
   const [address,         setAddress]         = useState(property?.address ?? '')
   const [complement,      setComplement]      = useState(property?.complement ?? '')
   const [unit,            setUnit]            = useState(property?.unit ?? '')
@@ -65,6 +66,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     setDevelopmentName(property?.developmentName ?? '')
     setType(property?.type ?? 'apartment')
     setNeighborhood(property?.neighborhood ?? '')
+    setCity(property?.city ?? '')
     setAddress(property?.address ?? '')
     setComplement(property?.complement ?? '')
     setUnit(property?.unit ?? '')
@@ -132,6 +134,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
       developmentName: kind === 'off_plan' ? developmentName.trim() : undefined,
       type,
       neighborhood:    neighborhood.trim(),
+      city:            city.trim() || undefined,
       address:         address.trim()    || undefined,
       complement:      complement.trim() || undefined,
       unit:            type === 'apartment' ? (unit.trim() || undefined) : undefined,
@@ -254,13 +257,21 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
             />
           </div>
 
-          {/* Endereço */}
-          <Input
-            label="Rua / Logradouro"
-            value={address}
-            onChange={e => setAddress(e.target.value)}
-            placeholder="Rua das Flores, 123"
-          />
+          {/* Cidade + Endereço */}
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Cidade"
+              value={city}
+              onChange={e => setCity(e.target.value)}
+              placeholder="São Paulo"
+            />
+            <Input
+              label="Rua / Logradouro"
+              value={address}
+              onChange={e => setAddress(e.target.value)}
+              placeholder="Rua das Flores, 123"
+            />
+          </div>
 
           {/* Complemento + Unidade (apartamento) */}
           <div className={`grid gap-4 ${type === 'apartment' ? 'grid-cols-2' : 'grid-cols-1'}`}>

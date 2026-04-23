@@ -17,7 +17,7 @@ interface ContactRow {
 
 interface PropertyRow {
   id: string; kind: string; name: string; type: string; neighborhood: string
-  address: string | null; complement: string | null; unit: string | null
+  city: string | null; address: string | null; complement: string | null; unit: string | null
   bedrooms: number | null; suites: number | null
   area_sqm: number | null; condo_fee: number | null; notes: string | null
   value: number; status: string; owner_id: string | null
@@ -92,6 +92,7 @@ function toProperty(r: PropertyRow): Property {
   return {
     id: r.id, kind: r.kind as Property['kind'], name: r.name,
     type: r.type as Property['type'], neighborhood: r.neighborhood,
+    city: r.city ?? undefined,
     address: r.address ?? undefined, complement: r.complement ?? undefined,
     unit: r.unit ?? undefined,
     bedrooms: r.bedrooms ?? undefined, suites: r.suites ?? undefined,
@@ -106,7 +107,7 @@ function toProperty(r: PropertyRow): Property {
 function fromProperty(p: Property): PropertyRow {
   return {
     id: p.id, kind: p.kind, name: p.name, type: p.type,
-    neighborhood: p.neighborhood,
+    neighborhood: p.neighborhood, city: p.city ?? null,
     address: p.address ?? null, complement: p.complement ?? null, unit: p.unit ?? null,
     bedrooms: p.bedrooms ?? null, suites: p.suites ?? null,
     area_sqm: p.areaSqm ?? null, condo_fee: p.condoFee ?? null,

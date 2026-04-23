@@ -117,7 +117,7 @@ export function PropertiesPage() {
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-slate-500">{TYPE_LABELS[p.type]} · {p.neighborhood}</p>
+                    <p className="text-xs text-slate-500">{TYPE_LABELS[p.type]} · {p.neighborhood}{p.city ? ` · ${p.city}` : ''}</p>
                     {p.address && (
                       <p className="text-xs text-slate-600 mt-0.5 truncate">
                         {p.address}{p.complement ? `, ${p.complement}` : ''}
