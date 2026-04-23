@@ -16,8 +16,11 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useGoalsStore, calcProgress } from '../../store/useGoalsStore'
-import { formatCurrency, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
+import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 import { ContactTag, GoalCategory } from '../../types'
+import { useCampaignsStore } from '../../store/useCampaignsStore'
+import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { Megaphone, Zap, ThumbsUp } from 'lucide-react'
 
 const tagConfig: Record<ContactTag, { label: string; variant: 'indigo' | 'purple' | 'green' }> = {
   owner:    { label: 'Proprietário', variant: 'indigo' },
@@ -205,6 +208,110 @@ function UpcomingCard({
   )
 }
 
+// ─── Mensagem inteligente por campanha ───────────────────────────────────────
+
+function smartCampaignMessage(total: number, acionados: number, interessados: number): { text: string; color: string } {
+  if (total === 0)
+    return { text: 'Importe leads para começar a prospectar.', color: 'text-slate-500' }
+
+  const acRate  = acionados / total
+  const intRate = acionados > 0 ? interessados / acionados : 0
+
+  if (acionados === 0)
+    return { text: `${total.toLocaleString('pt-BR')} leads aguardando o 1º contato — vamos lá! 📋`, color: 'text-amber-400' }
+
+  if (acRate < 0.15)
+    return { text: `Ainda há muitos leads para acionar — ${(total - acionados).toLocaleString('pt-BR')} esperando! 📲`, color: 'text-orange-400' }
+
+  if (intRate === 0)
+    return { text: `Acionamento em curso, mas nenhum interesse registrado ainda. Revise a abordagem. 🔍`, color: 'text-slate-400' }
+
+  if (intRate < 0.15)
+    return { text: `Conversão de interesse baixa (${Math.round(intRate * 100)}%). Tente uma abordagem diferente. 💡`, color: 'text-yellow-400' }
+
+  if (intRate < 0.30)
+    return { text: `Boa conversão! ${Math.round(intRate * 100)}% dos acionados demonstraram interesse. 📈`, color: 'text-cyan-400' }
+
+  return { text: `Excelente! ${Math.round(intRate * 100)}% de interesse — foque em avançar para propostas. 🎯`, color: 'text-green-400' }
+}
+
+// ─── Widget de campanhas ativas ───────────────────────────────────────────────
+
+function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
+  const { campaigns } = useCampaignsStore()
+  const { leads }     = useCampaignLeadsStore()
+
+  const active = campaigns.filter(c => c.status === 'active')
+  if (active.length === 0) return null
+
+  return (
+    <div className="rounded-2xl border border-white/8 bg-[#13151f] overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/7">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-purple-500/15 rounded-xl flex items-center justify-center">
+            <Megaphone size={15} className="text-purple-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-200">Campanhas ativas</h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">{active.length} campanha{active.length !== 1 ? 's' : ''} em andamento</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col divide-y divide-white/5">
+        {active.map(c => {
+          const cLeads      = leads.filter(l => l.campaignId === c.id)
+          const total       = cLeads.length
+          const acionados   = cLeads.filter(l => l.firstContactAt).length
+          const interessados = cLeads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
+          const msg         = smartCampaignMessage(total, acionados, interessados)
+
+          const acPct  = total     > 0 ? Math.round(acionados    / total     * 100) : 0
+          const intPct = acionados > 0 ? Math.round(interessados / acionados * 100) : 0
+
+          return (
+            <div
+              key={c.id}
+              onClick={() => onNavigate(c.id)}
+              className="px-5 py-4 hover:bg-white/3 transition-colors cursor-pointer group"
+            >
+              {/* Nome + mensagem */}
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-200 group-hover:text-indigo-300 transition-colors">{c.name}</p>
+                  <p className={`text-[11px] mt-0.5 ${msg.color}`}>{msg.text}</p>
+                </div>
+                <ArrowRight size={14} className="text-slate-700 group-hover:text-indigo-400 transition-colors mt-0.5 flex-shrink-0" />
+              </div>
+
+              {/* Métricas em 3 colunas */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { icon: <Users size={11} />,    label: 'Leads',     value: total.toLocaleString('pt-BR'),       pct: null,   color: 'text-slate-400'  },
+                  { icon: <Zap size={11} />,      label: 'Acionados', value: acionados.toLocaleString('pt-BR'),   pct: acPct,  color: 'text-blue-400'   },
+                  { icon: <ThumbsUp size={11} />, label: 'Interesse', value: interessados.toLocaleString('pt-BR'),pct: intPct, color: 'text-cyan-400'   },
+                ].map(m => (
+                  <div key={m.label} className="flex flex-col gap-1 bg-white/3 rounded-xl px-3 py-2.5 border border-white/5">
+                    <div className={`flex items-center gap-1 ${m.color} text-[10px] font-medium`}>
+                      {m.icon} {m.label}
+                    </div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className={`text-base font-bold tabular-nums ${m.color}`}>{m.value}</span>
+                      {m.pct !== null && <span className="text-[10px] text-slate-600">{m.pct}%</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Dashboard principal ──────────────────────────────────────────────────────
+
 export function DashboardPage() {
   const navigate = useNavigate()
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
@@ -212,10 +319,13 @@ export function DashboardPage() {
   const { sales, load: loadSales, getThisMonth, getTotalValue, getThisMonthValue } = useSalesStore()
   const { tasks, load: loadTasks, getUpcoming, getOverdue } = useTasksStore()
   const { goals, load: loadGoals } = useGoalsStore()
+  const { load: loadCampaigns } = useCampaignsStore()
+  const { load: loadLeads }     = useCampaignLeadsStore()
 
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks(); loadGoals()
-  }, [loadContacts, loadProperties, loadSales, loadTasks, loadGoals])
+    loadCampaigns(); loadLeads()
+  }, [loadContacts, loadProperties, loadSales, loadTasks, loadGoals, loadCampaigns, loadLeads])
 
   const birthdays       = getBirthdaysThisMonth()
   const salesThisMonth  = getThisMonth()
@@ -374,7 +484,7 @@ export function DashboardPage() {
                       <p className="text-xs text-slate-500 truncate">{s.propertyName}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-green-400 tabular-nums">{formatCurrency(s.value)}</p>
+                      <p className="text-sm font-bold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</p>
                       <p className="text-xs text-slate-600">{formatDate(s.date)}</p>
                     </div>
                   </div>
@@ -384,6 +494,9 @@ export function DashboardPage() {
           )}
         </Card>
       </div>
+
+      {/* Campanhas ativas */}
+      <CampaignsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
       {/* Tasks — atrasadas (sempre visíveis e chamativas) */}
       <OverdueCard

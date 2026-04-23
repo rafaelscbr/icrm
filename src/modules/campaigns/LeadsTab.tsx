@@ -120,11 +120,12 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
 
   // ── Summary chips ─────────────────────────────────────────────────────────────
 
-  const total     = leads.length
-  const contacted = leads.filter(l => l.firstContactAt).length
-  const engaging  = leads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
-  const proposals = leads.filter(l => l.funnelStage === 'proposal').length
-  const sales     = leads.filter(l => l.funnelStage === 'sale').length
+  const total      = leads.length
+  const contacted  = leads.filter(l => l.firstContactAt).length
+  const interested = leads.filter(l => l.funnelStage === 'attended').length
+  const engaging   = leads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
+  const proposals  = leads.filter(l => l.funnelStage === 'proposal').length
+  const sales      = leads.filter(l => l.funnelStage === 'sale').length
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -134,11 +135,12 @@ export function LeadsTab({ leads, campaign }: LeadsTabProps) {
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2">
         {[
-          { label: 'Total',           value: total,     color: 'text-slate-400', bg: 'bg-white/5'      },
-          { label: 'Acionados',       value: contacted, color: 'text-blue-400',  bg: 'bg-blue-500/10'  },
-          { label: 'Em andamento',    value: engaging,  color: 'text-cyan-400',  bg: 'bg-cyan-500/10'  },
-          { label: 'Propostas',       value: proposals, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-          { label: 'Vendas',          value: sales,     color: 'text-green-400', bg: 'bg-green-500/10' },
+          { label: 'Total',                 value: total,      color: 'text-slate-400',  bg: 'bg-white/5'         },
+          { label: 'Acionados',             value: contacted,  color: 'text-blue-400',   bg: 'bg-blue-500/10'     },
+          { label: 'Demonstrou Interesse',  value: interested, color: 'text-cyan-400',   bg: 'bg-cyan-500/10'     },
+          { label: 'Em andamento',          value: engaging,   color: 'text-violet-400', bg: 'bg-violet-500/10'   },
+          { label: 'Propostas',             value: proposals,  color: 'text-amber-400',  bg: 'bg-amber-500/10'    },
+          { label: 'Vendas',                value: sales,      color: 'text-green-400',  bg: 'bg-green-500/10'    },
         ].map(s => (
           <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${s.bg} border border-white/8`}>
             <span className={`text-sm font-bold tabular-nums ${s.color}`}>{s.value.toLocaleString('pt-BR')}</span>

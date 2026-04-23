@@ -89,16 +89,21 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
             <line x1={x1} y1={y1} x2={x2} y2={y1} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
 
             {/* Label da etapa */}
-            <text x={cx} y={cy - 6} textAnchor="middle" fill="white" fontSize={10} fontWeight="700" opacity={0.95}
-              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+            <text x={cx} y={cy - 7} textAnchor="middle" fill="white" fontSize={10} fontWeight="700" opacity={0.92}>
               {stage.label}
             </text>
 
             {/* Contagem */}
-            <text x={cx} y={cy + 8} textAnchor="middle" fill="white" fontSize={13} fontWeight="800">
+            <text x={cx} y={cy + 6} textAnchor="middle" fill="white" fontSize={13} fontWeight="800">
               {stage.count.toLocaleString('pt-BR')}
-              <tspan fontSize={9} opacity={0.6} fontWeight="400"> · {stage.ofTotal}%</tspan>
             </text>
+
+            {/* % conversão da etapa anterior (mais útil que % do total) */}
+            {conv !== null && (
+              <text x={cx} y={cy + 19} textAnchor="middle" fill="white" fontSize={8} fontWeight="400" opacity={0.55}>
+                {conv}% do anterior
+              </text>
+            )}
 
             {/* Badge de conversão (entre etapas) — à direita */}
             {conv !== null && (
