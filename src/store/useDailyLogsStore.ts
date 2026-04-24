@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import toast from 'react-hot-toast'
 import { DailyLog } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
@@ -52,7 +53,7 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
     if (existing) return existing
     const log = createLog(today)
     set(s => ({ logs: [log, ...s.logs] }))
-    db.dailyLogs.upsert(log).catch(err => console.error('[dailyLogs] create today:', err))
+    db.dailyLogs.upsert(log).catch(() => toast.error('Erro ao criar registro do dia'))
     return log
   },
 
@@ -64,7 +65,7 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
     )
     set({ logs })
     const updated = logs.find(l => l.date === today)
-    if (updated) db.dailyLogs.upsert(updated).catch(err => console.error('[dailyLogs] updateToday:', err))
+    if (updated) db.dailyLogs.upsert(updated).catch(() => toast.error('Erro ao salvar alterações do dia'))
   },
 
   closeDay: () => {
@@ -75,7 +76,11 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
     )
     set({ logs })
     const updated = logs.find(l => l.date === today)
-    if (updated) db.dailyLogs.upsert(updated).catch(err => console.error('[dailyLogs] closeDay:', err))
+    if (updated) {
+      db.dailyLogs.upsert(updated)
+        .then(() => toast.success('Dia fechado com sucesso!'))
+        .catch(() => toast.error('Erro ao fechar o dia — tente novamente'))
+    }
   },
 
   reopenDay: () => {
@@ -86,7 +91,7 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
     )
     set({ logs })
     const updated = logs.find(l => l.date === today)
-    if (updated) db.dailyLogs.upsert(updated).catch(err => console.error('[dailyLogs] reopenDay:', err))
+    if (updated) db.dailyLogs.upsert(updated).catch(() => toast.error('Erro ao reabrir o dia'))
   },
 
   getLogsByRange: (start, end) =>
@@ -105,6 +110,6 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
       logs = [...get().logs, upserted]
     }
     set({ logs })
-    db.dailyLogs.upsert(upserted).catch(err => console.error('[dailyLogs] upsertLog:', err))
+    db.dailyLogs.upsert(upserted).catch(() => toast.error('Erro ao salvar registro'))
   },
 }))

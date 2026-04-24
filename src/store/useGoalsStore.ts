@@ -113,12 +113,12 @@ export function calcProgress(goal: Goal, tasks: Task[], sales: Sale[]): number {
   return tasks.filter(t => {
     if (t.status !== 'done') return false
     if (t.category !== (goal.category as GoalCategory)) return false
-    // Para metas semanais: usa APENAS dueDate — evita inflar com tarefas
-    // de semanas anteriores marcadas como concluídas recentemente.
-    // Para metas mensais: aceita fallback completedAt > updatedAt.
+    // Semana: somente dueDate (data real agendada da tarefa).
+    // Mês: dueDate ou completedAt — nunca updatedAt, pois updatedAt muda
+    // toda vez que a tarefa é editada e infla o contador indevidamente.
     const dateStr = goal.period === 'weekly'
       ? toDateStr(t.dueDate)
-      : toDateStr(t.dueDate) || toDateStr(t.completedAt) || toDateStr(t.updatedAt)
+      : toDateStr(t.dueDate) || toDateStr(t.completedAt)
     if (!dateStr) return false
     return dateStr >= start && dateStr <= end
   }).length
@@ -140,36 +140,17 @@ export function getVisitMetrics(tasks: Task[]) {
   const week  = getWeekRangeDates()
   const month = getMonthRangeDates()
 
-  // Referência de data para realizadas: dueDate > completedAt > updatedAt
-  const realizadaDate = (t: Task) =>
-    toDateStr(t.dueDate) || toDateStr(t.completedAt) || toDateStr(t.updatedAt)
-
-  // Referência de data para agendamentos: dueDate > createdAt
-  const agendamentoDate = (t: Task) =>
-    toDateStr(t.dueDate) || toDateStr(t.createdAt)
-
   const visitTasks = tasks.filter(t => t.category === 'visita')
-
-  // DEBUG — remover após diagnóstico
-  console.group('[getVisitMetrics] DEBUG')
-  console.log('Semana:', week.start, '→', week.end)
-  console.log('Mês:   ', month.start, '→', month.end)
-  visitTasks.filter(t => t.status === 'done').forEach(t => {
-    console.log(`  task="${t.title}" dueDate=${t.dueDate ?? 'null'} completedAt=${t.completedAt ?? 'null'} inWeek=${!!(toDateStr(t.dueDate) && toDateStr(t.dueDate)! >= week.start && toDateStr(t.dueDate)! <= week.end)}`)
-  })
-  console.groupEnd()
 
   return {
     // Todas as visitas agendadas no mês (qualquer status exceto cancelado)
     agendadasMes: visitTasks.filter(t => {
       if (t.status === 'cancelled') return false
-      const d = agendamentoDate(t)
+      const d = toDateStr(t.dueDate) || toDateStr(t.createdAt)
       return d >= month.start && d <= month.end
     }).length,
 
     // Visitas realizadas na semana: usa APENAS dueDate (data real da visita).
-    // Sem dueDate não conta para o semanal — evita inflar com tarefas marcadas
-    // como concluídas esta semana mas agendadas em semanas anteriores.
     realizadasSemana: visitTasks.filter(t => {
       if (t.status !== 'done') return false
       const d = toDateStr(t.dueDate)
@@ -177,11 +158,11 @@ export function getVisitMetrics(tasks: Task[]) {
       return d >= week.start && d <= week.end
     }).length,
 
-    // Visitas realizadas no mês: aceita fallback para completedAt/updatedAt
-    // quando não há dueDate.
+    // Visitas realizadas no mês: dueDate ou completedAt (nunca updatedAt).
     realizadasMes: visitTasks.filter(t => {
       if (t.status !== 'done') return false
-      const d = realizadaDate(t)
+      const d = toDateStr(t.dueDate) || toDateStr(t.completedAt)
+      if (!d) return false
       return d >= month.start && d <= month.end
     }).length,
   }

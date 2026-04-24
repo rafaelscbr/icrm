@@ -184,7 +184,10 @@ function fromGoal(g: Goal): GoalRow {
 
 function toDailyLog(r: DailyLogRow): DailyLog {
   return {
-    id: r.id, date: r.date, newLeads: r.new_leads, ownerCalls: r.owner_calls,
+    id: r.id,
+    // Normaliza para YYYY-MM-DD independente do tipo da coluna no banco (date ou timestamp)
+    date: r.date.split('T')[0],
+    newLeads: r.new_leads, ownerCalls: r.owner_calls,
     funnelFollowup: r.funnel_followup, notes: r.notes ?? undefined,
     closed: r.closed, closedAt: r.closed_at ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
@@ -343,10 +346,11 @@ export const db = {
   dailyLogs: {
     fetchAll: () => fetchAll<DailyLogRow, DailyLog>('daily_logs', toDailyLog),
     upsert: async (l: DailyLog) => {
-      // onConflict: 'date' garante que duas entradas para o mesmo dia nunca conflitem
+      // onConflict: 'id' — usa a PK para garantir upsert correto.
+      // Anteriormente usava 'date', o que exigia UNIQUE constraint na coluna date.
       const { error } = await supabase
         .from('daily_logs')
-        .upsert(fromDailyLog(l), { onConflict: 'date' })
+        .upsert(fromDailyLog(l), { onConflict: 'id' })
       if (error) {
         toast.error(`Erro ao salvar em daily_logs: ${error.message}`)
         throw error
