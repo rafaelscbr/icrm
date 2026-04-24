@@ -28,7 +28,9 @@ interface PropertyRow {
 interface SaleRow {
   id: string; client_id: string; property_id: string | null
   property_name: string; date: string; value: number; type: string
-  notes: string | null; created_at: string
+  notes: string | null
+  commission_pct: number | null; commission_fixed: number | null; broker_pct: number | null
+  created_at: string
 }
 
 interface TaskRow {
@@ -122,7 +124,11 @@ function toSale(r: SaleRow): Sale {
   return {
     id: r.id, clientId: r.client_id, propertyId: r.property_id ?? undefined,
     propertyName: r.property_name, date: r.date, value: r.value,
-    type: r.type as Sale['type'], notes: r.notes ?? undefined, createdAt: r.created_at,
+    type: r.type as Sale['type'], notes: r.notes ?? undefined,
+    commissionPct:   r.commission_pct   ?? undefined,
+    commissionFixed: r.commission_fixed ?? undefined,
+    brokerPct:       r.broker_pct       ?? undefined,
+    createdAt: r.created_at,
   }
 }
 
@@ -130,7 +136,11 @@ function fromSale(s: Sale): SaleRow {
   return {
     id: s.id, client_id: s.clientId, property_id: s.propertyId ?? null,
     property_name: s.propertyName, date: s.date, value: s.value,
-    type: s.type, notes: s.notes ?? null, created_at: s.createdAt,
+    type: s.type, notes: s.notes ?? null,
+    commission_pct:   s.commissionPct   ?? null,
+    commission_fixed: s.commissionFixed ?? null,
+    broker_pct:       s.brokerPct       ?? null,
+    created_at: s.createdAt,
   }
 }
 

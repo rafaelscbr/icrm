@@ -5,7 +5,7 @@ import {
   Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
   AlertTriangle, Clock, Target, CalendarCheck, Siren
 } from 'lucide-react'
-import { Task, Contact, Property } from '../../types'
+import { Task, Contact, Property, calcSaleCommissions } from '../../types'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
@@ -380,6 +380,30 @@ const recentSales     = sales.slice(0, 5)
           accent="purple"
         />
       </div>
+
+      {/* Comissões */}
+      {sales.length > 0 && (() => {
+        const totalComm  = sales.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
+        const brokerComm = sales.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
+        return (
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <StatCard
+              label="Comissão total gerada"
+              value={formatCurrencyFull(totalComm)}
+              sub="soma das comissões negociadas"
+              icon={<DollarSign size={18} />}
+              accent="purple"
+            />
+            <StatCard
+              label="Comissão do corretor"
+              value={formatCurrencyFull(brokerComm)}
+              sub="sua parte acumulada"
+              icon={<TrendingUp size={18} />}
+              accent="green"
+            />
+          </div>
+        )
+      })()}
 
       {/* Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

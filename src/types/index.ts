@@ -76,7 +76,18 @@ export interface Sale {
   value: number
   type: SaleType
   notes?: string
+  // Comissão
+  commissionPct?:   number   // % da venda (ex: 5 = 5%)
+  commissionFixed?: number   // valor fixo (alternativa ao %)
+  brokerPct?:       number   // % do corretor (default 40)
   createdAt: string
+}
+
+/** Calcula comissão total e comissão do corretor a partir de uma venda */
+export function calcSaleCommissions(s: Sale) {
+  const total  = s.commissionFixed ?? (s.value * (s.commissionPct ?? 0) / 100)
+  const broker = total * ((s.brokerPct ?? 40) / 100)
+  return { totalCommission: total, brokerCommission: broker }
 }
 
 // ─── Campanhas de Prospecção Ativa ───────────────────────────────────────────
