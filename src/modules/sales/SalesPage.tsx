@@ -7,9 +7,11 @@ import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Modal } from '../../components/ui/Modal'
+import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import { SaleForm } from './SaleForm'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useContactsStore } from '../../store/useContactsStore'
+import { usePeriodStore, MONTHS_PT } from '../../store/usePeriodStore'
 import { Sale, SaleType, calcSaleCommissions } from '../../types'
 import { formatCurrencyFull, formatDateShort } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -26,8 +28,9 @@ const FILTER_OPTIONS: { value: SaleType | null; label: string }[] = [
 ]
 
 export function SalesPage() {
-  const { sales, load, remove, getTotalValue, getThisMonth, getThisMonthValue } = useSalesStore()
+  const { sales, load, remove, getTotalValue, getByPeriod, getValueByPeriod } = useSalesStore()
   const { contacts, load: loadContacts } = useContactsStore()
+  const { year, month } = usePeriodStore()
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<SaleType | null>(null)
   const [formOpen, setFormOpen] = useState(false)
@@ -52,7 +55,12 @@ export function SalesPage() {
     return matchQuery && matchType
   })
 
-  // Totais de comissão
+  // KPIs do período selecionado
+  const salesInPeriod  = getByPeriod(year, month)
+  const valueInPeriod  = getValueByPeriod(year, month)
+  const periodComm     = salesInPeriod.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0)
+  const periodBroker   = salesInPeriod.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0)
+  // Totais acumulados (todos os períodos)
   const totalCommission = sales.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0)
   const totalBroker     = sales.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0)
 
@@ -63,8 +71,6 @@ export function SalesPage() {
     setDeleteTarget(undefined)
   }
 
-  const thisMonth = getThisMonth()
-
   return (
     <PageLayout
       title="Vendas"
@@ -72,6 +78,14 @@ export function SalesPage() {
       ctaLabel="Nova Venda"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
+      {/* Seletor de período */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs text-slate-500">
+          KPIs filtrados por período · lista mostra todas as vendas
+        </p>
+        <PeriodSelector />
+      </div>
+
       {/* Summary strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card accent="purple">
@@ -79,10 +93,12 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-purple-500/15 rounded-lg flex items-center justify-center">
               <TrendingUp size={14} className="text-purple-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Vendas no mês</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              {MONTHS_PT[month].slice(0, 3)} {year}
+            </p>
           </div>
-          <p className="text-2xl font-bold text-purple-300 tabular-nums">{formatCurrencyFull(getThisMonthValue())}</p>
-          <p className="text-xs text-slate-500 mt-1">{thisMonth.length} venda{thisMonth.length !== 1 ? 's' : ''}</p>
+          <p className="text-2xl font-bold text-purple-300 tabular-nums">{formatCurrencyFull(valueInPeriod)}</p>
+          <p className="text-xs text-slate-500 mt-1">{salesInPeriod.length} venda{salesInPeriod.length !== 1 ? 's' : ''} no período</p>
         </Card>
 
         <Card accent="green">
@@ -101,10 +117,10 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-violet-500/15 rounded-lg flex items-center justify-center">
               <BadgePercent size={14} className="text-violet-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Comissão total gerada</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Comissão no período</p>
           </div>
-          <p className="text-2xl font-bold text-violet-300 tabular-nums">{formatCurrencyFull(totalCommission)}</p>
-          <p className="text-xs text-slate-500 mt-1">soma das comissões negociadas</p>
+          <p className="text-2xl font-bold text-violet-300 tabular-nums">{formatCurrencyFull(periodComm)}</p>
+          <p className="text-xs text-slate-500 mt-1">total acum.: {formatCurrencyFull(totalCommission)}</p>
         </Card>
 
         <Card>
@@ -112,10 +128,10 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-emerald-500/15 rounded-lg flex items-center justify-center">
               <DollarSign size={14} className="text-emerald-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Comissão do corretor</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sua comissão no período</p>
           </div>
-          <p className="text-2xl font-bold text-emerald-300 tabular-nums">{formatCurrencyFull(totalBroker)}</p>
-          <p className="text-xs text-slate-500 mt-1">sua parte acumulada</p>
+          <p className="text-2xl font-bold text-emerald-300 tabular-nums">{formatCurrencyFull(periodBroker)}</p>
+          <p className="text-xs text-slate-500 mt-1">total acum.: {formatCurrencyFull(totalBroker)}</p>
         </Card>
       </div>
 
@@ -172,6 +188,12 @@ export function SalesPage() {
             const { label, variant } = TYPE_CONFIG[s.type]
             const { totalCommission: tc, brokerCommission: bc } = calcSaleCommissions(s)
             const hasComm = tc > 0
+            // Detecta se a venda é retroativa (pertence a período diferente do atual)
+            const saleYear  = Number(s.date.split('-')[0])
+            const saleMonth = Number(s.date.split('-')[1]) - 1
+            const nowDate   = new Date()
+            const isRetro   = saleYear < nowDate.getFullYear() ||
+              (saleYear === nowDate.getFullYear() && saleMonth < nowDate.getMonth())
             return (
               <div
                 key={s.id}
@@ -179,7 +201,12 @@ export function SalesPage() {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar name={client?.name ?? '?'} size="sm" />
-                  <span className="text-sm text-slate-200 truncate">{client?.name ?? '—'}</span>
+                  <div className="min-w-0">
+                    <span className="text-sm text-slate-200 truncate block">{client?.name ?? '—'}</span>
+                    {isRetro && (
+                      <span className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-wide">retroativo</span>
+                    )}
+                  </div>
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm text-slate-300 truncate">{s.propertyName}</p>

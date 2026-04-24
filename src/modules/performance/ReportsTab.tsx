@@ -1,4 +1,7 @@
 import { useEffect, useMemo } from 'react'
+import { localDateStr } from '../../store/useDailyLogsStore'
+import { usePeriodStore, MONTHS_PT } from '../../store/usePeriodStore'
+import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
@@ -54,6 +57,7 @@ export function ReportsTab() {
   const { contacts,   load: loadContacts   } = useContactsStore()
   const { properties, load: loadProperties } = usePropertiesStore()
   const { logs,       load: loadLogs       } = useDailyLogsStore()
+  const { year, month } = usePeriodStore()
 
   useEffect(() => {
     loadSales(); loadContacts(); loadProperties(); loadLogs()
@@ -61,9 +65,9 @@ export function ReportsTab() {
 
   // ── Sales charts ─────────────────────────────────────────────────────────
   const monthlySales = useMemo(() => {
-    const now = new Date()
+    const refNow = new Date()
     return Array.from({ length: 6 }, (_, i) => {
-      const d     = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+      const d     = new Date(refNow.getFullYear(), refNow.getMonth() - (5 - i), 1)
       const month = d.getMonth()
       const year  = d.getFullYear()
       const items = sales.filter(s => {
@@ -91,21 +95,14 @@ export function ReportsTab() {
 
   const avgTicket = sales.length > 0 ? sales.reduce((a, s) => a + s.value, 0) / sales.length : 0
 
-  const thisMonthSales = useMemo(() => {
-    const now = new Date()
-    return sales.filter(s => {
-      const d = new Date(s.date)
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    })
-  }, [sales])
-
   // ── Productivity charts ───────────────────────────────────────────────────
   const activityChart = useMemo(() => {
     const result: { date: string; Leads: number; Ligações: number }[] = []
     for (let i = 13; i >= 0; i--) {
       const d = new Date()
       d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split('T')[0]
+      // Usa data LOCAL (não UTC) para bater com os logs gravados pelo dispositivo
+      const dateStr = localDateStr(d)
       const log     = logs.find(l => l.date === dateStr)
       result.push({
         date:     `${d.getDate()}/${d.getMonth() + 1}`,
@@ -116,11 +113,12 @@ export function ReportsTab() {
     return result
   }, [logs])
 
-  // Monthly productivity stats
-  const now = new Date()
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
-  const monthLogs  = logs.filter(l => l.date >= monthStart && l.date <= monthEnd)
+  // Monthly productivity stats — período selecionado pelo PeriodSelector
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const monthStart     = `${year}-${pad(month + 1)}-01`
+  const lastDayOfMonth = new Date(year, month + 1, 0)
+  const monthEnd       = localDateStr(lastDayOfMonth)
+  const monthLogs      = logs.filter(l => l.date >= monthStart && l.date <= monthEnd)
 
   const monthLeads  = monthLogs.reduce((a, l) => a + l.newLeads, 0)
   const monthCalls  = monthLogs.reduce((a, l) => a + l.ownerCalls, 0)
@@ -128,30 +126,39 @@ export function ReportsTab() {
   const monthDays   = monthLogs.filter(l => l.closed).length
 
   // Targets mensais: leads = todos os dias, ligações = seg-sex, funil = seg-sáb
-  function countDayTypes(year: number, month: number, weekdays: number[]): number {
+  function countDayTypes(y: number, m: number, weekdays: number[]): number {
     let count = 0
-    const d = new Date(year, month, 1)
-    while (d.getMonth() === month) {
+    const d = new Date(y, m, 1)
+    while (d.getMonth() === m) {
       if (weekdays.includes(d.getDay())) count++
       d.setDate(d.getDate() + 1)
     }
     return count
   }
-  const daysInMonth        = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const weekdaysInMonth    = countDayTypes(now.getFullYear(), now.getMonth(), [1,2,3,4,5])
-  const monSatInMonth      = countDayTypes(now.getFullYear(), now.getMonth(), [1,2,3,4,5,6])
-  const monthTargetLeads   = daysInMonth     * DAILY_TARGETS.newLeads
-  const monthTargetCalls   = weekdaysInMonth * DAILY_TARGETS.ownerCalls
-  const monthTargetFunnel  = monSatInMonth
+  const daysInMonth       = new Date(year, month + 1, 0).getDate()
+  const weekdaysInMonth   = countDayTypes(year, month, [1,2,3,4,5])
+  const monSatInMonth     = countDayTypes(year, month, [1,2,3,4,5,6])
+  const monthTargetLeads  = daysInMonth     * DAILY_TARGETS.newLeads
+  const monthTargetCalls  = weekdaysInMonth * DAILY_TARGETS.ownerCalls
+  const monthTargetFunnel = monSatInMonth
+
+  // Sales do período selecionado
+  const periodSales = useMemo(
+    () => sales.filter(s => s.date >= monthStart && s.date <= monthEnd),
+    [sales, monthStart, monthEnd]
+  )
 
   return (
     <div className="flex flex-col gap-8">
 
       {/* ── Productivity this month ─────────────────────────────────────── */}
       <section>
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-          Produtividade — {MONTH_NAMES[now.getMonth()]} {now.getFullYear()}
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Produtividade — {MONTHS_PT[month]} {year}
+          </h2>
+          <PeriodSelector />
+        </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard
             label="Leads gerados"
@@ -218,9 +225,9 @@ export function ReportsTab() {
             accent="green"
           />
           <StatCard
-            label="Vendas no mês"
-            value={thisMonthSales.length}
-            sub={formatCurrency(thisMonthSales.reduce((a, s) => a + s.value, 0))}
+            label={`Vendas em ${MONTHS_PT[month].slice(0,3)}`}
+            value={periodSales.length}
+            sub={formatCurrency(periodSales.reduce((a, s) => a + s.value, 0))}
             icon={<TrendingUp size={18} />}
             accent="indigo"
           />

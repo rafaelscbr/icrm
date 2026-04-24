@@ -16,8 +16,16 @@ interface DailyLogsStore {
   upsertLog: (date: string, data: Partial<Pick<DailyLog, 'newLeads' | 'ownerCalls' | 'funnelFollowup' | 'notes' | 'closed'>>) => void
 }
 
+/** Retorna YYYY-MM-DD no fuso local do dispositivo (não UTC). */
+function localDateStr(d: Date = new Date()): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function todayStr() {
-  return new Date().toISOString().split('T')[0]
+  return localDateStr()
 }
 
 function createLog(date: string): DailyLog {
@@ -38,7 +46,38 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
   load: async () => {
     set({ loading: true })
     try {
-      const logs = await db.dailyLogs.fetchAll()
+      const raw = await db.dailyLogs.fetchAll()
+
+      // ── Deduplicar por data ──────────────────────────────────────────────────
+      // A ausência de UNIQUE constraint em "date" permitia que múltiplos registros
+      // fossem criados para o mesmo dia (bug do getTodayLog() no render + onConflict errado).
+      // Mantém o registro mais completo por data: preferência a closed > mais dados > mais recente.
+      const byDate = new Map<string, DailyLog>()
+      for (const log of raw) {
+        const prev = byDate.get(log.date)
+        if (!prev) {
+          byDate.set(log.date, log)
+        } else {
+          const prevScore = (prev.closed ? 200 : 0) + prev.newLeads + prev.ownerCalls + (prev.funnelFollowup ? 1 : 0)
+          const logScore  = (log.closed  ? 200 : 0) + log.newLeads  + log.ownerCalls  + (log.funnelFollowup  ? 1 : 0)
+          // Empate: prefere o mais recente
+          if (logScore > prevScore || (logScore === prevScore && log.updatedAt > prev.updatedAt)) {
+            byDate.set(log.date, log)
+          }
+        }
+      }
+
+      const logs = Array.from(byDate.values()).sort((a, b) => b.date.localeCompare(a.date))
+
+      // ── Garante log de hoje ──────────────────────────────────────────────────
+      // Criado aqui (após fetch), NUNCA durante o render — evita duplicatas.
+      const today = todayStr()
+      if (!byDate.has(today)) {
+        const log = createLog(today)
+        logs.unshift(log)
+        db.dailyLogs.upsert(log).catch(() => toast.error('Erro ao criar registro do dia'))
+      }
+
       set({ logs })
     } catch (err) {
       console.error('[dailyLogs] load:', err)
@@ -49,12 +88,9 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
 
   getTodayLog: () => {
     const today = todayStr()
-    const existing = get().logs.find(l => l.date === today)
-    if (existing) return existing
-    const log = createLog(today)
-    set(s => ({ logs: [log, ...s.logs] }))
-    db.dailyLogs.upsert(log).catch(() => toast.error('Erro ao criar registro do dia'))
-    return log
+    // Apenas lê o store — nunca cria durante o render (evita duplicatas no banco).
+    // Se ainda não carregou (loading), retorna placeholder sem salvar.
+    return get().logs.find(l => l.date === today) ?? createLog(today)
   },
 
   updateToday: (data) => {
@@ -113,3 +149,6 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
     db.dailyLogs.upsert(upserted).catch(() => toast.error('Erro ao salvar registro'))
   },
 }))
+
+/** Exportado para usar nas telas que precisam de datas locais. */
+export { localDateStr }

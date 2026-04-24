@@ -477,7 +477,7 @@ export function TasksPage() {
         </>
       )}
 
-      <TaskForm isOpen={formOpen} onClose={() => setFormOpen(false)} task={editing} />
+      <TaskForm key={editing?.id ?? 'new'} isOpen={formOpen} onClose={() => setFormOpen(false)} task={editing} />
 
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir tarefa" size="sm">
         <p className="text-sm text-slate-400 mb-6">

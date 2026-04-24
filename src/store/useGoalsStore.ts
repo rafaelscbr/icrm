@@ -71,6 +71,14 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
 
 // ─── Progress helpers ────────────────────────────────────────────────────────
 
+/** Formata Date para YYYY-MM-DD usando fuso LOCAL (não UTC). */
+function localFmt(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function getWeekRangeDates(): { start: string; end: string } {
   const now = new Date()
   const day = now.getDay()
@@ -79,16 +87,15 @@ function getWeekRangeDates(): { start: string; end: string } {
   mon.setDate(now.getDate() + diffToMon)
   const sun = new Date(mon)
   sun.setDate(mon.getDate() + 6)
-  const fmt = (d: Date) => d.toISOString().split('T')[0]
-  return { start: fmt(mon), end: fmt(sun) }
+  return { start: localFmt(mon), end: localFmt(sun) }
 }
 
 function getMonthRangeDates(): { start: string; end: string } {
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth()
-  const lastDay = new Date(year, month + 1, 0).getDate()
   const pad = (n: number) => String(n).padStart(2, '0')
+  const lastDay = new Date(year, month + 1, 0).getDate()
   return {
     start: `${year}-${pad(month + 1)}-01`,
     end:   `${year}-${pad(month + 1)}-${pad(lastDay)}`,

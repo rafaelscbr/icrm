@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { localDateStr } from '../../store/useDailyLogsStore'
 import {
   UserPlus, Phone, MessageSquare, CheckCircle2, Lock, Unlock,
   ChevronDown, ChevronUp, StickyNote, Calendar, TrendingUp, PlusCircle, Pencil
@@ -277,14 +278,14 @@ export function DailyProductivityTab() {
     toast.success('Dia reaberto.')
   }
 
-  // Week summary (Mon–Sun containing today)
+  // Week summary (Mon–Sun containing today) — usa data LOCAL para bater com os logs
   const now = new Date()
   const dayOfWeek = now.getDay()
   const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
   const monday = new Date(now); monday.setDate(now.getDate() + diffToMon)
-  const weekStart = monday.toISOString().split('T')[0]
+  const weekStart = localDateStr(monday)
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
-  const weekEnd = sunday.toISOString().split('T')[0]
+  const weekEnd = localDateStr(sunday)
 
   const weekLogs      = logs.filter(l => l.date >= weekStart && l.date <= weekEnd)
   const weekLeads     = weekLogs.reduce((a, l) => a + l.newLeads, 0)

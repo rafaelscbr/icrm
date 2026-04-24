@@ -147,7 +147,9 @@ function fromSale(s: Sale): SaleRow {
 function toTask(r: TaskRow): Task {
   return {
     id: r.id, title: r.title, description: r.description ?? undefined,
-    dueDate: r.due_date ?? undefined, dueTime: r.due_time ?? undefined,
+    // Normaliza para YYYY-MM-DD — coluna pode ser date ou timestamp no banco
+    dueDate: r.due_date ? r.due_date.split('T')[0] : undefined,
+    dueTime: r.due_time ?? undefined,
     status: r.status as Task['status'], priority: r.priority as Task['priority'],
     category: r.category as Task['category'] ?? undefined,
     completedAt: r.completed_at ?? undefined, contactId: r.contact_id ?? undefined,

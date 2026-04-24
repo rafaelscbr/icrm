@@ -10,11 +10,13 @@ import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
 import { Avatar } from '../../components/ui/Avatar'
+import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useGoalsStore, calcProgress } from '../../store/useGoalsStore'
+import { usePeriodStore, MONTHS_PT } from '../../store/usePeriodStore'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 import { GoalCategory } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
@@ -309,22 +311,30 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
   const { properties, load: loadProperties } = usePropertiesStore()
-  const { sales, load: loadSales, getThisMonth, getTotalValue, getThisMonthValue } = useSalesStore()
+  const { sales, load: loadSales, getByPeriod, getValueByPeriod, getTotalValue } = useSalesStore()
   const { tasks, load: loadTasks, getUpcoming, getOverdue } = useTasksStore()
   const { goals, load: loadGoals } = useGoalsStore()
   const { load: loadCampaigns } = useCampaignsStore()
   const { load: loadLeads }     = useCampaignLeadsStore()
+  const { year, month, isCurrentMonth } = usePeriodStore()
 
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks(); loadGoals()
     loadCampaigns(); loadLeads()
   }, [loadContacts, loadProperties, loadSales, loadTasks, loadGoals, loadCampaigns, loadLeads])
 
-  const birthdays       = getBirthdaysThisMonth()
-  const salesThisMonth  = getThisMonth()
-const recentSales     = sales.slice(0, 5)
-  const upcomingTasks   = getUpcoming()
-  const overdueTasks    = getOverdue()
+  const isCurrent      = isCurrentMonth()
+  const periodLabel    = `${MONTHS_PT[month]} ${year}`
+  const salesInPeriod  = getByPeriod(year, month)
+  const valueInPeriod  = getValueByPeriod(year, month)
+  const recentSales    = sales.slice(0, 5)
+  const upcomingTasks  = getUpcoming()
+  const overdueTasks   = getOverdue()
+  const birthdays      = getBirthdaysThisMonth()
+
+  // Comissões do período selecionado
+  const periodComm  = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
+  const periodBroker= salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
 
   const greeting = () => {
     const h = new Date().getHours()
@@ -337,9 +347,9 @@ const recentSales     = sales.slice(0, 5)
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
   })
 
-  const newContactsThisMonth = contacts.filter(c => {
-    const d = new Date(c.createdAt), now = new Date()
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  const newContactsInPeriod = contacts.filter(c => {
+    const parts = c.createdAt.split('-')
+    return Number(parts[0]) === year && Number(parts[1]) === month + 1
   }).length
 
   return (
@@ -349,12 +359,20 @@ const recentSales     = sales.slice(0, 5)
       ctaLabel="Nova Venda"
       onCta={() => navigate('/vendas?new=1')}
     >
+      {/* Seletor de período */}
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-xs text-slate-500">
+          {isCurrent ? 'Exibindo dados do mês atual' : `Exibindo dados retroativos de ${periodLabel}`}
+        </p>
+        <PeriodSelector />
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           label="Contatos"
           value={contacts.length}
-          sub={`+${newContactsThisMonth} este mês`}
+          sub={`+${newContactsInPeriod} em ${periodLabel}`}
           icon={<Users size={18} />}
           accent="indigo"
         />
@@ -366,44 +384,40 @@ const recentSales     = sales.slice(0, 5)
           accent="blue"
         />
         <StatCard
-          label="Total de vendas"
+          label="Total acumulado"
           value={formatCurrency(getTotalValue())}
-          sub={`${sales.length} vendas realizadas`}
+          sub={`${sales.length} vendas no total`}
           icon={<DollarSign size={18} />}
           accent="green"
         />
         <StatCard
-          label="Vendas no mês"
-          value={formatCurrency(getThisMonthValue())}
-          sub={`${salesThisMonth.length} venda${salesThisMonth.length !== 1 ? 's' : ''}`}
+          label={`Vendas em ${MONTHS_PT[month].toLowerCase()}`}
+          value={formatCurrency(valueInPeriod)}
+          sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''}`}
           icon={<TrendingUp size={18} />}
           accent="purple"
         />
       </div>
 
-      {/* Comissões */}
-      {sales.length > 0 && (() => {
-        const totalComm  = sales.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
-        const brokerComm = sales.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
-        return (
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <StatCard
-              label="Comissão total gerada"
-              value={formatCurrencyFull(totalComm)}
-              sub="soma das comissões negociadas"
-              icon={<DollarSign size={18} />}
-              accent="purple"
-            />
-            <StatCard
-              label="Comissão do corretor"
-              value={formatCurrencyFull(brokerComm)}
-              sub="sua parte acumulada"
-              icon={<TrendingUp size={18} />}
-              accent="green"
-            />
-          </div>
-        )
-      })()}
+      {/* Comissões do período */}
+      {salesInPeriod.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <StatCard
+            label={`Comissão gerada em ${MONTHS_PT[month].toLowerCase()}`}
+            value={formatCurrencyFull(periodComm)}
+            sub="soma das comissões negociadas no período"
+            icon={<DollarSign size={18} />}
+            accent="purple"
+          />
+          <StatCard
+            label={`Sua comissão em ${MONTHS_PT[month].toLowerCase()}`}
+            value={formatCurrencyFull(periodBroker)}
+            sub="sua parte no período selecionado"
+            icon={<TrendingUp size={18} />}
+            accent="green"
+          />
+        </div>
+      )}
 
       {/* Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
