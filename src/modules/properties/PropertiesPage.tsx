@@ -24,10 +24,12 @@ const FILTER_OPTIONS: { value: PropertyStatus | null; label: string }[] = [
 ]
 
 const TYPE_LABELS: Record<string, string> = {
-  apartment: 'Apartamento',
-  house: 'Casa',
-  commercial: 'Comercial',
-  land: 'Terreno',
+  apartment:          'Apartamento',
+  apartment_duplex:   'Apartamento Duplex',
+  penthouse_duplex:   'Cobertura Duplex',
+  house:              'Casa',
+  commercial:         'Comercial',
+  land:               'Terreno',
 }
 
 // Comissão: 10% do 5% do valor = 0,5% do valor

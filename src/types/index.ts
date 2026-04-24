@@ -16,7 +16,7 @@ export interface Contact {
   updatedAt: string
 }
 
-export type PropertyType   = 'apartment' | 'house' | 'commercial' | 'land'
+export type PropertyType   = 'apartment' | 'apartment_duplex' | 'penthouse_duplex' | 'house' | 'commercial' | 'land'
 export type PropertyStatus = 'opportunity' | 'market_price' | 'above_market'
 export type PropertyKind   = 'ready' | 'off_plan'
 

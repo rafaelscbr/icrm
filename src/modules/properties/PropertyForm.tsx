@@ -23,10 +23,12 @@ const STATUS_OPTIONS: { value: PropertyStatus; label: string }[] = [
 ]
 
 const TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
-  { value: 'apartment', label: 'Apartamento' },
-  { value: 'house',     label: 'Casa'        },
-  { value: 'commercial',label: 'Comercial'   },
-  { value: 'land',      label: 'Terreno'     },
+  { value: 'apartment',          label: 'Apartamento'        },
+  { value: 'apartment_duplex',   label: 'Apartamento Duplex' },
+  { value: 'penthouse_duplex',   label: 'Cobertura Duplex'   },
+  { value: 'house',              label: 'Casa'               },
+  { value: 'commercial',         label: 'Comercial'          },
+  { value: 'land',               label: 'Terreno'            },
 ]
 
 export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
@@ -137,7 +139,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
       city:            city.trim() || undefined,
       address:         address.trim()    || undefined,
       complement:      complement.trim() || undefined,
-      unit:            type === 'apartment' ? (unit.trim() || undefined) : undefined,
+      unit:            ['apartment','apartment_duplex','penthouse_duplex'].includes(type) ? (unit.trim() || undefined) : undefined,
       bedrooms:        bedrooms  ? Number(bedrooms)              : undefined,
       suites:          suites    ? Number(suites)                : undefined,
       areaSqm:         areaSqm   ? Number(areaSqm.replace(',', '.')) : undefined,
@@ -274,14 +276,14 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
           </div>
 
           {/* Complemento + Unidade (apartamento) */}
-          <div className={`grid gap-4 ${type === 'apartment' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div className={`grid gap-4 ${['apartment','apartment_duplex','penthouse_duplex'].includes(type) ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <Input
               label="Complemento"
               value={complement}
               onChange={e => setComplement(e.target.value)}
               placeholder="Bloco A, Torre 2…"
             />
-            {type === 'apartment' && (
+            {['apartment','apartment_duplex','penthouse_duplex'].includes(type) && (
               <Input
                 label="Unidade"
                 value={unit}
