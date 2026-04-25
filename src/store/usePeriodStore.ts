@@ -1,104 +1,119 @@
 import { create } from 'zustand'
 
-export type PeriodMode = 'month' | 'year' | 'all'
+export type PeriodPreset =
+  | 'this_month'
+  | 'last_month'
+  | 'this_year'
+  | 'last_3'
+  | 'last_6'
+  | 'all'
+  | 'custom'
 
 interface PeriodStore {
-  mode:  PeriodMode
-  year:  number
-  month: number   // 0-indexed: Jan=0 … Dez=11 (usado só quando mode='month')
-  setMode:  (mode: PeriodMode) => void
-  prev:     () => void
-  next:     () => void
-  reset:    () => void
-  isCurrentPeriod: () => boolean
+  preset:    PeriodPreset
+  startDate: string   // YYYY-MM-DD
+  endDate:   string   // YYYY-MM-DD
+  setPreset:      (preset: PeriodPreset) => void
+  setCustomRange: (start: string, end: string) => void
   getLabel: () => string
+  isAll:    () => boolean
 }
 
-const _now = new Date()
+function _pad(n: number) { return String(n).padStart(2, '0') }
+function _lastDay(y: number, m: number): string {
+  const d = new Date(y, m + 1, 0)
+  return `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-${_pad(d.getDate())}`
+}
+function _today(): string {
+  const n = new Date()
+  return `${n.getFullYear()}-${_pad(n.getMonth() + 1)}-${_pad(n.getDate())}`
+}
+
+export function rangeFromPreset(preset: Exclude<PeriodPreset, 'custom'>): { startDate: string; endDate: string } {
+  const n = new Date()
+  const y = n.getFullYear()
+  const m = n.getMonth()
+
+  switch (preset) {
+    case 'this_month':
+      return { startDate: `${y}-${_pad(m + 1)}-01`, endDate: _lastDay(y, m) }
+    case 'last_month': {
+      const d = new Date(y, m - 1, 1)
+      return { startDate: `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-01`, endDate: _lastDay(d.getFullYear(), d.getMonth()) }
+    }
+    case 'this_year':
+      return { startDate: `${y}-01-01`, endDate: `${y}-12-31` }
+    case 'last_3': {
+      const d = new Date(y, m - 2, 1)
+      return { startDate: `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-01`, endDate: _today() }
+    }
+    case 'last_6': {
+      const d = new Date(y, m - 5, 1)
+      return { startDate: `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-01`, endDate: _today() }
+    }
+    case 'all':
+      return { startDate: '0000-01-01', endDate: '9999-12-31' }
+  }
+}
+
+const _initial = rangeFromPreset('this_month')
 
 export const usePeriodStore = create<PeriodStore>((set, get) => ({
-  mode:  'month',
-  year:  _now.getFullYear(),
-  month: _now.getMonth(),
+  preset:    'this_month',
+  startDate: _initial.startDate,
+  endDate:   _initial.endDate,
 
-  setMode: (mode) => {
-    const n = new Date()
-    // Ao trocar de modo, redefine para o período atual
-    set({ mode, year: n.getFullYear(), month: n.getMonth() })
-  },
-
-  prev: () => {
-    const { mode, year, month } = get()
-    if (mode === 'all') return
-    if (mode === 'year') {
-      set({ year: year - 1 })
+  setPreset: (preset) => {
+    if (preset === 'custom') {
+      set({ preset })
     } else {
-      if (month === 0) set({ year: year - 1, month: 11 })
-      else             set({ year, month: month - 1 })
+      set({ preset, ...rangeFromPreset(preset) })
     }
   },
 
-  next: () => {
-    const { mode, year, month } = get()
-    if (mode === 'all') return
-    const n = new Date()
-    if (mode === 'year') {
-      if (year >= n.getFullYear()) return
-      set({ year: year + 1 })
-    } else {
-      if (year === n.getFullYear() && month >= n.getMonth()) return
-      if (month === 11) set({ year: year + 1, month: 0 })
-      else              set({ year, month: month + 1 })
-    }
-  },
-
-  reset: () => {
-    const n = new Date()
-    set({ year: n.getFullYear(), month: n.getMonth() })
-  },
-
-  isCurrentPeriod: () => {
-    const { mode, year, month } = get()
-    const n = new Date()
-    if (mode === 'all')   return true
-    if (mode === 'year')  return year === n.getFullYear()
-    return year === n.getFullYear() && month === n.getMonth()
+  setCustomRange: (start, end) => {
+    set({ preset: 'custom', startDate: start, endDate: end })
   },
 
   getLabel: () => {
-    const { mode, year, month } = get()
-    if (mode === 'all')  return 'Todos os períodos'
-    if (mode === 'year') return String(year)
-    return `${MONTHS_PT[month]} ${year}`
+    const { preset, startDate, endDate } = get()
+    const n = new Date()
+    switch (preset) {
+      case 'this_month':  return `${MONTHS_PT[n.getMonth()]} ${n.getFullYear()}`
+      case 'last_month': {
+        const d = new Date(n.getFullYear(), n.getMonth() - 1, 1)
+        return `${MONTHS_PT[d.getMonth()]} ${d.getFullYear()}`
+      }
+      case 'this_year':  return String(n.getFullYear())
+      case 'last_3':     return 'Últimos 3 meses'
+      case 'last_6':     return 'Últimos 6 meses'
+      case 'all':        return 'Acumulado'
+      case 'custom': {
+        const fmt = (d: string) => {
+          const [y, mo, da] = d.split('-')
+          return `${da}/${mo}/${y.slice(2)}`
+        }
+        return `${fmt(startDate)} – ${fmt(endDate)}`
+      }
+    }
   },
+
+  isAll: () => get().preset === 'all',
 }))
 
-/**
- * Retorna true se dateStr (YYYY-MM-DD) corresponde ao período selecionado.
- * mode='all'   → sempre true
- * mode='year'  → mesmo ano
- * mode='month' → mesmo ano e mês
- */
-export function matchesPeriod(
-  dateStr: string,
-  mode: PeriodMode,
-  year: number,
-  month: number,
-): boolean {
-  if (mode === 'all') return true
+export function matchesPeriod(dateStr: string, startDate: string, endDate: string): boolean {
   if (!dateStr) return false
-  const parts = dateStr.split('-')
-  if (parts.length < 2) return false
-  if (mode === 'year')  return Number(parts[0]) === year
-  return Number(parts[0]) === year && Number(parts[1]) === month + 1
-}
-
-/** isInPeriod mantido para retrocompatibilidade (mode=month implícito). */
-export function isInPeriod(dateStr: string, year: number, month: number): boolean {
-  return matchesPeriod(dateStr, 'month', year, month)
+  return dateStr >= startDate && dateStr <= endDate
 }
 
 export const MONTHS_PT = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
+
+// Retrocompatibilidade
+export type PeriodMode = 'month' | 'year' | 'all'
+export function isInPeriod(dateStr: string, year: number, month: number): boolean {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return matchesPeriod(dateStr, `${year}-${pad(month + 1)}-01`, `${year}-${pad(month + 1)}-${new Date(year, month + 1, 0).getDate()}`)
+}

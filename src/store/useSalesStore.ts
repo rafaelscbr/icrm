@@ -1,27 +1,25 @@
 import { create } from 'zustand'
 import { Sale } from '../types'
 import { generateId } from '../lib/formatters'
-import { PeriodMode, matchesPeriod } from './usePeriodStore'
+import { matchesPeriod, rangeFromPreset } from './usePeriodStore'
 import { db } from '../lib/db'
 
 interface SalesStore {
-  sales: Sale[]
+  sales:   Sale[]
   loading: boolean
-  load: () => Promise<void>
-  add: (data: Omit<Sale, 'id' | 'createdAt'>) => Sale
-  update: (id: string, data: Partial<Sale>) => void
-  remove: (id: string) => void
-  // Filtro por período arbitrário
-  getByPeriod:      (mode: PeriodMode, year: number, month: number) => Sale[]
-  getValueByPeriod: (mode: PeriodMode, year: number, month: number) => number
-  // Legado (mês atual do sistema — retrocompatibilidade)
-  getThisMonth:      () => Sale[]
-  getTotalValue:     () => number
+  load:    () => Promise<void>
+  add:     (data: Omit<Sale, 'id' | 'createdAt'>) => Sale
+  update:  (id: string, data: Partial<Sale>) => void
+  remove:  (id: string) => void
+  getByPeriod:      (start: string, end: string) => Sale[]
+  getValueByPeriod: (start: string, end: string) => number
+  getTotalValue:    () => number
+  getThisMonth:     () => Sale[]
   getThisMonthValue: () => number
 }
 
 export const useSalesStore = create<SalesStore>((set, get) => ({
-  sales: [],
+  sales:   [],
   loading: false,
 
   load: async () => {
@@ -55,27 +53,23 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
     db.sales.delete(id).catch(err => console.error('[sales] remove:', err))
   },
 
-  // ── Período arbitrário ────────────────────────────────────────────────────
+  getByPeriod: (start, end) =>
+    get().sales.filter(s => matchesPeriod(s.date, start, end)),
 
-  getByPeriod: (mode, year, month) =>
-    get().sales.filter(s => matchesPeriod(s.date, mode, year, month)),
-
-  getValueByPeriod: (mode, year, month) =>
+  getValueByPeriod: (start, end) =>
     get().sales
-      .filter(s => matchesPeriod(s.date, mode, year, month))
+      .filter(s => matchesPeriod(s.date, start, end))
       .reduce((acc, s) => acc + s.value, 0),
-
-  // ── Legado (mês corrente) ─────────────────────────────────────────────────
-
-  getThisMonth: () => {
-    const n = new Date()
-    return get().getByPeriod('month', n.getFullYear(), n.getMonth())
-  },
 
   getTotalValue: () => get().sales.reduce((acc, s) => acc + s.value, 0),
 
+  getThisMonth: () => {
+    const { startDate, endDate } = rangeFromPreset('this_month')
+    return get().getByPeriod(startDate, endDate)
+  },
+
   getThisMonthValue: () => {
-    const n = new Date()
-    return get().getValueByPeriod('month', n.getFullYear(), n.getMonth())
+    const { startDate, endDate } = rangeFromPreset('this_month')
+    return get().getValueByPeriod(startDate, endDate)
   },
 }))

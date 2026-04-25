@@ -316,17 +316,16 @@ export function DashboardPage() {
   const { goals, load: loadGoals } = useGoalsStore()
   const { load: loadCampaigns } = useCampaignsStore()
   const { load: loadLeads }     = useCampaignLeadsStore()
-  const { mode, year, month, isCurrentPeriod, getLabel } = usePeriodStore()
+  const { startDate, endDate, getLabel } = usePeriodStore()
 
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks(); loadGoals()
     loadCampaigns(); loadLeads()
   }, [loadContacts, loadProperties, loadSales, loadTasks, loadGoals, loadCampaigns, loadLeads])
 
-  const isCurrent     = isCurrentPeriod()
   const periodLabel   = getLabel()
-  const salesInPeriod = getByPeriod(mode, year, month)
-  const valueInPeriod = getValueByPeriod(mode, year, month)
+  const salesInPeriod = getByPeriod(startDate, endDate)
+  const valueInPeriod = getValueByPeriod(startDate, endDate)
   const recentSales   = sales.slice(0, 5)
   const upcomingTasks = getUpcoming()
   const overdueTasks  = getOverdue()
@@ -348,7 +347,7 @@ export function DashboardPage() {
   })
 
   const newContactsInPeriod = contacts.filter(c =>
-    matchesPeriod(c.createdAt.split('T')[0], mode, year, month)
+    matchesPeriod(c.createdAt.split('T')[0], startDate, endDate)
   ).length
 
   return (
@@ -360,9 +359,7 @@ export function DashboardPage() {
     >
       {/* Seletor de período */}
       <div className="flex items-center justify-between mb-6">
-        <p className="text-xs text-slate-500">
-          {isCurrent ? 'Exibindo dados do mês atual' : `Exibindo dados retroativos de ${periodLabel}`}
-        </p>
+        <p className="text-xs text-slate-500">Exibindo dados de <span className="text-slate-300 font-medium">{periodLabel}</span></p>
         <PeriodSelector />
       </div>
 

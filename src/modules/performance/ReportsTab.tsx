@@ -57,38 +57,36 @@ export function ReportsTab() {
   const { contacts,   load: loadContacts   } = useContactsStore()
   const { properties, load: loadProperties } = usePropertiesStore()
   const { logs,       load: loadLogs       } = useDailyLogsStore()
-  const { mode, year, month, getLabel } = usePeriodStore()
+  const { preset, startDate, endDate, getLabel } = usePeriodStore()
 
   useEffect(() => {
     loadSales(); loadContacts(); loadProperties(); loadLogs()
   }, [loadSales, loadContacts, loadProperties, loadLogs])
 
-  // ── Sales charts ─────────────────────────────────────────────────────────
+  // ── Sales charts — adapta automaticamente ao intervalo do período ────────
   const monthlySales = useMemo(() => {
-    if (mode === 'year') {
-      // Mostra os 12 meses do ano selecionado
-      return Array.from({ length: 12 }, (_, i) => {
-        const items = sales.filter(s => {
-          const parts = s.date.split('-')
-          return Number(parts[0]) === year && Number(parts[1]) === i + 1
-        })
-        return { name: MONTH_NAMES[i], valor: items.reduce((acc, s) => acc + s.value, 0), qtd: items.length }
-      })
+    // Para "Acumulado" mostra os últimos 12 meses até hoje
+    const effectiveEnd   = endDate   === '9999-12-31' ? new Date() : new Date(endDate   + 'T12:00:00')
+    const effectiveStart = startDate === '0000-01-01'
+      ? new Date(effectiveEnd.getFullYear() - 1, effectiveEnd.getMonth() + 1, 1)
+      : new Date(startDate + 'T12:00:00')
+
+    const months: { y: number; m: number }[] = []
+    const cur = new Date(effectiveStart.getFullYear(), effectiveStart.getMonth(), 1)
+    const end = new Date(effectiveEnd.getFullYear(),   effectiveEnd.getMonth(),   1)
+    while (cur <= end && months.length < 24) {
+      months.push({ y: cur.getFullYear(), m: cur.getMonth() + 1 })
+      cur.setMonth(cur.getMonth() + 1)
     }
-    // month ou all: últimos 6 meses a partir do mês/ano selecionado (ou atual no modo all)
-    const refYear  = mode === 'all' ? new Date().getFullYear() : year
-    const refMonth = mode === 'all' ? new Date().getMonth()    : month
-    return Array.from({ length: 6 }, (_, i) => {
-      const d   = new Date(refYear, refMonth - (5 - i), 1)
-      const m   = d.getMonth()
-      const y   = d.getFullYear()
+
+    return months.map(({ y, m }) => {
       const items = sales.filter(s => {
-        const sd = new Date(s.date)
-        return sd.getMonth() === m && sd.getFullYear() === y
+        const parts = s.date.split('-')
+        return Number(parts[0]) === y && Number(parts[1]) === m
       })
-      return { name: MONTH_NAMES[m], valor: items.reduce((acc, s) => acc + s.value, 0), qtd: items.length }
+      return { name: MONTH_NAMES[m - 1], valor: items.reduce((acc, s) => acc + s.value, 0), qtd: items.length }
     })
-  }, [sales, mode, year, month])
+  }, [sales, startDate, endDate])
 
   const propByStatus = useMemo(() => [
     { name: 'Oportunidade',     value: properties.filter(p => p.status === 'opportunity').length,   color: PIE_COLORS.opportunity   },
@@ -96,12 +94,18 @@ export function ReportsTab() {
     { name: 'Acima do mercado', value: properties.filter(p => p.status === 'above_market').length,  color: PIE_COLORS.above_market  },
   ].filter(d => d.value > 0), [properties])
 
-  const salesByType = useMemo(() => [
-    { name: 'Pronto', value: sales.filter(s => s.type === 'ready').reduce((a, s) => a + s.value, 0),    color: '#6366F1' },
-    { name: 'Planta', value: sales.filter(s => s.type === 'off_plan').reduce((a, s) => a + s.value, 0), color: '#A855F7' },
-  ], [sales])
+  // Sales do período selecionado (declarado antes dos derivados)
+  const periodSales = useMemo(
+    () => sales.filter(s => matchesPeriod(s.date, startDate, endDate)),
+    [sales, startDate, endDate]
+  )
 
-  const avgTicket = sales.length > 0 ? sales.reduce((a, s) => a + s.value, 0) / sales.length : 0
+  const salesByType = useMemo(() => [
+    { name: 'Pronto', value: periodSales.filter(s => s.type === 'ready').reduce((a, s) => a + s.value, 0),    color: '#6366F1' },
+    { name: 'Planta', value: periodSales.filter(s => s.type === 'off_plan').reduce((a, s) => a + s.value, 0), color: '#A855F7' },
+  ], [periodSales])
+
+  const avgTicket = periodSales.length > 0 ? periodSales.reduce((a, s) => a + s.value, 0) / periodSales.length : 0
 
   // ── Productivity charts ───────────────────────────────────────────────────
   const activityChart = useMemo(() => {
@@ -123,17 +127,8 @@ export function ReportsTab() {
 
   // ── Logs filtrados pelo período ───────────────────────────────────────────
   const periodLabel = getLabel()
-  const pad = (n: number) => String(n).padStart(2, '0')
 
-  // Intervalo de datas para mês, ano ou geral
-  const periodStart = mode === 'all' ? '0000-01-01'
-    : mode === 'year' ? `${year}-01-01`
-    : `${year}-${pad(month + 1)}-01`
-  const periodEnd = mode === 'all' ? '9999-12-31'
-    : mode === 'year' ? `${year}-12-31`
-    : localDateStr(new Date(year, month + 1, 0))
-
-  const periodLogs  = logs.filter(l => l.date >= periodStart && l.date <= periodEnd)
+  const periodLogs  = logs.filter(l => l.date >= startDate && l.date <= endDate)
   const monthLeads  = periodLogs.reduce((a, l) => a + l.newLeads, 0)
   const monthCalls  = periodLogs.reduce((a, l) => a + l.ownerCalls, 0)
   const monthFunnel = periodLogs.filter(l => l.funnelFollowup).length
@@ -150,19 +145,15 @@ export function ReportsTab() {
     }
     return count
   }
-  const showTargets     = mode !== 'all'
-  const totalDays       = showTargets ? countDayTypes(periodStart, periodEnd, [0,1,2,3,4,5,6]) : 0
-  const weekdaysCount   = showTargets ? countDayTypes(periodStart, periodEnd, [1,2,3,4,5])     : 0
-  const monSatCount     = showTargets ? countDayTypes(periodStart, periodEnd, [1,2,3,4,5,6])   : 0
-  const targetLeads     = totalDays   * DAILY_TARGETS.newLeads
-  const targetCalls     = weekdaysCount * DAILY_TARGETS.ownerCalls
-  const targetFunnel    = monSatCount
-
-  // Sales do período selecionado
-  const periodSales = useMemo(
-    () => sales.filter(s => matchesPeriod(s.date, mode, year, month)),
-    [sales, mode, year, month]
-  )
+  const showTargets   = preset !== 'all'
+  const pStart        = startDate === '0000-01-01' ? localDateStr(new Date()) : startDate
+  const pEnd          = endDate   === '9999-12-31' ? localDateStr(new Date()) : endDate
+  const totalDays     = showTargets ? countDayTypes(pStart, pEnd, [0,1,2,3,4,5,6]) : 0
+  const weekdaysCount = showTargets ? countDayTypes(pStart, pEnd, [1,2,3,4,5])     : 0
+  const monSatCount   = showTargets ? countDayTypes(pStart, pEnd, [1,2,3,4,5,6])   : 0
+  const targetLeads   = totalDays   * DAILY_TARGETS.newLeads
+  const targetCalls   = weekdaysCount * DAILY_TARGETS.ownerCalls
+  const targetFunnel  = monSatCount
 
   return (
     <div className="flex flex-col gap-8">
@@ -265,7 +256,7 @@ export function ReportsTab() {
 
         <Card className="mb-6">
           <h2 className="text-sm font-medium text-slate-300 mb-6">
-            Volume de vendas — {mode === 'year' ? `Jan–Dez ${year}` : 'últimos 6 meses'}
+            Volume de vendas — {periodLabel}
           </h2>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={monthlySales} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
@@ -288,7 +279,7 @@ export function ReportsTab() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <h2 className="text-sm font-medium text-slate-300 mb-6">
-              Quantidade de vendas — {mode === 'year' ? `Jan–Dez ${year}` : 'últimos 6 meses'}
+              Quantidade de vendas — {periodLabel}
             </h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={monthlySales} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>

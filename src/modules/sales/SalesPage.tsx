@@ -28,9 +28,9 @@ const FILTER_OPTIONS: { value: SaleType | null; label: string }[] = [
 ]
 
 export function SalesPage() {
-  const { sales, load, remove, getTotalValue, getByPeriod, getValueByPeriod } = useSalesStore()
+  const { sales, load, remove, getByPeriod, getValueByPeriod } = useSalesStore()
   const { contacts, load: loadContacts } = useContactsStore()
-  const { mode, year, month, getLabel } = usePeriodStore()
+  const { startDate, endDate, getLabel } = usePeriodStore()
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<SaleType | null>(null)
   const [formOpen, setFormOpen] = useState(false)
@@ -52,19 +52,17 @@ export function SalesPage() {
       (client?.name ?? '').toLowerCase().includes(query.toLowerCase()) ||
       s.propertyName.toLowerCase().includes(query.toLowerCase())
     const matchType   = !typeFilter || s.type === typeFilter
-    const matchPeriod = matchesPeriod(s.date, mode, year, month)
+    const matchPeriod = matchesPeriod(s.date, startDate, endDate)
     return matchQuery && matchType && matchPeriod
   })
 
-  // KPIs do período selecionado
+  // Todos os KPIs respeitam o período selecionado
   const periodLabel   = getLabel()
-  const salesInPeriod = getByPeriod(mode, year, month)
-  const valueInPeriod = getValueByPeriod(mode, year, month)
+  const salesInPeriod = getByPeriod(startDate, endDate)
+  const valueInPeriod = getValueByPeriod(startDate, endDate)
+  const avgTicket     = salesInPeriod.length > 0 ? valueInPeriod / salesInPeriod.length : 0
   const periodComm    = salesInPeriod.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0)
   const periodBroker  = salesInPeriod.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0)
-  // Totais acumulados (todos os períodos)
-  const totalCommission = sales.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0)
-  const totalBroker     = sales.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0)
 
   function handleDelete() {
     if (!deleteTarget) return
@@ -76,34 +74,30 @@ export function SalesPage() {
   return (
     <PageLayout
       title="Vendas"
-      subtitle={`${sales.length} vendas · ${formatCurrencyFull(getTotalValue())} total`}
+      subtitle={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} · ${periodLabel}`}
       ctaLabel="Nova Venda"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
       {/* Seletor de período */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <p className="text-xs text-slate-500">
-          KPIs e lista filtrados pelo período selecionado
-        </p>
+      <div className="flex items-center justify-between mb-5">
+        <p className="text-xs text-slate-500">Todos os dados filtrados pelo período</p>
         <PeriodSelector />
       </div>
 
-      {/* Summary strip */}
+      {/* KPIs — todos respeitam o período */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-5 lg:mb-6">
         <Card accent="purple">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 bg-purple-500/15 rounded-lg flex items-center justify-center">
               <TrendingUp size={14} className="text-purple-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider truncate">
-              {periodLabel}
-            </p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">VGV no período</p>
           </div>
           <p className="text-base lg:text-2xl font-bold text-purple-300 tabular-nums">
             <span className="lg:hidden">{formatCurrency(valueInPeriod)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(valueInPeriod)}</span>
           </p>
-          <p className="text-xs text-slate-500 mt-1">{salesInPeriod.length} venda{salesInPeriod.length !== 1 ? 's' : ''} no período</p>
+          <p className="text-xs text-slate-500 mt-1">{salesInPeriod.length} venda{salesInPeriod.length !== 1 ? 's' : ''}</p>
         </Card>
 
         <Card accent="green">
@@ -111,13 +105,13 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center">
               <TrendingUp size={14} className="text-green-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total acumulado</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Ticket médio</p>
           </div>
           <p className="text-base lg:text-2xl font-bold text-green-300 tabular-nums">
-            <span className="lg:hidden">{formatCurrency(getTotalValue())}</span>
-            <span className="hidden lg:inline">{formatCurrencyFull(getTotalValue())}</span>
+            <span className="lg:hidden">{formatCurrency(avgTicket)}</span>
+            <span className="hidden lg:inline">{formatCurrencyFull(avgTicket)}</span>
           </p>
-          <p className="text-xs text-slate-500 mt-1">{sales.length} vendas no total</p>
+          <p className="text-xs text-slate-500 mt-1">por venda no período</p>
         </Card>
 
         <Card>
@@ -125,13 +119,13 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-violet-500/15 rounded-lg flex items-center justify-center">
               <BadgePercent size={14} className="text-violet-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Comissão no período</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Comissão gerada</p>
           </div>
           <p className="text-base lg:text-2xl font-bold text-violet-300 tabular-nums">
             <span className="lg:hidden">{formatCurrency(periodComm)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(periodComm)}</span>
           </p>
-          <p className="text-xs text-slate-500 mt-1">total acum.: {formatCurrencyFull(totalCommission)}</p>
+          <p className="text-xs text-slate-500 mt-1">negociada no período</p>
         </Card>
 
         <Card>
@@ -139,13 +133,13 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-emerald-500/15 rounded-lg flex items-center justify-center">
               <DollarSign size={14} className="text-emerald-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sua comissão no período</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sua comissão</p>
           </div>
           <p className="text-base lg:text-2xl font-bold text-emerald-300 tabular-nums">
             <span className="lg:hidden">{formatCurrency(periodBroker)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(periodBroker)}</span>
           </p>
-          <p className="text-xs text-slate-500 mt-1">total acum.: {formatCurrencyFull(totalBroker)}</p>
+          <p className="text-xs text-slate-500 mt-1">sua parte no período</p>
         </Card>
       </div>
 
