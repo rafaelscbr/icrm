@@ -16,7 +16,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useGoalsStore, calcProgress } from '../../store/useGoalsStore'
-import { usePeriodStore, MONTHS_PT } from '../../store/usePeriodStore'
+import { usePeriodStore, MONTHS_PT, matchesPeriod } from '../../store/usePeriodStore'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 import { GoalCategory } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
@@ -316,25 +316,25 @@ export function DashboardPage() {
   const { goals, load: loadGoals } = useGoalsStore()
   const { load: loadCampaigns } = useCampaignsStore()
   const { load: loadLeads }     = useCampaignLeadsStore()
-  const { year, month, isCurrentMonth } = usePeriodStore()
+  const { mode, year, month, isCurrentPeriod, getLabel } = usePeriodStore()
 
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks(); loadGoals()
     loadCampaigns(); loadLeads()
   }, [loadContacts, loadProperties, loadSales, loadTasks, loadGoals, loadCampaigns, loadLeads])
 
-  const isCurrent      = isCurrentMonth()
-  const periodLabel    = `${MONTHS_PT[month]} ${year}`
-  const salesInPeriod  = getByPeriod(year, month)
-  const valueInPeriod  = getValueByPeriod(year, month)
-  const recentSales    = sales.slice(0, 5)
-  const upcomingTasks  = getUpcoming()
-  const overdueTasks   = getOverdue()
-  const birthdays      = getBirthdaysThisMonth()
+  const isCurrent     = isCurrentPeriod()
+  const periodLabel   = getLabel()
+  const salesInPeriod = getByPeriod(mode, year, month)
+  const valueInPeriod = getValueByPeriod(mode, year, month)
+  const recentSales   = sales.slice(0, 5)
+  const upcomingTasks = getUpcoming()
+  const overdueTasks  = getOverdue()
+  const birthdays     = getBirthdaysThisMonth()
 
   // Comissões do período selecionado
-  const periodComm  = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
-  const periodBroker= salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
+  const periodComm   = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
+  const periodBroker = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
 
   const greeting = () => {
     const h = new Date().getHours()
@@ -347,10 +347,9 @@ export function DashboardPage() {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
   })
 
-  const newContactsInPeriod = contacts.filter(c => {
-    const parts = c.createdAt.split('-')
-    return Number(parts[0]) === year && Number(parts[1]) === month + 1
-  }).length
+  const newContactsInPeriod = contacts.filter(c =>
+    matchesPeriod(c.createdAt.split('T')[0], mode, year, month)
+  ).length
 
   return (
     <PageLayout
@@ -391,7 +390,7 @@ export function DashboardPage() {
           accent="green"
         />
         <StatCard
-          label={`Vendas em ${MONTHS_PT[month].toLowerCase()}`}
+          label={`Vendas — ${periodLabel}`}
           value={formatCurrency(valueInPeriod)}
           sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''}`}
           icon={<TrendingUp size={18} />}
@@ -403,14 +402,14 @@ export function DashboardPage() {
       {salesInPeriod.length > 0 && (
         <div className="grid grid-cols-2 gap-4 mb-8">
           <StatCard
-            label={`Comissão gerada em ${MONTHS_PT[month].toLowerCase()}`}
+            label={`Comissão gerada — ${periodLabel}`}
             value={formatCurrencyFull(periodComm)}
             sub="soma das comissões negociadas no período"
             icon={<DollarSign size={18} />}
             accent="purple"
           />
           <StatCard
-            label={`Sua comissão em ${MONTHS_PT[month].toLowerCase()}`}
+            label={`Sua comissão — ${periodLabel}`}
             value={formatCurrencyFull(periodBroker)}
             sub="sua parte no período selecionado"
             icon={<TrendingUp size={18} />}

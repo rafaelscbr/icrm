@@ -27,7 +27,7 @@ export function Sidebar() {
   const [toolsOpen, setToolsOpen] = useState(false)
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-[#0d0f1a] border-r border-white/7 flex flex-col h-screen sticky top-0">
+    <aside className="hidden lg:flex w-56 flex-shrink-0 bg-[#0d0f1a] border-r border-white/7 flex-col h-screen sticky top-0">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/7">
         <div className="flex items-center gap-2.5">

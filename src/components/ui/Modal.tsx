@@ -9,10 +9,10 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg'
 }
 
-const sizes = {
-  sm: 'max-w-md',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
+const desktopSizes = {
+  sm: 'lg:max-w-md',
+  md: 'lg:max-w-lg',
+  lg: 'lg:max-w-2xl',
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
@@ -20,35 +20,49 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
-    if (isOpen) document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
+    if (isOpen) {
+      document.addEventListener('keydown', handler)
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.removeEventListener('keydown', handler)
+      document.body.style.overflow = ''
+    }
   }, [isOpen, onClose])
 
   if (!isOpen) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end lg:items-center justify-center lg:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         className={`
-          relative w-full ${sizes[size]} bg-[#1A1D27] border border-white/10
-          rounded-2xl shadow-2xl shadow-black/50
-          animate-in fade-in zoom-in-95 duration-150
+          relative w-full ${desktopSizes[size]}
+          bg-[#1A1D27] border border-white/10
+          rounded-t-2xl lg:rounded-2xl
+          shadow-2xl shadow-black/50
+          max-h-[92vh] overflow-y-auto
+          animate-in fade-in slide-in-from-bottom-4 lg:zoom-in-95 duration-200
         `}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+        {/* Handle — mobile only */}
+        <div className="flex justify-center pt-3 pb-1 lg:hidden">
+          <div className="w-10 h-1 bg-white/20 rounded-full" />
+        </div>
+
+        <div className="flex items-center justify-between px-5 lg:px-6 py-3.5 lg:py-4 border-b border-white/8">
           <h2 className="text-base font-semibold text-slate-100">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/8 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/8 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
           >
             <X size={16} />
           </button>
         </div>
-        <div className="px-6 py-6">{children}</div>
+        <div className="px-5 lg:px-6 py-5 lg:py-6">{children}</div>
       </div>
     </div>
   )

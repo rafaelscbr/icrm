@@ -68,23 +68,23 @@ export function ContactsPage() {
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
       {/* Filters */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             value={query}
             onChange={e => { setQuery(e.target.value); setPage(1) }}
             placeholder="Buscar contato..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all min-h-[44px]"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">
           {FILTER_OPTIONS.map(opt => (
             <button
               key={String(opt.value)}
               onClick={() => { setActiveTag(opt.value); setQuery(''); setPage(1) }}
               className={`
-                px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
+                flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
                 ${activeTag === opt.value && !query
                   ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
                   : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'

@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { localDateStr } from '../../store/useDailyLogsStore'
-import { usePeriodStore, MONTHS_PT } from '../../store/usePeriodStore'
+import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
 import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -57,7 +57,7 @@ export function ReportsTab() {
   const { contacts,   load: loadContacts   } = useContactsStore()
   const { properties, load: loadProperties } = usePropertiesStore()
   const { logs,       load: loadLogs       } = useDailyLogsStore()
-  const { year, month } = usePeriodStore()
+  const { mode, year, month, getLabel } = usePeriodStore()
 
   useEffect(() => {
     loadSales(); loadContacts(); loadProperties(); loadLogs()
@@ -65,22 +65,30 @@ export function ReportsTab() {
 
   // ── Sales charts ─────────────────────────────────────────────────────────
   const monthlySales = useMemo(() => {
-    const refNow = new Date()
+    if (mode === 'year') {
+      // Mostra os 12 meses do ano selecionado
+      return Array.from({ length: 12 }, (_, i) => {
+        const items = sales.filter(s => {
+          const parts = s.date.split('-')
+          return Number(parts[0]) === year && Number(parts[1]) === i + 1
+        })
+        return { name: MONTH_NAMES[i], valor: items.reduce((acc, s) => acc + s.value, 0), qtd: items.length }
+      })
+    }
+    // month ou all: últimos 6 meses a partir do mês/ano selecionado (ou atual no modo all)
+    const refYear  = mode === 'all' ? new Date().getFullYear() : year
+    const refMonth = mode === 'all' ? new Date().getMonth()    : month
     return Array.from({ length: 6 }, (_, i) => {
-      const d     = new Date(refNow.getFullYear(), refNow.getMonth() - (5 - i), 1)
-      const month = d.getMonth()
-      const year  = d.getFullYear()
+      const d   = new Date(refYear, refMonth - (5 - i), 1)
+      const m   = d.getMonth()
+      const y   = d.getFullYear()
       const items = sales.filter(s => {
         const sd = new Date(s.date)
-        return sd.getMonth() === month && sd.getFullYear() === year
+        return sd.getMonth() === m && sd.getFullYear() === y
       })
-      return {
-        name:  MONTH_NAMES[month],
-        valor: items.reduce((acc, s) => acc + s.value, 0),
-        qtd:   items.length,
-      }
+      return { name: MONTH_NAMES[m], valor: items.reduce((acc, s) => acc + s.value, 0), qtd: items.length }
     })
-  }, [sales])
+  }, [sales, mode, year, month])
 
   const propByStatus = useMemo(() => [
     { name: 'Oportunidade',     value: properties.filter(p => p.status === 'opportunity').length,   color: PIE_COLORS.opportunity   },
@@ -113,39 +121,47 @@ export function ReportsTab() {
     return result
   }, [logs])
 
-  // Monthly productivity stats — período selecionado pelo PeriodSelector
+  // ── Logs filtrados pelo período ───────────────────────────────────────────
+  const periodLabel = getLabel()
   const pad = (n: number) => String(n).padStart(2, '0')
-  const monthStart     = `${year}-${pad(month + 1)}-01`
-  const lastDayOfMonth = new Date(year, month + 1, 0)
-  const monthEnd       = localDateStr(lastDayOfMonth)
-  const monthLogs      = logs.filter(l => l.date >= monthStart && l.date <= monthEnd)
 
-  const monthLeads  = monthLogs.reduce((a, l) => a + l.newLeads, 0)
-  const monthCalls  = monthLogs.reduce((a, l) => a + l.ownerCalls, 0)
-  const monthFunnel = monthLogs.filter(l => l.funnelFollowup).length
-  const monthDays   = monthLogs.filter(l => l.closed).length
+  // Intervalo de datas para mês, ano ou geral
+  const periodStart = mode === 'all' ? '0000-01-01'
+    : mode === 'year' ? `${year}-01-01`
+    : `${year}-${pad(month + 1)}-01`
+  const periodEnd = mode === 'all' ? '9999-12-31'
+    : mode === 'year' ? `${year}-12-31`
+    : localDateStr(new Date(year, month + 1, 0))
 
-  // Targets mensais: leads = todos os dias, ligações = seg-sex, funil = seg-sáb
-  function countDayTypes(y: number, m: number, weekdays: number[]): number {
+  const periodLogs  = logs.filter(l => l.date >= periodStart && l.date <= periodEnd)
+  const monthLeads  = periodLogs.reduce((a, l) => a + l.newLeads, 0)
+  const monthCalls  = periodLogs.reduce((a, l) => a + l.ownerCalls, 0)
+  const monthFunnel = periodLogs.filter(l => l.funnelFollowup).length
+  const monthDays   = periodLogs.filter(l => l.closed).length
+
+  // Targets — calculados para o intervalo do período
+  function countDayTypes(start: string, end: string, weekdays: number[]): number {
     let count = 0
-    const d = new Date(y, m, 1)
-    while (d.getMonth() === m) {
+    const d = new Date(start + 'T12:00:00')
+    const e = new Date(end   + 'T12:00:00')
+    while (d <= e) {
       if (weekdays.includes(d.getDay())) count++
       d.setDate(d.getDate() + 1)
     }
     return count
   }
-  const daysInMonth       = new Date(year, month + 1, 0).getDate()
-  const weekdaysInMonth   = countDayTypes(year, month, [1,2,3,4,5])
-  const monSatInMonth     = countDayTypes(year, month, [1,2,3,4,5,6])
-  const monthTargetLeads  = daysInMonth     * DAILY_TARGETS.newLeads
-  const monthTargetCalls  = weekdaysInMonth * DAILY_TARGETS.ownerCalls
-  const monthTargetFunnel = monSatInMonth
+  const showTargets     = mode !== 'all'
+  const totalDays       = showTargets ? countDayTypes(periodStart, periodEnd, [0,1,2,3,4,5,6]) : 0
+  const weekdaysCount   = showTargets ? countDayTypes(periodStart, periodEnd, [1,2,3,4,5])     : 0
+  const monSatCount     = showTargets ? countDayTypes(periodStart, periodEnd, [1,2,3,4,5,6])   : 0
+  const targetLeads     = totalDays   * DAILY_TARGETS.newLeads
+  const targetCalls     = weekdaysCount * DAILY_TARGETS.ownerCalls
+  const targetFunnel    = monSatCount
 
   // Sales do período selecionado
   const periodSales = useMemo(
-    () => sales.filter(s => s.date >= monthStart && s.date <= monthEnd),
-    [sales, monthStart, monthEnd]
+    () => sales.filter(s => matchesPeriod(s.date, mode, year, month)),
+    [sales, mode, year, month]
   )
 
   return (
@@ -155,7 +171,7 @@ export function ReportsTab() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Produtividade — {MONTHS_PT[month]} {year}
+            Produtividade — {periodLabel}
           </h2>
           <PeriodSelector />
         </div>
@@ -163,28 +179,28 @@ export function ReportsTab() {
           <StatCard
             label="Leads gerados"
             value={monthLeads}
-            sub={`meta ${monthTargetLeads} (${daysInMonth} dias)`}
+            sub={showTargets ? `meta ${targetLeads} (${totalDays} dias)` : 'total acumulado'}
             icon={<UserPlus size={18} />}
             accent="indigo"
           />
           <StatCard
             label="Ligações propr."
             value={monthCalls}
-            sub={`meta ${monthTargetCalls} (seg–sex)`}
+            sub={showTargets ? `meta ${targetCalls} (seg–sex)` : 'total acumulado'}
             icon={<Phone size={18} />}
             accent="blue"
           />
           <StatCard
             label="Funil feito"
             value={`${monthFunnel}d`}
-            sub={`meta ${monthTargetFunnel} dias (seg–sáb)`}
+            sub={showTargets ? `meta ${targetFunnel} dias (seg–sáb)` : 'total acumulado'}
             icon={<MessageSquare size={18} />}
             accent="green"
           />
           <StatCard
             label="Dias fechados"
             value={monthDays}
-            sub="dias com registro"
+            sub={showTargets ? `de ${totalDays} dias no período` : 'total acumulado'}
             icon={<TrendingUp size={18} />}
             accent="purple"
           />
@@ -225,7 +241,7 @@ export function ReportsTab() {
             accent="green"
           />
           <StatCard
-            label={`Vendas em ${MONTHS_PT[month].slice(0,3)}`}
+            label={`Vendas — ${periodLabel}`}
             value={periodSales.length}
             sub={formatCurrency(periodSales.reduce((a, s) => a + s.value, 0))}
             icon={<TrendingUp size={18} />}
@@ -248,7 +264,9 @@ export function ReportsTab() {
         </div>
 
         <Card className="mb-6">
-          <h2 className="text-sm font-medium text-slate-300 mb-6">Volume de vendas — últimos 6 meses</h2>
+          <h2 className="text-sm font-medium text-slate-300 mb-6">
+            Volume de vendas — {mode === 'year' ? `Jan–Dez ${year}` : 'últimos 6 meses'}
+          </h2>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={monthlySales} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
@@ -269,7 +287,9 @@ export function ReportsTab() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <h2 className="text-sm font-medium text-slate-300 mb-6">Quantidade de vendas por mês</h2>
+            <h2 className="text-sm font-medium text-slate-300 mb-6">
+              Quantidade de vendas — {mode === 'year' ? `Jan–Dez ${year}` : 'últimos 6 meses'}
+            </h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={monthlySales} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />

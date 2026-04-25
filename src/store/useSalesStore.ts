@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { Sale } from '../types'
 import { generateId } from '../lib/formatters'
-import { isInPeriod } from './usePeriodStore'
+import { PeriodMode, matchesPeriod } from './usePeriodStore'
 import { db } from '../lib/db'
 
 interface SalesStore {
@@ -11,13 +11,13 @@ interface SalesStore {
   add: (data: Omit<Sale, 'id' | 'createdAt'>) => Sale
   update: (id: string, data: Partial<Sale>) => void
   remove: (id: string) => void
-  // Métodos legados (mês atual do sistema — mantidos para retrocompatibilidade)
-  getThisMonth: () => Sale[]
-  getTotalValue: () => number
+  // Filtro por período arbitrário
+  getByPeriod:      (mode: PeriodMode, year: number, month: number) => Sale[]
+  getValueByPeriod: (mode: PeriodMode, year: number, month: number) => number
+  // Legado (mês atual do sistema — retrocompatibilidade)
+  getThisMonth:      () => Sale[]
+  getTotalValue:     () => number
   getThisMonthValue: () => number
-  // Métodos que aceitam período arbitrário (year/month 0-indexed)
-  getByPeriod:      (year: number, month: number) => Sale[]
-  getValueByPeriod: (year: number, month: number) => number
 }
 
 export const useSalesStore = create<SalesStore>((set, get) => ({
@@ -57,25 +57,25 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
 
   // ── Período arbitrário ────────────────────────────────────────────────────
 
-  getByPeriod: (year, month) =>
-    get().sales.filter(s => isInPeriod(s.date, year, month)),
+  getByPeriod: (mode, year, month) =>
+    get().sales.filter(s => matchesPeriod(s.date, mode, year, month)),
 
-  getValueByPeriod: (year, month) =>
+  getValueByPeriod: (mode, year, month) =>
     get().sales
-      .filter(s => isInPeriod(s.date, year, month))
+      .filter(s => matchesPeriod(s.date, mode, year, month))
       .reduce((acc, s) => acc + s.value, 0),
 
   // ── Legado (mês corrente) ─────────────────────────────────────────────────
 
   getThisMonth: () => {
     const n = new Date()
-    return get().getByPeriod(n.getFullYear(), n.getMonth())
+    return get().getByPeriod('month', n.getFullYear(), n.getMonth())
   },
 
   getTotalValue: () => get().sales.reduce((acc, s) => acc + s.value, 0),
 
   getThisMonthValue: () => {
     const n = new Date()
-    return get().getValueByPeriod(n.getFullYear(), n.getMonth())
+    return get().getValueByPeriod('month', n.getFullYear(), n.getMonth())
   },
 }))
