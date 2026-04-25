@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
   Building2, Megaphone, Target, BarChart3, X,
-  Search, Home, Tv2, ExternalLink, Zap, Wrench,
+  Search, Home, Tv2, ExternalLink,
 } from 'lucide-react'
 
 const mainNav = [

@@ -12,7 +12,7 @@ const MODES: { value: PeriodMode; label: string }[] = [
 ]
 
 export function PeriodSelector({ className = '' }: PeriodSelectorProps) {
-  const { mode, year, month, setMode, prev, next, reset, isCurrentPeriod, getLabel } = usePeriodStore()
+  const { mode, year, month, setMode, prev, next, reset, isCurrentPeriod } = usePeriodStore()
   const isCurrent = isCurrentPeriod()
 
   const nowYear  = new Date().getFullYear()
