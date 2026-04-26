@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Target, Pencil, Trash2, TrendingUp, CheckCircle2,
   Calendar, CalendarDays, Footprints, Handshake, FileText, BadgeDollarSign,
-  CalendarCheck, ClipboardList
+  CalendarCheck, ClipboardList, History,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -11,6 +12,7 @@ import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { GoalForm } from './GoalForm'
 import { useGoalsStore, calcProgress, getVisitMetrics } from '../../store/useGoalsStore'
+import { useWeekSnapshotStore } from '../../store/useWeekSnapshotStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { Goal, GoalCategory, Task } from '../../types'
@@ -180,14 +182,20 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export function GoalsPage() {
-  const { goals, load, remove, update } = useGoalsStore()
-  const { tasks, load: loadTasks }      = useTasksStore()
-  const { sales, load: loadSales }      = useSalesStore()
-  const [formOpen,     setFormOpen]     = useState(false)
-  const [editing,      setEditing]      = useState<Goal | undefined>()
-  const [deleteTarget, setDeleteTarget] = useState<Goal | undefined>()
+  const { goals, load, remove, update }   = useGoalsStore()
+  const { tasks, load: loadTasks }        = useTasksStore()
+  const { sales, load: loadSales }        = useSalesStore()
+  const { checkAndSave, snapshots }       = useWeekSnapshotStore()
+  const [formOpen,     setFormOpen]       = useState(false)
+  const [editing,      setEditing]        = useState<Goal | undefined>()
+  const [deleteTarget, setDeleteTarget]   = useState<Goal | undefined>()
 
   useEffect(() => { load(); loadTasks(); loadSales() }, [load, loadTasks, loadSales])
+
+  // Archive past weeks whenever data loads
+  useEffect(() => {
+    if (goals.length > 0) checkAndSave(tasks, sales, goals)
+  }, [goals, tasks, sales, checkAndSave])
 
   const active   = goals.filter(g => g.active)
   const inactive = goals.filter(g => !g.active)
@@ -211,6 +219,17 @@ export function GoalsPage() {
       ctaLabel="Nova Meta"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
+      {/* History shortcut */}
+      {snapshots.length > 0 && (
+        <Link
+          to="/metas/historico"
+          className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 mb-6 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 transition-all"
+        >
+          <History size={12} />
+          Ver histórico semanal ({snapshots.length} semana{snapshots.length !== 1 ? 's' : ''})
+        </Link>
+      )}
+
       {goals.length === 0 ? (
         <EmptyState
           icon={<Target size={24} />}

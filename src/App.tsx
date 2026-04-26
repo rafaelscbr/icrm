@@ -9,6 +9,7 @@ import { SalesPage } from './modules/sales/SalesPage'
 import { PerformancePage } from './modules/performance/PerformancePage'
 import { TasksPage } from './modules/tasks/TasksPage'
 import { GoalsPage } from './modules/goals/GoalsPage'
+import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
 import { CampaignsPage } from './modules/campaigns/CampaignsPage'
 
 export default function App() {
@@ -23,7 +24,8 @@ export default function App() {
             <Route path="/imoveis" element={<PropertiesPage />} />
             <Route path="/vendas" element={<SalesPage />} />
             <Route path="/tarefas"     element={<TasksPage />} />
-            <Route path="/metas"       element={<GoalsPage />} />
+            <Route path="/metas"           element={<GoalsPage />} />
+            <Route path="/metas/historico" element={<WeekHistoryPage />} />
             <Route path="/campanhas"   element={<CampaignsPage />} />
             <Route path="/performance" element={<PerformancePage />} />
           </Routes>

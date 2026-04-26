@@ -157,3 +157,22 @@ export interface Goal {
   createdAt: string
   updatedAt: string
 }
+
+// ─── Histórico semanal ────────────────────────────────────────────────────────
+
+export interface WeekSnapshotEntry {
+  goalId:   string
+  goalName: string
+  category: GoalCategory
+  target:   number
+  achieved: number
+}
+
+export interface WeekSnapshot {
+  id:        string   // weekStart (YYYY-MM-DD) — PK
+  weekStart: string   // Monday YYYY-MM-DD
+  weekEnd:   string   // Sunday YYYY-MM-DD
+  entries:   WeekSnapshotEntry[]
+  score:     number   // 0–100
+  savedAt:   string
+}

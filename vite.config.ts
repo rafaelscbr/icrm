@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icon-maskable.svg'],
       manifest: {
-        name: 'iCRM — Gestão Imobiliária',
-        short_name: 'iCRM',
+        name: 'Souza Imobiliária',
+        short_name: 'Souza Imob',
         description: 'CRM imobiliário para gestão de contatos, vendas e performance',
         theme_color: '#0d0f1a',
         background_color: '#0f1117',

@@ -32,10 +32,10 @@ export function Sidebar() {
       <div className="px-5 py-5 border-b border-white/7">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-            <Zap size={15} className="text-white" fill="white" />
+            <span className="text-white text-xs font-bold tracking-tight">SI</span>
           </div>
           <div>
-            <span className="text-sm font-bold gradient-text tracking-tight">iCRM</span>
+            <span className="text-sm font-bold gradient-text tracking-tight">Souza Imobiliária</span>
             <p className="text-[10px] text-slate-600 -mt-0.5 leading-none">Gestão Imobiliária</p>
           </div>
         </div>

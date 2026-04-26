@@ -32,14 +32,21 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
   load: async () => {
     set({ loading: true })
     try {
-      const goals = await db.goals.fetchAll()
+      let goals = await db.goals.fetchAll()
       if (goals.length === 0) {
         const defaults = DEFAULT_GOALS.map(makeGoal)
         await Promise.all(defaults.map(g => db.goals.upsert(g)))
-        set({ goals: defaults })
+        goals = defaults
       } else {
-        set({ goals })
+        // Migration: weekly agenciamento target was incorrectly set to 8 (that's the monthly value)
+        const wrong = goals.find(g => g.category === 'agenciamento' && g.period === 'weekly' && g.target === 8)
+        if (wrong) {
+          const fixed = { ...wrong, target: 2, updatedAt: new Date().toISOString() }
+          await db.goals.upsert(fixed)
+          goals = goals.map(g => g.id === wrong.id ? fixed : g)
+        }
       }
+      set({ goals })
     } catch (err) {
       console.error('[goals] load:', err)
     } finally {
@@ -108,6 +115,20 @@ function toDateStr(iso?: string): string {
 }
 
 import { Task, Sale } from '../types'
+
+/** Computes progress for any goal within an explicit YYYY-MM-DD date range. */
+export function calcProgressForRange(goal: Goal, tasks: Task[], sales: Sale[], start: string, end: string): number {
+  if (goal.category === 'venda') {
+    return sales.filter(s => s.date >= start && s.date <= end).length
+  }
+  return tasks.filter(t => {
+    if (t.status !== 'done') return false
+    if (t.category !== (goal.category as GoalCategory)) return false
+    const dateStr = toDateStr(t.dueDate) || toDateStr(t.completedAt)
+    if (!dateStr) return false
+    return dateStr >= start && dateStr <= end
+  }).length
+}
 
 export function calcProgress(goal: Goal, tasks: Task[], sales: Sale[]): number {
   if (goal.category === 'venda') {

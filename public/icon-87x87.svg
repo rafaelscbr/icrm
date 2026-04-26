@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="87" height="87">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0d0f1a"></stop>
@@ -23,7 +23,7 @@
       <feDropShadow dx="0" dy="5" stdDeviation="16" flood-color="#7c3aed" flood-opacity="0.5"></feDropShadow>
     </filter>
     <clipPath id="rc">
-      <rect width="1024" height="1024" rx="230" ry="230"></rect>
+      <rect width="1024" height="1024" rx="20" ry="20"></rect>
     </clipPath>
   </defs>
   <g clip-path="url(#rc)">
