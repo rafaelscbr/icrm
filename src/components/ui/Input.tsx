@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, forwardRef } from 'react'
+import { InputHTMLAttributes, CSSProperties, forwardRef } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -6,7 +6,13 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, className = '', ...props }, ref) => {
+  ({ label, error, className = '', style, ...props }, ref) => {
+    // Garante tema escuro em inputs de data/hora no Safari (evita fundo branco)
+    const isDateOrTime = props.type === 'date' || props.type === 'time' || props.type === 'datetime-local'
+    const mergedStyle: CSSProperties = isDateOrTime
+      ? { colorScheme: 'dark', ...style }
+      : (style ?? {})
+
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
@@ -18,6 +24,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           {...props}
+          style={mergedStyle}
           className={`
             w-full bg-white/5 border rounded-xl px-3 py-3 text-sm text-slate-100 min-h-[44px]
             placeholder:text-slate-600
