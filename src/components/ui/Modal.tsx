@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -16,6 +16,10 @@ const desktopSizes = {
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  // Rastreia onde o mousedown começou para não fechar ao soltar o mouse
+  // fora do modal após selecionar texto dentro de um input
+  const mouseDownTarget = useRef<EventTarget | null>(null)
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -35,7 +39,13 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   return (
     <div
       className="fixed inset-0 z-50 flex items-end lg:items-center justify-center lg:p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onMouseDown={(e) => { mouseDownTarget.current = e.target }}
+      onClick={(e) => {
+        // Só fecha se o mousedown E o mouseup aconteceram no backdrop
+        if (e.target === e.currentTarget && mouseDownTarget.current === e.currentTarget) {
+          onClose()
+        }
+      }}
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
