@@ -22,7 +22,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             {...props}
             style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
             className={`
-              w-full bg-white/5 border rounded-xl px-3 py-3 pr-9 min-h-[44px]
+              w-full bg-[#1e2130] border rounded-xl px-3 py-3 pr-9 min-h-[44px]
               text-sm text-slate-100
               focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50
               transition-all duration-150 cursor-pointer

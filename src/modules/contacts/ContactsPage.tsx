@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, MessageCircle, Pencil, Trash2, Users } from 'lucide-react'
+import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
@@ -8,7 +8,9 @@ import { Avatar } from '../../components/ui/Avatar'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Modal } from '../../components/ui/Modal'
 import { ContactForm } from './ContactForm'
+import { TasksLinkedModal } from '../../components/shared/TasksLinkedModal'
 import { useContactsStore } from '../../store/useContactsStore'
+import { useTasksStore } from '../../store/useTasksStore'
 import { Contact, ContactTag } from '../../types'
 import { formatPhone, whatsappUrl, isBirthdayThisMonth } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -36,12 +38,14 @@ const PAGE_SIZE = 20
 
 export function ContactsPage() {
   const { contacts, load, remove, search, filterByTag } = useContactsStore()
+  const { tasks } = useTasksStore()
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<ContactTag | null>(null)
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Contact | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Contact | undefined>()
+  const [tasksContact, setTasksContact] = useState<Contact | undefined>()
 
   useEffect(() => { load() }, [load])
 
@@ -134,6 +138,24 @@ export function ContactsPage() {
                 ))}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Badge de tarefas vinculadas */}
+                {(() => {
+                  const count = tasks.filter(t => t.contactId === c.id).length
+                  return (
+                    <button
+                      onClick={() => setTasksContact(c)}
+                      className="relative p-2 rounded-lg hover:bg-indigo-500/10 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer"
+                      title="Ver tarefas vinculadas"
+                    >
+                      <ClipboardList size={15} />
+                      {count > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-indigo-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
+                          {count > 9 ? '9+' : count}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })()}
                 <a
                   href={whatsappUrl(c.phone)}
                   target="_blank"
@@ -186,6 +208,15 @@ export function ContactsPage() {
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
         contact={editing}
+      />
+
+      {/* Modal de tarefas vinculadas */}
+      <TasksLinkedModal
+        isOpen={Boolean(tasksContact)}
+        onClose={() => setTasksContact(undefined)}
+        title={tasksContact?.name ?? ''}
+        subtitle={[tasksContact?.company, tasksContact?.phone].filter(Boolean).join(' · ')}
+        contactId={tasksContact?.id}
       />
 
       {/* Delete confirm */}

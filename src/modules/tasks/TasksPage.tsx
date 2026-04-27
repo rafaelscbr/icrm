@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CheckCircle2, Circle, Clock, Trash2, Pencil, User,
   Building2, AlertTriangle, CheckCheck, ListTodo, CalendarClock,
-  Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp
+  Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
+  BarChart2
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -10,6 +12,7 @@ import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Modal } from '../../components/ui/Modal'
 import { TaskForm } from './TaskForm'
+import { TaskHistoryView } from './TaskHistoryView'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
@@ -144,6 +147,7 @@ interface TaskRowProps {
 }
 
 function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, onToggle, onEdit, onDelete, onCalendar }: TaskRowProps) {
+  const navigate = useNavigate()
   const contact  = contacts.find(c => c.id === t.contactId)
   const property = properties.find(p => p.id === t.propertyId)
   const { label: dateLabel, isToday, overdue } = formatDateLabel(t.dueDate, t.dueTime)
@@ -211,14 +215,20 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
           )}
 
           {contact && (
-            <span className="flex items-center gap-1 text-xs text-slate-500">
-              <User size={11} className="text-indigo-400" /> {contact.name}
-            </span>
+            <button
+              onClick={() => navigate('/contatos')}
+              className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 hover:underline transition-colors cursor-pointer"
+            >
+              <User size={11} /> {contact.name}
+            </button>
           )}
           {property && (
-            <span className="flex items-center gap-1 text-xs text-slate-500">
-              <Building2 size={11} className="text-cyan-400" /> {property.name}
-            </span>
+            <button
+              onClick={() => navigate('/imoveis')}
+              className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors cursor-pointer"
+            >
+              <Building2 size={11} /> {property.name}
+            </button>
           )}
 
           {isDone && t.completedAt && (
@@ -317,6 +327,7 @@ export function TasksPage() {
   const [editing,      setEditing]      = useState<Task | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Task | undefined>()
   const [showDone,     setShowDone]     = useState(false)
+  const [activeTab,    setActiveTab]    = useState<'tasks' | 'history'>('tasks')
 
   useEffect(() => { load(); loadContacts(); loadProperties() }, [load, loadContacts, loadProperties])
 
@@ -391,6 +402,36 @@ export function TasksPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
+      {/* Tab toggle */}
+      <div className="flex gap-1 p-1 bg-white/5 rounded-xl border border-white/8 mb-6 self-start">
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
+            ${activeTab === 'tasks'
+              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+            }`}
+        >
+          <ListTodo size={14} /> Tarefas
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
+            ${activeTab === 'history'
+              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+            }`}
+        >
+          <BarChart2 size={14} /> Resumo por dia
+        </button>
+      </div>
+
+      {/* ── Aba Histórico ── */}
+      {activeTab === 'history' && <TaskHistoryView tasks={tasks} />}
+
+      {/* ── Aba Tarefas ── */}
+      {activeTab === 'tasks' && <>
+
       {/* Smart greeting banner */}
       {!isEmpty && <SmartBanner tasks={tasks} />}
 
@@ -476,6 +517,8 @@ export function TasksPage() {
           )}
         </>
       )}
+
+      </> /* fim aba tasks */}
 
       <TaskForm key={editing?.id ?? 'new'} isOpen={formOpen} onClose={() => setFormOpen(false)} task={editing} />
 

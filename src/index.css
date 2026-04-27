@@ -23,9 +23,33 @@
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 
-  input[type='date']::-webkit-calendar-picker-indicator {
-    filter: invert(0.5);
+  /* ── Safari: força tema escuro em inputs nativos ── */
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    color-scheme: dark;
+    -webkit-appearance: none;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    filter: invert(0.6) brightness(1.2);
     cursor: pointer;
+    opacity: 0.7;
+  }
+
+  /* ── Safari: força tema escuro em selects ── */
+  select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    color-scheme: dark;
+    background-color: #1e2130;
+  }
+  /* Remove o highlight azul nativo do Safari em options */
+  select option {
+    background-color: #1A1D27;
+    color: #e2e8f0;
   }
 }
 

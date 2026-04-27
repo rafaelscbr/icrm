@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
   Search, Building2, Pencil, Trash2, ImageOff,
-  TrendingUp, Landmark, MapPin, BadgePercent,
+  TrendingUp, Landmark, MapPin, BadgePercent, ClipboardList,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -10,8 +10,10 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { Modal } from '../../components/ui/Modal'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { PropertyForm } from './PropertyForm'
+import { TasksLinkedModal } from '../../components/shared/TasksLinkedModal'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
+import { useTasksStore } from '../../store/useTasksStore'
 import { Property, PropertyStatus } from '../../types'
 import { formatCurrencyFull } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -149,11 +151,13 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
 export function PropertiesPage() {
   const { properties, load, remove, search, filterByStatus } = usePropertiesStore()
   const { load: loadContacts, getById } = useContactsStore()
+  const { tasks } = useTasksStore()
   const [query, setQuery] = useState('')
   const [activeStatus, setActiveStatus] = useState<PropertyStatus | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Property | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Property | undefined>()
+  const [tasksProperty, setTasksProperty] = useState<Property | undefined>()
 
   useEffect(() => { load(); loadContacts() }, [load, loadContacts])
 
@@ -283,6 +287,23 @@ export function PropertiesPage() {
                   )}
 
                   <div className="flex gap-2 mt-auto pt-2 border-t border-white/5">
+                    {/* Botão tarefas com badge de contagem */}
+                    {(() => {
+                      const count = tasks.filter(t => t.propertyId === p.id).length
+                      return (
+                        <button
+                          onClick={() => setTasksProperty(p)}
+                          className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer text-xs font-medium border border-white/8 hover:border-indigo-500/30"
+                          title="Ver tarefas vinculadas"
+                        >
+                          <ClipboardList size={13} />
+                          {count > 0
+                            ? <span className="text-indigo-400 font-bold">{count}</span>
+                            : <span>Tarefas</span>
+                          }
+                        </button>
+                      )
+                    })()}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -311,6 +332,15 @@ export function PropertiesPage() {
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
         property={editing}
+      />
+
+      {/* Modal de tarefas vinculadas */}
+      <TasksLinkedModal
+        isOpen={Boolean(tasksProperty)}
+        onClose={() => setTasksProperty(undefined)}
+        title={tasksProperty?.name ?? ''}
+        subtitle={[tasksProperty?.neighborhood, tasksProperty?.city].filter(Boolean).join(' · ')}
+        propertyId={tasksProperty?.id}
       />
 
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir imóvel" size="sm">
