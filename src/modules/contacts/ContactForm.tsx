@@ -153,20 +153,13 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
                 onChange={e => setCompany(e.target.value)}
                 placeholder="Construtora ABC"
               />
-              {/* Data de nascimento — value controlado impede Safari de puxar data de hoje */}
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Data de nascimento
-                </label>
-                <input
-                  type="date"
-                  value={birthdate}
-                  onChange={e => setBirthdate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 transition-all cursor-pointer"
-                  style={{ colorScheme: 'dark' }}
-                />
-              </div>
+              <Input
+                label="Data de nascimento"
+                type="date"
+                value={birthdate}
+                onChange={e => setBirthdate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+              />
             </div>
           )}
         </div>
