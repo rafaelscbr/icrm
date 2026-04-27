@@ -26,17 +26,22 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
   const { add, update } = useContactsStore()
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const [name, setName] = useState(contact?.name ?? '')
-  const [phone, setPhone] = useState(contact?.phone ?? '')
-  const [company, setCompany] = useState(contact?.company ?? '')
+  const [name, setName]           = useState(contact?.name ?? '')
+  const [phone, setPhone]         = useState(contact?.phone ?? '')
+  const [company, setCompany]     = useState(contact?.company ?? '')
   const [birthdate, setBirthdate] = useState(contact?.birthdate ?? '')
-  const [photoUrl, setPhotoUrl] = useState(contact?.photoUrl ?? '')
-  const [tags, setTags] = useState<ContactTag[]>(contact?.tags ?? defaultTags)
+  const [photoUrl, setPhotoUrl]   = useState(contact?.photoUrl ?? '')
+  const [tags, setTags]           = useState<ContactTag[]>(contact?.tags ?? defaultTags)
   const [isMarried, setIsMarried] = useState(contact?.isMarried ?? false)
-  const [spouseName, setSpouseName] = useState(contact?.spouseName ?? '')
-  const [hasChildren, setHasChildren] = useState(contact?.hasChildren ?? false)
+  const [spouseName, setSpouseName]       = useState(contact?.spouseName ?? '')
+  const [hasChildren, setHasChildren]     = useState(contact?.hasChildren ?? false)
   const [childrenNames, setChildrenNames] = useState(contact?.childrenNames ?? '')
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors]       = useState<Record<string, string>>({})
+
+  // Toggle "Informações do lead" — ativo se estiver editando e já tiver empresa ou aniversário
+  const [showLeadInfo, setShowLeadInfo] = useState(
+    Boolean(contact?.company || contact?.birthdate)
+  )
 
   const isEditing = Boolean(contact)
 
@@ -65,14 +70,14 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
     if (!validate()) return
 
     const data = {
-      name: name.trim(),
-      phone: phone.trim(),
-      company: company.trim() || undefined,
-      birthdate: birthdate || undefined,
+      name:     name.trim(),
+      phone:    phone.trim(),
+      company:  showLeadInfo ? (company.trim() || undefined) : undefined,
+      birthdate: showLeadInfo ? (birthdate || undefined) : undefined,
       photoUrl: photoUrl || undefined,
       tags,
       isMarried,
-      spouseName: isMarried ? spouseName.trim() : undefined,
+      spouseName:    isMarried ? spouseName.trim() : undefined,
       hasChildren,
       childrenNames: hasChildren ? childrenNames.trim() : undefined,
     }
@@ -91,6 +96,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Contato' : 'Novo Contato'}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+
         {/* Photo */}
         <div className="flex flex-col items-center gap-2">
           <button
@@ -110,7 +116,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
           </button>
         </div>
 
-        {/* Name + Phone */}
+        {/* Nome + Telefone — sempre visíveis */}
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Nome"
@@ -131,20 +137,38 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
           />
         </div>
 
-        {/* Company + Birthdate */}
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Empresa"
-            value={company}
-            onChange={e => setCompany(e.target.value)}
-            placeholder="Construtora ABC"
+        {/* Toggle Informações do lead */}
+        <div className="flex flex-col gap-3">
+          <Toggle
+            label="Informações do lead"
+            checked={showLeadInfo}
+            onChange={setShowLeadInfo}
           />
-          <Input
-            label="Data de nascimento"
-            type="date"
-            value={birthdate}
-            onChange={e => setBirthdate(e.target.value)}
-          />
+
+          {showLeadInfo && (
+            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-150">
+              <Input
+                label="Empresa"
+                value={company}
+                onChange={e => setCompany(e.target.value)}
+                placeholder="Construtora ABC"
+              />
+              {/* Data de nascimento — value controlado impede Safari de puxar data de hoje */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Data de nascimento
+                </label>
+                <input
+                  type="date"
+                  value={birthdate}
+                  onChange={e => setBirthdate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 transition-all cursor-pointer"
+                  style={{ colorScheme: 'dark' }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tags */}
@@ -173,7 +197,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
         {/* Divider */}
         <div className="border-t border-white/8" />
 
-        {/* Married */}
+        {/* Casado */}
         <div className="flex flex-col gap-3">
           <Toggle label="Casado(a)?" checked={isMarried} onChange={setIsMarried} />
           {isMarried && (
@@ -186,7 +210,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
           )}
         </div>
 
-        {/* Children */}
+        {/* Filhos */}
         <div className="flex flex-col gap-3">
           <Toggle label="Tem filhos?" checked={hasChildren} onChange={setHasChildren} />
           {hasChildren && (

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, Users, Building2, TrendingUp, BarChart3, Zap,
+  LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown, ExternalLink, Tv2
 } from 'lucide-react'
 
