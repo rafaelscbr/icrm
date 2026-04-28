@@ -348,11 +348,12 @@ export const db = {
   dailyLogs: {
     fetchAll: () => fetchAll<DailyLogRow, DailyLog>('daily_logs', toDailyLog),
     upsert: async (l: DailyLog) => {
-      // onConflict: 'id' — usa a PK para garantir upsert correto.
-      // Anteriormente usava 'date', o que exigia UNIQUE constraint na coluna date.
+      // O banco tem UNIQUE constraint em "date" (daily_logs_date_key).
+      // onConflict: 'date' garante que se já existe um registro para esse dia,
+      // ele é atualizado em vez de tentar inserir um novo (que violaria a constraint).
       const { error } = await supabase
         .from('daily_logs')
-        .upsert(fromDailyLog(l), { onConflict: 'id' })
+        .upsert(fromDailyLog(l), { onConflict: 'date' })
       if (error) {
         toast.error(`Erro ao salvar em daily_logs: ${error.message}`)
         throw error

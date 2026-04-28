@@ -3,8 +3,9 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
   Building2, Megaphone, Target, BarChart3, X,
-  Search, Home, Tv2, ExternalLink,
+  Search, Home, Tv2, ExternalLink, Plus,
 } from 'lucide-react'
+import { TaskForm } from '../../modules/tasks/TaskForm'
 
 const mainNav = [
   { to: '/',          icon: LayoutDashboard, label: 'Início',   end: true,  color: 'text-indigo-400', activeGrad: 'from-indigo-500/20 to-violet-500/10' },
@@ -29,12 +30,22 @@ const tools = [
 
 export function BottomNav() {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [taskFormOpen, setTaskFormOpen] = useState(false)
   const location = useLocation()
 
   const isMoreActive = moreNav.some(item => location.pathname === item.to)
 
   return (
     <>
+      {/* ── Nova Tarefa FAB ────────────────────────────────────────────── */}
+      <button
+        onClick={() => setTaskFormOpen(true)}
+        className="lg:hidden fixed bottom-20 right-4 z-50 w-[52px] h-[52px] rounded-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 flex items-center justify-center shadow-xl shadow-indigo-500/40 border border-indigo-400/30 transition-all duration-150"
+        title="Nova tarefa"
+      >
+        <Plus size={22} className="text-white" strokeWidth={2.5} />
+      </button>
+
       {/* ── Bottom bar ─────────────────────────────────────────────────── */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0d0f1a]/95 backdrop-blur-xl border-t border-white/10">
         <div className="flex items-center justify-around h-16 px-1">
@@ -86,6 +97,12 @@ export function BottomNav() {
       </nav>
 
       {/* ── Drawer ─────────────────────────────────────────────────────── */}
+      {/* ── Task Form Modal ────────────────────────────────────────────── */}
+      <TaskForm
+        isOpen={taskFormOpen}
+        onClose={() => setTaskFormOpen(false)}
+      />
+
       {drawerOpen && (
         <div
           className="lg:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"

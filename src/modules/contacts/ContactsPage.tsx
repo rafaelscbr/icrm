@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList } from 'lucide-react'
+import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
@@ -41,6 +41,7 @@ export function ContactsPage() {
   const { tasks } = useTasksStore()
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<ContactTag | null>(null)
+  const [onlyWithTasks, setOnlyWithTasks] = useState(false)
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Contact | undefined>()
@@ -49,9 +50,13 @@ export function ContactsPage() {
 
   useEffect(() => { load() }, [load])
 
-  const filtered = query.trim()
-    ? search(query)
-    : filterByTag(activeTag)
+  const filtered = (() => {
+    let result = query.trim() ? search(query) : filterByTag(activeTag)
+    if (onlyWithTasks) {
+      result = result.filter(c => tasks.some(t => t.contactId === c.id && t.status !== 'done'))
+    }
+    return result
+  })()
 
   const total = filtered.length
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -98,6 +103,18 @@ export function ContactsPage() {
               {opt.label}
             </button>
           ))}
+          <button
+            onClick={() => { setOnlyWithTasks(v => !v); setPage(1) }}
+            className={`
+              flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
+              ${onlyWithTasks
+                ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
+                : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+              }
+            `}
+          >
+            <ListFilter size={12} /> Com tarefas
+          </button>
         </div>
       </div>
 

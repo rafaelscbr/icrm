@@ -5,19 +5,23 @@ import {
 } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { TaskForm } from '../../modules/tasks/TaskForm'
+import { ChecklistBadge } from './ChecklistBadge'
 import { useTasksStore } from '../../store/useTasksStore'
 import { Task, TaskCategory } from '../../types'
 
 // ─── config ───────────────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; label: string }> = {
-  visita:       { icon: Home,       color: 'text-cyan-400',   label: 'Visita'          },
-  agenciamento: { icon: Building2,  color: 'text-indigo-400', label: 'Agenciamento'    },
-  proposta:     { icon: FileText,   color: 'text-amber-400',  label: 'Proposta'        },
-  busca_imovel: { icon: TrendingUp, color: 'text-violet-400', label: 'Busca de Imóvel' },
-  outro:        { icon: Zap,        color: 'text-slate-400',  label: 'Outro'           },
+  visita:             { icon: Home,       color: 'text-cyan-400',    label: 'Visita'                },
+  agenciamento:       { icon: Building2,  color: 'text-indigo-400',  label: 'Agenciamento'          },
+  proposta:           { icon: FileText,   color: 'text-amber-400',   label: 'Proposta'              },
+  busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel'       },
+  prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis' },
+  campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas'             },
+  administrativo:     { icon: FileText,   color: 'text-slate-300',   label: 'Administrativo'        },
+  outro:              { icon: Zap,        color: 'text-slate-400',   label: 'Outro'                 },
 }
-const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'outro']
+const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'outro']
 
 function fmtDate(d?: string) {
   if (!d) return null
@@ -40,6 +44,12 @@ function TaskLine({ task, isLast }: { task: Task; isLast: boolean }) {
         </p>
         {task.description && (
           <p className="text-xs text-slate-600 truncate mt-0.5">{task.description}</p>
+        )}
+        {/* Checklist progress */}
+        {task.checklist && task.checklist.length > 0 && (
+          <div className="mt-1.5">
+            <ChecklistBadge checklist={task.checklist} size="sm" />
+          </div>
         )}
         <div className="flex items-center gap-3 flex-wrap mt-1">
           {task.dueDate && (

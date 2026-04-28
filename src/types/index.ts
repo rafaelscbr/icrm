@@ -46,7 +46,13 @@ export interface Property {
 
 export type TaskStatus    = 'pending' | 'done' | 'cancelled'
 export type TaskPriority  = 'low' | 'medium' | 'high'
-export type TaskCategory  = 'visita' | 'agenciamento' | 'proposta' | 'busca_imovel' | 'outro'
+export type TaskCategory  = 'visita' | 'agenciamento' | 'proposta' | 'busca_imovel' | 'campanhas' | 'administrativo' | 'prospeccao_imoveis' | 'outro'
+
+export interface ChecklistItem {
+  id: string
+  text: string
+  done: boolean
+}
 
 export interface Task {
   id: string
@@ -61,6 +67,7 @@ export interface Task {
   contactId?: string
   propertyId?: string
   googleEventId?: string
+  checklist?: ChecklistItem[]   // stored in localStorage, not in Supabase
   createdAt: string
   updatedAt: string
 }

@@ -18,7 +18,8 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5175/)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(grep -v \"\\\\.toISOString\\(\\)$\\\\|updatedAt\\\\|createdAt\\\\|completedAt\")"
     ]
   }
 }

@@ -44,6 +44,18 @@ export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+/**
+ * Retorna a data LOCAL (fuso do dispositivo) em formato YYYY-MM-DD.
+ * Evita o bug de usar toISOString() que converte para UTC e pode devolver
+ * o dia errado em fusos negativos como São Paulo (UTC-3).
+ */
+export function localDateStr(date: Date = new Date()): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 export function isBirthdayThisMonth(birthdate: string): boolean {
   const month = new Date().getMonth() + 1
   const bMonth = parseInt(birthdate.split('-')[1], 10)

@@ -1,15 +1,17 @@
-import { useState, useEffect, FormEvent } from 'react'
-import { Calendar, User, Building2, Plus, ExternalLink, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect, FormEvent, useMemo, useRef } from 'react'
+import { Calendar, User, Building2, Plus, ExternalLink, ChevronDown, ChevronUp, CheckCircle2, ListChecks, X } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { Textarea } from '../../components/ui/Textarea'
 import { Select } from '../../components/ui/Select'
 import { Button } from '../../components/ui/Button'
-import { Task, TaskCategory, TaskPriority } from '../../types'
+import { Task, TaskCategory, TaskPriority, ChecklistItem } from '../../types'
+import { generateId } from '../../lib/formatters'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
+import { localDateStr } from '../../lib/formatters'
 import { ContactForm } from '../contacts/ContactForm'
 import toast from 'react-hot-toast'
 
@@ -26,17 +28,21 @@ const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
 ]
 
 const CATEGORY_OPTIONS: { value: TaskCategory; label: string }[] = [
-  { value: 'visita',       label: 'Visita'          },
-  { value: 'agenciamento', label: 'Agenciamento'    },
-  { value: 'proposta',     label: 'Proposta'        },
-  { value: 'busca_imovel', label: 'Busca de Imóvel' },
-  { value: 'outro',        label: 'Outro'           },
+  { value: 'visita',             label: 'Visita'                 },
+  { value: 'agenciamento',       label: 'Agenciamento'           },
+  { value: 'proposta',           label: 'Proposta'               },
+  { value: 'busca_imovel',       label: 'Busca de Imóvel'        },
+  { value: 'prospeccao_imoveis', label: 'Prospecção de Imóveis'  },
+  { value: 'campanhas',          label: 'Campanhas'              },
+  { value: 'administrativo',     label: 'Administrativo'         },
+  { value: 'outro',              label: 'Outro'                  },
 ]
 
-// Classes base para inputs "inline" que não usam o componente Input
-// (busca de contato/imóvel) — idêntico ao Input component
+// Classes base para inputs inline (busca de contato/imóvel)
 const inputBase =
   'w-full bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-150'
+
+function todayStr() { return localDateStr() }
 
 export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
   const { add, update } = useTasksStore()
@@ -44,11 +50,12 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
   const { properties }  = usePropertiesStore()
   const isEditing = Boolean(task)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayStr()
 
+  // Data padrão: hoje (para nova tarefa), data da tarefa (para edição)
   const [title,       setTitle]       = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
-  const [dueDate,     setDueDate]     = useState(task?.dueDate ?? '')
+  const [dueDate,     setDueDate]     = useState(task?.dueDate ?? today)
   const [dueTime,     setDueTime]     = useState(task?.dueTime ?? '')
   const [priority,    setPriority]    = useState<TaskPriority>(task?.priority ?? 'medium')
   const [category,    setCategory]    = useState<TaskCategory | ''>(task?.category ?? '')
@@ -71,11 +78,18 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
   const [newContactOpen, setNewContactOpen] = useState(false)
   const [errors,         setErrors]         = useState<Record<string, string>>({})
 
+  // Checklist
+  const [checklist,      setChecklist]      = useState<ChecklistItem[]>(task?.checklist ?? [])
+  const [showChecklist,  setShowChecklist]  = useState(Boolean(task?.checklist?.length))
+  const [newItemText,    setNewItemText]    = useState('')
+  const newItemRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     if (!isOpen) return
     setTitle(task?.title ?? '')
     setDescription(task?.description ?? '')
-    setDueDate(task?.dueDate ?? '')
+    // Nova tarefa → padrão hoje; edição → data existente
+    setDueDate(task?.dueDate ?? todayStr())
     setDueTime(task?.dueTime ?? '')
     setPriority(task?.priority ?? 'medium')
     setCategory(task?.category ?? '')
@@ -85,7 +99,10 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
     setPropertySearch(task?.propertyId ? (properties.find(p => p.id === task.propertyId)?.name ?? '') : '')
     setShowOptional(Boolean(task?.contactId || task?.propertyId))
     setMarkDone(task?.status === 'done')
-    setCompletedDate(task?.completedAt ? task.completedAt.split('T')[0] : today)
+    setCompletedDate(task?.completedAt ? task.completedAt.split('T')[0] : todayStr())
+    setChecklist(task?.checklist ?? [])
+    setShowChecklist(Boolean(task?.checklist?.length))
+    setNewItemText('')
     setErrors({})
   }, [task, isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -96,6 +113,24 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
   const filteredProperties = propertySearch.trim()
     ? properties.filter(p => p.name.toLowerCase().includes(propertySearch.toLowerCase()))
     : properties.slice(0, 6)
+
+  // URL do Google Agenda — gerada sempre que título ou data mudam
+  // Usa <a href> em vez de window.open() para funcionar no Safari PWA
+  const calendarUrl = useMemo(() => {
+    if (!title.trim() || !dueDate) return null
+    const contact  = contacts.find(c => c.id === contactId)
+    const property = properties.find(p => p.id === propertyId)
+    const parts: string[] = []
+    if (description.trim()) parts.push(description.trim())
+    if (contact)  parts.push(`Lead: ${contact.name}`)
+    if (property) parts.push(`Imóvel: ${property.name}`)
+    return buildGoogleCalendarUrl({
+      title:       title.trim(),
+      description: parts.join('\n') || undefined,
+      date:        dueDate,
+      time:        dueTime || undefined,
+    })
+  }, [title, dueDate, dueTime, description, contactId, propertyId, contacts, properties])
 
   function validate() {
     const errs: Record<string, string> = {}
@@ -119,6 +154,7 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
       completedAt: markDone ? `${completedDate}T12:00:00.000Z` : undefined,
       contactId:   contactId  || undefined,
       propertyId:  propertyId || undefined,
+      checklist:   checklist.length > 0 ? checklist : undefined,
     }
 
     if (isEditing && task) {
@@ -129,27 +165,6 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
       toast.success('Tarefa criada')
     }
     onClose()
-  }
-
-  function handleAddToCalendar() {
-    if (!title.trim() || !dueDate) {
-      toast.error('Preencha o título e a data para adicionar ao Google Agenda')
-      return
-    }
-    const contact  = contacts.find(c => c.id === contactId)
-    const property = properties.find(p => p.id === propertyId)
-    const parts: string[] = []
-    if (description.trim()) parts.push(description.trim())
-    if (contact)  parts.push(`Lead: ${contact.name}`)
-    if (property) parts.push(`Imóvel: ${property.name}`)
-
-    const url = buildGoogleCalendarUrl({
-      title:       title.trim(),
-      description: parts.join('\n') || undefined,
-      date:        dueDate,
-      time:        dueTime || undefined,
-    })
-    window.open(url, '_blank')
   }
 
   return (
@@ -204,7 +219,7 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
 
           {/* Categoria */}
           <Select
-            label="Categoria (para metas)"
+            label="Categoria"
             value={category}
             onChange={e => setCategory(e.target.value as TaskCategory | '')}
           >
@@ -213,6 +228,34 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </Select>
+
+          {/* Google Agenda — sempre visível quando há título; usa <a> para funcionar no Safari */}
+          <a
+            href={calendarUrl ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => { if (!calendarUrl) { e.preventDefault(); toast.error('Preencha o título para adicionar ao Google Agenda') } }}
+            className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all group no-underline
+              ${calendarUrl
+                ? 'border-white/10 hover:border-indigo-500/40 hover:bg-indigo-500/5 cursor-pointer'
+                : 'border-white/5 opacity-40 cursor-not-allowed'
+              }`}
+          >
+            <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+              <Calendar size={14} className="text-indigo-400" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-xs font-medium text-slate-300 group-hover:text-indigo-300 transition-colors">
+                Adicionar ao Google Agenda
+              </p>
+              <p className="text-xs text-slate-600">
+                {dueDate
+                  ? `${dueDate.split('-').reverse().join('/')}${dueTime ? ` às ${dueTime}` : ''}`
+                  : 'Preencha o título primeiro'}
+              </p>
+            </div>
+            <ExternalLink size={13} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
+          </a>
 
           {/* Marcar como concluída */}
           <div className={`flex flex-col gap-3 px-4 py-3 rounded-xl border transition-all
@@ -244,27 +287,109 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
             )}
           </div>
 
-          {/* Adicionar ao Google Agenda */}
-          {dueDate && (
+          {/* Checklist */}
+          <div>
             <button
               type="button"
-              onClick={handleAddToCalendar}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-white/10 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all group cursor-pointer"
+              onClick={() => {
+                setShowChecklist(v => !v)
+                if (!showChecklist) setTimeout(() => newItemRef.current?.focus(), 50)
+              }}
+              className={`flex items-center gap-2 text-xs font-medium transition-colors cursor-pointer mb-3
+                ${showChecklist ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
             >
-              <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                <Calendar size={14} className="text-indigo-400" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-xs font-medium text-slate-300 group-hover:text-indigo-300 transition-colors">
-                  Adicionar ao Google Agenda
-                </p>
-                <p className="text-xs text-slate-600">
-                  {dueDate.split('-').reverse().join('/')}{dueTime ? ` às ${dueTime}` : ''}
-                </p>
-              </div>
-              <ExternalLink size={13} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
+              <ListChecks size={14} />
+              {showChecklist ? 'Checklist' : 'Adicionar checklist'}
+              {!showChecklist && checklist.length > 0 && (
+                <span className="text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-md text-[10px] font-bold">
+                  {checklist.filter(i => i.done).length}/{checklist.length}
+                </span>
+              )}
             </button>
-          )}
+
+            {showChecklist && (
+              <div className="flex flex-col gap-2 pl-1 border-l-2 border-indigo-500/20 ml-1">
+                {/* Progress bar */}
+                {checklist.length > 0 && (() => {
+                  const done = checklist.filter(i => i.done).length
+                  const pct  = Math.round((done / checklist.length) * 100)
+                  return (
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${pct === 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className={`text-[11px] font-bold tabular-nums flex-shrink-0 ${pct === 100 ? 'text-green-400' : 'text-slate-500'}`}>
+                        {done}/{checklist.length}
+                      </span>
+                    </div>
+                  )
+                })()}
+
+                {/* Items */}
+                {checklist.map(item => (
+                  <div key={item.id} className="flex items-center gap-2 group">
+                    <button
+                      type="button"
+                      onClick={() => setChecklist(cl => cl.map(i => i.id === item.id ? { ...i, done: !i.done } : i))}
+                      className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all cursor-pointer
+                        ${item.done
+                          ? 'bg-green-500 border-green-500'
+                          : 'border-white/25 hover:border-indigo-400'}`}
+                    >
+                      {item.done && <CheckCircle2 size={10} className="text-white" />}
+                    </button>
+                    <span className={`flex-1 text-sm transition-colors ${item.done ? 'line-through text-slate-600' : 'text-slate-300'}`}>
+                      {item.text}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setChecklist(cl => cl.filter(i => i.id !== item.id))}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-700 hover:text-red-400 transition-all cursor-pointer"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+
+                {/* New item input */}
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-4 h-4 rounded border border-white/15 flex-shrink-0" />
+                  <input
+                    ref={newItemRef}
+                    value={newItemText}
+                    onChange={e => setNewItemText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        const text = newItemText.trim()
+                        if (!text) return
+                        setChecklist(cl => [...cl, { id: generateId(), text, done: false }])
+                        setNewItemText('')
+                      }
+                    }}
+                    placeholder="Adicionar item..."
+                    className="flex-1 bg-transparent text-sm text-slate-300 placeholder:text-slate-700 focus:outline-none focus:placeholder:text-slate-600 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = newItemText.trim()
+                      if (!text) return
+                      setChecklist(cl => [...cl, { id: generateId(), text, done: false }])
+                      setNewItemText('')
+                      newItemRef.current?.focus()
+                    }}
+                    className="text-indigo-500 hover:text-indigo-400 transition-colors cursor-pointer p-1 rounded-lg hover:bg-indigo-500/10"
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Vincular lead ou imóvel */}
           <div>
@@ -375,7 +500,7 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
         </form>
       </Modal>
 
-      {/* Formulário de novo contato — usa o mesmo ContactForm atualizado */}
+      {/* Formulário de novo contato */}
       <ContactForm
         isOpen={newContactOpen}
         onClose={() => setNewContactOpen(false)}

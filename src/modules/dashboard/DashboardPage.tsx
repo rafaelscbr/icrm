@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   Users, Building2, TrendingUp, DollarSign, Cake, ArrowRight,
   Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
-  AlertTriangle, Clock, Target, CalendarCheck, Siren
+  AlertTriangle, Clock, Target, CalendarCheck, Siren, ClipboardCheck, ListTodo,
 } from 'lucide-react'
+import { useState } from 'react'
 import { Task, Contact, Property, calcSaleCommissions } from '../../types'
+import { TaskForm } from '../tasks/TaskForm'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
@@ -309,6 +311,7 @@ function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
 
 export function DashboardPage() {
   const navigate = useNavigate()
+  const [taskFormOpen, setTaskFormOpen] = useState(false)
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
   const { properties, load: loadProperties } = usePropertiesStore()
   const { sales, load: loadSales, getByPeriod, getValueByPeriod, getTotalValue } = useSalesStore()
@@ -346,16 +349,20 @@ export function DashboardPage() {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
   })
 
-  const newContactsInPeriod = contacts.filter(c =>
-    matchesPeriod(c.createdAt.split('T')[0], startDate, endDate)
+  // Tarefas do período
+  const tasksDoneInPeriod = tasks.filter(t =>
+    t.status === 'done' && t.completedAt && matchesPeriod(t.completedAt.split('T')[0], startDate, endDate)
+  ).length
+  const tasksPendingInPeriod = tasks.filter(t =>
+    t.status !== 'done' && t.dueDate && matchesPeriod(t.dueDate, startDate, endDate)
   ).length
 
   return (
     <PageLayout
       title={`${greeting()}, Rafael ✨`}
       subtitle={todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1)}
-      ctaLabel="Nova Venda"
-      onCta={() => navigate('/vendas?new=1')}
+      ctaLabel="Nova Tarefa"
+      onCta={() => setTaskFormOpen(true)}
     >
       {/* Seletor de período */}
       <div className="flex items-center justify-between mb-6">
@@ -364,33 +371,58 @@ export function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          label="Contatos"
-          value={contacts.length}
-          sub={`+${newContactsInPeriod} em ${periodLabel}`}
-          icon={<Users size={18} />}
-          accent="indigo"
-        />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Card combinado de tarefas */}
+        <Card className="!py-4 col-span-2 sm:col-span-1">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg leading-none">🔥</span>
+            <span className="text-xs text-slate-500">Tarefas — {periodLabel}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-2xl font-bold tabular-nums text-green-400">{tasksDoneInPeriod}</p>
+              <p className="text-[10px] text-slate-600 mt-0.5 flex items-center gap-1">
+                <ClipboardCheck size={9} className="text-green-500" /> realizadas
+              </p>
+            </div>
+            <div className="w-px h-10 bg-white/8 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-2xl font-bold tabular-nums text-indigo-400">{tasksPendingInPeriod}</p>
+              <p className="text-[10px] text-slate-600 mt-0.5 flex items-center gap-1">
+                <ListTodo size={9} className="text-indigo-500" /> pendentes
+              </p>
+            </div>
+          </div>
+          {tasksPendingInPeriod > 0 && (
+            <div className="mt-3 pt-2 border-t border-white/5">
+              <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-green-500 transition-all duration-500"
+                  style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </Card>
         <StatCard
           label="Imóveis"
           value={properties.length}
           sub={`${properties.filter(p => p.status === 'opportunity').length} oportunidades`}
-          icon={<Building2 size={18} />}
+          icon={<span className="text-lg leading-none">🏠</span>}
           accent="blue"
         />
         <StatCard
           label="Total acumulado"
           value={formatCurrency(getTotalValue())}
           sub={`${sales.length} vendas no total`}
-          icon={<DollarSign size={18} />}
+          icon={<span className="text-lg leading-none">💰</span>}
           accent="green"
         />
         <StatCard
           label={`Vendas — ${periodLabel}`}
           value={formatCurrency(valueInPeriod)}
           sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''}`}
-          icon={<TrendingUp size={18} />}
+          icon={<span className="text-lg leading-none">💰</span>}
           accent="purple"
         />
       </div>
@@ -590,6 +622,10 @@ export function DashboardPage() {
         </Card>
       )}
 
+      <TaskForm
+        isOpen={taskFormOpen}
+        onClose={() => setTaskFormOpen(false)}
+      />
     </PageLayout>
   )
 }

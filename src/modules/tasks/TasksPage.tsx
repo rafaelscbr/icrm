@@ -18,6 +18,8 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { Task, TaskPriority, TaskCategory } from '../../types'
 import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
+import { localDateStr } from '../../lib/formatters'
+import { ChecklistBadge } from '../../components/shared/ChecklistBadge'
 import toast from 'react-hot-toast'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -29,11 +31,14 @@ const PRIORITY_DOT: Record<TaskPriority, string> = {
 }
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; label: string; motto: string }> = {
-  visita:        { icon: Home,      color: 'text-cyan-400',    label: 'Visita',           motto: 'bora fechar negócio! 🏠'                },
-  agenciamento:  { icon: Building2, color: 'text-indigo-400',  label: 'Agenciamento',     motto: 'hora de ampliar o portfólio! 📋'        },
-  proposta:      { icon: FileText,  color: 'text-amber-400',   label: 'Proposta',         motto: 'proposta enviada é venda garantida! 💰'  },
-  busca_imovel:  { icon: TrendingUp, color: 'text-violet-400', label: 'Busca de Imóvel',  motto: 'encontre o imóvel certo para o lead! 🔍' },
-  outro:         { icon: Zap,       color: 'text-slate-400',   label: 'Outro',            motto: ''                                        },
+  visita:             { icon: Home,       color: 'text-cyan-400',    label: 'Visita',                motto: 'bora fechar negócio! 🏠'                },
+  agenciamento:       { icon: Building2,  color: 'text-indigo-400',  label: 'Agenciamento',          motto: 'hora de ampliar o portfólio! 📋'        },
+  proposta:           { icon: FileText,   color: 'text-amber-400',   label: 'Proposta',              motto: 'proposta enviada é venda garantida! 💰'  },
+  busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel',       motto: 'encontre o imóvel certo para o lead! 🔍' },
+  prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis', motto: 'novos imóveis no portfólio! 🏘️'          },
+  campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas',             motto: 'marketing em ação! 📣'                   },
+  administrativo:     { icon: FileText,   color: 'text-slate-300',   label: 'Administrativo',        motto: 'mantendo a casa em ordem! 📁'            },
+  outro:              { icon: Zap,        color: 'text-slate-400',   label: 'Outro',                 motto: ''                                        },
 }
 
 function getGreeting() {
@@ -43,7 +48,7 @@ function getGreeting() {
   return 'Boa noite'
 }
 
-function todayStr() { return new Date().toISOString().split('T')[0] }
+function todayStr() { return localDateStr() }
 
 function sortKey(t: Task): string {
   const d = t.dueDate ?? '9999-12-31'
@@ -200,6 +205,13 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
           <p className="text-xs text-slate-500 mb-1.5 truncate">{t.description}</p>
         )}
 
+        {/* Checklist progress */}
+        {t.checklist && t.checklist.length > 0 && (
+          <div className="mb-2">
+            <ChecklistBadge checklist={t.checklist} />
+          </div>
+        )}
+
         <div className="flex items-center gap-3 flex-wrap">
           <span className={`flex items-center gap-1 text-xs font-medium
             ${overdue && !isDone ? 'text-red-400' : isToday && !isDone ? 'text-indigo-400' : 'text-slate-500'}`}>
@@ -316,6 +328,13 @@ function Section({
   )
 }
 
+// ─── helpers de data ─────────────────────────────────────────────────────────
+
+function offsetStr(days: number) {
+  const d = new Date(); d.setDate(d.getDate() + days)
+  return localDateStr(d)
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function TasksPage() {
@@ -331,39 +350,37 @@ export function TasksPage() {
 
   useEffect(() => { load(); loadContacts(); loadProperties() }, [load, loadContacts, loadProperties])
 
-  const today = todayStr()
+  const today    = todayStr()
+  const tomorrow = offsetStr(1)
+  const in7days  = offsetStr(7)
 
-  // urgency prefix: 0=overdue 1=today 2=upcoming 3=no date
-  function urgencyPrefix(t: Task): string {
-    if (t.dueDate && t.dueDate < today) return '0'
-    if (t.dueDate === today)            return '1'
-    if (t.dueDate && t.dueDate > today) return '2'
-    return '3'
+  // Ordenação: priority high > medium > low, depois por horário
+  const PRIORITY_W: Record<string, number> = { high: 0, medium: 1, low: 2 }
+  function taskSort(a: Task, b: Task) {
+    const pw = PRIORITY_W[a.priority] - PRIORITY_W[b.priority]
+    if (pw !== 0) return pw
+    return sortKey(a).localeCompare(sortKey(b))
   }
-  function fullKey(t: Task) { return urgencyPrefix(t) + sortKey(t) }
 
   const pending = tasks.filter(t => t.status === 'pending')
 
-  // Stats (for strip)
-  const overdueCount  = pending.filter(t => t.dueDate && t.dueDate < today).length
-  const todayCount    = pending.filter(t => t.dueDate === today).length
-  const upcomingCount = pending.filter(t => t.dueDate && t.dueDate > today).length
-
-  // Group pending by category, sorted by urgency then date within each group
-  const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'outro']
-  const byCategory = CATEGORY_ORDER.map(cat => ({
-    cat,
-    tasks: pending
-      .filter(t => (t.category ?? 'outro') === cat)
-      .sort((a, b) => fullKey(a).localeCompare(fullKey(b))),
-  }))
+  // Blocos de tempo
+  const overdue  = pending.filter(t => t.dueDate && t.dueDate < today).sort(taskSort)
+  const todayT   = pending.filter(t => t.dueDate === today).sort(taskSort)
+  const tomorrowT= pending.filter(t => t.dueDate === tomorrow).sort(taskSort)
+  const thisWeek = pending.filter(t => t.dueDate && t.dueDate > tomorrow && t.dueDate <= in7days).sort(taskSort)
+  const later    = pending.filter(t => t.dueDate && t.dueDate > in7days).sort(taskSort)
+  const noDate   = pending.filter(t => !t.dueDate).sort(taskSort)
 
   const doneList = tasks
     .filter(t => t.status === 'done')
     .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
 
-  const pendingCount = pending.length
-  const doneCount    = doneList.length
+  const pendingCount  = pending.length
+  const doneCount     = doneList.length
+  const overdueCount  = overdue.length
+  const todayCount    = todayT.length
+  const upcomingCount = tomorrowT.length + thisWeek.length + later.length
 
   function handleDelete() {
     if (!deleteTarget) return
@@ -395,6 +412,16 @@ export function TasksPage() {
     onCalendar: openCalendar,
   }
 
+  // Blocos temporais a renderizar
+  const timeBlocks = [
+    { key: 'overdue',  title: 'Atrasadas',     tasks: overdue,   icon: <AlertTriangle size={12} />, color: 'text-red-400',    defaultOpen: true  },
+    { key: 'today',    title: 'Hoje',           tasks: todayT,    icon: <Flame size={12} />,         color: 'text-indigo-400', defaultOpen: true  },
+    { key: 'tomorrow', title: 'Amanhã',         tasks: tomorrowT, icon: <CalendarClock size={12} />, color: 'text-amber-400',  defaultOpen: true  },
+    { key: 'week',     title: 'Esta semana',    tasks: thisWeek,  icon: <TrendingUp size={12} />,    color: 'text-cyan-400',   defaultOpen: true  },
+    { key: 'later',    title: 'Próximos dias',  tasks: later,     icon: <CheckCheck size={12} />,    color: 'text-slate-400',  defaultOpen: false },
+    { key: 'nodate',   title: 'Sem data',       tasks: noDate,    icon: <ListTodo size={12} />,      color: 'text-slate-500',  defaultOpen: false },
+  ]
+
   return (
     <PageLayout
       title="Tarefas"
@@ -402,28 +429,24 @@ export function TasksPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
-      {/* Tab toggle */}
-      <div className="flex gap-1 p-1 bg-white/5 rounded-xl border border-white/8 mb-6 self-start">
-        <button
-          onClick={() => setActiveTab('tasks')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
-            ${activeTab === 'tasks'
-              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-              : 'text-slate-500 hover:text-slate-300'
-            }`}
-        >
-          <ListTodo size={14} /> Tarefas
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
-            ${activeTab === 'history'
-              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-              : 'text-slate-500 hover:text-slate-300'
-            }`}
-        >
-          <BarChart2 size={14} /> Resumo por dia
-        </button>
+      {/* Tabs — estilo sem barra de fundo, igual Performance */}
+      <div className="flex gap-1 mb-6 border-b border-white/8">
+        {([
+          { key: 'tasks',   label: 'Tarefas',       icon: <ListTodo size={14} /> },
+          { key: 'history', label: 'Resumo por dia', icon: <BarChart2 size={14} /> },
+        ] as const).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all cursor-pointer border-b-2 -mb-px
+              ${activeTab === tab.key
+                ? 'text-indigo-300 border-indigo-400'
+                : 'text-slate-500 border-transparent hover:text-slate-300'
+              }`}
+          >
+            {tab.icon} {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* ── Aba Histórico ── */}
@@ -466,24 +489,21 @@ export function TasksPage() {
         />
       ) : (
         <>
-          {byCategory.map(({ cat, tasks: catTasks }) => {
-            const cfg     = CATEGORY_CONFIG[cat]
-            const CatIcon = cfg.icon
-            return (
-              <Section
-                key={cat}
-                title={cfg.label}
-                icon={<CatIcon size={12} />}
-                count={catTasks.length}
-                color={cfg.color}
-                tasks={catTasks}
-                showCategory={false}
-                collapsible
-                defaultOpen
-                {...sharedProps}
-              />
-            )
-          })}
+          {/* Blocos por tempo */}
+          {timeBlocks.map(block => (
+            <Section
+              key={block.key}
+              title={block.title}
+              icon={block.icon}
+              count={block.tasks.length}
+              color={block.color}
+              tasks={block.tasks}
+              showCategory
+              collapsible
+              defaultOpen={block.defaultOpen}
+              {...sharedProps}
+            />
+          ))}
 
           {/* Done section toggle */}
           {doneList.length > 0 && (

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
   Search, Building2, Pencil, Trash2, ImageOff,
-  TrendingUp, Landmark, MapPin, BadgePercent, ClipboardList,
+  TrendingUp, Landmark, MapPin, BadgePercent, ClipboardList, ListFilter,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -154,6 +154,7 @@ export function PropertiesPage() {
   const { tasks } = useTasksStore()
   const [query, setQuery] = useState('')
   const [activeStatus, setActiveStatus] = useState<PropertyStatus | null>(null)
+  const [onlyWithTasks, setOnlyWithTasks] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Property | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Property | undefined>()
@@ -161,7 +162,13 @@ export function PropertiesPage() {
 
   useEffect(() => { load(); loadContacts() }, [load, loadContacts])
 
-  const filtered = query.trim() ? search(query) : filterByStatus(activeStatus)
+  const filtered = (() => {
+    let result = query.trim() ? search(query) : filterByStatus(activeStatus)
+    if (onlyWithTasks) {
+      result = result.filter(p => tasks.some(t => t.propertyId === p.id && t.status !== 'done'))
+    }
+    return result
+  })()
 
   function handleDelete() {
     if (!deleteTarget) return
@@ -191,7 +198,7 @@ export function PropertiesPage() {
             className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {FILTER_OPTIONS.map(opt => (
             <button
               key={String(opt.value)}
@@ -207,6 +214,18 @@ export function PropertiesPage() {
               {opt.label}
             </button>
           ))}
+          <button
+            onClick={() => setOnlyWithTasks(v => !v)}
+            className={`
+              flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
+              ${onlyWithTasks
+                ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
+                : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+              }
+            `}
+          >
+            <ListFilter size={12} /> Com tarefas
+          </button>
         </div>
       </div>
 

@@ -12,21 +12,25 @@ import { Card } from '../../components/ui/Card'
 import { Task, TaskCategory } from '../../types'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { localDateStr } from '../../lib/formatters'
 import { Home, FileText, TrendingUp, Zap } from 'lucide-react'
 
 // ─── config ───────────────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; bar: string; label: string }> = {
-  visita:       { icon: Home,       color: 'text-cyan-400',   bar: '#22d3ee', label: 'Visita'          },
-  agenciamento: { icon: Building2,  color: 'text-indigo-400', bar: '#818cf8', label: 'Agenciamento'    },
-  proposta:     { icon: FileText,   color: 'text-amber-400',  bar: '#fbbf24', label: 'Proposta'        },
-  busca_imovel: { icon: TrendingUp, color: 'text-violet-400', bar: '#a78bfa', label: 'Busca de Imóvel' },
-  outro:        { icon: Zap,        color: 'text-slate-400',  bar: '#64748b', label: 'Outro'           },
+  visita:             { icon: Home,       color: 'text-cyan-400',    bar: '#22d3ee', label: 'Visita'                },
+  agenciamento:       { icon: Building2,  color: 'text-indigo-400',  bar: '#818cf8', label: 'Agenciamento'          },
+  proposta:           { icon: FileText,   color: 'text-amber-400',   bar: '#fbbf24', label: 'Proposta'              },
+  busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  bar: '#a78bfa', label: 'Busca de Imóvel'       },
+  prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', bar: '#34d399', label: 'Prospecção de Imóveis' },
+  campanhas:          { icon: Zap,        color: 'text-pink-400',    bar: '#f472b6', label: 'Campanhas'             },
+  administrativo:     { icon: FileText,   color: 'text-slate-300',   bar: '#94a3b8', label: 'Administrativo'        },
+  outro:              { icon: Zap,        color: 'text-slate-400',   bar: '#64748b', label: 'Outro'                 },
 }
-const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'outro']
+const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'outro']
 
 function pad(n: number) { return String(n).padStart(2, '0') }
-function todayStr() { return new Date().toISOString().split('T')[0] }
+function todayStr() { return localDateStr() }
 function offsetDay(base: string, days: number): string {
   const d = new Date(base + 'T00:00:00')
   d.setDate(d.getDate() + days)
