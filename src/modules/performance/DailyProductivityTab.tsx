@@ -154,7 +154,7 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: 'Novos leads', value: newLeads,   set: setNewLeads,   color: 'text-indigo-400' },
-            { label: 'Proprietários', value: ownerCalls, set: setOwnerCalls, color: 'text-cyan-400'   },
+            { label: 'Contatos com Propr.', value: ownerCalls, set: setOwnerCalls, color: 'text-cyan-400' },
           ].map(({ label, value, set, color }) => (
             <div key={label} className="bg-white/5 rounded-xl p-3 flex flex-col items-center gap-2">
               <span className="text-xs text-slate-500">{label}</span>
@@ -263,8 +263,10 @@ export function DailyProductivityTab() {
   const today = getTodayLog()
   const locked = today.closed
 
+  // Quando o dia está aberto: exclui hoje do histórico (evita duplicação com o card principal)
+  // Quando o dia está fechado: inclui hoje no topo do histórico (virou registro histórico)
   const history = logs
-    .filter(l => l.date !== today.date)
+    .filter(l => locked ? true : l.date !== today.date)
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 14)
 
@@ -353,7 +355,7 @@ export function DailyProductivityTab() {
           onChange={v => updateToday({ newLeads: v })}
         />
         <Counter
-          label="Proprietários Contatados"
+          label="Contatos com Proprietários"
           icon={<Phone size={15} className="text-cyan-400" />}
           value={today.ownerCalls}
           target={DAILY_TARGETS.ownerCalls}
@@ -417,7 +419,7 @@ export function DailyProductivityTab() {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Leads esta semana',       value: weekLeads,      sub: `meta ${WEEK_TARGET_LEADS} (7 dias)`,   color: 'text-indigo-400' },
-          { label: 'Ligações esta semana',     value: weekCalls,      sub: `meta ${WEEK_TARGET_CALLS} (seg–sex)`, color: 'text-cyan-400'   },
+          { label: 'Contatos com Propr. esta semana', value: weekCalls, sub: `meta ${WEEK_TARGET_CALLS} (seg–sex)`, color: 'text-cyan-400' },
           { label: 'Dias de funil',            value: weekFunnel,     sub: `meta ${WEEK_TARGET_FUNNEL} (seg–sáb)`,color: 'text-green-400'  },
           { label: 'Dias fechados na semana',  value: weekDayClosed,  sub: 'de 5 dias úteis',                    color: 'text-amber-400'  },
         ].map(s => (
@@ -439,7 +441,7 @@ export function DailyProductivityTab() {
           <div className="flex items-center gap-4 px-4 mb-2">
             <span className="w-20 text-xs text-slate-600 uppercase tracking-wider">Data</span>
             <span className="w-16 text-xs text-slate-600 uppercase tracking-wider">Leads</span>
-            <span className="w-16 text-xs text-slate-600 uppercase tracking-wider">Propr.</span>
+            <span className="w-16 text-xs text-slate-600 uppercase tracking-wider">Cont. Propr.</span>
             <span className="w-16 text-xs text-slate-600 uppercase tracking-wider">Funil</span>
             <span className="text-xs text-slate-600 uppercase tracking-wider">Score</span>
           </div>

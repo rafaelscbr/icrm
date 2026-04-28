@@ -175,7 +175,7 @@ export function ReportsTab() {
             accent="indigo"
           />
           <StatCard
-            label="Ligações propr."
+            label="Contatos com Propr."
             value={monthCalls}
             sub={showTargets ? `meta ${targetCalls} (seg–sex)` : 'total acumulado'}
             icon={<Phone size={18} />}
