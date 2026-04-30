@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft, Upload, Pencil, LayoutGrid, List, BarChart3, Pause, Play, CheckCheck
 } from 'lucide-react'
@@ -33,6 +33,17 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   const [editOpen,     setEditOpen]     = useState(false)
   const [importOpen,   setImportOpen]   = useState(false)
 
+  const headerRef = useRef<HTMLDivElement>(null)
+  const [headerH,  setHeaderH]  = useState(0)
+
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setHeaderH(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   useEffect(() => { loadLeads() }, [loadLeads])
 
   const campaign = campaigns.find(c => c.id === campaignId)
@@ -55,7 +66,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header bar */}
-      <div className="sticky top-0 z-10 bg-[#0F1117]/95 backdrop-blur border-b border-white/7 px-6 py-4">
+      <div ref={headerRef} className="sticky top-0 z-10 bg-[#0F1117]/95 backdrop-blur border-b border-white/7 px-6 py-4">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
@@ -130,7 +141,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
 
       {/* Content */}
       <div className="flex-1 p-6">
-        {tab === 'leads'   && <LeadsTab  leads={campaignLeads} campaign={campaign} />}
+        {tab === 'leads'   && <LeadsTab  leads={campaignLeads} campaign={campaign} stickyTop={headerH} />}
         {tab === 'kanban'  && <KanbanTab leads={campaignLeads} campaign={campaign} />}
         {tab === 'metrics' && <MetricsTab leads={campaignLeads} />}
       </div>

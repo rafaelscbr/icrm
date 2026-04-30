@@ -106,7 +106,8 @@ export type CampaignStatus = 'active' | 'paused' | 'finished'
 export interface Campaign {
   id: string
   name: string
-  message: string       // mensagem padrão com suporte a {nome}
+  message: string         // mensagem principal (template 1)
+  messages?: string[]     // templates adicionais (2, 3, …) — armazenados como JSONB no banco
   status: CampaignStatus
   createdAt: string
   updatedAt: string

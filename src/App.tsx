@@ -39,8 +39,9 @@ export default function App() {
             background: '#1A1D27',
             color: '#f1f5f9',
             border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            fontSize: '14px',
+            borderRadius: '8px',
+            fontSize: '12px',
+            padding: '8px 12px',
           },
           success: {
             iconTheme: { primary: '#22C55E', secondary: '#1A1D27' },

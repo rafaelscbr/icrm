@@ -55,6 +55,7 @@ interface DailyLogRow {
 
 interface CampaignRow {
   id: string; name: string; message: string; status: string
+  messages: string[] | null
   created_at: string; updated_at: string
 }
 
@@ -208,6 +209,7 @@ function fromDailyLog(l: DailyLog): DailyLogRow {
 function toCampaign(r: CampaignRow): Campaign {
   return {
     id: r.id, name: r.name, message: r.message,
+    messages: r.messages ?? undefined,
     status: r.status as Campaign['status'],
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
@@ -216,6 +218,7 @@ function toCampaign(r: CampaignRow): Campaign {
 function fromCampaign(c: Campaign): CampaignRow {
   return {
     id: c.id, name: c.name, message: c.message, status: c.status,
+    messages: c.messages && c.messages.length > 0 ? c.messages : null,
     created_at: c.createdAt, updated_at: c.updatedAt,
   }
 }

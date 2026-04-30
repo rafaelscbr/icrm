@@ -314,7 +314,7 @@ export function DashboardPage() {
   const [taskFormOpen, setTaskFormOpen] = useState(false)
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
   const { properties, load: loadProperties } = usePropertiesStore()
-  const { sales, load: loadSales, getByPeriod, getValueByPeriod, getTotalValue } = useSalesStore()
+  const { sales, load: loadSales, getByPeriod, getValueByPeriod } = useSalesStore()
   const { tasks, load: loadTasks, getUpcoming, getOverdue } = useTasksStore()
   const { goals, load: loadGoals } = useGoalsStore()
   const { load: loadCampaigns } = useCampaignsStore()
@@ -329,7 +329,11 @@ export function DashboardPage() {
   const periodLabel   = getLabel()
   const salesInPeriod = getByPeriod(startDate, endDate)
   const valueInPeriod = getValueByPeriod(startDate, endDate)
-  const recentSales   = sales.slice(0, 5)
+
+  // Total acumulado até o fim do período selecionado (não exibe vendas além do endDate)
+  const totalAccumulated      = sales.filter(s => s.date <= endDate).reduce((acc, s) => acc + s.value, 0)
+  const totalAccumulatedCount = sales.filter(s => s.date <= endDate).length
+  const recentSales   = salesInPeriod.slice(0, 5)
   const upcomingTasks = getUpcoming()
   const overdueTasks  = getOverdue()
   const birthdays     = getBirthdaysThisMonth()
@@ -413,8 +417,8 @@ export function DashboardPage() {
         />
         <StatCard
           label="Total acumulado"
-          value={formatCurrency(getTotalValue())}
-          sub={`${sales.length} vendas no total`}
+          value={formatCurrency(totalAccumulated)}
+          sub={`${totalAccumulatedCount} venda${totalAccumulatedCount !== 1 ? 's' : ''} até ${periodLabel}`}
           icon={<span className="text-lg leading-none">💰</span>}
           accent="green"
         />

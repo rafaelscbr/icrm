@@ -4,6 +4,9 @@ import { generateId } from '../lib/formatters'
 import { matchesPeriod, rangeFromPreset } from './usePeriodStore'
 import { db } from '../lib/db'
 
+const sortByDate = (sales: Sale[]) =>
+  [...sales].sort((a, b) => b.date.localeCompare(a.date))
+
 interface SalesStore {
   sales:   Sale[]
   loading: boolean
@@ -26,7 +29,7 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
     set({ loading: true })
     try {
       const sales = await db.sales.fetchAll()
-      set({ sales })
+      set({ sales: sortByDate(sales) })
     } catch (err) {
       console.error('[sales] load:', err)
     } finally {
@@ -36,13 +39,13 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
 
   add: (data) => {
     const sale: Sale = { ...data, id: generateId(), createdAt: new Date().toISOString() }
-    set(s => ({ sales: [sale, ...s.sales] }))
+    set(s => ({ sales: sortByDate([sale, ...s.sales]) }))
     db.sales.upsert(sale).catch(err => console.error('[sales] add:', err))
     return sale
   },
 
   update: (id, data) => {
-    const sales = get().sales.map(s => s.id === id ? { ...s, ...data } : s)
+    const sales = sortByDate(get().sales.map(s => s.id === id ? { ...s, ...data } : s))
     set({ sales })
     const updated = sales.find(s => s.id === id)
     if (updated) db.sales.upsert(updated).catch(err => console.error('[sales] update:', err))

@@ -29,13 +29,13 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex w-56 flex-shrink-0 bg-[#0d0f1a] border-r border-white/7 flex-col h-screen sticky top-0">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/7">
+      <div className="px-5 py-4 border-b border-white/7">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-            <span className="text-white text-xs font-bold tracking-tight">SI</span>
+          <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30">
+            <span className="text-white text-[10px] font-bold tracking-tight">SI</span>
           </div>
           <div>
-            <span className="text-sm font-bold gradient-text tracking-tight">Souza Imobiliária</span>
+            <span className="text-xs font-bold gradient-text tracking-tight">Souza Imobiliária</span>
             <p className="text-[10px] text-slate-600 -mt-0.5 leading-none">Gestão Imobiliária</p>
           </div>
         </div>
@@ -49,7 +49,7 @@ export function Sidebar() {
             to={to}
             end={end}
             className={({ isActive }) =>
-              `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200
+              `group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200
               ${isActive
                 ? 'bg-gradient-to-r from-indigo-500/20 to-violet-500/10 text-slate-100 font-medium border border-indigo-500/20'
                 : 'text-slate-500 hover:text-slate-200 hover:bg-white/5 border border-transparent'
@@ -58,9 +58,9 @@ export function Sidebar() {
           >
             {({ isActive }) => (
               <>
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200
+                <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-all duration-200
                   ${isActive ? 'bg-gradient-to-br from-indigo-500/30 to-violet-500/20' : 'group-hover:bg-white/8'}`}>
-                  <Icon size={15} className={isActive ? 'text-indigo-300' : color} />
+                  <Icon size={14} className={isActive ? 'text-indigo-300' : color} />
                 </div>
                 {label}
                 {isActive && (
@@ -72,38 +72,38 @@ export function Sidebar() {
         ))}
 
         {/* Ferramentas dropdown */}
-        <div className="mt-1">
+        <div className="mt-0.5">
           <button
             onClick={() => setToolsOpen(v => !v)}
-            className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 cursor-pointer border
+            className={`w-full group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 cursor-pointer border
               ${toolsOpen
                 ? 'bg-white/5 text-slate-200 border-white/8'
                 : 'text-slate-500 hover:text-slate-200 hover:bg-white/5 border-transparent'
               }`}
           >
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center group-hover:bg-white/8 transition-all">
-              <Wrench size={15} className="text-teal-400" />
+            <div className="w-6 h-6 rounded-md flex items-center justify-center group-hover:bg-white/8 transition-all">
+              <Wrench size={14} className="text-teal-400" />
             </div>
             <span className="flex-1 text-left">Ferramentas</span>
             <ChevronDown
-              size={13}
+              size={12}
               className={`text-slate-600 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
           {/* Sub-items */}
           {toolsOpen && (
-            <div className="mt-1 ml-3 flex flex-col gap-0.5 pl-3 border-l border-white/8">
+            <div className="mt-0.5 ml-3 flex flex-col gap-0.5 pl-2.5 border-l border-white/8">
               {tools.map(({ label, href, icon: Icon, color }) => (
                 <a
                   key={href}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-150"
+                  className="group flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-150"
                 >
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center group-hover:bg-white/8 transition-all flex-shrink-0">
-                    <Icon size={13} className={color} />
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center group-hover:bg-white/8 transition-all flex-shrink-0">
+                    <Icon size={12} className={color} />
                   </div>
                   <span className="flex-1 truncate">{label}</span>
                   <ExternalLink size={10} className="text-slate-700 group-hover:text-slate-500 flex-shrink-0 transition-colors" />
@@ -115,9 +115,9 @@ export function Sidebar() {
       </nav>
 
       {/* User */}
-      <div className="px-4 py-4 border-t border-white/7">
-        <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md shadow-indigo-500/30">
+      <div className="px-3 py-3 border-t border-white/7">
+        <div className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
+          <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md shadow-indigo-500/30">
             R
           </div>
           <div className="min-w-0 flex-1">

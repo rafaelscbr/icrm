@@ -10,6 +10,7 @@ import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { CampaignForm } from './CampaignForm'
 import { CampaignDetail } from './CampaignDetail'
+import { DailyLimitBar } from './DailyLimitBar'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { Campaign } from '../../types'
@@ -55,6 +56,11 @@ export function CampaignsPage() {
       ctaLabel="Nova Campanha"
       onCta={() => setCreateOpen(true)}
     >
+      {/* Barra de limite diário de disparos */}
+      <div className="mb-6">
+        <DailyLimitBar />
+      </div>
+
       {/* Overview stats */}
       {campaigns.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

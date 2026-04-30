@@ -19,7 +19,9 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(grep -v \"\\\\.toISOString\\(\\)$\\\\|updatedAt\\\\|createdAt\\\\|completedAt\")"
+      "Bash(grep -v \"\\\\.toISOString\\(\\)$\\\\|updatedAt\\\\|createdAt\\\\|completedAt\")",
+      "Bash(python3 -c \" import openpyxl wb = openpyxl.load_workbook\\('/Users/rafasouza/Downloads/planilha_contratos_porto_velas.xlsx'\\) for sheet in wb.sheetnames: ws = wb[sheet] print\\(f'=== Sheet: {sheet} ==='\\) for i, row in enumerate\\(ws.iter_rows\\(values_only=True\\)\\): if i > 40: break print\\(row\\) \")",
+      "Bash(python3 -c \" import csv, subprocess result = subprocess.run\\(['python3', '-c', ''' import openpyxl '''], capture_output=True\\) print\\('trying pandas...'\\) import pandas as pd df = pd.read_excel\\('/Users/rafasouza/Downloads/planilha_contratos_porto_velas.xlsx', sheet_name=None\\) for name, sheet in df.items\\(\\): print\\(f'=== {name} ==='\\) print\\(sheet.to_string\\(\\)\\) \")"
     ]
   }
 }

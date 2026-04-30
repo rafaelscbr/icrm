@@ -43,9 +43,11 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
 
     const prevStage = lead.funnelStage
 
-    // Update stage + situation + notes
+    // Contato inexistente não pode ficar em etapa do funil
+    const effectiveStage: FunnelStage = situation === 'invalid' ? 'new' : stage
+
     const patch: Partial<CampaignLead> = {
-      funnelStage: stage,
+      funnelStage: effectiveStage,
       situation,
       notes: notes.trim() || undefined,
     }

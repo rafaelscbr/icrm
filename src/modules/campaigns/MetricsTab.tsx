@@ -22,9 +22,14 @@ const STAGE_WIDTHS_PCT = [100, 84, 69, 55, 42, 30, 20]
 function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
   const total = leads.length
 
+  // Ordem das etapas para comparação de índice
+  const STAGE_ORDER = FUNNEL_STAGES.map(s => s.value)
+
   const stageData = FUNNEL_STAGES.map((s, i) => {
-    const count   = leads.filter(l => l.funnelStage === s.value).length
-    const ofTotal = total > 0 ? Math.round((count / total) * 100) : 0
+    // Conta leads que estão nesta etapa OU em etapas posteriores (já passaram por aqui)
+    const stageIdx = STAGE_ORDER.indexOf(s.value)
+    const count    = leads.filter(l => STAGE_ORDER.indexOf(l.funnelStage) >= stageIdx).length
+    const ofTotal  = total > 0 ? Math.round((count / total) * 100) : 0
     const widthPct = STAGE_WIDTHS_PCT[i] ?? 20
     return { ...s, count, ofTotal, widthPct, fill: FUNNEL_COLORS[s.value] }
   })
@@ -144,14 +149,17 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export function MetricsTab({ leads }: MetricsTabProps) {
-  const total      = leads.length
-  const contacted  = leads.filter(l => l.firstContactAt).length
-  const engaged    = leads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
-  const proposals  = leads.filter(l => l.funnelStage === 'proposal').length
-  const sales      = leads.filter(l => l.funnelStage === 'sale').length
+  // Leads com contato inexistente são excluídos do funil
+  const funnelLeads = leads.filter(l => l.situation !== 'invalid')
+
+  const total      = funnelLeads.length
+  const contacted  = funnelLeads.filter(l => l.firstContactAt).length
+  const engaged    = funnelLeads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
+  const proposals  = funnelLeads.filter(l => l.funnelStage === 'proposal').length
+  const sales      = funnelLeads.filter(l => l.funnelStage === 'sale').length
   const responseRate  = contacted > 0 ? Math.round((engaged   / contacted) * 100) : 0
   const convRate      = total     > 0 ? Math.round((sales     / total)     * 100) : 0
-  const proposalValue = leads.reduce((a, l) => a + (l.proposalValue ?? 0), 0)
+  const proposalValue = funnelLeads.reduce((a, l) => a + (l.proposalValue ?? 0), 0)
 
   const dailyData = useMemo(() => {
     return Array.from({ length: 21 }, (_, i) => {
@@ -160,10 +168,10 @@ export function MetricsTab({ leads }: MetricsTabProps) {
       const dateStr = d.toISOString().split('T')[0]
       return {
         date:      `${d.getDate()}/${d.getMonth() + 1}`,
-        acionados: leads.filter(l => l.firstContactAt?.startsWith(dateStr)).length,
+        acionados: funnelLeads.filter(l => l.firstContactAt?.startsWith(dateStr)).length,
       }
     })
-  }, [leads])
+  }, [funnelLeads])
 
   const situationData = SITUATION_CONFIG.map(s => ({
     ...s,
@@ -176,7 +184,7 @@ export function MetricsTab({ leads }: MetricsTabProps) {
       {/* KPIs topo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total de leads',    value: total.toLocaleString('pt-BR'),                                                                   color: 'text-slate-200'  },
+          { label: 'Total no funil',    value: total.toLocaleString('pt-BR'),                                                                   color: 'text-slate-200'  },
           { label: 'Leads acionados',   value: `${contacted.toLocaleString('pt-BR')} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400'   },
           { label: 'Taxa de resposta',  value: `${responseRate}%`,                                                                              color: 'text-cyan-400'   },
           { label: 'Conversão (venda)', value: `${convRate}%`,                                                                                  color: 'text-green-400'  },
@@ -200,7 +208,7 @@ export function MetricsTab({ leads }: MetricsTabProps) {
             </div>
           ) : (
             <div className="px-2">
-              <SalesFunnel leads={leads} />
+              <SalesFunnel leads={funnelLeads} />
             </div>
           )}
         </Card>

@@ -14,9 +14,9 @@ const variants = {
 }
 
 const sizes = {
-  sm: 'px-3 py-2 text-xs gap-1.5 min-h-[36px]',
-  md: 'px-4 py-2.5 text-sm gap-2 min-h-[44px]',
-  lg: 'px-5 py-3 text-sm gap-2 min-h-[44px]',
+  sm: 'px-3 py-2 text-xs gap-1.5 min-h-[34px]',
+  md: 'px-4 py-2 text-sm gap-2 min-h-[38px]',
+  lg: 'px-5 py-2.5 text-sm gap-2 min-h-[42px]',
 }
 
 export function Button({ variant = 'primary', size = 'md', children, className = '', disabled, ...props }: ButtonProps) {
@@ -25,7 +25,7 @@ export function Button({ variant = 'primary', size = 'md', children, className =
       {...props}
       disabled={disabled}
       className={`
-        inline-flex items-center justify-center font-medium rounded-xl
+        inline-flex items-center justify-center font-medium rounded-lg
         transition-all duration-200 active:scale-[0.97] cursor-pointer
         disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
         ${variants[variant]} ${sizes[size]} ${className}

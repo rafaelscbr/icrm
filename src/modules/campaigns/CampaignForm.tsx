@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { MessageSquarePlus, Info } from 'lucide-react'
+import { MessageSquarePlus, Info, Plus, Trash2, GripVertical } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
@@ -15,27 +15,52 @@ interface CampaignFormProps {
   campaign?: Campaign
 }
 
+const PLACEHOLDER = 'Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de...'
+const HINT = (
+  <div className="flex items-start gap-2 bg-indigo-500/8 border border-indigo-500/20 rounded-xl px-3 py-2.5">
+    <Info size={13} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+    <p className="text-xs text-indigo-300/80">
+      Use <code className="bg-white/10 px-1 rounded text-indigo-300">{'{nome}'}</code> para inserir o nome do lead automaticamente.
+      Ter múltiplas mensagens diferentes ajuda a evitar bloqueio no WhatsApp.
+    </p>
+  </div>
+)
+
 export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
   const { add, update } = useCampaignsStore()
   const isEditing = Boolean(campaign)
 
-  const [name,    setName]    = useState(campaign?.name    ?? '')
-  const [message, setMessage] = useState(campaign?.message ?? '')
-  const [status,  setStatus]  = useState<CampaignStatus>(campaign?.status ?? 'active')
-  const [errors,  setErrors]  = useState<Record<string, string>>({})
+  const [name,     setName]     = useState(campaign?.name    ?? '')
+  const [message,  setMessage]  = useState(campaign?.message ?? '')
+  const [messages, setMessages] = useState<string[]>(campaign?.messages ?? [])
+  const [status,   setStatus]   = useState<CampaignStatus>(campaign?.status ?? 'active')
+  const [errors,   setErrors]   = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!isOpen) return
     setName(campaign?.name ?? '')
     setMessage(campaign?.message ?? '')
+    setMessages(campaign?.messages ?? [])
     setStatus(campaign?.status ?? 'active')
     setErrors({})
   }, [campaign, isOpen])
 
+  function addExtraMessage() {
+    setMessages(m => [...m, ''])
+  }
+
+  function updateMessage(idx: number, val: string) {
+    setMessages(m => m.map((v, i) => i === idx ? val : v))
+  }
+
+  function removeMessage(idx: number) {
+    setMessages(m => m.filter((_, i) => i !== idx))
+  }
+
   function validate() {
     const e: Record<string, string> = {}
     if (!name.trim())    e.name    = 'Nome é obrigatório'
-    if (!message.trim()) e.message = 'Mensagem é obrigatória'
+    if (!message.trim()) e.message = 'Mensagem principal é obrigatória'
     setErrors(e)
     return !Object.keys(e).length
   }
@@ -43,15 +68,28 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!validate()) return
+    const cleanMessages = messages.filter(m => m.trim())
     if (isEditing && campaign) {
-      update(campaign.id, { name: name.trim(), message: message.trim(), status })
+      update(campaign.id, {
+        name: name.trim(),
+        message: message.trim(),
+        messages: cleanMessages.length > 0 ? cleanMessages : undefined,
+        status,
+      })
       toast.success('Campanha atualizada')
     } else {
-      add({ name: name.trim(), message: message.trim(), status: 'active' })
+      add({
+        name: name.trim(),
+        message: message.trim(),
+        messages: cleanMessages.length > 0 ? cleanMessages : undefined,
+        status: 'active',
+      })
       toast.success('Campanha criada!')
     }
     onClose()
   }
+
+  const allCount = 1 + messages.filter(m => m.trim()).length
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Campanha' : 'Nova Campanha'} size="md">
@@ -79,25 +117,61 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
           </Select>
         )}
 
+        {/* Mensagem principal */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-            Mensagem inicial padrão
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Mensagem 1 <span className="text-indigo-400 normal-case font-normal">(principal)</span>
+            </label>
+            <span className="text-[10px] text-slate-600">{allCount} template{allCount !== 1 ? 's' : ''} no total</span>
+          </div>
           <textarea
             value={message}
             onChange={e => setMessage(e.target.value)}
-            rows={5}
-            placeholder="Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de..."
+            rows={4}
+            placeholder={PLACEHOLDER}
             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
           />
           {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
-          <div className="flex items-start gap-2 bg-indigo-500/8 border border-indigo-500/20 rounded-xl px-3 py-2.5 mt-1">
-            <Info size={13} className="text-indigo-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-indigo-300/80">
-              Use <code className="bg-white/10 px-1 rounded text-indigo-300">{'{nome}'}</code> para inserir o nome do lead automaticamente na mensagem.
-            </p>
-          </div>
         </div>
+
+        {/* Mensagens extras */}
+        {messages.map((msg, idx) => (
+          <div key={idx} className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <GripVertical size={12} className="text-slate-600" />
+                Mensagem {idx + 2}
+              </label>
+              <button
+                type="button"
+                onClick={() => removeMessage(idx)}
+                className="text-slate-600 hover:text-red-400 transition-colors cursor-pointer p-1"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+            <textarea
+              value={msg}
+              onChange={e => updateMessage(idx, e.target.value)}
+              rows={4}
+              placeholder={PLACEHOLDER}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+            />
+          </div>
+        ))}
+
+        {/* Botão adicionar mensagem */}
+        <button
+          type="button"
+          onClick={addExtraMessage}
+          className="flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer py-1"
+        >
+          <Plus size={13} />
+          Adicionar mensagem alternativa
+        </button>
+
+        {HINT}
 
         <div className="flex gap-3 pt-1">
           <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>

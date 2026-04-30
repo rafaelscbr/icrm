@@ -34,14 +34,15 @@ export const FUNNEL_COLORS: Record<string, string> = {
 export interface SituationConfig {
   value:  LeadSituation
   label:  string
+  short:  string
   color:  string
   bg:     string
 }
 
 export const SITUATION_CONFIG: SituationConfig[] = [
-  { value: 'no_interest',   label: 'Sem Interesse',          color: 'text-orange-400', bg: 'bg-orange-500/10' },
-  { value: 'stop_messages', label: 'Pediu para não receber', color: 'text-red-400',    bg: 'bg-red-500/10'    },
-  { value: 'invalid',       label: 'Contato Inexistente',    color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
+  { value: 'no_interest',   label: 'Sem Interesse',          short: 'Sem interesse',  color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  { value: 'stop_messages', label: 'Pediu para não receber', short: 'Não perturbe',   color: 'text-red-400',    bg: 'bg-red-500/10'    },
+  { value: 'invalid',       label: 'Contato Inexistente',    short: 'Inexistente',    color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
 ]
 
 export const STATUS_CONFIG = {
