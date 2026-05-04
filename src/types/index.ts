@@ -124,6 +124,7 @@ export interface CampaignLead {
   situation?: LeadSituation
   notes?: string
   firstContactAt?: string
+  lastMessage?: string
   proposalValue?: number
   propertyId?: string
   createdAt: string

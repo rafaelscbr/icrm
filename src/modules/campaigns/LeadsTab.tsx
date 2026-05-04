@@ -246,7 +246,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     setForceOffHours(false)
 
     const wasNew = lead.funnelStage === 'new'
-    markContacted(lead.id)
+    markContacted(lead.id, msg)
 
     if (total >= DAILY_WARN && total < DAILY_LIMIT) {
       toast(`⚠️ ${total} disparos hoje — limite recomendado é ${DAILY_WARN}. Cuidado com o banimento!`,

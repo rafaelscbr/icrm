@@ -12,7 +12,16 @@ interface KanbanTabProps {
   campaign: Campaign
 }
 
-const COLUMN_PAGE = 20   // quantos cards mostrar inicialmente por coluna
+const COLUMN_PAGE = 20
+
+// Ordena leads: mais recente envio primeiro, depois mais recente atualização
+function sortByRecent(leads: CampaignLead[]): CampaignLead[] {
+  return [...leads].sort((a, b) => {
+    const aTime = a.firstContactAt ?? a.updatedAt ?? a.createdAt
+    const bTime = b.firstContactAt ?? b.updatedAt ?? b.createdAt
+    return bTime.localeCompare(aTime)
+  })
+}
 
 function LeadCard({
   lead, campaign, onParecer,
@@ -25,7 +34,7 @@ function LeadCard({
     const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     const wasNew = lead.funnelStage === 'new'
-    markContacted(lead.id)
+    markContacted(lead.id, msg)
     if (wasNew) toast.success('1ª mensagem registrada!')
   }
 
@@ -56,6 +65,21 @@ function LeadCard({
 
       <p className="text-xs text-slate-500 tabular-nums">{formatPhone(lead.phone)}</p>
 
+      {lead.lastMessage && (
+        <div className="mt-2 group/msg relative">
+          <p className="text-[10px] text-slate-600 line-clamp-1 italic leading-relaxed">
+            "{lead.lastMessage}"
+          </p>
+          {/* tooltip com mensagem completa */}
+          <div className="absolute bottom-full left-0 mb-1.5 z-50 hidden group-hover/msg:block w-56 pointer-events-none">
+            <div className="bg-slate-800 border border-white/10 rounded-lg p-2.5 shadow-xl">
+              <p className="text-[10px] text-slate-400 font-medium mb-1">Última mensagem enviada</p>
+              <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">{lead.lastMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {situation && (
         <span className={`mt-2 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${situation.bg} ${situation.color}`}>
           {situation.label}
@@ -81,8 +105,9 @@ function KanbanColumn({
   onParecer: (l: CampaignLead) => void
 }) {
   const [visible, setVisible] = useState(COLUMN_PAGE)
-  const shown  = leads.slice(0, visible)
-  const hasMore = visible < leads.length
+  const sorted  = sortByRecent(leads)
+  const shown   = sorted.slice(0, visible)
+  const hasMore = visible < sorted.length
 
   return (
     <div className="flex-shrink-0 w-60 flex flex-col">
@@ -120,7 +145,7 @@ function KanbanColumn({
                 className="flex items-center justify-center gap-1.5 py-2 text-xs text-slate-500 hover:text-slate-300 border border-dashed border-white/10 hover:border-white/20 rounded-xl transition-all cursor-pointer"
               >
                 <ChevronDown size={12} />
-                Ver mais {Math.min(COLUMN_PAGE, leads.length - visible).toLocaleString('pt-BR')} de {(leads.length - visible).toLocaleString('pt-BR')}
+                Ver mais {Math.min(COLUMN_PAGE, sorted.length - visible).toLocaleString('pt-BR')} de {(sorted.length - visible).toLocaleString('pt-BR')}
               </button>
             )}
           </>
