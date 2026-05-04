@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { MessageCircle, FileText, ChevronDown } from 'lucide-react'
+import { MessageCircle, FileText, ChevronDown, Eye } from 'lucide-react'
 import { LeadParecerModal } from './LeadParecerModal'
+import { Modal } from '../../components/ui/Modal'
 import { CampaignLead, Campaign } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
@@ -14,7 +15,6 @@ interface KanbanTabProps {
 
 const COLUMN_PAGE = 20
 
-// Ordena leads: mais recente envio primeiro, depois mais recente atualização
 function sortByRecent(leads: CampaignLead[]): CampaignLead[] {
   return [...leads].sort((a, b) => {
     const aTime = a.firstContactAt ?? a.updatedAt ?? a.createdAt
@@ -23,11 +23,20 @@ function sortByRecent(leads: CampaignLead[]): CampaignLead[] {
   })
 }
 
+function LastMessageModal({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <Modal isOpen onClose={onClose} title="Última mensagem enviada" size="sm">
+      <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{message}</p>
+    </Modal>
+  )
+}
+
 function LeadCard({
   lead, campaign, onParecer,
 }: { lead: CampaignLead; campaign: Campaign; onParecer: (l: CampaignLead) => void }) {
   const { markContacted } = useCampaignLeadsStore()
   const situation = SITUATION_CONFIG.find(s => s.value === lead.situation)
+  const [showMsg, setShowMsg] = useState(false)
 
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
@@ -39,63 +48,68 @@ function LeadCard({
   }
 
   return (
-    <div
-      onClick={() => onParecer(lead)}
-      className="bg-white/4 hover:bg-white/7 border border-white/8 hover:border-white/15 rounded-xl p-3 cursor-pointer transition-all group"
-    >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <p className="text-sm font-medium text-slate-200 truncate flex-1">{lead.name}</p>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <button
-            onClick={handleWhatsApp}
-            className="p-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
-            title="WhatsApp"
-          >
-            <MessageCircle size={11} />
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); onParecer(lead) }}
-            className="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
-            title="Parecer"
-          >
-            <FileText size={11} />
-          </button>
-        </div>
-      </div>
-
-      <p className="text-xs text-slate-500 tabular-nums">{formatPhone(lead.phone)}</p>
-
-      {lead.lastMessage && (
-        <div className="mt-2 group/msg relative">
-          <p className="text-[10px] text-slate-600 line-clamp-1 italic leading-relaxed">
-            "{lead.lastMessage}"
-          </p>
-          {/* tooltip com mensagem completa */}
-          <div className="absolute bottom-full left-0 mb-1.5 z-50 hidden group-hover/msg:block w-56 pointer-events-none">
-            <div className="bg-slate-800 border border-white/10 rounded-lg p-2.5 shadow-xl">
-              <p className="text-[10px] text-slate-400 font-medium mb-1">Última mensagem enviada</p>
-              <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">{lead.lastMessage}</p>
-            </div>
+    <>
+      <div
+        onClick={() => onParecer(lead)}
+        className="bg-white/4 hover:bg-white/7 border border-white/8 hover:border-white/15 rounded-xl p-3 cursor-pointer transition-all group"
+      >
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <p className="text-sm font-medium text-slate-200 truncate flex-1">{lead.name}</p>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            {lead.lastMessage && (
+              <button
+                onClick={e => { e.stopPropagation(); setShowMsg(true) }}
+                className="p-1 rounded-lg bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 transition-colors"
+                title="Ver última mensagem"
+              >
+                <Eye size={11} />
+              </button>
+            )}
+            <button
+              onClick={handleWhatsApp}
+              className="p-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
+              title="WhatsApp"
+            >
+              <MessageCircle size={11} />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); onParecer(lead) }}
+              className="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+              title="Parecer"
+            >
+              <FileText size={11} />
+            </button>
           </div>
         </div>
-      )}
 
-      {situation && (
-        <span className={`mt-2 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${situation.bg} ${situation.color}`}>
-          {situation.label}
-        </span>
-      )}
+        <p className="text-xs text-slate-500 tabular-nums">{formatPhone(lead.phone)}</p>
 
-      {lead.proposalValue && lead.funnelStage === 'proposal' && (
-        <p className="text-xs text-amber-400 font-medium mt-1">
-          R$ {lead.proposalValue.toLocaleString('pt-BR')}
-        </p>
+        {lead.lastMessage && (
+          <p className="mt-1.5 text-[10px] text-slate-700 line-clamp-1 italic">
+            "{lead.lastMessage}"
+          </p>
+        )}
+
+        {situation && (
+          <span className={`mt-2 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${situation.bg} ${situation.color}`}>
+            {situation.label}
+          </span>
+        )}
+
+        {lead.proposalValue && lead.funnelStage === 'proposal' && (
+          <p className="text-xs text-amber-400 font-medium mt-1">
+            R$ {lead.proposalValue.toLocaleString('pt-BR')}
+          </p>
+        )}
+      </div>
+
+      {showMsg && lead.lastMessage && (
+        <LastMessageModal message={lead.lastMessage} onClose={() => setShowMsg(false)} />
       )}
-    </div>
+    </>
   )
 }
 
-// Coluna individual com paginação própria
 function KanbanColumn({
   stage, leads, campaign, onParecer,
 }: {
@@ -111,7 +125,6 @@ function KanbanColumn({
 
   return (
     <div className="flex-shrink-0 w-60 flex flex-col">
-      {/* Cabeçalho */}
       <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${stage.bg} border ${stage.border} mb-3`}>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
@@ -122,7 +135,6 @@ function KanbanColumn({
         </span>
       </div>
 
-      {/* Cards */}
       <div className="flex flex-col gap-2 flex-1">
         {leads.length === 0 ? (
           <div className="flex items-center justify-center py-8 border border-dashed border-white/8 rounded-xl">

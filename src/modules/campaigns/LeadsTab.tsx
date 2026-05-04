@@ -441,7 +441,11 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               return (
               <div
                 key={lead.id}
-                className="grid grid-cols-[1fr_140px_170px_160px_120px] gap-0 px-5 py-3.5 items-center hover:bg-white/3 transition-colors group"
+                className={`grid grid-cols-[1fr_140px_170px_160px_120px] gap-0 px-5 py-3.5 items-center transition-colors group ${
+                  lead.situation === 'invalid'
+                    ? 'bg-slate-500/5 hover:bg-slate-500/8'
+                    : 'hover:bg-white/3'
+                }`}
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-200 truncate">{lead.name}</p>
