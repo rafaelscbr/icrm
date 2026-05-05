@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown, ExternalLink, Tv2
 } from 'lucide-react'
+import { useTasksStore } from '../../store/useTasksStore'
 
 const nav = [
   { to: '/',           icon: LayoutDashboard, label: 'Dashboard',  end: true,  color: 'text-indigo-400' },
@@ -31,7 +32,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="px-5 py-4 border-b border-white/7">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <div className="w-7 h-7 bg-gradient-to-br from-indigo-400 via-violet-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/40">
             <span className="text-white text-[10px] font-bold tracking-tight">SI</span>
           </div>
           <div>
@@ -43,6 +44,13 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
+        {/* Search shortcut hint — keyboard trigger via ⌘K in App.tsx */}
+        <div className="flex items-center gap-2 px-3 py-2 mb-1 rounded-lg border border-white/7 bg-white/2 cursor-default select-none">
+          <Search size={12} className="text-slate-600 flex-shrink-0" />
+          <span className="flex-1 text-xs text-slate-600">Buscar…</span>
+          <kbd className="text-[10px] font-mono text-slate-700 bg-white/5 border border-white/8 rounded px-1 py-0.5 leading-none flex-shrink-0">⌘K</kbd>
+        </div>
+
         {nav.map(({ to, icon: Icon, label, end, color }) => (
           <NavLink
             key={to}
@@ -59,7 +67,7 @@ export function Sidebar() {
             {({ isActive }) => (
               <>
                 <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-all duration-200
-                  ${isActive ? 'bg-gradient-to-br from-indigo-500/30 to-violet-500/20' : 'group-hover:bg-white/8'}`}>
+                  ${isActive ? 'bg-gradient-to-br from-indigo-500/30 to-violet-500/20' : 'bg-white/5 group-hover:bg-white/10'}`}>
                   <Icon size={14} className={isActive ? 'text-indigo-300' : color} />
                 </div>
                 {label}
@@ -72,7 +80,7 @@ export function Sidebar() {
         ))}
 
         {/* Ferramentas dropdown */}
-        <div className="mt-0.5">
+        <div className="mt-2 pt-2 border-t border-white/7">
           <button
             onClick={() => setToolsOpen(v => !v)}
             className={`w-full group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 cursor-pointer border
@@ -117,8 +125,11 @@ export function Sidebar() {
       {/* User */}
       <div className="px-3 py-3 border-t border-white/7">
         <div className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
-          <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md shadow-indigo-500/30">
-            R
+          <div className="relative flex-shrink-0">
+            <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md shadow-indigo-500/30">
+              R
+            </div>
+            <div className="absolute -inset-[2px] rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 -z-10 opacity-60 blur-[2px]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-slate-300 truncate">Rafael</p>

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Target, Pencil, Trash2, TrendingUp, CheckCircle2,
   Calendar, CalendarDays, Footprints, Handshake, FileText, BadgeDollarSign,
   CalendarCheck, ClipboardList, History,
 } from 'lucide-react'
+import confetti from 'canvas-confetti'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -36,6 +37,84 @@ const CATEGORY_LABEL: Record<GoalCategory, string> = {
   agenciamento: 'Agenciamento',
   proposta:     'Proposta',
   venda:        'Venda',
+}
+
+const CATEGORY_HEX: Record<GoalCategory, string> = {
+  visita: '#6366f1', agenciamento: '#06b6d4', proposta: '#f59e0b', venda: '#22c55e',
+}
+
+function ProgressRing({ value, target, category }: { value: number; target: number; category: GoalCategory }) {
+  const pct  = Math.min(100, target > 0 ? (value / target) * 100 : 0)
+  const done = value >= target
+  const size = 88
+  const r    = 36
+  const circ = 2 * Math.PI * r
+  const dash = (pct / 100) * circ
+  const color = done ? '#22c55e' : CATEGORY_HEX[category]
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={8} />
+        <circle
+          cx={size/2} cy={size/2} r={r} fill="none"
+          stroke={color} strokeWidth={8} strokeLinecap="round"
+          strokeDasharray={`${dash} ${circ - dash}`}
+          strokeDashoffset={circ / 4}
+          style={{ transition: 'stroke-dasharray 600ms cubic-bezier(0.16,1,0.3,1)' }}
+        />
+        <text x={size/2} y={size/2 - 4} textAnchor="middle" fill={done ? '#4ade80' : 'white'} fontSize={14} fontWeight="700">
+          {Math.round(pct)}%
+        </text>
+        <text x={size/2} y={size/2 + 10} textAnchor="middle" fill="#64748b" fontSize={9}>
+          {value}/{target}
+        </text>
+      </svg>
+      {done && <span className="text-[10px] text-green-400 font-medium">Meta atingida!</span>}
+    </div>
+  )
+}
+
+function GoalCard({ goal, progress, onEdit, onDelete, onPause }: { goal: Goal; progress: number; onEdit: () => void; onDelete: () => void; onPause: () => void }) {
+  const colors = CATEGORY_COLOR[goal.category]
+  const Icon   = CATEGORY_ICON[goal.category]
+  const done   = progress >= goal.target
+  const firedRef = useRef(false)
+
+  useEffect(() => {
+    if (done && !firedRef.current) {
+      firedRef.current = true
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#6366f1','#22c55e','#f59e0b','#06b6d4'] })
+    }
+  }, [done])
+
+  return (
+    <Card key={goal.id} className={`relative group border ${colors.border} transition-all duration-200`}>
+      {done && <div className="absolute top-3 right-3"><CheckCircle2 size={16} className="text-green-400" /></div>}
+      <div className="flex items-start gap-3 mb-4">
+        <div className={`w-9 h-9 ${colors.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+          <Icon size={16} className={colors.text} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-100 truncate">{goal.name}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className={`text-xs font-medium ${colors.text}`}>{CATEGORY_LABEL[goal.category]}</span>
+            <span className="text-slate-700">·</span>
+            <span className="text-xs text-slate-500 flex items-center gap-1">
+              {goal.period === 'weekly' ? <><Calendar size={10} /> Semanal</> : <><CalendarDays size={10} /> Mensal</>}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-center mb-4">
+        <ProgressRing value={progress} target={goal.target} category={goal.category} />
+      </div>
+      <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={onPause} className="flex-1 text-xs text-slate-500 hover:text-slate-300 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">Pausar</button>
+        <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"><Pencil size={13} /></button>
+        <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer"><Trash2 size={13} /></button>
+      </div>
+    </Card>
+  )
 }
 
 function ProgressBar({ value, target, barClass }: { value: number; target: number; barClass: string }) {
@@ -262,69 +341,15 @@ export function GoalsPage() {
                 {/* Outros goals (agenciamento, proposta, venda) */}
                 {otherGoals.map(goal => {
                   const progress = calcProgress(goal, tasks, sales)
-                  const colors   = CATEGORY_COLOR[goal.category]
-                  const Icon     = CATEGORY_ICON[goal.category]
-                  const done     = progress >= goal.target
-
                   return (
-                    <Card
+                    <GoalCard
                       key={goal.id}
-                      className={`relative group border ${colors.border} transition-all duration-200`}
-                    >
-                      {done && (
-                        <div className="absolute top-3 right-3">
-                          <CheckCircle2 size={16} className="text-green-400" />
-                        </div>
-                      )}
-                      <div className="flex items-start gap-3 mb-4">
-                        <div className={`w-9 h-9 ${colors.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                          <Icon size={16} className={colors.text} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-100 truncate">{goal.name}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className={`text-xs font-medium ${colors.text}`}>{CATEGORY_LABEL[goal.category]}</span>
-                            <span className="text-slate-700">·</span>
-                            <span className="text-xs text-slate-500 flex items-center gap-1">
-                              {goal.period === 'weekly'
-                                ? <><Calendar size={10} /> Semanal</>
-                                : <><CalendarDays size={10} /> Mensal</>
-                              }
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-baseline gap-1.5 mb-4">
-                        <span className={`text-3xl font-bold tabular-nums ${done ? 'text-green-400' : 'text-slate-100'}`}>
-                          {progress}
-                        </span>
-                        <span className="text-sm text-slate-600">/ {goal.target}</span>
-                      </div>
-
-                      <ProgressBar value={progress} target={goal.target} barClass={colors.bar} />
-
-                      <div className="flex gap-1 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => update(goal.id, { active: false })}
-                          className="flex-1 text-xs text-slate-500 hover:text-slate-300 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-                        >
-                          Pausar
-                        </button>
-                        <button
-                          onClick={() => { setEditing(goal); setFormOpen(true) }}
-                          className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(goal)}
-                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </Card>
+                      goal={goal}
+                      progress={progress}
+                      onEdit={() => { setEditing(goal); setFormOpen(true) }}
+                      onDelete={() => setDeleteTarget(goal)}
+                      onPause={() => update(goal.id, { active: false })}
+                    />
                   )
                 })}
               </div>

@@ -146,6 +146,91 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
   )
 }
 
+// ─── Conversão por mensagem ───────────────────────────────────────────────────
+
+const ENGAGED_STAGES = ['attended', 'scheduled', 'presentation', 'proposal', 'sale']
+
+function ConversionByMessage({ leads }: { leads: CampaignLead[] }) {
+  const messageStats = useMemo(() => {
+    const leadsWithMessage = leads.filter(l => l.lastMessage && l.lastMessage.trim() !== '')
+    if (leadsWithMessage.length === 0) return []
+
+    const map = new Map<string, { total: number; engaged: number }>()
+    leadsWithMessage.forEach(l => {
+      const msg = l.lastMessage!
+      const existing = map.get(msg) ?? { total: 0, engaged: 0 }
+      existing.total += 1
+      if (ENGAGED_STAGES.includes(l.funnelStage)) existing.engaged += 1
+      map.set(msg, existing)
+    })
+
+    return Array.from(map.entries())
+      .map(([message, { total, engaged }]) => ({
+        message,
+        total,
+        engaged,
+        rate: total > 0 ? Math.round((engaged / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.rate - a.rate)
+  }, [leads])
+
+  const hasData = messageStats.length > 0
+
+  return (
+    <Card>
+      <h2 className="text-sm font-semibold text-slate-300 mb-4">Conversão por mensagem</h2>
+      {!hasData ? (
+        <p className="text-sm text-slate-600 text-center py-6">
+          Envie mensagens pelo sistema para ver a análise por template
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {messageStats.map((item, i) => (
+            <div
+              key={i}
+              className="flex flex-col gap-2 p-3 rounded-xl bg-white/3 border border-white/5"
+            >
+              {/* Message preview + badge */}
+              <div className="flex items-start gap-3">
+                <p
+                  className="flex-1 text-xs italic text-slate-400 leading-5 min-w-0"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
+                  "{item.message}"
+                </p>
+                <span className="flex-shrink-0 text-[11px] font-semibold bg-white/8 text-slate-300 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  {item.total} lead{item.total !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {/* Progress bar + percentage */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-white/8 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-green-500 transition-all"
+                    style={{ width: `${item.rate}%` }}
+                  />
+                </div>
+                <span className="text-xs font-bold text-green-400 tabular-nums w-9 text-right">
+                  {item.rate}%
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-600">
+                {item.engaged} de {item.total} engajaram
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export function MetricsTab({ leads }: MetricsTabProps) {
@@ -286,6 +371,9 @@ export function MetricsTab({ leads }: MetricsTabProps) {
           </AreaChart>
         </ResponsiveContainer>
       </Card>
+
+      {/* Conversão por mensagem */}
+      <ConversionByMessage leads={funnelLeads} />
     </div>
   )
 }

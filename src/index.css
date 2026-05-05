@@ -15,14 +15,17 @@
 
   body {
     background-color: #0F1117;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(99,102,241,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(168,85,247,0.05) 0%, transparent 55%);
     color: #f1f5f9;
     font-family: 'Inter', system-ui, sans-serif;
   }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
 
   /* ── Safari: força tema escuro em inputs nativos ── */
   input[type='date'],
@@ -97,6 +100,70 @@
     to   { background-position: -200% 0; }
   }
 
+  /* ── Stagger children ── */
+  .stagger-children > * { animation: slideUp 220ms cubic-bezier(0.16,1,0.3,1) both; }
+  .stagger-children > *:nth-child(1)  { animation-delay:  0ms; }
+  .stagger-children > *:nth-child(2)  { animation-delay: 40ms; }
+  .stagger-children > *:nth-child(3)  { animation-delay: 80ms; }
+  .stagger-children > *:nth-child(4)  { animation-delay:120ms; }
+  .stagger-children > *:nth-child(5)  { animation-delay:160ms; }
+  .stagger-children > *:nth-child(6)  { animation-delay:200ms; }
+  .stagger-children > *:nth-child(7)  { animation-delay:240ms; }
+  .stagger-children > *:nth-child(8)  { animation-delay:280ms; }
+
+  /* ── Page fade ── */
+  .page-fade {
+    animation: pageFade 180ms ease-out;
+  }
+  @keyframes pageFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0);   }
+  }
+
+  /* ── Shake (erro de formulário) ── */
+  .shake {
+    animation: shake 320ms ease-in-out;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0);    }
+    20%       { transform: translateX(-6px); }
+    40%       { transform: translateX(6px);  }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px);  }
+  }
+
+  /* ── WhatsApp cooldown pulse ── */
+  .wapp-pulse {
+    animation: wappPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes wappPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0);  }
+  }
+
+  /* ── Counter roll-up ── */
+  .count-up {
+    animation: countUp 600ms cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0);   }
+  }
+
+  /* ── Badge bounce ── */
+  .badge-bounce {
+    animation: badgeBounce 500ms cubic-bezier(0.36,0.07,0.19,0.97);
+  }
+  @keyframes badgeBounce {
+    0%, 100% { transform: scale(1);    }
+    30%       { transform: scale(1.35); }
+    60%       { transform: scale(0.9); }
+    80%       { transform: scale(1.1); }
+  }
+
+  /* ── Lead frio (card levemente esmaecido) ── */
+  .lead-cold { opacity: 0.65; }
+
   /* ── Utility overrides ── */
   .hover\:bg-white\/3:hover  { background-color: rgba(255,255,255,0.03); }
   .hover\:bg-white\/8:hover  { background-color: rgba(255,255,255,0.08); }
@@ -104,12 +171,12 @@
   .border-white\/7           { border-color: rgba(255,255,255,0.07); }
   .border-white\/8           { border-color: rgba(255,255,255,0.08); }
 
-  /* ── Card accent top border ── */
-  .card-accent-indigo { border-top: 2px solid rgba(99,102,241,0.6);  }
-  .card-accent-green  { border-top: 2px solid rgba(34,197,94,0.6);   }
-  .card-accent-blue   { border-top: 2px solid rgba(59,130,246,0.6);  }
-  .card-accent-purple { border-top: 2px solid rgba(168,85,247,0.6);  }
-  .card-accent-yellow { border-top: 2px solid rgba(234,179,8,0.6);   }
+  /* ── Card accent top border — 3px para mais presença ── */
+  .card-accent-indigo { border-top: 3px solid rgba(99,102,241,0.65);  box-shadow: 0 -1px 12px rgba(99,102,241,0.12);  }
+  .card-accent-green  { border-top: 3px solid rgba(34,197,94,0.65);   box-shadow: 0 -1px 12px rgba(34,197,94,0.10);   }
+  .card-accent-blue   { border-top: 3px solid rgba(59,130,246,0.65);  box-shadow: 0 -1px 12px rgba(59,130,246,0.10);  }
+  .card-accent-purple { border-top: 3px solid rgba(168,85,247,0.65);  box-shadow: 0 -1px 12px rgba(168,85,247,0.10);  }
+  .card-accent-yellow { border-top: 3px solid rgba(234,179,8,0.65);   box-shadow: 0 -1px 12px rgba(234,179,8,0.08);   }
 
   /* ── Floating badge pulse ── */
   .pulse-dot::before {
@@ -125,4 +192,18 @@
     0%, 100% { transform: scale(1);   opacity: 0.3; }
     50%       { transform: scale(1.6); opacity: 0;   }
   }
+
+  /* ── Gradient fade divider ── */
+  .divider-fade {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent);
+    border: none;
+  }
+
+  /* ── Table row left accent on hover ── */
+  .row-accent {
+    border-left: 2px solid transparent;
+    transition: border-color 150ms, background-color 150ms;
+  }
+  .row-accent:hover { border-left-color: rgba(99,102,241,0.5); }
 }

@@ -133,7 +133,7 @@ export function ContactsPage() {
             <div
               key={c.id}
               className={`
-                flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/3
+                flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/5 row-accent
                 ${i < paginated.length - 1 ? 'border-b border-white/5' : ''}
               `}
             >

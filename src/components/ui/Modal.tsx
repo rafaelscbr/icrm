@@ -51,9 +51,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       <div
         className={`
           relative w-full ${desktopSizes[size]}
-          bg-[#1A1D27] border border-white/10
+          bg-[#13151f]/95 backdrop-blur-xl border border-white/12
           rounded-t-2xl lg:rounded-2xl
-          shadow-2xl shadow-black/50
+          shadow-2xl shadow-black/60
           max-h-[92vh] overflow-y-auto
           animate-in fade-in slide-in-from-bottom-4 lg:zoom-in-95 duration-200
         `}

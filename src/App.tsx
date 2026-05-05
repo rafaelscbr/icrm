@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { Sidebar } from './components/layout/Sidebar'
 import { BottomNav } from './components/layout/BottomNav'
+import { GlobalSearch } from './components/shared/GlobalSearch'
 import { DashboardPage } from './modules/dashboard/DashboardPage'
 import { ContactsPage } from './modules/contacts/ContactsPage'
 import { PropertiesPage } from './modules/properties/PropertiesPage'
@@ -12,26 +14,65 @@ import { GoalsPage } from './modules/goals/GoalsPage'
 import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
 import { CampaignsPage } from './modules/campaigns/CampaignsPage'
 
-export default function App() {
+// ── PageWrapper ──────────────────────────────────────────────────────────────
+// Wraps page content in a div with the `page-fade` CSS animation class.
+// Re-keyed on every route change so the animation replays on navigation.
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
   return (
-    <BrowserRouter>
+    <div key={location.pathname} className="page-fade h-full">
+      {children}
+    </div>
+  )
+}
+
+// ── AppRoutes ────────────────────────────────────────────────────────────────
+// Lives inside BrowserRouter so it can use useLocation for the keyboard
+// shortcut listener that opens GlobalSearch.
+function AppRoutes() {
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  return (
+    <>
       <div className="flex min-h-screen bg-[#0F1117]">
         <Sidebar />
         <main className="flex-1 overflow-auto pb-16 lg:pb-0">
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/contatos" element={<ContactsPage />} />
-            <Route path="/imoveis" element={<PropertiesPage />} />
-            <Route path="/vendas" element={<SalesPage />} />
-            <Route path="/tarefas"     element={<TasksPage />} />
-            <Route path="/metas"           element={<GoalsPage />} />
-            <Route path="/metas/historico" element={<WeekHistoryPage />} />
-            <Route path="/campanhas"   element={<CampaignsPage />} />
-            <Route path="/performance" element={<PerformancePage />} />
+            <Route path="/" element={<PageWrapper><DashboardPage /></PageWrapper>} />
+            <Route path="/contatos" element={<PageWrapper><ContactsPage /></PageWrapper>} />
+            <Route path="/imoveis" element={<PageWrapper><PropertiesPage /></PageWrapper>} />
+            <Route path="/vendas" element={<PageWrapper><SalesPage /></PageWrapper>} />
+            <Route path="/tarefas" element={<PageWrapper><TasksPage /></PageWrapper>} />
+            <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
+            <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />
+            <Route path="/campanhas" element={<PageWrapper><CampaignsPage /></PageWrapper>} />
+            <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
           </Routes>
         </main>
         <BottomNav />
       </div>
+
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
+  )
+}
+
+// ── App ──────────────────────────────────────────────────────────────────────
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
       <Toaster
         position="bottom-right"
         toastOptions={{

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
@@ -63,6 +64,31 @@ export function SalesPage() {
   const avgTicket     = salesInPeriod.length > 0 ? valueInPeriod / salesInPeriod.length : 0
   const periodComm    = salesInPeriod.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0)
   const periodBroker  = salesInPeriod.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0)
+
+  const monthlyData = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date()
+      d.setDate(1)
+      d.setMonth(d.getMonth() - (11 - i))
+      const year = d.getFullYear()
+      const month = d.getMonth()
+      const monthSales = sales.filter(s => {
+        const sd = new Date(s.date + 'T00:00:00')
+        return sd.getFullYear() === year && sd.getMonth() === month
+      })
+      return {
+        month: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+        value: monthSales.reduce((a, s) => a + s.value, 0),
+        count: monthSales.length,
+      }
+    })
+  }, [sales])
+
+  const formatAxisValue = (v: number) => {
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
+    if (v >= 1_000)     return `${(v / 1_000).toFixed(0)}k`
+    return `${v}`
+  }
 
   function handleDelete() {
     if (!deleteTarget) return
@@ -142,6 +168,43 @@ export function SalesPage() {
           <p className="text-xs text-slate-500 mt-1">sua parte no período</p>
         </Card>
       </div>
+
+      {/* Gráfico mensal */}
+      {sales.length > 0 && (
+        <Card className="mb-5 lg:mb-6">
+          <h2 className="text-sm font-semibold text-slate-300 mb-4">Evolução mensal — últimos 12 meses</h2>
+          <ResponsiveContainer width="100%" height={160}>
+            <LineChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="month" tick={{ fill: '#475569', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis
+                tick={{ fill: '#475569', fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={formatAxisValue}
+                width={42}
+              />
+              <Tooltip
+                contentStyle={{ background: '#1A1D27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
+                labelStyle={{ color: '#94a3b8', fontSize: 11 }}
+                formatter={(value: number, _name: string, props: { payload?: { count?: number } }) => [
+                  `${formatCurrency(value)}  ·  ${props.payload?.count ?? 0} venda${(props.payload?.count ?? 0) !== 1 ? 's' : ''}`,
+                  'VGV',
+                ]}
+              />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#a78bfa"
+                strokeWidth={2}
+                dot={{ fill: '#a78bfa', r: 3 }}
+                activeDot={{ r: 5 }}
+                name="VGV"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -273,7 +336,7 @@ export function SalesPage() {
               return (
                 <div
                   key={s.id}
-                  className={`grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-4 hover:bg-white/3 transition-colors ${i < filtered.length - 1 ? 'border-b border-white/5' : ''}`}
+                  className={`grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-4 hover:bg-white/5 row-accent transition-colors ${i < filtered.length - 1 ? 'border-b border-white/5' : ''}`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar name={client?.name ?? '?'} size="sm" />

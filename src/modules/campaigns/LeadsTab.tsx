@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown, ThumbsUp, Loader2,
-  Clock, ChevronRight, Moon,
+  Clock, ChevronRight, Moon, LayoutList, Save, X,
 } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -193,19 +193,82 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
   const [pickerLead,    setPickerLead]    = useState<CampaignLead | undefined>()
   const [forceOffHours, setForceOffHours] = useState(false)
+  const [compact,       setCompact]       = useState(false)
+  const [excludedIds,   setExcludedIds]   = useState<Set<string>>(new Set())
+  const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [savedFilters, setSavedFilters]   = useState<{name: string; search: string; stage: FunnelStage | 'all'}[]>(() => {
+    try { return JSON.parse(localStorage.getItem('crm_saved_filters') ?? '[]') } catch { return [] }
+  })
+  const [savingFilter,  setSavingFilter]  = useState(false)
+  const [filterName,    setFilterName]    = useState('')
 
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   // Filtragem
   const filtered = leads.filter(l => {
+    if (excludedIds.has(l.id)) return false
     const q = search.trim().toLowerCase()
     const matchSearch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q)
     const matchStage  = stageFilter === 'all' || l.funnelStage === stageFilter
     return matchSearch && matchStage
   })
 
-  const visible = filtered.slice(0, visibleCount)
-  const hasMore = visibleCount < filtered.length
+  // Ordena: com contato primeiro (desc), depois sem contato
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    if (a.firstContactAt && b.firstContactAt) return b.firstContactAt.localeCompare(a.firstContactAt)
+    if (a.firstContactAt) return -1
+    if (b.firstContactAt) return 1
+    return b.createdAt.localeCompare(a.createdAt)
+  })
+
+  const visible = sortedFiltered.slice(0, visibleCount)
+  const hasMore = visibleCount < sortedFiltered.length
+
+  // Cria lista com separadores de data intercalados
+  function getDateLabel(dateStr: string): string {
+    const today = new Date(); today.setHours(0,0,0,0)
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1)
+    const d = new Date(dateStr)
+    d.setHours(0,0,0,0)
+    if (d.getTime() === today.getTime()) return 'Hoje'
+    if (d.getTime() === yesterday.getTime()) return 'Ontem'
+    const diff = Math.floor((today.getTime() - d.getTime()) / 86_400_000)
+    if (diff <= 7) return 'Esta semana'
+    return 'Mais antigos'
+  }
+
+  type ListItem = { type: 'separator'; label: string } | { type: 'lead'; lead: CampaignLead }
+  const listItems: ListItem[] = []
+  let lastLabel = ''
+  for (const lead of visible) {
+    const label = lead.firstContactAt ? getDateLabel(lead.firstContactAt) : 'Sem contato'
+    if (label !== lastLabel) {
+      listItems.push({ type: 'separator', label })
+      lastLabel = label
+    }
+    listItems.push({ type: 'lead', lead })
+  }
+
+  function saveCurrentFilter() {
+    if (!filterName.trim()) return
+    const newFilter = { name: filterName.trim(), search, stage: stageFilter }
+    const updated = [...savedFilters, newFilter]
+    setSavedFilters(updated)
+    localStorage.setItem('crm_saved_filters', JSON.stringify(updated))
+    setFilterName('')
+    setSavingFilter(false)
+  }
+
+  function applyFilter(f: { search: string; stage: FunnelStage | 'all' }) {
+    setSearch(f.search)
+    setStageFilter(f.stage)
+  }
+
+  function removeSavedFilter(i: number) {
+    const updated = savedFilters.filter((_, idx) => idx !== i)
+    setSavedFilters(updated)
+    localStorage.setItem('crm_saved_filters', JSON.stringify(updated))
+  }
 
   // Resetar paginação quando filtro muda
   useEffect(() => {
@@ -322,9 +385,28 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
   function handleDelete() {
     if (!deleteLead) return
-    remove(deleteLead.id)
-    toast.success('Lead removido')
+    const lead = deleteLead
     setDeleteLead(undefined)
+    setExcludedIds(prev => new Set([...prev, lead.id]))
+    deleteTimeoutRef.current = setTimeout(() => {
+      remove(lead.id)
+      setExcludedIds(prev => { const s = new Set(prev); s.delete(lead.id); return s })
+    }, 5000)
+    toast(t => (
+      <div className="flex items-center gap-3">
+        <span className="text-sm">Lead removido</span>
+        <button
+          onClick={() => {
+            clearTimeout(deleteTimeoutRef.current!)
+            setExcludedIds(prev => { const s = new Set(prev); s.delete(lead.id); return s })
+            toast.dismiss(t.id)
+          }}
+          className="text-xs text-indigo-400 font-semibold underline cursor-pointer"
+        >
+          Desfazer
+        </button>
+      </div>
+    ), { duration: 5000 })
   }
 
   // ── Summary chips ─────────────────────────────────────────────────────────────
@@ -403,7 +485,59 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           </select>
           <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
         </div>
+        <button
+          onClick={() => setCompact(v => !v)}
+          className={`p-2.5 rounded-xl border transition-colors cursor-pointer flex-shrink-0 ${compact ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400' : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'}`}
+          title="Modo compacto"
+        >
+          <LayoutList size={14} />
+        </button>
       </div>
+
+      {/* Filtros salvos */}
+      {savedFilters.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {savedFilters.map((f, i) => (
+            <button
+              key={i}
+              onClick={() => applyFilter(f)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs border bg-indigo-500/8 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/15 transition-colors cursor-pointer"
+            >
+              {f.name}
+              <span onClick={e => { e.stopPropagation(); removeSavedFilter(i) }} className="ml-0.5 hover:text-red-400 transition-colors cursor-pointer">
+                <X size={10} />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Salvar filtro atual */}
+      {(search || stageFilter !== 'all') && (
+        <div className="flex items-center gap-2">
+          {!savingFilter ? (
+            <button
+              onClick={() => setSavingFilter(true)}
+              className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+            >
+              <Save size={11} /> Salvar este filtro
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={filterName}
+                onChange={e => setFilterName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveCurrentFilter(); if (e.key === 'Escape') setSavingFilter(false) }}
+                placeholder="Nome do filtro..."
+                className="text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 w-40"
+              />
+              <button onClick={saveCurrentFilter} className="text-xs text-indigo-400 hover:text-indigo-300 cursor-pointer">Salvar</button>
+              <button onClick={() => setSavingFilter(false)} className="text-xs text-slate-600 hover:text-slate-400 cursor-pointer">Cancelar</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Contador de resultados */}
       {filtered.length > 0 && (
@@ -435,21 +569,27 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           </div>
 
           <div className="divide-y divide-white/5">
-            {visible.map(lead => {
+            {listItems.map((item, idx) => {
+              if (item.type === 'separator') return (
+                <div key={`sep-${idx}`} className="px-5 py-1.5 bg-white/2 border-b border-white/5">
+                  <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider">{item.label}</span>
+                </div>
+              )
+              const lead = item.lead
               const secs = remaining()
               const onCd = secs > 0
               return (
               <div
                 key={lead.id}
-                className={`grid grid-cols-[1fr_140px_170px_160px_120px] gap-0 px-5 py-3.5 items-center transition-colors group ${
+                className={`grid grid-cols-[1fr_140px_170px_160px_120px] gap-0 px-5 items-center transition-colors group ${compact ? 'py-2' : 'py-3.5'} ${
                   lead.situation === 'invalid'
                     ? 'bg-slate-500/5 hover:bg-slate-500/8'
-                    : 'hover:bg-white/3'
+                    : 'hover:bg-white/5 row-accent'
                 }`}
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-200 truncate">{lead.name}</p>
-                  {lead.email && <p className="text-xs text-slate-600 truncate">{lead.email}</p>}
+                  {!compact && lead.email && <p className="text-xs text-slate-600 truncate">{lead.email}</p>}
                 </div>
                 <span className="text-sm text-slate-400 tabular-nums">{formatPhone(lead.phone)}</span>
                 <span><StageBadge stage={lead.funnelStage} /></span>
@@ -516,7 +656,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                 </div>
               </div>
             )})}
-          </div>
+            </div>
 
           {/* Sentinel para scroll infinito */}
           <div ref={sentinelRef} className="h-1" />
