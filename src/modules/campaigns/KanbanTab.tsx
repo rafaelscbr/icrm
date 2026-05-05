@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   MessageCircle, FileText, ChevronDown, Eye,
-  Download, Plus, Snowflake, ClipboardList,
+  Download, Plus, Snowflake,
 } from 'lucide-react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
@@ -15,7 +15,7 @@ import { CampaignLead, Campaign, FunnelStage, Task } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
-import { formatPhone, whatsappUrl, generateId } from '../../lib/formatters'
+import { formatPhone, whatsappUrl } from '../../lib/formatters'
 import toast from 'react-hot-toast'
 
 interface KanbanTabProps {

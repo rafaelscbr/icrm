@@ -4,7 +4,6 @@ import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown, ExternalLink, Tv2
 } from 'lucide-react'
-import { useTasksStore } from '../../store/useTasksStore'
 
 const nav = [
   { to: '/',           icon: LayoutDashboard, label: 'Dashboard',  end: true,  color: 'text-indigo-400' },
