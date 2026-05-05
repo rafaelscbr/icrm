@@ -56,6 +56,8 @@ interface DailyLogRow {
 interface CampaignRow {
   id: string; name: string; message: string; status: string
   messages: string[] | null
+  average_ticket: number | null
+  conversion_rates: Record<string, number> | null
   created_at: string; updated_at: string
 }
 
@@ -212,6 +214,8 @@ function toCampaign(r: CampaignRow): Campaign {
     id: r.id, name: r.name, message: r.message,
     messages: r.messages ?? undefined,
     status: r.status as Campaign['status'],
+    averageTicket: r.average_ticket ?? undefined,
+    conversionRates: r.conversion_rates ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -220,6 +224,8 @@ function fromCampaign(c: Campaign): CampaignRow {
   return {
     id: c.id, name: c.name, message: c.message, status: c.status,
     messages: c.messages && c.messages.length > 0 ? c.messages : null,
+    average_ticket: c.averageTicket ?? null,
+    conversion_rates: c.conversionRates ?? null,
     created_at: c.createdAt, updated_at: c.updatedAt,
   }
 }
