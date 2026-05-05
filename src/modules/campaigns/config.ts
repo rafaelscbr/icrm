@@ -45,16 +45,24 @@ export const SITUATION_CONFIG: SituationConfig[] = [
   { value: 'invalid',       label: 'Contato Inexistente',    short: 'Inexistente',    color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
 ]
 
-// Taxas de conversão sugeridas — benchmark outbound imobiliário brasileiro
-// Representa: "% de leads nesta etapa que chegarão à venda"
+// Taxas de conversão do funil — CASCATA (etapa → próxima etapa)
+// Chave = etapa de DESTINO; valor = % da etapa anterior que avança para cá
+// Ex: attended=10 → 10% da base fria vai demonstrar interesse
 export const DEFAULT_CONVERSION_RATES: Record<string, number> = {
-  new:          1,   // lista fria, sem contato
-  sent:         2,   // contactado, sem resposta ainda
-  attended:     6,   // demonstrou interesse
-  scheduled:    15,  // agendou visita
-  presentation: 30,  // fez a apresentação
-  proposal:     60,  // em negociação
-  sale:         100, // venda confirmada
+  attended:     10,  // % da base fria (new+sent) que demonstra interesse
+  scheduled:    30,  // % dos interessados que agendam apresentação
+  presentation: 50,  // % dos agendados que fazem a apresentação
+  proposal:     50,  // % das apresentações que viram proposta
+  sale:         50,  // % das propostas que fecham negócio
+}
+
+// Descrição de cada transição (para o UI)
+export const TRANSITION_LABELS: Record<string, string> = {
+  attended:     'demonstram interesse',
+  scheduled:    'agendam apresentação',
+  presentation: 'fazem a apresentação',
+  proposal:     'entram em proposta',
+  sale:         'fecham negócio',
 }
 
 export const STATUS_CONFIG = {
