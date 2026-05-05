@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { MessageSquarePlus, Info, Plus, Trash2, GripVertical } from 'lucide-react'
+import { MessageSquarePlus, Info, Plus, Trash2, GripVertical, DollarSign } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
@@ -8,6 +8,15 @@ import { Campaign, CampaignStatus } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { STATUS_CONFIG } from './config'
 import toast from 'react-hot-toast'
+
+function parseBRL(raw: string): number {
+  return parseFloat(raw.replace(/\./g, '').replace(',', '.')) || 0
+}
+
+function formatBRL(value: number): string {
+  if (!value) return ''
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
 
 interface CampaignFormProps {
   isOpen:   boolean
@@ -30,11 +39,12 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
   const { add, update } = useCampaignsStore()
   const isEditing = Boolean(campaign)
 
-  const [name,     setName]     = useState(campaign?.name    ?? '')
-  const [message,  setMessage]  = useState(campaign?.message ?? '')
-  const [messages, setMessages] = useState<string[]>(campaign?.messages ?? [])
-  const [status,   setStatus]   = useState<CampaignStatus>(campaign?.status ?? 'active')
-  const [errors,   setErrors]   = useState<Record<string, string>>({})
+  const [name,        setName]        = useState(campaign?.name    ?? '')
+  const [message,     setMessage]     = useState(campaign?.message ?? '')
+  const [messages,    setMessages]    = useState<string[]>(campaign?.messages ?? [])
+  const [status,      setStatus]      = useState<CampaignStatus>(campaign?.status ?? 'active')
+  const [ticketRaw,   setTicketRaw]   = useState(campaign?.averageTicket ? formatBRL(campaign.averageTicket) : '')
+  const [errors,      setErrors]      = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!isOpen) return
@@ -42,6 +52,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
     setMessage(campaign?.message ?? '')
     setMessages(campaign?.messages ?? [])
     setStatus(campaign?.status ?? 'active')
+    setTicketRaw(campaign?.averageTicket ? formatBRL(campaign.averageTicket) : '')
     setErrors({})
   }, [campaign, isOpen])
 
@@ -69,12 +80,14 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
     e.preventDefault()
     if (!validate()) return
     const cleanMessages = messages.filter(m => m.trim())
+    const ticket = parseBRL(ticketRaw)
     if (isEditing && campaign) {
       update(campaign.id, {
         name: name.trim(),
         message: message.trim(),
         messages: cleanMessages.length > 0 ? cleanMessages : undefined,
         status,
+        averageTicket: ticket > 0 ? ticket : undefined,
       })
       toast.success('Campanha atualizada')
     } else {
@@ -83,6 +96,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
         message: message.trim(),
         messages: cleanMessages.length > 0 ? cleanMessages : undefined,
         status: 'active',
+        averageTicket: ticket > 0 ? ticket : undefined,
       })
       toast.success('Campanha criada!')
     }
@@ -104,6 +118,32 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
           error={errors.name}
           placeholder="Ex: Proprietários Pinheiros - Abr/2026"
         />
+
+        {/* Ticket médio */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            Ticket Médio <span className="text-slate-600 normal-case font-normal">(opcional)</span>
+          </label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-500 pointer-events-none">
+              <DollarSign size={13} />
+              <span className="text-xs">R$</span>
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={ticketRaw}
+              onChange={e => setTicketRaw(e.target.value.replace(/[^\d.,]/g, ''))}
+              onBlur={() => {
+                const n = parseBRL(ticketRaw)
+                setTicketRaw(n > 0 ? formatBRL(n) : '')
+              }}
+              placeholder="Ex: 500.000"
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            />
+          </div>
+          <p className="text-[11px] text-slate-600">Usado para calcular o VGV esperado na aba de Previsão</p>
+        </div>
 
         {isEditing && (
           <Select

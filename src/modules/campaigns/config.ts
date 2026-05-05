@@ -45,6 +45,17 @@ export const SITUATION_CONFIG: SituationConfig[] = [
   { value: 'invalid',       label: 'Contato Inexistente',    short: 'Inexistente',    color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
 ]
 
+// Taxas de conversão sugeridas — benchmark mercado imobiliário
+export const DEFAULT_CONVERSION_RATES: Record<string, number> = {
+  new:          3,
+  sent:         6,
+  attended:     15,
+  scheduled:    28,
+  presentation: 45,
+  proposal:     65,
+  sale:         100,
+}
+
 export const STATUS_CONFIG = {
   active:   { label: 'Ativa',      color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20'  },
   paused:   { label: 'Pausada',    color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },

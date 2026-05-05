@@ -109,6 +109,8 @@ export interface Campaign {
   message: string         // mensagem principal (template 1)
   messages?: string[]     // templates adicionais (2, 3, …) — armazenados como JSONB no banco
   status: CampaignStatus
+  averageTicket?: number                               // ticket médio do produto (R$)
+  conversionRates?: Partial<Record<FunnelStage, number>> // % de conversão por etapa (0-100)
   createdAt: string
   updatedAt: string
 }
