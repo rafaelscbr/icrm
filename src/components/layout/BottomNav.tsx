@@ -47,7 +47,7 @@ export function BottomNav() {
       </button>
 
       {/* ── Bottom bar ─────────────────────────────────────────────────── */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0d0f1a]/95 backdrop-blur-xl border-t border-white/10">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 nav-bg-blur border-t border-white/10">
         <div className="flex items-center justify-around h-16 px-1">
           {mainNav.map(({ to, icon: Icon, label, end, color, activeGrad }) => (
             <NavLink
@@ -109,7 +109,7 @@ export function BottomNav() {
           onClick={() => setDrawerOpen(false)}
         >
           <div
-            className="absolute bottom-16 inset-x-0 bg-[#0d0f1a] border-t border-white/10 rounded-t-2xl pb-2 animate-in slide-in-from-bottom-4 duration-200"
+            className="absolute bottom-16 inset-x-0 nav-bg border-t border-white/10 rounded-t-2xl pb-2 animate-in slide-in-from-bottom-4 duration-200"
             onClick={e => e.stopPropagation()}
           >
             {/* Handle */}

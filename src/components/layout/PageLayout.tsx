@@ -12,7 +12,7 @@ interface PageLayoutProps {
 
 export function PageLayout({ title, subtitle, ctaLabel, onCta, children }: PageLayoutProps) {
   return (
-    <div className="flex-1 min-h-screen bg-[#0F1117]">
+    <div className="flex-1 min-h-screen page-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-7">
         <div className="flex items-center justify-between mb-5 lg:mb-6">
           <div>

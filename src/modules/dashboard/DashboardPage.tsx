@@ -299,7 +299,7 @@ function UpcomingCard({
 }: { tasks: Task[]; contacts: Contact[]; properties: Property[]; onNavigate: () => void }) {
   const shown = tasks.slice(0, 6)
   return (
-    <div className="relative rounded-2xl border border-white/8 bg-[#13151f] overflow-hidden mb-6 animate-slide-up">
+    <div className="relative rounded-2xl border border-white/8 card-surface overflow-hidden mb-6 animate-slide-up">
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/7">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-indigo-500/15 rounded-xl flex items-center justify-center">
