@@ -6,6 +6,8 @@ import {
   Sun, Moon,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
+import logoLight from '../../assets/logo.png'
+import logoDark from '../../assets/logo-dark.png'
 
 const nav = [
   { to: '/',           icon: LayoutDashboard, label: 'Dashboard',  end: true,  color: 'text-indigo-400' },
@@ -32,16 +34,12 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex w-56 flex-shrink-0 nav-bg border-r border-white/7 flex-col h-screen sticky top-0">
       {/* Logo */}
-      <div className="px-5 py-4 border-b border-white/7">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-gradient-to-br from-indigo-400 via-violet-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/40">
-            <span className="text-white text-[10px] font-bold tracking-tight">SI</span>
-          </div>
-          <div>
-            <span className="text-xs font-bold gradient-text tracking-tight">Souza Imobiliária</span>
-            <p className="text-[10px] text-slate-600 -mt-0.5 leading-none">Gestão Imobiliária</p>
-          </div>
-        </div>
+      <div className="px-4 py-3 border-b border-white/7 flex items-center justify-center">
+        <img
+          src={theme === 'dark' ? logoLight : logoDark}
+          alt="Souza Imobiliária"
+          className="h-10 w-auto object-contain"
+        />
       </div>
 
       {/* Nav */}
