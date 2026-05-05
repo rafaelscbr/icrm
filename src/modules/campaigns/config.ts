@@ -45,15 +45,16 @@ export const SITUATION_CONFIG: SituationConfig[] = [
   { value: 'invalid',       label: 'Contato Inexistente',    short: 'Inexistente',    color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
 ]
 
-// Taxas de conversão sugeridas — benchmark mercado imobiliário
+// Taxas de conversão sugeridas — benchmark outbound imobiliário brasileiro
+// Representa: "% de leads nesta etapa que chegarão à venda"
 export const DEFAULT_CONVERSION_RATES: Record<string, number> = {
-  new:          3,
-  sent:         6,
-  attended:     15,
-  scheduled:    28,
-  presentation: 45,
-  proposal:     65,
-  sale:         100,
+  new:          1,   // lista fria, sem contato
+  sent:         2,   // contactado, sem resposta ainda
+  attended:     6,   // demonstrou interesse
+  scheduled:    15,  // agendou visita
+  presentation: 30,  // fez a apresentação
+  proposal:     60,  // em negociação
+  sale:         100, // venda confirmada
 }
 
 export const STATUS_CONFIG = {
