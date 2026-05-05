@@ -20,10 +20,10 @@ export function Card({ children, hover = false, accent = 'none', className = '',
     <div
       {...props}
       className={`
-        bg-[#1A1D27] border border-white/10 rounded-xl p-5 lg:p-6
+        card-surface border rounded-xl p-5 lg:p-6
         ${accents[accent]}
         ${hover
-          ? 'transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 hover:border-white/18 cursor-pointer'
+          ? 'transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 cursor-pointer'
           : ''}
         ${className}
       `}

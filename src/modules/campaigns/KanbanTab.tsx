@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   MessageCircle, FileText, ChevronDown, Eye,
-  Download, Plus, Snowflake,
+  Download, Plus, Snowflake, Clock,
 } from 'lucide-react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
@@ -15,7 +15,7 @@ import { CampaignLead, Campaign, FunnelStage, Task } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
-import { formatPhone, whatsappUrl } from '../../lib/formatters'
+import { formatPhone, whatsappUrl, formatCurrency } from '../../lib/formatters'
 import toast from 'react-hot-toast'
 
 interface KanbanTabProps {
@@ -26,6 +26,9 @@ interface KanbanTabProps {
 const COLUMN_PAGE = 20
 
 type DateFilter = 'all' | 'today' | 'week' | 'cold'
+
+// Etapas que mostram VGV
+const VGV_STAGES: FunnelStage[] = ['attended', 'scheduled', 'presentation', 'proposal', 'sale']
 
 function sortByRecent(leads: CampaignLead[]): CampaignLead[] {
   return [...leads].sort((a, b) => {
@@ -67,6 +70,19 @@ function exportColumn(stageName: string, leads: CampaignLead[]) {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Leads')
   XLSX.writeFile(wb, `leads-${stageName}.xlsx`)
+}
+
+/** Retorna há quantos dias o lead está na etapa atual */
+function daysInStage(lead: CampaignLead): number {
+  const ref = lead.stageUpdatedAt ?? lead.updatedAt ?? lead.createdAt
+  return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
+}
+
+function stageAgeBadge(days: number): { label: string; color: string; bg: string } | null {
+  if (days < 1) return null
+  if (days <= 2)  return { label: `${days}d`, color: 'text-green-400',  bg: 'bg-green-500/10'  }
+  if (days <= 5)  return { label: `${days}d`, color: 'text-amber-400',  bg: 'bg-amber-500/10'  }
+  return { label: `${days}d`, color: 'text-red-400', bg: 'bg-red-500/10' }
 }
 
 // ─── Modal de última mensagem ─────────────────────────────────────────────────
@@ -149,6 +165,8 @@ function LeadCard({
   const [showMsg,  setShowMsg]  = useState(false)
   const [showTask, setShowTask] = useState(false)
   const cold = isCold(lead)
+  const days = daysInStage(lead)
+  const ageBadge = stageAgeBadge(days)
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id:   lead.id,
@@ -195,9 +213,15 @@ function LeadCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <p className="text-xs text-slate-500 tabular-nums">{formatPhone(lead.phone)}</p>
           {cold && <span className="flex items-center gap-0.5 text-[9px] text-blue-400/70 font-medium"><Snowflake size={9} />Frio</span>}
+          {/* Tempo na etapa */}
+          {ageBadge && (
+            <span className={`flex items-center gap-0.5 text-[9px] font-semibold px-1 rounded ${ageBadge.bg} ${ageBadge.color}`}>
+              <Clock size={8} />{ageBadge.label}
+            </span>
+          )}
         </div>
 
         {lead.lastMessage && (
@@ -211,7 +235,7 @@ function LeadCard({
         )}
 
         {lead.proposalValue && lead.funnelStage === 'proposal' && (
-          <p className="text-xs text-amber-400 font-medium mt-1">R$ {lead.proposalValue.toLocaleString('pt-BR')}</p>
+          <p className="text-xs text-amber-400 font-medium mt-1">{formatCurrency(lead.proposalValue)}</p>
         )}
       </div>
 
@@ -237,27 +261,50 @@ function KanbanColumn({
   const shown   = sorted.slice(0, visible)
   const hasMore = visible < sorted.length
 
+  // VGV da coluna
+  const showVgv = VGV_STAGES.includes(stage.value as FunnelStage)
+  const ticket  = campaign.averageTicket ?? 0
+
+  const colVGV = useMemo(() => {
+    if (!showVgv || !ticket) return 0
+    if (stage.value === 'proposal') {
+      // Usa o proposalValue real se disponível, caso contrário ticket médio
+      return leads.reduce((sum, l) => sum + (l.proposalValue ?? ticket), 0)
+    }
+    return leads.length * ticket
+  }, [leads, ticket, showVgv, stage.value])
+
   return (
     <div className="flex-shrink-0 w-60 flex flex-col bg-white/2 rounded-2xl p-3">
-      <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${stage.bg} border ${stage.border} mb-3`}>
-        <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
-          <span className={`text-xs font-semibold ${stage.color}`}>{stage.label}</span>
+      <div className={`flex flex-col px-3 py-2.5 rounded-xl ${stage.bg} border ${stage.border} mb-3`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
+            <span className={`text-xs font-semibold ${stage.color}`}>{stage.label}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-xs font-bold tabular-nums ${stage.color} opacity-70`}>
+              {leads.length.toLocaleString('pt-BR')}
+            </span>
+            {leads.length > 0 && (
+              <button
+                onClick={() => exportColumn(stage.value, leads)}
+                className={`p-1 rounded-md opacity-50 hover:opacity-100 transition-opacity ${stage.color}`}
+                title={`Exportar ${stage.label}`}
+              >
+                <Download size={10} />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className={`text-xs font-bold tabular-nums ${stage.color} opacity-70`}>
-            {leads.length.toLocaleString('pt-BR')}
-          </span>
-          {leads.length > 0 && (
-            <button
-              onClick={() => exportColumn(stage.value, leads)}
-              className={`p-1 rounded-md opacity-50 hover:opacity-100 transition-opacity ${stage.color}`}
-              title={`Exportar ${stage.label}`}
-            >
-              <Download size={10} />
-            </button>
-          )}
-        </div>
+        {/* VGV da coluna */}
+        {showVgv && colVGV > 0 && (
+          <div className="mt-1.5 pt-1.5 border-t border-white/10">
+            <p className={`text-[10px] font-semibold tabular-nums ${stage.color} opacity-80`}>
+              VGV: {formatCurrency(colVGV)}
+            </p>
+          </div>
+        )}
       </div>
 
       <div
@@ -344,6 +391,13 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
             )}
           </button>
         ))}
+        {/* Info do ticket médio */}
+        {campaign.averageTicket && campaign.averageTicket > 0 && (
+          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 bg-white/4 border border-white/10 rounded-xl px-3 py-1.5">
+            Ticket médio:
+            <span className="text-indigo-300 font-semibold">{formatCurrency(campaign.averageTicket)}</span>
+          </div>
+        )}
       </div>
 
       <DndContext

@@ -129,6 +129,7 @@ export interface CampaignLead {
   lastMessage?: string
   proposalValue?: number
   propertyId?: string
+  stageUpdatedAt?: string  // quando a etapa foi alterada pela última vez
   createdAt: string
   updatedAt: string
 }

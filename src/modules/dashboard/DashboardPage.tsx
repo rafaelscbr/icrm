@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Users, Building2, TrendingUp, DollarSign, Cake, ArrowRight,
   Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
   AlertTriangle, Clock, Target, CalendarCheck, Siren, ClipboardCheck, ListTodo,
+  Snowflake, RefreshCw,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Task, Contact, Property, calcSaleCommissions } from '../../types'
@@ -24,6 +25,181 @@ import { GoalCategory } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { Megaphone, Zap, ThumbsUp } from 'lucide-react'
+
+// ─── Leads congelados ────────────────────────────────────────────────────────
+
+const FROZEN_STAGES = ['attended', 'scheduled', 'presentation', 'proposal'] as const
+const FROZEN_STAGE_LABELS: Record<string, string> = {
+  attended:     'Interesse',
+  scheduled:    'Agendado',
+  presentation: 'Apresentação',
+  proposal:     'Proposta',
+}
+const FROZEN_THRESHOLD_DAYS = 2
+
+function daysInStage(lead: { stageUpdatedAt?: string; updatedAt?: string; createdAt: string }): number {
+  const ref = lead.stageUpdatedAt ?? lead.updatedAt ?? lead.createdAt
+  return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
+}
+
+function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
+  const { campaigns } = useCampaignsStore()
+  const { leads }     = useCampaignLeadsStore()
+
+  const frozen = useMemo(() => {
+    return leads
+      .filter(l => (FROZEN_STAGES as readonly string[]).includes(l.funnelStage) && !l.situation)
+      .map(l => ({ ...l, days: daysInStage(l) }))
+      .filter(l => l.days >= FROZEN_THRESHOLD_DAYS)
+      .sort((a, b) => b.days - a.days)
+  }, [leads])
+
+  if (frozen.length === 0) return null
+
+  const byCampaign = frozen.reduce<Record<string, typeof frozen>>((acc, l) => {
+    if (!acc[l.campaignId]) acc[l.campaignId] = []
+    acc[l.campaignId].push(l)
+    return acc
+  }, {})
+
+  return (
+    <div className="rounded-2xl border border-blue-400/30 bg-blue-500/5 ring-1 ring-blue-400/15 overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-blue-400/15">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-blue-500/15 rounded-xl flex items-center justify-center">
+            <Snowflake size={15} className="text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-blue-300 leading-none">Leads congelados</h2>
+            <p className="text-[11px] text-blue-500/70 mt-0.5">Sem movimento há +{FROZEN_THRESHOLD_DAYS} dias nas etapas de interesse</p>
+          </div>
+          <span className="ml-1 bg-blue-500/20 text-blue-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-blue-400/25 tabular-nums">
+            {frozen.length}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col divide-y divide-blue-400/8">
+        {Object.entries(byCampaign).slice(0, 3).map(([cid, cLeads]) => {
+          const campaign = campaigns.find(c => c.id === cid)
+          return (
+            <div key={cid} className="px-5 py-3 hover:bg-blue-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-slate-300">{campaign?.name ?? 'Campanha'}</p>
+                <span className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-400/20">
+                  {cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {cLeads.slice(0, 3).map(l => (
+                  <div key={l.id} className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-500 w-24 truncate">{l.name}</span>
+                    <span className="text-[10px] text-blue-400/70 bg-blue-500/8 px-1.5 py-0.5 rounded border border-blue-400/15">
+                      {FROZEN_STAGE_LABELS[l.funnelStage] ?? l.funnelStage}
+                    </span>
+                    <span className="text-[10px] text-slate-600 ml-auto">{l.days}d sem mov.</span>
+                  </div>
+                ))}
+                {cLeads.length > 3 && (
+                  <p className="text-[10px] text-slate-700">+{cLeads.length - 3} mais</p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+        {Object.keys(byCampaign).length > 3 && (
+          <div className="px-5 py-2 text-center">
+            <p className="text-[11px] text-slate-600">+{frozen.length - Object.values(byCampaign).slice(0,3).reduce((a,c)=>a+c.length,0)} leads em outras campanhas</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Painel de recompra ───────────────────────────────────────────────────────
+
+function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
+  const { contacts } = useContactsStore()
+  const { sales }    = useSalesStore()
+
+  const candidates = useMemo(() => {
+    const buyers = contacts.filter(c => c.tags.includes('buyer'))
+    return buyers.map(c => {
+      const clientSales = sales.filter(s => s.clientId === c.id).sort((a, b) => b.date.localeCompare(a.date))
+      const lastSale = clientSales[0]
+      const daysSince = lastSale
+        ? Math.floor((Date.now() - new Date(lastSale.date).getTime()) / 86_400_000)
+        : null
+      return { contact: c, lastSale, daysSince, totalSales: clientSales.length }
+    })
+    .filter(c => c.daysSince !== null && c.daysSince >= 180)
+    .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
+  }, [contacts, sales])
+
+  if (candidates.length === 0) return null
+
+  return (
+    <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-emerald-500/15">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-emerald-500/15 rounded-xl flex items-center justify-center">
+            <RefreshCw size={15} className="text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-200 leading-none">Potencial de recompra</h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">Clientes que compraram há +6 meses — hora de reativar</p>
+          </div>
+          <span className="ml-1 bg-emerald-500/15 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-xl border border-emerald-500/20 tabular-nums">
+            {candidates.length}
+          </span>
+        </div>
+        <button
+          onClick={onNavigate}
+          className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          Ver contatos <ArrowRight size={12} />
+        </button>
+      </div>
+
+      <div className="flex flex-col divide-y divide-emerald-500/8">
+        {candidates.slice(0, 5).map(({ contact: c, lastSale, daysSince, totalSales }) => (
+          <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-emerald-500/5 transition-colors">
+            <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-200 truncate">{c.name}</p>
+              <p className="text-[10px] text-slate-500">
+                {totalSales} compra{totalSales !== 1 ? 's' : ''} · última: {lastSale ? formatDate(lastSale.date) : '—'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-[10px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">
+                {daysSince}d sem compra
+              </span>
+              <a
+                href={whatsappUrl(c.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors"
+                title="Contato via WhatsApp"
+              >
+                <MessageCircle size={12} />
+              </a>
+            </div>
+          </div>
+        ))}
+        {candidates.length > 5 && (
+          <div className="px-5 py-2 text-center">
+            <button onClick={onNavigate} className="text-[11px] text-slate-600 hover:text-emerald-400 transition-colors cursor-pointer">
+              +{candidates.length - 5} outros candidatos →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function daysOverdue(dueDate: string): number {
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -575,6 +751,12 @@ export function DashboardPage() {
 
       {/* Campanhas ativas */}
       <CampaignsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
+
+      {/* Leads congelados (sem movimento em etapas de interesse) */}
+      <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
+
+      {/* Painel de recompra */}
+      <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
 
       {/* Goals widget */}
       {goals.filter(g => g.active).length > 0 && (

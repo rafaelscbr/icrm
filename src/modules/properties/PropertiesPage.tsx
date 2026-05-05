@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { Modal } from '../../components/ui/Modal'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { PropertyForm } from './PropertyForm'
+import { PropertyModal } from './PropertyModal'
 import { TasksLinkedModal } from '../../components/shared/TasksLinkedModal'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
@@ -159,6 +160,7 @@ export function PropertiesPage() {
   const [editing, setEditing] = useState<Property | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Property | undefined>()
   const [tasksProperty, setTasksProperty] = useState<Property | undefined>()
+  const [viewProperty, setViewProperty] = useState<Property | undefined>()
 
   useEffect(() => { load(); loadContacts() }, [load, loadContacts])
 
@@ -244,8 +246,11 @@ export function PropertiesPage() {
             const commission = calcCommission(p.value)
             return (
               <Card key={p.id} hover className="!p-0 overflow-hidden flex flex-col">
-                {/* Image */}
-                <div className="h-36 bg-white/3 flex items-center justify-center flex-shrink-0">
+                {/* Image (clicável) */}
+                <div
+                  onClick={() => setViewProperty(p)}
+                  className="h-36 bg-white/3 flex items-center justify-center flex-shrink-0 cursor-pointer"
+                >
                   {p.images[0] ? (
                     <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
                   ) : (
@@ -253,8 +258,11 @@ export function PropertiesPage() {
                   )}
                 </div>
 
-                {/* Content */}
-                <div className="p-5 flex flex-col gap-3 flex-1">
+                {/* Content (clicável exceto botões) */}
+                <div
+                  onClick={() => setViewProperty(p)}
+                  className="p-5 flex flex-col gap-3 flex-1 cursor-pointer"
+                >
                   <div>
                     <p className="text-sm font-semibold text-slate-100 mb-0.5">
                       {p.name}
@@ -305,7 +313,7 @@ export function PropertiesPage() {
                     <p className="text-xs text-slate-600 italic line-clamp-2">"{p.notes}"</p>
                   )}
 
-                  <div className="flex gap-2 mt-auto pt-2 border-t border-white/5">
+                  <div className="flex gap-2 mt-auto pt-2 border-t border-white/5" onClick={e => e.stopPropagation()}>
                     {/* Botão tarefas com badge de contagem */}
                     {(() => {
                       const count = tasks.filter(t => t.propertyId === p.id).length
@@ -345,6 +353,13 @@ export function PropertiesPage() {
           })}
         </div>
       )}
+
+      {/* Modal de detalhes do imóvel */}
+      <PropertyModal
+        isOpen={Boolean(viewProperty)}
+        onClose={() => setViewProperty(undefined)}
+        property={viewProperty}
+      />
 
       <PropertyForm
         key={editing?.id ?? 'new'}

@@ -8,6 +8,7 @@ import { Avatar } from '../../components/ui/Avatar'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Modal } from '../../components/ui/Modal'
 import { ContactForm } from './ContactForm'
+import { ContactModal } from './ContactModal'
 import { TasksLinkedModal } from '../../components/shared/TasksLinkedModal'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useTasksStore } from '../../store/useTasksStore'
@@ -47,6 +48,7 @@ export function ContactsPage() {
   const [editing, setEditing] = useState<Contact | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Contact | undefined>()
   const [tasksContact, setTasksContact] = useState<Contact | undefined>()
+  const [viewContact, setViewContact] = useState<Contact | undefined>()
 
   useEffect(() => { load() }, [load])
 
@@ -132,8 +134,9 @@ export function ContactsPage() {
           {paginated.map((c, i) => (
             <div
               key={c.id}
+              onClick={() => setViewContact(c)}
               className={`
-                flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/5 row-accent
+                flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/5 row-accent cursor-pointer
                 ${i < paginated.length - 1 ? 'border-b border-white/5' : ''}
               `}
             >
@@ -154,7 +157,7 @@ export function ContactsPage() {
                   <Badge key={tag} variant={TAG_VARIANTS[tag]}>{TAG_LABELS[tag]}</Badge>
                 ))}
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                 {/* Badge de tarefas vinculadas */}
                 {(() => {
                   const count = tasks.filter(t => t.contactId === c.id).length
@@ -218,6 +221,13 @@ export function ContactsPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de detalhes do contato */}
+      <ContactModal
+        isOpen={Boolean(viewContact)}
+        onClose={() => setViewContact(undefined)}
+        contact={viewContact}
+      />
 
       {/* Form modal */}
       <ContactForm

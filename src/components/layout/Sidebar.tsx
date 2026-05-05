@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
-  CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown, ExternalLink, Tv2
+  CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown, ExternalLink, Tv2,
+  Sun, Moon,
 } from 'lucide-react'
+import { useThemeStore } from '../../store/useThemeStore'
 
 const nav = [
   { to: '/',           icon: LayoutDashboard, label: 'Dashboard',  end: true,  color: 'text-indigo-400' },
@@ -25,6 +27,7 @@ const tools = [
 
 export function Sidebar() {
   const [toolsOpen, setToolsOpen] = useState(false)
+  const { theme, toggle } = useThemeStore()
 
   return (
     <aside className="hidden lg:flex w-56 flex-shrink-0 bg-[#0d0f1a] border-r border-white/7 flex-col h-screen sticky top-0">
@@ -121,8 +124,28 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {/* User */}
+      {/* User + theme toggle */}
       <div className="px-3 py-3 border-t border-white/7">
+        {/* Theme toggle */}
+        <button
+          onClick={toggle}
+          title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+          className="w-full flex items-center gap-2.5 px-3 py-2 mb-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+        >
+          <div className="w-6 h-6 rounded-md flex items-center justify-center group-hover:bg-white/8 transition-all">
+            {theme === 'dark'
+              ? <Sun size={13} className="text-amber-400" />
+              : <Moon size={13} className="text-indigo-400" />
+            }
+          </div>
+          <span className="text-xs text-slate-500 group-hover:text-slate-300 transition-colors">
+            {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+          </span>
+          <div className={`ml-auto relative w-8 h-4 rounded-full transition-all flex-shrink-0 ${theme === 'light' ? 'bg-amber-400/80' : 'bg-white/10'}`}>
+            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all ${theme === 'light' ? 'left-4' : 'left-0.5'}`} />
+          </div>
+        </button>
+
         <div className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
           <div className="relative flex-shrink-0">
             <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md shadow-indigo-500/30">

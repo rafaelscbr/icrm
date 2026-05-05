@@ -121,15 +121,20 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
   const hasTicket = ticket > 0
 
   // Leads ativos por etapa (sem situação negativa)
-  const active = (stage: FunnelStage) => leads.filter(l => l.funnelStage === stage && !l.situation).length
+  const FUNNEL_ORDER: FunnelStage[] = ['attended', 'scheduled', 'presentation', 'proposal', 'sale']
+  const activeAt = (stage: FunnelStage) => leads.filter(l => l.funnelStage === stage && !l.situation).length
+  const activeAtOrAbove = (stage: FunnelStage) => {
+    const idx = FUNNEL_ORDER.indexOf(stage)
+    return FUNNEL_ORDER.slice(idx).reduce((sum, s) => sum + activeAt(s), 0)
+  }
 
   const count = {
-    cold:         active('new') + active('sent'),
-    attended:     active('attended'),
-    scheduled:    active('scheduled'),
-    presentation: active('presentation'),
-    proposal:     active('proposal'),
-    sale:         active('sale'),
+    cold:         activeAt('new') + activeAt('sent'),
+    attended:     activeAtOrAbove('attended'),
+    scheduled:    activeAtOrAbove('scheduled'),
+    presentation: activeAtOrAbove('presentation'),
+    proposal:     activeAtOrAbove('proposal'),
+    sale:         activeAt('sale'),
   }
 
   const totalActive = Object.values(count).reduce((a, b) => a + b, 0)
@@ -373,9 +378,9 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   </div>
                 </div>
 
-                {/* Leads reais */}
+                {/* Leads reais (cumulativo para etapas intermediárias) */}
                 <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] text-slate-600 mb-0.5">leads reais</p>
+                  <p className="text-[10px] text-slate-600 mb-0.5">{block.key === 'cold' ? 'leads reais' : 'acumulado'}</p>
                   <p className={`text-lg font-bold tabular-nums ${block.realCount > 0 ? 'text-slate-200' : 'text-slate-600'}`}>
                     {block.realCount}
                   </p>
@@ -489,7 +494,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         <div className="px-5 py-3 border-t border-white/8 flex items-center gap-2">
           <Sparkles size={11} className="text-indigo-500/60 flex-shrink-0" />
           <p className="text-[11px] text-slate-600">
-            Projeção calculada em cascata a partir da base fria. Leads já avançados no funil contribuem diretamente com as taxas restantes.
+            Projeção calculada em cascata. "Acumulado" exibe todos os leads que já passaram ou estão na etapa. Leads avançados contribuem com as taxas restantes.
             {hasCustomRates && <span className="text-indigo-400/80"> Taxas personalizadas ativas.</span>}
           </p>
         </div>

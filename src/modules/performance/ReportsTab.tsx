@@ -13,8 +13,8 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useDailyLogsStore } from '../../store/useDailyLogsStore'
 import { formatCurrency } from '../../lib/formatters'
-import { DAILY_TARGETS } from '../../types'
-import { TrendingUp, DollarSign, Users, Building2, UserPlus, Phone, MessageSquare } from 'lucide-react'
+import { DAILY_TARGETS, Sale } from '../../types'
+import { TrendingUp, DollarSign, Users, Building2, UserPlus, Phone, MessageSquare, Sun } from 'lucide-react'
 
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
@@ -51,6 +51,86 @@ function ActivityTooltip({ active, payload, label }: { active?: boolean; payload
 }
 
 const axisStyle = { fill: '#475569', fontSize: 11 }
+
+const MONTH_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+
+function SeasonalitySection({ sales }: { sales: Sale[] }) {
+  const data = useMemo(() => {
+    const map = Array.from({ length: 12 }, (_, i) => ({
+      month: MONTH_NAMES[i],
+      monthFull: MONTH_FULL[i],
+      total: 0,
+      count: 0,
+      years: new Set<number>(),
+    }))
+    sales.forEach(s => {
+      const parts = s.date.split('-')
+      const m = Number(parts[1]) - 1
+      const y = Number(parts[0])
+      map[m].total += s.value
+      map[m].count += 1
+      map[m].years.add(y)
+    })
+    const maxTotal = Math.max(...map.map(d => d.total), 1)
+    return map.map(d => ({
+      ...d,
+      avg: d.count > 0 ? d.total / d.years.size : 0,
+      barPct: Math.round((d.total / maxTotal) * 100),
+    }))
+  }, [sales])
+
+  const bestMonth = data.reduce((best, d) => d.total > best.total ? d : best, data[0])
+  const hasData = sales.length > 0
+
+  return (
+    <Card className="mb-6">
+      <div className="flex items-center gap-2 mb-5">
+        <Sun size={14} className="text-amber-400" />
+        <h2 className="text-sm font-semibold text-slate-300">Sazonalidade de vendas — histórico acumulado</h2>
+        {hasData && (
+          <span className="ml-auto text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-400/20">
+            melhor: {bestMonth.monthFull}
+          </span>
+        )}
+      </div>
+      {!hasData ? (
+        <p className="text-sm text-slate-600 text-center py-8">Registre vendas para ver o padrão de sazonalidade</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {data.map((d, i) => {
+            const isCurrentMonth = new Date().getMonth() === i
+            const isBest = d.month === bestMonth.month && d.total > 0
+            return (
+              <div key={d.month} className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${isCurrentMonth ? 'bg-indigo-500/8 border border-indigo-500/20' : ''}`}>
+                <span className={`text-xs w-8 flex-shrink-0 font-medium ${isCurrentMonth ? 'text-indigo-400' : 'text-slate-500'}`}>
+                  {d.month}
+                </span>
+                <div className="flex-1 h-2.5 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${isBest ? 'bg-amber-400' : isCurrentMonth ? 'bg-indigo-400' : 'bg-indigo-600'}`}
+                    style={{ width: `${d.barPct}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-xs tabular-nums text-slate-400 w-5 text-right">{d.count}</span>
+                  <span className={`text-xs tabular-nums font-semibold w-28 text-right ${isBest ? 'text-amber-400' : 'text-slate-300'}`}>
+                    {d.total > 0 ? formatCurrency(d.total) : '—'}
+                  </span>
+                  {d.years.size > 1 && (
+                    <span className="text-[10px] text-slate-600 w-20 text-right">
+                      ø {formatCurrency(d.avg)}/ano
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <p className="text-[10px] text-slate-600 mt-4">Total histórico de todas as vendas agrupado por mês do ano.</p>
+    </Card>
+  )
+}
 
 export function ReportsTab() {
   const { sales,      load: loadSales      } = useSalesStore()
@@ -275,6 +355,8 @@ export function ReportsTab() {
             </AreaChart>
           </ResponsiveContainer>
         </Card>
+
+        <SeasonalitySection sales={sales} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>

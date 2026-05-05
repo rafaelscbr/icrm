@@ -67,7 +67,8 @@ interface CampaignLeadRow {
   situation: string | null; notes: string | null
   first_contact_at: string | null; last_message: string | null
   proposal_value: number | null
-  property_id: string | null; created_at: string; updated_at: string
+  property_id: string | null; stage_updated_at: string | null
+  created_at: string; updated_at: string
 }
 
 // ─── Mappers: row → tipo do app ───────────────────────────────────────────────
@@ -239,6 +240,7 @@ function toCampaignLead(r: CampaignLeadRow): CampaignLead {
     notes: r.notes ?? undefined, firstContactAt: r.first_contact_at ?? undefined,
     lastMessage: r.last_message ?? undefined,
     proposalValue: r.proposal_value ?? undefined, propertyId: r.property_id ?? undefined,
+    stageUpdatedAt: r.stage_updated_at ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -251,6 +253,7 @@ function fromCampaignLead(l: CampaignLead): CampaignLeadRow {
     notes: l.notes ?? null, first_contact_at: l.firstContactAt ?? null,
     last_message: l.lastMessage ?? null,
     proposal_value: l.proposalValue ?? null, property_id: l.propertyId ?? null,
+    stage_updated_at: l.stageUpdatedAt ?? null,
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }

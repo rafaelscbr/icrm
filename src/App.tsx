@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { useThemeStore, applyTheme } from './store/useThemeStore'
 import { Sidebar } from './components/layout/Sidebar'
 import { BottomNav } from './components/layout/BottomNav'
 import { GlobalSearch } from './components/shared/GlobalSearch'
@@ -70,6 +71,12 @@ function AppRoutes() {
 
 // ── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
+  const { theme } = useThemeStore()
+
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
+
   return (
     <BrowserRouter>
       <AppRoutes />

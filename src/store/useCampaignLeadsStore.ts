@@ -99,7 +99,7 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   },
 
   setStage: (id, stage, extra) => {
-    get().update(id, { funnelStage: stage, ...extra })
+    get().update(id, { funnelStage: stage, stageUpdatedAt: new Date().toISOString(), ...extra })
   },
 
   setSituation: (id, situation) => {
