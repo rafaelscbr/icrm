@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -40,6 +41,7 @@ const PAGE_SIZE = 20
 export function ContactsPage() {
   const { contacts, load, remove, search, filterByTag } = useContactsStore()
   const { tasks } = useTasksStore()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<ContactTag | null>(null)
   const [onlyWithTasks, setOnlyWithTasks] = useState(false)
@@ -51,6 +53,18 @@ export function ContactsPage() {
   const [viewContact, setViewContact] = useState<Contact | undefined>()
 
   useEffect(() => { load() }, [load])
+
+  // Abre modal automaticamente se vier ?open=<id> na URL
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (openId && contacts.length > 0) {
+      const found = contacts.find(c => c.id === openId)
+      if (found) {
+        setViewContact(found)
+        setSearchParams({}, { replace: true })
+      }
+    }
+  }, [searchParams, contacts, setSearchParams])
 
   const filtered = (() => {
     let result = query.trim() ? search(query) : filterByTag(activeTag)

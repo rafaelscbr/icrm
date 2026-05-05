@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Search, Building2, Pencil, Trash2, ImageOff,
   TrendingUp, Landmark, MapPin, BadgePercent, ClipboardList, ListFilter,
@@ -153,6 +154,7 @@ export function PropertiesPage() {
   const { properties, load, remove, search, filterByStatus } = usePropertiesStore()
   const { load: loadContacts, getById } = useContactsStore()
   const { tasks } = useTasksStore()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [activeStatus, setActiveStatus] = useState<PropertyStatus | null>(null)
   const [onlyWithTasks, setOnlyWithTasks] = useState(false)
@@ -163,6 +165,18 @@ export function PropertiesPage() {
   const [viewProperty, setViewProperty] = useState<Property | undefined>()
 
   useEffect(() => { load(); loadContacts() }, [load, loadContacts])
+
+  // Abre modal automaticamente se vier ?open=<id> na URL
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (openId && properties.length > 0) {
+      const found = properties.find(p => p.id === openId)
+      if (found) {
+        setViewProperty(found)
+        setSearchParams({}, { replace: true })
+      }
+    }
+  }, [searchParams, properties, setSearchParams])
 
   const filtered = (() => {
     let result = query.trim() ? search(query) : filterByStatus(activeStatus)

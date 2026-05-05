@@ -106,6 +106,11 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     onClose()
   }
 
+  function goWithModal(basePath: string, id: string) {
+    navigate(`${basePath}?open=${id}`)
+    onClose()
+  }
+
   // ── Helpers ─────────────────────────────────────────────────────────────────
   function getCampaignName(campaignId: string) {
     return campaigns.find(c => c.id === campaignId)?.name ?? 'Campanha'
@@ -180,7 +185,8 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                   icon={<Users size={13} className="text-blue-400/70" />}
                   title={c.name}
                   subtitle={c.phone}
-                  onClick={() => go('/contatos')}
+                  tag="Abre detalhes"
+                  onClick={() => goWithModal('/contatos', c.id)}
                 />
               ))}
             </Section>
@@ -198,7 +204,8 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                   icon={<Building2 size={13} className="text-cyan-400/70" />}
                   title={p.name}
                   subtitle={p.neighborhood}
-                  onClick={() => go('/imoveis')}
+                  tag="Abre detalhes"
+                  onClick={() => goWithModal('/imoveis', p.id)}
                 />
               ))}
             </Section>
@@ -216,7 +223,8 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                   icon={<Megaphone size={13} className="text-pink-400/70" />}
                   title={l.name}
                   subtitle={`${l.phone} · ${getCampaignName(l.campaignId)}`}
-                  onClick={() => go('/campanhas')}
+                  tag="Ver campanha"
+                  onClick={() => go(`/campanhas?id=${l.campaignId}`)}
                 />
               ))}
             </Section>
@@ -234,6 +242,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                   icon={<CheckSquare size={13} className="text-orange-400/70" />}
                   title={t.title}
                   subtitle={t.dueDate ? `Vence em ${formatDueDate(t.dueDate)}` : 'Sem prazo'}
+                  tag="Ver tarefas"
                   onClick={() => go('/tarefas')}
                 />
               ))}
@@ -282,11 +291,13 @@ function ResultRow({
   icon,
   title,
   subtitle,
+  tag,
   onClick,
 }: {
   icon: React.ReactNode
   title: string
   subtitle: string
+  tag?: string
   onClick: () => void
 }) {
   return (
@@ -301,6 +312,11 @@ function ResultRow({
         <p className="text-sm text-slate-200 truncate leading-tight">{title}</p>
         <p className="text-[11px] text-slate-600 truncate leading-tight mt-0.5">{subtitle}</p>
       </div>
+      {tag && (
+        <span className="flex-shrink-0 text-[10px] text-slate-700 group-hover:text-indigo-400 transition-colors bg-white/4 group-hover:bg-indigo-500/10 px-2 py-0.5 rounded border border-white/8 group-hover:border-indigo-500/20">
+          {tag}
+        </span>
+      )}
     </button>
   )
 }
