@@ -145,7 +145,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
       <div className="flex-1 p-6">
         {tab === 'leads'    && <LeadsTab    leads={campaignLeads} campaign={campaign} stickyTop={headerH} />}
         {tab === 'kanban'   && <KanbanTab   leads={campaignLeads} campaign={campaign} />}
-        {tab === 'metrics'  && <MetricsTab  leads={campaignLeads} />}
+        {tab === 'metrics'  && <MetricsTab  leads={campaignLeads} campaign={campaign} />}
         {tab === 'forecast' && <ForecastTab leads={campaignLeads} campaign={campaign} />}
       </div>
 

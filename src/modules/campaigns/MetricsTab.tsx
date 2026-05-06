@@ -3,12 +3,13 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { Card } from '../../components/ui/Card'
-import { CampaignLead } from '../../types'
+import { Campaign, CampaignLead } from '../../types'
 import { FUNNEL_STAGES, FUNNEL_COLORS, SITUATION_CONFIG } from './config'
 import { formatCurrency } from '../../lib/formatters'
 
 interface MetricsTabProps {
   leads: CampaignLead[]
+  campaign: Campaign
 }
 
 const axisStyle = { fill: '#475569', fontSize: 11 }
@@ -146,54 +147,85 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
   )
 }
 
-// ─── Conversão por mensagem ───────────────────────────────────────────────────
+// ─── Conversão por modelo de mensagem ────────────────────────────────────────
 
 const ENGAGED_STAGES = ['attended', 'scheduled', 'presentation', 'proposal', 'sale']
 
-function ConversionByMessage({ leads }: { leads: CampaignLead[] }) {
-  const messageStats = useMemo(() => {
-    const leadsWithMessage = leads.filter(l => l.lastMessage && l.lastMessage.trim() !== '')
+function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campaign: Campaign }) {
+  // Todos os templates originais (sem substituição de nome)
+  const templates = useMemo(
+    () => [campaign.message, ...(campaign.messages ?? [])],
+    [campaign],
+  )
+
+  const templateStats = useMemo(() => {
+    // Para leads com messageIndex gravado usa direto.
+    // Para leads antigos (só lastMessage), tenta inferir o template comparando o texto
+    // gerado por cada template com o nome do lead.
+    function resolveIndex(l: CampaignLead): number | undefined {
+      if (l.messageIndex !== undefined) return l.messageIndex
+      if (!l.lastMessage) return undefined
+      const firstName = l.name.trim().split(/\s+/)[0]
+      const idx = templates.findIndex(t => t.replace(/\{nome\}/gi, firstName) === l.lastMessage)
+      return idx === -1 ? undefined : idx
+    }
+
+    const leadsWithMessage = leads.filter(l => l.lastMessage || l.messageIndex !== undefined)
     if (leadsWithMessage.length === 0) return []
 
-    const map = new Map<string, { total: number; engaged: number }>()
+    const map = new Map<number, { total: number; engaged: number }>()
     leadsWithMessage.forEach(l => {
-      const msg = l.lastMessage!
-      const existing = map.get(msg) ?? { total: 0, engaged: 0 }
+      const idx = resolveIndex(l)
+      if (idx === undefined) return
+      const existing = map.get(idx) ?? { total: 0, engaged: 0 }
       existing.total += 1
       if (ENGAGED_STAGES.includes(l.funnelStage)) existing.engaged += 1
-      map.set(msg, existing)
+      map.set(idx, existing)
     })
 
     return Array.from(map.entries())
-      .map(([message, { total, engaged }]) => ({
-        message,
+      .map(([idx, { total, engaged }]) => ({
+        idx,
+        label: `Mensagem ${idx + 1}`,
+        preview: templates[idx] ?? '',
         total,
         engaged,
         rate: total > 0 ? Math.round((engaged / total) * 100) : 0,
       }))
       .sort((a, b) => b.rate - a.rate)
-  }, [leads])
+  }, [leads, templates])
 
-  const hasData = messageStats.length > 0
+  const hasData = templateStats.length > 0
 
   return (
     <Card>
-      <h2 className="text-sm font-semibold text-slate-300 mb-4">Conversão por mensagem</h2>
+      <h2 className="text-sm font-semibold text-slate-300 mb-4">Conversão por modelo de mensagem</h2>
       {!hasData ? (
         <p className="text-sm text-slate-600 text-center py-6">
           Envie mensagens pelo sistema para ver a análise por template
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {messageStats.map((item, i) => (
+          {templateStats.map(item => (
             <div
-              key={i}
+              key={item.idx}
               className="flex flex-col gap-2 p-3 rounded-xl bg-white/3 border border-white/5"
             >
-              {/* Message preview + badge */}
-              <div className="flex items-start gap-3">
+              {/* Label do template + badge de leads */}
+              <div className="flex items-center gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-[11px] font-bold flex items-center justify-center">
+                  {item.idx + 1}
+                </span>
+                <span className="flex-1 text-xs font-semibold text-slate-300">{item.label}</span>
+                <span className="flex-shrink-0 text-[11px] font-semibold bg-white/8 text-slate-300 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  {item.total} lead{item.total !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {/* Preview do template original */}
+              {item.preview && (
                 <p
-                  className="flex-1 text-xs italic text-slate-400 leading-5 min-w-0"
+                  className="text-xs italic text-slate-500 leading-5 ml-9"
                   style={{
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
@@ -201,12 +233,9 @@ function ConversionByMessage({ leads }: { leads: CampaignLead[] }) {
                     overflow: 'hidden',
                   }}
                 >
-                  "{item.message}"
+                  "{item.preview}"
                 </p>
-                <span className="flex-shrink-0 text-[11px] font-semibold bg-white/8 text-slate-300 px-2 py-0.5 rounded-full whitespace-nowrap">
-                  {item.total} lead{item.total !== 1 ? 's' : ''}
-                </span>
-              </div>
+              )}
 
               {/* Progress bar + percentage */}
               <div className="flex items-center gap-2">
@@ -233,7 +262,7 @@ function ConversionByMessage({ leads }: { leads: CampaignLead[] }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export function MetricsTab({ leads }: MetricsTabProps) {
+export function MetricsTab({ leads, campaign }: MetricsTabProps) {
   // Leads com contato inexistente são excluídos do funil
   const funnelLeads = leads.filter(l => l.situation !== 'invalid')
 
@@ -372,8 +401,8 @@ export function MetricsTab({ leads }: MetricsTabProps) {
         </ResponsiveContainer>
       </Card>
 
-      {/* Conversão por mensagem */}
-      <ConversionByMessage leads={funnelLeads} />
+      {/* Conversão por modelo de mensagem */}
+      <ConversionByMessage leads={funnelLeads} campaign={campaign} />
     </div>
   )
 }

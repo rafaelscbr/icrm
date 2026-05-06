@@ -127,6 +127,7 @@ export interface CampaignLead {
   notes?: string
   firstContactAt?: string
   lastMessage?: string
+  messageIndex?: number   // índice do template usado (0 = Mensagem 1, 1 = Mensagem 2, …)
   proposalValue?: number
   propertyId?: string
   stageUpdatedAt?: string  // quando a etapa foi alterada pela última vez

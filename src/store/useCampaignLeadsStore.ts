@@ -16,7 +16,7 @@ interface CampaignLeadsStore {
   removeForCampaign: (campaignId: string) => void
   setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>) => void
   setSituation: (id: string, situation: LeadSituation | undefined) => void
-  markContacted: (id: string, message?: string) => void
+  markContacted: (id: string, message?: string, messageIndex?: number) => void
   getForCampaign: (campaignId: string) => CampaignLead[]
 }
 
@@ -106,13 +106,14 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     get().update(id, { situation })
   },
 
-  markContacted: (id, message) => {
+  markContacted: (id, message, messageIndex) => {
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
     const patch: Partial<CampaignLead> = {}
     if (!lead.firstContactAt) patch.firstContactAt = new Date().toISOString()
     if (lead.funnelStage === 'new') patch.funnelStage = 'sent'
     if (message) patch.lastMessage = message
+    if (messageIndex !== undefined) patch.messageIndex = messageIndex
     if (Object.keys(patch).length) get().update(id, patch)
   },
 

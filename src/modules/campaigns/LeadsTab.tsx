@@ -117,7 +117,7 @@ interface MessagePickerProps {
   isOpen:    boolean
   onClose:   () => void
   templates: string[]         // todos os templates (já com {nome} substituído)
-  onPick:    (msg: string) => void
+  onPick:    (msg: string, index: number) => void
 }
 
 function MessagePickerModal({ isOpen, onClose, templates, onPick }: MessagePickerProps) {
@@ -130,7 +130,7 @@ function MessagePickerModal({ isOpen, onClose, templates, onPick }: MessagePicke
         {templates.map((t, i) => (
           <button
             key={i}
-            onClick={() => { onPick(t); onClose() }}
+            onClick={() => { onPick(t, i); onClose() }}
             className="flex items-start gap-3 text-left p-3 rounded-xl bg-white/4 border border-white/8 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-pointer group"
           >
             <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[11px] font-bold flex items-center justify-center mt-0.5">
@@ -301,7 +301,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     return all.map(m => m.replace(/\{nome\}/gi, firstName))
   }
 
-  function sendWhatsApp(lead: CampaignLead, msg: string) {
+  function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
     window.open(whatsappUrl(lead.phone, msg), '_blank')  // primeiro — usa o gesto do clique
     requestNotificationPermission()   // depois — async, não bloqueia o open
     const secs  = start()             // cooldown global aleatório
@@ -309,7 +309,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     setForceOffHours(false)
 
     const wasNew = lead.funnelStage === 'new'
-    markContacted(lead.id, msg)
+    markContacted(lead.id, msg, templateIndex)
 
     if (total >= DAILY_WARN && total < DAILY_LIMIT) {
       toast(`⚠️ ${total} disparos hoje — limite recomendado é ${DAILY_WARN}. Cuidado com o banimento!`,
@@ -364,7 +364,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     if (templates.length > 1) {
       setPickerLead(lead)
     } else {
-      sendWhatsApp(lead, templates[0])
+      sendWhatsApp(lead, templates[0], 0)
     }
   }
 
@@ -690,7 +690,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         isOpen={Boolean(pickerLead)}
         onClose={() => setPickerLead(undefined)}
         templates={pickerLead ? getTemplates(pickerLead) : []}
-        onPick={msg => pickerLead && sendWhatsApp(pickerLead, msg)}
+        onPick={(msg, idx) => pickerLead && sendWhatsApp(pickerLead, msg, idx)}
       />
 
       <Modal isOpen={Boolean(deleteLead)} onClose={() => setDeleteLead(undefined)} title="Remover lead" size="sm">

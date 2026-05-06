@@ -56,8 +56,11 @@ CREATE TABLE IF NOT EXISTS campaign_leads (
   situation TEXT CHECK (situation IN ('no_interest', 'stop_messages', 'invalid')),
   notes TEXT,
   first_contact_at TIMESTAMPTZ,
+  last_message TEXT,
+  message_index SMALLINT,
   proposal_value NUMERIC,
   property_id TEXT REFERENCES properties(id) ON DELETE SET NULL,
+  stage_updated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL
 );
