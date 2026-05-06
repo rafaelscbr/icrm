@@ -48,6 +48,8 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
 
   useEffect(() => { loadLeads() }, [loadLeads])
 
+  const campaign = campaigns.find(c => c.id === campaignId)
+
   // Backfill único: salva messageIndex para leads antigos que só têm lastMessage
   const backfillDone = useRef(false)
   useEffect(() => {
@@ -56,7 +58,6 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
     backfillMessageIndex(campaign)
   }, [campaign, leads, backfillMessageIndex])
 
-  const campaign = campaigns.find(c => c.id === campaignId)
   if (!campaign) return null
 
   const campaignLeads = leads.filter(l => l.campaignId === campaignId)
