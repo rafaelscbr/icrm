@@ -29,7 +29,7 @@ const TABS: { value: Tab; label: string; icon: typeof List }[] = [
 
 export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   const { campaigns, setStatus } = useCampaignsStore()
-  const { leads, load: loadLeads } = useCampaignLeadsStore()
+  const { leads, load: loadLeads, backfillMessageIndex } = useCampaignLeadsStore()
 
   const [tab,          setTab]          = useState<Tab>('leads')
   const [editOpen,     setEditOpen]     = useState(false)
@@ -47,6 +47,14 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   }, [])
 
   useEffect(() => { loadLeads() }, [loadLeads])
+
+  // Backfill único: salva messageIndex para leads antigos que só têm lastMessage
+  const backfillDone = useRef(false)
+  useEffect(() => {
+    if (backfillDone.current || !campaign || leads.length === 0) return
+    backfillDone.current = true
+    backfillMessageIndex(campaign)
+  }, [campaign, leads, backfillMessageIndex])
 
   const campaign = campaigns.find(c => c.id === campaignId)
   if (!campaign) return null

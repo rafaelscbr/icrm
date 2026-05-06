@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { CampaignLead, FunnelStage, LeadSituation } from '../types'
+import { Campaign, CampaignLead, FunnelStage, LeadSituation } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 
@@ -17,6 +17,7 @@ interface CampaignLeadsStore {
   setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>) => void
   setSituation: (id: string, situation: LeadSituation | undefined) => void
   markContacted: (id: string, message?: string, messageIndex?: number) => void
+  backfillMessageIndex: (campaign: Campaign) => Promise<number>
   getForCampaign: (campaignId: string) => CampaignLead[]
 }
 
@@ -115,6 +116,22 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     if (message) patch.lastMessage = message
     if (messageIndex !== undefined) patch.messageIndex = messageIndex
     if (Object.keys(patch).length) get().update(id, patch)
+  },
+
+  backfillMessageIndex: async (campaign) => {
+    const templates = [campaign.message, ...(campaign.messages ?? [])]
+    const candidates = get().leads.filter(
+      l => l.campaignId === campaign.id && l.lastMessage && l.messageIndex === undefined,
+    )
+    let patched = 0
+    for (const lead of candidates) {
+      const firstName = lead.name.trim().split(/\s+/)[0]
+      const idx = templates.findIndex(t => t.replace(/\{nome\}/gi, firstName) === lead.lastMessage)
+      if (idx === -1) continue
+      get().update(lead.id, { messageIndex: idx })
+      patched++
+    }
+    return patched
   },
 
   getForCampaign: (campaignId) =>
