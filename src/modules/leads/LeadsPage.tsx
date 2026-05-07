@@ -38,20 +38,24 @@ type ViewMode = 'list' | 'kanban'
 
 function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const { advanceFollowup } = useLeadsStore()
+  const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const property = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
+  const contact = lead.contactId ? getById(lead.contactId) : undefined
+  const displayName = contact?.name ?? lead.name
+  const displayPhone = contact?.phone ?? lead.phone
   const conf = STAGE_CONFIG[lead.funnelStage]
   const originConf = ORIGIN_CONFIG[lead.origin]
   const isDiscarded = !!lead.discardReason
 
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
-    const firstName = lead.name.split(' ')[0]
+    const firstName = displayName.split(' ')[0]
     let msg = FOLLOWUP_MESSAGES[0](firstName)
     if (lead.funnelStage === 'followup' && lead.followupStep >= 1 && lead.followupStep <= 5) {
       msg = FOLLOWUP_MESSAGES[lead.followupStep - 1](firstName)
     }
-    window.open(whatsappUrl(lead.phone, msg), '_blank')
+    window.open(whatsappUrl(displayPhone, msg), '_blank')
     advanceFollowup(lead.id)
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
     toast.success(`WhatsApp · ${nextStep}ª msg`)
@@ -66,20 +70,20 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
     >
       {/* Avatar */}
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${isDiscarded ? 'bg-slate-500/20 text-slate-500' : 'bg-gradient-to-br from-violet-500/30 to-purple-500/20 text-violet-200'}`}>
-        {lead.name.charAt(0).toUpperCase()}
+        {displayName.charAt(0).toUpperCase()}
       </div>
 
       {/* Name + phone */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-slate-200 truncate">{lead.name}</span>
+          <span className="text-sm font-medium text-slate-200 truncate">{displayName}</span>
           {lead.contactId && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/20 flex-shrink-0">
-              <UserCheck size={8} /> Contato
+            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 flex-shrink-0">
+              <UserCheck size={8} /> No CRM
             </span>
           )}
         </div>
-        <p className="text-xs text-slate-500 mt-0.5">{formatPhone(lead.phone)}</p>
+        <p className="text-xs text-slate-500 mt-0.5">{formatPhone(displayPhone)}</p>
       </div>
 
       {/* Origin */}

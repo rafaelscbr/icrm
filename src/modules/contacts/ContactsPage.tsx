@@ -13,6 +13,7 @@ import { ContactModal } from './ContactModal'
 import { TasksLinkedModal } from '../../components/shared/TasksLinkedModal'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useTasksStore } from '../../store/useTasksStore'
+import { useLeadsStore } from '../../store/useLeadsStore'
 import { Contact, ContactTag } from '../../types'
 import { formatPhone, whatsappUrl, isBirthdayThisMonth } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -41,6 +42,7 @@ const PAGE_SIZE = 20
 export function ContactsPage() {
   const { contacts, load, remove, search, filterByTag } = useContactsStore()
   const { tasks } = useTasksStore()
+  const { leads } = useLeadsStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<ContactTag | null>(null)
@@ -166,10 +168,15 @@ export function ContactsPage() {
                   {[c.company, formatPhone(c.phone)].filter(Boolean).join(' · ')}
                 </p>
               </div>
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5 flex-wrap">
                 {c.tags.map(tag => (
                   <Badge key={tag} variant={TAG_VARIANTS[tag]}>{TAG_LABELS[tag]}</Badge>
                 ))}
+                {leads.some(l => l.contactId === c.id && !l.discardReason) && (
+                  <span className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">
+                    Em Funil
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                 {/* Badge de tarefas vinculadas */}

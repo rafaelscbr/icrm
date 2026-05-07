@@ -64,7 +64,7 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
   const originConf = ORIGIN_CONFIG[lead.origin]
 
   const isDiscarded = !!lead.discardReason
-  const isConverted = !!lead.contactId
+  const isLinked = !!lead.contactId   // already linked to a contact (new arch or converted)
 
   function getWhatsAppMessage() {
     if (lead.funnelStage === 'followup' && lead.followupStep >= 1 && lead.followupStep <= 5) {
@@ -91,7 +91,7 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
   }
 
   function handleConvert() {
-    if (isConverted) return
+    if (isLinked) return
     const newContact = addContact({
       name: lead.name,
       phone: lead.phone,
@@ -137,9 +137,9 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
                       {stageConf.label}
                       {followupLabel && <span className="opacity-70">· {followupLabel}</span>}
                     </span>
-                    {isConverted && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/25">
-                        <CheckCircle2 size={9} /> Convertido
+                    {isLinked && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">
+                        <CheckCircle2 size={9} /> Contato vinculado
                       </span>
                     )}
                     {isDiscarded && (
@@ -230,11 +230,20 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
               </div>
             )}
 
-            {/* Contato convertido */}
+            {/* Contato vinculado */}
             {contact && (
-              <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-3 flex items-center gap-2">
-                <UserCheck size={14} className="text-green-400 flex-shrink-0" />
-                <p className="text-xs text-green-300">Convertido em contato: <span className="font-medium">{contact.name}</span></p>
+              <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 text-sm font-bold text-violet-300">
+                  {contact.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-slate-500">Contato no CRM</p>
+                  <p className="text-sm font-medium text-slate-200 truncate">{contact.name}</p>
+                  {contact.phone !== lead.phone && (
+                    <p className="text-xs text-slate-500">{formatPhone(contact.phone)}</p>
+                  )}
+                </div>
+                <UserCheck size={15} className="text-violet-400 flex-shrink-0" />
               </div>
             )}
 
@@ -287,12 +296,12 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
                 <Edit2 size={13} /> Editar
               </button>
 
-              {!isConverted && !isDiscarded && (
+              {!isLinked && !isDiscarded && (
                 <button
                   onClick={handleConvert}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm text-violet-300 hover:text-violet-200 bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 rounded-xl transition-all"
                 >
-                  <UserCheck size={13} /> Converter
+                  <UserCheck size={13} /> Criar contato
                 </button>
               )}
 

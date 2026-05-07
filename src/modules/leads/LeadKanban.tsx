@@ -6,6 +6,7 @@ import {
 import { MessageCircle, UserCheck, GripVertical, Phone } from 'lucide-react'
 import { Lead, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
+import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { LeadModal } from './LeadModal'
@@ -41,11 +42,15 @@ const ORIGIN_EMOJI: Record<string, string> = {
 
 function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const { advanceFollowup } = useLeadsStore()
+  const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id })
 
   const property = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
-  const firstName = lead.name.split(' ')[0]
+  const contact = lead.contactId ? getById(lead.contactId) : undefined
+  const displayName = contact?.name ?? lead.name
+  const displayPhone = contact?.phone ?? lead.phone
+  const firstName = displayName.split(' ')[0]
 
   function getWhatsAppMessage() {
     if (lead.funnelStage === 'followup' && lead.followupStep >= 1 && lead.followupStep <= 5) {
@@ -57,14 +62,14 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
     const msg = getWhatsAppMessage()
-    const url = whatsappUrl(lead.phone, msg)
+    const url = whatsappUrl(displayPhone, msg)
     window.open(url, '_blank')
     advanceFollowup(lead.id)
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
     toast.success(`WhatsApp · ${nextStep}ª msg enviada`)
   }
 
-  const isConverted = !!lead.contactId
+  const isLinked = !!lead.contactId
 
   return (
     <div
@@ -73,7 +78,7 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       className={`group relative bg-[#1A1D27] border rounded-xl p-3 cursor-pointer transition-all duration-150 hover:border-white/20 hover:shadow-lg hover:shadow-black/20 hover:translate-y-[-1px] active:scale-[0.98]
         ${isDragging ? 'opacity-40 scale-95' : ''}
         ${lead.funnelStage === 'venda' ? 'border-green-500/25 bg-green-500/5' : 'border-white/10'}
-        ${isConverted ? 'border-violet-500/25' : ''}
+        ${isLinked ? 'border-violet-500/20' : ''}
       `}
     >
       {/* Drag handle */}
@@ -89,13 +94,13 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       {/* Name + origin */}
       <div className="flex items-start gap-2 pr-6 mb-2">
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center text-xs font-bold text-violet-200 flex-shrink-0">
-          {lead.name.charAt(0).toUpperCase()}
+          {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-slate-200 truncate leading-tight">{lead.name}</p>
+          <p className="text-sm font-medium text-slate-200 truncate leading-tight">{displayName}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-[10px] text-slate-600">{ORIGIN_EMOJI[lead.origin]}</span>
-            <span className="text-[10px] text-slate-500">{formatPhone(lead.phone)}</span>
+            <span className="text-[10px] text-slate-500">{formatPhone(displayPhone)}</span>
           </div>
         </div>
       </div>
@@ -132,13 +137,13 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       )}
 
       {/* Badges */}
-      <div className="flex items-center gap-1 flex-wrap">
-        {isConverted && (
-          <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/20">
-            <UserCheck size={8} /> Contato
+      {isLinked && (
+        <div className="flex items-center gap-1 flex-wrap mb-1">
+          <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20">
+            <UserCheck size={8} /> No CRM
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* WhatsApp button */}
       <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5">
@@ -153,7 +158,7 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
           )}
         </button>
         <a
-          href={`tel:${lead.phone}`}
+          href={`tel:${displayPhone}`}
           onClick={e => e.stopPropagation()}
           className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-200 bg-white/3 hover:bg-white/8 border border-white/8 rounded-lg transition-all"
         >

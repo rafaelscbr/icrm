@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Phone, Building2, Cake, Heart, Baby, Tag, CheckCircle2,
   Clock, Circle, AlertTriangle, TrendingUp, MessageCircle,
+  UserPlus,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Badge } from '../../components/ui/Badge'
@@ -10,8 +11,10 @@ import { Contact, ContactTag } from '../../types'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useLeadsStore } from '../../store/useLeadsStore'
 import { formatPhone, formatDate, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { calcSaleCommissions } from '../../types'
+import { LeadModal } from '../leads/LeadModal'
 
 const TAG_LABELS: Record<ContactTag, string> = {
   owner:    'Proprietário',
@@ -55,10 +58,21 @@ interface ContactModalProps {
   onClose: () => void
 }
 
+const LEAD_STAGE_CONFIG = {
+  lead:        { label: 'Lead',        color: 'text-slate-300',  bg: 'bg-slate-500/20',  border: 'border-slate-500/30'  },
+  followup:    { label: 'Followup',    color: 'text-blue-300',   bg: 'bg-blue-500/20',   border: 'border-blue-500/30'   },
+  atendimento: { label: 'Atendimento', color: 'text-violet-300', bg: 'bg-violet-500/20', border: 'border-violet-500/30' },
+  visita:      { label: 'Visita',      color: 'text-amber-300',  bg: 'bg-amber-500/20',  border: 'border-amber-500/30'  },
+  proposta:    { label: 'Proposta',    color: 'text-orange-300', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
+  venda:       { label: 'Venda',       color: 'text-green-300',  bg: 'bg-green-500/20',  border: 'border-green-500/30'  },
+}
+
 export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
   const { tasks }      = useTasksStore()
   const { sales }      = useSalesStore()
   const { properties } = usePropertiesStore()
+  const { leads }      = useLeadsStore()
+  const [selectedLead, setSelectedLead] = useState<string | null>(null)
 
   const linkedTasks = useMemo(
     () => contact ? tasks.filter(t => t.contactId === contact.id).sort((a, b) => {
@@ -82,6 +96,11 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
     [contact, properties]
   )
 
+  const activeLeads = useMemo(
+    () => contact ? leads.filter(l => l.contactId === contact.id && !l.discardReason) : [],
+    [contact, leads]
+  )
+
   const totalSalesValue = linkedSales.reduce((a, s) => a + s.value, 0)
   const totalCommission = linkedSales.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
 
@@ -92,6 +111,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
   const cancelledTasks = linkedTasks.filter(t => t.status === 'cancelled')
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do contato" size="lg">
       <div className="flex flex-col gap-6">
 
@@ -217,6 +237,48 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
           </div>
         )}
 
+        {/* Leads no Funil */}
+        {activeLeads.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <UserPlus size={13} className="text-violet-400" />
+              <h3 className="text-sm font-semibold text-slate-300">Leads no Funil</h3>
+              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 font-medium">
+                {activeLeads.length} ativo{activeLeads.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {activeLeads.map(lead => {
+                const conf = LEAD_STAGE_CONFIG[lead.funnelStage]
+                const prop = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
+                return (
+                  <button
+                    key={lead.id}
+                    onClick={() => setSelectedLead(lead.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 bg-white/3 hover:bg-white/5 border border-white/8 rounded-xl transition-all text-left"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${conf.bg} ${conf.color} ${conf.border}`}>
+                          {conf.label}
+                          {lead.funnelStage === 'followup' && lead.followupStep > 0 && ` · ${lead.followupStep}ª msg`}
+                        </span>
+                      </div>
+                      {prop && (
+                        <p className="text-[10px] text-slate-500 mt-0.5 truncate">🏠 {prop.name}</p>
+                      )}
+                      {lead.averageTicket && !prop && (
+                        <p className="text-[10px] text-violet-400 mt-0.5">{formatCurrencyFull(lead.averageTicket)}</p>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-600 flex-shrink-0">{formatDate(lead.createdAt)}</p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Histórico de tarefas */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -288,5 +350,11 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
 
       </div>
     </Modal>
+
+    {selectedLead && (() => {
+      const lead = leads.find(l => l.id === selectedLead)
+      return lead ? <LeadModal lead={lead} onClose={() => setSelectedLead(null)} /> : null
+    })()}
+    </>
   )
 }
