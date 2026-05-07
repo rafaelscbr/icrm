@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   X, Phone, Mail, MessageCircle, ArrowRight, UserCheck,
   Building2, DollarSign, Trash2, RotateCcw, Edit2,
-  Calendar, Tag, AlertTriangle, CheckCircle2, Clock,
+  Calendar, Tag, AlertTriangle, CheckCircle2, Clock, ClipboardList,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -10,6 +10,7 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { formatPhone, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { LeadForm } from './LeadForm'
+import { TaskForm } from '../tasks/TaskForm'
 import toast from 'react-hot-toast'
 
 const DISCARD_REASONS: { value: LeadDiscardReason; label: string; icon: string }[] = [
@@ -57,6 +58,7 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
   const [showDiscard, setShowDiscard] = useState(false)
   const [selectedReason, setSelectedReason] = useState<LeadDiscardReason | null>(null)
   const [showEdit, setShowEdit] = useState(false)
+  const [showTaskForm, setShowTaskForm] = useState(false)
 
   const property = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact = lead.contactId ? getById(lead.contactId) : undefined
@@ -296,6 +298,13 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
                 <Edit2 size={13} /> Editar
               </button>
 
+              <button
+                onClick={() => setShowTaskForm(true)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm text-indigo-300 hover:text-indigo-200 bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/20 rounded-xl transition-all"
+              >
+                <ClipboardList size={13} /> Tarefa
+              </button>
+
               {!isLinked && !isDiscarded && (
                 <button
                   onClick={handleConvert}
@@ -373,6 +382,13 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
 
       {/* Edit Form */}
       <LeadForm isOpen={showEdit} onClose={() => setShowEdit(false)} lead={lead} />
+
+      {/* Task Form — pre-linked to contact */}
+      <TaskForm
+        isOpen={showTaskForm}
+        onClose={() => setShowTaskForm(false)}
+        defaultContactId={lead.contactId}
+      />
     </>
   )
 }

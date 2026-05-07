@@ -2,14 +2,15 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, Search, MessageCircle,
-  Users, TrendingUp, BarChart3, Phone,
-  UserCheck, Trash2, ChevronRight, RefreshCw,
+  Users, TrendingUp, BarChart3,
+  UserCheck, Trash2, ChevronRight, RefreshCw, Zap,
+  DollarSign, Target, AlertCircle,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
-import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
+import { formatPhone, formatCurrency, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { LeadForm } from './LeadForm'
 import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
@@ -176,15 +177,35 @@ export function LeadsPage() {
     return result
   }, [leads, search, filterStage, filterOrigin, showDiscarded])
 
-  const active = leads.filter(l => !l.discardReason)
+  const active   = leads.filter(l => !l.discardReason)
   const discarded = leads.filter(l => !!l.discardReason)
 
-  const kpis = [
-    { label: 'Total Ativos', value: active.length, icon: Users, color: 'violet', gradient: 'from-violet-500/20 to-purple-500/10', border: 'border-violet-500/20', text: 'text-violet-300' },
-    { label: 'Em Followup', value: active.filter(l => l.funnelStage === 'followup').length, icon: MessageCircle, color: 'blue', gradient: 'from-blue-500/20 to-sky-500/10', border: 'border-blue-500/20', text: 'text-blue-300' },
-    { label: 'Em Atendimento', value: active.filter(l => l.funnelStage === 'atendimento').length, icon: Phone, color: 'violet', gradient: 'from-violet-500/20 to-purple-500/10', border: 'border-violet-500/20', text: 'text-violet-300' },
-    { label: 'Vendas', value: active.filter(l => l.funnelStage === 'venda').length, icon: TrendingUp, color: 'green', gradient: 'from-green-500/20 to-emerald-500/10', border: 'border-green-500/20', text: 'text-green-300' },
-  ]
+  // Dashboard data
+  const byStage = useMemo(() => ({
+    lead:        active.filter(l => l.funnelStage === 'lead').length,
+    followup:    active.filter(l => l.funnelStage === 'followup').length,
+    atendimento: active.filter(l => l.funnelStage === 'atendimento').length,
+    visita:      active.filter(l => l.funnelStage === 'visita').length,
+    proposta:    active.filter(l => l.funnelStage === 'proposta').length,
+    venda:       active.filter(l => l.funnelStage === 'venda').length,
+  }), [active])
+
+  const vgvPotential = useMemo(
+    () => active.reduce((sum, l) => sum + (l.averageTicket ?? 0), 0),
+    [active]
+  )
+
+  const conversionRate = active.length > 0
+    ? Math.round((byStage.venda / active.length) * 100)
+    : 0
+
+  // Leads that need immediate attention
+  const urgentLeads = useMemo(() => active.filter(l =>
+    (l.funnelStage === 'followup' && l.followupStep === 0) ||
+    (l.funnelStage === 'lead')
+  ).slice(0, 4), [active])
+
+  const maxStageCount = Math.max(1, ...Object.values(byStage))
 
   return (
     <div className="flex flex-col h-full">
@@ -198,7 +219,7 @@ export function LeadsPage() {
               </div>
               <h1 className="text-xl font-bold text-slate-100">Leads</h1>
             </div>
-            <p className="text-xs text-slate-500 mt-1 ml-10">Gerencie seu funil de prospecção</p>
+            <p className="text-xs text-slate-500 mt-1 ml-10">Funil de prospecção</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -219,19 +240,126 @@ export function LeadsPage() {
           </div>
         </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
-          {kpis.map(kpi => (
-            <div key={kpi.label} className={`bg-gradient-to-br ${kpi.gradient} border ${kpi.border} rounded-xl px-4 py-3 flex items-center gap-3`}>
-              <div className={`w-8 h-8 rounded-lg bg-${kpi.color}-500/20 flex items-center justify-center flex-shrink-0`}>
-                <kpi.icon size={15} className={kpi.text} />
+        {/* ── Dashboard ── */}
+        <div className="mt-5 space-y-4">
+
+          {/* KPI row */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-gradient-to-br from-violet-500/15 to-purple-500/8 border border-violet-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                <Users size={16} className="text-violet-300" />
               </div>
               <div>
-                <p className={`text-xl font-bold ${kpi.text}`}>{kpi.value}</p>
-                <p className="text-[11px] text-slate-500">{kpi.label}</p>
+                <p className="text-2xl font-bold text-violet-200 leading-none">{active.length}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Leads ativos</p>
               </div>
             </div>
-          ))}
+
+            <div className="bg-gradient-to-br from-blue-500/15 to-sky-500/8 border border-blue-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <MessageCircle size={16} className="text-blue-300" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-blue-200 leading-none">{byStage.followup}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Em followup</p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-500/15 to-emerald-500/8 border border-green-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                <TrendingUp size={16} className="text-green-300" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-green-200 leading-none">{byStage.venda}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Vendas · {conversionRate}% conv.</p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-500/15 to-orange-500/8 border border-amber-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <DollarSign size={16} className="text-amber-300" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-amber-200 leading-none">{vgvPotential > 0 ? formatCurrencyFull(vgvPotential) : '—'}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">VGV potencial</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Funnel visualization + urgent leads */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+
+            {/* Mini funnel */}
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Target size={13} className="text-violet-400" />
+                <p className="text-xs font-semibold text-slate-300">Distribuição por etapa</p>
+              </div>
+              <div className="space-y-1.5">
+                {(Object.entries(byStage) as [LeadFunnelStage, number][]).map(([stage, count]) => {
+                  const conf = STAGE_CONFIG[stage]
+                  const pct = Math.round((count / maxStageCount) * 100)
+                  return (
+                    <div key={stage} className="flex items-center gap-2.5">
+                      <span className={`text-[10px] font-medium w-20 text-right flex-shrink-0 ${conf.color}`}>{conf.label}</span>
+                      <div className="flex-1 h-5 bg-white/4 rounded-lg overflow-hidden">
+                        <div
+                          className={`h-full rounded-lg transition-all duration-500 ${conf.headerBg}`}
+                          style={{ width: `${pct}%`, minWidth: count > 0 ? '12px' : '0' }}
+                        />
+                      </div>
+                      <span className={`text-xs font-bold w-5 text-right flex-shrink-0 ${conf.color}`}>{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Leads que precisam de atenção */}
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap size={13} className="text-amber-400" />
+                <p className="text-xs font-semibold text-slate-300">Precisam de ação</p>
+                {urgentLeads.length > 0 && (
+                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/25">
+                    {active.filter(l => l.funnelStage === 'lead' || (l.funnelStage === 'followup' && l.followupStep === 0)).length}
+                  </span>
+                )}
+              </div>
+              {urgentLeads.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-5 gap-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center">
+                    <UserCheck size={14} className="text-green-400" />
+                  </div>
+                  <p className="text-xs text-slate-500 text-center">Todos os leads estão sendo atendidos!</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {urgentLeads.map(lead => (
+                    <button
+                      key={lead.id}
+                      onClick={() => setSelectedLead(lead)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 bg-white/3 hover:bg-amber-500/8 border border-white/5 hover:border-amber-500/20 rounded-xl transition-all text-left group"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center text-xs font-bold text-violet-200 flex-shrink-0">
+                        {lead.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-slate-200 truncate">{lead.name}</p>
+                        <p className="text-[10px] text-slate-500">{lead.funnelStage === 'lead' ? 'Aguardando 1º contato' : 'Followup pendente'}</p>
+                      </div>
+                      <AlertCircle size={13} className="text-amber-400 flex-shrink-0 group-hover:text-amber-300" />
+                    </button>
+                  ))}
+                  {active.filter(l => l.funnelStage === 'lead' || (l.funnelStage === 'followup' && l.followupStep === 0)).length > 4 && (
+                    <p className="text-[10px] text-slate-600 text-center pt-1">
+                      +{active.filter(l => l.funnelStage === 'lead' || (l.funnelStage === 'followup' && l.followupStep === 0)).length - 4} mais aguardando
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

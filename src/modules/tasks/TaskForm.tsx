@@ -19,6 +19,7 @@ interface TaskFormProps {
   isOpen: boolean
   onClose: () => void
   task?: Task
+  defaultContactId?: string
 }
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
@@ -44,7 +45,7 @@ const inputBase =
 
 function todayStr() { return localDateStr() }
 
-export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
+export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormProps) {
   const { add, update } = useTasksStore()
   const { contacts }    = useContactsStore()
   const { properties }  = usePropertiesStore()
@@ -59,12 +60,14 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
   const [dueTime,     setDueTime]     = useState(task?.dueTime ?? '')
   const [priority,    setPriority]    = useState<TaskPriority>(task?.priority ?? 'medium')
   const [category,    setCategory]    = useState<TaskCategory | ''>(task?.category ?? '')
-  const [contactId,   setContactId]   = useState(task?.contactId ?? '')
+  const [contactId,   setContactId]   = useState(task?.contactId ?? defaultContactId ?? '')
   const [propertyId,  setPropertyId]  = useState(task?.propertyId ?? '')
 
   const [showContactDrop,  setShowContactDrop]  = useState(false)
   const [contactSearch,    setContactSearch]    = useState(
-    task?.contactId ? (contacts.find(c => c.id === task.contactId)?.name ?? '') : ''
+    task?.contactId ? (contacts.find(c => c.id === task.contactId)?.name ?? '')
+    : defaultContactId ? (contacts.find(c => c.id === defaultContactId)?.name ?? '')
+    : ''
   )
   const [showPropertyDrop, setShowPropertyDrop] = useState(false)
   const [propertySearch,   setPropertySearch]   = useState(
@@ -93,11 +96,12 @@ export function TaskForm({ isOpen, onClose, task }: TaskFormProps) {
     setDueTime(task?.dueTime ?? '')
     setPriority(task?.priority ?? 'medium')
     setCategory(task?.category ?? '')
-    setContactId(task?.contactId ?? '')
+    const resolvedContactId = task?.contactId ?? defaultContactId ?? ''
+    setContactId(resolvedContactId)
     setPropertyId(task?.propertyId ?? '')
-    setContactSearch(task?.contactId ? (contacts.find(c => c.id === task.contactId)?.name ?? '') : '')
+    setContactSearch(resolvedContactId ? (contacts.find(c => c.id === resolvedContactId)?.name ?? '') : '')
     setPropertySearch(task?.propertyId ? (properties.find(p => p.id === task.propertyId)?.name ?? '') : '')
-    setShowOptional(Boolean(task?.contactId || task?.propertyId))
+    setShowOptional(Boolean(resolvedContactId || task?.propertyId))
     setMarkDone(task?.status === 'done')
     setCompletedDate(task?.completedAt ? task.completedAt.split('T')[0] : todayStr())
     setChecklist(task?.checklist ?? [])
