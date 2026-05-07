@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
   Building2, Megaphone, Target, BarChart3, X,
-  Search, Home, Tv2, ExternalLink, Plus,
+  Search, Home, Tv2, ExternalLink, Plus, UserPlus,
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
 
@@ -16,6 +16,7 @@ const mainNav = [
 
 const moreNav = [
   { to: '/imoveis',     icon: Building2, label: 'Imóveis',     color: 'text-cyan-400'   },
+  { to: '/leads',       icon: UserPlus,  label: 'Leads',       color: 'text-violet-400' },
   { to: '/campanhas',   icon: Megaphone, label: 'Campanhas',   color: 'text-pink-400'   },
   { to: '/metas',       icon: Target,    label: 'Metas',       color: 'text-amber-400'  },
   { to: '/performance', icon: BarChart3, label: 'Performance', color: 'text-purple-400' },

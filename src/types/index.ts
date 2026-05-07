@@ -171,6 +171,31 @@ export interface Goal {
   updatedAt: string
 }
 
+// ─── Leads ───────────────────────────────────────────────────────────────────
+
+export type LeadOrigin       = 'felicita' | 'meta_ads' | 'portal' | 'offline'
+export type LeadFunnelStage  = 'lead' | 'followup' | 'atendimento' | 'visita' | 'proposta' | 'venda'
+export type LeadDiscardReason = 'sem_condicao' | 'fora_de_nicho' | 'parou_de_responder' | 'nunca_respondeu' | 'telefone_invalido'
+
+export interface Lead {
+  id: string
+  name: string
+  phone: string
+  email?: string
+  origin: LeadOrigin
+  funnelStage: LeadFunnelStage
+  followupStep: number        // 1-5 quando funnelStage === 'followup'; 0 = não iniciado
+  discardReason?: LeadDiscardReason
+  discardedAt?: string
+  propertyId?: string
+  averageTicket?: number      // preenchido automaticamente pelo imóvel ou manualmente
+  contactId?: string          // preenchido ao converter lead em contato
+  convertedAt?: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Histórico semanal ────────────────────────────────────────────────────────
 
 export interface WeekSnapshotEntry {

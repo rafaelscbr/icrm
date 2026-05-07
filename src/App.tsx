@@ -14,6 +14,8 @@ import { TasksPage } from './modules/tasks/TasksPage'
 import { GoalsPage } from './modules/goals/GoalsPage'
 import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
 import { CampaignsPage } from './modules/campaigns/CampaignsPage'
+import { LeadsPage } from './modules/leads/LeadsPage'
+import { LeadsReports } from './modules/leads/LeadsReports'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -58,6 +60,8 @@ function AppRoutes() {
             <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
             <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />
             <Route path="/campanhas" element={<PageWrapper><CampaignsPage /></PageWrapper>} />
+            <Route path="/leads" element={<PageWrapper><LeadsPage /></PageWrapper>} />
+            <Route path="/leads/relatorios" element={<PageWrapper><LeadsReports /></PageWrapper>} />
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
           </Routes>
         </main>

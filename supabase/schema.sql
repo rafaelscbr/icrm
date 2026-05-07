@@ -118,6 +118,25 @@ CREATE TABLE IF NOT EXISTS daily_logs (
   updated_at TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS leads (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT,
+  origin TEXT NOT NULL CHECK (origin IN ('felicita', 'meta_ads', 'portal', 'offline')),
+  funnel_stage TEXT NOT NULL DEFAULT 'lead' CHECK (funnel_stage IN ('lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda')),
+  followup_step SMALLINT NOT NULL DEFAULT 0,
+  discard_reason TEXT CHECK (discard_reason IN ('sem_condicao', 'fora_de_nicho', 'parou_de_responder', 'nunca_respondeu', 'telefone_invalido')),
+  discarded_at TIMESTAMPTZ,
+  property_id TEXT REFERENCES properties(id) ON DELETE SET NULL,
+  average_ticket NUMERIC,
+  contact_id TEXT REFERENCES contacts(id) ON DELETE SET NULL,
+  converted_at TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
 -- ============================================================
 -- ÍNDICES
 -- ============================================================
@@ -132,6 +151,9 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status        ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_due_date      ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_sales_date          ON sales(date);
 CREATE INDEX IF NOT EXISTS idx_daily_logs_date     ON daily_logs(date);
+CREATE INDEX IF NOT EXISTS idx_leads_funnel_stage  ON leads(funnel_stage);
+CREATE INDEX IF NOT EXISTS idx_leads_origin        ON leads(origin);
+CREATE INDEX IF NOT EXISTS idx_leads_property      ON leads(property_id);
 
 -- ============================================================
 -- ROW LEVEL SECURITY

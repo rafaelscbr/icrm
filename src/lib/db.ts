@@ -2,7 +2,7 @@ import toast from 'react-hot-toast'
 import { supabase } from './supabase'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
-  ContactTag, FunnelStage, LeadSituation,
+  ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
 } from '../types'
 
 // ─── Row types (snake_case vindos do Supabase) ────────────────────────────────
@@ -261,6 +261,39 @@ function fromCampaignLead(l: CampaignLead): CampaignLeadRow {
   }
 }
 
+interface LeadRow {
+  id: string; name: string; phone: string; email: string | null
+  origin: string; funnel_stage: string; followup_step: number
+  discard_reason: string | null; discarded_at: string | null
+  property_id: string | null; average_ticket: number | null
+  contact_id: string | null; converted_at: string | null
+  notes: string | null; created_at: string; updated_at: string
+}
+
+function toLead(r: LeadRow): Lead {
+  return {
+    id: r.id, name: r.name, phone: r.phone, email: r.email ?? undefined,
+    origin: r.origin as LeadOrigin, funnelStage: r.funnel_stage as LeadFunnelStage,
+    followupStep: r.followup_step,
+    discardReason: (r.discard_reason as LeadDiscardReason) ?? undefined,
+    discardedAt: r.discarded_at ?? undefined,
+    propertyId: r.property_id ?? undefined, averageTicket: r.average_ticket ?? undefined,
+    contactId: r.contact_id ?? undefined, convertedAt: r.converted_at ?? undefined,
+    notes: r.notes ?? undefined, createdAt: r.created_at, updatedAt: r.updated_at,
+  }
+}
+
+function fromLead(l: Lead): LeadRow {
+  return {
+    id: l.id, name: l.name, phone: l.phone, email: l.email ?? null,
+    origin: l.origin, funnel_stage: l.funnelStage, followup_step: l.followupStep,
+    discard_reason: l.discardReason ?? null, discarded_at: l.discardedAt ?? null,
+    property_id: l.propertyId ?? null, average_ticket: l.averageTicket ?? null,
+    contact_id: l.contactId ?? null, converted_at: l.convertedAt ?? null,
+    notes: l.notes ?? null, created_at: l.createdAt, updated_at: l.updatedAt,
+  }
+}
+
 // ─── Operações genéricas ──────────────────────────────────────────────────────
 
 async function fetchAll<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> {
@@ -384,6 +417,12 @@ export const db = {
     fetchAll: () => fetchAll<CampaignRow, Campaign>('campaigns', toCampaign),
     upsert:   (c: Campaign) => upsertOne('campaigns', fromCampaign(c)),
     delete:   (id: string)  => deleteOne('campaigns', id),
+  },
+
+  leads: {
+    fetchAll: () => fetchAll<LeadRow, Lead>('leads', toLead),
+    upsert:   (l: Lead) => upsertOne('leads', fromLead(l)),
+    delete:   (id: string) => deleteOne('leads', id),
   },
 
   campaignLeads: {

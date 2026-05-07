@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown, ExternalLink, Tv2,
-  Sun, Moon,
+  Sun, Moon, UserPlus,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import logoLight from '../../assets/logo.png'
@@ -15,6 +15,7 @@ const nav = [
   { to: '/imoveis',    icon: Building2,       label: 'Imóveis',    end: false, color: 'text-cyan-400'   },
   { to: '/vendas',     icon: TrendingUp,      label: 'Vendas',     end: false, color: 'text-green-400'  },
   { to: '/tarefas',    icon: CheckSquare,     label: 'Tarefas',    end: false, color: 'text-orange-400' },
+  { to: '/leads',      icon: UserPlus,        label: 'Leads',      end: false, color: 'text-violet-400' },
   { to: '/campanhas',  icon: Megaphone,       label: 'Campanhas',  end: false, color: 'text-pink-400'   },
   { to: '/metas',      icon: Target,          label: 'Metas',      end: false, color: 'text-amber-400'  },
   { to: '/performance',icon: BarChart3,       label: 'Performance',end: false, color: 'text-purple-400' },
