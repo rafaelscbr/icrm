@@ -107,19 +107,29 @@ html.light .modal-surface {
   border: 1px solid rgba(0,0,0,0.10) !important;
 }
 
-/* Cores hardcoded escuras → claro (todas variações usadas no código) */
-html.light .bg-\[#0F1117\]   { background-color: #f1f5f9 !important; }
-html.light .bg-\[#0f1117\]   { background-color: #f1f5f9 !important; }
-html.light .bg-\[#0d0f1a\]   { background-color: #f8fafc !important; }
-html.light .bg-\[#13151F\]   { background-color: #ffffff !important; }
-html.light .bg-\[#13151f\]   { background-color: #ffffff !important; }
-html.light .bg-\[#1A1D27\]   { background-color: #ffffff !important; }
-html.light .bg-\[#1a1d27\]   { background-color: #ffffff !important; }
-html.light .bg-\[#1e2130\]   { background-color: #f8fafc !important; }
-html.light .bg-\[#20243A\]   { background-color: #e2e8f0 !important; }
-html.light .bg-\[#0F1117\]\/95 { background-color: rgba(241,245,249,0.97) !important; }
-html.light .bg-\[#0d0f1a\]\/95 { background-color: rgba(248,250,252,0.97) !important; }
-html.light .bg-\[#13151f\]\/95 { background-color: rgba(255,255,255,0.97) !important; }
+/* ── Cores hardcoded escuras — usa seletores de atributo para garantir
+      compatibilidade com o escape que o Tailwind aplica ao "#" nos nomes
+      de classes arbitrárias. [class*="..."] não depende de escaping. ── */
+
+/* Fundo principal da página */
+html.light [class*="#0F1117"],
+html.light [class*="#0f1117"] { background-color: #f1f5f9 !important; background-image: none !important; }
+
+/* Nav/aside escuro */
+html.light [class*="#0d0f1a"],
+html.light [class*="#0D0F1A"] { background-color: #f8fafc !important; }
+
+/* Superfícies de card/modal escuras */
+html.light [class*="#1A1D27"],
+html.light [class*="#1a1d27"],
+html.light [class*="#13151f"],
+html.light [class*="#13151F"],
+html.light [class*="#1E2130"],
+html.light [class*="#1e2130"] { background-color: #ffffff !important; }
+
+/* Tom intermediário */
+html.light [class*="#20243A"],
+html.light [class*="#20243a"] { background-color: #e2e8f0 !important; }
 
 /* Sidebar/nav claro */
 html.light aside {
@@ -196,12 +206,15 @@ html.light input[type='datetime-local']::-webkit-calendar-picker-indicator {
   filter: none !important; opacity: 0.6 !important;
 }
 
-/* ── Tooltips de gráficos ── */
-html.light .recharts-tooltip-wrapper [class*="bg-\[#1A1D27\]"],
-html.light .recharts-tooltip-wrapper [class*="bg-\[#1a1d27\]"],
-html.light .recharts-tooltip-wrapper [class*="bg-\[#13151"] {
+/* ── Tooltips de gráficos recharts ── */
+html.light .recharts-tooltip-wrapper > div {
   background-color: #ffffff !important;
   border-color: rgba(0,0,0,0.10) !important;
+  color: #1e293b !important;
+}
+/* garante que o texto dentro dos tooltips seja legível */
+html.light .recharts-tooltip-wrapper p,
+html.light .recharts-tooltip-wrapper span {
   color: #1e293b !important;
 }
 
@@ -210,6 +223,36 @@ html.light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15) !important; 
 html.light ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25) !important; }
 html.light .row-accent:hover { border-left-color: rgba(99,102,241,0.4); }
 html.light .bg-black\/60 { background-color: rgba(0,0,0,0.35) !important; }
+html.light .bg-black\/50 { background-color: rgba(0,0,0,0.25) !important; }
+html.light .bg-black\/40 { background-color: rgba(0,0,0,0.20) !important; }
+
+/* ── Text white/X → opacidade escura ── */
+html.light .text-white\/60 { color: rgba(15,23,42,0.6) !important; }
+html.light .text-white\/70 { color: rgba(15,23,42,0.7) !important; }
+html.light .text-white\/80 { color: rgba(15,23,42,0.8) !important; }
+html.light .text-white\/90 { color: rgba(15,23,42,0.9) !important; }
+
+/* ── Ring/outline brancas → cinza ── */
+html.light .ring-white\/10 { --tw-ring-color: rgba(0,0,0,0.08) !important; }
+html.light .ring-white\/20 { --tw-ring-color: rgba(0,0,0,0.12) !important; }
+
+/* ── Sombras: tornar mais suaves e claras em light mode ── */
+html.light .shadow-black\/20 { --tw-shadow-color: rgba(0,0,0,0.08) !important; }
+html.light .shadow-black\/30 { --tw-shadow-color: rgba(0,0,0,0.10) !important; }
+html.light .shadow-black\/40 { --tw-shadow-color: rgba(0,0,0,0.12) !important; }
+
+/* ── Separadores (w-px bg-white/8) ── */
+html.light [class*="bg-white\/8"].h-full,
+html.light [class*="bg-white\/8"][class*="w-px"] { background-color: rgba(0,0,0,0.10) !important; }
+
+/* ── Select nativo em modo claro ── */
+html.light select,
+html.light [class*="#1e2130"],
+html.light [class*="#1E2130"] {
+  background-color: #f8fafc !important;
+  color: #1e293b !important;
+  border-color: rgba(0,0,0,0.12) !important;
+}
 html.light .shimmer {
   background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
 }
