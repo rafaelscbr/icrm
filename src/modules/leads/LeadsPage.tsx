@@ -96,6 +96,8 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       <div className="hidden lg:block w-36 text-right">
         {property ? (
           <p className="text-xs text-slate-400 truncate">{property.name}</p>
+        ) : lead.propertyName ? (
+          <p className="text-xs text-amber-400/80 truncate">🏠 {lead.propertyName}</p>
         ) : lead.averageTicket ? (
           <p className="text-xs font-semibold text-violet-400">{formatCurrency(lead.averageTicket)}</p>
         ) : (

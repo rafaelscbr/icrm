@@ -188,9 +188,11 @@ export interface Lead {
   discardReason?: LeadDiscardReason
   discardedAt?: string
   propertyId?: string
+  propertyName?: string       // nome livre quando imóvel não está cadastrado
   averageTicket?: number      // preenchido automaticamente pelo imóvel ou manualmente
   contactId?: string          // preenchido ao converter lead em contato
   convertedAt?: string
+  visitaTaskId?: string       // ID da tarefa de visita criada automaticamente
   notes?: string
   createdAt: string
   updatedAt: string

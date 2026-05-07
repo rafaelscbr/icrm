@@ -3,29 +3,32 @@ import {
   X, User, Phone, Mail, Building2, DollarSign,
   Search, MapPin, ChevronRight, ChevronLeft,
   UserPlus, Users, CheckCircle2, AlertCircle, AlertTriangle,
+  Calendar, Sparkles, PenLine,
 } from 'lucide-react'
 import { Lead, LeadOrigin, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
-import { formatPhone, formatCurrencyFull } from '../../lib/formatters'
+import { formatPhone, formatCurrencyFull, localDateStr } from '../../lib/formatters'
 import toast from 'react-hot-toast'
 
-const ORIGINS: { value: LeadOrigin; label: string; color: string; emoji: string }[] = [
-  { value: 'felicita',  label: 'Felicità',  color: 'from-rose-500/30 to-pink-500/20 border-rose-500/40',    emoji: '✨' },
-  { value: 'meta_ads',  label: 'Meta ADS',  color: 'from-blue-500/30 to-indigo-500/20 border-blue-500/40',  emoji: '📱' },
-  { value: 'portal',    label: 'Portal',    color: 'from-cyan-500/30 to-sky-500/20 border-cyan-500/40',     emoji: '🌐' },
-  { value: 'offline',   label: 'Offline',   color: 'from-amber-500/30 to-orange-500/20 border-amber-500/40',emoji: '🤝' },
+// ─── Constantes ───────────────────────────────────────────────────────────────
+
+const ORIGINS: { value: LeadOrigin; label: string; emoji: string; grad: string; ring: string }[] = [
+  { value: 'felicita',  label: 'Felicità',  emoji: '✨', grad: 'from-rose-500 to-pink-600',    ring: 'ring-rose-500/50'   },
+  { value: 'meta_ads',  label: 'Meta ADS',  emoji: '📱', grad: 'from-blue-500 to-indigo-600',  ring: 'ring-blue-500/50'   },
+  { value: 'portal',    label: 'Portal',    emoji: '🌐', grad: 'from-cyan-500 to-sky-600',     ring: 'ring-cyan-500/50'   },
+  { value: 'offline',   label: 'Offline',   emoji: '🤝', grad: 'from-amber-500 to-orange-600', ring: 'ring-amber-500/50'  },
 ]
 
-const STAGES: { value: LeadFunnelStage; label: string; color: string }[] = [
-  { value: 'lead',        label: 'Lead',        color: 'border-slate-500/40 bg-slate-500/15 text-slate-300'  },
-  { value: 'followup',    label: 'Followup',    color: 'border-blue-500/40 bg-blue-500/15 text-blue-300'    },
-  { value: 'atendimento', label: 'Atendimento', color: 'border-violet-500/40 bg-violet-500/15 text-violet-300'},
-  { value: 'visita',      label: 'Visita',      color: 'border-amber-500/40 bg-amber-500/15 text-amber-300'  },
-  { value: 'proposta',    label: 'Proposta',    color: 'border-orange-500/40 bg-orange-500/15 text-orange-300'},
-  { value: 'venda',       label: 'Venda',       color: 'border-green-500/40 bg-green-500/15 text-green-300'  },
+const STAGES: { value: LeadFunnelStage; label: string; emoji: string; color: string; active: string }[] = [
+  { value: 'lead',        label: 'Lead',        emoji: '🎯', color: 'text-slate-400',  active: 'bg-slate-500/25 border-slate-400/50 text-slate-200' },
+  { value: 'followup',    label: 'Followup',    emoji: '💬', color: 'text-blue-400',   active: 'bg-blue-500/25 border-blue-400/50 text-blue-200'    },
+  { value: 'atendimento', label: 'Atendimento', emoji: '🤙', color: 'text-violet-400', active: 'bg-violet-500/25 border-violet-400/50 text-violet-200'},
+  { value: 'visita',      label: 'Visita',      emoji: '🏠', color: 'text-amber-400',  active: 'bg-amber-500/25 border-amber-400/50 text-amber-200'  },
+  { value: 'proposta',    label: 'Proposta',    emoji: '📝', color: 'text-orange-400', active: 'bg-orange-500/25 border-orange-400/50 text-orange-200'},
+  { value: 'venda',       label: 'Venda',       emoji: '🏆', color: 'text-green-400',  active: 'bg-green-500/25 border-green-400/50 text-green-200'  },
 ]
 
 function formatPhoneInput(v: string) {
@@ -52,26 +55,31 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
   const isEdit = Boolean(lead)
   const [step, setStep] = useState(1)
+  const [animDir, setAnimDir] = useState<'forward' | 'back'>('forward')
 
-  // Step 1
+  // Step 1 — contact
   const [contactMode, setContactMode] = useState<ContactMode>('search')
   const [contactQuery, setContactQuery] = useState('')
   const [selectedContactId, setSelectedContactId] = useState<string | undefined>()
-  const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
 
   // New contact fields
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newEmail, setNewEmail] = useState('')
 
-  // Step 2
+  // Step 2 — funnel
   const [origin, setOrigin] = useState<LeadOrigin>('felicita')
   const [stage, setStage] = useState<LeadFunnelStage>('lead')
   const [propertySearch, setPropertySearch] = useState('')
   const [propertyId, setPropertyId] = useState<string | undefined>()
+  const [freePropertyName, setFreePropertyName] = useState('')  // free-text property
+  const [propertyMode, setPropertyMode] = useState<'search' | 'free' | 'selected'>('search')
   const [averageTicket, setAverageTicket] = useState('')
   const [notes, setNotes] = useState('')
+  const [entryDate, setEntryDate] = useState(localDateStr())   // retroactive date
 
+  // ─── Reset on open ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return
     if (lead) {
@@ -88,23 +96,33 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       setPropertyId(lead.propertyId)
       setAverageTicket(lead.averageTicket ? String(lead.averageTicket) : '')
       setNotes(lead.notes ?? '')
+      setEntryDate(lead.createdAt.split('T')[0])
       if (lead.propertyId) {
         const p = properties.find(p => p.id === lead.propertyId)
         setPropertySearch(p?.name ?? '')
+        setPropertyMode('selected')
+      } else if (lead.propertyName) {
+        setFreePropertyName(lead.propertyName)
+        setPropertyMode('free')
+      } else {
+        setPropertyMode('search')
       }
     } else {
       setStep(1)
+      setAnimDir('forward')
       setContactMode('search')
       setContactQuery('')
       setSelectedContactId(undefined)
       setNewName(''); setNewPhone(''); setNewEmail('')
       setOrigin('felicita'); setStage('lead')
       setPropertyId(undefined); setPropertySearch('')
+      setFreePropertyName(''); setPropertyMode('search')
       setAverageTicket(''); setNotes('')
+      setEntryDate(localDateStr())
     }
   }, [isOpen, lead])
 
-  // Derived
+  // ─── Derived ──────────────────────────────────────────────────────────────────
   const contactResults = contactQuery.length >= 1
     ? contacts.filter(c =>
         c.name.toLowerCase().includes(contactQuery.toLowerCase()) ||
@@ -119,11 +137,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     ? contacts.find(c => c.phone.replace(/\D/g, '') === newPhoneDigits)
     : undefined
 
-  // Campaign check (by phone)
   const phoneToCheck = contactMode === 'search'
     ? selectedContact?.phone?.replace(/\D/g, '')
     : newPhoneDigits
-
   const campaignHit = phoneToCheck && phoneToCheck.length >= 10
     ? campaignLeads.find(cl => cl.phone.replace(/\D/g, '') === phoneToCheck)
     : undefined
@@ -133,6 +149,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     p.neighborhood.toLowerCase().includes(propertySearch.toLowerCase())
   ).slice(0, 6)
 
+  const isRetroactive = entryDate < localDateStr()
+
+  // ─── Handlers ────────────────────────────────────────────────────────────────
   function selectContact(id: string) {
     setSelectedContactId(id)
     const c = contacts.find(c => c.id === id)
@@ -142,7 +161,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
   function clearContact() {
     setSelectedContactId(undefined)
     setContactQuery('')
-    setTimeout(() => searchInputRef.current?.focus(), 50)
+    setTimeout(() => searchRef.current?.focus(), 50)
   }
 
   function selectProperty(id: string) {
@@ -150,7 +169,22 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     if (!p) return
     setPropertyId(id)
     setPropertySearch(p.name)
+    setPropertyMode('selected')
     setAverageTicket(String(p.value))
+    setFreePropertyName('')
+  }
+
+  function useFreeProperty() {
+    setPropertyId(undefined)
+    setFreePropertyName(propertySearch)
+    setPropertyMode('free')
+  }
+
+  function clearProperty() {
+    setPropertyId(undefined)
+    setFreePropertyName('')
+    setPropertySearch('')
+    setPropertyMode('search')
   }
 
   function handleAverageTicketChange(v: string) {
@@ -163,19 +197,24 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     return newName.trim().length > 0 && newPhoneDigits.length >= 10 && !duplicateContact
   }
 
-  function handleStep1Next() {
+  function goNext() {
     if (!canAdvanceStep1()) {
       if (contactMode === 'search') toast.error('Selecione um contato da lista')
-      else if (duplicateContact) toast.error('Telefone já cadastrado — use "Contato existente"')
-      else toast.error('Nome e telefone (mínimo 10 dígitos) são obrigatórios')
+      else if (duplicateContact) toast.error('Telefone já cadastrado')
+      else toast.error('Nome e telefone são obrigatórios')
       return
     }
+    setAnimDir('forward')
     setStep(2)
+  }
+
+  function goBack() {
+    setAnimDir('back')
+    setStep(1)
   }
 
   function handleSubmit() {
     let resolvedContactId = selectedContactId
-
     if (!isEdit && contactMode === 'create') {
       const nc = addContact({ name: newName.trim(), phone: newPhone.trim(), tags: [], hasChildren: false, isMarried: false })
       resolvedContactId = nc.id
@@ -185,6 +224,8 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     const displayName  = contactRef?.name  ?? (isEdit ? lead!.name  : newName.trim())
     const displayPhone = contactRef?.phone ?? (isEdit ? lead!.phone : newPhone.trim())
 
+    const resolvedPropertyName = propertyMode === 'free' ? freePropertyName.trim() || undefined : undefined
+
     const data = {
       name: displayName,
       phone: displayPhone,
@@ -193,19 +234,22 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       followupStep: lead?.followupStep ?? 0,
       discardReason: lead?.discardReason,
       discardedAt: lead?.discardedAt,
-      propertyId: propertyId || undefined,
+      propertyId: propertyMode === 'selected' ? propertyId : undefined,
+      propertyName: resolvedPropertyName,
       averageTicket: averageTicket ? Number(averageTicket) : undefined,
       contactId: resolvedContactId,
       convertedAt: lead?.convertedAt,
+      visitaTaskId: lead?.visitaTaskId,
       notes: notes.trim() || undefined,
     }
 
     if (lead) {
-      update(lead.id, data)
+      update(lead.id, { ...data, createdAt: entryDate + 'T00:00:00.000Z' })
       toast.success('Lead atualizado!')
     } else {
-      add(data)
-      toast.success('Lead criado!')
+      add({ ...data, createdAt: entryDate + 'T00:00:00.000Z' })
+      if (isRetroactive) toast.success(`Lead registrado retroativamente para ${new Date(entryDate + 'T12:00:00').toLocaleDateString('pt-BR')}`)
+      else toast.success('Lead criado!')
     }
     onClose()
   }
@@ -214,47 +258,67 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#1A1D27] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 duration-200">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-md"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative w-full max-w-lg bg-[#13151F] border border-white/10 rounded-2xl shadow-2xl shadow-violet-900/30 flex flex-col max-h-[92vh] overflow-hidden
+        animate-in fade-in zoom-in-95 duration-200">
+
+        {/* Gradient top border */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-violet-500 via-purple-400 to-pink-500" />
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8 bg-gradient-to-r from-violet-500/10 to-purple-500/5 flex-shrink-0">
-          <div>
-            <h2 className="text-base font-semibold text-slate-100">
-              {isEdit ? 'Editar Lead' : 'Novo Lead'}
-            </h2>
-            {!isEdit && (
-              <p className="text-xs text-slate-500 mt-0.5">
-                {step === 1 ? 'Passo 1 de 2 — Identificar contato' : 'Passo 2 de 2 — Detalhes do funil'}
-              </p>
-            )}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center
+              bg-gradient-to-br from-violet-500/30 to-purple-500/20 border border-violet-500/30`}>
+              <Sparkles size={16} className="text-violet-300" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white">
+                {isEdit ? 'Editar Lead' : 'Novo Lead'}
+              </h2>
+              {!isEdit && (
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {step === 1 ? '① Identificar contato' : '② Detalhes do funil'}
+                </p>
+              )}
+            </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/8 text-slate-500 hover:text-slate-200 transition-colors">
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-slate-500 hover:text-slate-200 transition-all"
+          >
             <X size={16} />
           </button>
         </div>
 
         {/* Progress bar */}
         {!isEdit && (
-          <div className="flex gap-1.5 px-6 pt-4 flex-shrink-0">
-            <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${step >= 1 ? 'bg-violet-500' : 'bg-white/10'}`} />
-            <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${step >= 2 ? 'bg-violet-500' : 'bg-white/10'}`} />
+          <div className="flex gap-1.5 px-6 pb-4 flex-shrink-0">
+            <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-violet-500 to-purple-500" />
+            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/8'}`} />
           </div>
         )}
 
-        {/* Body — scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        {/* ── Body ── */}
+        <div className="flex-1 overflow-y-auto px-6 pb-2 space-y-4">
 
-          {/* ── STEP 1: Contact ── */}
+          {/* ────── STEP 1: Contact ────── */}
           {step === 1 && (
-            <>
-              {/* Mode toggle */}
-              <div className="flex gap-2 p-1 bg-white/4 rounded-xl border border-white/8">
+            <div className={`space-y-4 ${animDir === 'forward' ? 'animate-in fade-in slide-in-from-right-4' : 'animate-in fade-in slide-in-from-left-4'} duration-200`}>
+
+              {/* Toggle */}
+              <div className="flex gap-1 p-1 bg-white/4 rounded-xl border border-white/8">
                 <button
                   onClick={() => { setContactMode('search'); clearContact() }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     contactMode === 'search'
-                      ? 'bg-violet-500/20 text-violet-200 shadow-sm'
+                      ? 'bg-gradient-to-br from-violet-600/40 to-purple-600/30 text-violet-200 shadow-sm border border-violet-500/30'
                       : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
@@ -262,9 +326,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 </button>
                 <button
                   onClick={() => { setContactMode('create'); setSelectedContactId(undefined) }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     contactMode === 'create'
-                      ? 'bg-emerald-500/20 text-emerald-200 shadow-sm'
+                      ? 'bg-gradient-to-br from-emerald-600/40 to-teal-600/30 text-emerald-200 shadow-sm border border-emerald-500/30'
                       : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
@@ -272,20 +336,20 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 </button>
               </div>
 
-              {/* ─ Search mode ─ */}
+              {/* Search mode */}
               {contactMode === 'search' && (
                 <div className="space-y-2">
                   {selectedContact ? (
-                    /* Selected contact card */
-                    <div className="flex items-center gap-3 px-4 py-3 bg-violet-500/10 border border-violet-500/30 rounded-xl">
-                      <div className="w-10 h-10 rounded-full bg-violet-500/25 flex items-center justify-center text-sm font-bold text-violet-200 flex-shrink-0">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-violet-500/15 to-purple-500/10 border border-violet-500/30 rounded-xl
+                      animate-in fade-in zoom-in-95 duration-200">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500/40 to-purple-500/30 flex items-center justify-center text-sm font-bold text-violet-100 flex-shrink-0 border border-violet-400/30">
                         {selectedContact.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-100 truncate">{selectedContact.name}</p>
-                        <p className="text-xs text-slate-500">{formatPhone(selectedContact.phone)}</p>
+                        <p className="text-sm font-semibold text-white truncate">{selectedContact.name}</p>
+                        <p className="text-xs text-slate-400">{formatPhone(selectedContact.phone)}</p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2">
                         <CheckCircle2 size={16} className="text-violet-400" />
                         <button
                           onClick={clearContact}
@@ -296,51 +360,50 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                       </div>
                     </div>
                   ) : (
-                    /* Search input + inline results */
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-slate-400">Buscar contato *</label>
                       <div className="relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                         <input
-                          ref={searchInputRef}
+                          ref={searchRef}
                           value={contactQuery}
                           onChange={e => setContactQuery(e.target.value)}
                           autoFocus
-                          placeholder="Digite nome ou telefone..."
-                          className="w-full bg-white/5 border border-white/15 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 transition-all"
+                          placeholder="Nome ou telefone..."
+                          className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600
+                            focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 focus:ring-1 focus:ring-violet-500/20 transition-all"
                         />
                       </div>
 
-                      {/* Inline results — no absolute positioning */}
                       {contactQuery.length >= 1 && (
-                        <div className="rounded-xl border border-white/10 overflow-hidden bg-[#1E2130]">
+                        <div className="rounded-xl border border-white/10 overflow-hidden bg-[#1A1D2E] animate-in fade-in slide-in-from-top-1 duration-150">
                           {contactResults.length === 0 ? (
-                            <div className="flex flex-col items-center gap-2 py-5 px-4">
+                            <div className="flex flex-col items-center gap-2 py-6 px-4">
                               <p className="text-xs text-slate-500 text-center">Nenhum contato com "{contactQuery}"</p>
                               <button
                                 onClick={() => { setContactMode('create'); setNewName(contactQuery) }}
-                                className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/15 px-3 py-1.5 rounded-lg border border-emerald-500/20 transition-all"
                               >
-                                <UserPlus size={12} /> Criar novo contato com esse nome
+                                <UserPlus size={12} /> Criar "{contactQuery}"
                               </button>
                             </div>
                           ) : (
                             <>
-                              <p className="text-[10px] font-medium text-slate-600 px-3 pt-2 pb-1 uppercase tracking-wider">
-                                {contactResults.length} resultado{contactResults.length > 1 ? 's' : ''}
+                              <p className="text-[10px] font-semibold text-slate-600 px-3 pt-2.5 pb-1 uppercase tracking-widest">
+                                {contactResults.length} encontrado{contactResults.length > 1 ? 's' : ''}
                               </p>
                               <div className="max-h-52 overflow-y-auto">
                                 {contactResults.map(c => (
                                   <button
                                     key={c.id}
                                     onClick={() => selectContact(c.id)}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-violet-500/10 text-left transition-colors group border-t border-white/5 first:border-0"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-violet-500/12 text-left transition-all group border-t border-white/5 first:border-0"
                                   >
-                                    <div className="w-8 h-8 rounded-full bg-white/8 group-hover:bg-violet-500/20 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:text-violet-300 transition-colors flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-white/8 group-hover:bg-violet-500/25 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:text-violet-200 transition-all flex-shrink-0">
                                       {c.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-slate-200 truncate group-hover:text-violet-100">{c.name}</p>
+                                      <p className="text-sm font-medium text-slate-200 group-hover:text-white truncate">{c.name}</p>
                                       <p className="text-xs text-slate-500">{formatPhone(c.phone)}</p>
                                     </div>
                                     <ChevronRight size={13} className="text-slate-600 group-hover:text-violet-400 flex-shrink-0 transition-colors" />
@@ -351,10 +414,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           )}
                         </div>
                       )}
-
-                      {contactQuery.length === 0 && contacts.length > 0 && (
-                        <p className="text-xs text-slate-600 text-center py-3">
-                          Digite ao menos 1 letra para buscar entre {contacts.length} contatos
+                      {contactQuery.length === 0 && (
+                        <p className="text-xs text-slate-600 text-center py-2">
+                          {contacts.length} contatos disponíveis — comece a digitar
                         </p>
                       )}
                     </div>
@@ -362,9 +424,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 </div>
               )}
 
-              {/* ─ Create mode ─ */}
+              {/* Create mode */}
               {contactMode === 'create' && (
-                <div className="space-y-3">
+                <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-200">
                   <div>
                     <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nome completo *</label>
                     <div className="relative">
@@ -374,11 +436,10 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                         value={newName}
                         onChange={e => setNewName(e.target.value)}
                         placeholder="Nome do lead"
-                        className="w-full bg-white/5 border border-white/15 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 transition-all"
+                        className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                       />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-slate-400 mb-1.5 block">Telefone *</label>
@@ -388,10 +449,10 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           value={newPhone}
                           onChange={e => setNewPhone(formatPhoneInput(e.target.value))}
                           placeholder="(11) 99999-9999"
-                          className={`w-full bg-white/5 border rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none transition-all ${
+                          className={`w-full bg-white/5 border rounded-xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 transition-all ${
                             duplicateContact
-                              ? 'border-amber-500/60 focus:border-amber-500 bg-amber-500/5'
-                              : 'border-white/15 focus:border-violet-500/60 focus:bg-violet-500/5'
+                              ? 'border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/20 bg-amber-500/5'
+                              : 'border-white/12 focus:border-violet-500/60 focus:ring-violet-500/20'
                           }`}
                         />
                       </div>
@@ -405,22 +466,21 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           onChange={e => setNewEmail(e.target.value)}
                           placeholder="email@..."
                           type="email"
-                          className="w-full bg-white/5 border border-white/15 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 transition-all"
+                          className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                         />
                       </div>
                     </div>
                   </div>
-
                   {duplicateContact && (
-                    <div className="flex items-start gap-2.5 px-3 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                    <div className="flex items-start gap-2.5 px-3 py-3 bg-amber-500/10 border border-amber-500/30 rounded-xl animate-in fade-in duration-200">
                       <AlertCircle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <p className="text-xs font-medium text-amber-300">Telefone já cadastrado</p>
-                        <p className="text-xs text-amber-400/70 mt-0.5">"{duplicateContact.name}" — use "Contato existente"</p>
+                        <p className="text-xs font-semibold text-amber-300">Telefone já cadastrado</p>
+                        <p className="text-xs text-amber-400/70 mt-0.5">"{duplicateContact.name}"</p>
                       </div>
                       <button
                         onClick={() => { setContactMode('search'); setContactQuery(duplicateContact.name); setSelectedContactId(duplicateContact.id) }}
-                        className="text-xs text-amber-300 hover:text-amber-200 bg-amber-500/20 hover:bg-amber-500/30 px-2 py-1 rounded-lg transition-all flex-shrink-0"
+                        className="text-xs text-amber-300 hover:text-amber-100 bg-amber-500/20 hover:bg-amber-500/30 px-2.5 py-1.5 rounded-lg transition-all flex-shrink-0 font-medium"
                       >
                         Usar esse
                       </button>
@@ -431,172 +491,238 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Campaign alert */}
               {campaignHit && (
-                <div className="flex items-start gap-2.5 px-3 py-2.5 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+                <div className="flex items-start gap-2.5 px-3 py-2.5 bg-orange-500/10 border border-orange-500/30 rounded-xl animate-in fade-in duration-200">
                   <AlertTriangle size={14} className="text-orange-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-orange-300">Contato em campanha ativa</p>
-                    <p className="text-xs text-orange-400/70 mt-0.5">Este número já está em uma campanha de mensagens.</p>
+                    <p className="text-xs font-semibold text-orange-300">Já está em campanha</p>
+                    <p className="text-xs text-orange-400/70 mt-0.5">Este número está em uma campanha de mensagens ativa.</p>
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
 
-          {/* ── STEP 2: Funnel details ── */}
+          {/* ────── STEP 2: Funnel ────── */}
           {step === 2 && (
-            <>
-              {/* Contact summary pill */}
-              {(selectedContact || (isEdit && lead?.contactId)) && (
-                <div className="flex items-center gap-2.5 px-3 py-2 bg-white/4 border border-white/8 rounded-xl">
-                  <div className="w-7 h-7 rounded-full bg-violet-500/20 flex items-center justify-center text-xs font-bold text-violet-300 flex-shrink-0">
-                    {(selectedContact?.name ?? (isEdit ? getById(lead!.contactId!)?.name ?? lead!.name : ''))?.charAt(0)?.toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-500">Contato</p>
-                    <p className="text-sm font-medium text-slate-200 truncate">
-                      {selectedContact?.name ?? (isEdit ? getById(lead!.contactId!)?.name ?? lead!.name : newName)}
-                    </p>
-                  </div>
-                  <CheckCircle2 size={14} className="text-violet-400 flex-shrink-0" />
-                </div>
-              )}
+            <div className={`space-y-5 ${animDir === 'forward' ? 'animate-in fade-in slide-in-from-right-4' : 'animate-in fade-in slide-in-from-left-4'} duration-200`}>
 
-              {/* Campaign alert on step 2 */}
+              {/* Contact pill */}
+              {(selectedContact || (isEdit && lead?.contactId)) && (() => {
+                const c = selectedContact ?? (lead?.contactId ? getById(lead.contactId) : undefined)
+                if (!c) return null
+                return (
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 bg-white/4 border border-white/8 rounded-xl">
+                    <div className="w-7 h-7 rounded-full bg-violet-500/25 flex items-center justify-center text-xs font-bold text-violet-200 flex-shrink-0">
+                      {c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500">Contato</p>
+                      <p className="text-sm font-semibold text-white truncate">{c.name}</p>
+                    </div>
+                    <CheckCircle2 size={14} className="text-violet-400 flex-shrink-0" />
+                  </div>
+                )
+              })()}
+
+              {/* Campaign alert */}
               {campaignHit && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/25 rounded-xl">
-                  <AlertTriangle size={13} className="text-orange-400 flex-shrink-0" />
-                  <p className="text-xs text-orange-300">Este contato já está em uma campanha de mensagens.</p>
+                  <AlertTriangle size={12} className="text-orange-400 flex-shrink-0" />
+                  <p className="text-xs text-orange-300">Este contato está em uma campanha ativa.</p>
                 </div>
               )}
 
               {/* Origem */}
               <div>
-                <label className="text-xs font-medium text-slate-400 mb-2 block">Origem do lead</label>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block uppercase tracking-wider">Origem</label>
                 <div className="grid grid-cols-2 gap-2">
                   {ORIGINS.map(o => (
                     <button
                       key={o.value}
                       onClick={() => setOrigin(o.value)}
-                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all duration-150 ${
+                      className={`relative flex items-center gap-2.5 px-3 py-3 rounded-xl border text-sm font-medium transition-all duration-200 overflow-hidden ${
                         origin === o.value
-                          ? `bg-gradient-to-r ${o.color} text-slate-100`
-                          : 'bg-white/3 border-white/8 text-slate-500 hover:bg-white/6 hover:text-slate-300'
+                          ? `bg-gradient-to-r ${o.grad} bg-opacity-20 border-white/30 text-white shadow-lg ring-2 ${o.ring}`
+                          : 'bg-white/4 border-white/8 text-slate-500 hover:bg-white/8 hover:text-slate-300 hover:border-white/15'
                       }`}
                     >
-                      <span className="text-base">{o.emoji}</span>
-                      {o.label}
+                      <span className="text-lg leading-none">{o.emoji}</span>
+                      <span>{o.label}</span>
+                      {origin === o.value && (
+                        <CheckCircle2 size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70" />
+                      )}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Produto / Imóvel — inline list (sem absolute) */}
+              {/* Produto */}
               <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Produto (Imóvel)</label>
-                {propertyId ? (
-                  <div className="flex items-center gap-3 px-3 py-2.5 bg-violet-500/8 border border-violet-500/25 rounded-xl">
+                <label className="text-xs font-semibold text-slate-400 mb-2 block uppercase tracking-wider">Produto / Imóvel</label>
+
+                {propertyMode === 'selected' && (
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-violet-500/10 to-purple-500/8 border border-violet-500/25 rounded-xl animate-in fade-in zoom-in-95 duration-150">
                     <Building2 size={14} className="text-violet-400 flex-shrink-0" />
-                    <p className="flex-1 text-sm text-slate-200 truncate">{propertySearch}</p>
-                    <button
-                      onClick={() => { setPropertyId(undefined); setPropertySearch('') }}
-                      className="text-xs text-slate-500 hover:text-red-400 transition-colors"
-                    >
-                      Trocar
-                    </button>
+                    <p className="flex-1 text-sm font-medium text-slate-200 truncate">{propertySearch}</p>
+                    <button onClick={clearProperty} className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
                   </div>
-                ) : (
+                )}
+
+                {propertyMode === 'free' && (
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-amber-500/10 to-orange-500/8 border border-amber-500/25 rounded-xl animate-in fade-in zoom-in-95 duration-150">
+                    <PenLine size={14} className="text-amber-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-amber-400/70">Nome livre (não cadastrado)</p>
+                      <p className="text-sm font-medium text-slate-200 truncate">{freePropertyName}</p>
+                    </div>
+                    <button onClick={clearProperty} className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
+                  </div>
+                )}
+
+                {propertyMode === 'search' && (
                   <div className="space-y-1">
                     <div className="relative">
                       <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                       <input
                         value={propertySearch}
                         onChange={e => setPropertySearch(e.target.value)}
-                        placeholder="Buscar imóvel..."
-                        className="w-full bg-white/5 border border-white/15 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 transition-all"
+                        placeholder="Buscar no sistema ou digitar nome livre..."
+                        className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                       />
                     </div>
-                    {propertySearch.length >= 1 && filteredProperties.length > 0 && (
-                      <div className="rounded-xl border border-white/10 overflow-hidden bg-[#1E2130]">
-                        {filteredProperties.map(p => (
-                          <button
-                            key={p.id}
-                            onClick={() => selectProperty(p.id)}
-                            className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 text-left transition-colors border-t border-white/5 first:border-0"
-                          >
-                            <div>
-                              <p className="text-sm font-medium text-slate-200">{p.name}</p>
-                              <p className="text-xs text-slate-500">{p.neighborhood} · {p.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</p>
-                            </div>
-                            <span className="text-xs font-semibold text-violet-400 ml-3 flex-shrink-0">
-                              {formatCurrencyFull(p.value)}
-                            </span>
-                          </button>
-                        ))}
+                    {propertySearch.length >= 1 && (
+                      <div className="rounded-xl border border-white/10 overflow-hidden bg-[#1A1D2E] animate-in fade-in slide-in-from-top-1 duration-150">
+                        {filteredProperties.length > 0 ? (
+                          <>
+                            {filteredProperties.map(p => (
+                              <button
+                                key={p.id}
+                                onClick={() => selectProperty(p.id)}
+                                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/6 text-left transition-all border-t border-white/5 first:border-0 group"
+                              >
+                                <div>
+                                  <p className="text-sm font-medium text-slate-200 group-hover:text-white">{p.name}</p>
+                                  <p className="text-xs text-slate-500">{p.neighborhood} · {p.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</p>
+                                </div>
+                                <span className="text-xs font-bold text-violet-400 ml-3 flex-shrink-0">{formatCurrencyFull(p.value)}</span>
+                              </button>
+                            ))}
+                            <button
+                              onClick={useFreeProperty}
+                              className="w-full flex items-center gap-2 px-3 py-2.5 text-amber-400 hover:bg-amber-500/8 border-t border-white/5 transition-all text-left"
+                            >
+                              <PenLine size={13} />
+                              <span className="text-xs font-medium">Usar "{propertySearch}" como nome livre</span>
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-start gap-1 px-3 py-3">
+                            <p className="text-xs text-slate-500">Nenhum imóvel cadastrado encontrado</p>
+                            <button
+                              onClick={useFreeProperty}
+                              className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/15 px-3 py-1.5 rounded-lg border border-amber-500/20 transition-all mt-1"
+                            >
+                              <PenLine size={12} /> Usar "{propertySearch}" como nome livre
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 )}
-                {propertyId && (
+
+                {(propertyMode === 'selected' && propertyId) && (
                   <p className="text-xs text-violet-400 mt-1 flex items-center gap-1">
                     <MapPin size={9} /> Ticket preenchido automaticamente
                   </p>
                 )}
               </div>
 
-              {/* Ticket Médio */}
+              {/* Ticket */}
               <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Ticket Médio (R$)</label>
+                <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider">Ticket Médio (R$)</label>
                 <div className="relative">
                   <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     value={averageTicket ? Number(averageTicket).toLocaleString('pt-BR') : ''}
                     onChange={e => handleAverageTicketChange(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-white/5 border border-white/15 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 transition-all"
+                    className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                   />
                 </div>
               </div>
 
               {/* Etapa */}
               <div>
-                <label className="text-xs font-medium text-slate-400 mb-2 block">Etapa do funil</label>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block uppercase tracking-wider">Etapa do Funil</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {STAGES.map(s => (
                     <button
                       key={s.value}
                       onClick={() => setStage(s.value)}
-                      className={`py-2 rounded-xl border text-xs font-medium transition-all ${
-                        stage === s.value ? s.color : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'
+                      className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all duration-200 ${
+                        stage === s.value
+                          ? `${s.active} shadow-sm scale-[1.02]`
+                          : `bg-white/3 border-white/8 text-slate-500 hover:text-slate-300 hover:bg-white/6`
                       }`}
                     >
-                      {s.label}
+                      <span className="text-base leading-none">{s.emoji}</span>
+                      <span>{s.label}</span>
                     </button>
                   ))}
                 </div>
+                {stage === 'visita' && (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/25 rounded-xl animate-in fade-in duration-200">
+                    <span className="text-sm">🏠</span>
+                    <p className="text-xs text-amber-300 font-medium">Uma tarefa de visita será criada automaticamente e vai alimentar suas metas!</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Data de entrada */}
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar size={11} />
+                  Data de entrada
+                  {isRetroactive && (
+                    <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/25">
+                      Retroativo
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="date"
+                  value={entryDate}
+                  max={localDateStr()}
+                  onChange={e => setEntryDate(e.target.value)}
+                  className="w-full bg-white/5 border border-white/12 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                />
+                {isRetroactive && (
+                  <p className="text-xs text-blue-400 mt-1 flex items-center gap-1">
+                    <Calendar size={10} /> Este lead será registrado com a data retroativa selecionada
+                  </p>
+                )}
               </div>
 
               {/* Notas */}
               <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Observações</label>
+                <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider">Observações</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Informações adicionais sobre o lead..."
                   rows={3}
-                  className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 transition-all resize-none"
+                  className="w-full bg-white/5 border border-white/12 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none"
                 />
               </div>
-            </>
+            </div>
           )}
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ── */}
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/8 bg-white/2 flex-shrink-0">
           <button
-            onClick={() => {
-              if (step === 1 || isEdit) onClose()
-              else setStep(1)
-            }}
+            onClick={() => { if (step === 1 || isEdit) onClose(); else goBack() }}
             className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/6 rounded-xl transition-all"
           >
             {step === 2 && !isEdit && <ChevronLeft size={14} />}
@@ -605,18 +731,24 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
           {step === 1 && !isEdit ? (
             <button
-              onClick={handleStep1Next}
+              onClick={goNext}
               disabled={!canAdvanceStep1()}
-              className="flex items-center gap-1.5 px-6 py-2.5 text-sm font-semibold bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/25 active:scale-95 disabled:opacity-35 disabled:pointer-events-none"
+              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/30 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
             >
               Próximo <ChevronRight size={15} />
             </button>
           ) : (
             <button
               onClick={handleSubmit}
-              className="px-6 py-2.5 text-sm font-semibold bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/25 active:scale-95"
+              className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl transition-all shadow-lg active:scale-95 ${
+                stage === 'venda'
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-500/30'
+                  : stage === 'visita'
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-amber-500/30'
+                  : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-violet-500/30'
+              }`}
             >
-              {lead ? 'Salvar alterações' : 'Criar Lead'}
+              {lead ? 'Salvar alterações' : isRetroactive ? '📅 Registrar lead' : '✨ Criar Lead'}
             </button>
           )}
         </div>

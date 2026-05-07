@@ -192,7 +192,7 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
               </div>
             </div>
 
-            {/* Imóvel */}
+            {/* Imóvel cadastrado */}
             {property && (
               <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
@@ -206,8 +206,21 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
               </div>
             )}
 
+            {/* Imóvel nome livre (não cadastrado) */}
+            {!property && lead.propertyName && (
+              <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                  <Building2 size={14} className="text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-amber-200 truncate">{lead.propertyName}</p>
+                  <p className="text-xs text-amber-400/60">Imóvel não cadastrado no sistema</p>
+                </div>
+              </div>
+            )}
+
             {/* Ticket sem imóvel */}
-            {!property && lead.averageTicket && (
+            {!property && !lead.propertyName && lead.averageTicket && (
               <div className="flex items-center gap-2 text-slate-400">
                 <DollarSign size={14} className="text-violet-400" />
                 <span className="text-sm">Ticket: <span className="font-semibold text-violet-300">{formatCurrencyFull(lead.averageTicket)}</span></span>

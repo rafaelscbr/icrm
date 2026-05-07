@@ -1,13 +1,14 @@
 import { create } from 'zustand'
 import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin } from '../types'
-import { generateId } from '../lib/formatters'
+import { generateId, localDateStr } from '../lib/formatters'
 import { db } from '../lib/db'
+import { useTasksStore } from './useTasksStore'
 
 interface LeadsStore {
   leads: Lead[]
   loading: boolean
   load: () => Promise<void>
-  add: (data: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => Lead
+  add: (data: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'> & { createdAt?: string }) => Lead
   update: (id: string, data: Partial<Lead>) => void
   remove: (id: string) => void
   getById: (id: string) => Lead | undefined
@@ -41,7 +42,8 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
   add: (data) => {
     const now = new Date().toISOString()
-    const lead: Lead = { ...data, id: generateId(), createdAt: now, updatedAt: now }
+    const { createdAt: customCreatedAt, ...rest } = data
+    const lead: Lead = { ...rest, id: generateId(), createdAt: customCreatedAt ?? now, updatedAt: now }
     set(s => ({ leads: [lead, ...s.leads] }))
     db.leads.upsert(lead).catch(err => console.error('[leads] add:', err))
     return lead
@@ -66,9 +68,38 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
   setStage: (id, stage) => {
     const now = new Date().toISOString()
+    const lead = get().leads.find(l => l.id === id)
+    if (!lead) return
+
+    let visitaTaskId = lead.visitaTaskId
+
+    // Auto-create visita task when moving into 'visita' stage
+    if (stage === 'visita' && !lead.visitaTaskId) {
+      const { add: addTask, tasks } = useTasksStore.getState()
+      // Avoid duplication: check if a visita task already exists for this contact
+      const existing = lead.contactId
+        ? tasks.find(t => t.contactId === lead.contactId && t.category === 'visita' && t.status === 'pending')
+        : undefined
+
+      if (!existing) {
+        const task = addTask({
+          title: `Visita — ${lead.name}`,
+          category: 'visita',
+          priority: 'high',
+          status: 'pending',
+          dueDate: localDateStr(),
+          contactId: lead.contactId,
+          propertyId: lead.propertyId,
+        })
+        visitaTaskId = task.id
+      } else {
+        visitaTaskId = existing.id
+      }
+    }
+
     const leads = get().leads.map(l =>
       l.id === id
-        ? { ...l, funnelStage: stage, followupStep: stage === 'followup' ? (l.followupStep || 1) : l.followupStep, updatedAt: now }
+        ? { ...l, funnelStage: stage, followupStep: stage === 'followup' ? (l.followupStep || 1) : l.followupStep, visitaTaskId, updatedAt: now }
         : l
     )
     set({ leads })

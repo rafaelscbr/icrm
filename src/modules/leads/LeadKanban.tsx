@@ -123,9 +123,9 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       )}
 
       {/* Property */}
-      {property && (
-        <p className="text-[11px] text-slate-500 mb-2 truncate flex items-center gap-1">
-          🏠 <span className="truncate">{property.name}</span>
+      {(property || lead.propertyName) && (
+        <p className={`text-[11px] mb-2 truncate flex items-center gap-1 ${lead.propertyName && !property ? 'text-amber-400/70' : 'text-slate-500'}`}>
+          🏠 <span className="truncate">{property ? property.name : lead.propertyName}</span>
         </p>
       )}
 

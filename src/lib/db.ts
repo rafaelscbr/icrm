@@ -265,8 +265,8 @@ interface LeadRow {
   id: string; name: string; phone: string; email: string | null
   origin: string; funnel_stage: string; followup_step: number
   discard_reason: string | null; discarded_at: string | null
-  property_id: string | null; average_ticket: number | null
-  contact_id: string | null; converted_at: string | null
+  property_id: string | null; property_name: string | null; average_ticket: number | null
+  contact_id: string | null; converted_at: string | null; visita_task_id: string | null
   notes: string | null; created_at: string; updated_at: string
 }
 
@@ -277,8 +277,10 @@ function toLead(r: LeadRow): Lead {
     followupStep: r.followup_step,
     discardReason: (r.discard_reason as LeadDiscardReason) ?? undefined,
     discardedAt: r.discarded_at ?? undefined,
-    propertyId: r.property_id ?? undefined, averageTicket: r.average_ticket ?? undefined,
+    propertyId: r.property_id ?? undefined, propertyName: r.property_name ?? undefined,
+    averageTicket: r.average_ticket ?? undefined,
     contactId: r.contact_id ?? undefined, convertedAt: r.converted_at ?? undefined,
+    visitaTaskId: r.visita_task_id ?? undefined,
     notes: r.notes ?? undefined, createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -288,8 +290,10 @@ function fromLead(l: Lead): LeadRow {
     id: l.id, name: l.name, phone: l.phone, email: l.email ?? null,
     origin: l.origin, funnel_stage: l.funnelStage, followup_step: l.followupStep,
     discard_reason: l.discardReason ?? null, discarded_at: l.discardedAt ?? null,
-    property_id: l.propertyId ?? null, average_ticket: l.averageTicket ?? null,
+    property_id: l.propertyId ?? null, property_name: l.propertyName ?? null,
+    average_ticket: l.averageTicket ?? null,
     contact_id: l.contactId ?? null, converted_at: l.convertedAt ?? null,
+    visita_task_id: l.visitaTaskId ?? null,
     notes: l.notes ?? null, created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }
