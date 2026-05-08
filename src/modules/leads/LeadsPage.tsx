@@ -14,11 +14,12 @@ import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadsDashboard } from './LeadsDashboard'
 import toast from 'react-hot-toast'
 
-const ORIGIN_CONFIG = {
-  felicita: { label: 'Felicità', emoji: '✨', color: 'text-rose-400',  bg: 'bg-rose-500/15',  border: 'border-rose-500/25'  },
-  meta_ads: { label: 'Meta ADS', emoji: '📱', color: 'text-blue-400',  bg: 'bg-blue-500/15',  border: 'border-blue-500/25'  },
-  portal:   { label: 'Portal',   emoji: '🌐', color: 'text-cyan-400',  bg: 'bg-cyan-500/15',  border: 'border-cyan-500/25'  },
-  offline:  { label: 'Offline',  emoji: '🤝', color: 'text-amber-400', bg: 'bg-amber-500/15', border: 'border-amber-500/25' },
+const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string; border: string }> = {
+  felicita: { label: 'Felicità', emoji: '✨', color: 'text-rose-400',   bg: 'bg-rose-500/15',   border: 'border-rose-500/25'   },
+  meta_ads: { label: 'Meta ADS', emoji: '📱', color: 'text-blue-400',   bg: 'bg-blue-500/15',   border: 'border-blue-500/25'   },
+  portal:   { label: 'Portal',   emoji: '🌐', color: 'text-cyan-400',   bg: 'bg-cyan-500/15',   border: 'border-cyan-500/25'   },
+  offline:  { label: 'Offline',  emoji: '🤝', color: 'text-amber-400',  bg: 'bg-amber-500/15',  border: 'border-amber-500/25'  },
+  campanha: { label: 'Campanha', emoji: '📣', color: 'text-violet-400', bg: 'bg-violet-500/15', border: 'border-violet-500/25' },
 }
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']

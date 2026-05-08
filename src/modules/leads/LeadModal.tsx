@@ -30,11 +30,12 @@ const STAGE_CONFIG = {
   venda:       { label: 'Venda',       color: 'text-green-300',  bg: 'bg-green-500/20',   border: 'border-green-500/30'   },
 }
 
-const ORIGIN_CONFIG = {
+const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
   felicita:  { label: 'Felicità',  emoji: '✨', color: 'text-rose-400'   },
   meta_ads:  { label: 'Meta ADS',  emoji: '📱', color: 'text-blue-400'   },
   portal:    { label: 'Portal',    emoji: '🌐', color: 'text-cyan-400'   },
   offline:   { label: 'Offline',   emoji: '🤝', color: 'text-amber-400'  },
+  campanha:  { label: 'Campanha',  emoji: '📣', color: 'text-violet-400' },
 }
 
 const FOLLOWUP_MESSAGES = [
