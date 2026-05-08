@@ -268,6 +268,7 @@ interface LeadRow {
   discard_reason: string | null; discarded_at: string | null
   property_id: string | null; property_name: string | null; average_ticket: number | null
   contact_id: string | null; converted_at: string | null; visita_task_id: string | null
+  flagged: boolean | null
   notes: string | null; created_at: string; updated_at: string
 }
 
@@ -282,6 +283,7 @@ function toLead(r: LeadRow): Lead {
     averageTicket: r.average_ticket ?? undefined,
     contactId: r.contact_id ?? undefined, convertedAt: r.converted_at ?? undefined,
     visitaTaskId: r.visita_task_id ?? undefined,
+    flagged: r.flagged ?? undefined,
     notes: r.notes ?? undefined, createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -295,6 +297,7 @@ function fromLead(l: Lead): LeadRow {
     average_ticket: l.averageTicket ?? null,
     contact_id: l.contactId ?? null, converted_at: l.convertedAt ?? null,
     visita_task_id: l.visitaTaskId ?? null,
+    flagged: l.flagged ?? null,
     notes: l.notes ?? null, created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }

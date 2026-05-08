@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   X, Phone, Mail, MessageCircle, ArrowRight, UserCheck,
   Building2, DollarSign, Trash2, RotateCcw, Edit2,
-  Calendar, Tag, AlertTriangle, CheckCircle2, Clock, ClipboardList,
+  Calendar, Tag, AlertTriangle, CheckCircle2, Clock, ClipboardList, Flame,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -54,7 +54,7 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
-  const { discard, restore, remove, convertToContact, advanceFollowup, leads } = useLeadsStore()
+  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, leads } = useLeadsStore()
   // Always read the live version from the store so edits are reflected immediately
   const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
 
@@ -347,7 +347,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               </button>
             )}
 
-            {/* Linha 1: Editar + Tarefa */}
+            {/* Linha 1: Editar + Tarefa + Prioridade */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowEdit(true)}
@@ -360,6 +360,17 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm text-indigo-300 hover:text-indigo-200 bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/20 rounded-xl transition-all"
               >
                 <ClipboardList size={13} /> Tarefa
+              </button>
+              <button
+                onClick={() => { toggleFlag(lead.id); toast.success(lead.flagged ? 'Prioridade removida' : '🔥 Prioridade máxima!') }}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium rounded-xl border transition-all ${
+                  lead.flagged
+                    ? 'bg-orange-500/20 border-orange-500/40 text-orange-300 hover:bg-orange-500/30'
+                    : 'bg-white/3 border-white/8 text-slate-500 hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-500/10'
+                }`}
+                title={lead.flagged ? 'Remover prioridade máxima' : 'Marcar prioridade máxima'}
+              >
+                <Flame size={14} />
               </button>
             </div>
 

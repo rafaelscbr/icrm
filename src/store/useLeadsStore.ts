@@ -17,6 +17,7 @@ interface LeadsStore {
   discard: (id: string, reason: LeadDiscardReason) => void
   restore: (id: string) => void
   convertToContact: (id: string, contactId: string) => void
+  toggleFlag: (id: string) => void
   search: (query: string) => Lead[]
   filterByStage: (stage: LeadFunnelStage | null) => Lead[]
   filterByOrigin: (origin: LeadOrigin | null) => Lead[]
@@ -161,6 +162,12 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     set({ leads })
     const updated = leads.find(l => l.id === id)
     if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] convertToContact:', err))
+  },
+
+  toggleFlag: (id) => {
+    const lead = get().leads.find(l => l.id === id)
+    if (!lead) return
+    get().update(id, { flagged: !lead.flagged })
   },
 
   search: (query) => {

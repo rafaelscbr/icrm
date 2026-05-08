@@ -3,7 +3,7 @@ import {
   DndContext, DragOverlay, useDraggable, useDroppable,
   closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core'
-import { MessageCircle, UserCheck, GripVertical, Phone } from 'lucide-react'
+import { MessageCircle, UserCheck, GripVertical, Phone, Flame } from 'lucide-react'
 import { Lead, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
@@ -41,7 +41,7 @@ const ORIGIN_EMOJI: Record<string, string> = {
 // ─── Card draggável ───────────────────────────────────────────────────────────
 
 function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
-  const { advanceFollowup } = useLeadsStore()
+  const { advanceFollowup, toggleFlag } = useLeadsStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id })
@@ -75,20 +75,46 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
     <div
       ref={setNodeRef}
       onClick={onClick}
-      className={`group relative bg-[#1A1D27] border rounded-xl p-3 cursor-pointer transition-all duration-150 hover:border-white/20 hover:shadow-lg hover:shadow-black/20 hover:translate-y-[-1px] active:scale-[0.98]
+      className={`group relative border rounded-xl p-3 cursor-pointer transition-all duration-150 hover:translate-y-[-1px] active:scale-[0.98]
         ${isDragging ? 'opacity-40 scale-95' : ''}
-        ${lead.funnelStage === 'venda' ? 'border-green-500/25 bg-green-500/5' : 'border-white/10'}
-        ${isLinked ? 'border-violet-500/20' : ''}
+        ${lead.flagged
+          ? 'bg-gradient-to-br from-orange-500/10 to-red-500/5 border-orange-500/50 shadow-lg shadow-orange-500/10 hover:border-orange-500/70 hover:shadow-orange-500/20'
+          : lead.funnelStage === 'venda'
+            ? 'bg-green-500/5 border-green-500/25 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
+            : isLinked
+              ? 'bg-[#1A1D27] border-violet-500/20 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
+              : 'bg-[#1A1D27] border-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
+        }
       `}
     >
-      {/* Drag handle */}
-      <div
-        {...listeners}
-        {...attributes}
-        onClick={e => e.stopPropagation()}
-        className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center text-slate-700 hover:text-slate-400 cursor-grab active:cursor-grabbing transition-colors"
-      >
-        <GripVertical size={12} />
+      {/* Flag badge quando ativo */}
+      {lead.flagged && (
+        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/50 z-10">
+          <Flame size={10} className="text-white" />
+        </div>
+      )}
+
+      {/* Drag handle + flag toggle */}
+      <div className="absolute top-2 right-2 flex items-center gap-0.5">
+        <button
+          onClick={e => { e.stopPropagation(); toggleFlag(lead.id) }}
+          className={`w-5 h-5 flex items-center justify-center rounded transition-all ${
+            lead.flagged
+              ? 'text-orange-400 hover:text-orange-300'
+              : 'text-slate-700 opacity-0 group-hover:opacity-100 hover:text-orange-400'
+          }`}
+          title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+        >
+          <Flame size={11} />
+        </button>
+        <div
+          {...listeners}
+          {...attributes}
+          onClick={e => e.stopPropagation()}
+          className="w-5 h-5 flex items-center justify-center text-slate-700 hover:text-slate-400 cursor-grab active:cursor-grabbing transition-colors"
+        >
+          <GripVertical size={12} />
+        </div>
       </div>
 
       {/* Name + origin */}

@@ -205,6 +205,7 @@ export interface Lead {
   contactId?: string          // preenchido ao converter lead em contato
   convertedAt?: string
   visitaTaskId?: string       // ID da tarefa de visita criada automaticamente
+  flagged?: boolean           // prioridade máxima — destaca o card no funil
   notes?: string
   createdAt: string
   updatedAt: string
