@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, Zap, DollarSign, ArrowRight } from 'lucide-react'
+import { CheckCircle2, Zap, DollarSign, ArrowRight, GitMerge } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { CampaignLead, FunnelStage, LeadSituation } from '../../types'
@@ -10,6 +10,7 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { Campaign } from '../../types'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone } from '../../lib/formatters'
+import { TransferToFunnelModal } from './TransferToFunnelModal'
 import toast from 'react-hot-toast'
 
 interface LeadParecerModalProps {
@@ -29,6 +30,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
   const [situation,      setSituationL]   = useState<LeadSituation | undefined>()
   const [notes,          setNotes]        = useState('')
   const [proposalValue,  setProposalValue]= useState('')
+  const [showTransfer,   setShowTransfer] = useState(false)
 
   useEffect(() => {
     if (!isOpen || !lead) return
@@ -217,12 +219,31 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
             />
           </div>
 
+          {/* Transferir para Funil Principal */}
+          <div className="pt-1 border-t border-white/8">
+            <button
+              type="button"
+              onClick={() => setShowTransfer(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-violet-300 hover:text-white bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/25 hover:border-violet-500/40 rounded-xl transition-all"
+            >
+              <GitMerge size={13} />
+              Enviar para o Funil Principal
+            </button>
+          </div>
+
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
             <Button className="flex-1" onClick={handleSave}>Salvar parecer</Button>
           </div>
         </div>
       )}
+
+      <TransferToFunnelModal
+        isOpen={showTransfer}
+        onClose={() => setShowTransfer(false)}
+        lead={lead}
+        campaign={campaign}
+      />
     </Modal>
   )
 }

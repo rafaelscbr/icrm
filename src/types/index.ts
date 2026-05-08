@@ -173,7 +173,7 @@ export interface Goal {
 
 // ─── Leads ───────────────────────────────────────────────────────────────────
 
-export type LeadOrigin       = 'felicita' | 'meta_ads' | 'portal' | 'offline'
+export type LeadOrigin       = 'felicita' | 'meta_ads' | 'portal' | 'offline' | 'campanha'
 export type LeadFunnelStage  = 'lead' | 'followup' | 'atendimento' | 'visita' | 'proposta' | 'venda'
 export type LeadDiscardReason = 'sem_condicao' | 'fora_de_nicho' | 'parou_de_responder' | 'nunca_respondeu' | 'telefone_invalido'
 

@@ -35,7 +35,7 @@ const FOLLOWUP_MESSAGES = [
 ]
 
 const ORIGIN_EMOJI: Record<string, string> = {
-  felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝',
+  felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝', campanha: '📣',
 }
 
 // ─── Card draggável ───────────────────────────────────────────────────────────

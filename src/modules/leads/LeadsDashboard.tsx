@@ -13,13 +13,13 @@ import { STAGE_CONFIG } from './LeadKanban'
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
 const ORIGIN_LABEL: Record<string, string> = {
-  felicita: 'Felicità', meta_ads: 'Meta ADS', portal: 'Portal', offline: 'Offline',
+  felicita: 'Felicità', meta_ads: 'Meta ADS', portal: 'Portal', offline: 'Offline', campanha: 'Campanha',
 }
 const ORIGIN_COLOR: Record<string, string> = {
-  felicita: '#f43f5e', meta_ads: '#3b82f6', portal: '#06b6d4', offline: '#f59e0b',
+  felicita: '#f43f5e', meta_ads: '#3b82f6', portal: '#06b6d4', offline: '#f59e0b', campanha: '#a855f7',
 }
 const ORIGIN_EMOJI: Record<string, string> = {
-  felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝',
+  felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝', campanha: '📣',
 }
 const DISCARD_LABELS: Record<string, string> = {
   sem_condicao: 'Sem condição financeira',
