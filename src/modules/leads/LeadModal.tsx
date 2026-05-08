@@ -51,12 +51,13 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ lead, onClose }: LeadModalProps) {
-  const { discard, restore, convertToContact, advanceFollowup } = useLeadsStore()
+  const { discard, restore, remove, convertToContact, advanceFollowup } = useLeadsStore()
   const { add: addContact, getById } = useContactsStore()
   const { properties } = usePropertiesStore()
 
   const [showDiscard, setShowDiscard] = useState(false)
   const [selectedReason, setSelectedReason] = useState<LeadDiscardReason | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [showTaskForm, setShowTaskForm] = useState(false)
 
@@ -113,6 +114,12 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
   function handleRestore() {
     restore(lead.id)
     toast.success('Lead restaurado')
+    onClose()
+  }
+
+  function handleDelete() {
+    remove(lead.id)
+    toast.success('Lead excluído')
     onClose()
   }
 
@@ -303,6 +310,7 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
               </button>
             )}
 
+            {/* Linha 1: Editar + Tarefa */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowEdit(true)}
@@ -310,14 +318,16 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
               >
                 <Edit2 size={13} /> Editar
               </button>
-
               <button
                 onClick={() => setShowTaskForm(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm text-indigo-300 hover:text-indigo-200 bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/20 rounded-xl transition-all"
               >
                 <ClipboardList size={13} /> Tarefa
               </button>
+            </div>
 
+            {/* Linha 2: Criar contato (se aplicável) + Descartar / Restaurar */}
+            <div className="flex items-center gap-2">
               {!isLinked && !isDiscarded && (
                 <button
                   onClick={handleConvert}
@@ -326,7 +336,6 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
                   <UserCheck size={13} /> Criar contato
                 </button>
               )}
-
               {isDiscarded ? (
                 <button
                   onClick={handleRestore}
@@ -350,7 +359,7 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
       {/* Discard Modal */}
       {showDiscard && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowDiscard(false)} />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setShowDiscard(false); setShowDeleteConfirm(false) }} />
           <div className="relative w-full max-w-sm bg-[#1A1D27] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="px-5 py-4 border-b border-white/8 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center">
@@ -358,9 +367,10 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-slate-100">Descartar Lead</h3>
-                <p className="text-xs text-slate-500">Selecione o motivo do descarte</p>
+                <p className="text-xs text-slate-500">Selecione o motivo ou exclua definitivamente</p>
               </div>
             </div>
+
             <div className="px-5 py-4 space-y-2">
               {DISCARD_REASONS.map(r => (
                 <button
@@ -377,14 +387,50 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
                   {selectedReason === r.value && <ArrowRight size={13} className="ml-auto text-red-400" />}
                 </button>
               ))}
+
+              {/* Separador — excluir permanentemente */}
+              <div className="pt-2 border-t border-white/6">
+                {!showDeleteConfirm ? (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-red-900/40 bg-red-950/20 text-red-500 hover:bg-red-900/30 hover:text-red-400 text-sm text-left transition-all"
+                  >
+                    <Trash2 size={13} />
+                    Excluir lead definitivamente
+                  </button>
+                ) : (
+                  <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-3 space-y-2">
+                    <p className="text-xs text-red-300 font-medium">⚠️ Isso é permanente e não pode ser desfeito.</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="flex-1 py-1.5 text-xs text-slate-400 hover:text-slate-200 bg-white/5 rounded-lg border border-white/10 transition-all"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        className="flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-all"
+                      >
+                        Sim, excluir
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
             <div className="flex items-center gap-2 px-5 pb-4">
-              <button onClick={() => setShowDiscard(false)} className="flex-1 py-2 text-sm text-slate-400 hover:text-slate-200 bg-white/3 hover:bg-white/6 rounded-xl border border-white/8 transition-all">
+              <button
+                onClick={() => { setShowDiscard(false); setShowDeleteConfirm(false) }}
+                className="flex-1 py-2 text-sm text-slate-400 hover:text-slate-200 bg-white/3 hover:bg-white/6 rounded-xl border border-white/8 transition-all"
+              >
                 Cancelar
               </button>
               <button
                 onClick={handleDiscard}
-                className="flex-1 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-xl transition-all"
+                disabled={!selectedReason}
+                className="flex-1 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
               >
                 Descartar
               </button>
