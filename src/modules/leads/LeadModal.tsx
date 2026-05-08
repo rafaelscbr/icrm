@@ -8,6 +8,7 @@ import { Lead, LeadDiscardReason } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { formatPhone, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
@@ -52,9 +53,13 @@ interface LeadModalProps {
   onClose: () => void
 }
 
-export function LeadModal({ lead, onClose }: LeadModalProps) {
-  const { discard, restore, remove, convertToContact, advanceFollowup } = useLeadsStore()
+export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
+  const { discard, restore, remove, convertToContact, advanceFollowup, leads } = useLeadsStore()
+  // Always read the live version from the store so edits are reflected immediately
+  const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
+
   const { add: addContact, getById } = useContactsStore()
+  const { add: addInteraction } = useLeadInteractionsStore()
   const { properties } = usePropertiesStore()
 
   const [activeTab, setActiveTab] = useState<'detalhes' | 'historico'>('detalhes')
@@ -85,6 +90,12 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
     window.open(url, '_blank')
     advanceFollowup(lead.id)
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
+    addInteraction({
+      leadId: lead.id,
+      type: 'whatsapp',
+      description: msg,
+      interactedAt: new Date().toISOString(),
+    })
     toast.success(`WhatsApp aberto · ${lead.funnelStage === 'lead' ? '1ª' : `${nextStep}ª`} mensagem`)
   }
 
