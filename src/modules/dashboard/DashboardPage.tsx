@@ -63,7 +63,7 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
   }, {})
 
   return (
-    <div className="rounded-2xl border border-blue-400/30 bg-blue-500/5 ring-1 ring-blue-400/15 overflow-hidden mb-6 animate-slide-up">
+    <div className="rounded-xl border border-blue-400/30 bg-blue-500/5 ring-1 ring-blue-400/15 overflow-hidden mb-6 animate-slide-up">
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-blue-400/15">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-blue-500/15 rounded-xl flex items-center justify-center">
@@ -140,7 +140,7 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
   if (candidates.length === 0) return null
 
   return (
-    <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 overflow-hidden mb-6 animate-slide-up">
+    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 overflow-hidden mb-6 animate-slide-up">
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-emerald-500/15">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-emerald-500/15 rounded-xl flex items-center justify-center">
@@ -223,7 +223,7 @@ function OverdueCard({
 }: { tasks: Task[]; contacts: Contact[]; properties: Property[]; onNavigate: () => void }) {
   if (tasks.length === 0) return null
   return (
-    <div className="relative rounded-2xl border border-red-500/40 bg-red-500/5 ring-1 ring-red-500/20 overflow-hidden mb-6 animate-slide-up">
+    <div className="relative rounded-xl border border-red-500/40 bg-red-500/5 ring-1 ring-red-500/20 overflow-hidden mb-6 animate-slide-up">
       {/* topo vermelho */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-red-500/20">
         <div className="flex items-center gap-2.5">
@@ -299,23 +299,22 @@ function UpcomingCard({
 }: { tasks: Task[]; contacts: Contact[]; properties: Property[]; onNavigate: () => void }) {
   const shown = tasks.slice(0, 6)
   return (
-    <div className="relative rounded-2xl border border-white/8 card-surface overflow-hidden mb-6 animate-slide-up">
+    <div className="relative rounded-xl border border-white/8 card-surface overflow-hidden mb-6 animate-slide-up">
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/7">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-indigo-500/15 rounded-xl flex items-center justify-center">
-            <CalendarCheck size={15} className="text-indigo-400" />
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-500/15 rounded-lg flex items-center justify-center">
+            <CalendarCheck size={15} className="text-blue-400" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-200">Próximas tarefas</h2>
-            {tasks.length > 0
-              ? <p className="text-[11px] text-slate-500 mt-0.5">Você tem {tasks.length} tarefa{tasks.length !== 1 ? 's' : ''} agendada{tasks.length !== 1 ? 's' : ''} — siga em frente! 💪</p>
-              : <p className="text-[11px] text-slate-500 mt-0.5">Agenda livre — aproveite para planejar! ✨</p>
-            }
+            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">PRÓXIMAS TAREFAS</p>
+            <h2 className="text-sm font-bold text-white leading-none mt-0.5">
+              {tasks.length > 0 ? `${tasks.length} agendada${tasks.length !== 1 ? 's' : ''}` : 'Agenda livre'}
+            </h2>
           </div>
         </div>
         <button
           onClick={onNavigate}
-          className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer hover:gap-2"
+          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors cursor-pointer"
         >
           Ver todas <ArrowRight size={12} />
         </button>
@@ -418,15 +417,15 @@ function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
   if (active.length === 0) return null
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-[#13151f] overflow-hidden mb-6 animate-slide-up">
+    <div className="rounded-xl border border-white/8 bg-[#0D1117] overflow-hidden mb-6 animate-slide-up">
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/7">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-purple-500/15 rounded-xl flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center">
             <Megaphone size={15} className="text-purple-400" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-200">Campanhas ativas</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">{active.length} campanha{active.length !== 1 ? 's' : ''} em andamento</p>
+            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">CAMPANHAS ATIVAS</p>
+            <h2 className="text-sm font-bold text-white leading-none mt-0.5">{active.length} em andamento</h2>
           </div>
         </div>
       </div>
@@ -539,70 +538,69 @@ export function DashboardPage() {
 
   return (
     <PageLayout
-      title={`${greeting()}, Rafael ✨`}
+      title={`${greeting()}, Rafael`}
       subtitle={todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1)}
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}
     >
-      {/* Seletor de período */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-xs text-slate-500">Exibindo dados de <span className="text-slate-300 font-medium">{periodLabel}</span></p>
+      {/* Period selector row */}
+      <div className="flex items-center justify-between mb-6 px-1">
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-4 rounded-full bg-blue-500" />
+          <p className="text-xs text-slate-500">Período: <span className="text-slate-300 font-semibold">{periodLabel}</span></p>
+        </div>
         <PeriodSelector />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {/* Card combinado de tarefas */}
-        <Card className="!py-4 col-span-2 sm:col-span-1">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg leading-none">🔥</span>
-            <span className="text-xs text-slate-500">Tarefas — {periodLabel}</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <p className="text-2xl font-bold tabular-nums text-green-400">{tasksDoneInPeriod}</p>
-              <p className="text-[10px] text-slate-600 mt-0.5 flex items-center gap-1">
-                <ClipboardCheck size={9} className="text-green-500" /> realizadas
-              </p>
-            </div>
-            <div className="w-px h-10 bg-white/8 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-2xl font-bold tabular-nums text-indigo-400">{tasksPendingInPeriod}</p>
-              <p className="text-[10px] text-slate-600 mt-0.5 flex items-center gap-1">
-                <ListTodo size={9} className="text-indigo-500" /> pendentes
-              </p>
-            </div>
-          </div>
-          {tasksPendingInPeriod > 0 && (
-            <div className="mt-3 pt-2 border-t border-white/5">
-              <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-green-500 transition-all duration-500"
-                  style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }}
-                />
+      {/* KPI command strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        {/* Tarefas */}
+        <div className="relative bg-[#0D1117] border border-white/8 rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-white/15 hover:shadow-2xl hover:shadow-black/40">
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
+          <div className="p-5">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
+            <div className="flex items-center gap-4 mb-3">
+              <div className="flex-1">
+                <p className="text-3xl font-black text-white tabular-nums leading-none">{tasksDoneInPeriod}</p>
+                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1">
+                  <ClipboardCheck size={9} className="text-green-500" /> realizadas
+                </p>
+              </div>
+              <div className="w-px h-8 bg-white/8 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-3xl font-black text-violet-300 tabular-nums leading-none">{tasksPendingInPeriod}</p>
+                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1">
+                  <ListTodo size={9} className="text-violet-500" /> pendentes
+                </p>
               </div>
             </div>
-          )}
-        </Card>
+            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-green-500 transition-all duration-700"
+                style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
         <StatCard
-          label="Imóveis"
+          label="Imóveis ativos"
           value={properties.length}
           sub={`${properties.filter(p => p.status === 'opportunity').length} oportunidades`}
-          icon={<span className="text-lg leading-none">🏠</span>}
+          icon={<Building2 size={16} />}
           accent="blue"
         />
         <StatCard
-          label="Total acumulado"
+          label="Volume acumulado"
           value={formatCurrency(totalAccumulated)}
           sub={`${totalAccumulatedCount} venda${totalAccumulatedCount !== 1 ? 's' : ''} até ${periodLabel}`}
-          icon={<span className="text-lg leading-none">💰</span>}
+          icon={<DollarSign size={16} />}
           accent="green"
         />
         <StatCard
           label={`Vendas — ${periodLabel}`}
           value={formatCurrency(valueInPeriod)}
-          sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''}`}
-          icon={<span className="text-lg leading-none">💰</span>}
+          sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`}
+          icon={<TrendingUp size={16} />}
           accent="purple"
         />
       </div>
@@ -699,7 +697,7 @@ export function DashboardPage() {
 
           {recentSales.length === 0 ? (
             <div className="flex flex-col items-center py-8 gap-2">
-              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center">
                 <Sparkles size={20} className="text-slate-600" />
               </div>
               <p className="text-sm text-slate-500">Nenhuma venda registrada ainda</p>

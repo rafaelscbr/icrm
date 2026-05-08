@@ -2,30 +2,45 @@ import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
-  CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown, ExternalLink, Tv2,
-  Sun, Moon, UserPlus,
+  CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown,
+  ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import logoLight from '../../assets/logo.png'
 import logoDark from '../../assets/logo-dark.png'
 
-const nav = [
-  { to: '/',           icon: LayoutDashboard, label: 'Dashboard',  end: true,  color: 'text-indigo-400' },
-  { to: '/contatos',   icon: Users,           label: 'Contatos',   end: false, color: 'text-blue-400'   },
-  { to: '/imoveis',    icon: Building2,       label: 'Imóveis',    end: false, color: 'text-cyan-400'   },
-  { to: '/vendas',     icon: TrendingUp,      label: 'Vendas',     end: false, color: 'text-green-400'  },
-  { to: '/tarefas',    icon: CheckSquare,     label: 'Tarefas',    end: false, color: 'text-orange-400' },
-  { to: '/leads',      icon: UserPlus,        label: 'Leads',      end: false, color: 'text-violet-400' },
-  { to: '/campanhas',  icon: Megaphone,       label: 'Campanhas',  end: false, color: 'text-pink-400'   },
-  { to: '/metas',      icon: Target,          label: 'Metas',      end: false, color: 'text-amber-400'  },
-  { to: '/performance',icon: BarChart3,       label: 'Performance',end: false, color: 'text-purple-400' },
+const navSections = [
+  {
+    label: 'PRINCIPAL',
+    items: [
+      { to: '/',      icon: LayoutDashboard, label: 'Dashboard',  end: true  },
+      { to: '/tarefas', icon: CheckSquare,  label: 'Tarefas',    end: false },
+    ],
+  },
+  {
+    label: 'COMERCIAL',
+    items: [
+      { to: '/leads',     icon: UserPlus,   label: 'Leads',      end: false },
+      { to: '/contatos',  icon: Users,      label: 'Contatos',   end: false },
+      { to: '/imoveis',   icon: Building2,  label: 'Imóveis',    end: false },
+      { to: '/vendas',    icon: TrendingUp, label: 'Vendas',     end: false },
+      { to: '/campanhas', icon: Megaphone,  label: 'Campanhas',  end: false },
+    ],
+  },
+  {
+    label: 'ANÁLISE',
+    items: [
+      { to: '/metas',       icon: Target,   label: 'Metas',       end: false },
+      { to: '/performance', icon: BarChart3, label: 'Performance', end: false },
+    ],
+  },
 ]
 
 const tools = [
-  { label: 'IBuscador',   href: 'http://localhost:5177/', icon: Search, color: 'text-sky-400'  },
-  { label: 'IAgenciador', href: 'http://localhost:5174/', icon: Home,   color: 'text-rose-400' },
-  { label: 'Meta ADS',    href: 'https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=886179520398765&business_id=1889117311563062&global_scope_id=1889117311563062', icon: Tv2, color: 'text-blue-400' },
-  { label: 'Eemovel',     href: 'https://brokers.eemovel.com.br/login', icon: Building2, color: 'text-emerald-400' },
+  { label: 'IBuscador',   href: 'http://localhost:5177/', icon: Search, },
+  { label: 'IAgenciador', href: 'http://localhost:5174/', icon: Home,   },
+  { label: 'Meta ADS',    href: 'https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=886179520398765&business_id=1889117311563062&global_scope_id=1889117311563062', icon: Tv2, },
+  { label: 'Eemovel',     href: 'https://brokers.eemovel.com.br/login', icon: Building2, },
 ]
 
 export function Sidebar() {
@@ -33,89 +48,91 @@ export function Sidebar() {
   const { theme, toggle } = useThemeStore()
 
   return (
-    <aside className="hidden lg:flex w-52 flex-shrink-0 nav-bg border-r border-white/7 flex-col h-screen sticky top-0">
+    <aside className="hidden lg:flex w-56 flex-shrink-0 flex-col h-screen sticky top-0 border-r border-white/6"
+      style={{ backgroundColor: '#080A10' }}>
+
       {/* Logo */}
-      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-center">
+      <div className="px-5 py-4 border-b border-white/6">
         <img
           src={theme === 'dark' ? logoLight : logoDark}
           alt="Souza Imobiliária"
-          className="h-10 w-auto object-contain"
+          className="h-9 w-auto object-contain"
         />
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-        {/* Search shortcut hint — keyboard trigger via ⌘K in App.tsx */}
-        <div className="flex items-center gap-2 px-3 py-2 mb-1 rounded-lg border border-white/8 bg-white/3 cursor-default select-none">
+      {/* Search pill */}
+      <div className="px-3 pt-3 pb-1">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/8 bg-white/3 cursor-default select-none group hover:border-white/12 hover:bg-white/5 transition-all">
           <Search size={12} className="text-slate-600 flex-shrink-0" />
           <span className="flex-1 text-xs text-slate-600">Buscar…</span>
-          <kbd className="text-[10px] font-mono text-slate-700 bg-white/5 border border-white/8 rounded px-1 py-0.5 leading-none flex-shrink-0">⌘K</kbd>
+          <kbd className="text-[10px] font-mono text-slate-700 bg-white/5 border border-white/8 rounded px-1 leading-4 flex-shrink-0">⌘K</kbd>
         </div>
+      </div>
 
-        {nav.map(({ to, icon: Icon, label, end, color }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200
-              ${isActive
-                ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/8 text-amber-100 font-semibold border border-amber-500/20'
-                : 'text-slate-500 hover:text-slate-200 hover:bg-white/5 border border-transparent'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-all duration-200
-                  ${isActive ? 'bg-gradient-to-br from-amber-500/25 to-orange-500/15' : 'bg-white/5 group-hover:bg-white/10'}`}>
-                  <Icon size={14} className={isActive ? 'text-amber-300' : color} />
-                </div>
-                {label}
-                {isActive && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400/60" />
-                )}
-              </>
-            )}
-          </NavLink>
+      {/* Nav sections */}
+      <nav className="flex-1 px-3 py-2 flex flex-col gap-4 overflow-y-auto">
+        {navSections.map(section => (
+          <div key={section.label}>
+            <p className="px-3 mb-1 text-[10px] font-bold tracking-widest text-slate-700 uppercase select-none">
+              {section.label}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {section.items.map(({ to, icon: Icon, label, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150
+                    ${isActive
+                      ? 'bg-blue-600 text-white font-semibold shadow-lg shadow-blue-600/25'
+                      : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon size={15} className={isActive ? 'text-white' : 'text-slate-600 group-hover:text-slate-300 transition-colors'} />
+                      <span className="flex-1 truncate">{label}</span>
+                      {isActive && <ChevronRight size={12} className="text-blue-200 flex-shrink-0" />}
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
 
-        {/* Ferramentas dropdown */}
-        <div className="mt-2 pt-2 border-t border-white/7">
+        {/* Ferramentas */}
+        <div>
+          <p className="px-3 mb-1 text-[10px] font-bold tracking-widest text-slate-700 uppercase select-none">
+            FERRAMENTAS
+          </p>
           <button
             onClick={() => setToolsOpen(v => !v)}
-            className={`w-full group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 cursor-pointer border
-              ${toolsOpen
-                ? 'bg-white/5 text-slate-200 border-white/8'
-                : 'text-slate-500 hover:text-slate-200 hover:bg-white/5 border-transparent'
-              }`}
+            className="w-full group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-150 cursor-pointer"
           >
-            <div className="w-6 h-6 rounded-md flex items-center justify-center group-hover:bg-white/8 transition-all">
-              <Wrench size={14} className="text-teal-400" />
-            </div>
-            <span className="flex-1 text-left">Ferramentas</span>
+            <Wrench size={15} className="text-slate-600 group-hover:text-slate-300 transition-colors" />
+            <span className="flex-1 text-left">Externas</span>
             <ChevronDown
               size={12}
-              className={`text-slate-600 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}
+              className={`text-slate-700 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
-          {/* Sub-items */}
           {toolsOpen && (
-            <div className="mt-0.5 ml-3 flex flex-col gap-0.5 pl-2.5 border-l border-white/8">
-              {tools.map(({ label, href, icon: Icon, color }) => (
+            <div className="mt-0.5 ml-4 flex flex-col gap-0.5 pl-3 border-l border-white/8">
+              {tools.map(({ label, href, icon: Icon }) => (
                 <a
                   key={href}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-150"
+                  className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-xs text-slate-600 hover:text-slate-200 hover:bg-white/5 transition-all duration-150"
                 >
-                  <div className="w-5 h-5 rounded-md flex items-center justify-center group-hover:bg-white/8 transition-all flex-shrink-0">
-                    <Icon size={12} className={color} />
-                  </div>
+                  <Icon size={12} className="text-slate-700 group-hover:text-slate-400 transition-colors flex-shrink-0" />
                   <span className="flex-1 truncate">{label}</span>
-                  <ExternalLink size={10} className="text-slate-700 group-hover:text-slate-500 flex-shrink-0 transition-colors" />
+                  <ExternalLink size={10} className="text-slate-800 group-hover:text-slate-600 flex-shrink-0" />
                 </a>
               ))}
             </div>
@@ -123,42 +140,36 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {/* User + theme toggle */}
-      <div className="px-3 py-3 border-t border-white/7">
+      {/* Footer */}
+      <div className="px-3 py-3 border-t border-white/6 flex flex-col gap-1">
         {/* Theme toggle */}
         <button
           onClick={toggle}
-          title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-          className="w-full flex items-center gap-2.5 px-3 py-2 mb-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+          title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
         >
-          <div className="w-6 h-6 rounded-md flex items-center justify-center group-hover:bg-white/8 transition-all">
-            {theme === 'dark'
-              ? <Sun size={13} className="text-amber-400" />
-              : <Moon size={13} className="text-indigo-400" />
-            }
-          </div>
-          <span className="text-xs text-slate-500 group-hover:text-slate-300 transition-colors">
+          {theme === 'dark'
+            ? <Sun size={14} className="text-slate-600 group-hover:text-amber-400 transition-colors" />
+            : <Moon size={14} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
+          }
+          <span className="flex-1 text-left text-xs text-slate-600 group-hover:text-slate-300 transition-colors">
             {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
           </span>
-          <div className={`ml-auto relative w-8 h-4 rounded-full transition-all flex-shrink-0 ${theme === 'light' ? 'bg-amber-400/80' : 'bg-white/10'}`}>
+          <div className={`relative w-8 h-4 rounded-full transition-all flex-shrink-0 ${theme === 'light' ? 'bg-blue-500/80' : 'bg-white/10'}`}>
             <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all ${theme === 'light' ? 'left-4' : 'left-0.5'}`} />
           </div>
         </button>
 
-        <div className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
-          <div className="relative flex-shrink-0">
-            <div className="w-7 h-7 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md shadow-amber-500/30">
-              R
-            </div>
-            <div className="absolute -inset-[2px] rounded-full bg-gradient-to-br from-amber-400 to-orange-500 -z-10 opacity-60 blur-[2px]" />
+        {/* User */}
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
+          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-md shadow-blue-600/40">
+            R
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-slate-300 truncate">Rafael</p>
-            <p className="text-[10px] text-slate-600">Corretor</p>
+            <p className="text-xs font-semibold text-slate-300 truncate leading-none">Rafael</p>
+            <p className="text-[10px] text-slate-600 mt-0.5">Corretor</p>
           </div>
-          <div className="w-1.5 h-1.5 rounded-full bg-green-400 relative flex-shrink-0">
-            <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-50" />
-          </div>
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 shadow-sm shadow-emerald-400/60" />
         </div>
       </div>
     </aside>

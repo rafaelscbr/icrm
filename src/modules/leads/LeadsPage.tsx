@@ -69,7 +69,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       `}
     >
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
-        ${isDiscarded ? 'bg-slate-500/20 text-slate-500' : 'bg-gradient-to-br from-violet-500/30 to-purple-500/20 text-violet-200'}`}>
+        ${isDiscarded ? 'bg-slate-500/20 text-slate-500' : 'bg-blue-600 text-white'}`}>
         {displayName.charAt(0).toUpperCase()}
       </div>
 
@@ -181,45 +181,40 @@ export function LeadsPage() {
     <div className="flex flex-col h-full">
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 sticky top-0 z-10 bg-[#0F1117]/95 backdrop-blur border-b border-white/7 px-6 py-4">
+      <div className="flex-shrink-0 sticky top-0 z-10 backdrop-blur border-b border-white/7 px-6 py-4" style={{ backgroundColor: 'rgba(7,9,15,0.97)' }}>
         {/* Título + ações */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center flex-shrink-0">
-              <Users size={17} className="text-violet-300" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base font-bold text-slate-100 leading-tight">Leads</h1>
-              <p className="text-[11px] text-slate-500">Funil de prospecção · {active.length} ativos</p>
-            </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold text-white leading-none tracking-tight">Leads</h1>
+            <p className="text-xs text-slate-500 mt-1">Funil de prospecção · <span className="text-slate-300 font-semibold">{active.length} ativos</span></p>
           </div>
 
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/20 active:scale-95 flex-shrink-0"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all shadow-lg shadow-blue-600/30 active:scale-95 flex-shrink-0"
           >
             <Plus size={15} />
             Novo Lead
           </button>
         </div>
 
-        {/* Tabs — estilo campaigns */}
-        <div className="flex gap-2 mt-4">
+        {/* Tabs */}
+        <div className="flex gap-1 mt-4">
           {TABS.map(({ value, label, icon: Icon, badge }) => (
             <button
               key={value}
               onClick={() => setTab(value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer
                 ${tab === value
-                  ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-600/30'
+                  : 'bg-transparent border-white/8 text-slate-500 hover:text-slate-300 hover:border-white/15'
                 }`}
             >
               <Icon size={12} />
               {label}
               {badge !== undefined && (
                 <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
-                  ${tab === value ? 'bg-violet-500/30 text-violet-200' : 'bg-white/8 text-slate-500'}`}>
+                  ${tab === value ? 'bg-white/20 text-white' : 'bg-white/8 text-slate-500'}`}>
                   {badge}
                 </span>
               )}
@@ -247,7 +242,7 @@ export function LeadsPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar lead..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/40 transition-all"
               />
             </div>
 
@@ -256,7 +251,7 @@ export function LeadsPage() {
               <button
                 onClick={() => setFilterStage(null)}
                 className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all
-                  ${!filterStage ? 'bg-violet-500/20 border-violet-500/30 text-violet-300' : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
+                  ${!filterStage ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
               >
                 Todas
               </button>
@@ -292,14 +287,14 @@ export function LeadsPage() {
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center gap-3">
-                  <RefreshCw size={20} className="text-violet-400 animate-spin" />
+                  <RefreshCw size={20} className="text-blue-400 animate-spin" />
                   <p className="text-sm text-slate-500">Carregando leads...</p>
                 </div>
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center">
-                  <Users size={28} className="text-violet-400/60" />
+                <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                  <Users size={28} className="text-blue-400/60" />
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-medium text-slate-400">
@@ -312,7 +307,7 @@ export function LeadsPage() {
                 {!search && !filterStage && !showDiscarded && (
                   <button
                     onClick={() => setShowForm(true)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/20"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all shadow-lg shadow-blue-600/30"
                   >
                     <Plus size={14} /> Criar primeiro lead
                   </button>

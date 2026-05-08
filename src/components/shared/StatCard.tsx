@@ -10,44 +10,39 @@ interface StatCardProps {
 
 const accentConfig = {
   indigo: {
-    border:     'card-accent-indigo',
-    iconBg:     'bg-indigo-500/20',
+    bar:        'bg-indigo-500',
+    iconBg:     'bg-indigo-500/15',
     iconText:   'text-indigo-400',
-    iconGlow:   'shadow-md shadow-indigo-500/20',
-    glow:       'hover:glow-indigo',
-    valueColor: 'text-slate-100',
+    valueColor: 'text-white',
+    border:     'border-indigo-500/20',
   },
   green: {
-    border:     'card-accent-green',
-    iconBg:     'bg-green-500/20',
-    iconText:   'text-green-400',
-    iconGlow:   'shadow-md shadow-green-500/20',
-    glow:       'hover:glow-green',
-    valueColor: 'text-green-300',
+    bar:        'bg-emerald-500',
+    iconBg:     'bg-emerald-500/15',
+    iconText:   'text-emerald-400',
+    valueColor: 'text-emerald-300',
+    border:     'border-emerald-500/20',
   },
   blue: {
-    border:     'card-accent-blue',
-    iconBg:     'bg-blue-500/20',
+    bar:        'bg-blue-500',
+    iconBg:     'bg-blue-500/15',
     iconText:   'text-blue-400',
-    iconGlow:   'shadow-md shadow-blue-500/15',
-    glow:       '',
-    valueColor: 'text-slate-100',
+    valueColor: 'text-white',
+    border:     'border-blue-500/20',
   },
   purple: {
-    border:     'card-accent-purple',
-    iconBg:     'bg-purple-500/20',
+    bar:        'bg-purple-500',
+    iconBg:     'bg-purple-500/15',
     iconText:   'text-purple-400',
-    iconGlow:   'shadow-md shadow-purple-500/20',
-    glow:       'hover:glow-purple',
-    valueColor: 'text-purple-300',
+    valueColor: 'text-purple-200',
+    border:     'border-purple-500/20',
   },
   yellow: {
-    border:     'card-accent-yellow',
-    iconBg:     'bg-yellow-500/20',
-    iconText:   'text-yellow-400',
-    iconGlow:   'shadow-md shadow-yellow-500/15',
-    glow:       '',
-    valueColor: 'text-slate-100',
+    bar:        'bg-amber-400',
+    iconBg:     'bg-amber-500/15',
+    iconText:   'text-amber-400',
+    valueColor: 'text-white',
+    border:     'border-amber-500/20',
   },
 }
 
@@ -55,18 +50,22 @@ export function StatCard({ label, value, sub, icon, accent = 'indigo' }: StatCar
   const cfg = accentConfig[accent]
   return (
     <div className={`
-      bg-[#0D1117] border border-white/10 rounded-2xl p-6
-      ${cfg.border}
-      transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30 hover:border-white/18
+      relative bg-[#0D1117] border border-white/8 rounded-xl overflow-hidden
+      transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15 hover:shadow-2xl hover:shadow-black/40
     `}>
-      <div className="flex items-start justify-between mb-4">
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{label}</p>
-        <div className={`w-9 h-9 ${cfg.iconBg} ${cfg.iconGlow} rounded-xl flex items-center justify-center ${cfg.iconText} flex-shrink-0`}>
-          {icon}
+      {/* accent bar top */}
+      <div className={`absolute top-0 left-0 right-0 h-0.5 ${cfg.bar}`} />
+
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">{label}</p>
+          <div className={`w-8 h-8 ${cfg.iconBg} rounded-lg flex items-center justify-center ${cfg.iconText} flex-shrink-0`}>
+            {icon}
+          </div>
         </div>
+        <p className={`text-3xl font-black ${cfg.valueColor} tabular-nums leading-none mb-2`}>{value}</p>
+        {sub && <p className="text-xs text-slate-600">{sub}</p>}
       </div>
-      <p className={`text-3xl font-bold ${cfg.valueColor} mb-1 tabular-nums`}>{value}</p>
-      {sub && <p className="text-xs text-slate-500">{sub}</p>}
     </div>
   )
 }

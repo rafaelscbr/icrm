@@ -68,7 +68,7 @@
 .nav-bg-blur { background-color: rgba(8,9,13,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .card-surface {
   background-color: #0D1117;
-  border-color: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.08);
 }
 .modal-surface {
   background-color: rgba(10,12,18,0.97);
@@ -294,7 +294,7 @@ html.light .card-accent-yellow { border-top: 3px solid rgba(234,179,8,0.7);   bo
 
   /* ── Gradient text ── */
   .gradient-text {
-    background: linear-gradient(135deg, #F59E0B 0%, #FB923C 100%);
+    background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
