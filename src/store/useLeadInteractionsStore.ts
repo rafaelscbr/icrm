@@ -4,17 +4,36 @@ import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 
 interface LeadInteractionsStore {
-  byLead:      Record<string, LeadInteraction[]>
-  loaded:      Set<string>
-  loadForLead: (leadId: string) => Promise<void>
-  add:         (data: Omit<LeadInteraction, 'id' | 'createdAt'>) => LeadInteraction
-  remove:      (id: string, leadId: string) => void
-  getForLead:  (leadId: string) => LeadInteraction[]
+  byLead:            Record<string, LeadInteraction[]>
+  loaded:            Set<string>
+  allLoaded:         boolean
+  loadForLead:       (leadId: string) => Promise<void>
+  loadAll:           () => Promise<void>
+  add:               (data: Omit<LeadInteraction, 'id' | 'createdAt'>) => LeadInteraction
+  remove:            (id: string, leadId: string) => void
+  getForLead:        (leadId: string) => LeadInteraction[]
+  getAllInteractions: () => LeadInteraction[]
 }
 
 export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get) => ({
   byLead: {},
   loaded: new Set(),
+  allLoaded: false,
+
+  loadAll: async () => {
+    if (get().allLoaded) return
+    try {
+      const items = await db.leadInteractions.fetchAll()
+      const byLead: Record<string, LeadInteraction[]> = {}
+      items.forEach(i => {
+        if (!byLead[i.leadId]) byLead[i.leadId] = []
+        byLead[i.leadId].push(i)
+      })
+      set(s => ({ byLead: { ...s.byLead, ...byLead }, allLoaded: true }))
+    } catch {
+      // error already toasted by db layer
+    }
+  },
 
   loadForLead: async (leadId) => {
     if (get().loaded.has(leadId)) return
@@ -52,5 +71,6 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
     db.leadInteractions.delete(id).catch(err => console.error('[interactions] remove:', err))
   },
 
-  getForLead: (leadId) => get().byLead[leadId] ?? [],
+  getForLead:        (leadId) => get().byLead[leadId] ?? [],
+  getAllInteractions: ()       => Object.values(get().byLead).flat(),
 }))

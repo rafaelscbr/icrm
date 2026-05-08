@@ -477,6 +477,17 @@ export const db = {
       }
       return (data as LeadInteractionRow[]).map(toLeadInteraction)
     },
+    fetchAll: async (): Promise<LeadInteraction[]> => {
+      const { data, error } = await supabase
+        .from('lead_interactions')
+        .select('*')
+        .order('interacted_at', { ascending: false })
+      if (error) {
+        toast.error(`Erro ao carregar interações: ${error.message}`)
+        throw error
+      }
+      return (data as LeadInteractionRow[]).map(toLeadInteraction)
+    },
     upsert: (i: LeadInteraction) => upsertOne('lead_interactions', fromLeadInteraction(i)),
     delete: (id: string)         => deleteOne('lead_interactions', id),
   },

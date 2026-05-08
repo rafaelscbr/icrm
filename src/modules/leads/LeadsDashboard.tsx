@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import {
   Flame, DollarSign, TrendingDown, Activity,
   AlertTriangle, Clock, Crown, ChevronRight,
-  MessageCircle, XCircle, Zap,
+  MessageCircle, XCircle, Zap, Thermometer, BarChart2,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage } from '../../types'
 import { formatCurrency } from '../../lib/formatters'
 import { STAGE_CONFIG } from './LeadKanban'
+import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,9 @@ interface Props {
 export function LeadsDashboard({ leads, onOpenLead }: Props) {
   const active    = useMemo(() => leads.filter(l => !l.discardReason), [leads])
   const discarded = useMemo(() => leads.filter(l => !!l.discardReason), [leads])
+
+  const { loadAll, byLead, allLoaded } = useLeadInteractionsStore()
+  useEffect(() => { loadAll() }, [])
 
   // ── BLOCO 1 — North Star KPIs ───────────────────────────────────────────────
   const vgvPipeline = useMemo(() =>
@@ -151,6 +155,42 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   }, [discarded])
   const maxLossVgv = Math.max(1, ...lossAnalysis.map(l => l.vgv))
 
+  // ── BLOCO 5 — Radar de Temperatura ──────────────────────────────────────────
+  const radarData = useMemo(() => {
+    // Build map: leadId → most recent interactedAt
+    const lastByLead: Record<string, string> = {}
+    Object.values(byLead).flat().forEach(i => {
+      if (!lastByLead[i.leadId] || i.interactedAt > lastByLead[i.leadId]) {
+        lastByLead[i.leadId] = i.interactedAt
+      }
+    })
+    const stagesForRadar: LeadFunnelStage[] = ['proposta', 'visita', 'atendimento', 'followup', 'lead']
+    return stagesForRadar.map(stage => {
+      const inStage   = active.filter(l => l.funnelStage === stage)
+      const cold      = inStage.filter(l => {
+        const last = lastByLead[l.id]
+        return !last || daysAgo(last) > 3
+      })
+      const vgvAtRisk = cold.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
+      const coldPct   = inStage.length > 0 ? (cold.length / inStage.length) * 100 : 0
+      return { stage, label: STAGE_CONFIG[stage].label, conf: STAGE_CONFIG[stage], total: inStage.length, cold: cold.length, coldPct, vgvAtRisk }
+    })
+  }, [active, byLead])
+
+  // ── BLOCO 6 — Pulso Comercial ────────────────────────────────────────────────
+  const pulsoData = useMemo(() => {
+    const allInteractions = Object.values(byLead).flat()
+    return Array.from({ length: 14 }, (_, i) => {
+      const d = new Date()
+      d.setDate(d.getDate() - (13 - i))
+      const dateStr = d.toISOString().split('T')[0]
+      const label   = i === 13 ? 'Hoje' : i === 12 ? 'Ontem' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      const count   = allInteractions.filter(x => x.interactedAt.startsWith(dateStr)).length
+      return { dateStr, label, count }
+    })
+  }, [byLead])
+  const maxPulso = Math.max(1, ...pulsoData.map(d => d.count))
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
@@ -234,6 +274,105 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── BLOCO 5 — Radar de Temperatura do Pipeline ─────────────────────── */}
+      <div className="bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Thermometer size={13} className="text-orange-400" />
+          <p className="text-sm font-semibold text-slate-200">Radar de Temperatura do Pipeline</p>
+          {!allLoaded && <span className="ml-2 text-[10px] text-slate-600 animate-pulse">carregando interações…</span>}
+          <span className="ml-auto text-[11px] text-slate-600">sem interação nos últimos 3 dias</span>
+        </div>
+        <p className="text-[11px] text-slate-600 mb-4">
+          Leads que esfriaram — VGV em risco de perda por inatividade
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-[10px] text-slate-600 uppercase tracking-wider border-b border-white/5">
+                <th className="text-left pb-2 pr-4">Etapa</th>
+                <th className="text-center pb-2 px-4">Total</th>
+                <th className="text-center pb-2 px-4">Frios +3d</th>
+                <th className="text-center pb-2 px-4">% Frios</th>
+                <th className="text-right pb-2 pl-4">VGV em Risco</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/4">
+              {radarData.map(row => {
+                const tempColor = row.coldPct > 50
+                  ? 'text-red-400'
+                  : row.coldPct > 25
+                  ? 'text-amber-400'
+                  : 'text-green-400'
+                const tempBg = row.coldPct > 50
+                  ? 'bg-red-500/8'
+                  : row.coldPct > 25
+                  ? 'bg-amber-500/5'
+                  : ''
+                return (
+                  <tr key={row.stage} className={`${tempBg} transition-colors`}>
+                    <td className="py-2.5 pr-4">
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${row.conf.bg} ${row.conf.color} ${row.conf.border}`}>
+                        {row.label}
+                      </span>
+                    </td>
+                    <td className="text-center py-2.5 px-4 font-semibold text-slate-300">
+                      {row.total}
+                    </td>
+                    <td className="text-center py-2.5 px-4">
+                      <span className={`font-bold ${tempColor}`}>
+                        {row.cold > 0 ? `${row.cold}` : '—'}
+                      </span>
+                    </td>
+                    <td className="text-center py-2.5 px-4">
+                      {row.total > 0 ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-16 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-700 ${
+                                row.coldPct > 50 ? 'bg-red-500/70' :
+                                row.coldPct > 25 ? 'bg-amber-500/70' : 'bg-green-500/70'
+                              }`}
+                              style={{ width: `${row.coldPct}%` }}
+                            />
+                          </div>
+                          <span className={`text-[11px] font-semibold ${tempColor}`}>
+                            {row.coldPct.toFixed(0)}%
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-700">—</span>
+                      )}
+                    </td>
+                    <td className="text-right py-2.5 pl-4">
+                      <span className={`text-[11px] font-semibold ${row.vgvAtRisk > 0 ? 'text-orange-300' : 'text-slate-700'}`}>
+                        {row.vgvAtRisk > 0 ? formatCurrency(row.vgvAtRisk) : '—'}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+            {radarData.some(r => r.vgvAtRisk > 0) && (
+              <tfoot>
+                <tr className="border-t border-white/8">
+                  <td colSpan={4} className="pt-2.5 text-[10px] text-slate-600">Total VGV em risco</td>
+                  <td className="pt-2.5 text-right text-xs font-bold text-orange-300">
+                    {formatCurrency(radarData.reduce((s, r) => s + r.vgvAtRisk, 0))}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+
+        {allLoaded && radarData.every(r => r.cold === 0) && active.length > 0 && (
+          <p className="text-center text-xs text-green-400 mt-3">
+            ✅ Todos os leads tiveram interação nos últimos 3 dias
+          </p>
+        )}
       </div>
 
       {/* ── BLOCO 3 — Priority Ranking + Canal Performance ──────────────────── */}
@@ -488,6 +627,70 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── BLOCO 6 — Pulso Comercial ───────────────────────────────────────── */}
+      <div className="bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <BarChart2 size={13} className="text-violet-400" />
+          <p className="text-sm font-semibold text-slate-200">Pulso Comercial</p>
+          {!allLoaded && <span className="ml-2 text-[10px] text-slate-600 animate-pulse">carregando…</span>}
+          <span className="ml-auto text-[11px] text-slate-600">interações registradas nos últimos 14 dias</span>
+        </div>
+        <p className="text-[11px] text-slate-600 mb-5">
+          Ritmo diário da equipe — queda indica inatividade comercial
+        </p>
+
+        {!allLoaded ? (
+          <div className="h-24 flex items-center justify-center">
+            <span className="text-xs text-slate-700 animate-pulse">Carregando dados…</span>
+          </div>
+        ) : (
+          <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1">
+            {pulsoData.map((day, i) => {
+              const barH   = maxPulso > 0 ? (day.count / maxPulso) * 100 : 0
+              const isToday = i === 13
+              return (
+                <div key={day.dateStr} className="flex flex-col items-center gap-1 flex-1 min-w-[28px]">
+                  {/* count label on top */}
+                  <span className={`text-[9px] font-semibold leading-none ${day.count > 0 ? (isToday ? 'text-violet-300' : 'text-slate-500') : 'text-transparent'}`}>
+                    {day.count}
+                  </span>
+                  {/* bar */}
+                  <div className="w-full flex items-end" style={{ height: '56px' }}>
+                    <div
+                      className={`w-full rounded-t-sm transition-all duration-700 ${
+                        isToday ? 'bg-violet-500/60' : day.count > 0 ? 'bg-slate-500/40' : 'bg-white/4'
+                      }`}
+                      style={{ height: `${Math.max(4, barH)}%` }}
+                    />
+                  </div>
+                  {/* date label */}
+                  <span className={`text-[8px] leading-none truncate w-full text-center ${isToday ? 'text-violet-400 font-semibold' : 'text-slate-700'}`}>
+                    {day.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {allLoaded && pulsoData.every(d => d.count === 0) && (
+          <p className="text-center text-xs text-slate-600 mt-2">
+            Nenhuma interação registrada nos últimos 14 dias
+          </p>
+        )}
+
+        {allLoaded && pulsoData.some(d => d.count > 0) && (
+          <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+            <span className="text-[11px] text-slate-600">
+              Total no período: <span className="text-slate-300 font-semibold">{pulsoData.reduce((s, d) => s + d.count, 0)} interações</span>
+            </span>
+            <span className="text-[11px] text-slate-600">
+              Média/dia: <span className="text-slate-300 font-semibold">{(pulsoData.reduce((s, d) => s + d.count, 0) / 14).toFixed(1)}</span>
+            </span>
+          </div>
+        )}
       </div>
 
     </div>
