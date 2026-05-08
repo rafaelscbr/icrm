@@ -317,7 +317,8 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
 
           <div className="space-y-3">
             {canalPerf.map((c, idx) => {
-              const isBestConv = idx === [...canalPerf].sort((a, b) => b.convRate - a.convRate)[0] && c.convRate > 0
+              const bestConvOrigin = [...canalPerf].sort((a, b) => b.convRate - a.convRate)[0]?.origin
+              const isBestConv = c.origin === bestConvOrigin && c.convRate > 0
               return (
                 <div key={c.origin} className={`p-3 rounded-xl border ${isBestConv ? 'bg-green-500/5 border-green-500/20' : 'bg-white/2 border-white/5'}`}>
                   <div className="flex items-center gap-2 mb-2.5">
@@ -454,7 +455,6 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
             <div className="space-y-3">
               {lossAnalysis.map((item, i) => {
                 const barPct  = maxLossVgv > 0 ? (item.vgv / maxLossVgv) * 100 : 0
-                const vgvPct  = vgvPerdido > 0 ? Math.round((item.vgv / vgvPerdido) * 100) : 0
                 return (
                   <div key={item.key}>
                     <div className="flex items-center justify-between mb-1.5">
