@@ -432,7 +432,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                     </button>
                   )}
                   {showContactDrop && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#1A1D27] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
                       {filteredContacts.map(c => (
                         <button key={c.id} type="button"
                           onMouseDown={() => { setContactId(c.id); setContactSearch(c.name); setShowContactDrop(false) }}
@@ -479,7 +479,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                     </button>
                   )}
                   {showPropertyDrop && filteredProperties.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#1A1D27] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
                       {filteredProperties.map(p => (
                         <button key={p.id} type="button"
                           onMouseDown={() => { setPropertyId(p.id); setPropertySearch(p.name); setShowPropertyDrop(false) }}

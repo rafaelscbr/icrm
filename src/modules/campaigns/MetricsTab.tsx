@@ -390,7 +390,7 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
             <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} interval={2} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
             <Tooltip
-              contentStyle={{ background: '#1A1D27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
+              contentStyle={{ background: '#0D1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
               labelStyle={{ color: '#94a3b8', fontSize: 11 }}
               itemStyle={{ color: '#93c5fd' }}
               formatter={(v: number) => [v, 'Acionados']}

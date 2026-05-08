@@ -47,7 +47,7 @@ function AppRoutes() {
 
   return (
     <>
-      <div className="flex min-h-screen bg-[#0F1117]">
+      <div className="flex min-h-screen bg-[#07090F]">
         <Sidebar />
         <main className="flex-1 overflow-auto pb-16 lg:pb-0">
           <Routes>
@@ -86,9 +86,9 @@ export default function App() {
         position="bottom-right"
         toastOptions={{
           style: {
-            background: '#1A1D27',
+            background: '#0D1117',
             color: '#f1f5f9',
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '8px',
             fontSize: '12px',
             padding: '8px 12px',

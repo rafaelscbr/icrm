@@ -50,7 +50,7 @@ function fmtFull(d: string): string {
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#1A1D27] border border-white/10 rounded-xl px-3 py-2 shadow-xl">
+    <div className="bg-[#0D1117] border border-white/10 rounded-xl px-3 py-2 shadow-xl">
       <p className="text-xs text-slate-400 mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.name} className="text-xs font-semibold" style={{ color: p.fill }}>

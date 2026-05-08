@@ -133,7 +133,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
       className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4 bg-black/60 backdrop-blur-sm"
     >
       {/* Command palette card */}
-      <div className="w-full max-w-xl bg-[#1A1D27] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden animate-in">
+      <div className="w-full max-w-xl bg-[#0D1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden animate-in">
 
         {/* Search input row */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/8">

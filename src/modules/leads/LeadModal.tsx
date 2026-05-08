@@ -145,12 +145,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative w-full max-w-md bg-[#1A1D27] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="relative w-full max-w-md bg-[#0D1117] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
           {/* Header */}
-          <div className={`px-5 py-4 border-b border-white/8 ${isDiscarded ? 'bg-red-500/5' : 'bg-gradient-to-r from-violet-500/10 to-purple-500/5'}`}>
+          <div className={`px-5 py-4 border-b border-white/10 ${isDiscarded ? 'bg-red-500/5' : lead.flagged ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/5' : 'bg-gradient-to-r from-white/3 to-transparent'}`}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold ${isDiscarded ? 'bg-red-500/20 text-red-300' : 'bg-gradient-to-br from-violet-500/30 to-purple-500/20 text-violet-200'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base font-black ${isDiscarded ? 'bg-red-500/20 text-red-300' : lead.flagged ? 'bg-amber-500/20 border border-amber-500/30 text-amber-200' : 'bg-white/8 border border-white/10 text-slate-200'}`}>
                   {lead.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -408,7 +408,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       {showDiscard && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setShowDiscard(false); setShowDeleteConfirm(false) }} />
-          <div className="relative w-full max-w-sm bg-[#1A1D27] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="relative w-full max-w-sm bg-[#0D1117] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="px-5 py-4 border-b border-white/8 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center">
                 <AlertTriangle size={15} className="text-red-400" />

@@ -76,7 +76,7 @@ export function PeriodSelector({ className = '' }: PeriodSelectorProps) {
 
       {/* ── Dropdown ─────────────────────────────────────────────── */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-60 bg-[#1A1D27] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute right-0 top-full mt-2 z-50 w-60 bg-[#0D1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
 
           {/* Presets */}
           <div className="p-1.5">

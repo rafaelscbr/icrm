@@ -230,10 +230,13 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       </div>
 
       {/* ── BLOCO 2 — Pipeline Estratégico ─────────────────────────────────── */}
-      <div className="bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-semibold text-slate-200">Pipeline Estratégico</p>
-          <span className="text-[11px] text-slate-600">↓% = perda da etapa anterior · ⚠ parado &gt;7 dias</span>
+      <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Funil de Vendas</p>
+            <p className="text-base font-bold text-slate-100">Pipeline Estratégico</p>
+          </div>
+          <span className="text-[10px] text-slate-600 bg-white/3 border border-white/8 px-2 py-1 rounded-lg">↓% perda · ⚠ parado +7d</span>
         </div>
         <div className="flex items-stretch gap-1 overflow-x-auto pb-1 min-w-0">
           {funnelStages.map((item, i) => (
@@ -277,7 +280,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       </div>
 
       {/* ── BLOCO 5 — Radar de Temperatura do Pipeline ─────────────────────── */}
-      <div className="bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
+      <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-1">
           <Thermometer size={13} className="text-orange-400" />
           <p className="text-sm font-semibold text-slate-200">Radar de Temperatura do Pipeline</p>
@@ -357,7 +360,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
             </tbody>
             {radarData.some(r => r.vgvAtRisk > 0) && (
               <tfoot>
-                <tr className="border-t border-white/8">
+                <tr className="border-t border-white/10">
                   <td colSpan={4} className="pt-2.5 text-[10px] text-slate-600">Total VGV em risco</td>
                   <td className="pt-2.5 text-right text-xs font-bold text-orange-300">
                     {formatCurrency(radarData.reduce((s, r) => s + r.vgvAtRisk, 0))}
@@ -379,7 +382,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* Prioridade de Contato */}
-        <div className="lg:col-span-3 bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
+        <div className="lg:col-span-3 bg-[#0D1117] border border-white/10 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <Crown size={13} className="text-amber-400" />
             <p className="text-sm font-semibold text-slate-200">Prioridade de Contato</p>
@@ -445,7 +448,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         </div>
 
         {/* Canal Performance */}
-        <div className="lg:col-span-2 bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
+        <div className="lg:col-span-2 bg-[#0D1117] border border-white/10 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <Zap size={13} className="text-blue-400" />
             <p className="text-sm font-semibold text-slate-200">Performance por Canal</p>
@@ -513,7 +516,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Follow-up Intelligence */}
-        <div className="bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
+        <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <MessageCircle size={13} className="text-blue-400" />
             <p className="text-sm font-semibold text-slate-200">Inteligência de Follow-up</p>
@@ -578,7 +581,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         </div>
 
         {/* Loss Analysis */}
-        <div className="bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
+        <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <XCircle size={13} className="text-red-400" />
             <p className="text-sm font-semibold text-slate-200">Análise de Perda</p>
@@ -630,7 +633,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       </div>
 
       {/* ── BLOCO 6 — Pulso Comercial ───────────────────────────────────────── */}
-      <div className="bg-[#1A1D27] border border-white/8 rounded-2xl p-5">
+      <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-1">
           <BarChart2 size={13} className="text-violet-400" />
           <p className="text-sm font-semibold text-slate-200">Pulso Comercial</p>
@@ -712,13 +715,14 @@ interface NorthStarProps {
 
 function NorthStar({ icon, label, value, sub, color, bg, border, highlight }: NorthStarProps) {
   return (
-    <div className={`${bg} border ${border} rounded-2xl p-4 ${highlight ? 'ring-1 ring-orange-500/20' : ''}`}>
-      <div className={`w-8 h-8 rounded-xl ${bg} border ${border} flex items-center justify-center mb-3 ${color}`}>
+    <div className={`${bg} border ${border} rounded-2xl p-5 ${highlight ? 'ring-1 ring-orange-500/25 shadow-lg shadow-orange-500/8' : ''} relative overflow-hidden`}>
+      <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 ${bg} opacity-40 blur-xl`} />
+      <div className={`w-8 h-8 rounded-xl ${bg} border ${border} flex items-center justify-center mb-4 ${color} relative`}>
         {icon}
       </div>
-      <p className={`text-xl font-bold leading-none ${color}`}>{value}</p>
-      <p className="text-xs font-semibold text-slate-300 mt-1.5">{label}</p>
-      <p className="text-[10px] text-slate-600 mt-0.5 leading-tight">{sub}</p>
+      <p className={`text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-1`}>{label}</p>
+      <p className={`text-3xl font-black leading-none tabular-nums ${color}`}>{value}</p>
+      <p className="text-[10px] text-slate-600 mt-2 leading-tight">{sub}</p>
     </div>
   )
 }

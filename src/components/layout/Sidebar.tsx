@@ -33,9 +33,9 @@ export function Sidebar() {
   const { theme, toggle } = useThemeStore()
 
   return (
-    <aside className="hidden lg:flex w-56 flex-shrink-0 nav-bg border-r border-white/7 flex-col h-screen sticky top-0">
+    <aside className="hidden lg:flex w-52 flex-shrink-0 nav-bg border-r border-white/7 flex-col h-screen sticky top-0">
       {/* Logo */}
-      <div className="px-4 py-3 border-b border-white/7 flex items-center justify-center">
+      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-center">
         <img
           src={theme === 'dark' ? logoLight : logoDark}
           alt="Souza Imobiliária"
@@ -46,7 +46,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
         {/* Search shortcut hint — keyboard trigger via ⌘K in App.tsx */}
-        <div className="flex items-center gap-2 px-3 py-2 mb-1 rounded-lg border border-white/7 bg-white/2 cursor-default select-none">
+        <div className="flex items-center gap-2 px-3 py-2 mb-1 rounded-lg border border-white/8 bg-white/3 cursor-default select-none">
           <Search size={12} className="text-slate-600 flex-shrink-0" />
           <span className="flex-1 text-xs text-slate-600">Buscar…</span>
           <kbd className="text-[10px] font-mono text-slate-700 bg-white/5 border border-white/8 rounded px-1 py-0.5 leading-none flex-shrink-0">⌘K</kbd>
@@ -60,7 +60,7 @@ export function Sidebar() {
             className={({ isActive }) =>
               `group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200
               ${isActive
-                ? 'bg-gradient-to-r from-indigo-500/20 to-violet-500/10 text-slate-100 font-medium border border-indigo-500/20'
+                ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/8 text-amber-100 font-semibold border border-amber-500/20'
                 : 'text-slate-500 hover:text-slate-200 hover:bg-white/5 border border-transparent'
               }`
             }
@@ -68,12 +68,12 @@ export function Sidebar() {
             {({ isActive }) => (
               <>
                 <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-all duration-200
-                  ${isActive ? 'bg-gradient-to-br from-indigo-500/30 to-violet-500/20' : 'bg-white/5 group-hover:bg-white/10'}`}>
-                  <Icon size={14} className={isActive ? 'text-indigo-300' : color} />
+                  ${isActive ? 'bg-gradient-to-br from-amber-500/25 to-orange-500/15' : 'bg-white/5 group-hover:bg-white/10'}`}>
+                  <Icon size={14} className={isActive ? 'text-amber-300' : color} />
                 </div>
                 {label}
                 {isActive && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/50" />
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400/60" />
                 )}
               </>
             )}
@@ -147,10 +147,10 @@ export function Sidebar() {
 
         <div className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
           <div className="relative flex-shrink-0">
-            <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md shadow-indigo-500/30">
+            <div className="w-7 h-7 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md shadow-amber-500/30">
               R
             </div>
-            <div className="absolute -inset-[2px] rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 -z-10 opacity-60 blur-[2px]" />
+            <div className="absolute -inset-[2px] rounded-full bg-gradient-to-br from-amber-400 to-orange-500 -z-10 opacity-60 blur-[2px]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-slate-300 truncate">Rafael</p>

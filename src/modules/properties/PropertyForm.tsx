@@ -414,7 +414,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               />
               {errors.owner && <p className="text-xs text-red-400">{errors.owner}</p>}
               {showOwnerDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-[#1A1D27] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
                   {filteredContacts.map(c => (
                     <button
                       key={c.id}

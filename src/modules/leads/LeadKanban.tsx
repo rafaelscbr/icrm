@@ -82,8 +82,8 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
           : lead.funnelStage === 'venda'
             ? 'bg-green-500/5 border-green-500/25 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
             : isLinked
-              ? 'bg-[#1A1D27] border-violet-500/20 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
-              : 'bg-[#1A1D27] border-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
+              ? 'bg-[#0D1117] border-violet-500/20 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
+              : 'bg-[#0D1117] border-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
         }
       `}
     >
@@ -118,15 +118,15 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       </div>
 
       {/* Name + origin */}
-      <div className="flex items-start gap-2 pr-6 mb-2">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center text-xs font-bold text-violet-200 flex-shrink-0">
+      <div className="flex items-start gap-2 pr-12 mb-2">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-white/8 flex items-center justify-center text-sm font-black text-slate-300 flex-shrink-0">
           {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-slate-200 truncate leading-tight">{displayName}</p>
+          <p className="text-[13px] font-semibold text-white truncate leading-tight">{displayName}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-[10px] text-slate-600">{ORIGIN_EMOJI[lead.origin]}</span>
-            <span className="text-[10px] text-slate-500">{formatPhone(displayPhone)}</span>
+            <span className="text-[10px] text-slate-600 tabular-nums">{formatPhone(displayPhone)}</span>
           </div>
         </div>
       </div>
@@ -199,13 +199,13 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 
 function DragCard({ lead }: { lead: Lead }) {
   return (
-    <div className="bg-[#1A1D27] border border-violet-500/40 rounded-xl p-3 shadow-2xl shadow-violet-500/20 w-64 rotate-2 opacity-95">
+    <div className="bg-[#0D1117] border border-amber-500/40 rounded-xl p-3 shadow-2xl shadow-amber-500/15 w-64 rotate-2 opacity-95">
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center text-xs font-bold text-violet-200">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/20 flex items-center justify-center text-sm font-black text-amber-300">
           {lead.name.charAt(0).toUpperCase()}
         </div>
         <div>
-          <p className="text-sm font-medium text-slate-200">{lead.name}</p>
+          <p className="text-sm font-semibold text-white">{lead.name}</p>
           <p className="text-[10px] text-slate-500">{formatPhone(lead.phone)}</p>
         </div>
       </div>
@@ -228,10 +228,13 @@ function KanbanColumn({
   return (
     <div className="flex flex-col w-72 flex-shrink-0">
       {/* Header */}
-      <div className={`flex items-center gap-2 px-3 py-2.5 rounded-t-xl border border-b-0 ${conf.headerBg} ${conf.border}`}>
-        <div className={`w-2 h-2 rounded-full ${conf.dot}`} />
-        <span className={`text-sm font-semibold ${conf.headerText}`}>{conf.label}</span>
-        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${conf.bg} ${conf.color} border ${conf.border}`}>
+      <div className={`flex items-center gap-2.5 px-3 py-3 rounded-t-xl border border-b-0 ${conf.headerBg} ${conf.border}`}>
+        <div className={`w-2 h-2 rounded-full ${conf.dot} shadow-sm`} style={{ boxShadow: `0 0 6px currentColor` }} />
+        <div className="flex-1 min-w-0">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Etapa</p>
+          <span className={`text-sm font-bold leading-tight ${conf.headerText}`}>{conf.label}</span>
+        </div>
+        <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${conf.bg} ${conf.color} border ${conf.border} tabular-nums`}>
           {leads.length}
         </span>
       </div>
@@ -239,13 +242,13 @@ function KanbanColumn({
       {/* Drop zone */}
       <div
         ref={setNodeRef}
-        className={`flex-1 min-h-[400px] rounded-b-xl border ${conf.border} ${conf.bg} p-2 flex flex-col gap-2 transition-all duration-150
-          ${isOver ? 'ring-2 ring-inset ring-white/20 bg-white/5' : ''}
+        className={`flex-1 min-h-[420px] rounded-b-xl border ${conf.border} bg-[#080B11] p-2 flex flex-col gap-2 transition-all duration-150
+          ${isOver ? 'ring-1 ring-inset ring-white/15 bg-white/3' : ''}
         `}
       >
         {leads.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-xs text-slate-600 text-center">Arraste cards aqui</p>
+            <p className="text-[11px] text-slate-700 text-center">Arraste cards aqui</p>
           </div>
         )}
         {leads.map(lead => (

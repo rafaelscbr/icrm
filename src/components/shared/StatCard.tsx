@@ -55,7 +55,7 @@ export function StatCard({ label, value, sub, icon, accent = 'indigo' }: StatCar
   const cfg = accentConfig[accent]
   return (
     <div className={`
-      bg-[#1A1D27] border border-white/10 rounded-2xl p-6
+      bg-[#0D1117] border border-white/10 rounded-2xl p-6
       ${cfg.border}
       transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30 hover:border-white/18
     `}>

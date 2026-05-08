@@ -185,7 +185,7 @@ export function SalesPage() {
                 width={42}
               />
               <Tooltip
-                contentStyle={{ background: '#1A1D27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
+                contentStyle={{ background: '#0D1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
                 labelStyle={{ color: '#94a3b8', fontSize: 11 }}
                 formatter={(value: number, _name: string, props: { payload?: { count?: number } }) => [
                   `${formatCurrency(value)}  ·  ${props.payload?.count ?? 0} venda${(props.payload?.count ?? 0) !== 1 ? 's' : ''}`,

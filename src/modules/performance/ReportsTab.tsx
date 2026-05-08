@@ -27,7 +27,7 @@ const PIE_COLORS = {
 function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#1A1D27] border border-white/10 rounded-xl px-4 py-3 shadow-xl">
+    <div className="bg-[#0D1117] border border-white/10 rounded-xl px-4 py-3 shadow-xl">
       <p className="text-xs text-slate-500 mb-1">{label}</p>
       <p className="text-sm font-semibold text-slate-100">{formatCurrency(payload[0].value)}</p>
     </div>
@@ -37,7 +37,7 @@ function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: 
 function ActivityTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#1A1D27] border border-white/10 rounded-xl px-4 py-3 shadow-xl">
+    <div className="bg-[#0D1117] border border-white/10 rounded-xl px-4 py-3 shadow-xl">
       <p className="text-xs text-slate-500 mb-2">{label}</p>
       {payload.map(p => (
         <div key={p.name} className="flex items-center gap-2 text-xs">
@@ -369,7 +369,7 @@ export function ReportsTab() {
                 <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ background: '#1A1D27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
+                  contentStyle={{ background: '#0D1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
                   labelStyle={{ color: '#94a3b8', fontSize: 11 }}
                   itemStyle={{ color: '#a5b4fc' }}
                 />

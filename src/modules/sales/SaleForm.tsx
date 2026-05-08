@@ -132,7 +132,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
             />
             {errors.client && <p className="text-xs text-red-400">{errors.client}</p>}
             {showClientDrop && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[#1A1D27] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
                 {filteredClients.map(c => (
                   <button key={c.id} type="button"
                     onMouseDown={() => { setClientId(c.id); setClientSearch(c.name); setShowClientDrop(false) }}
@@ -162,7 +162,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
             />
             {errors.property && <p className="text-xs text-red-400">{errors.property}</p>}
             {showPropDrop && filteredProps.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[#1A1D27] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
                 {filteredProps.map(p => (
                   <button key={p.id} type="button"
                     onMouseDown={() => { setPropertyId(p.id); setPropertyName(p.name); setShowPropDrop(false) }}
