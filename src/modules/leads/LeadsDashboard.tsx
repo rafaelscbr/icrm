@@ -316,7 +316,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
           </p>
 
           <div className="space-y-3">
-            {canalPerf.map((c, idx) => {
+            {canalPerf.map((c) => {
               const bestConvOrigin = [...canalPerf].sort((a, b) => b.convRate - a.convRate)[0]?.origin
               const isBestConv = c.origin === bestConvOrigin && c.convRate > 0
               return (
