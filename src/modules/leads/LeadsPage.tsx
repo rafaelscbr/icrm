@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
-  Plus, LayoutGrid, List, Search,
-  MessageCircle, Users, BarChart3,
-  UserCheck, Trash2, ChevronRight, RefreshCw,
+  Plus, LayoutGrid, List, Search, BarChart3,
+  MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -32,8 +31,7 @@ const FOLLOWUP_MESSAGES = [
   (name: string) => `${name}, última tentativa de contato. Se ainda tiver interesse em encontrar seu imóvel ideal, me dá um sinal! Estarei à disposição 😊`,
 ]
 
-type Tab      = 'funil' | 'dashboard'
-type ViewMode = 'kanban' | 'list'
+type Tab = 'leads' | 'kanban' | 'dashboard'
 
 // ─── LeadRow ──────────────────────────────────────────────────────────────────
 
@@ -41,13 +39,13 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const { advanceFollowup } = useLeadsStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
-  const property    = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
-  const contact     = lead.contactId  ? getById(lead.contactId) : undefined
-  const displayName = contact?.name  ?? lead.name
-  const displayPhone= contact?.phone ?? lead.phone
-  const conf        = STAGE_CONFIG[lead.funnelStage]
-  const originConf  = ORIGIN_CONFIG[lead.origin]
-  const isDiscarded = !!lead.discardReason
+  const property     = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
+  const contact      = lead.contactId  ? getById(lead.contactId) : undefined
+  const displayName  = contact?.name   ?? lead.name
+  const displayPhone = contact?.phone  ?? lead.phone
+  const conf         = STAGE_CONFIG[lead.funnelStage]
+  const originConf   = ORIGIN_CONFIG[lead.origin]
+  const isDiscarded  = !!lead.discardReason
 
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
@@ -69,7 +67,8 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         ${isDiscarded ? 'opacity-50' : ''}
       `}
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${isDiscarded ? 'bg-slate-500/20 text-slate-500' : 'bg-gradient-to-br from-violet-500/30 to-purple-500/20 text-violet-200'}`}>
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
+        ${isDiscarded ? 'bg-slate-500/20 text-slate-500' : 'bg-gradient-to-br from-violet-500/30 to-purple-500/20 text-violet-200'}`}>
         {displayName.charAt(0).toUpperCase()}
       </div>
 
@@ -134,17 +133,16 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 
 export function LeadsPage() {
   const { leads, loading, load } = useLeadsStore()
-  const { load: loadProps } = usePropertiesStore()
+  const { load: loadProps }    = usePropertiesStore()
   const { load: loadContacts } = useContactsStore()
 
-  const [tab,           setTab]          = useState<Tab>('funil')
-  const [view,          setView]         = useState<ViewMode>('kanban')
-  const [search,        setSearch]       = useState('')
-  const [filterStage,   setFilterStage]  = useState<LeadFunnelStage | null>(null)
-  const [filterOrigin]                   = useState<LeadOrigin | null>(null)
-  const [showDiscarded, setShowDiscarded]= useState(false)
-  const [showForm,      setShowForm]     = useState(false)
-  const [selectedLead,  setSelectedLead] = useState<Lead | null>(null)
+  const [tab,           setTab]           = useState<Tab>('leads')
+  const [search,        setSearch]        = useState('')
+  const [filterStage,   setFilterStage]   = useState<LeadFunnelStage | null>(null)
+  const [filterOrigin]                    = useState<LeadOrigin | null>(null)
+  const [showDiscarded, setShowDiscarded] = useState(false)
+  const [showForm,      setShowForm]      = useState(false)
+  const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
 
   useEffect(() => { load(); loadProps(); loadContacts() }, [])
 
@@ -168,52 +166,57 @@ export function LeadsPage() {
     return result
   }, [leads, search, filterStage, filterOrigin, showDiscarded])
 
-  const TABS = [
-    { value: 'funil'     as Tab, label: 'Funil',      icon: LayoutGrid, badge: active.length },
-    { value: 'dashboard' as Tab, label: 'Dashboard',  icon: BarChart3,  badge: null          },
+  const TABS: { value: Tab; label: string; icon: typeof List; badge?: number }[] = [
+    { value: 'leads',     label: 'Leads',     icon: List,       badge: active.length },
+    { value: 'kanban',    label: 'Kanban',     icon: LayoutGrid                       },
+    { value: 'dashboard', label: 'Dashboard',  icon: BarChart3                        },
   ]
+
+  const isListTab   = tab === 'leads'
+  const isKanbanTab = tab === 'kanban'
+  const isDashTab   = tab === 'dashboard'
 
   return (
     <div className="flex flex-col h-full">
 
-      {/* ── Header fixo ───────────────────────────────────────────────────────── */}
+      {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 sticky top-0 z-10 bg-[#0F1117]/95 backdrop-blur border-b border-white/7 px-6 py-4">
-        {/* Título + ação */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        {/* Título + ações */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center flex-shrink-0">
               <Users size={17} className="text-violet-300" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-slate-100 leading-tight">Leads</h1>
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-slate-100 leading-tight">Leads</h1>
               <p className="text-[11px] text-slate-500">Funil de prospecção · {active.length} ativos</p>
             </div>
           </div>
 
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/20 active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/20 active:scale-95 flex-shrink-0"
           >
             <Plus size={15} />
             Novo Lead
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs — estilo campaigns */}
         <div className="flex gap-2 mt-4">
           {TABS.map(({ value, label, icon: Icon, badge }) => (
             <button
               key={value}
               onClick={() => setTab(value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer
                 ${tab === value
                   ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300 hover:bg-white/8'
+                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
                 }`}
             >
               <Icon size={12} />
               {label}
-              {badge !== null && (
+              {badge !== undefined && (
                 <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
                   ${tab === value ? 'bg-violet-500/30 text-violet-200' : 'bg-white/8 text-slate-500'}`}>
                   {badge}
@@ -224,19 +227,17 @@ export function LeadsPage() {
         </div>
       </div>
 
-      {/* ── Conteúdo ──────────────────────────────────────────────────────────── */}
-
-      {/* Dashboard tab */}
-      {tab === 'dashboard' && (
+      {/* ── Dashboard ─────────────────────────────────────────────────────────── */}
+      {isDashTab && (
         <div className="flex-1 overflow-auto">
           <LeadsDashboard leads={leads} onOpenLead={setSelectedLead} />
         </div>
       )}
 
-      {/* Funil tab */}
-      {tab === 'funil' && (
+      {/* ── Lista / Kanban ────────────────────────────────────────────────────── */}
+      {(isListTab || isKanbanTab) && (
         <>
-          {/* Toolbar */}
+          {/* Toolbar filtros */}
           <div className="flex-shrink-0 px-6 py-3 border-b border-white/7 flex items-center gap-3 flex-wrap">
             {/* Search */}
             <div className="relative flex-1 min-w-[180px] max-w-xs">
@@ -249,11 +250,12 @@ export function LeadsPage() {
               />
             </div>
 
-            {/* Stage filter */}
+            {/* Filtro por etapa */}
             <div className="flex items-center gap-1 flex-wrap">
               <button
                 onClick={() => setFilterStage(null)}
-                className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all ${!filterStage ? 'bg-violet-500/20 border-violet-500/30 text-violet-300' : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
+                className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all
+                  ${!filterStage ? 'bg-violet-500/20 border-violet-500/30 text-violet-300' : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
               >
                 Todas
               </button>
@@ -263,7 +265,8 @@ export function LeadsPage() {
                   <button
                     key={s}
                     onClick={() => setFilterStage(filterStage === s ? null : s)}
-                    className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all ${filterStage === s ? `${conf.bg} ${conf.border} ${conf.color}` : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
+                    className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all
+                      ${filterStage === s ? `${conf.bg} ${conf.border} ${conf.color}` : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
                   >
                     {conf.label}
                   </button>
@@ -271,38 +274,19 @@ export function LeadsPage() {
               })}
             </div>
 
-            <div className="ml-auto flex items-center gap-2">
-              {/* Descartados */}
-              <button
-                onClick={() => setShowDiscarded(v => !v)}
-                className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all ${showDiscarded ? 'bg-red-500/15 border-red-500/25 text-red-300' : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
-              >
-                <Trash2 size={11} />
-                <span className="hidden sm:inline">{showDiscarded ? 'Descartados' : 'Ver descartados'}</span>
-                {discarded.length > 0 && <span className="font-bold">{discarded.length}</span>}
-              </button>
-
-              {/* View toggle */}
-              <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-0.5">
-                <button
-                  onClick={() => setView('list')}
-                  className={`p-1.5 rounded-lg transition-all ${view === 'list' ? 'bg-violet-500/20 text-violet-300' : 'text-slate-500 hover:text-slate-300'}`}
-                  title="Lista"
-                >
-                  <List size={14} />
-                </button>
-                <button
-                  onClick={() => setView('kanban')}
-                  className={`p-1.5 rounded-lg transition-all ${view === 'kanban' ? 'bg-violet-500/20 text-violet-300' : 'text-slate-500 hover:text-slate-300'}`}
-                  title="Kanban"
-                >
-                  <LayoutGrid size={14} />
-                </button>
-              </div>
-            </div>
+            {/* Descartados */}
+            <button
+              onClick={() => setShowDiscarded(v => !v)}
+              className={`ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all
+                ${showDiscarded ? 'bg-red-500/15 border-red-500/25 text-red-300' : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
+            >
+              <Trash2 size={11} />
+              <span className="hidden sm:inline">{showDiscarded ? 'Descartados' : 'Ver descartados'}</span>
+              {discarded.length > 0 && <span className="font-bold">{discarded.length}</span>}
+            </button>
           </div>
 
-          {/* Content */}
+          {/* Conteúdo */}
           <div className="flex-1 overflow-auto">
             {loading ? (
               <div className="flex items-center justify-center h-64">
@@ -321,10 +305,10 @@ export function LeadsPage() {
                     {showDiscarded ? 'Nenhum lead descartado' : 'Nenhum lead encontrado'}
                   </p>
                   <p className="text-xs text-slate-600 mt-1">
-                    {search || filterStage || filterOrigin ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
+                    {search || filterStage ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
                   </p>
                 </div>
-                {!search && !filterStage && !filterOrigin && !showDiscarded && (
+                {!search && !filterStage && !showDiscarded && (
                   <button
                     onClick={() => setShowForm(true)}
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/20"
@@ -333,7 +317,7 @@ export function LeadsPage() {
                   </button>
                 )}
               </div>
-            ) : view === 'kanban' ? (
+            ) : isKanbanTab ? (
               <div className="p-4">
                 <LeadKanban leads={filtered} />
               </div>
