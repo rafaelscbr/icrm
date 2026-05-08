@@ -11,6 +11,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { formatPhone, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
+import { LeadTimeline } from './LeadTimeline'
 import toast from 'react-hot-toast'
 
 const DISCARD_REASONS: { value: LeadDiscardReason; label: string; icon: string }[] = [
@@ -56,6 +57,7 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
   const { add: addContact, getById } = useContactsStore()
   const { properties } = usePropertiesStore()
 
+  const [activeTab, setActiveTab] = useState<'detalhes' | 'historico'>('detalhes')
   const [showDiscard, setShowDiscard] = useState(false)
   const [selectedReason, setSelectedReason] = useState<LeadDiscardReason | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -166,8 +168,29 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
             </div>
           </div>
 
+          {/* Tabs */}
+          <div className="flex gap-1 px-5 pt-3 pb-0 border-b border-white/6">
+            {(['detalhes', 'historico'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-t-lg border-b-2 transition-all ${
+                  activeTab === tab
+                    ? 'text-violet-300 border-violet-500'
+                    : 'text-slate-500 border-transparent hover:text-slate-300'
+                }`}
+              >
+                {tab === 'detalhes' ? 'Detalhes' : 'Histórico'}
+              </button>
+            ))}
+          </div>
+
           {/* Body */}
-          <div className="px-5 py-4 space-y-4">
+          <div className="px-5 py-4 space-y-4 max-h-[55vh] overflow-y-auto">
+            {activeTab === 'historico' ? (
+              <LeadTimeline leadId={lead.id} />
+            ) : (<>
+
             {/* Contatos */}
             <div className="space-y-2">
               <a href={`tel:${lead.phone}`} className="flex items-center gap-3 group">
@@ -294,6 +317,8 @@ export function LeadModal({ lead, onClose }: LeadModalProps) {
                 <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{lead.notes}</p>
               </div>
             )}
+
+            </>)}
           </div>
 
           {/* Actions */}

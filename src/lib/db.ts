@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
+  LeadInteraction, LeadInteractionType, LeadInteractionOutcome,
 } from '../types'
 
 // ─── Row types (snake_case vindos do Supabase) ────────────────────────────────
@@ -298,6 +299,40 @@ function fromLead(l: Lead): LeadRow {
   }
 }
 
+interface LeadInteractionRow {
+  id:            string
+  lead_id:       string
+  type:          string
+  description:   string | null
+  outcome:       string | null
+  interacted_at: string
+  created_at:    string
+}
+
+function toLeadInteraction(r: LeadInteractionRow): LeadInteraction {
+  return {
+    id:           r.id,
+    leadId:       r.lead_id,
+    type:         r.type as LeadInteractionType,
+    description:  r.description ?? undefined,
+    outcome:      r.outcome ? (r.outcome as LeadInteractionOutcome) : undefined,
+    interactedAt: r.interacted_at,
+    createdAt:    r.created_at,
+  }
+}
+
+function fromLeadInteraction(i: LeadInteraction): LeadInteractionRow {
+  return {
+    id:            i.id,
+    lead_id:       i.leadId,
+    type:          i.type,
+    description:   i.description ?? null,
+    outcome:       i.outcome ?? null,
+    interacted_at: i.interactedAt,
+    created_at:    i.createdAt,
+  }
+}
+
 // ─── Operações genéricas ──────────────────────────────────────────────────────
 
 async function fetchAll<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> {
@@ -427,6 +462,23 @@ export const db = {
     fetchAll: () => fetchAll<LeadRow, Lead>('leads', toLead),
     upsert:   (l: Lead) => upsertOne('leads', fromLead(l)),
     delete:   (id: string) => deleteOne('leads', id),
+  },
+
+  leadInteractions: {
+    fetchForLead: async (leadId: string): Promise<LeadInteraction[]> => {
+      const { data, error } = await supabase
+        .from('lead_interactions')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('interacted_at', { ascending: false })
+      if (error) {
+        toast.error(`Erro ao carregar interações: ${error.message}`)
+        throw error
+      }
+      return (data as LeadInteractionRow[]).map(toLeadInteraction)
+    },
+    upsert: (i: LeadInteraction) => upsertOne('lead_interactions', fromLeadInteraction(i)),
+    delete: (id: string)         => deleteOne('lead_interactions', id),
   },
 
   campaignLeads: {
