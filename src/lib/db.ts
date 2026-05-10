@@ -71,6 +71,8 @@ interface CampaignLeadRow {
   message_index: number | null
   proposal_value: number | null
   property_id: string | null; stage_updated_at: string | null
+  source: string | null; meta_ad_name: string | null
+  viewed_at: string | null
   created_at: string; updated_at: string
 }
 
@@ -245,6 +247,9 @@ function toCampaignLead(r: CampaignLeadRow): CampaignLead {
     messageIndex: r.message_index ?? undefined,
     proposalValue: r.proposal_value ?? undefined, propertyId: r.property_id ?? undefined,
     stageUpdatedAt: r.stage_updated_at ?? undefined,
+    source: (r.source as CampaignLead['source']) ?? undefined,
+    metaAdName: r.meta_ad_name ?? undefined,
+    viewedAt: r.viewed_at ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -259,6 +264,8 @@ function fromCampaignLead(l: CampaignLead): CampaignLeadRow {
     message_index: l.messageIndex ?? null,
     proposal_value: l.proposalValue ?? null, property_id: l.propertyId ?? null,
     stage_updated_at: l.stageUpdatedAt ?? null,
+    source: l.source ?? null, meta_ad_name: l.metaAdName ?? null,
+    viewed_at: l.viewedAt ?? null,
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }

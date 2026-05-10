@@ -17,6 +17,7 @@ interface CampaignLeadsStore {
   setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>) => void
   setSituation: (id: string, situation: LeadSituation | undefined) => void
   markContacted: (id: string, message?: string, messageIndex?: number) => void
+  markViewed: (id: string) => void
   backfillMessageIndex: (campaign: Campaign) => Promise<number>
   getForCampaign: (campaignId: string) => CampaignLead[]
 }
@@ -116,6 +117,12 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     if (message) patch.lastMessage = message
     if (messageIndex !== undefined) patch.messageIndex = messageIndex
     if (Object.keys(patch).length) get().update(id, patch)
+  },
+
+  markViewed: (id) => {
+    const lead = get().leads.find(l => l.id === id)
+    if (!lead || lead.viewedAt) return   // já visualizado, não faz nada
+    get().update(id, { viewedAt: new Date().toISOString() })
   },
 
   backfillMessageIndex: async (campaign) => {
