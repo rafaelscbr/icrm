@@ -238,7 +238,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             {property && (
               <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
-                  <Building2 size={14} className="text-blue-400"" />
+                  <Building2 size={14} className="text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-200 truncate">{property.name}</p>
