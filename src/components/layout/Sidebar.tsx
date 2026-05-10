@@ -48,8 +48,7 @@ export function Sidebar() {
   const { theme, toggle } = useThemeStore()
 
   return (
-    <aside className="hidden lg:flex w-56 flex-shrink-0 flex-col h-screen sticky top-0 border-r border-white/6"
-      style={{ backgroundColor: '#080A10' }}>
+    <aside className="hidden lg:flex w-56 flex-shrink-0 flex-col h-screen sticky top-0 border-r border-white/6 nav-bg">
 
       {/* Logo */}
       <div className="px-5 py-4 border-b border-white/6">

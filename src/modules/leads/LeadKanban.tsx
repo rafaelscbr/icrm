@@ -242,7 +242,7 @@ function KanbanColumn({
       {/* Drop zone */}
       <div
         ref={setNodeRef}
-        className={`flex-1 min-h-[420px] rounded-b-xl border ${conf.border} bg-[#080B11] p-2 flex flex-col gap-2 transition-all duration-150
+        className={`flex-1 min-h-[420px] rounded-b-xl border ${conf.border} page-bg p-2 flex flex-col gap-2 transition-all duration-150
           ${isOver ? 'ring-1 ring-inset ring-white/15 bg-white/3' : ''}
         `}
       >

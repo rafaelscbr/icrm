@@ -424,7 +424,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     <div className="flex flex-col gap-4">
 
       {/* ── Barra de limite diário — sticky, acompanha o scroll ──────────── */}
-      <div className="sticky z-20 -mx-4 px-4 pb-2 pt-1 bg-[#0d0f1a]" style={{ top: stickyTop }}>
+      <div className="sticky z-20 -mx-4 px-4 pb-2 pt-1 nav-bg" style={{ top: stickyTop }}>
         <DailyLimitBar count={dailyCount} />
 
         {/* Cooldown + fora de horário — abaixo da barra quando ativos */}

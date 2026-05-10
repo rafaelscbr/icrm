@@ -265,7 +265,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-[#13151F] border border-white/10 rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[92vh] overflow-hidden
+      <div className="relative w-full max-w-lg modal-surface rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[92vh] overflow-hidden
         animate-in fade-in zoom-in-95 duration-200">
 
         {/* Gradient top border */}

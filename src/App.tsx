@@ -47,7 +47,7 @@ function AppRoutes() {
 
   return (
     <>
-      <div className="flex min-h-screen bg-[#07090F]">
+      <div className="flex min-h-screen page-bg">
         <Sidebar />
         <main className="flex-1 overflow-auto pb-16 lg:pb-0">
           <Routes>

@@ -71,7 +71,7 @@ function Stepper({ value, onChange }: { value: number; onChange: (v: number) => 
       onChange={e => setRaw(e.target.value)}
       onBlur={() => commit(raw)}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') commit(raw) }}
-      style={{ colorScheme: 'dark', backgroundColor: '#13151F' }}
+      style={{ colorScheme: 'dark' }}
       className="w-14 text-center text-sm font-bold text-indigo-300 border border-indigo-500/60 rounded-lg py-1 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
     />
   )
@@ -296,7 +296,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   onChange={e => setTicketRaw(e.target.value.replace(/[^\d.,]/g, ''))}
                   onKeyDown={e => { if (e.key === 'Enter') saveTicket(); if (e.key === 'Escape') setEditingTicket(false) }}
                   placeholder="500.000"
-                  style={{ colorScheme: 'dark', backgroundColor: '#13151F' }}
+                  style={{ colorScheme: 'dark' }}
                   className="w-full border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                 />
               </div>

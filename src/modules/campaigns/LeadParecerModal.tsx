@@ -198,7 +198,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
                   >
                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0
                       ${active ? 'border-current bg-current' : 'border-slate-600'}`}>
-                      {active && <div className="w-1.5 h-1.5 rounded-full bg-[#0F1117]" />}
+                      {active && <div className="w-1.5 h-1.5 rounded-full page-bg" />}
                     </div>
                     {s.label}
                   </button>

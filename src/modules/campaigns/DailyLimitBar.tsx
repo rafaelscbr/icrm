@@ -18,7 +18,7 @@ export function DailyLimitBar({ count }: Props) {
                    :                             'text-green-400'
 
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-xl bg-[#13151f] border border-white/8 text-xs">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-xl card-surface border border-white/8 text-xs">
       <ShieldAlert size={13} className={textColor} />
 
       {/* Barra de progresso */}

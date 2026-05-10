@@ -107,19 +107,34 @@ html.light .modal-surface {
   border: 1px solid rgba(0,0,0,0.10) !important;
 }
 
+/* ── Sidebar / Nav light override extra (cobre variantes novas) ── */
+html.light aside {
+  background-color: #f8fafc !important;
+  border-right-color: rgba(0,0,0,0.08) !important;
+}
+
 /* ── Cores hardcoded escuras — usa seletores de atributo para garantir
       compatibilidade com o escape que o Tailwind aplica ao "#" nos nomes
       de classes arbitrárias. [class*="..."] não depende de escaping. ── */
 
 /* Fundo principal da página */
 html.light [class*="#0F1117"],
-html.light [class*="#0f1117"] { background-color: #f1f5f9 !important; background-image: none !important; }
+html.light [class*="#0f1117"],
+html.light [class*="#07090F"],
+html.light [class*="#07090f"] { background-color: #f1f5f9 !important; background-image: none !important; }
 
-/* Nav/aside escuro */
+/* Nav/aside/sticky-bar escuro */
 html.light [class*="#0d0f1a"],
-html.light [class*="#0D0F1A"] { background-color: #f8fafc !important; }
+html.light [class*="#0D0F1A"],
+html.light [class*="#080A10"],
+html.light [class*="#08090D"],
+html.light [class*="#080B11"] { background-color: #f8fafc !important; }
 
-/* Superfícies de card/modal escuras */
+/* Cards / Superfícies escuras */
+html.light [class*="#0D1117"],
+html.light [class*="#0d1117"] { background-color: #ffffff !important; border-color: rgba(0,0,0,0.08) !important; }
+
+/* Modais / Superfícies mais escuras */
 html.light [class*="#1A1D27"],
 html.light [class*="#1a1d27"],
 html.light [class*="#13151f"],

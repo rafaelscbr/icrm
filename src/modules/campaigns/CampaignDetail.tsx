@@ -77,7 +77,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header bar */}
-      <div ref={headerRef} className="sticky top-0 z-10 bg-[#0F1117]/95 backdrop-blur border-b border-white/7 px-6 py-4">
+      <div ref={headerRef} className="sticky top-0 z-10 nav-bg-blur border-b border-white/7 px-6 py-4">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}

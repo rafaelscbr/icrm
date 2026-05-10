@@ -181,7 +181,7 @@ export function LeadsPage() {
     <div className="flex flex-col h-full">
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 sticky top-0 z-10 backdrop-blur border-b border-white/7 px-6 py-4" style={{ backgroundColor: 'rgba(7,9,15,0.97)' }}>
+      <div className="flex-shrink-0 sticky top-0 z-10 nav-bg-blur border-b border-white/7 px-6 py-4">
         {/* Título + ações */}
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
