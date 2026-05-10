@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
   closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors,
@@ -8,6 +8,7 @@ import { Lead, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { LeadModal } from './LeadModal'
 import toast from 'react-hot-toast'
@@ -26,14 +27,6 @@ export const STAGE_CONFIG: Record<LeadFunnelStage, {
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
-const FOLLOWUP_MESSAGES = [
-  (name: string) => `Olá ${name}! Tudo bem? Sou o Rafael, da Souza Imobiliária. Vi que você tem interesse em imóveis. Posso te ajudar? 😊`,
-  (name: string) => `Oi ${name}, tudo certo? Passando para ver se conseguiu ver minha mensagem anterior. Tenho ótimas opções que podem te interessar! 🏠`,
-  (name: string) => `${name}, que tal conversarmos sobre o que você procura em um imóvel? Tenho algumas opções que podem ser perfeitas pra você! ✨`,
-  (name: string) => `Oi ${name}! Ainda tenho aquelas opções incríveis para te mostrar. Tem um minutinho para conversarmos? 🌟`,
-  (name: string) => `${name}, última tentativa de contato. Se ainda tiver interesse em encontrar seu imóvel ideal, me dá um sinal! Estarei à disposição 😊`,
-]
-
 const ORIGIN_EMOJI: Record<string, string> = {
   felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝', campanha: '📣',
 }
@@ -44,29 +37,33 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const { advanceFollowup, toggleFlag } = useLeadsStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
+  const { add: addInteraction, getForLead } = useLeadInteractionsStore()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id })
 
   const property = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact = lead.contactId ? getById(lead.contactId) : undefined
   const displayName = contact?.name ?? lead.name
   const displayPhone = contact?.phone ?? lead.phone
-  const firstName = displayName.split(' ')[0]
-
-  function getWhatsAppMessage() {
-    if (lead.funnelStage === 'followup' && lead.followupStep >= 1 && lead.followupStep <= 5) {
-      return FOLLOWUP_MESSAGES[lead.followupStep - 1](firstName)
-    }
-    return FOLLOWUP_MESSAGES[0](firstName)
-  }
+  const interactions = getForLead(lead.id)
+  const lastInteraction = interactions[0] ?? null
 
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
-    const msg = getWhatsAppMessage()
-    const url = whatsappUrl(displayPhone, msg)
-    window.open(url, '_blank')
+    window.open(whatsappUrl(displayPhone), '_blank')
     advanceFollowup(lead.id)
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
-    toast.success(`WhatsApp · ${nextStep}ª msg enviada`)
+    addInteraction({
+      leadId: lead.id,
+      type: 'whatsapp',
+      description: 'Interagiu via WhatsApp',
+      interactedAt: new Date().toISOString(),
+    })
+    toast.success(`WhatsApp · ${nextStep}ª msg registrada`)
+  }
+
+  function handleWhatsAppOpen(e: React.MouseEvent) {
+    e.stopPropagation()
+    window.open(whatsappUrl(displayPhone), '_blank')
   }
 
   const isLinked = !!lead.contactId
@@ -157,8 +154,16 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 
       {/* Ticket */}
       {lead.averageTicket && (
-        <p className="text-[11px] font-semibold text-violet-400 mb-2">
+        <p className="text-[11px] font-semibold text-violet-400 mb-1.5">
           {formatCurrency(lead.averageTicket)}
+        </p>
+      )}
+
+      {/* Last interaction summary */}
+      {lastInteraction && (
+        <p className="text-[10px] text-slate-600 mb-2 truncate leading-snug">
+          {lastInteraction.type === 'ligacao' ? '📞' : lastInteraction.type === 'whatsapp' ? '💬' : lastInteraction.type === 'visita' ? '🏠' : lastInteraction.type === 'reuniao' ? '🤝' : lastInteraction.type === 'email' ? '📧' : '📝'}{' '}
+          {lastInteraction.description ?? lastInteraction.type}
         </p>
       )}
 
@@ -171,17 +176,25 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         </div>
       )}
 
-      {/* WhatsApp button */}
+      {/* Action buttons */}
       <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5">
         <button
           onClick={handleWhatsApp}
           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium text-green-300 hover:text-white bg-green-500/10 hover:bg-green-500 border border-green-500/20 hover:border-green-500 rounded-lg transition-all active:scale-95"
+          title="Registrar e abrir WhatsApp"
         >
           <MessageCircle size={11} />
-          WhatsApp
+          Registrar
           {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
             <span className="opacity-60">· {lead.followupStep}ª</span>
           )}
+        </button>
+        <button
+          onClick={handleWhatsAppOpen}
+          className="w-7 h-7 flex items-center justify-center text-green-500/70 hover:text-green-300 bg-white/3 hover:bg-green-500/10 border border-white/8 hover:border-green-500/20 rounded-lg transition-all"
+          title="Só abrir WhatsApp"
+        >
+          <MessageCircle size={11} />
         </button>
         <a
           href={`tel:${displayPhone}`}
@@ -267,8 +280,11 @@ interface LeadKanbanProps {
 
 export function LeadKanban({ leads }: LeadKanbanProps) {
   const { setStage } = useLeadsStore()
+  const { loadAll: loadAllInteractions } = useLeadInteractionsStore()
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+
+  useEffect(() => { loadAllInteractions() }, [])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })

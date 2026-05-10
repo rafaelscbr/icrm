@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
-  MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw,
+  MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -12,6 +12,7 @@ import { LeadForm } from './LeadForm'
 import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadsDashboard } from './LeadsDashboard'
+import { LeadSettings } from './LeadSettings'
 import toast from 'react-hot-toast'
 
 const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string; border: string }> = {
@@ -24,15 +25,7 @@ const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: strin
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
-const FOLLOWUP_MESSAGES = [
-  (name: string) => `Olá ${name}! Tudo bem? Sou o Rafael, da Souza Imobiliária. Vi que você tem interesse em imóveis. Posso te ajudar? 😊`,
-  (name: string) => `Oi ${name}, tudo certo? Passando para ver se conseguiu ver minha mensagem anterior. Tenho ótimas opções que podem te interessar! 🏠`,
-  (name: string) => `${name}, que tal conversarmos sobre o que você procura em um imóvel? Tenho algumas opções que podem ser perfeitas pra você! ✨`,
-  (name: string) => `Oi ${name}! Ainda tenho aquelas opções incríveis para te mostrar. Tem um minutinho para conversarmos? 🌟`,
-  (name: string) => `${name}, última tentativa de contato. Se ainda tiver interesse em encontrar seu imóvel ideal, me dá um sinal! Estarei à disposição 😊`,
-]
-
-type Tab = 'leads' | 'kanban' | 'dashboard'
+type Tab = 'leads' | 'kanban' | 'dashboard' | 'configuracoes'
 
 // ─── LeadRow ──────────────────────────────────────────────────────────────────
 
@@ -50,15 +43,8 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
-    const firstName = displayName.split(' ')[0]
-    let msg = FOLLOWUP_MESSAGES[0](firstName)
-    if (lead.funnelStage === 'followup' && lead.followupStep >= 1 && lead.followupStep <= 5) {
-      msg = FOLLOWUP_MESSAGES[lead.followupStep - 1](firstName)
-    }
-    window.open(whatsappUrl(displayPhone, msg), '_blank')
+    window.open(whatsappUrl(displayPhone), '_blank')
     advanceFollowup(lead.id)
-    const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
-    toast.success(`WhatsApp · ${nextStep}ª msg`)
   }
 
   return (
@@ -168,14 +154,16 @@ export function LeadsPage() {
   }, [leads, search, filterStage, filterOrigin, showDiscarded])
 
   const TABS: { value: Tab; label: string; icon: typeof List; badge?: number }[] = [
-    { value: 'leads',     label: 'Leads',     icon: List,       badge: active.length },
-    { value: 'kanban',    label: 'Kanban',     icon: LayoutGrid                       },
-    { value: 'dashboard', label: 'Dashboard',  icon: BarChart3                        },
+    { value: 'leads',          label: 'Leads',          icon: List,       badge: active.length },
+    { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                       },
+    { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                        },
+    { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                        },
   ]
 
-  const isListTab   = tab === 'leads'
-  const isKanbanTab = tab === 'kanban'
-  const isDashTab   = tab === 'dashboard'
+  const isListTab    = tab === 'leads'
+  const isKanbanTab  = tab === 'kanban'
+  const isDashTab    = tab === 'dashboard'
+  const isConfigTab  = tab === 'configuracoes'
 
   return (
     <div className="flex flex-col h-full">
@@ -227,6 +215,13 @@ export function LeadsPage() {
       {isDashTab && (
         <div className="flex-1 overflow-auto">
           <LeadsDashboard leads={leads} onOpenLead={setSelectedLead} />
+        </div>
+      )}
+
+      {/* ── Configurações ──────────────────────────────────────────────────────── */}
+      {isConfigTab && (
+        <div className="flex-1 overflow-auto">
+          <LeadSettings />
         </div>
       )}
 

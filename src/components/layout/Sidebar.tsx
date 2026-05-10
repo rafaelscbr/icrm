@@ -51,7 +51,7 @@ export function Sidebar() {
     <aside className="hidden lg:flex w-56 flex-shrink-0 flex-col h-screen sticky top-0 border-r border-white/6 nav-bg">
 
       {/* Logo */}
-      <div className="px-5 py-4 border-b border-white/6">
+      <div className="px-5 py-4">
         <img
           src={theme === 'dark' ? logoLight : logoDark}
           alt="Souza Imobiliária"
@@ -140,7 +140,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-3 border-t border-white/6 flex flex-col gap-1">
+      <div className="px-3 py-3 flex flex-col gap-1">
         {/* Theme toggle */}
         <button
           onClick={toggle}

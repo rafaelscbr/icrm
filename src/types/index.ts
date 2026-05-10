@@ -211,6 +211,23 @@ export interface Lead {
   updatedAt: string
 }
 
+// ─── Configuração de leads (motivos de descarte + origens) ───────────────────
+
+export type LeadConfigType = 'discard_reason' | 'origin'
+
+export interface LeadConfigEntry {
+  id: string
+  type: LeadConfigType
+  slug: string        // valor salvo no banco (ex: 'sem_condicao')
+  label: string       // label exibido na UI
+  emoji?: string
+  color?: string      // classe Tailwind (ex: 'text-rose-400')
+  displayOrder: number
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Histórico semanal ────────────────────────────────────────────────────────
 
 export interface WeekSnapshotEntry {

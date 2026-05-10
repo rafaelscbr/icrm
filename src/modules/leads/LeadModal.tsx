@@ -85,18 +85,20 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   }
 
   function handleWhatsApp() {
-    const msg = getWhatsAppMessage()
-    const url = whatsappUrl(lead.phone, msg)
-    window.open(url, '_blank')
+    window.open(whatsappUrl(lead.phone), '_blank')
     advanceFollowup(lead.id)
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
     addInteraction({
       leadId: lead.id,
       type: 'whatsapp',
-      description: msg,
+      description: 'Interagiu via WhatsApp',
       interactedAt: new Date().toISOString(),
     })
-    toast.success(`WhatsApp aberto · ${lead.funnelStage === 'lead' ? '1ª' : `${nextStep}ª`} mensagem`)
+    toast.success(`Interação registrada · ${lead.funnelStage === 'lead' ? '1ª' : `${nextStep}ª`} mensagem`)
+  }
+
+  function handleWhatsAppOpen() {
+    window.open(whatsappUrl(lead.phone), '_blank')
   }
 
   function handleDiscard() {
@@ -187,7 +189,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 onClick={() => setActiveTab(tab)}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-t-lg border-b-2 transition-all ${
                   activeTab === tab
-                    ? 'text-violet-300 border-violet-500'
+                    ? 'text-blue-400 border-blue-500'
                     : 'text-slate-500 border-transparent hover:text-slate-300'
                 }`}
               >
@@ -335,16 +337,26 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
           {/* Actions */}
           <div className="px-5 pb-5 space-y-2">
             {!isDiscarded && (
-              <button
-                onClick={handleWhatsApp}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-green-500/20 active:scale-[0.98]"
-              >
-                <MessageCircle size={16} />
-                Abrir WhatsApp
-                {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
-                  <span className="text-xs opacity-80">· {lead.followupStep}ª msg</span>
-                )}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleWhatsApp}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-green-500/20 active:scale-[0.98]"
+                  title="Abre o WhatsApp e registra interação"
+                >
+                  <MessageCircle size={15} />
+                  Registrar & Abrir
+                  {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
+                    <span className="text-xs opacity-80">· {lead.followupStep}ª</span>
+                  )}
+                </button>
+                <button
+                  onClick={handleWhatsAppOpen}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2.5 text-green-300 hover:text-white bg-green-500/10 hover:bg-green-500/25 border border-green-500/25 hover:border-green-500/50 rounded-xl transition-all active:scale-[0.98]"
+                  title="Só abre o WhatsApp (sem registrar)"
+                >
+                  <MessageCircle size={15} />
+                </button>
+              </div>
             )}
 
             {/* Linha 1: Editar + Tarefa + Prioridade */}

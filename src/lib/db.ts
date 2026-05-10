@@ -4,6 +4,7 @@ import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
   LeadInteraction, LeadInteractionType, LeadInteractionOutcome,
+  LeadConfigEntry, LeadConfigType,
 } from '../types'
 
 // ─── Row types (snake_case vindos do Supabase) ────────────────────────────────
@@ -493,6 +494,36 @@ export const db = {
     },
     upsert: (i: LeadInteraction) => upsertOne('lead_interactions', fromLeadInteraction(i)),
     delete: (id: string)         => deleteOne('lead_interactions', id),
+  },
+
+  leadConfig: {
+    fetchAll: async (): Promise<LeadConfigEntry[]> => {
+      const { data, error } = await supabase
+        .from('lead_config')
+        .select('*')
+        .order('display_order')
+      if (error) throw error
+      return (data as Array<{
+        id: string; type: string; slug: string; label: string
+        emoji: string | null; color: string | null; display_order: number
+        active: boolean; created_at: string; updated_at: string
+      }>).map(r => ({
+        id: r.id, type: r.type as LeadConfigType, slug: r.slug, label: r.label,
+        emoji: r.emoji ?? undefined, color: r.color ?? undefined,
+        displayOrder: r.display_order, active: r.active,
+        createdAt: r.created_at, updatedAt: r.updated_at,
+      }))
+    },
+    upsert: async (e: LeadConfigEntry): Promise<void> => {
+      const { error } = await supabase.from('lead_config').upsert({
+        id: e.id, type: e.type, slug: e.slug, label: e.label,
+        emoji: e.emoji ?? null, color: e.color ?? null,
+        display_order: e.displayOrder, active: e.active,
+        updated_at: new Date().toISOString(),
+      })
+      if (error) throw error
+    },
+    delete: (id: string) => deleteOne('lead_config', id),
   },
 
   campaignLeads: {
