@@ -16,7 +16,7 @@
 
   body {
     font-weight: 400;
-    background-color: #07090F;
+    background-color: #060A12;
     background-image:
       radial-gradient(ellipse 80% 50% at 20% 0%, rgba(245,158,11,0.04) 0%, transparent 60%),
       radial-gradient(ellipse 60% 40% at 80% 100%, rgba(6,182,212,0.03) 0%, transparent 55%);
@@ -59,7 +59,7 @@
     -moz-appearance: none;
     appearance: none;
     color-scheme: dark;
-    background-color: #0D1117;
+    background-color: #0E1420;
   }
   /* Remove o highlight azul nativo do Safari em options */
   select option {
@@ -70,21 +70,21 @@
 
 /* ── Superfícies semânticas (dark default) ── */
 .page-bg {
-  background-color: #07090F;
+  background-color: #060A12;
   background-image:
     radial-gradient(ellipse 80% 50% at 20% 0%, rgba(245,158,11,0.04) 0%, transparent 60%),
     radial-gradient(ellipse 60% 40% at 80% 100%, rgba(6,182,212,0.03) 0%, transparent 55%);
 }
-.nav-bg      { background-color: #08090D; }
-.nav-bg-blur { background-color: rgba(8,9,13,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.nav-bg      { background-color: #070B13; }
+.nav-bg-blur { background-color: rgba(7,11,19,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .card-surface {
-  background-color: #0D1117;
-  border-color: rgba(255,255,255,0.08);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  background-color: #0E1420;
+  border-color: rgba(255,255,255,0.10);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4);
 }
 .modal-surface {
-  background-color: rgba(10,12,18,0.97);
-  border: 1px solid rgba(255,255,255,0.12);
+  background-color: rgba(9,13,22,0.98);
+  border: 1px solid rgba(255,255,255,0.14);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -133,18 +133,24 @@ html.light aside {
 html.light [class*="#0F1117"],
 html.light [class*="#0f1117"],
 html.light [class*="#07090F"],
-html.light [class*="#07090f"] { background-color: #f1f5f9 !important; background-image: none !important; }
+html.light [class*="#07090f"],
+html.light [class*="#060A12"],
+html.light [class*="#060a12"] { background-color: #f1f5f9 !important; background-image: none !important; }
 
 /* Nav/aside/sticky-bar escuro */
 html.light [class*="#0d0f1a"],
 html.light [class*="#0D0F1A"],
 html.light [class*="#080A10"],
 html.light [class*="#08090D"],
+html.light [class*="#070B13"],
+html.light [class*="#070b13"],
 html.light [class*="#080B11"] { background-color: #f8fafc !important; }
 
 /* Cards / Superfícies escuras */
 html.light [class*="#0D1117"],
-html.light [class*="#0d1117"] { background-color: #ffffff !important; border-color: rgba(0,0,0,0.08) !important; }
+html.light [class*="#0d1117"],
+html.light [class*="#0E1420"],
+html.light [class*="#0e1420"] { background-color: #ffffff !important; border-color: rgba(0,0,0,0.08) !important; }
 
 /* Modais / Superfícies mais escuras */
 html.light [class*="#1A1D27"],
@@ -444,4 +450,29 @@ html.light .card-accent-yellow { border-top: 3px solid rgba(234,179,8,0.7);   bo
     transition: border-color 150ms, background-color 150ms;
   }
   .row-accent:hover { border-left-color: rgba(99,102,241,0.5); }
+
+  /* Better input base */
+  .input-base {
+    background-color: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 0.5rem;
+    color: #e2e8f0;
+    transition: border-color 150ms, box-shadow 150ms;
+  }
+  .input-base:focus {
+    outline: none;
+    border-color: rgba(59,130,246,0.5);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+  }
+  /* Section divider */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent);
+    border: none;
+    margin: 0;
+  }
+  /* Better table rows */
+  .table-row-hover:hover {
+    background-color: rgba(255,255,255,0.03);
+  }
 }

@@ -50,8 +50,8 @@ export function StatCard({ label, value, sub, icon, accent = 'indigo' }: StatCar
   const cfg = accentConfig[accent]
   return (
     <div className={`
-      relative bg-[#0D1117] border border-white/8 rounded-xl overflow-hidden
-      transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15 hover:shadow-2xl hover:shadow-black/40
+      relative bg-[#0E1420] border border-white/10 rounded-xl overflow-hidden
+      transition-all duration-200 hover:-translate-y-0.5 hover:border-white/18 hover:shadow-2xl hover:shadow-black/50
     `}>
       {/* accent bar top */}
       <div className={`absolute top-0 left-0 right-0 h-0.5 ${cfg.bar}`} />

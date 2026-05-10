@@ -79,8 +79,8 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
           : lead.funnelStage === 'venda'
             ? 'bg-green-500/5 border-green-500/25 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
             : isLinked
-              ? 'bg-[#0D1117] border-violet-500/20 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
-              : 'bg-[#0D1117] border-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
+              ? 'bg-[#0E1420] border-violet-500/25 hover:border-white/20 hover:shadow-lg hover:shadow-black/30'
+              : 'bg-[#0E1420] border-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-black/30'
         }
       `}
     >
@@ -116,7 +116,7 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 
       {/* Name + origin */}
       <div className="flex items-start gap-2 pr-12 mb-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-white/8 flex items-center justify-center text-sm font-black text-slate-300 flex-shrink-0">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-white/10 flex items-center justify-center text-sm font-black text-slate-300 flex-shrink-0">
           {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
@@ -191,7 +191,7 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         </button>
         <button
           onClick={handleWhatsAppOpen}
-          className="w-7 h-7 flex items-center justify-center text-green-500/70 hover:text-green-300 bg-white/3 hover:bg-green-500/10 border border-white/8 hover:border-green-500/20 rounded-lg transition-all"
+          className="w-7 h-7 flex items-center justify-center text-green-500/70 hover:text-green-300 bg-white/3 hover:bg-green-500/10 border border-white/10 hover:border-green-500/20 rounded-lg transition-all"
           title="Só abrir WhatsApp"
         >
           <MessageCircle size={11} />
@@ -199,7 +199,7 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         <a
           href={`tel:${displayPhone}`}
           onClick={e => e.stopPropagation()}
-          className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-200 bg-white/3 hover:bg-white/8 border border-white/8 rounded-lg transition-all"
+          className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-200 bg-white/3 hover:bg-white/8 border border-white/10 rounded-lg transition-all"
         >
           <Phone size={11} />
         </a>
@@ -212,7 +212,7 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 
 function DragCard({ lead }: { lead: Lead }) {
   return (
-    <div className="bg-[#0D1117] border border-amber-500/40 rounded-xl p-3 shadow-2xl shadow-amber-500/15 w-64 rotate-2 opacity-95">
+    <div className="bg-[#0E1420] border border-amber-500/40 rounded-xl p-3 shadow-2xl shadow-amber-500/15 w-64 rotate-2 opacity-95">
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/20 flex items-center justify-center text-sm font-black text-amber-300">
           {lead.name.charAt(0).toUpperCase()}

@@ -186,22 +186,22 @@ export function LeadsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mt-4">
+        <div className="flex gap-0 mt-4 border-b border-white/8">
           {TABS.map(({ value, label, icon: Icon, badge }) => (
             <button
               key={value}
               onClick={() => setTab(value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 -mb-px transition-all cursor-pointer
                 ${tab === value
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-600/30'
-                  : 'bg-transparent border-white/8 text-slate-500 hover:text-slate-300 hover:border-white/15'
+                  ? 'border-blue-500 text-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-300 hover:border-white/20'
                 }`}
             >
               <Icon size={12} />
               {label}
               {badge !== undefined && (
                 <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
-                  ${tab === value ? 'bg-white/20 text-white' : 'bg-white/8 text-slate-500'}`}>
+                  ${tab === value ? 'bg-blue-500/20 text-blue-300' : 'bg-white/8 text-slate-500'}`}>
                   {badge}
                 </span>
               )}
