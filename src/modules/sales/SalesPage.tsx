@@ -304,7 +304,7 @@ export function SalesPage() {
               )
             })}
             {/* Mobile footer */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white/3 rounded-2xl border border-white/8">
+            <div className="flex items-center justify-between px-4 py-3 bg-white/3 rounded-xl border border-white/8">
               <p className="text-xs text-slate-500">{filtered.length} venda{filtered.length !== 1 ? 's' : ''}</p>
               <div className="text-right">
                 <p className="text-sm font-bold text-slate-100 tabular-nums">

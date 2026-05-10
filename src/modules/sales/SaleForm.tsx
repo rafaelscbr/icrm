@@ -204,7 +204,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
           </div>
 
           {/* ── Seção de comissão ── */}
-          <div className="flex flex-col gap-3 p-4 rounded-2xl bg-violet-500/5 border border-violet-500/15">
+          <div className="flex flex-col gap-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/15">
             <div className="flex items-center gap-2 mb-1">
               <BadgePercent size={13} className="text-violet-400" />
               <p className="text-xs font-semibold text-violet-300 uppercase tracking-wider">Comissão negociada</p>

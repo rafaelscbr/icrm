@@ -101,7 +101,7 @@ function SmartBanner({ tasks }: { tasks: Task[] }) {
 
   let headline = ''
   let sub = ''
-  let accent = 'from-indigo-500/20 to-violet-500/10'
+  let accent = 'from-blue-500/10 to-blue-600/5'
 
   if (total === 0 && overdue.length === 0) {
     headline = `${greeting}, Chefe! 🎉`
@@ -114,11 +114,11 @@ function SmartBanner({ tasks }: { tasks: Task[] }) {
   } else {
     headline = `${greeting}, Chefe! Temos ${total} tarefa${total > 1 ? 's' : ''} para hoje.`
     sub = lines.length > 0 ? lines.join(' · ') : 'Foco no que importa — cada tarefa concluída é um passo à frente!'
-    accent = total >= 5 ? 'from-amber-500/20 to-orange-500/10' : 'from-indigo-500/20 to-violet-500/10'
+    accent = total >= 5 ? 'from-amber-500/20 to-orange-500/10' : 'from-blue-500/10 to-blue-600/5'
   }
 
   return (
-    <div className={`bg-gradient-to-r ${accent} border border-white/10 rounded-2xl px-6 py-5 mb-6`}>
+    <div className={`border border-white/8 rounded-xl bg-[#0D1117] px-6 py-5 mb-6`}>
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">
           {total === 0 && overdue.length === 0 ? '✅' : total >= 5 ? '🔥' : '💼'}

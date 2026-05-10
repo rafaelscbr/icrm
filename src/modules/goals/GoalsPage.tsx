@@ -194,7 +194,7 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
       {/* 3 métricas */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {/* Agendadas no mês */}
-        <div className="bg-white/3 rounded-2xl p-3 text-center border border-white/5">
+        <div className="bg-white/3 rounded-xl p-3 text-center border border-white/5">
           <div className="flex items-center justify-center mb-1.5">
             <ClipboardList size={13} className="text-indigo-400" />
           </div>
@@ -203,7 +203,7 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
         </div>
 
         {/* Realizadas na semana */}
-        <div className={`bg-white/3 rounded-2xl p-3 text-center border ${semanaOk ? 'border-green-500/30' : 'border-white/5'}`}>
+        <div className={`bg-white/3 rounded-xl p-3 text-center border ${semanaOk ? 'border-green-500/30' : 'border-white/5'}`}>
           <div className="flex items-center justify-center mb-1.5">
             <CalendarCheck size={13} className={semanaOk ? 'text-green-400' : 'text-slate-400'} />
           </div>
@@ -214,7 +214,7 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
         </div>
 
         {/* Realizadas no mês */}
-        <div className={`bg-white/3 rounded-2xl p-3 text-center border ${mesOk ? 'border-green-500/30' : 'border-white/5'}`}>
+        <div className={`bg-white/3 rounded-xl p-3 text-center border ${mesOk ? 'border-green-500/30' : 'border-white/5'}`}>
           <div className="flex items-center justify-center mb-1.5">
             <CalendarDays size={13} className={mesOk ? 'text-green-400' : 'text-slate-400'} />
           </div>
@@ -366,7 +366,7 @@ export function GoalsPage() {
                   const Icon   = CATEGORY_ICON[goal.category]
                   return (
                     <div key={goal.id}
-                      className="flex items-center gap-4 px-5 py-3.5 bg-white/3 rounded-2xl border border-white/5 group hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-4 px-5 py-3.5 bg-white/3 rounded-xl border border-white/5 group hover:bg-white/5 transition-colors"
                     >
                       <div className={`w-8 h-8 ${colors.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
                         <Icon size={14} className={`${colors.text} opacity-50`} />

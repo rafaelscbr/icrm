@@ -230,7 +230,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       </div>
 
       {/* ── BLOCO 2 — Pipeline Estratégico ─────────────────────────────────── */}
-      <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
+      <div className="bg-[#0D1117] border border-white/10 rounded-xl p-5">
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Funil de Vendas</p>
@@ -280,7 +280,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       </div>
 
       {/* ── BLOCO 5 — Radar de Temperatura do Pipeline ─────────────────────── */}
-      <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
+      <div className="bg-[#0D1117] border border-white/10 rounded-xl p-5">
         <div className="flex items-center gap-2 mb-1">
           <Thermometer size={13} className="text-orange-400" />
           <p className="text-sm font-semibold text-slate-200">Radar de Temperatura do Pipeline</p>
@@ -382,7 +382,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* Prioridade de Contato */}
-        <div className="lg:col-span-3 bg-[#0D1117] border border-white/10 rounded-2xl p-5">
+        <div className="lg:col-span-3 bg-[#0D1117] border border-white/10 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <Crown size={13} className="text-amber-400" />
             <p className="text-sm font-semibold text-slate-200">Prioridade de Contato</p>
@@ -448,7 +448,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         </div>
 
         {/* Canal Performance */}
-        <div className="lg:col-span-2 bg-[#0D1117] border border-white/10 rounded-2xl p-5">
+        <div className="lg:col-span-2 bg-[#0D1117] border border-white/10 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <Zap size={13} className="text-blue-400" />
             <p className="text-sm font-semibold text-slate-200">Performance por Canal</p>
@@ -516,7 +516,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Follow-up Intelligence */}
-        <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
+        <div className="bg-[#0D1117] border border-white/10 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <MessageCircle size={13} className="text-blue-400" />
             <p className="text-sm font-semibold text-slate-200">Inteligência de Follow-up</p>
@@ -581,7 +581,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         </div>
 
         {/* Loss Analysis */}
-        <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
+        <div className="bg-[#0D1117] border border-white/10 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <XCircle size={13} className="text-red-400" />
             <p className="text-sm font-semibold text-slate-200">Análise de Perda</p>
@@ -633,7 +633,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       </div>
 
       {/* ── BLOCO 6 — Pulso Comercial ───────────────────────────────────────── */}
-      <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-5">
+      <div className="bg-[#0D1117] border border-white/10 rounded-xl p-5">
         <div className="flex items-center gap-2 mb-1">
           <BarChart2 size={13} className="text-violet-400" />
           <p className="text-sm font-semibold text-slate-200">Pulso Comercial</p>
@@ -715,7 +715,7 @@ interface NorthStarProps {
 
 function NorthStar({ icon, label, value, sub, color, bg, border, highlight }: NorthStarProps) {
   return (
-    <div className={`${bg} border ${border} rounded-2xl p-5 ${highlight ? 'ring-1 ring-orange-500/25 shadow-lg shadow-orange-500/8' : ''} relative overflow-hidden`}>
+    <div className={`${bg} border ${border} rounded-xl p-5 ${highlight ? 'ring-1 ring-orange-500/25 shadow-lg shadow-orange-500/8' : ''} relative overflow-hidden`}>
       <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 ${bg} opacity-40 blur-xl`} />
       <div className={`w-8 h-8 rounded-xl ${bg} border ${border} flex items-center justify-center mb-4 ${color} relative`}>
         {icon}

@@ -161,7 +161,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                       {followupLabel && <span className="opacity-70">· {followupLabel}</span>}
                     </span>
                     {isLinked && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/25">
                         <CheckCircle2 size={9} /> Contato vinculado
                       </span>
                     )}
@@ -213,9 +213,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               {lead.email && (
                 <a href={`mailto:${lead.email}`} className="flex items-center gap-3 group">
                   <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-500/15 transition-colors">
-                    <Mail size={13} className="text-slate-500 group-hover:text-violet-400 transition-colors" />
+                    <Mail size={13} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
                   </div>
-                  <span className="text-sm text-slate-300 group-hover:text-violet-400 transition-colors">{lead.email}</span>
+                  <span className="text-sm text-slate-300 group-hover:text-blue-400 transition-colors">{lead.email}</span>
                 </a>
               )}
             </div>
@@ -238,7 +238,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             {property && (
               <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
-                  <Building2 size={14} className="text-violet-400" />
+                  <Building2 size={14} className="text-blue-400"" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-200 truncate">{property.name}</p>

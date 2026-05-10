@@ -265,18 +265,18 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-[#13151F] border border-white/10 rounded-2xl shadow-2xl shadow-violet-900/30 flex flex-col max-h-[92vh] overflow-hidden
+      <div className="relative w-full max-w-lg bg-[#13151F] border border-white/10 rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[92vh] overflow-hidden
         animate-in fade-in zoom-in-95 duration-200">
 
         {/* Gradient top border */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-violet-500 via-purple-400 to-pink-500" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-500" />
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center
-              bg-gradient-to-br from-violet-500/30 to-purple-500/20 border border-violet-500/30`}>
-              <Sparkles size={16} className="text-violet-300" />
+              bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20`}>
+              <Sparkles size={16} className="text-blue-300" />
             </div>
             <div>
               <h2 className="text-base font-bold text-white">
@@ -300,8 +300,8 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
         {/* Progress bar */}
         {!isEdit && (
           <div className="flex gap-1.5 px-6 pb-4 flex-shrink-0">
-            <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-violet-500 to-purple-500" />
-            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/8'}`} />
+            <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600" />
+            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-gradient-to-r from-blue-400 to-cyan-500' : 'bg-white/8'}`} />
           </div>
         )}
 
@@ -318,7 +318,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   onClick={() => { setContactMode('search'); clearContact() }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     contactMode === 'search'
-                      ? 'bg-gradient-to-br from-violet-600/40 to-purple-600/30 text-violet-200 shadow-sm border border-violet-500/30'
+                      ? 'bg-gradient-to-br bg-blue-600/30 text-blue-100 shadow-sm border border-blue-500/30'
                       : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
@@ -340,9 +340,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
               {contactMode === 'search' && (
                 <div className="space-y-2">
                   {selectedContact ? (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-violet-500/15 to-purple-500/10 border border-violet-500/30 rounded-xl
+                    <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-500/10 to-blue-600/5 border border-blue-500/25 rounded-xl
                       animate-in fade-in zoom-in-95 duration-200">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500/40 to-purple-500/30 flex items-center justify-center text-sm font-bold text-violet-100 flex-shrink-0 border border-violet-400/30">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br bg-blue-600/30 text-blue-100 border border-blue-500/30">
                         {selectedContact.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -353,7 +353,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                         <CheckCircle2 size={16} className="text-violet-400" />
                         <button
                           onClick={clearContact}
-                          className="text-xs text-slate-500 hover:text-violet-300 px-2 py-1 rounded-lg hover:bg-violet-500/10 transition-all"
+                          className="text-xs text-slate-500 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-blue-500/10 transition-all"
                         >
                           Trocar
                         </button>
@@ -399,14 +399,14 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                                     onClick={() => selectContact(c.id)}
                                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-violet-500/12 text-left transition-all group border-t border-white/5 first:border-0"
                                   >
-                                    <div className="w-8 h-8 rounded-full bg-white/8 group-hover:bg-violet-500/25 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:text-violet-200 transition-all flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-white/8 group-hover:bg-blue-500/20 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:text-blue-200 transition-all flex-shrink-0">
                                       {c.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="text-sm font-medium text-slate-200 group-hover:text-white truncate">{c.name}</p>
                                       <p className="text-xs text-slate-500">{formatPhone(c.phone)}</p>
                                     </div>
-                                    <ChevronRight size={13} className="text-slate-600 group-hover:text-violet-400 flex-shrink-0 transition-colors" />
+                                    <ChevronRight size={13} className="text-slate-600 group-hover:text-blue-400 flex-shrink-0 transition-colors" />
                                   </button>
                                 ))}
                               </div>
@@ -512,14 +512,14 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 if (!c) return null
                 return (
                   <div className="flex items-center gap-2.5 px-3 py-2.5 bg-white/4 border border-white/8 rounded-xl">
-                    <div className="w-7 h-7 rounded-full bg-violet-500/25 flex items-center justify-center text-xs font-bold text-violet-200 flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-violet-500/25 flex items-center justify-center text-xs font-bold text-blue-200 flex-shrink-0">
                       {c.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-slate-500">Contato</p>
                       <p className="text-sm font-semibold text-white truncate">{c.name}</p>
                     </div>
-                    <CheckCircle2 size={14} className="text-violet-400 flex-shrink-0" />
+                    <CheckCircle2 size={14} className="text-blue-400 flex-shrink-0" />
                   </div>
                 )
               })()}
@@ -561,8 +561,8 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 <label className="text-xs font-semibold text-slate-400 mb-2 block uppercase tracking-wider">Produto / Imóvel</label>
 
                 {propertyMode === 'selected' && (
-                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-violet-500/10 to-purple-500/8 border border-violet-500/25 rounded-xl animate-in fade-in zoom-in-95 duration-150">
-                    <Building2 size={14} className="text-violet-400 flex-shrink-0" />
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-xl animate-in fade-in zoom-in-95 duration-150">
+                    <Building2 size={14} className="text-blue-400 flex-shrink-0" />
                     <p className="flex-1 text-sm font-medium text-slate-200 truncate">{propertySearch}</p>
                     <button onClick={clearProperty} className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
                   </div>
@@ -604,7 +604,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                                   <p className="text-sm font-medium text-slate-200 group-hover:text-white">{p.name}</p>
                                   <p className="text-xs text-slate-500">{p.neighborhood} · {p.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</p>
                                 </div>
-                                <span className="text-xs font-bold text-violet-400 ml-3 flex-shrink-0">{formatCurrencyFull(p.value)}</span>
+                                <span className="text-xs font-bold text-blue-400 ml-3 flex-shrink-0">{formatCurrencyFull(p.value)}</span>
                               </button>
                             ))}
                             <button
@@ -632,7 +632,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 )}
 
                 {(propertyMode === 'selected' && propertyId) && (
-                  <p className="text-xs text-violet-400 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-blue-400 mt-1 flex items-center gap-1">
                     <MapPin size={9} /> Ticket preenchido automaticamente
                   </p>
                 )}
@@ -733,7 +733,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
             <button
               onClick={goNext}
               disabled={!canAdvanceStep1()}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/30 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-gradient-to-r bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-lg shadow-blue-600/30 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
             >
               Próximo <ChevronRight size={15} />
             </button>
@@ -745,7 +745,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-500/30'
                   : stage === 'visita'
                   ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-amber-500/30'
-                  : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-violet-500/30'
+                  : 'bg-gradient-to-r bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30'
               }`}
             >
               {lead ? 'Salvar alterações' : isRetroactive ? '📅 Registrar lead' : '✨ Criar Lead'}
