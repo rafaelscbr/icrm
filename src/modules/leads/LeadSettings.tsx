@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   Plus, Pencil, Trash2, Check, Database, Copy, ChevronDown, ChevronUp,
-  AlertCircle, CheckCircle2, ToggleLeft, ToggleRight,
+  AlertCircle, CheckCircle2, ToggleLeft, ToggleRight, Loader2,
 } from 'lucide-react'
 import { LeadConfigEntry, LeadConfigType } from '../../types'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
@@ -327,7 +327,7 @@ function Section({ type, title, description, items, dbAvailable }: SectionProps)
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export function LeadSettings() {
-  const { load, dbAvailable, loaded } = useLeadConfigStore()
+  const { load, dbAvailable, dbChecked, syncing } = useLeadConfigStore()
   const [showSql, setShowSql] = useState(false)
   const [copied,  setCopied]  = useState(false)
 
@@ -347,23 +347,31 @@ export function LeadSettings() {
     <div className="max-w-2xl mx-auto px-6 py-6 space-y-8">
 
       {/* Status do banco */}
-      <div className={`flex items-start gap-3 p-4 rounded-xl border ${
-        dbAvailable
-          ? 'bg-emerald-500/8 border-emerald-500/20'
-          : 'bg-amber-500/8 border-amber-500/20'
+      <div className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+        syncing
+          ? 'bg-white/3 border-white/8'
+          : dbAvailable
+            ? 'bg-emerald-500/8 border-emerald-500/20'
+            : 'bg-amber-500/8 border-amber-500/20'
       }`}>
-        {dbAvailable
-          ? <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-          : <Database size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+        {syncing
+          ? <Loader2 size={16} className="text-slate-500 flex-shrink-0 mt-0.5 animate-spin" />
+          : dbAvailable
+            ? <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+            : <Database size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
         }
         <div className="flex-1 min-w-0">
-          {dbAvailable ? (
+          {syncing ? (
+            <p className="text-sm text-slate-500">Verificando banco de dados…</p>
+          ) : dbAvailable ? (
             <p className="text-sm font-medium text-emerald-300">Conectado ao banco de dados</p>
           ) : (
             <>
-              <p className="text-sm font-medium text-amber-300">Tabela <code className="font-mono text-amber-400 bg-amber-500/15 px-1 py-0.5 rounded text-xs">lead_config</code> não encontrada</p>
+              <p className="text-sm font-medium text-amber-300">
+                Tabela <code className="font-mono text-amber-400 bg-amber-500/15 px-1 py-0.5 rounded text-xs">lead_config</code> não encontrada
+              </p>
               <p className="text-xs text-amber-400/70 mt-0.5">
-                As configurações abaixo estão usando valores padrão. Execute o SQL abaixo no Supabase para ativar persistência.
+                Os valores abaixo são os padrões. Execute o SQL no Supabase para ativar persistência e poder editar.
               </p>
               <button
                 onClick={() => setShowSql(v => !v)}
@@ -378,7 +386,7 @@ export function LeadSettings() {
       </div>
 
       {/* SQL expandido */}
-      {showSql && !dbAvailable && (
+      {showSql && dbChecked && !dbAvailable && (
         <div className="rounded-xl border border-white/10 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 bg-white/3 border-b border-white/8">
             <span className="text-xs font-semibold text-slate-400">SQL · Supabase Editor</span>
@@ -400,54 +408,51 @@ export function LeadSettings() {
         </div>
       )}
 
-      {/* Motivos de descarte */}
-      {loaded && (
-        <div className="space-y-6">
-          <div className="border-t border-white/6 pt-6">
-            <Section
-              type="discard_reason"
-              title="Motivos de Descarte"
-              description="Usado para categorizar leads descartados e gerar relatórios de qualidade"
-              items={allDiscards}
-              dbAvailable={dbAvailable}
-            />
-          </div>
+      {/* Seções — sempre visíveis (static fallback garante dados imediatos) */}
+      <div className="space-y-6">
+        <div className="border-t border-white/6 pt-6">
+          <Section
+            type="discard_reason"
+            title="Motivos de Descarte"
+            description="Categorize os leads descartados para relatórios de qualidade de funil"
+            items={allDiscards}
+            dbAvailable={dbAvailable}
+          />
+        </div>
 
-          {/* Origens */}
-          <div className="border-t border-white/6 pt-6">
-            <Section
-              type="origin"
-              title="Origens de Lead"
-              description="Canal de origem do lead — essencial para mensurar ROI por canal"
-              items={allOrigins}
-              dbAvailable={dbAvailable}
-            />
-          </div>
+        <div className="border-t border-white/6 pt-6">
+          <Section
+            type="origin"
+            title="Origens de Lead"
+            description="Canal de origem — essencial para mensurar ROI por canal"
+            items={allOrigins}
+            dbAvailable={dbAvailable}
+          />
+        </div>
 
-          {/* Nota sobre relatórios */}
-          <div className="border-t border-white/6 pt-6">
-            <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-2">
-              <h4 className="text-xs font-semibold text-slate-300 flex items-center gap-2">
-                <Database size={13} className="text-blue-400" />
-                Uso em Relatórios
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Os motivos de descarte e origens são usados no <strong className="text-slate-300">Dashboard de Leads</strong> para análise de conversão por canal e diagnóstico de funil. Manter uma categorização consistente permite identificar quais origens geram leads mais qualificados e quais etapas do funil têm maior perda.
-              </p>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-white/3 rounded-lg p-2.5">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Motivos de descarte</p>
-                  <p className="text-xs text-slate-400 mt-1">{allDiscards.filter(d => d.active).length} ativos</p>
-                </div>
-                <div className="bg-white/3 rounded-lg p-2.5">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Origens</p>
-                  <p className="text-xs text-slate-400 mt-1">{allOrigins.filter(o => o.active).length} ativas</p>
-                </div>
+        {/* Nota sobre relatórios */}
+        <div className="border-t border-white/6 pt-6">
+          <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-2">
+            <h4 className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+              <Database size={13} className="text-blue-400" />
+              Uso em Relatórios
+            </h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Os motivos de descarte e origens são usados no <strong className="text-slate-300">Dashboard de Leads</strong> para análise de conversão por canal e diagnóstico de funil. Manter categorização consistente permite identificar quais origens geram leads mais qualificados e onde o funil perde mais.
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="bg-white/3 rounded-lg p-2.5">
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Motivos de descarte</p>
+                <p className="text-xs text-slate-400 mt-1">{allDiscards.filter(d => d.active).length} ativos</p>
+              </div>
+              <div className="bg-white/3 rounded-lg p-2.5">
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Origens</p>
+                <p className="text-xs text-slate-400 mt-1">{allOrigins.filter(o => o.active).length} ativas</p>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

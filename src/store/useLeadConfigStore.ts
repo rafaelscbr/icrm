@@ -3,7 +3,7 @@ import { LeadConfigEntry, LeadConfigType } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 
-// Configuração estática — usada como fallback se a tabela lead_config não existir
+// Configuração estática — visível imediatamente, substituída pelo banco se disponível
 export const STATIC_DISCARD_REASONS: LeadConfigEntry[] = [
   { id: 'sr-1', type: 'discard_reason', slug: 'sem_condicao',       label: 'Sem condição financeira',  emoji: '💸', displayOrder: 1, active: true, createdAt: '', updatedAt: '' },
   { id: 'sr-2', type: 'discard_reason', slug: 'fora_de_nicho',      label: 'Fora do nicho de atuação', emoji: '🎯', displayOrder: 2, active: true, createdAt: '', updatedAt: '' },
@@ -24,8 +24,9 @@ const STATIC_ALL = [...STATIC_DISCARD_REASONS, ...STATIC_ORIGINS]
 
 interface LeadConfigStore {
   items:       LeadConfigEntry[]
-  loaded:      boolean
+  syncing:     boolean   // buscando no banco (fundo — UI não bloqueia)
   dbAvailable: boolean
+  dbChecked:   boolean   // já tentou conectar ao banco
   load:        () => Promise<void>
   getByType:   (type: LeadConfigType) => LeadConfigEntry[]
   getBySlug:   (slug: string) => LeadConfigEntry | undefined
@@ -35,22 +36,28 @@ interface LeadConfigStore {
 }
 
 export const useLeadConfigStore = create<LeadConfigStore>((set, get) => ({
+  // Config estática disponível imediatamente — sem tela em branco
   items:       STATIC_ALL,
-  loaded:      false,
+  syncing:     false,
   dbAvailable: false,
+  dbChecked:   false,
 
   load: async () => {
-    if (get().loaded && get().dbAvailable) return
+    if (get().dbChecked) return   // já tentou, não tenta de novo
+    set({ syncing: true })
     try {
       const items = await db.leadConfig.fetchAll()
-      set({ items, loaded: true, dbAvailable: true })
+      set({ items, syncing: false, dbAvailable: true, dbChecked: true })
     } catch {
-      // Tabela não existe ainda — usa config estática
-      set({ items: STATIC_ALL, loaded: true, dbAvailable: false })
+      // Tabela não existe — mantém config estática, apenas marca como verificado
+      set({ syncing: false, dbAvailable: false, dbChecked: true })
     }
   },
 
-  getByType: (type) => get().items.filter(i => i.type === type && i.active).sort((a, b) => a.displayOrder - b.displayOrder),
+  getByType: (type) =>
+    get().items
+      .filter(i => i.type === type && i.active)
+      .sort((a, b) => a.displayOrder - b.displayOrder),
 
   getBySlug: (slug) => get().items.find(i => i.slug === slug),
 
