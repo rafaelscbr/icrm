@@ -13,7 +13,6 @@ import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadsDashboard } from './LeadsDashboard'
 import { LeadSettings } from './LeadSettings'
-import toast from 'react-hot-toast'
 
 const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string; border: string }> = {
   felicita: { label: 'Felicità', emoji: '✨', color: 'text-rose-400',   bg: 'bg-rose-500/15',   border: 'border-rose-500/25'   },

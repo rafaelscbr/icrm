@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  Plus, Pencil, Trash2, Check, X, Database, Copy, ChevronDown, ChevronUp,
+  Plus, Pencil, Trash2, Check, Database, Copy, ChevronDown, ChevronUp,
   AlertCircle, CheckCircle2, ToggleLeft, ToggleRight,
 } from 'lucide-react'
 import { LeadConfigEntry, LeadConfigType } from '../../types'
@@ -327,16 +327,14 @@ function Section({ type, title, description, items, dbAvailable }: SectionProps)
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export function LeadSettings() {
-  const { load, getByType, dbAvailable, loaded } = useLeadConfigStore()
+  const { load, dbAvailable, loaded } = useLeadConfigStore()
   const [showSql, setShowSql] = useState(false)
   const [copied,  setCopied]  = useState(false)
 
   useEffect(() => { load() }, [])
 
-  const discardReasons = getByType('discard_reason')
-  const allDiscards    = useLeadConfigStore(s => s.items.filter(i => i.type === 'discard_reason'))
-  const origins        = getByType('origin')
-  const allOrigins     = useLeadConfigStore(s => s.items.filter(i => i.type === 'origin'))
+  const allDiscards = useLeadConfigStore(s => s.items.filter(i => i.type === 'discard_reason'))
+  const allOrigins  = useLeadConfigStore(s => s.items.filter(i => i.type === 'origin'))
 
   function handleCopySql() {
     navigator.clipboard.writeText(SETUP_SQL)

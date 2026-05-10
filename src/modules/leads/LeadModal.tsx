@@ -40,14 +40,6 @@ const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: strin
   campanha:  { label: 'Campanha',  emoji: '📣', color: 'text-violet-400' },
 }
 
-const FOLLOWUP_MESSAGES = [
-  (name: string) => `Olá ${name}! Tudo bem? Sou o Rafael, da Souza Imobiliária. Vi que você tem interesse em imóveis. Posso te ajudar? 😊`,
-  (name: string) => `Oi ${name}, tudo certo? Passando para ver se conseguiu ver minha mensagem anterior. Tenho ótimas opções que podem te interessar! 🏠`,
-  (name: string) => `${name}, que tal conversarmos sobre o que você procura em um imóvel? Tenho algumas opções que podem ser perfeitas pra você! ✨`,
-  (name: string) => `Oi ${name}! Ainda tenho aquelas opções incríveis para te mostrar. Tem um minutinho para conversarmos? 🌟`,
-  (name: string) => `${name}, última tentativa de contato. Se ainda tiver interesse em encontrar seu imóvel ideal, me dá um sinal! Estarei à disposição 😊`,
-]
-
 interface LeadModalProps {
   lead: Lead
   onClose: () => void
@@ -76,13 +68,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   const isDiscarded = !!lead.discardReason
   const isLinked = !!lead.contactId   // already linked to a contact (new arch or converted)
-
-  function getWhatsAppMessage() {
-    if (lead.funnelStage === 'followup' && lead.followupStep >= 1 && lead.followupStep <= 5) {
-      return FOLLOWUP_MESSAGES[lead.followupStep - 1](lead.name.split(' ')[0])
-    }
-    return FOLLOWUP_MESSAGES[0](lead.name.split(' ')[0])
-  }
 
   function handleWhatsApp() {
     window.open(whatsappUrl(lead.phone), '_blank')
