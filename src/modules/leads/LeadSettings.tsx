@@ -333,8 +333,9 @@ export function LeadSettings() {
 
   useEffect(() => { load() }, [])
 
-  const allDiscards = useLeadConfigStore(s => s.items.filter(i => i.type === 'discard_reason'))
-  const allOrigins  = useLeadConfigStore(s => s.items.filter(i => i.type === 'origin'))
+  const items       = useLeadConfigStore(s => s.items)
+  const allDiscards = items.filter(i => i.type === 'discard_reason')
+  const allOrigins  = items.filter(i => i.type === 'origin')
 
   function handleCopySql() {
     navigator.clipboard.writeText(SETUP_SQL)
