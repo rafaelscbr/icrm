@@ -118,7 +118,7 @@ function SmartBanner({ tasks }: { tasks: Task[] }) {
   }
 
   return (
-    <div className={`border border-white/8 rounded-xl bg-[#0D1117] px-6 py-5 mb-6`}>
+    <div className={`border border-white/8 rounded-xl bg-gradient-to-r ${accent} px-6 py-5 mb-6`}>
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">
           {total === 0 && overdue.length === 0 ? '✅' : total >= 5 ? '🔥' : '💼'}
