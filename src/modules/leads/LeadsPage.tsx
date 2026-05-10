@@ -172,7 +172,7 @@ export function LeadsPage() {
         {/* Título + ações */}
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-white leading-none tracking-tight">Leads</h1>
+            <h1 className="text-xl font-bold text-white leading-none tracking-tight">Leads</h1>
             <p className="text-xs text-slate-500 mt-1">Funil de prospecção · <span className="text-slate-300 font-semibold">{active.length} ativos</span></p>
           </div>
 

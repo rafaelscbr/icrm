@@ -48,10 +48,10 @@ export function Sidebar() {
   const { theme, toggle } = useThemeStore()
 
   return (
-    <aside className="hidden lg:flex w-56 flex-shrink-0 flex-col h-screen sticky top-0 border-r border-white/6 nav-bg">
+    <aside className="hidden lg:flex w-60 flex-shrink-0 flex-col h-screen sticky top-0 border-r border-white/6 nav-bg">
 
       {/* Logo */}
-      <div className="px-5 py-4">
+      <div className="px-5 py-4 mb-1">
         <img
           src={theme === 'dark' ? logoLight : logoDark}
           alt="Souza Imobiliária"
@@ -84,7 +84,7 @@ export function Sidebar() {
                   className={({ isActive }) =>
                     `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150
                     ${isActive
-                      ? 'bg-blue-600 text-white font-semibold shadow-lg shadow-blue-600/25'
+                      ? 'bg-blue-600 text-white font-semibold shadow-lg shadow-blue-600/20'
                       : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
                     }`
                   }

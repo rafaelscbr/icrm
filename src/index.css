@@ -11,9 +11,11 @@
     font-size: 15px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
   }
 
   body {
+    font-weight: 400;
     background-color: #07090F;
     background-image:
       radial-gradient(ellipse 80% 50% at 20% 0%, rgba(245,158,11,0.04) 0%, transparent 60%),
@@ -40,6 +42,15 @@
     filter: invert(0.6) brightness(1.2);
     cursor: pointer;
     opacity: 0.7;
+  }
+
+  /* ── Typography defaults ── */
+  h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
+
+  /* ── Focus styles ── */
+  *:focus-visible {
+    outline: 2px solid rgba(59,130,246,0.6);
+    outline-offset: 2px;
   }
 
   /* ── Safari: força tema escuro em selects ── */
@@ -69,6 +80,7 @@
 .card-surface {
   background-color: #0D1117;
   border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
 }
 .modal-surface {
   background-color: rgba(10,12,18,0.97);

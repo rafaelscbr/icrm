@@ -217,20 +217,18 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
 
   return (
     <div className="bg-white/2 border border-white/8 rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20">
-              {active.length} {active.length === 1 ? 'ativo' : 'ativos'}
-            </span>
-          </div>
-          <p className="text-xs text-slate-600 mt-0.5">{subtitle}</p>
+      {/* Header — single line: title left, badge + button right */}
+      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-white/6">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-slate-200 truncate">{title}</h3>
+          <p className="text-[11px] text-slate-600 mt-0.5 truncate">{subtitle}</p>
         </div>
+        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 flex-shrink-0">
+          {active.length} {active.length === 1 ? 'ativo' : 'ativos'}
+        </span>
         <button
           onClick={() => { setShowAdd(v => !v); setEditId(null) }}
-          className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all flex-shrink-0 ${
             showAdd
               ? 'bg-white/5 border-white/15 text-slate-300'
               : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20'
@@ -280,31 +278,22 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
               </div>
             ) : (
               /* Normal row */
-              <div className="group flex items-center gap-3 px-4 py-3 bg-white/3 hover:bg-white/4 border border-white/8 hover:border-white/12 rounded-xl transition-all">
+              <div className="group flex items-center gap-2.5 px-4 py-2.5 bg-white/3 hover:bg-white/4 border border-white/8 hover:border-white/12 rounded-xl transition-all">
                 {/* Emoji */}
-                <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-lg flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-base flex-shrink-0">
                   {item.emoji || '·'}
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {type === 'origin' && item.color && (
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colorDot(item.color)}`} />
-                    )}
-                    <span className={`text-sm font-medium ${type === 'origin' && item.color ? item.color : 'text-slate-200'}`}>
-                      {item.label}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-700 font-mono mt-0.5">{item.slug}</p>
-                </div>
-
-                {/* Preview badge for origins */}
-                {type === 'origin' && (
-                  <span className={`hidden sm:inline-flex text-[11px] font-medium px-2.5 py-1 rounded-full border ${item.color ?? 'text-slate-400'} bg-white/5 border-white/10`}>
-                    {item.emoji} {item.label}
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                  {type === 'origin' && item.color && (
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colorDot(item.color)}`} />
+                  )}
+                  <span className={`text-sm font-medium truncate ${type === 'origin' && item.color ? item.color : 'text-slate-200'}`}>
+                    {item.label}
                   </span>
-                )}
+                  <span className="text-[11px] text-slate-700 font-mono truncate hidden sm:block">{item.slug}</span>
+                </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -394,7 +383,7 @@ export function LeadSettings() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+    <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
 
       {/* DB status banner — só mostra se não conectado ou ainda verificando */}
       {(syncing || (dbChecked && !dbAvailable)) && (
