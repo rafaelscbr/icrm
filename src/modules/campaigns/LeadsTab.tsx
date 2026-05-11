@@ -23,43 +23,66 @@ function randomCooldownMs() {
   return options[Math.floor(Math.random() * options.length)] * 1000
 }
 
+// Retorna uma promise que rejeita após N ms — evita que serviceWorker.ready trave para sempre
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ])
+}
+
 async function fireReadyNotification() {
-  const title = 'Souza Imobiliária 🚀'
-  const body  = 'Chefe, já dá para enviar mais mensagem, boraaa! 💬'
-  const opts  = { body, icon: '/icon.svg', tag: 'cooldown-done', requireInteraction: true, renotify: true }
-  if ('Notification' in window && Notification.permission === 'granted') {
+  const title = '⚡ Pronto para disparar!'
+  const body  = 'Rafinha, cooldown encerrou — pode mandar a próxima mensagem! 🚀'
+
+  const opts = {
+    body,
+    icon:               '/icon-192x192.png',
+    badge:              '/icon-192x192.png',
+    tag:                'cooldown-ready',
+    requireInteraction: true,   // fica na tela até clicar ou fechar
+    renotify:           true,   // força reaparecer mesmo com tag igual
+    silent:             false,
+  } as NotificationOptions & { renotify: boolean; silent: boolean; badge: string }
+
+  if (!('Notification' in window) || Notification.permission !== 'granted') return false
+
+  // Tenta via Service Worker (funciona mesmo sem foco na aba)
+  if ('serviceWorker' in navigator) {
     try {
-      if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.ready
-        await reg.showNotification(title, opts as NotificationOptions)
-        return
-      }
-    } catch (_) {}
-    new Notification(title, opts as NotificationOptions)
-    return
+      const reg = await withTimeout(navigator.serviceWorker.ready, 3000)
+      await reg.showNotification(title, opts)
+      return true
+    } catch (_) { /* fallback abaixo */ }
   }
-  toast(body, { icon: '🚀', duration: Infinity })
+
+  // Fallback: Notification API direto
+  try {
+    const n = new Notification(title, opts)
+    n.onclick = () => { window.focus(); n.close() }
+    return true
+  } catch (_) { return false }
 }
 
 function useGlobalCooldown() {
-  const [, setTick]  = useState(0)
-  const expiresAtRef = useRef(0)
-  const wasActiveRef = useRef(false)
+  const [, setTick]   = useState(0)
+  const [isReady, setIsReady] = useState(false)  // banner interno quando cooldown termina
+  const expiresAtRef  = useRef(0)
+  const wasActiveRef  = useRef(false)
 
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-  }, [])
-
+  // Intervalo de 1s — lê refs atualizados sem closure stale
   useEffect(() => {
     const id = setInterval(() => {
       setTick(t => t + 1)
       const secs = Math.max(0, Math.ceil((expiresAtRef.current - Date.now()) / 1000))
       if (wasActiveRef.current && secs === 0) {
         wasActiveRef.current = false
-        fireReadyNotification().catch(() => {
-          toast('🚀 Chefe, já dá para enviar mais mensagem, boraaa!', { duration: Infinity })
+        setIsReady(true)
+        // Tenta notificação nativa; se falhar usa toast persistente como último recurso
+        fireReadyNotification().then(ok => {
+          if (!ok) toast('⚡ Pronto! Pode disparar a próxima mensagem.', { icon: '🚀', duration: Infinity })
+        }).catch(() => {
+          toast('⚡ Pronto! Pode disparar a próxima mensagem.', { icon: '🚀', duration: Infinity })
         })
       }
     }, 1000)
@@ -69,20 +92,21 @@ function useGlobalCooldown() {
   const remaining = () => Math.max(0, Math.ceil((expiresAtRef.current - Date.now()) / 1000))
 
   const start = () => {
+    // Pede permissão aqui — ainda dentro do gesto do clique do usuário
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()  // fire-and-forget intencional
+    }
     const ms = randomCooldownMs()
     expiresAtRef.current = Date.now() + ms
     wasActiveRef.current = true
+    setIsReady(false)
     setTick(t => t + 1)
     return Math.ceil(ms / 1000)
   }
 
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission()
-    }
-  }
+  const clearReady = () => setIsReady(false)
 
-  return { remaining, start, requestNotificationPermission }
+  return { remaining, start, isReady, clearReady }
 }
 
 function isBusinessHours(): boolean {
@@ -158,8 +182,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const sentinelQRef     = useRef<HTMLDivElement>(null)
   const sentinelCRef     = useRef<HTMLDivElement>(null)
 
-  const { remaining, start, requestNotificationPermission } = useGlobalCooldown()
-  const { count: dailyCount, increment: dailyIncrement }    = useDailyCounter()
+  const { remaining, start, isReady, clearReady } = useGlobalCooldown()
+  const { count: dailyCount, increment: dailyIncrement }  = useDailyCounter()
 
   // ── Filtragem e agrupamento ───────────────────────────────────────────────
 
@@ -220,8 +244,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
   function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
     window.open(whatsappUrl(lead.phone, msg), '_blank')
-    requestNotificationPermission()
-    const secs  = start()
+    clearReady()          // esconde o banner "pronto" ao iniciar novo disparo
+    const secs  = start() // pede permissão de notificação + inicia cooldown
     const total = dailyIncrement()
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'
@@ -303,6 +327,24 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       {/* ── Sticky header ─────────────────────────────────────────────────── */}
       <div className="sticky z-20 -mx-6 px-6 pb-3 pt-1 nav-bg" style={{ top: stickyTop }}>
         <DailyLimitBar count={dailyCount} />
+
+          {/* ── Banner PRONTO — fixo, só some quando dispara de novo ── */}
+        {isReady && !atLim && (
+          <div className="mt-2 flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/15 border border-green-400/40 ring-1 ring-green-400/20 animate-pulse-once">
+            <span className="text-xl">⚡</span>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-green-300 leading-none">Pronto para disparar!</p>
+              <p className="text-[11px] text-green-500/80 mt-0.5">Cooldown encerrou — clique em Disparar para enviar a próxima mensagem.</p>
+            </div>
+            <button
+              onClick={clearReady}
+              className="text-green-600 hover:text-green-400 transition-colors p-1"
+              title="Fechar"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Status global de cooldown — one place, not per-row */}
         {(onCd || !isBusinessHours() || atLim) && (
