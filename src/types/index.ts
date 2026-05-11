@@ -238,7 +238,8 @@ export interface Lead {
   radarValueMax?: number
   radarAreaMin?: number
   radarBedrooms?: number
-  kanbanOrder?: number  // float para ordenação manual dentro da coluna (maior = primeiro)
+  kanbanOrder?: number      // float para ordenação manual dentro da coluna (maior = primeiro)
+  stageChangedAt?: string   // quando entrou na etapa atual — base para tempo em etapa
   createdAt: string
   updatedAt: string
 }

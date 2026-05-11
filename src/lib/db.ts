@@ -327,6 +327,7 @@ interface LeadRow {
   radar_area_min: number | null
   radar_bedrooms: number | null
   kanban_order: number | null
+  stage_changed_at: string | null
   created_at: string; updated_at: string
 }
 
@@ -355,6 +356,7 @@ function toLead(r: LeadRow): Lead {
     radarAreaMin: r.radar_area_min ?? undefined,
     radarBedrooms: r.radar_bedrooms ?? undefined,
     kanbanOrder: r.kanban_order ?? undefined,
+    stageChangedAt: r.stage_changed_at ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -382,6 +384,7 @@ function fromLead(l: Lead): LeadRow {
     radar_area_min: l.radarAreaMin ?? null,
     radar_bedrooms: l.radarBedrooms ?? null,
     kanban_order: l.kanbanOrder ?? null,
+    stage_changed_at: l.stageChangedAt ?? null,
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }
