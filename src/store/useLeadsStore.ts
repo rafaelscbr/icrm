@@ -4,6 +4,7 @@ import { generateId, localDateStr } from '../lib/formatters'
 import { db } from '../lib/db'
 import { useTasksStore } from './useTasksStore'
 import { useContactsStore } from './useContactsStore'
+import { useLeadInteractionsStore } from './useLeadInteractionsStore'
 
 interface LeadsStore {
   leads: Lead[]
@@ -25,6 +26,11 @@ interface LeadsStore {
   filterByOrigin: (origin: LeadOrigin | null) => Lead[]
   getActive: () => Lead[]
   getDiscarded: () => Lead[]
+}
+
+const STAGE_LABEL: Record<string, string> = {
+  lead: 'Leads', followup: 'Followup', atendimento: 'Atendimento',
+  visita: 'Visita', proposta: 'Proposta', venda: 'Venda',
 }
 
 export const useLeadsStore = create<LeadsStore>((set, get) => ({
@@ -130,6 +136,14 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     set({ leads })
     const updated = leads.find(l => l.id === id)
     if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] setStage:', err))
+
+    // Registra mudança de etapa no histórico de interações
+    useLeadInteractionsStore.getState().add({
+      leadId: id,
+      type: 'stage_change',
+      description: `Movido de ${STAGE_LABEL[lead.funnelStage] ?? lead.funnelStage} → ${STAGE_LABEL[stage] ?? stage}`,
+      interactedAt: now,
+    })
   },
 
   advanceFollowup: (id) => {
@@ -160,12 +174,23 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
   discard: (id, reason) => {
     const now = new Date().toISOString()
+    const lead = get().leads.find(l => l.id === id)
     const leads = get().leads.map(l =>
       l.id === id ? { ...l, discardReason: reason, discardedAt: now, updatedAt: now } : l
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
     if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] discard:', err))
+
+    // Registra descarte no histórico — preserva etapa de origem para análise de funil
+    if (lead) {
+      useLeadInteractionsStore.getState().add({
+        leadId: id,
+        type: 'discard',
+        description: `Descartado em ${STAGE_LABEL[lead.funnelStage] ?? lead.funnelStage} — ${reason}`,
+        interactedAt: now,
+      })
+    }
   },
 
   restore: (id) => {

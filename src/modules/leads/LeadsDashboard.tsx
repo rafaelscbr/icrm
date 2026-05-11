@@ -83,18 +83,35 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   // ── BLOCO 2 — Pipeline Estratégico ─────────────────────────────────────────
   const funnelStages = useMemo(() => {
     const all = [...active, ...discarded]
+
+    // Mapa: etapa → quantos foram descartados nela (via interaction type='discard')
+    const discardedByStage: Record<string, number> = {}
+    const allInteractions = Object.values(byLead).flat()
+    allInteractions
+      .filter(i => i.type === 'discard')
+      .forEach(i => {
+        // description: "Descartado em Atendimento — motivo"
+        const match = i.description?.match(/Descartado em ([^—]+)/)
+        if (match) {
+          const stageLabel = match[1].trim()
+          const stageKey = STAGES.find(s => STAGE_CONFIG[s].label === stageLabel) ?? stageLabel
+          discardedByStage[stageKey] = (discardedByStage[stageKey] ?? 0) + 1
+        }
+      })
+
     return STAGES.map((stage, i) => {
       const inStage   = active.filter(l => l.funnelStage === stage)
       const count     = inStage.length
       const vgv       = inStage.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
-      const parados   = inStage.filter(l => daysAgo(l.updatedAt) > 7).length
+      const parados   = inStage.filter(l => daysAgo(l.updatedAt) > 2).length
       // Leads que chegaram até esta etapa ou além (funil acumulado)
       const reached   = all.filter(l => STAGES.indexOf(l.funnelStage) >= i).length
       const reachedPrev = i === 0 ? all.length : all.filter(l => STAGES.indexOf(l.funnelStage) >= i - 1).length
       const dropRate  = reachedPrev > 0 ? Math.round(((reachedPrev - reached) / reachedPrev) * 100) : 0
-      return { stage, count, vgv, parados, dropRate, conf: STAGE_CONFIG[stage] }
+      const discardedHere = discardedByStage[stage] ?? 0
+      return { stage, count, vgv, parados, dropRate, discardedHere, conf: STAGE_CONFIG[stage] }
     })
-  }, [active, discarded])
+  }, [active, discarded, byLead])
 
   // ── BLOCO 3 — Priority Ranking ──────────────────────────────────────────────
   const priorityList = useMemo(() =>
@@ -169,7 +186,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       const inStage   = active.filter(l => l.funnelStage === stage)
       const cold      = inStage.filter(l => {
         const last = lastByLead[l.id]
-        return !last || daysAgo(last) > 3
+        return !last || daysAgo(last) > 2
       })
       const vgvAtRisk = cold.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
       const coldPct   = inStage.length > 0 ? (cold.length / inStage.length) * 100 : 0
@@ -264,7 +281,13 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                 {item.parados > 0 && item.stage !== 'venda' && (
                   <div className="flex items-center gap-1 mt-1">
                     <AlertTriangle size={9} className="text-amber-400 flex-shrink-0" />
-                    <span className="text-[10px] text-amber-400">{item.parados} parados</span>
+                    <span className="text-[10px] text-amber-400">{item.parados} esfriando</span>
+                  </div>
+                )}
+                {item.discardedHere > 0 && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <XCircle size={9} className="text-rose-400 flex-shrink-0" />
+                    <span className="text-[10px] text-rose-400">{item.discardedHere} saíram aqui</span>
                   </div>
                 )}
               </div>

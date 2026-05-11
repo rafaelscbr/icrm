@@ -24,7 +24,67 @@ import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsap
 import { GoalCategory } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useLeadsStore } from '../../store/useLeadsStore'
+import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { Megaphone, Zap, ThumbsUp } from 'lucide-react'
+
+// ─── Leads esfriando ─────────────────────────────────────────────────────────
+
+const COOLING_THRESHOLD_DAYS = 2
+
+function CoolingLeadsWidget({ onNavigate }: { onNavigate: () => void }) {
+  const { leads } = useLeadsStore()
+  const { byLead, loadAll } = useLeadInteractionsStore()
+
+  useEffect(() => { loadAll() }, [])
+
+  const coolingCount = useMemo(() => {
+    const active = leads.filter(l => !l.discardReason && l.funnelStage !== 'venda')
+    return active.filter(l => {
+      const interactions = byLead[l.id] ?? []
+      const lastAt = interactions[0]?.interactedAt
+      const ref = lastAt ?? l.createdAt
+      const days = (Date.now() - new Date(ref).getTime()) / 86_400_000
+      return days > COOLING_THRESHOLD_DAYS
+    }).length
+  }, [leads, byLead])
+
+  if (coolingCount === 0) return null
+
+  return (
+    <button
+      onClick={onNavigate}
+      className="w-full text-left rounded-2xl border border-sky-400/40 bg-gradient-to-br from-sky-500/10 to-blue-600/5 ring-1 ring-sky-400/20 p-6 mb-6 animate-slide-up hover:border-sky-400/60 hover:bg-sky-500/12 transition-all group"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-5">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-sky-500/15 border border-sky-400/25 flex items-center justify-center">
+              <Snowflake size={28} className="text-sky-400 animate-pulse" />
+            </div>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-sky-500/70 mb-1">
+              Leads esfriando
+            </p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-6xl font-black text-sky-300 tabular-nums leading-none">
+                {coolingCount}
+              </span>
+              <span className="text-base text-sky-400/70 font-medium">
+                sem interação há +{COOLING_THRESHOLD_DAYS} dias
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-sky-400/60 group-hover:text-sky-300 transition-colors">
+          <span className="text-xs font-medium">Ver no funil</span>
+          <ArrowRight size={14} />
+        </div>
+      </div>
+    </button>
+  )
+}
 
 // ─── Leads congelados ────────────────────────────────────────────────────────
 
@@ -494,12 +554,13 @@ export function DashboardPage() {
   const { goals, load: loadGoals } = useGoalsStore()
   const { load: loadCampaigns } = useCampaignsStore()
   const { load: loadLeads }     = useCampaignLeadsStore()
+  const { load: loadMyLeads }   = useLeadsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks(); loadGoals()
-    loadCampaigns(); loadLeads()
-  }, [loadContacts, loadProperties, loadSales, loadTasks, loadGoals, loadCampaigns, loadLeads])
+    loadCampaigns(); loadLeads(); loadMyLeads()
+  }, [loadContacts, loadProperties, loadSales, loadTasks, loadGoals, loadCampaigns, loadLeads, loadMyLeads])
 
   const periodLabel   = getLabel()
   const salesInPeriod = getByPeriod(startDate, endDate)
@@ -730,6 +791,9 @@ export function DashboardPage() {
           )}
         </Card>
       </div>
+
+      {/* Leads esfriando — métrica crítica, sempre no topo */}
+      <CoolingLeadsWidget onNavigate={() => navigate('/leads')} />
 
       {/* Tasks — atrasadas (sempre visíveis e chamativas) */}
       <OverdueCard

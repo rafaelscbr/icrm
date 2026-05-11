@@ -9,7 +9,7 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { MessageCircle, UserCheck, GripVertical, Phone, Flame } from 'lucide-react'
+import { MessageCircle, UserCheck, GripVertical, Phone, Flame, Snowflake } from 'lucide-react'
 import { Lead, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
@@ -35,6 +35,13 @@ const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 
 
 const ORIGIN_EMOJI: Record<string, string> = {
   felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝', campanha: '📣',
+}
+
+const COOLING_DAYS = 2
+
+function daysWithoutInteraction(lastInteractionAt?: string, createdAt?: string): number {
+  const ref = lastInteractionAt ?? createdAt ?? new Date().toISOString()
+  return (Date.now() - new Date(ref).getTime()) / 86_400_000
 }
 
 function effectiveOrder(lead: Lead): number {
@@ -75,6 +82,7 @@ function LeadCard({
   const displayPhone = contact?.phone ?? lead.phone
   const interactions = getForLead(lead.id)
   const lastInteraction = interactions[0] ?? null
+  const isCooling = !isOverlay && daysWithoutInteraction(lastInteraction?.interactedAt, lead.createdAt) > COOLING_DAYS
 
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
@@ -118,6 +126,11 @@ function LeadCard({
       {lead.flagged && (
         <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/50 z-10">
           <Flame size={10} className="text-white" />
+        </div>
+      )}
+      {isCooling && (
+        <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/50 z-10" title="Sem interação há +2 dias">
+          <Snowflake size={10} className="text-white" />
         </div>
       )}
 
