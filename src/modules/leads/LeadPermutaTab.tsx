@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { ArrowLeftRight, Car, Home, Save, Trash2, CheckCircle2 } from 'lucide-react'
-import { Lead, Contact } from '../../types'
+import { Contact } from '../../types'
 import { useContactsStore } from '../../store/useContactsStore'
 import { formatCurrencyFull } from '../../lib/formatters'
 
 interface LeadPermutaTabProps {
-  lead:    Lead
   contact: Contact | undefined
 }
 
@@ -21,7 +20,7 @@ function formatCurrencyInput(value: string): string {
   return Number(num).toLocaleString('pt-BR')
 }
 
-export function LeadPermutaTab({ lead, contact }: LeadPermutaTabProps) {
+export function LeadPermutaTab({ contact }: LeadPermutaTabProps) {
   const { update: updateContact } = useContactsStore()
 
   const [type,            setType]            = useState<'imovel' | 'carro'>(contact?.permutaType ?? 'imovel')

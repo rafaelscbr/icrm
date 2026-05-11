@@ -197,7 +197,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             ) : activeTab === 'radar' ? (
               <LeadRadarTab lead={lead} properties={properties} />
             ) : activeTab === 'permuta' ? (
-              <LeadPermutaTab lead={lead} contact={contact} />
+              <LeadPermutaTab contact={contact} />
             ) : (<>
 
             {/* Contatos */}
