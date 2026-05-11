@@ -13,6 +13,7 @@ import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone, whatsappUrl } from '../../lib/formatters'
 import { DAILY_WARN, DAILY_LIMIT, useDailyCounter } from './dailyCounter'
+import { useDisparosStore } from '../../store/useDisparosStore'
 import { DailyLimitBar } from './DailyLimitBar'
 import toast from 'react-hot-toast'
 
@@ -182,8 +183,9 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const sentinelQRef     = useRef<HTMLDivElement>(null)
   const sentinelCRef     = useRef<HTMLDivElement>(null)
 
-  const { remaining, start, isReady, clearReady } = useGlobalCooldown()
-  const { count: dailyCount, increment: dailyIncrement }  = useDailyCounter()
+  const { remaining, start, isReady, clearReady }        = useGlobalCooldown()
+  const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
+  const { increment: persistDisparo }                    = useDisparosStore()
 
   // ── Filtragem e agrupamento ───────────────────────────────────────────────
 
@@ -247,6 +249,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     clearReady()          // esconde o banner "pronto" ao iniciar novo disparo
     const secs  = start() // pede permissão de notificação + inicia cooldown
     const total = dailyIncrement()
+    persistDisparo()      // persiste no Supabase (fonte de verdade para metas)
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'
     markContacted(lead.id, msg, templateIndex)

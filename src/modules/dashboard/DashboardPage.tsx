@@ -23,7 +23,7 @@ import { useLeadsStore } from '../../store/useLeadsStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
-import { getDailySends, getWeeklySends, getMonthlySends } from '../campaigns/dailyCounter'
+import { useDisparosStore } from '../../store/useDisparosStore'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -127,6 +127,9 @@ function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
 function GoalsWidget() {
   const { getAllInteractions } = useLeadInteractionsStore()
   const { sales }             = useSalesStore()
+  const { countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
+
+  useEffect(() => { loadDisparos() }, [loadDisparos])
 
   const metrics = useMemo(() => {
     const all        = getAllInteractions()
@@ -143,12 +146,7 @@ function GoalsWidget() {
     const monthProp     = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
     const monthSales    = sales.filter(s => s.date >= monthStart.toISOString().slice(0, 10)).length
 
-    // Disparos lista fria — lidos do localStorage (registrado automaticamente ao clicar WhatsApp nas campanhas)
-    const disparosHoje    = getDailySends()
-    const disparosSemana  = getWeeklySends()
-    const disparosMes     = getMonthlySends()
-
-    return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales, disparosHoje, disparosSemana, disparosMes }
+    return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
   }, [getAllInteractions, sales])
 
   return (
@@ -169,7 +167,7 @@ function GoalsWidget() {
           <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Hoje</p>
           <div className="grid grid-cols-2 gap-3">
             <GoalCard label="Interações c/ leads"  value={metrics.daily}         target={DAILY_TARGET_INTERACTIONS} barColor="bg-blue-500"   />
-            <GoalCard label="Disparos lista fria"  value={metrics.disparosHoje}  target={DAILY_TARGET_DISPAROS}     barColor="bg-violet-500" />
+            <GoalCard label="Disparos lista fria"  value={disparosHoje}          target={DAILY_TARGET_DISPAROS}     barColor="bg-violet-500" />
           </div>
         </div>
 
@@ -179,7 +177,7 @@ function GoalsWidget() {
           <div className="grid grid-cols-3 gap-3">
             <GoalCard label="Visitas"         value={metrics.weekVisits}     target={WEEKLY_TARGET_VISITS}     barColor="bg-amber-500"  />
             <GoalCard label="Propostas"       value={metrics.weekProp}       target={WEEKLY_TARGET_PROPOSALS}  barColor="bg-orange-500" />
-            <GoalCard label="Disparos"        value={metrics.disparosSemana} target={WEEKLY_TARGET_DISPAROS}   barColor="bg-violet-500" />
+            <GoalCard label="Disparos"        value={disparosSemana}         target={WEEKLY_TARGET_DISPAROS}   barColor="bg-violet-500" />
           </div>
         </div>
 
@@ -190,7 +188,7 @@ function GoalsWidget() {
             <GoalCard label="Visitas"         value={metrics.monthVisits}    target={MONTHLY_TARGET_VISITS}    barColor="bg-amber-500"  />
             <GoalCard label="Propostas"       value={metrics.monthProp}      target={MONTHLY_TARGET_PROPOSALS} barColor="bg-orange-500" />
             <GoalCard label="Vendas"          value={metrics.monthSales}     target={MONTHLY_TARGET_SALES}     barColor="bg-green-500"  />
-            <GoalCard label="Disparos"        value={metrics.disparosMes}    target={MONTHLY_TARGET_DISPAROS}  barColor="bg-violet-500" />
+            <GoalCard label="Disparos"        value={disparosMes}            target={MONTHLY_TARGET_DISPAROS}  barColor="bg-violet-500" />
           </div>
         </div>
 

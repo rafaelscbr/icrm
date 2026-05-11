@@ -1,14 +1,12 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
 import { Card } from '../../components/ui/Card'
 import { CampaignLead } from '../../types'
-import {
-  getDailySends, getWeeklySends, getMonthlySends, getDisparosHistory,
-  DAILY_LIMIT,
-} from './dailyCounter'
+import { DAILY_LIMIT } from './dailyCounter'
+import { useDisparosStore } from '../../store/useDisparosStore'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -72,11 +70,9 @@ interface Props {
 
 export function CampaignPerformanceTab({ leads }: Props) {
 
-  // Leitura de disparos do localStorage (automático via clique WhatsApp)
-  const disparosHoje   = getDailySends()
-  const disparosSemana = getWeeklySends()
-  const disparosMes    = getMonthlySends()
-  const history        = getDisparosHistory(30)
+  // Disparos do Supabase (persistentes entre dispositivos e limpezas de cache)
+  const { countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes, history, load: loadDisparos } = useDisparosStore()
+  useEffect(() => { loadDisparos() }, [loadDisparos])
 
   // Interessados por dia (funnelStage === 'attended', agrupados por stageUpdatedAt)
   const intByDay = useMemo(() => {
