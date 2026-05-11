@@ -72,7 +72,7 @@ function LeadCard({
 }: {
   lead: Lead; onClick: () => void; isOverlay?: boolean
 }) {
-  const { advanceFollowup, toggleFlag } = useLeadsStore()
+  const { advanceFollowup, toggleFlag, update } = useLeadsStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { add: addInteraction, getForLead } = useLeadInteractionsStore()
@@ -193,12 +193,22 @@ function LeadCard({
             {[1, 2, 3, 4, 5].map(step => (
               <div
                 key={step}
-                className={`flex-1 h-1 rounded-full transition-all ${step <= lead.followupStep ? 'bg-blue-400' : 'bg-white/10'}`}
+                onClick={e => {
+                  e.stopPropagation()
+                  update(lead.id, { followupStep: lead.followupStep === step ? step - 1 : step })
+                  toast.success(`${lead.followupStep === step ? step - 1 : step}ª tentativa marcada`)
+                }}
+                title={`Marcar ${step}ª tentativa`}
+                className={`flex-1 h-2.5 rounded-full transition-all cursor-pointer hover:opacity-90 active:scale-95
+                  ${step <= lead.followupStep
+                    ? 'bg-blue-400 hover:bg-blue-300'
+                    : 'bg-white/10 hover:bg-blue-400/40'
+                  }`}
               />
             ))}
           </div>
           <p className="text-[10px] text-blue-400/70">
-            {lead.followupStep === 0 ? 'Aguardando 1ª msg' : `${lead.followupStep}ª de 5 msgs`}
+            {lead.followupStep === 0 ? 'Clique para marcar tentativas' : `${lead.followupStep}ª de 5 tentativas`}
           </p>
         </div>
       )}

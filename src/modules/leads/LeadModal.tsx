@@ -103,7 +103,7 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
-  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, leads } = useLeadsStore()
+  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, leads } = useLeadsStore()
   // Always read the live version from the store so edits are reflected immediately
   const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
 
@@ -356,17 +356,34 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             {/* Followup progress */}
             {lead.funnelStage === 'followup' && (
               <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3">
-                <p className="text-xs font-medium text-blue-300 mb-2">Progresso do Followup</p>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-blue-300">Tentativas de contato</p>
+                  <span className="text-[10px] text-blue-400/60">clique para marcar</span>
+                </div>
+                <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map(step => (
-                    <div
+                    <button
                       key={step}
-                      className={`flex-1 h-1.5 rounded-full transition-all ${step <= lead.followupStep ? 'bg-blue-400' : 'bg-white/10'}`}
-                    />
+                      onClick={() => {
+                        const next = lead.followupStep === step ? step - 1 : step
+                        update(lead.id, { followupStep: next })
+                        toast.success(`${next}ª tentativa marcada`)
+                      }}
+                      title={`Marcar ${step}ª tentativa`}
+                      className={`flex-1 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer border
+                        ${step <= lead.followupStep
+                          ? 'bg-blue-500/30 border-blue-400/40 text-blue-300 hover:bg-blue-500/50'
+                          : 'bg-white/5 border-white/10 text-slate-600 hover:bg-blue-500/15 hover:border-blue-400/30 hover:text-blue-400'
+                        }`}
+                    >
+                      {step}
+                    </button>
                   ))}
                 </div>
-                <p className="text-xs text-blue-400/70 mt-1.5">
-                  {lead.followupStep === 0 ? 'Nenhuma mensagem enviada' : `${lead.followupStep} de 5 mensagens enviadas`}
+                <p className="text-xs text-blue-400/70 mt-2">
+                  {lead.followupStep === 0
+                    ? 'Nenhuma tentativa registrada'
+                    : `${lead.followupStep} de 5 tentativas realizadas`}
                 </p>
               </div>
             )}
