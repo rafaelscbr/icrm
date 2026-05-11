@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Megaphone, Users, TrendingUp, Calendar, Pencil, Trash2, ArrowRight,
-  Play, Pause, CheckCheck, BarChart3
+  Play, Pause, CheckCheck, BarChart3, Zap
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -10,19 +10,23 @@ import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { CampaignForm } from './CampaignForm'
 import { CampaignDetail } from './CampaignDetail'
+import { CampaignPerformanceTab } from './CampaignPerformanceTab'
 import { DailyLimitBar } from './DailyLimitBar'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { Campaign } from '../../types'
 import { STATUS_CONFIG } from './config'
 
+type PageTab = 'campanhas' | 'performance'
+
 export function CampaignsPage() {
   const { campaigns, load: loadCampaigns, remove, setStatus } = useCampaignsStore()
   const { leads, load: loadLeads, removeForCampaign } = useCampaignLeadsStore()
 
-  const [selectedId,   setSelectedId]   = useState<string>('')
-  const [createOpen,   setCreateOpen]   = useState(false)
-  const [editCampaign, setEditCampaign] = useState<Campaign | undefined>()
+  const [selectedId,     setSelectedId]     = useState<string>('')
+  const [pageTab,        setPageTab]        = useState<PageTab>('campanhas')
+  const [createOpen,     setCreateOpen]     = useState(false)
+  const [editCampaign,   setEditCampaign]   = useState<Campaign | undefined>()
   const [deleteCampaign, setDeleteCampaign] = useState<Campaign | undefined>()
 
   useEffect(() => { loadCampaigns(); loadLeads() }, [loadCampaigns, loadLeads])
@@ -57,9 +61,36 @@ export function CampaignsPage() {
       onCta={() => setCreateOpen(true)}
     >
       {/* Barra de limite diário de disparos */}
-      <div className="mb-6">
+      <div className="mb-4">
         <DailyLimitBar />
       </div>
+
+      {/* Abas principais */}
+      <div className="flex items-center gap-1 mb-6 bg-white/3 border border-white/8 rounded-xl p-1 w-fit">
+        {([
+          { value: 'campanhas',   label: 'Campanhas',  icon: <Megaphone size={13} /> },
+          { value: 'performance', label: 'Performance', icon: <Zap       size={13} /> },
+        ] as { value: PageTab; label: string; icon: React.ReactNode }[]).map(t => (
+          <button
+            key={t.value}
+            onClick={() => setPageTab(t.value)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all
+              ${pageTab === t.value
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Aba Performance ── */}
+      {pageTab === 'performance' && (
+        <CampaignPerformanceTab leads={leads} />
+      )}
+
+      {/* ── Aba Campanhas ── */}
+      {pageTab === 'campanhas' && <>
 
       {/* Overview stats */}
       {campaigns.length > 0 && (
@@ -188,6 +219,8 @@ export function CampaignsPage() {
           })}
         </div>
       )}
+
+      </> /* fim aba campanhas */}
 
       <CampaignForm isOpen={createOpen}        onClose={() => setCreateOpen(false)}    />
       <CampaignForm isOpen={Boolean(editCampaign)} onClose={() => setEditCampaign(undefined)} campaign={editCampaign} />
