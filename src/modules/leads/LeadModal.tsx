@@ -14,6 +14,7 @@ import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
 import { LeadRadarTab } from './LeadRadarTab'
+import { LeadPermutaTab } from './LeadPermutaTab'
 import toast from 'react-hot-toast'
 
 const DISCARD_REASONS: { value: LeadDiscardReason; label: string; icon: string }[] = [
@@ -55,7 +56,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const { add: addInteraction } = useLeadInteractionsStore()
   const { properties } = usePropertiesStore()
 
-  const [activeTab, setActiveTab] = useState<'detalhes' | 'historico' | 'radar'>('detalhes')
+  const [activeTab, setActiveTab] = useState<'detalhes' | 'historico' | 'radar' | 'permuta'>('detalhes')
   const [showDiscard, setShowDiscard] = useState(false)
   const [selectedReason, setSelectedReason] = useState<LeadDiscardReason | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -169,17 +170,22 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
           {/* Tabs */}
           <div className="flex gap-1 px-5 pt-3 pb-0 border-b border-white/6">
-            {(['detalhes', 'historico', 'radar'] as const).map(tab => (
+            {(['detalhes', 'historico', 'radar', 'permuta'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-t-lg border-b-2 transition-all ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-t-lg border-b-2 transition-all whitespace-nowrap ${
                   activeTab === tab
-                    ? 'text-blue-400 border-blue-500'
+                    ? tab === 'permuta'
+                      ? 'text-orange-400 border-orange-500'
+                      : 'text-blue-400 border-blue-500'
                     : 'text-slate-500 border-transparent hover:text-slate-300'
                 }`}
               >
-                {tab === 'detalhes' ? 'Detalhes' : tab === 'historico' ? 'Histórico' : '🎯 Radar'}
+                {tab === 'detalhes' ? 'Detalhes'
+                  : tab === 'historico' ? 'Histórico'
+                  : tab === 'radar' ? '🎯 Radar'
+                  : '🔄 Permuta'}
               </button>
             ))}
           </div>
@@ -190,6 +196,8 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               <LeadTimeline leadId={lead.id} />
             ) : activeTab === 'radar' ? (
               <LeadRadarTab lead={lead} properties={properties} />
+            ) : activeTab === 'permuta' ? (
+              <LeadPermutaTab lead={lead} contact={contact} />
             ) : (<>
 
             {/* Contatos */}
