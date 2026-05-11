@@ -17,7 +17,7 @@ interface LeadsStore {
   advanceFollowup: (id: string) => void
   discard: (id: string, reason: LeadDiscardReason) => void
   restore: (id: string) => void
-  convertToContact: (id: string, contactId: string) => void
+  convertToContact: (id: string, contactId: string) => Promise<void>
   toggleFlag: (id: string) => void
   reorder: (id: string, kanbanOrder: number) => void
   search: (query: string) => Lead[]
@@ -178,13 +178,16 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] restore:', err))
   },
 
-  convertToContact: (id, contactId) => {
+  convertToContact: async (id, contactId) => {
     const now = new Date().toISOString()
     const leads = get().leads.map(l =>
-      l.id === id ? { ...l, contactId, convertedAt: now, updatedAt: now } : l
+      l.id === id ? { ...l, contactId, convertedAt: now, updatedAt: now, kanbanOrder: Date.now() } : l
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
+    // Garante que o contato existe no banco antes de salvar o lead (evita FK violation)
+    const contact = useContactsStore.getState().getById(contactId)
+    if (contact) await db.contacts.upsert(contact).catch(err => console.error('[leads] convertToContact - contact upsert:', err))
     if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] convertToContact:', err))
   },
 
