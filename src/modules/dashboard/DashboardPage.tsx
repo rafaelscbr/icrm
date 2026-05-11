@@ -127,6 +127,7 @@ function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
 function GoalsWidget() {
   const { getAllInteractions } = useLeadInteractionsStore()
   const { sales }             = useSalesStore()
+  const { tasks }             = useTasksStore()
   const { countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
 
   useEffect(() => { loadDisparos() }, [loadDisparos])
@@ -140,14 +141,23 @@ function GoalsWidget() {
     const daily         = all.filter(i => REAL_TYPES.has(i.type) && i.interactedAt.slice(0, 10) === today).length
     const weekInteract  = all.filter(i => new Date(i.interactedAt) >= weekStart)
     const monthInteract = all.filter(i => new Date(i.interactedAt) >= monthStart)
-    const weekVisits    = weekInteract.filter(i  => i.type === 'stage_change' && i.description?.includes('→ Visita')).length
-    const weekProp      = weekInteract.filter(i  => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
-    const monthVisits   = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Visita')).length
     const monthProp     = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
+    const weekProp      = weekInteract.filter(i  => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
     const monthSales    = sales.filter(s => s.date >= monthStart.toISOString().slice(0, 10)).length
 
+    // Visitas = tarefas concluídas com categoria 'visita', usando completedAt (ou dueDate como fallback)
+    const visitasDone = tasks.filter(t => t.done && t.category === 'visita')
+    const weekVisits  = visitasDone.filter(t => {
+      const d = t.completedAt ?? t.dueDate
+      return d && new Date(d) >= weekStart
+    }).length
+    const monthVisits = visitasDone.filter(t => {
+      const d = t.completedAt ?? t.dueDate
+      return d && new Date(d) >= monthStart
+    }).length
+
     return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
-  }, [getAllInteractions, sales])
+  }, [getAllInteractions, sales, tasks])
 
   return (
     <div className="rounded-xl border border-white/8 bg-[#0D1117] overflow-hidden mb-6 animate-slide-up">
