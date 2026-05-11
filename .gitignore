@@ -1,1 +1,5 @@
 node_modules
+.claude/worktrees/
+dist
+dev-dist
+.DS_Store
