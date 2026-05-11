@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown,
-  ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight,
+  ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight, ArrowLeftRight,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import logoLight from '../../assets/logo.png'
@@ -23,8 +23,9 @@ const navSections = [
       { to: '/leads',     icon: UserPlus,   label: 'Leads',      end: false },
       { to: '/contatos',  icon: Users,      label: 'Contatos',   end: false },
       { to: '/imoveis',   icon: Building2,  label: 'Imóveis',    end: false },
-      { to: '/vendas',    icon: TrendingUp, label: 'Vendas',     end: false },
-      { to: '/campanhas', icon: Megaphone,  label: 'Campanhas',  end: false },
+      { to: '/vendas',    icon: TrendingUp,    label: 'Vendas',     end: false },
+      { to: '/campanhas', icon: Megaphone,    label: 'Campanhas',  end: false },
+      { to: '/permuta',   icon: ArrowLeftRight, label: 'Permuta',  end: false },
     ],
   },
   {

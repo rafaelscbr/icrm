@@ -15,6 +15,7 @@ import { GoalsPage } from './modules/goals/GoalsPage'
 import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
 import { CampaignsPage } from './modules/campaigns/CampaignsPage'
 import { LeadsPage } from './modules/leads/LeadsPage'
+import { PermutaPage } from './modules/permuta/PermutaPage'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -61,6 +62,7 @@ function AppRoutes() {
             <Route path="/campanhas" element={<PageWrapper><CampaignsPage /></PageWrapper>} />
             <Route path="/leads" element={<PageWrapper><LeadsPage /></PageWrapper>} />
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
+            <Route path="/permuta" element={<PageWrapper><PermutaPage /></PageWrapper>} />
           </Routes>
         </main>
         <BottomNav />
