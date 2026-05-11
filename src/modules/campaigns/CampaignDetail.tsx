@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowLeft, Upload, Pencil, LayoutGrid, List, BarChart3, Pause, Play, CheckCheck, TrendingUp
+  ArrowLeft, Upload, Pencil, LayoutGrid, List, BarChart3, Pause, Play, CheckCheck, TrendingUp, Zap
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { CampaignForm } from './CampaignForm'
@@ -9,11 +9,12 @@ import { LeadsTab } from './LeadsTab'
 import { KanbanTab } from './KanbanTab'
 import { MetricsTab } from './MetricsTab'
 import { ForecastTab } from './ForecastTab'
+import { CampaignPerformanceTab } from './CampaignPerformanceTab'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { STATUS_CONFIG } from './config'
 
-type Tab = 'leads' | 'kanban' | 'metrics' | 'forecast'
+type Tab = 'leads' | 'kanban' | 'metrics' | 'forecast' | 'performance'
 
 interface CampaignDetailProps {
   campaignId: string
@@ -21,10 +22,11 @@ interface CampaignDetailProps {
 }
 
 const TABS: { value: Tab; label: string; icon: typeof List }[] = [
-  { value: 'leads',    label: 'Leads',      icon: List       },
-  { value: 'kanban',   label: 'Kanban',      icon: LayoutGrid },
-  { value: 'metrics',  label: 'Métricas',    icon: BarChart3  },
-  { value: 'forecast', label: 'Previsão VGV', icon: TrendingUp },
+  { value: 'leads',       label: 'Leads',        icon: List       },
+  { value: 'kanban',      label: 'Kanban',        icon: LayoutGrid },
+  { value: 'metrics',     label: 'Métricas',      icon: BarChart3  },
+  { value: 'forecast',    label: 'Previsão VGV',  icon: TrendingUp },
+  { value: 'performance', label: 'Performance',   icon: Zap        },
 ]
 
 export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
@@ -152,10 +154,11 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
 
       {/* Content */}
       <div className="flex-1 p-6">
-        {tab === 'leads'    && <LeadsTab    leads={campaignLeads} campaign={campaign} stickyTop={headerH} />}
-        {tab === 'kanban'   && <KanbanTab   leads={campaignLeads} campaign={campaign} />}
-        {tab === 'metrics'  && <MetricsTab  leads={campaignLeads} campaign={campaign} />}
-        {tab === 'forecast' && <ForecastTab leads={campaignLeads} campaign={campaign} />}
+        {tab === 'leads'       && <LeadsTab               leads={campaignLeads} campaign={campaign} stickyTop={headerH} />}
+        {tab === 'kanban'      && <KanbanTab              leads={campaignLeads} campaign={campaign} />}
+        {tab === 'metrics'     && <MetricsTab             leads={campaignLeads} campaign={campaign} />}
+        {tab === 'forecast'    && <ForecastTab            leads={campaignLeads} campaign={campaign} />}
+        {tab === 'performance' && <CampaignPerformanceTab leads={campaignLeads} />}
       </div>
 
       <CampaignForm isOpen={editOpen}   onClose={() => setEditOpen(false)}   campaign={campaign} />

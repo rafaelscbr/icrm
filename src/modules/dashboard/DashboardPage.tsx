@@ -23,7 +23,7 @@ import { useLeadsStore } from '../../store/useLeadsStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
-import { useDisparosStore } from '../../store/useDisparosStore'
+import { getDailySends, getWeeklySends, getMonthlySends } from '../campaigns/dailyCounter'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -31,13 +31,15 @@ import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsap
 const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
 const COOLING_DAYS = 2
 
-const DAILY_TARGET_INTERACTIONS = 10
-const DAILY_TARGET_DISPAROS     = 30
-const WEEKLY_TARGET_VISITS    = 2
-const WEEKLY_TARGET_PROPOSALS = 1
-const MONTHLY_TARGET_VISITS    = 8
-const MONTHLY_TARGET_PROPOSALS = 4
-const MONTHLY_TARGET_SALES     = 2
+const DAILY_TARGET_INTERACTIONS  = 10
+const DAILY_TARGET_DISPAROS      = 30
+const WEEKLY_TARGET_VISITS       = 2
+const WEEKLY_TARGET_PROPOSALS    = 1
+const WEEKLY_TARGET_DISPAROS     = 150   // 30 × 5 dias úteis
+const MONTHLY_TARGET_VISITS      = 8
+const MONTHLY_TARGET_PROPOSALS   = 4
+const MONTHLY_TARGET_SALES       = 2
+const MONTHLY_TARGET_DISPAROS    = 600   // 30 × 5 × 4 semanas
 
 const STAGE_LABELS: Partial<Record<LeadFunnelStage, { label: string; color: string }>> = {
   lead:        { label: 'Lead',        color: 'text-slate-400'  },
@@ -125,7 +127,6 @@ function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
 function GoalsWidget() {
   const { getAllInteractions } = useLeadInteractionsStore()
   const { sales }             = useSalesStore()
-  const { count: disparos, increment: addDisparo, decrement: removeDisparo } = useDisparosStore()
 
   const metrics = useMemo(() => {
     const all        = getAllInteractions()
@@ -141,7 +142,13 @@ function GoalsWidget() {
     const monthVisits   = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Visita')).length
     const monthProp     = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
     const monthSales    = sales.filter(s => s.date >= monthStart.toISOString().slice(0, 10)).length
-    return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
+
+    // Disparos lista fria — lidos do localStorage (registrado automaticamente ao clicar WhatsApp nas campanhas)
+    const disparosHoje    = getDailySends()
+    const disparosSemana  = getWeeklySends()
+    const disparosMes     = getMonthlySends()
+
+    return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales, disparosHoje, disparosSemana, disparosMes }
   }, [getAllInteractions, sales])
 
   return (
@@ -156,38 +163,37 @@ function GoalsWidget() {
         </div>
       </div>
       <div className="p-4 space-y-4">
+
         {/* Hoje */}
         <div>
           <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Hoje</p>
           <div className="grid grid-cols-2 gap-3">
-            <GoalCard label="Interações com leads" value={metrics.daily}  target={DAILY_TARGET_INTERACTIONS} barColor="bg-blue-500" />
-            <GoalCard
-              label="Disparos lista fria"
-              value={disparos}
-              target={DAILY_TARGET_DISPAROS}
-              barColor="bg-violet-500"
-              onAdd={addDisparo}
-              onRemove={removeDisparo}
-            />
+            <GoalCard label="Interações c/ leads"  value={metrics.daily}         target={DAILY_TARGET_INTERACTIONS} barColor="bg-blue-500"   />
+            <GoalCard label="Disparos lista fria"  value={metrics.disparosHoje}  target={DAILY_TARGET_DISPAROS}     barColor="bg-violet-500" />
           </div>
         </div>
+
         {/* Semana */}
         <div>
           <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Esta semana</p>
-          <div className="grid grid-cols-2 gap-3">
-            <GoalCard label="Visitas"   value={metrics.weekVisits} target={WEEKLY_TARGET_VISITS}    barColor="bg-amber-500"  />
-            <GoalCard label="Propostas" value={metrics.weekProp}   target={WEEKLY_TARGET_PROPOSALS} barColor="bg-orange-500" />
+          <div className="grid grid-cols-3 gap-3">
+            <GoalCard label="Visitas"         value={metrics.weekVisits}     target={WEEKLY_TARGET_VISITS}     barColor="bg-amber-500"  />
+            <GoalCard label="Propostas"       value={metrics.weekProp}       target={WEEKLY_TARGET_PROPOSALS}  barColor="bg-orange-500" />
+            <GoalCard label="Disparos"        value={metrics.disparosSemana} target={WEEKLY_TARGET_DISPAROS}   barColor="bg-violet-500" />
           </div>
         </div>
+
         {/* Mês */}
         <div>
           <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Este mês</p>
-          <div className="grid grid-cols-3 gap-3">
-            <GoalCard label="Visitas"   value={metrics.monthVisits} target={MONTHLY_TARGET_VISITS}    barColor="bg-amber-500"  />
-            <GoalCard label="Propostas" value={metrics.monthProp}   target={MONTHLY_TARGET_PROPOSALS} barColor="bg-orange-500" />
-            <GoalCard label="Vendas"    value={metrics.monthSales}  target={MONTHLY_TARGET_SALES}     barColor="bg-green-500"  />
+          <div className="grid grid-cols-2 gap-3">
+            <GoalCard label="Visitas"         value={metrics.monthVisits}    target={MONTHLY_TARGET_VISITS}    barColor="bg-amber-500"  />
+            <GoalCard label="Propostas"       value={metrics.monthProp}      target={MONTHLY_TARGET_PROPOSALS} barColor="bg-orange-500" />
+            <GoalCard label="Vendas"          value={metrics.monthSales}     target={MONTHLY_TARGET_SALES}     barColor="bg-green-500"  />
+            <GoalCard label="Disparos"        value={metrics.disparosMes}    target={MONTHLY_TARGET_DISPAROS}  barColor="bg-violet-500" />
           </div>
         </div>
+
       </div>
     </div>
   )
