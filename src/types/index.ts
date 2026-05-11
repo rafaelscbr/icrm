@@ -1,5 +1,17 @@
 export type ContactTag = 'owner' | 'investor' | 'buyer'
 
+// Um único bem que o contato quer dar em permuta
+export interface PermutaItem {
+  id: string
+  type: 'imovel' | 'carro'
+  // campos de imóvel
+  region?: string
+  value?: number
+  // campos de carro
+  carModel?: string
+  carValue?: number
+}
+
 export interface Contact {
   id: string
   name: string
@@ -12,12 +24,8 @@ export interface Contact {
   childrenNames?: string
   isMarried: boolean
   spouseName?: string
-  // Permuta
-  permutaType?: 'imovel' | 'carro'
-  permutaPropertyRegion?: string
-  permutaPropertyValue?: number
-  permutaCarModel?: string
-  permutaCarValue?: number
+  // Permuta — lista de bens para permuta (imóveis e/ou carros)
+  permutaItems: PermutaItem[]
   createdAt: string
   updatedAt: string
 }

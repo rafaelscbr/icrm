@@ -109,6 +109,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       childrenNames: undefined,
       isMarried: false,
       spouseName: undefined,
+      permutaItems: [],
     })
     convertToContact(lead.id, newContact.id)
     toast.success('Lead convertido em contato!')
@@ -268,26 +269,25 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             )}
 
             {/* Permuta */}
-            {contact?.permutaType && (
+            {(contact?.permutaItems?.length ?? 0) > 0 && (
               <div className="bg-orange-500/8 border border-orange-500/20 rounded-xl p-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-xs font-semibold text-orange-300 flex items-center gap-1.5">
-                    <ArrowLeftRight size={11} /> Permuta
-                  </p>
+                <p className="text-xs font-semibold text-orange-300 flex items-center gap-1.5 mb-2">
+                  <ArrowLeftRight size={11} /> Permuta
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {contact!.permutaItems.map(item => (
+                    <div key={item.id} className="flex items-start gap-2">
+                      <span className="text-sm">{item.type === 'imovel' ? '🏠' : '🚗'}</span>
+                      <div className="text-xs text-slate-300">
+                        {item.type === 'imovel' ? (
+                          <>{item.region && <span>{item.region}</span>}{item.region && item.value && ' · '}{item.value && <span className="text-violet-400 font-semibold">{formatCurrencyFull(item.value)}</span>}</>
+                        ) : (
+                          <>{item.carModel && <span>{item.carModel}</span>}{item.carModel && item.carValue && ' · '}{item.carValue && <span className="text-violet-400 font-semibold">{formatCurrencyFull(item.carValue)}</span>}</>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {contact.permutaType === 'imovel' ? (
-                  <>
-                    <p className="text-sm text-slate-200">🏠 Imóvel para permutar</p>
-                    {contact.permutaPropertyRegion && <p className="text-xs text-slate-400 mt-0.5">Região: {contact.permutaPropertyRegion}</p>}
-                    {contact.permutaPropertyValue && <p className="text-xs text-violet-400 font-semibold mt-0.5">{formatCurrencyFull(contact.permutaPropertyValue)}</p>}
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-slate-200">🚗 Carro para permutar</p>
-                    {contact.permutaCarModel && <p className="text-xs text-slate-400 mt-0.5">{contact.permutaCarModel}</p>}
-                    {contact.permutaCarValue && <p className="text-xs text-violet-400 font-semibold mt-0.5">{formatCurrencyFull(contact.permutaCarValue)}</p>}
-                  </>
-                )}
               </div>
             )}
 

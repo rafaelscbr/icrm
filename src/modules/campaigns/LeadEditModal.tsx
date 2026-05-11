@@ -52,7 +52,7 @@ export function LeadEditModal({ isOpen, onClose, lead }: LeadEditModalProps) {
     const digits = phone.replace(/\D/g, '')
     const exists = contacts.some(c => c.phone.replace(/\D/g, '') === digits)
     if (exists) { toast.error('Já existe um contato com esse telefone.'); return }
-    addContact({ name: name.trim() || lead.name, phone: phone.trim() || lead.phone, tags: [], hasChildren: false, isMarried: false })
+    addContact({ name: name.trim() || lead.name, phone: phone.trim() || lead.phone, tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
     toast.success(`${name || lead.name} adicionado aos contatos!`)
     onClose()
   }

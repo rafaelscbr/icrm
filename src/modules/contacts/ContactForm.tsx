@@ -80,6 +80,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
       spouseName:    isMarried ? spouseName.trim() : undefined,
       hasChildren,
       childrenNames: hasChildren ? childrenNames.trim() : undefined,
+      permutaItems:  contact?.permutaItems ?? [],
     }
 
     if (isEditing && contact) {

@@ -4,7 +4,7 @@ import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
   LeadInteraction, LeadInteractionType, LeadInteractionOutcome,
-  LeadConfigEntry, LeadConfigType,
+  LeadConfigEntry, LeadConfigType, PermutaItem,
 } from '../types'
 
 // ─── Row types (snake_case vindos do Supabase) ────────────────────────────────
@@ -14,6 +14,9 @@ interface ContactRow {
   company: string | null; birthdate: string | null; photo_url: string | null
   tags: string[]; has_children: boolean; children_names: string | null
   is_married: boolean; spouse_name: string | null
+  // novo: array de itens de permuta (JSONB)
+  permuta_items: PermutaItem[] | null
+  // legado: mantidos no banco para migração transparente
   permuta_type: string | null
   permuta_property_region: string | null
   permuta_property_value: number | null
@@ -83,17 +86,30 @@ interface CampaignLeadRow {
 // ─── Mappers: row → tipo do app ───────────────────────────────────────────────
 
 function toContact(r: ContactRow): Contact {
+  // Prioriza novo campo JSONB; faz migração transparente dos campos legados
+  let permutaItems: PermutaItem[] = []
+  if (r.permuta_items && r.permuta_items.length > 0) {
+    permutaItems = r.permuta_items
+  } else if (r.permuta_type) {
+    // migra dado antigo (campo único) para o novo formato (array)
+    const legacy: PermutaItem = {
+      id: `legacy-${r.id}`,
+      type: r.permuta_type as 'imovel' | 'carro',
+      region: r.permuta_property_region ?? undefined,
+      value: r.permuta_property_value ?? undefined,
+      carModel: r.permuta_car_model ?? undefined,
+      carValue: r.permuta_car_value ?? undefined,
+    }
+    permutaItems = [legacy]
+  }
+
   return {
     id: r.id, name: r.name, phone: r.phone,
     company: r.company ?? undefined, birthdate: r.birthdate ?? undefined,
     photoUrl: r.photo_url ?? undefined, tags: r.tags as ContactTag[],
     hasChildren: r.has_children, childrenNames: r.children_names ?? undefined,
     isMarried: r.is_married, spouseName: r.spouse_name ?? undefined,
-    permutaType: (r.permuta_type as Contact['permutaType']) ?? undefined,
-    permutaPropertyRegion: r.permuta_property_region ?? undefined,
-    permutaPropertyValue: r.permuta_property_value ?? undefined,
-    permutaCarModel: r.permuta_car_model ?? undefined,
-    permutaCarValue: r.permuta_car_value ?? undefined,
+    permutaItems,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -105,11 +121,13 @@ function fromContact(c: Contact): ContactRow {
     photo_url: c.photoUrl ?? null, tags: c.tags,
     has_children: c.hasChildren, children_names: c.childrenNames ?? null,
     is_married: c.isMarried, spouse_name: c.spouseName ?? null,
-    permuta_type: c.permutaType ?? null,
-    permuta_property_region: c.permutaPropertyRegion ?? null,
-    permuta_property_value: c.permutaPropertyValue ?? null,
-    permuta_car_model: c.permutaCarModel ?? null,
-    permuta_car_value: c.permutaCarValue ?? null,
+    permuta_items: c.permutaItems.length > 0 ? c.permutaItems : null,
+    // nulifica campos legados ao salvar no novo modelo
+    permuta_type: null,
+    permuta_property_region: null,
+    permuta_property_value: null,
+    permuta_car_model: null,
+    permuta_car_value: null,
     created_at: c.createdAt, updated_at: c.updatedAt,
   }
 }

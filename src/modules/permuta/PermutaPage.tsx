@@ -1,178 +1,242 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeftRight, Home, Car, Building2, Users, Zap, ChevronRight, Search } from 'lucide-react'
+import {
+  ArrowLeftRight, Home, Car, Building2, Users, Zap, ChevronRight,
+  Search, ChevronDown, BedDouble, Maximize2,
+} from 'lucide-react'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { formatCurrencyFull } from '../../lib/formatters'
-import { Contact, Property } from '../../types'
+import { Contact, PermutaItem, Property } from '../../types'
 
 // ─── Matching logic ───────────────────────────────────────────────────────────
 
 interface PermutaMatch {
   contact: Contact
+  item: PermutaItem           // qual bem do contato foi usado no match
   property: Property
   score: number
   reasons: string[]
 }
 
-function matchContactToProperty(contact: Contact, property: Property): PermutaMatch | null {
+function matchItemToProperty(contact: Contact, item: PermutaItem, property: Property): PermutaMatch | null {
   if (!property.acceptsPermuta) return null
-  if (!contact.permutaType) return null
 
   const reasons: string[] = []
   let score = 0
 
-  // Type match
-  const wantsImovel = contact.permutaType === 'imovel'
-  const wantsCarro  = contact.permutaType === 'carro'
   const propAccepts = property.permutaTypes ?? []
 
-  if (wantsImovel && propAccepts.includes('imovel')) {
+  // Type match
+  if (propAccepts.includes(item.type)) {
     score += 2
-    reasons.push('Aceita imóvel em permuta')
-  } else if (wantsCarro && propAccepts.includes('carro')) {
-    score += 2
-    reasons.push('Aceita carro em permuta')
+    reasons.push(item.type === 'imovel' ? 'Aceita imóvel em permuta' : 'Aceita carro em permuta')
   } else if (propAccepts.length === 0) {
-    // property accepts any permuta type — partial match
     score += 1
     reasons.push('Aceita permuta (tipo flexível)')
   } else {
-    return null // type mismatch, no match
+    return null // tipo incompatível
   }
 
-  // Region match (for imovel)
-  if (wantsImovel && contact.permutaPropertyRegion) {
+  // Region match (imovel only)
+  if (item.type === 'imovel' && item.region) {
     const propRegions = property.permutaRegions ?? []
-    const contactRegion = contact.permutaPropertyRegion.toLowerCase()
-    const regionMatch = propRegions.some(r => r.toLowerCase().includes(contactRegion) || contactRegion.includes(r.toLowerCase()))
-    if (regionMatch) {
+    const q = item.region.toLowerCase()
+    const hit = propRegions.some(r => r.toLowerCase().includes(q) || q.includes(r.toLowerCase()))
+    if (hit) {
       score += 2
-      reasons.push(`Região compatível (${contact.permutaPropertyRegion})`)
+      reasons.push(`Região compatível (${item.region})`)
     }
   }
 
-  // Value match (contact's offer value vs property value range ±30%)
-  const contactValue = wantsImovel ? contact.permutaPropertyValue : contact.permutaCarValue
-  if (contactValue && property.value) {
+  // Value match ±40%
+  const offerValue = item.type === 'imovel' ? item.value : item.carValue
+  if (offerValue && property.value) {
     const min = property.value * 0.6
     const max = property.value * 1.4
-    if (contactValue >= min && contactValue <= max) {
+    if (offerValue >= min && offerValue <= max) {
       score += 2
-      reasons.push(`Valor compatível (${formatCurrencyFull(contactValue)} vs ${formatCurrencyFull(property.value)})`)
-    } else if (contactValue >= property.value * 0.4 && contactValue <= property.value * 2) {
+      reasons.push(`Valor compatível (${formatCurrencyFull(offerValue)} vs ${formatCurrencyFull(property.value)})`)
+    } else if (offerValue >= property.value * 0.4 && offerValue <= property.value * 2) {
       score += 1
-      reasons.push(`Valor aproximado (${formatCurrencyFull(contactValue)})`)
+      reasons.push(`Valor aproximado (${formatCurrencyFull(offerValue)})`)
     }
   }
 
   if (score === 0) return null
 
-  return { contact, property, score, reasons }
+  return { contact, item, property, score, reasons }
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const TYPE_LABELS: Record<string, string> = {
+  apartment:        'Apartamento',
+  apartment_duplex: 'Apt. Duplex',
+  penthouse_duplex: 'Cobertura',
+  house:            'Casa',
+  commercial:       'Comercial',
+  land:             'Terreno',
+}
+
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
 
 function ScoreBadge({ score }: { score: number }) {
-  const color =
+  const cls =
     score >= 5 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
     score >= 3 ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
                  'bg-white/8 text-slate-400 border-white/10'
   const label =
     score >= 5 ? 'Ótimo match' :
-    score >= 3 ? 'Bom match' :
-                 'Match parcial'
+    score >= 3 ? 'Bom match' : 'Match parcial'
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${color}`}>
+    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
       {label} · {score}pts
     </span>
   )
 }
 
-function ContactCard({ contact }: { contact: Contact }) {
-  const hasImovel = contact.permutaType === 'imovel'
+function PropertyDetails({ property }: { property: Property }) {
   return (
-    <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex items-start gap-3">
-      <div className="w-8 h-8 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
-        {hasImovel
-          ? <Home size={14} className="text-orange-400" />
-          : <Car size={14} className="text-orange-400" />
-        }
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-200 truncate">{contact.name}</p>
-        <p className="text-xs text-slate-500 truncate">{contact.phone}</p>
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">
-            {hasImovel ? 'Imóvel' : 'Carro'}
-          </span>
-          {hasImovel && contact.permutaPropertyRegion && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-              {contact.permutaPropertyRegion}
-            </span>
-          )}
-          {!hasImovel && contact.permutaCarModel && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-              {contact.permutaCarModel}
-            </span>
-          )}
-          {(hasImovel ? contact.permutaPropertyValue : contact.permutaCarValue) && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-              {formatCurrencyFull(hasImovel ? contact.permutaPropertyValue! : contact.permutaCarValue!)}
-            </span>
-          )}
+    <div className="mt-2 pt-2 border-t border-white/8 flex flex-wrap gap-x-4 gap-y-1">
+      {property.neighborhood && (
+        <span className="text-[11px] text-slate-400">
+          📍 <span className="text-slate-300">{property.neighborhood}</span>
+        </span>
+      )}
+      {property.city && (
+        <span className="text-[11px] text-slate-400">
+          🏙️ <span className="text-slate-300">{property.city}</span>
+        </span>
+      )}
+      {property.type && (
+        <span className="text-[11px] text-slate-400">
+          🏗️ <span className="text-slate-300">{TYPE_LABELS[property.type] ?? property.type}</span>
+        </span>
+      )}
+      {property.bedrooms !== undefined && (
+        <span className="text-[11px] text-slate-400 flex items-center gap-1">
+          <BedDouble size={10} className="text-slate-500" />
+          <span className="text-slate-300">{property.bedrooms} dorm.</span>
+        </span>
+      )}
+      {property.suites !== undefined && (
+        <span className="text-[11px] text-slate-400">
+          🛁 <span className="text-slate-300">{property.suites} suíte{property.suites !== 1 ? 's' : ''}</span>
+        </span>
+      )}
+      {property.areaSqm !== undefined && (
+        <span className="text-[11px] text-slate-400 flex items-center gap-1">
+          <Maximize2 size={10} className="text-slate-500" />
+          <span className="text-slate-300">{property.areaSqm} m²</span>
+        </span>
+      )}
+      {property.condoFee !== undefined && property.condoFee > 0 && (
+        <span className="text-[11px] text-slate-400">
+          🏢 Cond. <span className="text-slate-300">{formatCurrencyFull(property.condoFee)}/mês</span>
+        </span>
+      )}
+      {property.notes && (
+        <p className="w-full text-[11px] text-slate-500 italic mt-0.5">"{property.notes}"</p>
+      )}
+    </div>
+  )
+}
+
+function ContactCard({ contact }: { contact: Contact }) {
+  const items = contact.permutaItems ?? []
+  return (
+    <div className="bg-white/3 border border-white/8 rounded-xl p-3">
+      <div className="flex items-center gap-2.5 mb-2">
+        <div className="w-7 h-7 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+          <Users size={13} className="text-orange-400" />
         </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-200 truncate">{contact.name}</p>
+          <p className="text-xs text-slate-500 truncate">{contact.phone}</p>
+        </div>
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-semibold flex-shrink-0">
+          {items.length} item{items.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {items.map(item => (
+          <div key={item.id} className="flex items-start gap-2 bg-white/3 rounded-lg px-2.5 py-1.5">
+            <span className="flex-shrink-0 mt-0.5">
+              {item.type === 'imovel' ? <Home size={11} className="text-indigo-400" /> : <Car size={11} className="text-amber-400" />}
+            </span>
+            <div className="flex-1 min-w-0 text-[11px]">
+              {item.type === 'imovel' ? (
+                <span className="text-slate-300">
+                  {item.region && `${item.region}`}{item.region && item.value && ' · '}{item.value && formatCurrencyFull(item.value)}
+                  {!item.region && !item.value && <span className="text-slate-600">Imóvel (sem detalhes)</span>}
+                </span>
+              ) : (
+                <span className="text-slate-300">
+                  {item.carModel && `${item.carModel}`}{item.carModel && item.carValue && ' · '}{item.carValue && formatCurrencyFull(item.carValue)}
+                  {!item.carModel && !item.carValue && <span className="text-slate-600">Carro (sem detalhes)</span>}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
 }
 
 function PropertyCard({ property }: { property: Property }) {
+  const [expanded, setExpanded] = useState(false)
   return (
-    <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex items-start gap-3">
-      <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
-        <Building2 size={14} className="text-violet-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-200 truncate">{property.name}</p>
-        <p className="text-xs text-slate-500 truncate">{property.neighborhood}</p>
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20 font-medium">
-            {formatCurrencyFull(property.value)}
-          </span>
-          {(property.permutaTypes ?? []).map(t => (
-            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-              {t === 'imovel' ? 'Aceita imóvel' : 'Aceita carro'}
-            </span>
-          ))}
-          {(property.permutaRegions ?? []).slice(0, 2).map(r => (
-            <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-              {r}
-            </span>
-          ))}
+    <div className="bg-white/3 border border-white/8 rounded-xl p-3">
+      <div className="flex items-start gap-3">
+        <div className="w-7 h-7 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Building2 size={13} className="text-violet-400" />
         </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-200 truncate">{property.name}</p>
+          <p className="text-xs text-slate-500 truncate">{property.neighborhood}{property.city ? ` · ${property.city}` : ''}</p>
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20 font-medium">
+              {formatCurrencyFull(property.value)}
+            </span>
+            {(property.permutaTypes ?? []).map(t => (
+              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
+                {t === 'imovel' ? 'Aceita imóvel' : 'Aceita carro'}
+              </span>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="flex-shrink-0 flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/8 border border-white/8 transition-all"
+        >
+          + info
+          <ChevronDown size={10} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
       </div>
+      {expanded && <PropertyDetails property={property} />}
     </div>
   )
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Página principal ─────────────────────────────────────────────────────────
 
 export function PermutaPage() {
   const contacts   = useContactsStore(s => s.contacts)
   const properties = usePropertiesStore(s => s.properties)
-  const [search, setSearch] = useState('')
+  const [search, setSearch]     = useState('')
   const [activeTab, setActiveTab] = useState<'cruzamento' | 'contatos' | 'imoveis'>('cruzamento')
 
-  const contactsWithPermuta   = useMemo(() => contacts.filter(c => c.permutaType), [contacts])
+  const contactsWithPermuta   = useMemo(() => contacts.filter(c => (c.permutaItems ?? []).length > 0), [contacts])
   const propertiesWithPermuta = useMemo(() => properties.filter(p => p.acceptsPermuta), [properties])
 
-  // All matches, sorted by score desc
+  // Gera todos os matches (cada item de cada contato vs cada imóvel)
   const allMatches = useMemo<PermutaMatch[]>(() => {
     const results: PermutaMatch[] = []
     for (const contact of contactsWithPermuta) {
-      for (const property of propertiesWithPermuta) {
-        const match = matchContactToProperty(contact, property)
-        if (match) results.push(match)
+      for (const item of contact.permutaItems ?? []) {
+        for (const property of propertiesWithPermuta) {
+          const match = matchItemToProperty(contact, item, property)
+          if (match) results.push(match)
+        }
       }
     }
     return results.sort((a, b) => b.score - a.score)
@@ -191,22 +255,18 @@ export function PermutaPage() {
   const filteredContacts = useMemo(() => {
     if (!search.trim()) return contactsWithPermuta
     const q = search.toLowerCase()
-    return contactsWithPermuta.filter(c =>
-      c.name.toLowerCase().includes(q) || c.phone.includes(q)
-    )
+    return contactsWithPermuta.filter(c => c.name.toLowerCase().includes(q) || c.phone.includes(q))
   }, [contactsWithPermuta, search])
 
   const filteredProperties = useMemo(() => {
     if (!search.trim()) return propertiesWithPermuta
     const q = search.toLowerCase()
-    return propertiesWithPermuta.filter(p =>
-      p.name.toLowerCase().includes(q) || p.neighborhood.toLowerCase().includes(q)
-    )
+    return propertiesWithPermuta.filter(p => p.name.toLowerCase().includes(q) || p.neighborhood.toLowerCase().includes(q))
   }, [propertiesWithPermuta, search])
 
   const tabs = [
-    { id: 'cruzamento' as const, label: 'Cruzamentos', count: allMatches.length,           icon: Zap      },
-    { id: 'contatos'   as const, label: 'Contatos',    count: contactsWithPermuta.length,   icon: Users    },
+    { id: 'cruzamento' as const, label: 'Cruzamentos', count: allMatches.length,           icon: Zap       },
+    { id: 'contatos'   as const, label: 'Contatos',    count: contactsWithPermuta.length,   icon: Users     },
     { id: 'imoveis'    as const, label: 'Imóveis',     count: propertiesWithPermuta.length, icon: Building2 },
   ]
 
@@ -228,7 +288,7 @@ export function PermutaPage() {
         </div>
       </div>
 
-      {/* Stats strip */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3">
           <Users size={16} className="text-orange-400 flex-shrink-0" />
@@ -253,7 +313,7 @@ export function PermutaPage() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Busca */}
       <div className="relative mb-4">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
         <input
@@ -288,7 +348,7 @@ export function PermutaPage() {
         ))}
       </div>
 
-      {/* Tab content */}
+      {/* Conteúdo das tabs */}
       {activeTab === 'cruzamento' && (
         <div className="space-y-3">
           {filteredMatches.length === 0 ? (
@@ -307,99 +367,13 @@ export function PermutaPage() {
                 {contactsWithPermuta.length === 0
                   ? 'Cadastre o perfil de permuta no contato ou via aba Permuta no lead'
                   : propertiesWithPermuta.length === 0
-                  ? 'Ative "Aceita Permuta" no cadastro de imóvel'
-                  : 'Tente ajustar os perfis de permuta dos contatos ou imóveis'}
+                  ? 'Ative "Aceita Permuta" no cadastro do imóvel'
+                  : 'Ajuste os perfis de permuta dos contatos ou imóveis'}
               </p>
             </div>
           ) : (
             filteredMatches.map((match, i) => (
-              <div key={`${match.contact.id}-${match.property.id}-${i}`}
-                className="bg-white/3 border border-white/8 hover:border-white/14 rounded-xl p-4 transition-all">
-
-                {/* Match header */}
-                <div className="flex items-center justify-between mb-3">
-                  <ScoreBadge score={match.score} />
-                  <div className="flex flex-wrap gap-1">
-                    {match.reasons.map(r => (
-                      <span key={r} className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/8">
-                        {r}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Match body: contact ↔ property */}
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                  {/* Contact side */}
-                  <div className="bg-white/3 border border-orange-500/15 rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
-                        {match.contact.permutaType === 'imovel'
-                          ? <Home size={11} className="text-orange-400" />
-                          : <Car size={11} className="text-orange-400" />
-                        }
-                      </div>
-                      <p className="text-xs font-semibold text-slate-300 truncate">{match.contact.name}</p>
-                    </div>
-                    <p className="text-[11px] text-slate-500 truncate">{match.contact.phone}</p>
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                        Quer dar {match.contact.permutaType === 'imovel' ? 'imóvel' : 'carro'}
-                      </span>
-                      {match.contact.permutaType === 'imovel' && match.contact.permutaPropertyRegion && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-                          {match.contact.permutaPropertyRegion}
-                        </span>
-                      )}
-                      {match.contact.permutaType === 'carro' && match.contact.permutaCarModel && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-                          {match.contact.permutaCarModel}
-                        </span>
-                      )}
-                      {(match.contact.permutaType === 'imovel'
-                        ? match.contact.permutaPropertyValue
-                        : match.contact.permutaCarValue
-                      ) && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-                          {formatCurrencyFull(
-                            match.contact.permutaType === 'imovel'
-                              ? match.contact.permutaPropertyValue!
-                              : match.contact.permutaCarValue!
-                          )}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-7 h-7 rounded-full bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
-                      <ChevronRight size={12} className="text-amber-400" />
-                    </div>
-                  </div>
-
-                  {/* Property side */}
-                  <div className="bg-white/3 border border-violet-500/15 rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
-                        <Building2 size={11} className="text-violet-400" />
-                      </div>
-                      <p className="text-xs font-semibold text-slate-300 truncate">{match.property.name}</p>
-                    </div>
-                    <p className="text-[11px] text-slate-500 truncate">{match.property.neighborhood}</p>
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                        {formatCurrencyFull(match.property.value)}
-                      </span>
-                      {(match.property.permutaTypes ?? []).map(t => (
-                        <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
-                          {t === 'imovel' ? 'Aceita imóvel' : 'Aceita carro'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <MatchCard key={`${match.contact.id}-${match.item.id}-${match.property.id}-${i}`} match={match} />
             ))
           )}
         </div>
@@ -411,9 +385,6 @@ export function PermutaPage() {
             <div className="text-center py-12">
               <p className="text-sm text-slate-500">
                 {search ? 'Nenhum contato encontrado' : 'Nenhum contato com perfil de permuta'}
-              </p>
-              <p className="text-xs text-slate-600 mt-1">
-                Cadastre o perfil de permuta na aba Permuta do lead ou diretamente no contato
               </p>
             </div>
           ) : (
@@ -429,15 +400,99 @@ export function PermutaPage() {
               <p className="text-sm text-slate-500">
                 {search ? 'Nenhum imóvel encontrado' : 'Nenhum imóvel aceita permuta'}
               </p>
-              <p className="text-xs text-slate-600 mt-1">
-                Ative "Aceita Permuta" no cadastro do imóvel para ele aparecer aqui
-              </p>
+              <p className="text-xs text-slate-600 mt-1">Ative "Aceita Permuta" no cadastro do imóvel</p>
             </div>
           ) : (
             filteredProperties.map(p => <PropertyCard key={p.id} property={p} />)
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Card de match ────────────────────────────────────────────────────────────
+
+function MatchCard({ match }: { match: PermutaMatch }) {
+  const [propertyExpanded, setPropertyExpanded] = useState(false)
+  const { item, contact, property } = match
+  const offerValue = item.type === 'imovel' ? item.value : item.carValue
+
+  return (
+    <div className="bg-white/3 border border-white/8 hover:border-white/14 rounded-xl p-4 transition-all">
+      {/* Badge + reasons */}
+      <div className="flex items-center flex-wrap gap-1.5 mb-3">
+        <ScoreBadge score={match.score} />
+        {match.reasons.map(r => (
+          <span key={r} className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/8">
+            {r}
+          </span>
+        ))}
+      </div>
+
+      {/* Contato ↔ Imóvel */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
+        {/* Lado contato */}
+        <div className="bg-white/3 border border-orange-500/15 rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="w-6 h-6 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+              {item.type === 'imovel' ? <Home size={11} className="text-orange-400" /> : <Car size={11} className="text-orange-400" />}
+            </div>
+            <p className="text-xs font-semibold text-slate-300 truncate">{contact.name}</p>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20">
+              Quer dar {item.type === 'imovel' ? 'imóvel' : 'carro'}
+            </span>
+            {item.type === 'imovel' && item.region && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">{item.region}</span>
+            )}
+            {item.type === 'carro' && item.carModel && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">{item.carModel}</span>
+            )}
+            {offerValue && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
+                {formatCurrencyFull(offerValue)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Seta */}
+        <div className="flex items-center justify-center pt-4">
+          <div className="w-7 h-7 rounded-full bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
+            <ChevronRight size={12} className="text-amber-400" />
+          </div>
+        </div>
+
+        {/* Lado imóvel */}
+        <div className="bg-white/3 border border-violet-500/15 rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="w-6 h-6 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
+              <Building2 size={11} className="text-violet-400" />
+            </div>
+            <p className="text-xs font-semibold text-slate-300 truncate">{property.name}</p>
+          </div>
+          <div className="flex flex-wrap gap-1 mb-2">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20">
+              {formatCurrencyFull(property.value)}
+            </span>
+            {(property.permutaTypes ?? []).map(t => (
+              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
+                {t === 'imovel' ? 'Aceita imóvel' : 'Aceita carro'}
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={() => setPropertyExpanded(v => !v)}
+            className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            <ChevronDown size={10} className={`transition-transform ${propertyExpanded ? 'rotate-180' : ''}`} />
+            {propertyExpanded ? 'Menos detalhes' : '+ informações'}
+          </button>
+          {propertyExpanded && <PropertyDetails property={property} />}
+        </div>
+      </div>
     </div>
   )
 }

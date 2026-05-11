@@ -80,12 +80,13 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
   function handleAddAsContact() {
     if (!lead) return
     const contact = contactsStore.add({
-      name:        lead.name,
-      phone:       lead.phone,
-      tags:        [],
-      hasChildren: false,
-      isMarried:   false,
-      company:     campaign?.name,
+      name:         lead.name,
+      phone:        lead.phone,
+      tags:         [],
+      hasChildren:  false,
+      isMarried:    false,
+      company:      campaign?.name,
+      permutaItems: [],
     })
     update(lead.id, { funnelStage: 'sale' })
     toast.success('Contato criado! Registre a venda.')

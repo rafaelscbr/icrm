@@ -216,7 +216,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
   function handleSubmit() {
     let resolvedContactId = selectedContactId
     if (!isEdit && contactMode === 'create') {
-      const nc = addContact({ name: newName.trim(), phone: newPhone.trim(), tags: [], hasChildren: false, isMarried: false })
+      const nc = addContact({ name: newName.trim(), phone: newPhone.trim(), tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
       resolvedContactId = nc.id
     }
 

@@ -7,7 +7,7 @@ import {
 import { Modal } from '../../components/ui/Modal'
 import { Badge } from '../../components/ui/Badge'
 import { Avatar } from '../../components/ui/Avatar'
-import { Contact, ContactTag } from '../../types'
+import { Contact, ContactTag, PermutaItem } from '../../types'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
@@ -78,36 +78,42 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
 
   // Permuta edit state
   const [editingPermuta, setEditingPermuta] = useState(false)
-  const [permutaType, setPermutaType] = useState<'imovel' | 'carro'>('imovel')
-  const [permutaPropertyRegion, setPermutaPropertyRegion] = useState('')
-  const [permutaPropertyValue, setPermutaPropertyValue] = useState('')
-  const [permutaCarModel, setPermutaCarModel] = useState('')
-  const [permutaCarValue, setPermutaCarValue] = useState('')
+  const [permutaItems, setPermutaItems] = useState<PermutaItem[]>([])
 
   function openPermutaEdit() {
     if (!contact) return
-    setPermutaType(contact.permutaType ?? 'imovel')
-    setPermutaPropertyRegion(contact.permutaPropertyRegion ?? '')
-    setPermutaPropertyValue(contact.permutaPropertyValue ? String(contact.permutaPropertyValue) : '')
-    setPermutaCarModel(contact.permutaCarModel ?? '')
-    setPermutaCarValue(contact.permutaCarValue ? String(contact.permutaCarValue) : '')
+    const existing = contact.permutaItems ?? []
+    setPermutaItems(
+      existing.length > 0
+        ? existing
+        : [{ id: `new-${Date.now()}`, type: 'imovel' }]
+    )
     setEditingPermuta(true)
   }
 
   function savePermuta() {
     if (!contact) return
-    updateContact(contact.id, {
-      permutaType,
-      permutaPropertyRegion: permutaType === 'imovel' ? (permutaPropertyRegion || undefined) : undefined,
-      permutaPropertyValue: permutaType === 'imovel' && permutaPropertyValue ? Number(permutaPropertyValue.replace(/\D/g, '')) : undefined,
-      permutaCarModel: permutaType === 'carro' ? (permutaCarModel || undefined) : undefined,
-      permutaCarValue: permutaType === 'carro' && permutaCarValue ? Number(permutaCarValue.replace(/\D/g, '')) : undefined,
-    })
+    const filled = permutaItems.filter(it =>
+      it.type === 'imovel' ? (it.region || it.value) : (it.carModel || it.carValue)
+    )
+    updateContact(contact.id, { permutaItems: filled })
     setEditingPermuta(false)
   }
 
   function cancelPermuta() {
     setEditingPermuta(false)
+  }
+
+  function addPermutaItem() {
+    setPermutaItems(prev => [...prev, { id: `new-${Date.now()}`, type: 'imovel' }])
+  }
+
+  function removePermutaItem(id: string) {
+    setPermutaItems(prev => prev.filter(it => it.id !== id))
+  }
+
+  function updatePermutaItem(id: string, patch: Partial<PermutaItem>) {
+    setPermutaItems(prev => prev.map(it => it.id === id ? { ...it, ...patch } : it))
   }
 
   const linkedTasks = useMemo(
@@ -321,7 +327,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
             <ArrowLeftRight size={13} className="text-amber-400" />
             <h3 className="text-sm font-semibold text-slate-300">Permuta</h3>
             {!editingPermuta && (
-              contact?.permutaType ? (
+              (contact?.permutaItems?.length ?? 0) > 0 ? (
                 <button
                   onClick={openPermutaEdit}
                   className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/8 border border-white/8 text-slate-400 hover:text-slate-200 transition-all"
@@ -339,117 +345,128 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
             )}
           </div>
 
-          {!editingPermuta && !contact?.permutaType && (
+          {/* Visualização dos itens */}
+          {!editingPermuta && (contact?.permutaItems?.length ?? 0) === 0 && (
             <p className="text-xs text-slate-600 text-center py-3">Sem informação de permuta</p>
           )}
 
-          {!editingPermuta && contact?.permutaType && (
-            <div className="flex flex-col gap-2 px-3 py-2.5 bg-white/3 rounded-xl border border-white/8">
-              <span className={`inline-flex self-start text-[10px] font-medium px-2 py-0.5 rounded-full border ${
-                contact.permutaType === 'imovel'
-                  ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25'
-                  : 'bg-amber-500/15 text-amber-300 border-amber-500/25'
-              }`}>
-                {contact.permutaType === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
-              </span>
-              {contact.permutaType === 'imovel' && (
-                <div className="space-y-0.5">
-                  {contact.permutaPropertyRegion && (
-                    <p className="text-xs text-slate-400">Região: <span className="text-slate-200">{contact.permutaPropertyRegion}</span></p>
-                  )}
-                  {contact.permutaPropertyValue && (
-                    <p className="text-xs text-slate-400">Valor: <span className="text-slate-200 font-medium">{formatCurrencyFull(contact.permutaPropertyValue)}</span></p>
-                  )}
+          {!editingPermuta && (contact?.permutaItems?.length ?? 0) > 0 && (
+            <div className="flex flex-col gap-2">
+              {contact!.permutaItems.map(item => (
+                <div key={item.id} className="flex items-start gap-2 px-3 py-2.5 bg-white/3 rounded-xl border border-white/8">
+                  <span className={`inline-flex self-start text-[10px] font-medium px-2 py-0.5 rounded-full border flex-shrink-0 ${
+                    item.type === 'imovel'
+                      ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25'
+                      : 'bg-amber-500/15 text-amber-300 border-amber-500/25'
+                  }`}>
+                    {item.type === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+                  </span>
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    {item.type === 'imovel' && (
+                      <>
+                        {item.region && <p className="text-xs text-slate-400">Região: <span className="text-slate-200">{item.region}</span></p>}
+                        {item.value && <p className="text-xs text-slate-400">Valor: <span className="text-slate-200 font-medium">{formatCurrencyFull(item.value)}</span></p>}
+                      </>
+                    )}
+                    {item.type === 'carro' && (
+                      <>
+                        {item.carModel && <p className="text-xs text-slate-400">Modelo: <span className="text-slate-200">{item.carModel}</span></p>}
+                        {item.carValue && <p className="text-xs text-slate-400">Valor: <span className="text-slate-200 font-medium">{formatCurrencyFull(item.carValue)}</span></p>}
+                      </>
+                    )}
+                  </div>
                 </div>
-              )}
-              {contact.permutaType === 'carro' && (
-                <div className="space-y-0.5">
-                  {contact.permutaCarModel && (
-                    <p className="text-xs text-slate-400">Modelo: <span className="text-slate-200">{contact.permutaCarModel}</span></p>
-                  )}
-                  {contact.permutaCarValue && (
-                    <p className="text-xs text-slate-400">Valor de entrada: <span className="text-slate-200 font-medium">{formatCurrencyFull(contact.permutaCarValue)}</span></p>
-                  )}
-                </div>
-              )}
+              ))}
             </div>
           )}
 
+          {/* Formulário de edição */}
           {editingPermuta && (
-            <div className="bg-white/3 border border-white/8 rounded-xl p-3 space-y-3">
-              {/* Type radio */}
-              <div className="flex gap-2">
-                {(['imovel', 'carro'] as const).map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setPermutaType(t)}
-                    className={`flex-1 py-2 rounded-xl border text-sm transition-all ${
-                      permutaType === t
-                        ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                        : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-3">
+              {permutaItems.map((item, idx) => (
+                <div key={item.id} className="bg-white/3 border border-white/8 rounded-xl p-3 space-y-2">
+                  {/* Tipo */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5 flex-1">
+                      {(['imovel', 'carro'] as const).map(t => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => updatePermutaItem(item.id, { type: t, region: undefined, value: undefined, carModel: undefined, carValue: undefined })}
+                          className={`flex-1 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+                            item.type === t
+                              ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
+                              : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                          }`}
+                        >
+                          {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+                        </button>
+                      ))}
+                    </div>
+                    {permutaItems.length > 1 && (
+                      <button
+                        onClick={() => removePermutaItem(item.id)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/8 hover:bg-red-500/15 border border-red-500/20 text-red-400 hover:text-red-300 transition-all flex-shrink-0"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
 
-              {permutaType === 'imovel' ? (
-                <div className="space-y-2">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-slate-500">Região</label>
-                    <input
-                      type="text"
-                      value={permutaPropertyRegion}
-                      onChange={e => setPermutaPropertyRegion(e.target.value)}
-                      placeholder="Ex: Balneário Camboriú"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-slate-500">Valor do imóvel</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">R$</span>
+                  {item.type === 'imovel' ? (
+                    <div className="space-y-1.5">
                       <input
                         type="text"
-                        inputMode="numeric"
-                        value={permutaPropertyValue}
-                        onChange={e => setPermutaPropertyValue(e.target.value.replace(/\D/g, ''))}
-                        placeholder="850000"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        value={item.region ?? ''}
+                        onChange={e => updatePermutaItem(item.id, { region: e.target.value || undefined })}
+                        placeholder="Região (ex: Balneário Camboriú)"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       />
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">R$</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={item.value ? item.value.toLocaleString('pt-BR') : ''}
+                          onChange={e => updatePermutaItem(item.id, { value: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
+                          placeholder="Valor do imóvel"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-slate-500">Modelo</label>
-                    <input
-                      type="text"
-                      value={permutaCarModel}
-                      onChange={e => setPermutaCarModel(e.target.value)}
-                      placeholder="Ex: Toyota Corolla 2022"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-slate-500">Valor de entrada</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">R$</span>
+                  ) : (
+                    <div className="space-y-1.5">
                       <input
                         type="text"
-                        inputMode="numeric"
-                        value={permutaCarValue}
-                        onChange={e => setPermutaCarValue(e.target.value.replace(/\D/g, ''))}
-                        placeholder="80000"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        value={item.carModel ?? ''}
+                        onChange={e => updatePermutaItem(item.id, { carModel: e.target.value || undefined })}
+                        placeholder="Modelo (ex: Toyota Corolla 2022)"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       />
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">R$</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={item.carValue ? item.carValue.toLocaleString('pt-BR') : ''}
+                          onChange={e => updatePermutaItem(item.id, { carValue: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
+                          placeholder="Valor de entrada"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {idx === permutaItems.length - 1 && (
+                    <button
+                      onClick={addPermutaItem}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] text-slate-500 hover:text-slate-300 border border-dashed border-white/12 hover:border-white/22 rounded-lg transition-all"
+                    >
+                      <Plus size={10} /> Adicionar outro bem
+                    </button>
+                  )}
                 </div>
-              )}
+              ))}
 
               <div className="flex gap-2 pt-1">
                 <button

@@ -62,6 +62,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         tags: [],
         hasChildren: false,
         isMarried: false,
+        permutaItems: [],
       })
       lead.contactId = newContact.id
       lead.convertedAt = now
