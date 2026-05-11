@@ -131,9 +131,6 @@ export interface CampaignLead {
   proposalValue?: number
   propertyId?: string
   stageUpdatedAt?: string  // quando a etapa foi alterada pela última vez
-  source?: 'manual' | 'import' | 'meta_ads'
-  metaAdName?: string
-  viewedAt?: string        // null = lead Meta não visualizado ainda
   createdAt: string
   updatedAt: string
 }

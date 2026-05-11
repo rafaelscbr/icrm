@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   MessageCircle, FileText, ChevronDown, Eye,
-  Download, Plus, Snowflake, Clock, Zap,
+  Download, Plus, Snowflake, Clock,
 } from 'lucide-react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
@@ -161,7 +161,6 @@ function LeadCard({
   ghost?: boolean
 }) {
   const { markContacted } = useCampaignLeadsStore()
-  const isUnreadMeta = lead.source === 'meta_ads' && !lead.viewedAt
   const situation = SITUATION_CONFIG.find(s => s.value === lead.situation)
   const [showMsg,  setShowMsg]  = useState(false)
   const [showTask, setShowTask] = useState(false)
@@ -190,26 +189,12 @@ function LeadCard({
         {...listeners}
         {...attributes}
         onClick={() => !isDragging && onParecer(lead)}
-        className={`relative bg-white/4 hover:bg-white/7 border rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all group select-none
+        className={`bg-white/4 hover:bg-white/7 border border-white/8 hover:border-white/15 rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all group select-none
           ${isDragging || ghost ? 'opacity-40 scale-[0.98]' : ''}
-          ${cold ? 'lead-cold' : ''}
-          ${isUnreadMeta
-            ? 'border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-            : 'border-white/8 hover:border-white/15'
-          }`}
+          ${cold ? 'lead-cold' : ''}`}
       >
-        {/* Badge "Novo" para leads Meta não visualizados */}
-        {isUnreadMeta && (
-          <div className="absolute -top-2 -right-2 flex items-center gap-0.5 bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg animate-pulse">
-            <Zap size={8} />
-            NOVO
-          </div>
-        )}
-
         <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">{lead.name}</p>
-          </div>
+          <p className="text-sm font-medium text-slate-200 truncate flex-1">{lead.name}</p>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={e => e.stopPropagation()}>
             {lead.lastMessage && (
               <button onClick={() => setShowMsg(true)} className="p-1 rounded-lg bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 transition-colors" title="Ver última mensagem">
@@ -230,11 +215,6 @@ function LeadCard({
 
         <div className="flex items-center gap-1.5 flex-wrap">
           <p className="text-xs text-slate-500 tabular-nums">{formatPhone(lead.phone)}</p>
-          {lead.source === 'meta_ads' && (
-            <span className="flex items-center gap-0.5 text-[9px] font-semibold px-1 rounded bg-amber-500/15 text-amber-400">
-              <Zap size={8} />Meta
-            </span>
-          )}
           {cold && <span className="flex items-center gap-0.5 text-[9px] text-blue-400/70 font-medium"><Snowflake size={9} />Frio</span>}
           {/* Tempo na etapa */}
           {ageBadge && (
@@ -366,15 +346,10 @@ const DATE_FILTERS: { value: DateFilter; label: string }[] = [
 ]
 
 export function KanbanTab({ leads, campaign }: KanbanTabProps) {
-  const { setStage, markViewed } = useCampaignLeadsStore()
+  const { setStage } = useCampaignLeadsStore()
   const [parecerLead,  setParecerLead]  = useState<CampaignLead | undefined>()
   const [dateFilter,   setDateFilter]   = useState<DateFilter>('all')
   const [activeLead,   setActiveLead]   = useState<CampaignLead | null>(null)
-
-  function handleParecer(lead: CampaignLead) {
-    markViewed(lead.id)
-    setParecerLead(lead)
-  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -441,7 +416,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
               stage={stage}
               leads={filteredLeads.filter(l => l.funnelStage === stage.value)}
               campaign={campaign}
-              onParecer={handleParecer}
+              onParecer={setParecerLead}
             />
           ))}
         </div>
