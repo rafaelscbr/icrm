@@ -12,6 +12,12 @@ export interface Contact {
   childrenNames?: string
   isMarried: boolean
   spouseName?: string
+  // Permuta
+  permutaType?: 'imovel' | 'carro'
+  permutaPropertyRegion?: string
+  permutaPropertyValue?: number
+  permutaCarModel?: string
+  permutaCarValue?: number
   createdAt: string
   updatedAt: string
 }

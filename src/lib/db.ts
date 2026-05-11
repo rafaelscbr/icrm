@@ -14,6 +14,11 @@ interface ContactRow {
   company: string | null; birthdate: string | null; photo_url: string | null
   tags: string[]; has_children: boolean; children_names: string | null
   is_married: boolean; spouse_name: string | null
+  permuta_type: string | null
+  permuta_property_region: string | null
+  permuta_property_value: number | null
+  permuta_car_model: string | null
+  permuta_car_value: number | null
   created_at: string; updated_at: string
 }
 
@@ -84,6 +89,11 @@ function toContact(r: ContactRow): Contact {
     photoUrl: r.photo_url ?? undefined, tags: r.tags as ContactTag[],
     hasChildren: r.has_children, childrenNames: r.children_names ?? undefined,
     isMarried: r.is_married, spouseName: r.spouse_name ?? undefined,
+    permutaType: (r.permuta_type as Contact['permutaType']) ?? undefined,
+    permutaPropertyRegion: r.permuta_property_region ?? undefined,
+    permutaPropertyValue: r.permuta_property_value ?? undefined,
+    permutaCarModel: r.permuta_car_model ?? undefined,
+    permutaCarValue: r.permuta_car_value ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -95,6 +105,11 @@ function fromContact(c: Contact): ContactRow {
     photo_url: c.photoUrl ?? null, tags: c.tags,
     has_children: c.hasChildren, children_names: c.childrenNames ?? null,
     is_married: c.isMarried, spouse_name: c.spouseName ?? null,
+    permuta_type: c.permutaType ?? null,
+    permuta_property_region: c.permutaPropertyRegion ?? null,
+    permuta_property_value: c.permutaPropertyValue ?? null,
+    permuta_car_model: c.permutaCarModel ?? null,
+    permuta_car_value: c.permutaCarValue ?? null,
     created_at: c.createdAt, updated_at: c.updatedAt,
   }
 }

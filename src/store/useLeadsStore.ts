@@ -3,6 +3,7 @@ import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin } from '../types'
 import { generateId, localDateStr } from '../lib/formatters'
 import { db } from '../lib/db'
 import { useTasksStore } from './useTasksStore'
+import { useContactsStore } from './useContactsStore'
 
 interface LeadsStore {
   leads: Lead[]
@@ -45,6 +46,27 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     const now = new Date().toISOString()
     const { createdAt: customCreatedAt, ...rest } = data
     const lead: Lead = { ...rest, id: generateId(), createdAt: customCreatedAt ?? now, updatedAt: now }
+
+    // Auto-link or create contact
+    const { contacts, add: addContact } = useContactsStore.getState()
+    const phone = lead.phone.replace(/\D/g, '')
+    const existing = contacts.find(c => c.phone.replace(/\D/g, '') === phone)
+
+    if (existing) {
+      lead.contactId = existing.id
+      lead.convertedAt = now
+    } else {
+      const newContact = addContact({
+        name: lead.name,
+        phone: lead.phone,
+        tags: [],
+        hasChildren: false,
+        isMarried: false,
+      })
+      lead.contactId = newContact.id
+      lead.convertedAt = now
+    }
+
     set(s => ({ leads: [lead, ...s.leads] }))
     db.leads.upsert(lead).catch(err => console.error('[leads] add:', err))
     return lead

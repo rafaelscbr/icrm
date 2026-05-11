@@ -104,6 +104,15 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
         permutaCarModel: permutaType === 'carro' ? (permutaCarModel || undefined) : undefined,
         permutaCarValue: permutaType === 'carro' && permutaCarValue ? Number(permutaCarValue.replace(/\D/g, '')) : undefined,
       })
+      if (lead.contactId) {
+        useContactsStore.getState().update(lead.contactId, {
+          permutaType,
+          permutaPropertyRegion: permutaType === 'imovel' ? (permutaPropertyRegion || undefined) : undefined,
+          permutaPropertyValue: permutaType === 'imovel' && permutaPropertyValue ? Number(permutaPropertyValue.replace(/\D/g, '')) : undefined,
+          permutaCarModel: permutaType === 'carro' ? (permutaCarModel || undefined) : undefined,
+          permutaCarValue: permutaType === 'carro' && permutaCarValue ? Number(permutaCarValue.replace(/\D/g, '')) : undefined,
+        })
+      }
     }
     discard(lead.id, selectedReason)
     toast.success('Lead descartado')
