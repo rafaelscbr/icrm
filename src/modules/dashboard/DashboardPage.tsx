@@ -23,6 +23,7 @@ import { useLeadsStore } from '../../store/useLeadsStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useDisparosStore } from '../../store/useDisparosStore'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -31,6 +32,7 @@ const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao',
 const COOLING_DAYS = 2
 
 const DAILY_TARGET_INTERACTIONS = 10
+const DAILY_TARGET_DISPAROS     = 30
 const WEEKLY_TARGET_VISITS    = 2
 const WEEKLY_TARGET_PROPOSALS = 1
 const MONTHLY_TARGET_VISITS    = 8
@@ -75,18 +77,41 @@ function dueDateLabel(dueDate?: string): { text: string; color: string } {
 
 // ─── GoalCard ─────────────────────────────────────────────────────────────────
 
-function GoalCard({ label, value, target, barColor }: {
+function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
   label: string; value: number; target: number; barColor: string
+  onAdd?:    () => void
+  onRemove?: () => void
 }) {
   const pct  = Math.min(100, Math.round((value / target) * 100))
   const done = value >= target
   return (
     <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex flex-col gap-2">
       <p className="text-[10px] text-slate-500 uppercase tracking-wide leading-none">{label}</p>
-      <div className="flex items-baseline gap-1">
-        <span className={`text-2xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-white'}`}>{value}</span>
-        <span className="text-xs text-slate-600">/{target}</span>
-        {done && <CheckCircle2 size={12} className="text-green-400 ml-0.5" />}
+      <div className="flex items-center gap-1">
+        <div className="flex items-baseline gap-1 flex-1">
+          <span className={`text-2xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-white'}`}>{value}</span>
+          <span className="text-xs text-slate-600">/{target}</span>
+          {done && <CheckCircle2 size={12} className="text-green-400 ml-0.5" />}
+        </div>
+        {(onAdd || onRemove) && (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {onRemove && (
+              <button
+                onClick={onRemove}
+                className="w-6 h-6 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-500 hover:text-slate-300 text-base leading-none transition-all active:scale-90"
+                title="Remover 1"
+              >−</button>
+            )}
+            {onAdd && (
+              <button
+                onClick={onAdd}
+                className={`w-6 h-6 flex items-center justify-center rounded-lg text-base leading-none font-bold transition-all active:scale-90
+                  ${done ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400' : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300'}`}
+                title="Registrar +1"
+              >+</button>
+            )}
+          </div>
+        )}
       </div>
       <div className="h-1 bg-white/5 rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-700 ${done ? 'bg-green-500' : barColor}`} style={{ width: `${pct}%` }} />
@@ -99,11 +124,12 @@ function GoalCard({ label, value, target, barColor }: {
 
 function GoalsWidget() {
   const { getAllInteractions } = useLeadInteractionsStore()
-  const { sales } = useSalesStore()
+  const { sales }             = useSalesStore()
+  const { count: disparos, increment: addDisparo, decrement: removeDisparo } = useDisparosStore()
 
   const metrics = useMemo(() => {
-    const all  = getAllInteractions()
-    const today = new Date().toISOString().slice(0, 10)
+    const all        = getAllInteractions()
+    const today      = new Date().toISOString().slice(0, 10)
     const weekStart  = getWeekStart()
     const monthStart = getMonthStart()
 
@@ -133,7 +159,17 @@ function GoalsWidget() {
         {/* Hoje */}
         <div>
           <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Hoje</p>
-          <GoalCard label="Interações com leads" value={metrics.daily} target={DAILY_TARGET_INTERACTIONS} barColor="bg-blue-500" />
+          <div className="grid grid-cols-2 gap-3">
+            <GoalCard label="Interações com leads" value={metrics.daily}  target={DAILY_TARGET_INTERACTIONS} barColor="bg-blue-500" />
+            <GoalCard
+              label="Disparos lista fria"
+              value={disparos}
+              target={DAILY_TARGET_DISPAROS}
+              barColor="bg-violet-500"
+              onAdd={addDisparo}
+              onRemove={removeDisparo}
+            />
+          </div>
         </div>
         {/* Semana */}
         <div>
