@@ -136,6 +136,11 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
 
   const scored = hasCriteria
     ? properties
+        .filter(p => {
+          if (currentLead.radarValueMin !== undefined && p.value < currentLead.radarValueMin) return false
+          if (currentLead.radarValueMax !== undefined && p.value > currentLead.radarValueMax) return false
+          return true
+        })
         .map(p => ({ p, score: scoreProperty(p, currentLead) }))
         .filter(({ score }) => score >= 1)
         .sort((a, b) => b.score - a.score || a.p.value - b.p.value)
@@ -186,6 +191,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
               placeholder="500000"
               className={inputClass}
             />
+            {radarValueMin && <p className="text-[10px] text-indigo-400 mt-0.5">{formatCurrencyFull(Number(radarValueMin))}</p>}
           </div>
           <div className="flex flex-col gap-1">
             <label className={labelClass}>Valor máx (R$)</label>
@@ -197,6 +203,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
               placeholder="1500000"
               className={inputClass}
             />
+            {radarValueMax && <p className="text-[10px] text-indigo-400 mt-0.5">{formatCurrencyFull(Number(radarValueMax))}</p>}
           </div>
         </div>
 

@@ -49,7 +49,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-4 px-4 py-3.5 hover:bg-white/3 transition-all cursor-pointer border-b border-white/5 last:border-0 group
+      className={`flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-all cursor-pointer border-b border-white/5 last:border-0 group
         ${isDiscarded ? 'opacity-50' : ''}
       `}
     >
@@ -70,11 +70,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         <p className="text-xs text-slate-500 mt-0.5">{formatPhone(displayPhone)}</p>
       </div>
 
-      <div className={`hidden md:flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border ${originConf.bg} ${originConf.color} ${originConf.border}`}>
-        {originConf.emoji} {originConf.label}
-      </div>
-
-      <div className="hidden lg:block w-36 text-right">
+      <div className="hidden md:block text-right flex-shrink-0 max-w-[120px]">
         {property ? (
           <p className="text-xs text-slate-400 truncate">{property.name}</p>
         ) : lead.propertyName ? (
@@ -86,20 +82,16 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         )}
       </div>
 
-      {lead.funnelStage === 'followup' && (
-        <div className="hidden sm:flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map(s => (
-            <div key={s} className={`w-1.5 h-1.5 rounded-full ${s <= lead.followupStep ? 'bg-blue-400' : 'bg-white/10'}`} />
-          ))}
-        </div>
-      )}
+      <div className={`hidden sm:flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border flex-shrink-0 ${originConf.bg} ${originConf.color} ${originConf.border}`}>
+        {originConf.emoji} {originConf.label}
+      </div>
 
-      <span className={`hidden sm:inline-flex text-[11px] font-medium px-2 py-1 rounded-lg border ${conf.bg} ${conf.color} ${conf.border}`}>
+      <span className={`inline-flex text-[11px] font-medium px-2 py-1 rounded-lg border flex-shrink-0 ${conf.bg} ${conf.color} ${conf.border}`}>
         {conf.label}
         {lead.funnelStage === 'followup' && lead.followupStep > 0 && ` · ${lead.followupStep}ª`}
       </span>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
         {!isDiscarded && (
           <button
             onClick={handleWhatsApp}
@@ -313,12 +305,12 @@ export function LeadsPage() {
               </div>
             ) : (
               <div className="bg-[#0D1117] mx-4 my-4 rounded-2xl border border-white/8 overflow-hidden">
-                <div className="grid grid-cols-[32px_1fr_auto_auto_auto_auto] gap-4 px-4 py-2.5 border-b border-white/8 bg-white/2">
+                <div className="grid grid-cols-[32px_1fr_auto_auto_auto_auto] gap-3 px-4 py-2.5 border-b border-white/8 bg-white/2">
                   <div />
                   <span className="text-xs font-semibold text-slate-500">Nome</span>
-                  <span className="text-xs font-semibold text-slate-500 hidden md:block">Origem</span>
-                  <span className="text-xs font-semibold text-slate-500 hidden lg:block">Produto</span>
-                  <span className="text-xs font-semibold text-slate-500 hidden sm:block">Etapa</span>
+                  <span className="text-xs font-semibold text-slate-500 hidden md:block">Produto</span>
+                  <span className="text-xs font-semibold text-slate-500 hidden sm:block">Origem</span>
+                  <span className="text-xs font-semibold text-slate-500">Etapa</span>
                   <div />
                 </div>
                 {filtered.map(lead => (
