@@ -146,7 +146,7 @@ function GoalsWidget() {
     const monthSales    = sales.filter(s => s.date >= monthStart.toISOString().slice(0, 10)).length
 
     // Visitas = tarefas concluídas com categoria 'visita', usando completedAt (ou dueDate como fallback)
-    const visitasDone = tasks.filter(t => t.done && t.category === 'visita')
+    const visitasDone = tasks.filter(t => t.status === 'done' && t.category === 'visita')
     const weekVisits  = visitasDone.filter(t => {
       const d = t.completedAt ?? t.dueDate
       return d && new Date(d) >= weekStart
