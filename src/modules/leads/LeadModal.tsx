@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
-  X, Phone, Mail, MessageCircle, ArrowRight, UserCheck,
+  X, Phone, Mail, MessageCircle, UserCheck,
   Building2, DollarSign, Trash2, RotateCcw, Edit2,
   Calendar, Tag, AlertTriangle, CheckCircle2, Clock, ClipboardList, Flame, ArrowLeftRight,
+  Search, Check,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
+import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { formatPhone, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
@@ -17,13 +19,6 @@ import { LeadRadarTab } from './LeadRadarTab'
 import { LeadPermutaTab } from './LeadPermutaTab'
 import toast from 'react-hot-toast'
 
-const DISCARD_REASONS: { value: LeadDiscardReason; label: string; icon: string }[] = [
-  { value: 'sem_condicao',        label: 'Sem condição financeira', icon: '💸' },
-  { value: 'fora_de_nicho',       label: 'Fora do nicho de atuação', icon: '🎯' },
-  { value: 'parou_de_responder',  label: 'Parou de responder',      icon: '🔇' },
-  { value: 'nunca_respondeu',     label: 'Nunca respondeu',         icon: '📵' },
-  { value: 'telefone_invalido',   label: 'Telefone inválido',       icon: '❌' },
-]
 
 const STAGE_CONFIG = {
   lead:        { label: 'Lead',        color: 'text-slate-300',  bg: 'bg-slate-500/20',   border: 'border-slate-500/30'   },
@@ -55,10 +50,14 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const { add: addContact, getById } = useContactsStore()
   const { add: addInteraction } = useLeadInteractionsStore()
   const { properties } = usePropertiesStore()
+  const { getByType } = useLeadConfigStore()
+
+  const discardReasons = useMemo(() => getByType('discard_reason'), [getByType])
 
   const [activeTab, setActiveTab] = useState<'detalhes' | 'historico' | 'radar' | 'permuta'>('detalhes')
   const [showDiscard, setShowDiscard] = useState(false)
   const [selectedReason, setSelectedReason] = useState<LeadDiscardReason | null>(null)
+  const [discardSearch, setDiscardSearch] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [showTaskForm, setShowTaskForm] = useState(false)
@@ -327,39 +326,25 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             )}
 
             {/* Descarte */}
-            {isDiscarded && lead.discardReason && (
-              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3 space-y-2">
-                <p className="text-xs font-medium text-red-300 mb-1">Motivo do descarte</p>
-                <p className="text-sm text-slate-300">
-                  {DISCARD_REASONS.find(r => r.value === lead.discardReason)?.label}
-                </p>
-                {lead.discardedAt && (
-                  <p className="text-xs text-slate-500">
-                    {new Date(lead.discardedAt).toLocaleDateString('pt-BR')}
-                  </p>
-                )}
-                {lead.discardReason === 'permuta' && lead.permutaType && (
-                  <div className="mt-2 pt-2 border-t border-red-500/10 space-y-1">
-                    <p className="text-xs font-medium text-slate-400">Detalhes da permuta</p>
-                    <p className="text-xs text-slate-300">
-                      Tipo: {lead.permutaType === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+            {isDiscarded && lead.discardReason && (() => {
+              const reasonEntry = discardReasons.find(r => r.slug === lead.discardReason)
+              return (
+                <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3 flex items-center gap-3">
+                  <span className="text-xl flex-shrink-0">{reasonEntry?.emoji ?? '🗑️'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-0.5">Descartado</p>
+                    <p className="text-sm font-medium text-slate-300 truncate">
+                      {reasonEntry?.label ?? lead.discardReason}
                     </p>
-                    {lead.permutaType === 'imovel' && (
-                      <>
-                        {lead.permutaPropertyRegion && <p className="text-xs text-slate-400">Região: {lead.permutaPropertyRegion}</p>}
-                        {lead.permutaPropertyValue && <p className="text-xs text-slate-400">Valor: {formatCurrencyFull(lead.permutaPropertyValue)}</p>}
-                      </>
-                    )}
-                    {lead.permutaType === 'carro' && (
-                      <>
-                        {lead.permutaCarModel && <p className="text-xs text-slate-400">Modelo: {lead.permutaCarModel}</p>}
-                        {lead.permutaCarValue && <p className="text-xs text-slate-400">Valor de entrada: {formatCurrencyFull(lead.permutaCarValue)}</p>}
-                      </>
+                    {lead.discardedAt && (
+                      <p className="text-[11px] text-slate-600 mt-0.5">
+                        {new Date(lead.discardedAt).toLocaleDateString('pt-BR')}
+                      </p>
                     )}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )
+            })()}
 
             {/* Notas */}
             {lead.notes && (
@@ -458,82 +443,143 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
       {/* Discard Modal */}
       {showDiscard && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setShowDiscard(false); setShowDeleteConfirm(false) }} />
-          <div className="relative w-full max-w-sm modal-surface rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-            <div className="px-5 py-4 border-b border-white/8 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center">
-                <AlertTriangle size={15} className="text-red-400" />
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            onClick={() => { setShowDiscard(false); setShowDeleteConfirm(false); setSelectedReason(null); setDiscardSearch('') }}
+          />
+          <div className="relative w-full sm:max-w-md modal-surface rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col max-h-[90vh]">
+
+            {/* Header */}
+            <div className="px-5 pt-5 pb-4 border-b border-white/8 flex-shrink-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle size={16} className="text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-100">Descartar lead</h3>
+                    <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[220px]">{lead.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowDiscard(false); setShowDeleteConfirm(false); setSelectedReason(null); setDiscardSearch('') }}
+                  className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-all"
+                >
+                  <X size={13} />
+                </button>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-100">Descartar Lead</h3>
-                <p className="text-xs text-slate-500">Selecione o motivo ou exclua definitivamente</p>
-              </div>
+
+              {/* Busca — aparece quando tem muitos motivos */}
+              {discardReasons.length > 4 && (
+                <div className="relative mt-3">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={discardSearch}
+                    onChange={e => setDiscardSearch(e.target.value)}
+                    placeholder="Filtrar motivos..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="px-5 py-4 space-y-2 max-h-[60vh] overflow-y-auto">
-              {DISCARD_REASONS.map(r => (
+            {/* Lista de motivos */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+              <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider px-1 mb-2">
+                Motivo do descarte
+              </p>
+
+              {discardReasons
+                .filter(r => !discardSearch || r.label.toLowerCase().includes(discardSearch.toLowerCase()))
+                .map(r => {
+                  const isSelected = selectedReason === r.slug
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => setSelectedReason(r.slug as LeadDiscardReason)}
+                      className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all duration-150 ${
+                        isSelected
+                          ? 'bg-red-500/12 border-red-500/40 shadow-sm shadow-red-500/10'
+                          : 'bg-white/2 border-white/6 hover:bg-white/5 hover:border-white/12'
+                      }`}
+                    >
+                      <span className="text-base flex-shrink-0 w-7 text-center">{r.emoji ?? '📋'}</span>
+                      <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-red-200' : 'text-slate-300'}`}>
+                        {r.label}
+                      </span>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        isSelected
+                          ? 'bg-red-500 border-red-500'
+                          : 'border-white/20 bg-white/3'
+                      }`}>
+                        {isSelected && <Check size={10} className="text-white" strokeWidth={3} />}
+                      </div>
+                    </button>
+                  )
+                })
+              }
+
+              {discardReasons.filter(r => !discardSearch || r.label.toLowerCase().includes(discardSearch.toLowerCase())).length === 0 && (
+                <p className="text-xs text-slate-600 text-center py-4">Nenhum motivo encontrado</p>
+              )}
+            </div>
+
+            {/* Footer com ações */}
+            <div className="flex-shrink-0 px-4 pb-5 pt-3 border-t border-white/6 space-y-2">
+              {/* Excluir permanentemente */}
+              {!showDeleteConfirm ? (
                 <button
-                  key={r.value}
-                  onClick={() => setSelectedReason(r.value)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-sm text-left transition-all ${
-                    selectedReason === r.value
-                      ? 'bg-red-500/15 border-red-500/30 text-red-200'
-                      : 'bg-white/3 border-white/8 text-slate-400 hover:bg-white/6 hover:text-slate-300'
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs text-red-500/70 hover:text-red-400 border border-dashed border-red-900/40 hover:border-red-500/30 hover:bg-red-950/20 transition-all"
+                >
+                  <Trash2 size={11} />
+                  Excluir permanentemente (sem volta)
+                </button>
+              ) : (
+                <div className="bg-red-950/25 border border-red-500/25 rounded-xl p-3 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={13} className="text-red-400 flex-shrink-0" />
+                    <p className="text-xs text-red-300 font-medium">Isso apaga o lead permanentemente e não pode ser desfeito.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1 py-2 text-xs text-slate-400 hover:text-slate-200 bg-white/5 rounded-lg border border-white/10 transition-all"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="flex-1 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-all"
+                    >
+                      Excluir de vez
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirmar descarte */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowDiscard(false); setShowDeleteConfirm(false); setSelectedReason(null); setDiscardSearch('') }}
+                  className="flex-1 py-2.5 text-sm text-slate-400 hover:text-slate-200 bg-white/3 hover:bg-white/6 rounded-xl border border-white/8 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDiscard}
+                  disabled={!selectedReason}
+                  className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all ${
+                    selectedReason
+                      ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20'
+                      : 'bg-white/5 text-slate-600 cursor-not-allowed border border-white/8'
                   }`}
                 >
-                  <span>{r.icon}</span>
-                  {r.label}
-                  {selectedReason === r.value && <ArrowRight size={13} className="ml-auto text-red-400" />}
+                  {selectedReason ? 'Confirmar descarte' : 'Selecione um motivo'}
                 </button>
-              ))}
-
-              {/* Separador — excluir permanentemente */}
-              <div className="pt-2 border-t border-white/6">
-                {!showDeleteConfirm ? (
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-red-900/40 bg-red-950/20 text-red-500 hover:bg-red-900/30 hover:text-red-400 text-sm text-left transition-all"
-                  >
-                    <Trash2 size={13} />
-                    Excluir lead definitivamente
-                  </button>
-                ) : (
-                  <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-3 space-y-2">
-                    <p className="text-xs text-red-300 font-medium">⚠️ Isso é permanente e não pode ser desfeito.</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowDeleteConfirm(false)}
-                        className="flex-1 py-1.5 text-xs text-slate-400 hover:text-slate-200 bg-white/5 rounded-lg border border-white/10 transition-all"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={handleDelete}
-                        className="flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-all"
-                      >
-                        Sim, excluir
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 px-5 pb-4">
-              <button
-                onClick={() => { setShowDiscard(false); setShowDeleteConfirm(false) }}
-                className="flex-1 py-2 text-sm text-slate-400 hover:text-slate-200 bg-white/3 hover:bg-white/6 rounded-xl border border-white/8 transition-all"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleDiscard}
-                disabled={!selectedReason}
-                className="flex-1 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
-              >
-                Descartar
-              </button>
             </div>
           </div>
         </div>
