@@ -378,9 +378,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 >
                   <MessageCircle size={16} />
                   <span className="text-[10px] font-semibold">WhatsApp</span>
-                  {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
-                    <span className="text-[9px] opacity-70">{lead.followupStep}ª tentativa</span>
-                  )}
                 </button>
 
                 <button
