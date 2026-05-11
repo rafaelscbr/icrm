@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown, ThumbsUp, Loader2,
-  Clock, ChevronRight, Moon, LayoutList, Save, X,
+  MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown,
+  ThumbsUp, Loader2, Clock, Moon, ChevronRight,
 } from 'lucide-react'
-import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -17,11 +16,9 @@ import { DAILY_WARN, DAILY_LIMIT, useDailyCounter } from './dailyCounter'
 import { DailyLimitBar } from './DailyLimitBar'
 import toast from 'react-hot-toast'
 
-// ─── Cooldown global: bloqueia TODOS os botões após cada disparo ──────────────
-// Duração aleatória entre 45s e 150s para parecer comportamento humano
+// ─── Cooldown ─────────────────────────────────────────────────────────────────
 
 function randomCooldownMs() {
-  // Valores possíveis (segundos): 45, 55, 60, 75, 90, 110, 120, 150
   const options = [45, 55, 60, 75, 90, 110, 120, 150]
   return options[Math.floor(Math.random() * options.length)] * 1000
 }
@@ -29,51 +26,35 @@ function randomCooldownMs() {
 async function fireReadyNotification() {
   const title = 'Souza Imobiliária 🚀'
   const body  = 'Chefe, já dá para enviar mais mensagem, boraaa! 💬'
-  const opts  = {
-    body,
-    icon:               '/icon.svg',
-    tag:                'cooldown-done',
-    requireInteraction: true,   // fica até o usuário fechar no X
-    renotify:           true,   // força aparecer mesmo com mesmo tag
-  }
-
+  const opts  = { body, icon: '/icon.svg', tag: 'cooldown-done', requireInteraction: true, renotify: true }
   if ('Notification' in window && Notification.permission === 'granted') {
     try {
-      // Service Worker: aparece em qualquer aba/janela, mesmo fora de foco
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.ready
-        await reg.showNotification(title, opts)
+        await reg.showNotification(title, opts as NotificationOptions)
         return
       }
-    } catch (_) { /* fallback abaixo */ }
-
-    // Fallback direto (sem SW)
-    new Notification(title, opts)
+    } catch (_) {}
+    new Notification(title, opts as NotificationOptions)
     return
   }
-
-  // Último recurso: toast persistente dentro do sistema
   toast(body, { icon: '🚀', duration: Infinity })
 }
 
 function useGlobalCooldown() {
-  const [, setTick]    = useState(0)
-  const expiresAtRef   = useRef(0)   // ref evita closure stale no interval
-  const wasActiveRef   = useRef(false)
+  const [, setTick]  = useState(0)
+  const expiresAtRef = useRef(0)
+  const wasActiveRef = useRef(false)
 
-  // Pede permissão de notificação na montagem (Chrome aceita sem gesto)
-  // Safari exige gesto — será pedido também no primeiro envio
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
   }, [])
 
-  // Interval único (sem deps) — lê sempre o ref atualizado
   useEffect(() => {
     const id = setInterval(() => {
       setTick(t => t + 1)
-
       const secs = Math.max(0, Math.ceil((expiresAtRef.current - Date.now()) / 1000))
       if (wasActiveRef.current && secs === 0) {
         wasActiveRef.current = false
@@ -104,38 +85,27 @@ function useGlobalCooldown() {
   return { remaining, start, requestNotificationPermission }
 }
 
-// ─── Horário comercial (8h – 20h) ─────────────────────────────────────────────
-
 function isBusinessHours(): boolean {
   const h = new Date().getHours()
   return h >= 8 && h < 20
 }
 
-// ─── Modal para escolher qual mensagem enviar ─────────────────────────────────
+// ─── Message picker ───────────────────────────────────────────────────────────
 
-interface MessagePickerProps {
-  isOpen:    boolean
-  onClose:   () => void
-  templates: string[]         // todos os templates (já com {nome} substituído)
-  onPick:    (msg: string, index: number) => void
-}
-
-function MessagePickerModal({ isOpen, onClose, templates, onPick }: MessagePickerProps) {
+function MessagePickerModal({ isOpen, onClose, templates, onPick }: {
+  isOpen: boolean; onClose: () => void
+  templates: string[]; onPick: (msg: string, index: number) => void
+}) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Qual mensagem enviar?" size="sm">
       <p className="text-xs text-slate-500 -mt-2 mb-4">
-        Escolha um template diferente a cada envio para reduzir risco de bloqueio.
+        Varie os templates a cada envio para reduzir risco de bloqueio.
       </p>
       <div className="flex flex-col gap-2">
         {templates.map((t, i) => (
-          <button
-            key={i}
-            onClick={() => { onPick(t, i); onClose() }}
-            className="flex items-start gap-3 text-left p-3 rounded-xl bg-white/4 border border-white/8 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-pointer group"
-          >
-            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[11px] font-bold flex items-center justify-center mt-0.5">
-              {i + 1}
-            </span>
+          <button key={i} onClick={() => { onPick(t, i); onClose() }}
+            className="flex items-start gap-3 text-left p-3 rounded-xl bg-white/4 border border-white/8 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-pointer group">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[11px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
             <p className="flex-1 text-xs text-slate-300 line-clamp-3 leading-relaxed">{t}</p>
             <ChevronRight size={14} className="text-slate-700 group-hover:text-indigo-400 transition-colors flex-shrink-0 mt-0.5" />
           </button>
@@ -145,156 +115,103 @@ function MessagePickerModal({ isOpen, onClose, templates, onPick }: MessagePicke
   )
 }
 
-interface LeadsTabProps {
-  leads:      CampaignLead[]
-  campaign:   Campaign
-  stickyTop?: number
-}
-
-const PAGE_SIZE = 50
-
-const stageFilterOptions = [
-  { value: 'all', label: 'Todas as etapas' },
-  ...FUNNEL_STAGES.map(s => ({ value: s.value, label: s.label })),
-]
+// ─── Badges ───────────────────────────────────────────────────────────────────
 
 function StageBadge({ stage }: { stage: FunnelStage }) {
   const cfg = FUNNEL_STAGES.find(s => s.value === stage)!
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-lg ${cfg.bg} ${cfg.color}`}>
+    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg ${cfg.bg} ${cfg.color}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {cfg.short}
     </span>
   )
 }
 
-function SituationBadge({ situation }: { situation: CampaignLead['situation'] }) {
-  if (!situation) return null
-  const cfg = SITUATION_CONFIG.find(s => s.value === situation)!
-  return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded-lg ${cfg.bg} ${cfg.color}`} title={cfg.label}>
-      {cfg.short}
-    </span>
-  )
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+interface LeadsTabProps {
+  leads:      CampaignLead[]
+  campaign:   Campaign
+  stickyTop?: number
 }
+
+const PAGE_SIZE = 60
+
+// ─── Componente ───────────────────────────────────────────────────────────────
 
 export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const { remove, markContacted, update } = useCampaignLeadsStore()
 
-  const [search,       setSearch]       = useState('')
-  const [stageFilter,  setStageFilter]  = useState<FunnelStage | 'all'>('all')
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const [parecerLead,  setParecerLead]  = useState<CampaignLead | undefined>()
-  const [editLead,     setEditLead]     = useState<CampaignLead | undefined>()
-  const [deleteLead,   setDeleteLead]   = useState<CampaignLead | undefined>()
+  const [search,          setSearch]          = useState('')
+  const [visibleQueue,    setVisibleQueue]    = useState(PAGE_SIZE)
+  const [visibleContacted,setVisibleContacted]= useState(PAGE_SIZE)
+  const [parecerLead,     setParecerLead]     = useState<CampaignLead | undefined>()
+  const [editLead,        setEditLead]        = useState<CampaignLead | undefined>()
+  const [deleteLead,      setDeleteLead]      = useState<CampaignLead | undefined>()
+  const [showContacted,   setShowContacted]   = useState(true)
+  const [showDisqualified,setShowDisqualified]= useState(false)
+  const [pickerLead,      setPickerLead]      = useState<CampaignLead | undefined>()
+  const [forceOffHours,   setForceOffHours]   = useState(false)
+  const [excludedIds,     setExcludedIds]     = useState<Set<string>>(new Set())
 
-  // ── Cooldown global + picker de mensagem + contador diário ───────────────
-  const { remaining, start, requestNotificationPermission } = useGlobalCooldown()
-  const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
-  const [pickerLead,    setPickerLead]    = useState<CampaignLead | undefined>()
-  const [forceOffHours, setForceOffHours] = useState(false)
-  const [compact,       setCompact]       = useState(false)
-  const [excludedIds,   setExcludedIds]   = useState<Set<string>>(new Set())
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [savedFilters, setSavedFilters]   = useState<{name: string; search: string; stage: FunnelStage | 'all'}[]>(() => {
-    try { return JSON.parse(localStorage.getItem('crm_saved_filters') ?? '[]') } catch { return [] }
-  })
-  const [savingFilter,  setSavingFilter]  = useState(false)
-  const [filterName,    setFilterName]    = useState('')
+  const sentinelQRef     = useRef<HTMLDivElement>(null)
+  const sentinelCRef     = useRef<HTMLDivElement>(null)
 
-  const sentinelRef = useRef<HTMLDivElement>(null)
+  const { remaining, start, requestNotificationPermission } = useGlobalCooldown()
+  const { count: dailyCount, increment: dailyIncrement }    = useDailyCounter()
 
-  // Filtragem
-  const filtered = leads.filter(l => {
-    if (excludedIds.has(l.id)) return false
-    const q = search.trim().toLowerCase()
-    const matchSearch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q)
-    const matchStage  = stageFilter === 'all' || l.funnelStage === stageFilter
-    return matchSearch && matchStage
-  })
+  // ── Filtragem e agrupamento ───────────────────────────────────────────────
 
-  // Ordena: com contato primeiro (desc), depois sem contato
-  const sortedFiltered = [...filtered].sort((a, b) => {
-    if (a.firstContactAt && b.firstContactAt) return b.firstContactAt.localeCompare(a.firstContactAt)
-    if (a.firstContactAt) return -1
-    if (b.firstContactAt) return 1
-    return b.createdAt.localeCompare(a.createdAt)
-  })
+  const q = search.trim().toLowerCase()
+  const matchSearch = (l: CampaignLead) =>
+    !q || l.name.toLowerCase().includes(q) || l.phone.includes(q)
 
-  const visible = sortedFiltered.slice(0, visibleCount)
-  const hasMore = visibleCount < sortedFiltered.length
+  const allFiltered = leads.filter(l => !excludedIds.has(l.id) && matchSearch(l))
 
-  // Cria lista com separadores de data intercalados
-  function getDateLabel(dateStr: string): string {
-    const today = new Date(); today.setHours(0,0,0,0)
-    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1)
-    const d = new Date(dateStr)
-    d.setHours(0,0,0,0)
-    if (d.getTime() === today.getTime()) return 'Hoje'
-    if (d.getTime() === yesterday.getTime()) return 'Ontem'
-    const diff = Math.floor((today.getTime() - d.getTime()) / 86_400_000)
-    if (diff <= 7) return 'Esta semana'
-    return 'Mais antigos'
-  }
+  // 1. Fila: nunca contatados, sem situação especial — mais antigos primeiro
+  const queueLeads = allFiltered
+    .filter(l => l.funnelStage === 'new' && !l.situation)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
 
-  type ListItem = { type: 'separator'; label: string } | { type: 'lead'; lead: CampaignLead }
-  const listItems: ListItem[] = []
-  let lastLabel = ''
-  for (const lead of visible) {
-    const label = lead.firstContactAt ? getDateLabel(lead.firstContactAt) : 'Sem contato'
-    if (label !== lastLabel) {
-      listItems.push({ type: 'separator', label })
-      lastLabel = label
-    }
-    listItems.push({ type: 'lead', lead })
-  }
+  // 2. Já acionados: tiveram contato ou avançaram no funil
+  const contactedLeads = allFiltered
+    .filter(l => l.funnelStage !== 'new' && !l.situation)
+    .sort((a, b) => {
+      const aT = a.stageUpdatedAt ?? a.firstContactAt ?? a.updatedAt ?? a.createdAt
+      const bT = b.stageUpdatedAt ?? b.firstContactAt ?? b.updatedAt ?? b.createdAt
+      return bT.localeCompare(aT)
+    })
 
-  function saveCurrentFilter() {
-    if (!filterName.trim()) return
-    const newFilter = { name: filterName.trim(), search, stage: stageFilter }
-    const updated = [...savedFilters, newFilter]
-    setSavedFilters(updated)
-    localStorage.setItem('crm_saved_filters', JSON.stringify(updated))
-    setFilterName('')
-    setSavingFilter(false)
-  }
+  // 3. Desqualificados: têm situação (sem interesse / inválido / parar msgs)
+  const disqualLeads = allFiltered
+    .filter(l => !!l.situation)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 
-  function applyFilter(f: { search: string; stage: FunnelStage | 'all' }) {
-    setSearch(f.search)
-    setStageFilter(f.stage)
-  }
+  // Scroll infinito
+  useEffect(() => { setVisibleQueue(PAGE_SIZE); setVisibleContacted(PAGE_SIZE) }, [search])
 
-  function removeSavedFilter(i: number) {
-    const updated = savedFilters.filter((_, idx) => idx !== i)
-    setSavedFilters(updated)
-    localStorage.setItem('crm_saved_filters', JSON.stringify(updated))
-  }
-
-  // Resetar paginação quando filtro muda
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE)
-  }, [search, stageFilter])
-
-  // Scroll infinito via IntersectionObserver
-  const loadMore = useCallback(() => {
-    setVisibleCount(c => Math.min(c + PAGE_SIZE, filtered.length))
-  }, [filtered.length])
+  const loadMoreQueue     = useCallback(() => setVisibleQueue    (c => Math.min(c + PAGE_SIZE, queueLeads.length)),     [queueLeads.length])
+  const loadMoreContacted = useCallback(() => setVisibleContacted(c => Math.min(c + PAGE_SIZE, contactedLeads.length)), [contactedLeads.length])
 
   useEffect(() => {
-    const el = sentinelRef.current
-    if (!el || !hasMore) return
+    const el = sentinelQRef.current
+    if (!el || visibleQueue >= queueLeads.length) return
+    const obs = new IntersectionObserver(e => { if (e[0].isIntersecting) loadMoreQueue() }, { rootMargin: '300px' })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [visibleQueue, queueLeads.length, loadMoreQueue])
 
-    const observer = new IntersectionObserver(
-      entries => { if (entries[0].isIntersecting) loadMore() },
-      { rootMargin: '300px' }   // carrega 300 px antes do fim
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [hasMore, loadMore])
+  useEffect(() => {
+    const el = sentinelCRef.current
+    if (!el || visibleContacted >= contactedLeads.length) return
+    const obs = new IntersectionObserver(e => { if (e[0].isIntersecting) loadMoreContacted() }, { rootMargin: '300px' })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [visibleContacted, contactedLeads.length, loadMoreContacted])
 
-  // ── Ações ────────────────────────────────────────────────────────────────────
+  // ── Ações ─────────────────────────────────────────────────────────────────
 
-  // Todos os templates da campanha (principal + extras), com {nome} substituído
   function getTemplates(lead: CampaignLead): string[] {
     const firstName = lead.name.trim().split(/\s+/)[0]
     const all = [campaign.message, ...(campaign.messages ?? [])]
@@ -302,85 +219,53 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   }
 
   function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
-    window.open(whatsappUrl(lead.phone, msg), '_blank')  // primeiro — usa o gesto do clique
-    requestNotificationPermission()   // depois — async, não bloqueia o open
-    const secs  = start()             // cooldown global aleatório
-    const total = dailyIncrement()    // incrementa contador do dia
+    window.open(whatsappUrl(lead.phone, msg), '_blank')
+    requestNotificationPermission()
+    const secs  = start()
+    const total = dailyIncrement()
     setForceOffHours(false)
-
     const wasNew = lead.funnelStage === 'new'
     markContacted(lead.id, msg, templateIndex)
-
     if (total >= DAILY_WARN && total < DAILY_LIMIT) {
-      toast(`⚠️ ${total} disparos hoje — limite recomendado é ${DAILY_WARN}. Cuidado com o banimento!`,
-        { duration: 5000, icon: '⚠️' })
+      toast(`⚠️ ${total} disparos hoje — limite ${DAILY_WARN} recomendado. Cuidado com o ban!`, { duration: 5000, icon: '⚠️' })
     } else if (wasNew) {
-      toast.success(`1ª mensagem enviada! Próximo envio em ${secs}s.`)
+      toast.success(`1ª mensagem enviada! Próximo disparo em ${secs}s.`)
     } else {
-      toast.success(`Mensagem enviada. Próximo envio em ${secs}s.`)
+      toast.success(`Mensagem enviada. Próximo disparo em ${secs}s.`)
     }
   }
 
   function handleWhatsApp(lead: CampaignLead) {
-    // 1. Cooldown global ainda ativo?
     const secs = remaining()
-    if (secs > 0) {
-      toast.error(`Aguarde ${secs}s antes do próximo envio.`)
-      return
-    }
-
-    // 2. Fora do horário comercial (8h–20h)?
+    if (secs > 0) { toast.error(`Aguarde ${secs}s antes do próximo envio.`); return }
     if (!isBusinessHours() && !forceOffHours) {
-      toast(
-        t => (
-          <span className="flex flex-col gap-1.5">
-            <span className="font-semibold text-amber-300 flex items-center gap-1.5">
-              🌙 Fora do horário comercial
-            </span>
-            <span className="text-xs text-slate-300">
-              Enviar mensagens entre 20h e 8h aumenta o risco de banimento.
-            </span>
-            <button
-              onClick={() => { toast.dismiss(t.id); setForceOffHours(true) }}
-              className="mt-1 text-xs underline text-amber-400 text-left cursor-pointer"
-            >
-              Enviar mesmo assim →
-            </button>
-          </span>
-        ),
-        { duration: 8000, style: { background: '#1e1a0e', border: '1px solid #92400e' } }
-      )
+      toast(t => (
+        <span className="flex flex-col gap-1.5">
+          <span className="font-semibold text-amber-300 flex items-center gap-1.5">🌙 Fora do horário comercial</span>
+          <span className="text-xs text-slate-300">Enviar entre 20h e 8h aumenta o risco de banimento.</span>
+          <button onClick={() => { toast.dismiss(t.id); setForceOffHours(true) }}
+            className="mt-1 text-xs underline text-amber-400 text-left cursor-pointer">
+            Enviar mesmo assim →
+          </button>
+        </span>
+      ), { duration: 8000, style: { background: '#1e1a0e', border: '1px solid #92400e' } })
       return
     }
-
-    // 3. Limite diário atingido?
     if (dailyCount >= DAILY_LIMIT) {
-      toast.error(`Limite de ${DAILY_LIMIT} disparos diários atingido. Retome amanhã para proteger seu número.`,
-        { duration: 6000 })
+      toast.error(`Limite de ${DAILY_LIMIT} disparos diários atingido. Retome amanhã.`, { duration: 6000 })
       return
     }
-
     const templates = getTemplates(lead)
-    if (templates.length > 1) {
-      setPickerLead(lead)
-    } else {
-      sendWhatsApp(lead, templates[0], 0)
-    }
+    if (templates.length > 1) setPickerLead(lead)
+    else sendWhatsApp(lead, templates[0], 0)
   }
 
-  function handleAdvanceFunnel(lead: CampaignLead) {
-    const STAGES: FunnelStage[] = ['new', 'sent', 'attended', 'scheduled', 'presentation', 'proposal', 'sale']
-    const currentIdx = STAGES.indexOf(lead.funnelStage)
-    if (lead.funnelStage === 'attended') {
-      toast('Lead já está em "Demonstrou Interesse"', { icon: '👍' })
-      return
-    }
-    if (currentIdx >= STAGES.indexOf('attended')) {
-      toast('Lead já está em uma etapa avançada', { icon: 'ℹ️' })
-      return
+  function handleInterested(lead: CampaignLead) {
+    if (['attended','scheduled','presentation','proposal','sale'].includes(lead.funnelStage)) {
+      toast('Lead já está em etapa avançada', { icon: 'ℹ️' }); return
     }
     update(lead.id, { funnelStage: 'attended' })
-    toast.success(`${lead.name} avançou para "Demonstrou Interesse"!`)
+    toast.success(`${lead.name} marcado como interessado!`)
   }
 
   function handleDelete() {
@@ -395,304 +280,351 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     toast(t => (
       <div className="flex items-center gap-3">
         <span className="text-sm">Lead removido</span>
-        <button
-          onClick={() => {
-            clearTimeout(deleteTimeoutRef.current!)
-            setExcludedIds(prev => { const s = new Set(prev); s.delete(lead.id); return s })
-            toast.dismiss(t.id)
-          }}
-          className="text-xs text-indigo-400 font-semibold underline cursor-pointer"
-        >
-          Desfazer
-        </button>
+        <button onClick={() => {
+          clearTimeout(deleteTimeoutRef.current!)
+          setExcludedIds(prev => { const s = new Set(prev); s.delete(lead.id); return s })
+          toast.dismiss(t.id)
+        }} className="text-xs text-indigo-400 font-semibold underline cursor-pointer">Desfazer</button>
       </div>
     ), { duration: 5000 })
   }
 
-  // ── Summary chips ─────────────────────────────────────────────────────────────
+  // ── Cooldown global ───────────────────────────────────────────────────────
 
-  const total      = leads.length
-  const contacted  = leads.filter(l => l.firstContactAt).length
-  const interested = leads.filter(l => l.funnelStage === 'attended').length
-  const engaging   = leads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
-  const proposals  = leads.filter(l => l.funnelStage === 'proposal').length
-  const sales      = leads.filter(l => l.funnelStage === 'sale').length
+  const secs  = remaining()
+  const onCd  = secs > 0
+  const atLim = dailyCount >= DAILY_LIMIT
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-0">
 
-      {/* ── Barra de limite diário — sticky, acompanha o scroll ──────────── */}
-      <div className="sticky z-20 -mx-4 px-4 pb-2 pt-1 nav-bg" style={{ top: stickyTop }}>
+      {/* ── Sticky header ─────────────────────────────────────────────────── */}
+      <div className="sticky z-20 -mx-6 px-6 pb-3 pt-1 nav-bg" style={{ top: stickyTop }}>
         <DailyLimitBar count={dailyCount} />
 
-        {/* Cooldown + fora de horário — abaixo da barra quando ativos */}
-        {(remaining() > 0 || !isBusinessHours()) && (
+        {/* Status global de cooldown — one place, not per-row */}
+        {(onCd || !isBusinessHours() || atLim) && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {remaining() > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 text-xs">
-                <Clock size={11} />
-                <span className="tabular-nums font-bold">{remaining()}s</span>
-                <span className="text-slate-600">aguardando</span>
+            {atLim && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs font-semibold">
+                🚫 Limite diário atingido — retome amanhã
               </div>
             )}
-            {!isBusinessHours() && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
-                <Moon size={11} />
-                <span>Fora do horário comercial</span>
+            {!atLim && onCd && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-slate-300 text-xs">
+                <Clock size={12} className="text-slate-500" />
+                <span>Próximo disparo em</span>
+                <span className="font-black tabular-nums text-white text-sm">{secs}s</span>
+              </div>
+            )}
+            {!isBusinessHours() && !atLim && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
+                <Moon size={11} /> Fora do horário comercial (8h–20h)
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Summary chips */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          { label: 'Total',                 value: total,      color: 'text-slate-400',  bg: 'bg-white/5'         },
-          { label: 'Acionados',             value: contacted,  color: 'text-blue-400',   bg: 'bg-blue-500/10'     },
-          { label: 'Demonstrou Interesse',  value: interested, color: 'text-cyan-400',   bg: 'bg-cyan-500/10'     },
-          { label: 'Em andamento',          value: engaging,   color: 'text-violet-400', bg: 'bg-violet-500/10'   },
-          { label: 'Propostas',             value: proposals,  color: 'text-amber-400',  bg: 'bg-amber-500/10'    },
-          { label: 'Vendas',                value: sales,      color: 'text-green-400',  bg: 'bg-green-500/10'    },
-        ].map(s => (
-          <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${s.bg} border border-white/8`}>
-            <span className={`text-sm font-bold tabular-nums ${s.color}`}>{s.value.toLocaleString('pt-BR')}</span>
-            <span className="text-xs text-slate-500">{s.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-3">
+      {/* ── Busca + resumo ────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 mb-5">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
           <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por nome ou telefone..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar nome ou telefone…"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
           />
         </div>
-        <div className="relative">
-          <select
-            value={stageFilter}
-            onChange={e => { setStageFilter(e.target.value as FunnelStage | 'all') }}
-            className="appearance-none bg-white/5 border border-white/10 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"
-          >
-            {stageFilterOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+        {/* Mini resumo inline */}
+        <div className="flex items-center gap-3 text-xs text-slate-500 flex-shrink-0">
+          <span><span className="text-white font-bold tabular-nums">{queueLeads.length}</span> na fila</span>
+          <span className="text-white/10">|</span>
+          <span><span className="text-cyan-400 font-bold tabular-nums">{contactedLeads.length}</span> acionados</span>
+          <span className="text-white/10">|</span>
+          <span><span className="text-green-400 font-bold tabular-nums">{leads.filter(l => l.funnelStage === 'sale').length}</span> vendas</span>
         </div>
-        <button
-          onClick={() => setCompact(v => !v)}
-          className={`p-2.5 rounded-xl border transition-colors cursor-pointer flex-shrink-0 ${compact ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400' : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'}`}
-          title="Modo compacto"
-        >
-          <LayoutList size={14} />
-        </button>
       </div>
 
-      {/* Filtros salvos */}
-      {savedFilters.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {savedFilters.map((f, i) => (
-            <button
-              key={i}
-              onClick={() => applyFilter(f)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs border bg-indigo-500/8 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/15 transition-colors cursor-pointer"
-            >
-              {f.name}
-              <span onClick={e => { e.stopPropagation(); removeSavedFilter(i) }} className="ml-0.5 hover:text-red-400 transition-colors cursor-pointer">
-                <X size={10} />
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Salvar filtro atual */}
-      {(search || stageFilter !== 'all') && (
-        <div className="flex items-center gap-2">
-          {!savingFilter ? (
-            <button
-              onClick={() => setSavingFilter(true)}
-              className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
-            >
-              <Save size={11} /> Salvar este filtro
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <input
-                autoFocus
-                value={filterName}
-                onChange={e => setFilterName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') saveCurrentFilter(); if (e.key === 'Escape') setSavingFilter(false) }}
-                placeholder="Nome do filtro..."
-                className="text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 w-40"
-              />
-              <button onClick={saveCurrentFilter} className="text-xs text-indigo-400 hover:text-indigo-300 cursor-pointer">Salvar</button>
-              <button onClick={() => setSavingFilter(false)} className="text-xs text-slate-600 hover:text-slate-400 cursor-pointer">Cancelar</button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Contador de resultados */}
-      {filtered.length > 0 && (
-        <p className="text-xs text-slate-600">
-          Exibindo{' '}
-          <span className="text-slate-400 font-medium">{Math.min(visibleCount, filtered.length).toLocaleString('pt-BR')}</span>
-          {' '}de{' '}
-          <span className="text-slate-400 font-medium">{filtered.length.toLocaleString('pt-BR')}</span>
-          {' '}leads{stageFilter !== 'all' || search ? ' (filtrado)' : ''}
-        </p>
-      )}
-
-      {/* Tabela */}
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={<Search size={24} />}
-          title={search || stageFilter !== 'all' ? 'Nenhum lead encontrado' : 'Nenhum lead importado'}
-          description={search || stageFilter !== 'all' ? 'Tente ajustar os filtros.' : 'Importe uma lista XLSX para começar.'}
-        />
+      {leads.length === 0 ? (
+        <EmptyState icon={<MessageCircle size={24} />} title="Nenhum lead importado"
+          description="Importe uma lista XLSX para começar a disparar." />
       ) : (
-        <Card className="!p-0 overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-[1fr_140px_170px_160px_120px] gap-0 px-5 py-3 border-b border-white/8 text-xs text-slate-600 uppercase tracking-wider font-medium">
-            <span>Nome</span>
-            <span>Telefone</span>
-            <span>Etapa</span>
-            <span>Situação</span>
-            <span className="text-right">Ações</span>
+        <>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SEÇÃO 1 — FILA DE DISPARO
+        ══════════════════════════════════════════════════════════════════ */}
+        <div className="mb-6">
+          {/* Header da seção */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <h3 className="text-sm font-bold text-white">Fila de disparo</h3>
+            </div>
+            <span className="text-xs bg-green-500/15 text-green-400 border border-green-500/25 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+              {queueLeads.length}
+            </span>
+            <div className="flex-1 h-px bg-white/6" />
+            <span className="text-[10px] text-slate-600 uppercase tracking-wider">não acionados · mais antigos primeiro</span>
           </div>
 
-          <div className="divide-y divide-white/5">
-            {listItems.map((item, idx) => {
-              if (item.type === 'separator') return (
-                <div key={`sep-${idx}`} className="px-5 py-1.5 bg-white/2 border-b border-white/5">
-                  <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider">{item.label}</span>
-                </div>
-              )
-              const lead = item.lead
-              const secs = remaining()
-              const onCd = secs > 0
-              return (
-              <div
-                key={lead.id}
-                className={`grid grid-cols-[1fr_140px_170px_160px_120px] gap-0 px-5 items-center transition-colors group ${compact ? 'py-2' : 'py-3.5'} ${
-                  lead.situation === 'invalid'
-                    ? 'bg-slate-500/5 hover:bg-slate-500/8'
-                    : 'hover:bg-white/5 row-accent'
-                }`}
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-200 truncate">{lead.name}</p>
-                  {!compact && lead.email && <p className="text-xs text-slate-600 truncate">{lead.email}</p>}
-                </div>
-                <span className="text-sm text-slate-400 tabular-nums">{formatPhone(lead.phone)}</span>
-                <span><StageBadge stage={lead.funnelStage} /></span>
-                <span>
-                  {lead.situation
-                    ? <SituationBadge situation={lead.situation} />
-                    : <span className="text-xs text-slate-700">—</span>
-                  }
-                </span>
-                <div className="flex items-center justify-end gap-1">
-                  {/* Countdown: fixo e sempre visível enquanto ativo, some quando termina */}
-                  {onCd && (
-                    <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold tabular-nums select-none">
-                      <Clock size={11} />
-                      {secs}s
-                    </span>
-                  )}
-
-                  {/* Botões de ação: só aparecem no hover */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {/* WhatsApp: só quando não há cooldown */}
-                    {!onCd && (
-                      <button
-                        onClick={() => handleWhatsApp(lead)}
-                        className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors cursor-pointer"
-                        title="Abrir WhatsApp"
-                      >
-                        <MessageCircle size={13} />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setParecerLead(lead)}
-                      className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-indigo-400 transition-colors cursor-pointer"
-                      title="Parecer"
-                    >
-                      <FileText size={13} />
-                    </button>
-                    <button
-                      onClick={() => setEditLead(lead)}
-                      className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
-                      title="Editar"
-                    >
-                      <Pencil size={13} />
-                    </button>
-                    <button
-                      onClick={() => handleAdvanceFunnel(lead)}
-                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                        lead.funnelStage === 'attended' || ['scheduled','presentation','proposal','sale'].includes(lead.funnelStage)
-                          ? 'text-cyan-500/40 cursor-default'
-                          : 'hover:bg-cyan-500/10 text-slate-600 hover:text-cyan-400'
-                      }`}
-                      title="Avançar para Demonstrou Interesse"
-                    >
-                      <ThumbsUp size={13} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteLead(lead)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer"
-                      title="Excluir"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
+          {queueLeads.length === 0 ? (
+            <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-green-500/5 border border-green-500/15">
+              <span className="text-2xl">✅</span>
+              <div>
+                <p className="text-sm font-semibold text-green-400">Fila zerada!</p>
+                <p className="text-xs text-slate-500">Todos os leads desta campanha já foram acionados.</p>
               </div>
-            )})}
             </div>
+          ) : (
+            <div className="rounded-xl border border-white/8 overflow-hidden bg-[#0D1117]">
+              {/* Header da tabela */}
+              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-white/6 text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+                <span>Nome</span>
+                <span>Telefone</span>
+                <span className="w-28 text-center">Ação</span>
+              </div>
 
-          {/* Sentinel para scroll infinito */}
-          <div ref={sentinelRef} className="h-1" />
+              <div className="divide-y divide-white/5">
+                {queueLeads.slice(0, visibleQueue).map((lead, idx) => {
+                  const isNext = idx === 0 && !onCd && !atLim
+                  return (
+                    <div key={lead.id}
+                      className={`grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-3 items-center transition-colors
+                        ${isNext ? 'bg-green-500/5' : 'hover:bg-white/3'}`}>
 
-          {/* Indicador de carregando mais */}
-          {hasMore && (
-            <div className="flex items-center justify-center gap-2 py-4 border-t border-white/5">
-              <Loader2 size={14} className="animate-spin text-indigo-400" />
-              <span className="text-xs text-slate-500">
-                Carregando mais leads...
-              </span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Avatar */}
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
+                          ${isNext ? 'bg-green-500/20 text-green-300' : 'bg-white/6 text-slate-400'}`}>
+                          {lead.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-sm font-medium truncate ${isNext ? 'text-white' : 'text-slate-300'}`}>
+                            {lead.name}
+                          </p>
+                          {lead.extra && (
+                            <p className="text-[10px] text-slate-600 truncate">{lead.extra}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <span className="text-sm text-slate-500 tabular-nums font-mono">
+                        {formatPhone(lead.phone)}
+                      </span>
+
+                      {/* Botão de disparo — sempre visível */}
+                      <div className="w-28 flex justify-center">
+                        {atLim ? (
+                          <span className="text-[11px] text-red-400/60">limite atingido</span>
+                        ) : onCd ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-white/8 text-slate-400 text-xs tabular-nums">
+                            <Clock size={11} /> {secs}s
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleWhatsApp(lead)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95
+                              ${isNext
+                                ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20'
+                                : 'bg-green-500/15 hover:bg-green-500/25 text-green-400 border border-green-500/25'
+                              }`}
+                          >
+                            <MessageCircle size={13} />
+                            {isNext ? 'Disparar agora' : 'Disparar'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div ref={sentinelQRef} className="h-1" />
+              {visibleQueue < queueLeads.length && (
+                <div className="flex items-center justify-center gap-2 py-3 border-t border-white/5">
+                  <Loader2 size={13} className="animate-spin text-slate-600" />
+                  <span className="text-xs text-slate-600">Carregando mais…</span>
+                </div>
+              )}
             </div>
           )}
-        </Card>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SEÇÃO 2 — JÁ ACIONADOS
+        ══════════════════════════════════════════════════════════════════ */}
+        {contactedLeads.length > 0 && (
+          <div className="mb-6">
+            <button
+              onClick={() => setShowContacted(v => !v)}
+              className="flex items-center gap-3 w-full mb-3 group"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                <h3 className="text-sm font-bold text-slate-400 group-hover:text-slate-200 transition-colors">Já acionados</h3>
+              </div>
+              <span className="text-xs bg-blue-500/15 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+                {contactedLeads.length}
+              </span>
+              <div className="flex-1 h-px bg-white/6" />
+              <ChevronDown size={13} className={`text-slate-600 transition-transform ${showContacted ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showContacted && (
+              <div className="rounded-xl border border-white/8 overflow-hidden bg-[#0D1117]">
+                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-white/6 text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+                  <span>Etapa</span>
+                  <span>Nome</span>
+                  <span>Telefone</span>
+                  <span className="w-24 text-right">Ações</span>
+                </div>
+
+                <div className="divide-y divide-white/5">
+                  {contactedLeads.slice(0, visibleContacted).map(lead => {
+                    const cdActive = onCd || atLim
+                    const situCfg  = lead.situation ? SITUATION_CONFIG.find(s => s.value === lead.situation) : null
+                    return (
+                      <div key={lead.id}
+                        className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 items-center hover:bg-white/3 transition-colors group">
+
+                        <div className="flex items-center gap-2">
+                          <StageBadge stage={lead.funnelStage} />
+                          {situCfg && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${situCfg.bg} ${situCfg.color}`}>
+                              {situCfg.short}
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-sm text-slate-300 truncate">{lead.name}</p>
+
+                        <span className="text-sm text-slate-600 tabular-nums font-mono">
+                          {formatPhone(lead.phone)}
+                        </span>
+
+                        {/* Ações — visíveis no hover */}
+                        <div className="w-24 flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {!cdActive && (
+                            <button onClick={() => handleWhatsApp(lead)}
+                              className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors cursor-pointer"
+                              title="WhatsApp">
+                              <MessageCircle size={13} />
+                            </button>
+                          )}
+                          <button onClick={() => handleInterested(lead)}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              ['attended','scheduled','presentation','proposal','sale'].includes(lead.funnelStage)
+                                ? 'text-cyan-500/30 cursor-default'
+                                : 'hover:bg-cyan-500/10 text-slate-600 hover:text-cyan-400'
+                            }`}
+                            title="Marcar como interessado">
+                            <ThumbsUp size={13} />
+                          </button>
+                          <button onClick={() => setParecerLead(lead)}
+                            className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-indigo-400 transition-colors cursor-pointer"
+                            title="Parecer">
+                            <FileText size={13} />
+                          </button>
+                          <button onClick={() => setEditLead(lead)}
+                            className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+                            title="Editar">
+                            <Pencil size={13} />
+                          </button>
+                          <button onClick={() => setDeleteLead(lead)}
+                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer"
+                            title="Remover">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div ref={sentinelCRef} className="h-1" />
+                {visibleContacted < contactedLeads.length && (
+                  <div className="flex items-center justify-center gap-2 py-3 border-t border-white/5">
+                    <Loader2 size={13} className="animate-spin text-slate-600" />
+                    <span className="text-xs text-slate-600">Carregando mais…</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SEÇÃO 3 — DESQUALIFICADOS (colapsável, fechado por padrão)
+        ══════════════════════════════════════════════════════════════════ */}
+        {disqualLeads.length > 0 && (
+          <div className="mb-4">
+            <button
+              onClick={() => setShowDisqualified(v => !v)}
+              className="flex items-center gap-3 w-full mb-3 group"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-slate-600" />
+                <h3 className="text-sm font-bold text-slate-600 group-hover:text-slate-400 transition-colors">Sem interesse / Inválidos</h3>
+              </div>
+              <span className="text-xs bg-white/5 text-slate-600 border border-white/8 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+                {disqualLeads.length}
+              </span>
+              <div className="flex-1 h-px bg-white/4" />
+              <ChevronDown size={13} className={`text-slate-700 transition-transform ${showDisqualified ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showDisqualified && (
+              <div className="rounded-xl border border-white/5 overflow-hidden opacity-60">
+                <div className="divide-y divide-white/4">
+                  {disqualLeads.map(lead => {
+                    const situCfg = SITUATION_CONFIG.find(s => s.value === lead.situation)
+                    return (
+                      <div key={lead.id}
+                        className="flex items-center gap-4 px-5 py-2.5 hover:bg-white/2 transition-colors group">
+                        <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium ${situCfg?.bg ?? 'bg-white/5'} ${situCfg?.color ?? 'text-slate-500'}`}>
+                          {situCfg?.short ?? '—'}
+                        </span>
+                        <p className="flex-1 text-sm text-slate-500 truncate">{lead.name}</p>
+                        <span className="text-xs text-slate-700 tabular-nums font-mono">{formatPhone(lead.phone)}</span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setEditLead(lead)}
+                            className="p-1.5 rounded-lg hover:bg-white/8 text-slate-700 hover:text-slate-400 transition-colors cursor-pointer">
+                            <Pencil size={12} />
+                          </button>
+                          <button onClick={() => setDeleteLead(lead)}
+                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-700 hover:text-red-400 transition-colors cursor-pointer">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        </>
       )}
 
+      {/* ── Modais ────────────────────────────────────────────────────────── */}
       <LeadParecerModal
-        isOpen={Boolean(parecerLead)}
-        onClose={() => setParecerLead(undefined)}
-        lead={parecerLead}
-        campaign={campaign}
+        isOpen={Boolean(parecerLead)} onClose={() => setParecerLead(undefined)}
+        lead={parecerLead} campaign={campaign}
       />
       <LeadEditModal
-        isOpen={Boolean(editLead)}
-        onClose={() => setEditLead(undefined)}
-        lead={editLead}
+        isOpen={Boolean(editLead)} onClose={() => setEditLead(undefined)} lead={editLead}
       />
-
-      {/* Picker de mensagem */}
       <MessagePickerModal
-        isOpen={Boolean(pickerLead)}
-        onClose={() => setPickerLead(undefined)}
+        isOpen={Boolean(pickerLead)} onClose={() => setPickerLead(undefined)}
         templates={pickerLead ? getTemplates(pickerLead) : []}
         onPick={(msg, idx) => pickerLead && sendWhatsApp(pickerLead, msg, idx)}
       />
-
       <Modal isOpen={Boolean(deleteLead)} onClose={() => setDeleteLead(undefined)} title="Remover lead" size="sm">
         <p className="text-sm text-slate-400 mb-6">
           Remover <span className="text-slate-200 font-medium">"{deleteLead?.name}"</span> desta campanha?
