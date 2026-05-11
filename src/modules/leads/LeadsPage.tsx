@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
-  MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2,
+  MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2, TrendingUp,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -14,6 +14,7 @@ import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadsDashboard } from './LeadsDashboard'
 import { LeadSettings } from './LeadSettings'
+import { LeadsPerformance } from './LeadsPerformance'
 
 const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string; border: string }> = {
   felicita: { label: 'Felicità', emoji: '✨', color: 'text-rose-400',   bg: 'bg-rose-500/15',   border: 'border-rose-500/25'   },
@@ -25,7 +26,7 @@ const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: strin
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
-type Tab = 'leads' | 'kanban' | 'dashboard' | 'configuracoes'
+type Tab = 'leads' | 'kanban' | 'dashboard' | 'performance' | 'configuracoes'
 
 // ─── LeadRow ──────────────────────────────────────────────────────────────────
 
@@ -147,16 +148,18 @@ export function LeadsPage() {
   }, [leads, search, filterStage, filterOrigin, showDiscarded])
 
   const TABS: { value: Tab; label: string; icon: typeof List; badge?: number }[] = [
-    { value: 'leads',          label: 'Leads',          icon: List,       badge: active.length },
-    { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                       },
-    { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                        },
-    { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                        },
+    { value: 'leads',          label: 'Leads',          icon: List,        badge: active.length },
+    { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                        },
+    { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                         },
+    { value: 'performance',    label: 'Performance',     icon: TrendingUp                        },
+    { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                         },
   ]
 
-  const isListTab    = tab === 'leads'
-  const isKanbanTab  = tab === 'kanban'
-  const isDashTab    = tab === 'dashboard'
-  const isConfigTab  = tab === 'configuracoes'
+  const isListTab        = tab === 'leads'
+  const isKanbanTab      = tab === 'kanban'
+  const isDashTab        = tab === 'dashboard'
+  const isPerformanceTab = tab === 'performance'
+  const isConfigTab      = tab === 'configuracoes'
 
   return (
     <div className="flex flex-col h-full">
@@ -208,6 +211,13 @@ export function LeadsPage() {
       {isDashTab && (
         <div className="flex-1 overflow-auto">
           <LeadsDashboard leads={leads} onOpenLead={setSelectedLead} />
+        </div>
+      )}
+
+      {/* ── Performance ───────────────────────────────────────────────────────── */}
+      {isPerformanceTab && (
+        <div className="flex-1 overflow-auto">
+          <LeadsPerformance leads={active} />
         </div>
       )}
 
