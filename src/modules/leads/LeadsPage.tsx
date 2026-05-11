@@ -7,6 +7,7 @@ import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
+import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { LeadForm } from './LeadForm'
 import { LeadModal } from './LeadModal'
@@ -113,6 +114,7 @@ export function LeadsPage() {
   const { leads, loading, load } = useLeadsStore()
   const { load: loadProps }    = usePropertiesStore()
   const { load: loadContacts } = useContactsStore()
+  const { load: loadConfig }   = useLeadConfigStore()
 
   const [tab,           setTab]           = useState<Tab>('leads')
   const [search,        setSearch]        = useState('')
@@ -122,7 +124,7 @@ export function LeadsPage() {
   const [showForm,      setShowForm]      = useState(false)
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
 
-  useEffect(() => { load(); loadProps(); loadContacts() }, [])
+  useEffect(() => { load(); loadProps(); loadContacts(); loadConfig() }, [])
 
   const active    = leads.filter(l => !l.discardReason)
   const discarded = leads.filter(l => !!l.discardReason)

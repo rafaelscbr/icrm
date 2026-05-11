@@ -326,6 +326,7 @@ interface LeadRow {
   radar_value_max: number | null
   radar_area_min: number | null
   radar_bedrooms: number | null
+  kanban_order: number | null
   created_at: string; updated_at: string
 }
 
@@ -353,6 +354,7 @@ function toLead(r: LeadRow): Lead {
     radarValueMax: r.radar_value_max ?? undefined,
     radarAreaMin: r.radar_area_min ?? undefined,
     radarBedrooms: r.radar_bedrooms ?? undefined,
+    kanbanOrder: r.kanban_order ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -379,6 +381,7 @@ function fromLead(l: Lead): LeadRow {
     radar_value_max: l.radarValueMax ?? null,
     radar_area_min: l.radarAreaMin ?? null,
     radar_bedrooms: l.radarBedrooms ?? null,
+    kanban_order: l.kanbanOrder ?? null,
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }

@@ -19,6 +19,7 @@ interface LeadsStore {
   restore: (id: string) => void
   convertToContact: (id: string, contactId: string) => void
   toggleFlag: (id: string) => void
+  reorder: (id: string, kanbanOrder: number) => void
   search: (query: string) => Lead[]
   filterByStage: (stage: LeadFunnelStage | null) => Lead[]
   filterByOrigin: (origin: LeadOrigin | null) => Lead[]
@@ -76,7 +77,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
   update: (id, data) => {
     const now = new Date().toISOString()
     const leads = get().leads.map(l =>
-      l.id === id ? { ...l, ...data, updatedAt: now } : l
+      l.id === id ? { ...l, ...data, updatedAt: now, kanbanOrder: Date.now() } : l
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
@@ -123,7 +124,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
     const leads = get().leads.map(l =>
       l.id === id
-        ? { ...l, funnelStage: stage, followupStep: stage === 'followup' ? (l.followupStep || 1) : l.followupStep, visitaTaskId, updatedAt: now }
+        ? { ...l, funnelStage: stage, followupStep: stage === 'followup' ? (l.followupStep || 1) : l.followupStep, visitaTaskId, updatedAt: now, kanbanOrder: Date.now() }
         : l
     )
     set({ leads })
@@ -150,7 +151,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     }
 
     const leads = get().leads.map(l =>
-      l.id === id ? { ...l, funnelStage: nextStage, followupStep: nextStep, updatedAt: now } : l
+      l.id === id ? { ...l, funnelStage: nextStage, followupStep: nextStep, updatedAt: now, kanbanOrder: Date.now() } : l
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
@@ -191,6 +192,16 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
     get().update(id, { flagged: !lead.flagged })
+  },
+
+  reorder: (id, kanbanOrder) => {
+    const now = new Date().toISOString()
+    const leads = get().leads.map(l =>
+      l.id === id ? { ...l, kanbanOrder, updatedAt: now } : l
+    )
+    set({ leads })
+    const updated = leads.find(l => l.id === id)
+    if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] reorder:', err))
   },
 
   search: (query) => {

@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
-  DndContext, DragOverlay, useDraggable, useDroppable,
-  closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors,
+  DndContext, DragOverlay, closestCenter,
+  DragEndEvent, DragOverEvent, DragStartEvent,
+  PointerSensor, useSensor, useSensors,
+  useDroppable,
 } from '@dnd-kit/core'
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { MessageCircle, UserCheck, GripVertical, Phone, Flame } from 'lucide-react'
 import { Lead, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -31,14 +37,37 @@ const ORIGIN_EMOJI: Record<string, string> = {
   felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝', campanha: '📣',
 }
 
-// ─── Card draggável ───────────────────────────────────────────────────────────
+function effectiveOrder(lead: Lead): number {
+  return lead.kanbanOrder ?? new Date(lead.updatedAt).getTime()
+}
 
-function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
+function orderBetween(above: Lead | null, below: Lead | null): number {
+  const a = above ? effectiveOrder(above) : Date.now() + 1_000_000
+  const b = below ? effectiveOrder(below) : 0
+  return (a + b) / 2
+}
+
+// ─── Card sortável ────────────────────────────────────────────────────────────
+
+function LeadCard({
+  lead, onClick, isOverlay = false,
+}: {
+  lead: Lead; onClick: () => void; isOverlay?: boolean
+}) {
   const { advanceFollowup, toggleFlag } = useLeadsStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { add: addInteraction, getForLead } = useLeadInteractionsStore()
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id })
+
+  const {
+    attributes, listeners, setNodeRef,
+    transform, transition, isDragging,
+  } = useSortable({ id: lead.id })
+
+  const style = isOverlay ? {} : {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
 
   const property = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact = lead.contactId ? getById(lead.contactId) : undefined
@@ -71,9 +100,11 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   return (
     <div
       ref={setNodeRef}
+      style={style}
       onClick={onClick}
       className={`group relative border rounded-xl p-3 cursor-pointer transition-all duration-150 hover:translate-y-[-1px] active:scale-[0.98]
-        ${isDragging ? 'opacity-40 scale-95' : ''}
+        ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
+        ${isOverlay ? 'rotate-1 shadow-2xl shadow-amber-500/15 border-amber-500/40' : ''}
         ${lead.flagged
           ? 'bg-gradient-to-br from-orange-500/10 to-red-500/5 border-orange-500/50 shadow-lg shadow-orange-500/10 hover:border-orange-500/70 hover:shadow-orange-500/20'
           : lead.funnelStage === 'venda'
@@ -84,14 +115,12 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         }
       `}
     >
-      {/* Flag badge quando ativo */}
       {lead.flagged && (
         <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/50 z-10">
           <Flame size={10} className="text-white" />
         </div>
       )}
 
-      {/* Drag handle + flag toggle */}
       <div className="absolute top-2 right-2 flex items-center gap-0.5">
         <button
           onClick={e => { e.stopPropagation(); toggleFlag(lead.id) }}
@@ -114,7 +143,6 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         </div>
       </div>
 
-      {/* Name + origin */}
       <div className="flex items-start gap-2 pr-12 mb-2">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-white/10 flex items-center justify-center text-sm font-black text-slate-300 flex-shrink-0">
           {displayName.charAt(0).toUpperCase()}
@@ -128,7 +156,6 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         </div>
       </div>
 
-      {/* Followup progress */}
       {lead.funnelStage === 'followup' && (
         <div className="mb-2">
           <div className="flex items-center gap-1 mb-1">
@@ -145,21 +172,18 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         </div>
       )}
 
-      {/* Property */}
       {(property || lead.propertyName) && (
         <p className={`text-[11px] mb-2 truncate flex items-center gap-1 ${lead.propertyName && !property ? 'text-amber-400/70' : 'text-slate-500'}`}>
           🏠 <span className="truncate">{property ? property.name : lead.propertyName}</span>
         </p>
       )}
 
-      {/* Ticket */}
       {lead.averageTicket && (
         <p className="text-[11px] font-semibold text-violet-400 mb-1.5">
           {formatCurrency(lead.averageTicket)}
         </p>
       )}
 
-      {/* Last interaction summary */}
       {lastInteraction && (
         <p className="text-[10px] text-slate-600 mb-2 truncate leading-snug">
           {lastInteraction.type === 'ligacao' ? '📞' : lastInteraction.type === 'whatsapp' ? '💬' : lastInteraction.type === 'visita' ? '🏠' : lastInteraction.type === 'reuniao' ? '🤝' : lastInteraction.type === 'email' ? '📧' : '📝'}{' '}
@@ -167,7 +191,6 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         </p>
       )}
 
-      {/* Badges */}
       {isLinked && (
         <div className="flex items-center gap-1 flex-wrap mb-1">
           <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20">
@@ -176,7 +199,6 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         </div>
       )}
 
-      {/* Action buttons */}
       <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5">
         <button
           onClick={handleWhatsApp}
@@ -208,41 +230,24 @@ function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   )
 }
 
-// ─── Overlay card (durante drag) ──────────────────────────────────────────────
-
-function DragCard({ lead }: { lead: Lead }) {
-  return (
-    <div className="bg-[#0E1420] border border-amber-500/40 rounded-xl p-3 shadow-2xl shadow-amber-500/15 w-64 rotate-2 opacity-95">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/20 flex items-center justify-center text-sm font-black text-amber-300">
-          {lead.name.charAt(0).toUpperCase()}
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-white">{lead.name}</p>
-          <p className="text-[10px] text-slate-500">{formatPhone(lead.phone)}</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Coluna do kanban ─────────────────────────────────────────────────────────
 
 function KanbanColumn({
-  stage, leads, onCardClick,
+  stage, leads, onCardClick, isActiveDragTarget,
 }: {
   stage: LeadFunnelStage
   leads: Lead[]
   onCardClick: (lead: Lead) => void
+  isActiveDragTarget: boolean
 }) {
   const conf = STAGE_CONFIG[stage]
   const { isOver, setNodeRef } = useDroppable({ id: stage })
+  const ids = leads.map(l => l.id)
 
   return (
     <div className="flex flex-col w-72 flex-shrink-0">
-      {/* Header */}
       <div className={`flex items-center gap-2.5 px-3 py-3 rounded-t-xl border border-b-0 ${conf.headerBg} ${conf.border}`}>
-        <div className={`w-2 h-2 rounded-full ${conf.dot} shadow-sm`} style={{ boxShadow: `0 0 6px currentColor` }} />
+        <div className={`w-2 h-2 rounded-full ${conf.dot} shadow-sm`} />
         <div className="flex-1 min-w-0">
           <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Etapa</p>
           <span className={`text-sm font-bold leading-tight ${conf.headerText}`}>{conf.label}</span>
@@ -252,22 +257,23 @@ function KanbanColumn({
         </span>
       </div>
 
-      {/* Drop zone */}
-      <div
-        ref={setNodeRef}
-        className={`flex-1 min-h-[420px] rounded-b-xl border ${conf.border} page-bg p-2 flex flex-col gap-2 transition-all duration-150
-          ${isOver ? 'ring-1 ring-inset ring-white/15 bg-white/3' : ''}
-        `}
-      >
-        {leads.length === 0 && (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-[11px] text-slate-700 text-center">Arraste cards aqui</p>
-          </div>
-        )}
-        {leads.map(lead => (
-          <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} />
-        ))}
-      </div>
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <div
+          ref={setNodeRef}
+          className={`flex-1 min-h-[420px] rounded-b-xl border ${conf.border} page-bg p-2 flex flex-col gap-2 transition-all duration-150
+            ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-white/15 bg-white/3' : ''}
+          `}
+        >
+          {leads.length === 0 && (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-[11px] text-slate-700 text-center">Arraste cards aqui</p>
+            </div>
+          )}
+          {leads.map(lead => (
+            <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} />
+          ))}
+        </div>
+      </SortableContext>
     </div>
   )
 }
@@ -279,9 +285,10 @@ interface LeadKanbanProps {
 }
 
 export function LeadKanban({ leads }: LeadKanbanProps) {
-  const { setStage } = useLeadsStore()
+  const { setStage, reorder } = useLeadsStore()
   const { loadAll: loadAllInteractions } = useLeadInteractionsStore()
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [overStage, setOverStage] = useState<LeadFunnelStage | null>(null)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
   useEffect(() => { loadAllInteractions() }, [])
@@ -290,31 +297,98 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
+  // Ordena cada coluna por kanbanOrder desc (ou updatedAt como fallback)
+  const sortedByStage = useMemo(() => {
+    return STAGES.reduce((acc, stage) => {
+      acc[stage] = leads
+        .filter(l => l.funnelStage === stage)
+        .sort((a, b) => effectiveOrder(b) - effectiveOrder(a))
+      return acc
+    }, {} as Record<LeadFunnelStage, Lead[]>)
+  }, [leads])
+
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id))
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { over } = event
+    if (!over) { setOverStage(null); return }
+    const overId = String(over.id)
+    if (STAGES.includes(overId as LeadFunnelStage)) {
+      setOverStage(overId as LeadFunnelStage)
+    } else {
+      const overLead = leads.find(l => l.id === overId)
+      setOverStage(overLead?.funnelStage ?? null)
+    }
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     setActiveId(null)
+    setOverStage(null)
     if (!over) return
-    const leadId = String(active.id)
-    const newStage = String(over.id) as LeadFunnelStage
-    const lead = leads.find(l => l.id === leadId)
-    if (!lead || lead.funnelStage === newStage) return
-    setStage(leadId, newStage)
-    toast.success(`Lead movido para ${STAGE_CONFIG[newStage].label}`)
-  }
 
-  const byStage = STAGES.reduce((acc, stage) => {
-    acc[stage] = leads.filter(l => l.funnelStage === stage)
-    return acc
-  }, {} as Record<LeadFunnelStage, Lead[]>)
+    const leadId = String(active.id)
+    const overId = String(over.id)
+    const draggedLead = leads.find(l => l.id === leadId)
+    if (!draggedLead) return
+
+    // Dropped on a stage column (empty area)
+    if (STAGES.includes(overId as LeadFunnelStage)) {
+      const newStage = overId as LeadFunnelStage
+      if (draggedLead.funnelStage !== newStage) {
+        setStage(leadId, newStage)
+        toast.success(`Lead movido para ${STAGE_CONFIG[newStage].label}`)
+      }
+      return
+    }
+
+    // Dropped on another card
+    if (overId === leadId) return
+    const overLead = leads.find(l => l.id === overId)
+    if (!overLead) return
+
+    const targetStage = overLead.funnelStage
+    const stageLeads = sortedByStage[targetStage]
+
+    // Cross-column: change stage first
+    if (draggedLead.funnelStage !== targetStage) {
+      setStage(leadId, targetStage)
+      toast.success(`Lead movido para ${STAGE_CONFIG[targetStage].label}`)
+    }
+
+    // Compute new order based on neighbors in target column
+    const activeIndex = stageLeads.findIndex(l => l.id === leadId)
+    const overIndex = stageLeads.findIndex(l => l.id === overId)
+
+    let newArr: Lead[]
+    if (activeIndex === -1) {
+      // Cross-column: insert at overIndex
+      newArr = [
+        ...stageLeads.slice(0, overIndex),
+        draggedLead,
+        ...stageLeads.slice(overIndex),
+      ]
+    } else {
+      newArr = arrayMove(stageLeads, activeIndex, overIndex)
+    }
+
+    const newIndex = newArr.findIndex(l => l.id === leadId)
+    const above = newIndex > 0 ? newArr[newIndex - 1] : null
+    const below = newIndex < newArr.length - 1 ? newArr[newIndex + 1] : null
+    reorder(leadId, orderBetween(above, below))
+  }
 
   return (
     <>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragStart={e => setActiveId(String(e.active.id))}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <div className="flex gap-3 overflow-x-auto pb-4 px-1">
@@ -322,14 +396,15 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
             <KanbanColumn
               key={stage}
               stage={stage}
-              leads={byStage[stage]}
+              leads={sortedByStage[stage]}
               onCardClick={setSelectedLead}
+              isActiveDragTarget={overStage === stage && !!activeId}
             />
           ))}
         </div>
 
         <DragOverlay>
-          {activeLead ? <DragCard lead={activeLead} /> : null}
+          {activeLead ? <LeadCard lead={activeLead} onClick={() => {}} isOverlay /> : null}
         </DragOverlay>
       </DndContext>
 
