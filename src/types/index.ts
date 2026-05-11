@@ -193,7 +193,7 @@ export interface Goal {
 
 export type LeadOrigin       = 'felicita' | 'meta_ads' | 'portal' | 'offline' | 'campanha'
 export type LeadFunnelStage  = 'lead' | 'followup' | 'atendimento' | 'visita' | 'proposta' | 'venda'
-export type LeadDiscardReason    = 'sem_condicao' | 'fora_de_nicho' | 'parou_de_responder' | 'nunca_respondeu' | 'telefone_invalido' | 'permuta'
+export type LeadDiscardReason = string
 export type LeadInteractionType  = 'ligacao' | 'whatsapp' | 'email' | 'visita' | 'reuniao' | 'nota'
 export type LeadInteractionOutcome = 'interessado' | 'nao_interessado' | 'agendado' | 'sem_resposta' | 'proposta_enviada' | 'fechado' | 'reagendado'
 
