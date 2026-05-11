@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Loader2, Clock, MessageCircle, Phone, Mail, Home, Users, FileText } from 'lucide-react'
+import { Plus, Trash2, Loader2, Clock, MessageCircle, Phone, Mail, Home, Users, FileText, ArrowRight, XCircle } from 'lucide-react'
 import { LeadInteractionType, LeadInteractionOutcome } from '../../types'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import toast from 'react-hot-toast'
@@ -13,12 +13,14 @@ const TYPE_CONFIG: Record<LeadInteractionType, {
   bg: string
   border: string
 }> = {
-  ligacao:  { label: 'Ligação',  Icon: Phone,         color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/25'   },
-  whatsapp: { label: 'WhatsApp', Icon: MessageCircle, color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25'  },
-  email:    { label: 'Email',    Icon: Mail,          color: 'text-sky-400',    bg: 'bg-sky-500/10',    border: 'border-sky-500/25'    },
-  visita:   { label: 'Visita',   Icon: Home,          color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25'  },
-  reuniao:  { label: 'Reunião',  Icon: Users,         color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25' },
-  nota:     { label: 'Nota',     Icon: FileText,      color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/25'  },
+  ligacao:      { label: 'Ligação',     Icon: Phone,         color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/25'   },
+  whatsapp:     { label: 'WhatsApp',    Icon: MessageCircle, color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25'  },
+  email:        { label: 'Email',       Icon: Mail,          color: 'text-sky-400',    bg: 'bg-sky-500/10',    border: 'border-sky-500/25'    },
+  visita:       { label: 'Visita',      Icon: Home,          color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25'  },
+  reuniao:      { label: 'Reunião',     Icon: Users,         color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25' },
+  nota:         { label: 'Nota',        Icon: FileText,      color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/25'  },
+  stage_change: { label: 'Etapa',       Icon: ArrowRight,    color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/25' },
+  discard:      { label: 'Descartado',  Icon: XCircle,       color: 'text-rose-400',   bg: 'bg-rose-500/10',   border: 'border-rose-500/25'   },
 }
 
 const OUTCOME_CONFIG: Record<LeadInteractionOutcome, { label: string; color: string; bg: string; border: string }> = {
