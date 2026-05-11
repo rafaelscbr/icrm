@@ -1,14 +1,14 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Users, Building2, TrendingUp, DollarSign, Cake, ArrowRight,
-  Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
-  AlertTriangle, Clock, Target, CalendarCheck, Siren, ClipboardCheck, ListTodo,
-  Snowflake, RefreshCw,
+  Users, Building2, TrendingUp, DollarSign, Cake,
+  ArrowRight, Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
+  AlertTriangle, Clock, Target, CalendarCheck, Siren, ClipboardCheck,
+  ListTodo, Snowflake, RefreshCw, Megaphone, Zap, ThumbsUp,
 } from 'lucide-react'
-import { useState } from 'react'
-import { Task, Contact, Property, calcSaleCommissions } from '../../types'
+import { Task, Contact, Property, Lead, LeadFunnelStage, calcSaleCommissions } from '../../types'
 import { TaskForm } from '../tasks/TaskForm'
+import { LeadModal } from '../leads/LeadModal'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
@@ -18,241 +18,305 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
-import { useGoalsStore, calcProgress } from '../../store/useGoalsStore'
 import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
-import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
-import { GoalCategory } from '../../types'
-import { useCampaignsStore } from '../../store/useCampaignsStore'
-import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
-import { Megaphone, Zap, ThumbsUp } from 'lucide-react'
+import { useCampaignsStore } from '../../store/useCampaignsStore'
+import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 
-// ─── Leads esfriando ─────────────────────────────────────────────────────────
+// ─── Constantes ───────────────────────────────────────────────────────────────
 
-const COOLING_THRESHOLD_DAYS = 2
+const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
+const COOLING_DAYS = 2
 
-function CoolingLeadsWidget({ onNavigate }: { onNavigate: () => void }) {
-  const { leads } = useLeadsStore()
-  const { byLead, loadAll } = useLeadInteractionsStore()
+const DAILY_TARGET_INTERACTIONS = 10
+const WEEKLY_TARGET_VISITS    = 2
+const WEEKLY_TARGET_PROPOSALS = 1
+const MONTHLY_TARGET_VISITS    = 8
+const MONTHLY_TARGET_PROPOSALS = 4
+const MONTHLY_TARGET_SALES     = 2
 
-  useEffect(() => { loadAll() }, [])
+const STAGE_LABELS: Partial<Record<LeadFunnelStage, { label: string; color: string }>> = {
+  lead:        { label: 'Lead',        color: 'text-slate-400'  },
+  followup:    { label: 'Followup',    color: 'text-blue-400'   },
+  atendimento: { label: 'Atendimento', color: 'text-violet-400' },
+  visita:      { label: 'Visita',      color: 'text-amber-400'  },
+  proposta:    { label: 'Proposta',    color: 'text-orange-400' },
+  venda:       { label: 'Venda',       color: 'text-green-400'  },
+}
 
-  const coolingCount = useMemo(() => {
-    const active = leads.filter(l => !l.discardReason && l.funnelStage !== 'venda')
-    return active.filter(l => {
-      const interactions = byLead[l.id] ?? []
-      const lastAt = interactions[0]?.interactedAt
-      const ref = lastAt ?? l.createdAt
-      const days = (Date.now() - new Date(ref).getTime()) / 86_400_000
-      return days > COOLING_THRESHOLD_DAYS
-    }).length
-  }, [leads, byLead])
+// ─── Helpers de data ──────────────────────────────────────────────────────────
 
-  if (coolingCount === 0) return null
+function getWeekStart(): Date {
+  const d = new Date(); d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return d
+}
+function getMonthStart(): Date {
+  const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1)
+}
+function daysAgo(iso: string): number {
+  return (Date.now() - new Date(iso).getTime()) / 86_400_000
+}
+function daysOverdue(dueDate: string): number {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return Math.floor((today.getTime() - new Date(dueDate + 'T00:00:00').getTime()) / 86_400_000)
+}
+function dueDateLabel(dueDate?: string): { text: string; color: string } {
+  if (!dueDate) return { text: 'Sem prazo', color: 'text-slate-600' }
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((new Date(dueDate + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
+  if (diffDays === 0) return { text: 'Hoje!', color: 'text-amber-400' }
+  if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
+  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-slate-400' }
+  return { text: dueDate.split('-').reverse().join('/'), color: 'text-slate-500' }
+}
 
+// ─── GoalCard ─────────────────────────────────────────────────────────────────
+
+function GoalCard({ label, value, target, barColor }: {
+  label: string; value: number; target: number; barColor: string
+}) {
+  const pct  = Math.min(100, Math.round((value / target) * 100))
+  const done = value >= target
   return (
-    <button
-      onClick={onNavigate}
-      className="w-full text-left rounded-2xl border border-sky-400/40 bg-gradient-to-br from-sky-500/10 to-blue-600/5 ring-1 ring-sky-400/20 p-6 mb-6 animate-slide-up hover:border-sky-400/60 hover:bg-sky-500/12 transition-all group"
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-5">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-sky-500/15 border border-sky-400/25 flex items-center justify-center">
-              <Snowflake size={28} className="text-sky-400 animate-pulse" />
-            </div>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-sky-500/70 mb-1">
-              Leads esfriando
-            </p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-6xl font-black text-sky-300 tabular-nums leading-none">
-                {coolingCount}
-              </span>
-              <span className="text-base text-sky-400/70 font-medium">
-                sem interação há +{COOLING_THRESHOLD_DAYS} dias
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-sky-400/60 group-hover:text-sky-300 transition-colors">
-          <span className="text-xs font-medium">Ver no funil</span>
-          <ArrowRight size={14} />
-        </div>
+    <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex flex-col gap-2">
+      <p className="text-[10px] text-slate-500 uppercase tracking-wide leading-none">{label}</p>
+      <div className="flex items-baseline gap-1">
+        <span className={`text-2xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-white'}`}>{value}</span>
+        <span className="text-xs text-slate-600">/{target}</span>
+        {done && <CheckCircle2 size={12} className="text-green-400 ml-0.5" />}
       </div>
-    </button>
-  )
-}
-
-// ─── Leads congelados ────────────────────────────────────────────────────────
-
-const FROZEN_STAGES = ['attended', 'scheduled', 'presentation', 'proposal'] as const
-const FROZEN_STAGE_LABELS: Record<string, string> = {
-  attended:     'Interesse',
-  scheduled:    'Agendado',
-  presentation: 'Apresentação',
-  proposal:     'Proposta',
-}
-const FROZEN_THRESHOLD_DAYS = 2
-
-function daysInStage(lead: { stageUpdatedAt?: string; updatedAt?: string; createdAt: string }): number {
-  const ref = lead.stageUpdatedAt ?? lead.updatedAt ?? lead.createdAt
-  return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
-}
-
-function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
-  const { campaigns } = useCampaignsStore()
-  const { leads }     = useCampaignLeadsStore()
-
-  const frozen = useMemo(() => {
-    return leads
-      .filter(l => (FROZEN_STAGES as readonly string[]).includes(l.funnelStage) && !l.situation)
-      .map(l => ({ ...l, days: daysInStage(l) }))
-      .filter(l => l.days >= FROZEN_THRESHOLD_DAYS)
-      .sort((a, b) => b.days - a.days)
-  }, [leads])
-
-  if (frozen.length === 0) return null
-
-  const byCampaign = frozen.reduce<Record<string, typeof frozen>>((acc, l) => {
-    if (!acc[l.campaignId]) acc[l.campaignId] = []
-    acc[l.campaignId].push(l)
-    return acc
-  }, {})
-
-  return (
-    <div className="rounded-xl border border-blue-400/30 bg-blue-500/5 ring-1 ring-blue-400/15 overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-blue-400/15">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-blue-500/15 rounded-xl flex items-center justify-center">
-            <Snowflake size={15} className="text-blue-400" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-blue-300 leading-none">Leads congelados</h2>
-            <p className="text-[11px] text-blue-500/70 mt-0.5">Sem movimento há +{FROZEN_THRESHOLD_DAYS} dias nas etapas de interesse</p>
-          </div>
-          <span className="ml-1 bg-blue-500/20 text-blue-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-blue-400/25 tabular-nums">
-            {frozen.length}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-col divide-y divide-blue-400/8">
-        {Object.entries(byCampaign).slice(0, 3).map(([cid, cLeads]) => {
-          const campaign = campaigns.find(c => c.id === cid)
-          return (
-            <div key={cid} className="px-5 py-3 hover:bg-blue-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-slate-300">{campaign?.name ?? 'Campanha'}</p>
-                <span className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-400/20">
-                  {cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                {cLeads.slice(0, 3).map(l => (
-                  <div key={l.id} className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-500 w-24 truncate">{l.name}</span>
-                    <span className="text-[10px] text-blue-400/70 bg-blue-500/8 px-1.5 py-0.5 rounded border border-blue-400/15">
-                      {FROZEN_STAGE_LABELS[l.funnelStage] ?? l.funnelStage}
-                    </span>
-                    <span className="text-[10px] text-slate-600 ml-auto">{l.days}d sem mov.</span>
-                  </div>
-                ))}
-                {cLeads.length > 3 && (
-                  <p className="text-[10px] text-slate-700">+{cLeads.length - 3} mais</p>
-                )}
-              </div>
-            </div>
-          )
-        })}
-        {Object.keys(byCampaign).length > 3 && (
-          <div className="px-5 py-2 text-center">
-            <p className="text-[11px] text-slate-600">+{frozen.length - Object.values(byCampaign).slice(0,3).reduce((a,c)=>a+c.length,0)} leads em outras campanhas</p>
-          </div>
-        )}
+      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-700 ${done ? 'bg-green-500' : barColor}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   )
 }
 
-// ─── Painel de recompra ───────────────────────────────────────────────────────
+// ─── Metas Widget ─────────────────────────────────────────────────────────────
 
-function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
-  const { contacts } = useContactsStore()
-  const { sales }    = useSalesStore()
+function GoalsWidget() {
+  const { getAllInteractions } = useLeadInteractionsStore()
+  const { sales } = useSalesStore()
 
-  const candidates = useMemo(() => {
-    const buyers = contacts.filter(c => c.tags.includes('buyer'))
-    return buyers.map(c => {
-      const clientSales = sales.filter(s => s.clientId === c.id).sort((a, b) => b.date.localeCompare(a.date))
-      const lastSale = clientSales[0]
-      const daysSince = lastSale
-        ? Math.floor((Date.now() - new Date(lastSale.date).getTime()) / 86_400_000)
-        : null
-      return { contact: c, lastSale, daysSince, totalSales: clientSales.length }
-    })
-    .filter(c => c.daysSince !== null && c.daysSince >= 180)
-    .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
-  }, [contacts, sales])
+  const metrics = useMemo(() => {
+    const all  = getAllInteractions()
+    const today = new Date().toISOString().slice(0, 10)
+    const weekStart  = getWeekStart()
+    const monthStart = getMonthStart()
 
-  if (candidates.length === 0) return null
+    const daily         = all.filter(i => REAL_TYPES.has(i.type) && i.interactedAt.slice(0, 10) === today).length
+    const weekInteract  = all.filter(i => new Date(i.interactedAt) >= weekStart)
+    const monthInteract = all.filter(i => new Date(i.interactedAt) >= monthStart)
+    const weekVisits    = weekInteract.filter(i  => i.type === 'stage_change' && i.description?.includes('→ Visita')).length
+    const weekProp      = weekInteract.filter(i  => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
+    const monthVisits   = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Visita')).length
+    const monthProp     = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
+    const monthSales    = sales.filter(s => s.date >= monthStart.toISOString().slice(0, 10)).length
+    return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
+  }, [getAllInteractions, sales])
 
   return (
-    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-emerald-500/15">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-emerald-500/15 rounded-xl flex items-center justify-center">
-            <RefreshCw size={15} className="text-emerald-400" />
+    <div className="rounded-xl border border-white/8 bg-[#0D1117] overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-white/7">
+        <div className="w-7 h-7 bg-blue-500/15 rounded-lg flex items-center justify-center">
+          <Target size={14} className="text-blue-400" />
+        </div>
+        <div>
+          <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Metas</p>
+          <h2 className="text-sm font-bold text-white leading-none">Progresso automático</h2>
+        </div>
+      </div>
+      <div className="p-4 space-y-4">
+        {/* Hoje */}
+        <div>
+          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Hoje</p>
+          <GoalCard label="Interações com leads" value={metrics.daily} target={DAILY_TARGET_INTERACTIONS} barColor="bg-blue-500" />
+        </div>
+        {/* Semana */}
+        <div>
+          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Esta semana</p>
+          <div className="grid grid-cols-2 gap-3">
+            <GoalCard label="Visitas"   value={metrics.weekVisits} target={WEEKLY_TARGET_VISITS}    barColor="bg-amber-500"  />
+            <GoalCard label="Propostas" value={metrics.weekProp}   target={WEEKLY_TARGET_PROPOSALS} barColor="bg-orange-500" />
+          </div>
+        </div>
+        {/* Mês */}
+        <div>
+          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Este mês</p>
+          <div className="grid grid-cols-3 gap-3">
+            <GoalCard label="Visitas"   value={metrics.monthVisits} target={MONTHLY_TARGET_VISITS}    barColor="bg-amber-500"  />
+            <GoalCard label="Propostas" value={metrics.monthProp}   target={MONTHLY_TARGET_PROPOSALS} barColor="bg-orange-500" />
+            <GoalCard label="Vendas"    value={metrics.monthSales}  target={MONTHLY_TARGET_SALES}     barColor="bg-green-500"  />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Pipeline Widget ──────────────────────────────────────────────────────────
+
+function PipelineWidget({ onNavigate }: { onNavigate: () => void }) {
+  const { leads } = useLeadsStore()
+  const active = leads.filter(l => !l.discardReason)
+
+  const stages: Array<{ stage: LeadFunnelStage; label: string; color: string; text: string }> = [
+    { stage: 'followup',    label: 'Followup',    color: 'bg-blue-500/15',   text: 'text-blue-300'   },
+    { stage: 'atendimento', label: 'Atendimento', color: 'bg-violet-500/15', text: 'text-violet-300' },
+    { stage: 'visita',      label: 'Visita',      color: 'bg-amber-500/15',  text: 'text-amber-300'  },
+    { stage: 'proposta',    label: 'Proposta',    color: 'bg-orange-500/15', text: 'text-orange-300' },
+    { stage: 'venda',       label: 'Venda',       color: 'bg-green-500/15',  text: 'text-green-300'  },
+  ]
+
+  const totalPipeline    = active.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
+  const totalCommission  = totalPipeline * 0.02
+  const hasAnyTicket     = active.some(l => l.averageTicket)
+
+  return (
+    <div className="rounded-xl border border-white/8 bg-[#0D1117] overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-white/7">
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 bg-violet-500/15 rounded-lg flex items-center justify-center">
+            <DollarSign size={14} className="text-violet-400" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-200 leading-none">Potencial de recompra</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">Clientes que compraram há +6 meses — hora de reativar</p>
+            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Pipeline</p>
+            <h2 className="text-sm font-bold text-white leading-none">Valor por etapa do funil</h2>
           </div>
-          <span className="ml-1 bg-emerald-500/15 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-xl border border-emerald-500/20 tabular-nums">
-            {candidates.length}
+        </div>
+        {hasAnyTicket && (
+          <div className="text-right">
+            <p className="text-[10px] text-slate-600">Pipeline total</p>
+            <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrency(totalPipeline)}</p>
+            <p className="text-[10px] text-emerald-400 tabular-nums">💰 {formatCurrency(totalCommission)} sua comissão</p>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-5 divide-x divide-white/5">
+        {stages.map(({ stage, label, color, text }) => {
+          const stageLeads  = active.filter(l => l.funnelStage === stage)
+          const pipeline    = stageLeads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
+          const commission  = pipeline * 0.02
+          return (
+            <button
+              key={stage}
+              onClick={onNavigate}
+              className="p-3 text-center hover:bg-white/3 transition-colors cursor-pointer"
+            >
+              <p className={`text-[10px] font-bold ${text} uppercase tracking-wide mb-1.5`}>{label}</p>
+              <p className="text-xl font-black text-white tabular-nums">{stageLeads.length}</p>
+              <p className="text-[10px] text-slate-600 mb-2">leads</p>
+              {pipeline > 0 ? (
+                <>
+                  <div className={`rounded-lg px-2 py-1 ${color} mb-1`}>
+                    <p className="text-[11px] font-semibold text-white tabular-nums">{formatCurrency(pipeline)}</p>
+                  </div>
+                  <p className="text-[10px] text-emerald-400 tabular-nums">💰 {formatCurrency(commission)}</p>
+                </>
+              ) : (
+                <p className="text-[11px] text-slate-700">sem ticket</p>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Alertas de leads ─────────────────────────────────────────────────────────
+
+function LeadAlertsWidget({
+  onOpenLead, onNavigate,
+}: { onOpenLead: (lead: Lead) => void; onNavigate: () => void }) {
+  const { leads } = useLeadsStore()
+  const { byLead } = useLeadInteractionsStore()
+
+  const alertLeads = useMemo(() => {
+    const active = leads.filter(l => !l.discardReason && l.funnelStage !== 'venda')
+    return active
+      .map(l => {
+        const ints    = byLead[l.id] ?? []
+        const lastReal = ints.find(i => REAL_TYPES.has(i.type))
+        const days    = daysAgo(lastReal?.interactedAt ?? l.createdAt)
+        return { lead: l, days }
+      })
+      .filter(({ days }) => days > COOLING_DAYS)
+      .sort((a, b) => b.days - a.days)
+  }, [leads, byLead])
+
+  if (alertLeads.length === 0) return null
+
+  return (
+    <div className="rounded-xl border border-sky-400/30 bg-sky-500/5 overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-sky-400/15">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-sky-500/15 rounded-xl flex items-center justify-center">
+            <Snowflake size={15} className="text-sky-400 animate-pulse" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-sky-300 leading-none">Leads sem contato</h2>
+            <p className="text-[11px] text-sky-500/70 mt-0.5">Precisam de atenção agora</p>
+          </div>
+          <span className="ml-1 bg-sky-500/20 text-sky-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-sky-400/25 tabular-nums">
+            {alertLeads.length}
           </span>
         </div>
-        <button
-          onClick={onNavigate}
-          className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
-        >
-          Ver contatos <ArrowRight size={12} />
+        <button onClick={onNavigate} className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors cursor-pointer">
+          Ver funil <ArrowRight size={12} />
         </button>
       </div>
 
-      <div className="flex flex-col divide-y divide-emerald-500/8">
-        {candidates.slice(0, 5).map(({ contact: c, lastSale, daysSince, totalSales }) => (
-          <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-emerald-500/5 transition-colors">
-            <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-200 truncate">{c.name}</p>
-              <p className="text-[10px] text-slate-500">
-                {totalSales} compra{totalSales !== 1 ? 's' : ''} · última: {lastSale ? formatDate(lastSale.date) : '—'}
-              </p>
+      <div className="flex flex-col divide-y divide-sky-400/8">
+        {alertLeads.slice(0, 7).map(({ lead, days }) => {
+          const stageConf = STAGE_LABELS[lead.funnelStage]
+          const daysInt   = Math.floor(days)
+          const daysBadge = daysInt > 7
+            ? 'text-red-400 bg-red-500/10 border-red-500/20'
+            : daysInt > 4
+              ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+              : 'text-sky-400 bg-sky-500/10 border-sky-500/20'
+          return (
+            <div
+              key={lead.id}
+              onClick={() => onOpenLead(lead)}
+              className="flex items-center gap-3 px-5 py-3 hover:bg-sky-500/5 transition-colors cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-sm font-bold text-slate-300 flex-shrink-0">
+                {lead.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-200 truncate">{lead.name}</p>
+                <span className={`text-[10px] ${stageConf?.color ?? 'text-slate-500'}`}>
+                  {stageConf?.label ?? lead.funnelStage}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border tabular-nums ${daysBadge}`}>
+                  {daysInt}d
+                </span>
+                <a
+                  href={whatsappUrl(lead.phone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors"
+                  title="WhatsApp"
+                >
+                  <MessageCircle size={12} />
+                </a>
+              </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-[10px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">
-                {daysSince}d sem compra
-              </span>
-              <a
-                href={whatsappUrl(c.phone)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors"
-                title="Contato via WhatsApp"
-              >
-                <MessageCircle size={12} />
-              </a>
-            </div>
-          </div>
-        ))}
-        {candidates.length > 5 && (
-          <div className="px-5 py-2 text-center">
-            <button onClick={onNavigate} className="text-[11px] text-slate-600 hover:text-emerald-400 transition-colors cursor-pointer">
-              +{candidates.length - 5} outros candidatos →
+          )
+        })}
+        {alertLeads.length > 7 && (
+          <div className="px-5 py-2.5 text-center">
+            <button onClick={onNavigate} className="text-xs text-slate-600 hover:text-sky-400 transition-colors cursor-pointer">
+              +{alertLeads.length - 7} leads mais precisam de contato →
             </button>
           </div>
         )}
@@ -261,22 +325,7 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
   )
 }
 
-function daysOverdue(dueDate: string): number {
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const due   = new Date(dueDate + 'T00:00:00')
-  return Math.floor((today.getTime() - due.getTime()) / 86_400_000)
-}
-
-function dueDateLabel(dueDate?: string): { text: string; color: string } {
-  if (!dueDate) return { text: 'Sem prazo', color: 'text-slate-600' }
-  const today    = new Date(); today.setHours(0, 0, 0, 0)
-  const due      = new Date(dueDate + 'T00:00:00')
-  const diffDays = Math.round((due.getTime() - today.getTime()) / 86_400_000)
-  if (diffDays === 0) return { text: 'Hoje!',    color: 'text-amber-400' }
-  if (diffDays === 1) return { text: 'Amanhã',   color: 'text-yellow-400' }
-  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-slate-400' }
-  return { text: dueDate.split('-').reverse().join('/'), color: 'text-slate-500' }
-}
+// ─── Tarefas em atraso ────────────────────────────────────────────────────────
 
 function OverdueCard({
   tasks, contacts, properties, onNavigate,
@@ -284,7 +333,6 @@ function OverdueCard({
   if (tasks.length === 0) return null
   return (
     <div className="relative rounded-xl border border-red-500/40 bg-red-500/5 ring-1 ring-red-500/20 overflow-hidden mb-6 animate-slide-up">
-      {/* topo vermelho */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-red-500/20">
         <div className="flex items-center gap-2.5">
           <div className="relative w-8 h-8 bg-red-500/20 rounded-xl flex items-center justify-center">
@@ -298,54 +346,30 @@ function OverdueCard({
             {tasks.length}
           </span>
         </div>
-        <button
-          onClick={onNavigate}
-          className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors cursor-pointer"
-        >
+        <button onClick={onNavigate} className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors cursor-pointer">
           Resolver <ArrowRight size={12} />
         </button>
       </div>
-
       <div className="flex flex-col divide-y divide-red-500/10">
         {tasks.map(t => {
           const days     = daysOverdue(t.dueDate!)
           const contact  = contacts.find(c => c.id === t.contactId)
           const property = properties.find(p => p.id === t.propertyId)
           return (
-            <div
-              key={t.id}
-              onClick={onNavigate}
-              className="flex items-center gap-3 px-5 py-3 hover:bg-red-500/8 transition-colors cursor-pointer group"
-            >
+            <div key={t.id} onClick={onNavigate} className="flex items-center gap-3 px-5 py-3 hover:bg-red-500/8 transition-colors cursor-pointer">
               <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center">
                 <AlertTriangle size={13} className="text-red-400" />
               </div>
-
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-200 truncate">{t.title}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  {contact && (
-                    <span className="text-xs text-slate-500 flex items-center gap-0.5">
-                      <Users size={9} /> {contact.name}
-                    </span>
-                  )}
-                  {property && (
-                    <span className="text-xs text-slate-500 flex items-center gap-0.5">
-                      <Building2 size={9} /> {property.name}
-                    </span>
-                  )}
+                  {contact  && <span className="text-xs text-slate-500 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
+                  {property && <span className="text-xs text-slate-500 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
                 </div>
               </div>
-
-              <div className="flex-shrink-0 text-right">
-                <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-lg border border-red-500/20">
-                  <Clock size={10} />
-                  {days === 1 ? '1 dia' : `${days} dias`} de atraso
-                </span>
-                <p className="text-[10px] text-red-600 mt-0.5 text-right">
-                  {t.dueDate!.split('-').reverse().join('/')}
-                </p>
-              </div>
+              <span className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-lg border border-red-500/20">
+                <Clock size={10} /> {days === 1 ? '1 dia' : `${days} dias`} atraso
+              </span>
             </div>
           )
         })}
@@ -353,6 +377,8 @@ function OverdueCard({
     </div>
   )
 }
+
+// ─── Próximas tarefas ─────────────────────────────────────────────────────────
 
 function UpcomingCard({
   tasks, contacts, properties, onNavigate,
@@ -366,30 +392,21 @@ function UpcomingCard({
             <CalendarCheck size={15} className="text-blue-400" />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">PRÓXIMAS TAREFAS</p>
+            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Próximas Tarefas</p>
             <h2 className="text-sm font-bold text-white leading-none mt-0.5">
               {tasks.length > 0 ? `${tasks.length} agendada${tasks.length !== 1 ? 's' : ''}` : 'Agenda livre'}
             </h2>
           </div>
         </div>
-        <button
-          onClick={onNavigate}
-          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors cursor-pointer"
-        >
+        <button onClick={onNavigate} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors cursor-pointer">
           Ver todas <ArrowRight size={12} />
         </button>
       </div>
-
       {tasks.length === 0 ? (
         <div className="flex flex-col items-center py-8 gap-2">
           <CheckCircle2 size={30} className="text-green-500/40" />
           <p className="text-sm text-slate-500">Nenhuma tarefa futura por enquanto</p>
-          <button
-            onClick={onNavigate}
-            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer mt-1"
-          >
-            + Criar tarefa →
-          </button>
+          <button onClick={onNavigate} className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer mt-1">+ Criar tarefa →</button>
         </div>
       ) : (
         <div className="flex flex-col divide-y divide-white/5">
@@ -398,25 +415,13 @@ function UpcomingCard({
             const contact  = contacts.find(c => c.id === t.contactId)
             const property = properties.find(p => p.id === t.propertyId)
             return (
-              <div
-                key={t.id}
-                onClick={onNavigate}
-                className="flex items-center gap-3 px-5 py-3 hover:bg-white/4 transition-colors cursor-pointer group"
-              >
-                <Circle size={16} className="text-slate-700 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
+              <div key={t.id} onClick={onNavigate} className="flex items-center gap-3 px-5 py-3 hover:bg-white/4 transition-colors cursor-pointer">
+                <Circle size={16} className="text-slate-700 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-200 truncate">{t.title}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    {contact && (
-                      <span className="text-xs text-slate-600 flex items-center gap-0.5">
-                        <Users size={9} /> {contact.name}
-                      </span>
-                    )}
-                    {property && (
-                      <span className="text-xs text-slate-600 flex items-center gap-0.5">
-                        <Building2 size={9} /> {property.name}
-                      </span>
-                    )}
+                    {contact  && <span className="text-xs text-slate-600 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
+                    {property && <span className="text-xs text-slate-600 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
                   </div>
                 </div>
                 {t.dueDate && (
@@ -440,40 +445,24 @@ function UpcomingCard({
   )
 }
 
-// ─── Mensagem inteligente por campanha ───────────────────────────────────────
+// ─── Campanhas ativas ─────────────────────────────────────────────────────────
 
 function smartCampaignMessage(total: number, acionados: number, interessados: number): { text: string; color: string } {
-  if (total === 0)
-    return { text: 'Importe leads para começar a prospectar.', color: 'text-slate-500' }
-
+  if (total === 0) return { text: 'Importe leads para começar a prospectar.', color: 'text-slate-500' }
   const acRate  = acionados / total
   const intRate = acionados > 0 ? interessados / acionados : 0
-
-  if (acionados === 0)
-    return { text: `${total.toLocaleString('pt-BR')} leads aguardando o 1º contato — vamos lá! 📋`, color: 'text-amber-400' }
-
-  if (acRate < 0.15)
-    return { text: `Ainda há muitos leads para acionar — ${(total - acionados).toLocaleString('pt-BR')} esperando! 📲`, color: 'text-orange-400' }
-
-  if (intRate === 0)
-    return { text: `Acionamento em curso, mas nenhum interesse registrado ainda. Revise a abordagem. 🔍`, color: 'text-slate-400' }
-
-  if (intRate < 0.15)
-    return { text: `Conversão de interesse baixa (${Math.round(intRate * 100)}%). Tente uma abordagem diferente. 💡`, color: 'text-yellow-400' }
-
-  if (intRate < 0.30)
-    return { text: `Boa conversão! ${Math.round(intRate * 100)}% dos acionados demonstraram interesse. 📈`, color: 'text-cyan-400' }
-
-  return { text: `Excelente! ${Math.round(intRate * 100)}% de interesse — foque em avançar para propostas. 🎯`, color: 'text-green-400' }
+  if (acionados === 0)  return { text: `${total.toLocaleString('pt-BR')} leads aguardando o 1º contato — vamos lá! 📋`, color: 'text-amber-400' }
+  if (acRate < 0.15)   return { text: `Ainda há muitos leads para acionar — ${(total - acionados).toLocaleString('pt-BR')} esperando! 📲`, color: 'text-orange-400' }
+  if (intRate === 0)   return { text: `Acionamento em curso, mas nenhum interesse ainda. Revise a abordagem. 🔍`, color: 'text-slate-400' }
+  if (intRate < 0.15)  return { text: `Conversão de interesse baixa (${Math.round(intRate * 100)}%). Tente outra abordagem. 💡`, color: 'text-yellow-400' }
+  if (intRate < 0.30)  return { text: `Boa conversão! ${Math.round(intRate * 100)}% demonstraram interesse. 📈`, color: 'text-cyan-400' }
+  return { text: `Excelente! ${Math.round(intRate * 100)}% de interesse — avance para propostas. 🎯`, color: 'text-green-400' }
 }
-
-// ─── Widget de campanhas ativas ───────────────────────────────────────────────
 
 function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
   const { campaigns } = useCampaignsStore()
   const { leads }     = useCampaignLeadsStore()
-
-  const active = campaigns.filter(c => c.status === 'active')
+  const active        = campaigns.filter(c => c.status === 'active')
   if (active.length === 0) return null
 
   return (
@@ -484,30 +473,22 @@ function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
             <Megaphone size={15} className="text-purple-400" />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">CAMPANHAS ATIVAS</p>
+            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Campanhas ativas</p>
             <h2 className="text-sm font-bold text-white leading-none mt-0.5">{active.length} em andamento</h2>
           </div>
         </div>
       </div>
-
       <div className="flex flex-col divide-y divide-white/5">
         {active.map(c => {
-          const cLeads      = leads.filter(l => l.campaignId === c.id)
-          const total       = cLeads.length
-          const acionados   = cLeads.filter(l => l.firstContactAt).length
+          const cLeads       = leads.filter(l => l.campaignId === c.id)
+          const total        = cLeads.length
+          const acionados    = cLeads.filter(l => l.firstContactAt).length
           const interessados = cLeads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
-          const msg         = smartCampaignMessage(total, acionados, interessados)
-
-          const acPct  = total     > 0 ? Math.round(acionados    / total     * 100) : 0
-          const intPct = acionados > 0 ? Math.round(interessados / acionados * 100) : 0
-
+          const msg          = smartCampaignMessage(total, acionados, interessados)
+          const acPct        = total     > 0 ? Math.round(acionados    / total     * 100) : 0
+          const intPct       = acionados > 0 ? Math.round(interessados / acionados * 100) : 0
           return (
-            <div
-              key={c.id}
-              onClick={() => onNavigate(c.id)}
-              className="px-5 py-4 hover:bg-white/3 transition-colors cursor-pointer group"
-            >
-              {/* Nome + mensagem */}
+            <div key={c.id} onClick={() => onNavigate(c.id)} className="px-5 py-4 hover:bg-white/3 transition-colors cursor-pointer group">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-200 group-hover:text-indigo-300 transition-colors">{c.name}</p>
@@ -515,18 +496,14 @@ function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
                 </div>
                 <ArrowRight size={14} className="text-slate-700 group-hover:text-indigo-400 transition-colors mt-0.5 flex-shrink-0" />
               </div>
-
-              {/* Métricas em 3 colunas */}
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { icon: <Users size={11} />,    label: 'Leads',     value: total.toLocaleString('pt-BR'),       pct: null,   color: 'text-slate-400'  },
-                  { icon: <Zap size={11} />,      label: 'Acionados', value: acionados.toLocaleString('pt-BR'),   pct: acPct,  color: 'text-blue-400'   },
-                  { icon: <ThumbsUp size={11} />, label: 'Interesse', value: interessados.toLocaleString('pt-BR'),pct: intPct, color: 'text-cyan-400'   },
+                  { icon: <Users size={11} />,    label: 'Leads',     value: total.toLocaleString('pt-BR'),        pct: null,   color: 'text-slate-400' },
+                  { icon: <Zap size={11} />,      label: 'Acionados', value: acionados.toLocaleString('pt-BR'),    pct: acPct,  color: 'text-blue-400'  },
+                  { icon: <ThumbsUp size={11} />, label: 'Interesse', value: interessados.toLocaleString('pt-BR'), pct: intPct, color: 'text-cyan-400'  },
                 ].map(m => (
                   <div key={m.label} className="flex flex-col gap-1 bg-white/3 rounded-xl px-3 py-2.5 border border-white/5">
-                    <div className={`flex items-center gap-1 ${m.color} text-[10px] font-medium`}>
-                      {m.icon} {m.label}
-                    </div>
+                    <div className={`flex items-center gap-1 ${m.color} text-[10px] font-medium`}>{m.icon} {m.label}</div>
                     <div className="flex items-baseline gap-1.5">
                       <span className={`text-base font-bold tabular-nums ${m.color}`}>{m.value}</span>
                       {m.pct !== null && <span className="text-[10px] text-slate-600">{m.pct}%</span>}
@@ -542,41 +519,173 @@ function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
   )
 }
 
+// ─── Leads congelados em campanhas ───────────────────────────────────────────
+
+const FROZEN_STAGES    = ['attended', 'scheduled', 'presentation', 'proposal'] as const
+const FROZEN_LABELS: Record<string, string> = { attended: 'Interesse', scheduled: 'Agendado', presentation: 'Apresentação', proposal: 'Proposta' }
+
+function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
+  const { campaigns } = useCampaignsStore()
+  const { leads }     = useCampaignLeadsStore()
+
+  const frozen = useMemo(() => {
+    return leads
+      .filter(l => (FROZEN_STAGES as readonly string[]).includes(l.funnelStage) && !l.situation)
+      .map(l => {
+        const ref  = l.stageUpdatedAt ?? l.updatedAt ?? l.createdAt
+        const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
+        return { ...l, days }
+      })
+      .filter(l => l.days >= 2)
+      .sort((a, b) => b.days - a.days)
+  }, [leads])
+
+  if (frozen.length === 0) return null
+
+  const byCampaign = frozen.reduce<Record<string, typeof frozen>>((acc, l) => {
+    if (!acc[l.campaignId]) acc[l.campaignId] = []
+    acc[l.campaignId].push(l)
+    return acc
+  }, {})
+
+  return (
+    <div className="rounded-xl border border-blue-400/30 bg-blue-500/5 ring-1 ring-blue-400/15 overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-blue-400/15">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-blue-500/15 rounded-xl flex items-center justify-center">
+            <Snowflake size={15} className="text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-blue-300 leading-none">Leads congelados</h2>
+            <p className="text-[11px] text-blue-500/70 mt-0.5">Sem movimento há +2 dias nas campanhas</p>
+          </div>
+          <span className="ml-1 bg-blue-500/20 text-blue-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-blue-400/25 tabular-nums">{frozen.length}</span>
+        </div>
+      </div>
+      <div className="flex flex-col divide-y divide-blue-400/8">
+        {Object.entries(byCampaign).slice(0, 3).map(([cid, cLeads]) => {
+          const campaign = campaigns.find(c => c.id === cid)
+          return (
+            <div key={cid} className="px-5 py-3 hover:bg-blue-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-slate-300">{campaign?.name ?? 'Campanha'}</p>
+                <span className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-400/20">{cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {cLeads.slice(0, 3).map(l => (
+                  <div key={l.id} className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-500 w-24 truncate">{l.name}</span>
+                    <span className="text-[10px] text-blue-400/70 bg-blue-500/8 px-1.5 py-0.5 rounded border border-blue-400/15">{FROZEN_LABELS[l.funnelStage] ?? l.funnelStage}</span>
+                    <span className="text-[10px] text-slate-600 ml-auto">{l.days}d sem mov.</span>
+                  </div>
+                ))}
+                {cLeads.length > 3 && <p className="text-[10px] text-slate-700">+{cLeads.length - 3} mais</p>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Potencial de recompra ────────────────────────────────────────────────────
+
+function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
+  const { contacts } = useContactsStore()
+  const { sales }    = useSalesStore()
+  const candidates = useMemo(() => {
+    return contacts
+      .filter(c => c.tags.includes('buyer'))
+      .map(c => {
+        const clientSales = sales.filter(s => s.clientId === c.id).sort((a, b) => b.date.localeCompare(a.date))
+        const lastSale    = clientSales[0]
+        const daysSince   = lastSale ? Math.floor((Date.now() - new Date(lastSale.date).getTime()) / 86_400_000) : null
+        return { contact: c, lastSale, daysSince, totalSales: clientSales.length }
+      })
+      .filter(c => c.daysSince !== null && c.daysSince >= 180)
+      .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
+  }, [contacts, sales])
+  if (candidates.length === 0) return null
+
+  return (
+    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-emerald-500/15">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-emerald-500/15 rounded-xl flex items-center justify-center">
+            <RefreshCw size={15} className="text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-200 leading-none">Potencial de recompra</h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">Clientes que compraram há +6 meses</p>
+          </div>
+          <span className="ml-1 bg-emerald-500/15 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-xl border border-emerald-500/20 tabular-nums">{candidates.length}</span>
+        </div>
+        <button onClick={onNavigate} className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer">
+          Ver contatos <ArrowRight size={12} />
+        </button>
+      </div>
+      <div className="flex flex-col divide-y divide-emerald-500/8">
+        {candidates.slice(0, 5).map(({ contact: c, lastSale, daysSince, totalSales }) => (
+          <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-emerald-500/5 transition-colors">
+            <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-200 truncate">{c.name}</p>
+              <p className="text-[10px] text-slate-500">{totalSales} compra{totalSales !== 1 ? 's' : ''} · última: {lastSale ? formatDate(lastSale.date) : '—'}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-[10px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">{daysSince}d sem compra</span>
+              <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors">
+                <MessageCircle size={12} />
+              </a>
+            </div>
+          </div>
+        ))}
+        {candidates.length > 5 && (
+          <div className="px-5 py-2 text-center">
+            <button onClick={onNavigate} className="text-[11px] text-slate-600 hover:text-emerald-400 transition-colors cursor-pointer">+{candidates.length - 5} outros candidatos →</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Dashboard principal ──────────────────────────────────────────────────────
 
 export function DashboardPage() {
   const navigate = useNavigate()
-  const [taskFormOpen, setTaskFormOpen] = useState(false)
+  const [taskFormOpen,  setTaskFormOpen]  = useState(false)
+  const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
+
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
-  const { properties, load: loadProperties } = usePropertiesStore()
+  const { properties, load: loadProperties }                    = usePropertiesStore()
   const { sales, load: loadSales, getByPeriod, getValueByPeriod } = useSalesStore()
-  const { tasks, load: loadTasks, getUpcoming, getOverdue } = useTasksStore()
-  const { goals, load: loadGoals } = useGoalsStore()
-  const { load: loadCampaigns } = useCampaignsStore()
-  const { load: loadLeads }     = useCampaignLeadsStore()
-  const { load: loadMyLeads }   = useLeadsStore()
+  const { tasks, load: loadTasks, getUpcoming, getOverdue }     = useTasksStore()
+  const { load: loadCampaigns }    = useCampaignsStore()
+  const { load: loadCampLeads }    = useCampaignLeadsStore()
+  const { load: loadMyLeads }      = useLeadsStore()
+  const { loadAll: loadInteractions } = useLeadInteractionsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
   useEffect(() => {
-    loadContacts(); loadProperties(); loadSales(); loadTasks(); loadGoals()
-    loadCampaigns(); loadLeads(); loadMyLeads()
-  }, [loadContacts, loadProperties, loadSales, loadTasks, loadGoals, loadCampaigns, loadLeads, loadMyLeads])
+    loadContacts(); loadProperties(); loadSales(); loadTasks()
+    loadCampaigns(); loadCampLeads(); loadMyLeads(); loadInteractions()
+  }, [])
 
   const periodLabel   = getLabel()
   const salesInPeriod = getByPeriod(startDate, endDate)
   const valueInPeriod = getValueByPeriod(startDate, endDate)
-
-  // Total acumulado até o fim do período selecionado (não exibe vendas além do endDate)
   const totalAccumulated      = sales.filter(s => s.date <= endDate).reduce((acc, s) => acc + s.value, 0)
   const totalAccumulatedCount = sales.filter(s => s.date <= endDate).length
   const recentSales   = salesInPeriod.slice(0, 5)
   const upcomingTasks = getUpcoming()
   const overdueTasks  = getOverdue()
   const birthdays     = getBirthdaysThisMonth()
-
-  // Comissões do período selecionado
-  const periodComm   = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
-  const periodBroker = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
+  const periodComm    = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
+  const periodBroker  = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
+  const tasksDoneInPeriod    = tasks.filter(t => t.status === 'done' && t.completedAt && matchesPeriod(t.completedAt.split('T')[0], startDate, endDate)).length
+  const tasksPendingInPeriod = tasks.filter(t => t.status !== 'done' && t.dueDate && matchesPeriod(t.dueDate, startDate, endDate)).length
 
   const greeting = () => {
     const h = new Date().getHours()
@@ -584,18 +693,7 @@ export function DashboardPage() {
     if (h < 18) return 'Boa tarde'
     return 'Boa noite'
   }
-
-  const todayFormatted = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
-  })
-
-  // Tarefas do período
-  const tasksDoneInPeriod = tasks.filter(t =>
-    t.status === 'done' && t.completedAt && matchesPeriod(t.completedAt.split('T')[0], startDate, endDate)
-  ).length
-  const tasksPendingInPeriod = tasks.filter(t =>
-    t.status !== 'done' && t.dueDate && matchesPeriod(t.dueDate, startDate, endDate)
-  ).length
+  const todayFormatted = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 
   return (
     <PageLayout
@@ -604,7 +702,7 @@ export function DashboardPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}
     >
-      {/* Period selector row */}
+      {/* Period selector */}
       <div className="flex items-center justify-between mb-6 px-1">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-4 rounded-full bg-blue-500" />
@@ -613,9 +711,28 @@ export function DashboardPage() {
         <PeriodSelector />
       </div>
 
-      {/* KPI command strip */}
+      {/* 1. Metas — progresso automático */}
+      <GoalsWidget />
+
+      {/* 2. Pipeline do funil */}
+      <PipelineWidget onNavigate={() => navigate('/leads?tab=kanban')} />
+
+      {/* 3. Alertas de leads sem contato */}
+      <LeadAlertsWidget
+        onOpenLead={setSelectedLead}
+        onNavigate={() => navigate('/leads')}
+      />
+
+      {/* 4. Tarefas em atraso */}
+      <OverdueCard
+        tasks={overdueTasks}
+        contacts={contacts}
+        properties={properties}
+        onNavigate={() => navigate('/tarefas')}
+      />
+
+      {/* 5. KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        {/* Tarefas */}
         <div className="relative bg-[#0D1117] border border-white/8 rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-white/15 hover:shadow-2xl hover:shadow-black/40">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
           <div className="p-5">
@@ -623,86 +740,42 @@ export function DashboardPage() {
             <div className="flex items-center gap-4 mb-3">
               <div className="flex-1">
                 <p className="text-3xl font-black text-white tabular-nums leading-none">{tasksDoneInPeriod}</p>
-                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1">
-                  <ClipboardCheck size={9} className="text-green-500" /> realizadas
-                </p>
+                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1"><ClipboardCheck size={9} className="text-green-500" /> realizadas</p>
               </div>
               <div className="w-px h-8 bg-white/8 flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-3xl font-black text-violet-300 tabular-nums leading-none">{tasksPendingInPeriod}</p>
-                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1">
-                  <ListTodo size={9} className="text-violet-500" /> pendentes
-                </p>
+                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1"><ListTodo size={9} className="text-violet-500" /> pendentes</p>
               </div>
             </div>
             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-green-500 transition-all duration-700"
-                style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }}
-              />
+              <div className="h-full rounded-full bg-green-500 transition-all duration-700" style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }} />
             </div>
           </div>
         </div>
-        <StatCard
-          label="Imóveis ativos"
-          value={properties.length}
-          sub={`${properties.filter(p => p.status === 'opportunity').length} oportunidades`}
-          icon={<Building2 size={16} />}
-          accent="blue"
-        />
-        <StatCard
-          label="Volume acumulado"
-          value={formatCurrency(totalAccumulated)}
-          sub={`${totalAccumulatedCount} venda${totalAccumulatedCount !== 1 ? 's' : ''} até ${periodLabel}`}
-          icon={<DollarSign size={16} />}
-          accent="green"
-        />
-        <StatCard
-          label={`Vendas — ${periodLabel}`}
-          value={formatCurrency(valueInPeriod)}
-          sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`}
-          icon={<TrendingUp size={16} />}
-          accent="purple"
-        />
+        <StatCard label="Imóveis ativos" value={properties.length} sub={`${properties.filter(p => p.status === 'opportunity').length} oportunidades`} icon={<Building2 size={16} />} accent="blue" />
+        <StatCard label="Volume acumulado" value={formatCurrency(totalAccumulated)} sub={`${totalAccumulatedCount} venda${totalAccumulatedCount !== 1 ? 's' : ''} até ${periodLabel}`} icon={<DollarSign size={16} />} accent="green" />
+        <StatCard label={`Vendas — ${periodLabel}`} value={formatCurrency(valueInPeriod)} sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`} icon={<TrendingUp size={16} />} accent="purple" />
       </div>
 
-      {/* Comissões do período */}
+      {/* 6. Comissões do período */}
       {salesInPeriod.length > 0 && (
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <StatCard
-            label={`Comissão gerada — ${periodLabel}`}
-            value={formatCurrencyFull(periodComm)}
-            sub="soma das comissões negociadas no período"
-            icon={<DollarSign size={18} />}
-            accent="purple"
-          />
-          <StatCard
-            label={`Sua comissão — ${periodLabel}`}
-            value={formatCurrencyFull(periodBroker)}
-            sub="sua parte no período selecionado"
-            icon={<TrendingUp size={18} />}
-            accent="green"
-          />
+          <StatCard label={`Comissão gerada — ${periodLabel}`} value={formatCurrencyFull(periodComm)} sub="soma das comissões negociadas" icon={<DollarSign size={18} />} accent="purple" />
+          <StatCard label={`Sua comissão — ${periodLabel}`} value={formatCurrencyFull(periodBroker)} sub="sua parte no período" icon={<TrendingUp size={18} />} accent="green" />
         </div>
       )}
 
-      {/* Row 2 */}
+      {/* 7. Aniversários + Últimas vendas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-
-        {/* Birthdays */}
         <Card accent="yellow" className="animate-slide-up">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 bg-yellow-500/15 rounded-lg flex items-center justify-center">
-              <Cake size={14} className="text-yellow-400" />
-            </div>
+            <div className="w-7 h-7 bg-yellow-500/15 rounded-lg flex items-center justify-center"><Cake size={14} className="text-yellow-400" /></div>
             <h2 className="text-sm font-semibold text-slate-200">Aniversários do mês</h2>
             {birthdays.length > 0 && (
-              <span className="ml-auto bg-yellow-500/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-yellow-500/30">
-                {birthdays.length}
-              </span>
+              <span className="ml-auto bg-yellow-500/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-yellow-500/30">{birthdays.length}</span>
             )}
           </div>
-
           {birthdays.length === 0 ? (
             <div className="flex flex-col items-center py-6 gap-2">
               <Gift size={28} className="text-slate-700" />
@@ -717,64 +790,40 @@ export function DashboardPage() {
                     <p className="text-sm text-slate-200 truncate font-medium">{c.name}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-yellow-400 tabular-nums">
-                      {getBirthdayDay(c.birthdate!).replace(/^0/, '')}/{c.birthdate!.split('-')[1]}
-                    </span>
-                    <a
-                      href={whatsappUrl(c.phone)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all"
-                      title="Mandar parabéns!"
-                    >
+                    <span className="text-xs font-bold text-yellow-400 tabular-nums">{getBirthdayDay(c.birthdate!).replace(/^0/, '')}/{c.birthdate!.split('-')[1]}</span>
+                    <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all" title="Mandar parabéns!">
                       <MessageCircle size={12} />
                     </a>
                   </div>
                 </div>
               ))}
-              {birthdays.length > 5 && (
-                <p className="text-xs text-slate-600 text-center pt-1">+{birthdays.length - 5} mais</p>
-              )}
+              {birthdays.length > 5 && <p className="text-xs text-slate-600 text-center pt-1">+{birthdays.length - 5} mais</p>}
             </div>
           )}
         </Card>
 
-        {/* Recent sales */}
         <Card className="lg:col-span-2 animate-slide-up">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center">
-                <TrendingUp size={14} className="text-green-400" />
-              </div>
+              <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center"><TrendingUp size={14} className="text-green-400" /></div>
               <h2 className="text-sm font-semibold text-slate-200">Últimas vendas</h2>
             </div>
-            <button
-              onClick={() => navigate('/vendas')}
-              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer hover:gap-2"
-            >
+            <button onClick={() => navigate('/vendas')} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer hover:gap-2">
               Ver todas <ArrowRight size={12} />
             </button>
           </div>
-
           {recentSales.length === 0 ? (
             <div className="flex flex-col items-center py-8 gap-2">
-              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center">
-                <Sparkles size={20} className="text-slate-600" />
-              </div>
+              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center"><Sparkles size={20} className="text-slate-600" /></div>
               <p className="text-sm text-slate-500">Nenhuma venda registrada ainda</p>
-              <button
-                onClick={() => navigate('/vendas?new=1')}
-                className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer mt-1"
-              >
-                Registrar primeira venda →
-              </button>
+              <button onClick={() => navigate('/vendas?new=1')} className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer mt-1">Registrar primeira venda →</button>
             </div>
           ) : (
             <div className="flex flex-col gap-1">
               {recentSales.map(s => {
                 const client = contacts.find(c => c.id === s.clientId)
                 return (
-                  <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/4 transition-colors group -mx-3">
+                  <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/4 transition-colors -mx-3">
                     <Avatar name={client?.name ?? s.propertyName} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-200 truncate">{client?.name ?? '—'}</p>
@@ -792,88 +841,21 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Leads esfriando — métrica crítica, sempre no topo */}
-      <CoolingLeadsWidget onNavigate={() => navigate('/leads')} />
+      {/* 8. Próximas tarefas */}
+      <UpcomingCard tasks={upcomingTasks} contacts={contacts} properties={properties} onNavigate={() => navigate('/tarefas')} />
 
-      {/* Tasks — atrasadas (sempre visíveis e chamativas) */}
-      <OverdueCard
-        tasks={overdueTasks}
-        contacts={contacts}
-        properties={properties}
-        onNavigate={() => navigate('/tarefas')}
-      />
-
-      {/* Tasks — futuras (mensagem amigável) */}
-      <UpcomingCard
-        tasks={upcomingTasks}
-        contacts={contacts}
-        properties={properties}
-        onNavigate={() => navigate('/tarefas')}
-      />
-
-      {/* Campanhas ativas */}
+      {/* 9. Campanhas ativas */}
       <CampaignsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
-      {/* Leads congelados (sem movimento em etapas de interesse) */}
+      {/* 10. Leads congelados em campanhas */}
       <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
-      {/* Painel de recompra */}
+      {/* 11. Potencial de recompra */}
       <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
 
-      {/* Goals widget */}
-      {goals.filter(g => g.active).length > 0 && (
-        <Card className="animate-slide-up mb-6" accent="yellow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-amber-500/15 rounded-lg flex items-center justify-center">
-                <Target size={14} className="text-amber-400" />
-              </div>
-              <h2 className="text-sm font-semibold text-slate-200">Metas</h2>
-            </div>
-            <button
-              onClick={() => navigate('/metas')}
-              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer hover:gap-2"
-            >
-              Ver todas <ArrowRight size={12} />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {goals.filter(g => g.active).map(goal => {
-              const progress = calcProgress(goal, tasks, sales)
-              const pct  = Math.min(100, Math.round((progress / goal.target) * 100))
-              const done = progress >= goal.target
-              const colorMap: Record<GoalCategory, { bar: string; text: string }> = {
-                visita:       { bar: 'bg-indigo-500', text: 'text-indigo-400' },
-                agenciamento: { bar: 'bg-cyan-500',   text: 'text-cyan-400'   },
-                proposta:     { bar: 'bg-amber-500',  text: 'text-amber-400'  },
-                venda:        { bar: 'bg-green-500',  text: 'text-green-400'  },
-              }
-              const c = colorMap[goal.category]
-              return (
-                <div key={goal.id} className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400 truncate">{goal.name}</span>
-                    {done && <CheckCircle2 size={12} className="text-green-400 flex-shrink-0" />}
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className={`text-xl font-bold tabular-nums ${done ? 'text-green-400' : 'text-slate-100'}`}>{progress}</span>
-                    <span className="text-xs text-slate-600">/{goal.target}</span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-green-500' : c.bar}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-[10px] text-slate-600">{goal.period === 'weekly' ? 'esta semana' : 'este mês'}</span>
-                </div>
-              )
-            })}
-          </div>
-        </Card>
-      )}
-
-      <TaskForm
-        isOpen={taskFormOpen}
-        onClose={() => setTaskFormOpen(false)}
-      />
+      {/* Modais */}
+      <TaskForm isOpen={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
+      {selectedLead && <LeadModal lead={selectedLead} onClose={() => setSelectedLead(null)} />}
     </PageLayout>
   )
 }

@@ -52,7 +52,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
   add: (data) => {
     const now = new Date().toISOString()
     const { createdAt: customCreatedAt, ...rest } = data
-    const lead: Lead = { ...rest, id: generateId(), createdAt: customCreatedAt ?? now, updatedAt: now }
+    const lead: Lead = { ...rest, id: generateId(), createdAt: customCreatedAt ?? now, updatedAt: now, stageChangedAt: customCreatedAt ?? now }
 
     // Auto-link or create contact
     const { contacts, add: addContact } = useContactsStore.getState()
@@ -130,7 +130,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
     const leads = get().leads.map(l =>
       l.id === id
-        ? { ...l, funnelStage: stage, followupStep: stage === 'followup' ? (l.followupStep || 1) : l.followupStep, visitaTaskId, updatedAt: now, kanbanOrder: Date.now() }
+        ? { ...l, funnelStage: stage, followupStep: stage === 'followup' ? (l.followupStep || 1) : l.followupStep, visitaTaskId, updatedAt: now, kanbanOrder: Date.now(), stageChangedAt: now }
         : l
     )
     set({ leads })

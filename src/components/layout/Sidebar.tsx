@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
-  CheckSquare, Target, Megaphone, Wrench, Search, Home, ChevronDown,
+  CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
   ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight, ArrowLeftRight,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
@@ -31,7 +31,6 @@ const navSections = [
   {
     label: 'ANÁLISE',
     items: [
-      { to: '/metas',       icon: Target,   label: 'Metas',       end: false },
       { to: '/performance', icon: BarChart3, label: 'Performance', end: false },
     ],
   },

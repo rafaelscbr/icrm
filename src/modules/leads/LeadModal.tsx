@@ -3,9 +3,9 @@ import {
   X, Phone, Mail, MessageCircle, UserCheck,
   Building2, DollarSign, Trash2, RotateCcw, Edit2,
   Calendar, Tag, AlertTriangle, CheckCircle2, Clock, ClipboardList, Flame, ArrowLeftRight,
-  Search, Check,
+  Search, Check, Zap,
 } from 'lucide-react'
-import { Lead, LeadDiscardReason } from '../../types'
+import { Lead, LeadDiscardReason, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
@@ -19,6 +19,66 @@ import { LeadRadarTab } from './LeadRadarTab'
 import { LeadPermutaTab } from './LeadPermutaTab'
 import toast from 'react-hot-toast'
 
+
+// ─── Próxima ação ─────────────────────────────────────────────────────────────
+
+const REAL_INTERACTION_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
+
+function getNextAction(stage: LeadFunnelStage, followupStep: number, daysSince: number): { message: string; urgent: boolean } {
+  const days = Math.floor(daysSince)
+  if (daysSince > 2) {
+    const urgentMsg: Partial<Record<LeadFunnelStage, string>> = {
+      lead:        `Sem contato há ${days} dias — fazer primeiro contato agora`,
+      followup:    `Follow-up parado há ${days} dias — enviar mensagem urgente`,
+      atendimento: `Lead sem resposta há ${days} dias — ligar agora`,
+      visita:      `Visita sem confirmação há ${days} dias — confirmar ou reagendar`,
+      proposta:    `Proposta sem retorno há ${days} dias — fazer contato`,
+    }
+    return { message: urgentMsg[stage] ?? `Sem contato há ${days} dias`, urgent: true }
+  }
+  const normalMsg: Partial<Record<LeadFunnelStage, string>> = {
+    lead:        'Fazer primeiro contato via WhatsApp',
+    followup:    `Enviar ${Math.min(followupStep + 1, 5)}ª mensagem de follow-up`,
+    atendimento: 'Qualificar necessidades e apresentar o imóvel ideal',
+    visita:      'Confirmar visita e preparar apresentação do imóvel',
+    proposta:    'Aguardar retorno — acionar se passar de 2 dias',
+  }
+  return { message: normalMsg[stage] ?? 'Manter contato', urgent: false }
+}
+
+function NextActionBanner({ lead }: { lead: Lead }) {
+  const { getForLead } = useLeadInteractionsStore()
+  const interactions = getForLead(lead.id)
+  const lastReal = interactions.find(i => REAL_INTERACTION_TYPES.has(i.type))
+  const daysSince = (Date.now() - new Date(lastReal?.interactedAt ?? lead.createdAt).getTime()) / 86_400_000
+
+  if (lead.funnelStage === 'venda') {
+    return (
+      <div className="flex items-center gap-2 rounded-xl p-3 bg-green-500/10 border border-green-500/25">
+        <CheckCircle2 size={14} className="text-green-400 flex-shrink-0" />
+        <p className="text-xs font-semibold text-green-300">Venda realizada — manter relacionamento com o cliente</p>
+      </div>
+    )
+  }
+
+  const { message, urgent } = getNextAction(lead.funnelStage, lead.followupStep, daysSince)
+
+  return (
+    <div className={`flex items-start gap-2.5 rounded-xl p-3 border ${urgent ? 'bg-amber-500/10 border-amber-500/25' : 'bg-blue-500/8 border-blue-500/20'}`}>
+      <div className={`w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${urgent ? 'bg-amber-500/20' : 'bg-blue-500/15'}`}>
+        <Zap size={11} className={urgent ? 'text-amber-400' : 'text-blue-400'} />
+      </div>
+      <div>
+        <p className={`text-[10px] font-bold uppercase tracking-wide ${urgent ? 'text-amber-400' : 'text-blue-400'}`}>
+          {urgent ? '⚠️ Ação urgente' : 'Próximo passo'}
+        </p>
+        <p className="text-xs text-slate-200 mt-0.5 leading-relaxed">{message}</p>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const STAGE_CONFIG = {
   lead:        { label: 'Lead',        color: 'text-slate-300',  bg: 'bg-slate-500/20',   border: 'border-slate-500/30'   },
@@ -199,6 +259,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             ) : activeTab === 'permuta' ? (
               <LeadPermutaTab contact={contact} />
             ) : (<>
+
+            {/* Próxima ação */}
+            {!isDiscarded && <NextActionBanner lead={lead} />}
 
             {/* Contatos */}
             <div className="space-y-2">

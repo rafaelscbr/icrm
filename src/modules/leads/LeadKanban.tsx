@@ -44,6 +44,17 @@ function daysWithoutInteraction(lastInteractionAt?: string, createdAt?: string):
   return (Date.now() - new Date(ref).getTime()) / 86_400_000
 }
 
+function daysInStage(stageChangedAt?: string, createdAt?: string): number {
+  const ref = stageChangedAt ?? createdAt ?? new Date().toISOString()
+  return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
+}
+
+function stageDaysColor(days: number): string {
+  if (days <= 3)  return 'text-slate-500 bg-slate-500/10 border-slate-500/20'
+  if (days <= 7)  return 'text-amber-400 bg-amber-500/10 border-amber-500/25'
+  return 'text-red-400 bg-red-500/10 border-red-500/25'
+}
+
 function effectiveOrder(lead: Lead): number {
   return lead.kanbanOrder ?? new Date(lead.updatedAt).getTime()
 }
@@ -83,6 +94,8 @@ function LeadCard({
   const interactions = getForLead(lead.id)
   const lastInteraction = interactions[0] ?? null
   const isCooling = !isOverlay && daysWithoutInteraction(lastInteraction?.interactedAt, lead.createdAt) > COOLING_DAYS
+  const stageDays = isOverlay ? 0 : daysInStage(lead.stageChangedAt, lead.createdAt)
+  const stageDaysClass = stageDaysColor(stageDays)
 
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
@@ -165,6 +178,11 @@ function LeadCard({
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-[10px] text-slate-600">{ORIGIN_EMOJI[lead.origin]}</span>
             <span className="text-[10px] text-slate-600 tabular-nums">{formatPhone(displayPhone)}</span>
+            {!isOverlay && (
+              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${stageDaysClass}`}>
+                {stageDays}d
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -192,9 +210,14 @@ function LeadCard({
       )}
 
       {lead.averageTicket && (
-        <p className="text-[11px] font-semibold text-violet-400 mb-1.5">
-          {formatCurrency(lead.averageTicket)}
-        </p>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[11px] font-semibold text-violet-400">
+            {formatCurrency(lead.averageTicket)}
+          </span>
+          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/15 font-medium tabular-nums">
+            💰 {formatCurrency(lead.averageTicket * 0.02)}
+          </span>
+        </div>
       )}
 
       {lastInteraction && (
@@ -257,17 +280,29 @@ function KanbanColumn({
   const { isOver, setNodeRef } = useDroppable({ id: stage })
   const ids = leads.map(l => l.id)
 
+  const totalPipeline  = leads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
+  const totalCommission = totalPipeline * 0.02
+
   return (
     <div className="flex flex-col w-72 flex-shrink-0">
-      <div className={`flex items-center gap-2.5 px-3 py-3 rounded-t-xl border border-b-0 ${conf.headerBg} ${conf.border}`}>
-        <div className={`w-2 h-2 rounded-full ${conf.dot} shadow-sm`} />
-        <div className="flex-1 min-w-0">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Etapa</p>
-          <span className={`text-sm font-bold leading-tight ${conf.headerText}`}>{conf.label}</span>
+      <div className={`flex flex-col px-3 py-2.5 rounded-t-xl border border-b-0 ${conf.headerBg} ${conf.border}`}>
+        <div className="flex items-center gap-2.5">
+          <div className={`w-2 h-2 rounded-full ${conf.dot} shadow-sm flex-shrink-0`} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Etapa</p>
+            <span className={`text-sm font-bold leading-tight ${conf.headerText}`}>{conf.label}</span>
+          </div>
+          <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${conf.bg} ${conf.color} border ${conf.border} tabular-nums`}>
+            {leads.length}
+          </span>
         </div>
-        <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${conf.bg} ${conf.color} border ${conf.border} tabular-nums`}>
-          {leads.length}
-        </span>
+        {totalPipeline > 0 && (
+          <div className="flex items-center gap-1.5 mt-1.5 pl-4">
+            <span className="text-[10px] text-violet-400 font-semibold tabular-nums">{formatCurrency(totalPipeline)}</span>
+            <span className="text-[10px] text-slate-600">·</span>
+            <span className="text-[10px] text-emerald-400 font-semibold tabular-nums">💰 {formatCurrency(totalCommission)}</span>
+          </div>
+        )}
       </div>
 
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>

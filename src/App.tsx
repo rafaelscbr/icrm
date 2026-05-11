@@ -11,8 +11,6 @@ import { PropertiesPage } from './modules/properties/PropertiesPage'
 import { SalesPage } from './modules/sales/SalesPage'
 import { PerformancePage } from './modules/performance/PerformancePage'
 import { TasksPage } from './modules/tasks/TasksPage'
-import { GoalsPage } from './modules/goals/GoalsPage'
-import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
 import { CampaignsPage } from './modules/campaigns/CampaignsPage'
 import { LeadsPage } from './modules/leads/LeadsPage'
 import { PermutaPage } from './modules/permuta/PermutaPage'
@@ -57,8 +55,6 @@ function AppRoutes() {
             <Route path="/imoveis" element={<PageWrapper><PropertiesPage /></PageWrapper>} />
             <Route path="/vendas" element={<PageWrapper><SalesPage /></PageWrapper>} />
             <Route path="/tarefas" element={<PageWrapper><TasksPage /></PageWrapper>} />
-            <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
-            <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />
             <Route path="/campanhas" element={<PageWrapper><CampaignsPage /></PageWrapper>} />
             <Route path="/leads" element={<PageWrapper><LeadsPage /></PageWrapper>} />
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
