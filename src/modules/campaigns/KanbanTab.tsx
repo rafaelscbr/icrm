@@ -32,9 +32,11 @@ const VGV_STAGES: FunnelStage[] = ['attended', 'scheduled', 'presentation', 'pro
 
 function sortByRecent(leads: CampaignLead[]): CampaignLead[] {
   return [...leads].sort((a, b) => {
-    const aTime = a.firstContactAt ?? a.updatedAt ?? a.createdAt
-    const bTime = b.firstContactAt ?? b.updatedAt ?? b.createdAt
-    return bTime.localeCompare(aTime)
+    // updatedAt muda a cada interação (envio, mudança de etapa, edição)
+    // firstContactAt só muda na primeira vez — não serve como chave principal
+    const aTime = a.updatedAt ?? a.stageUpdatedAt ?? a.firstContactAt ?? a.createdAt
+    const bTime = b.updatedAt ?? b.stageUpdatedAt ?? b.firstContactAt ?? b.createdAt
+    return bTime.localeCompare(aTime)  // desc → mais recente no topo
   })
 }
 
