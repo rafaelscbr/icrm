@@ -24,6 +24,7 @@ interface PropertyRow {
   area_sqm: number | null; condo_fee: number | null; notes: string | null
   value: number; status: string; owner_id: string | null
   development_name: string | null; images: string[]
+  accepts_permuta: boolean; permuta_types: string[]; permuta_regions: string[]
   created_at: string; updated_at: string
 }
 
@@ -110,7 +111,11 @@ function toProperty(r: PropertyRow): Property {
     notes: r.notes ?? undefined,
     value: r.value, status: r.status as Property['status'],
     ownerId: r.owner_id ?? undefined, developmentName: r.development_name ?? undefined,
-    images: r.images ?? [], createdAt: r.created_at, updatedAt: r.updated_at,
+    images: r.images ?? [],
+    acceptsPermuta: r.accepts_permuta ?? false,
+    permutaTypes: (r.permuta_types ?? []) as Array<'imovel' | 'carro'>,
+    permutaRegions: r.permuta_regions ?? [],
+    createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
 
@@ -124,7 +129,11 @@ function fromProperty(p: Property): PropertyRow {
     notes: p.notes ?? null,
     value: p.value, status: p.status,
     owner_id: p.ownerId ?? null, development_name: p.developmentName ?? null,
-    images: p.images, created_at: p.createdAt, updated_at: p.updatedAt,
+    images: p.images,
+    accepts_permuta: p.acceptsPermuta ?? false,
+    permuta_types: p.permutaTypes ?? [],
+    permuta_regions: p.permutaRegions ?? [],
+    created_at: p.createdAt, updated_at: p.updatedAt,
   }
 }
 
@@ -270,7 +279,21 @@ interface LeadRow {
   property_id: string | null; property_name: string | null; average_ticket: number | null
   contact_id: string | null; converted_at: string | null; visita_task_id: string | null
   flagged: boolean | null
-  notes: string | null; created_at: string; updated_at: string
+  notes: string | null
+  // Permuta
+  permuta_type: string | null
+  permuta_property_region: string | null
+  permuta_property_value: number | null
+  permuta_car_model: string | null
+  permuta_car_value: number | null
+  // Radar
+  radar_property_type: string | null
+  radar_region: string | null
+  radar_value_min: number | null
+  radar_value_max: number | null
+  radar_area_min: number | null
+  radar_bedrooms: number | null
+  created_at: string; updated_at: string
 }
 
 function toLead(r: LeadRow): Lead {
@@ -285,7 +308,19 @@ function toLead(r: LeadRow): Lead {
     contactId: r.contact_id ?? undefined, convertedAt: r.converted_at ?? undefined,
     visitaTaskId: r.visita_task_id ?? undefined,
     flagged: r.flagged ?? undefined,
-    notes: r.notes ?? undefined, createdAt: r.created_at, updatedAt: r.updated_at,
+    notes: r.notes ?? undefined,
+    permutaType: (r.permuta_type as Lead['permutaType']) ?? undefined,
+    permutaPropertyRegion: r.permuta_property_region ?? undefined,
+    permutaPropertyValue: r.permuta_property_value ?? undefined,
+    permutaCarModel: r.permuta_car_model ?? undefined,
+    permutaCarValue: r.permuta_car_value ?? undefined,
+    radarPropertyType: r.radar_property_type ?? undefined,
+    radarRegion: r.radar_region ?? undefined,
+    radarValueMin: r.radar_value_min ?? undefined,
+    radarValueMax: r.radar_value_max ?? undefined,
+    radarAreaMin: r.radar_area_min ?? undefined,
+    radarBedrooms: r.radar_bedrooms ?? undefined,
+    createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
 
@@ -299,7 +334,19 @@ function fromLead(l: Lead): LeadRow {
     contact_id: l.contactId ?? null, converted_at: l.convertedAt ?? null,
     visita_task_id: l.visitaTaskId ?? null,
     flagged: l.flagged ?? null,
-    notes: l.notes ?? null, created_at: l.createdAt, updated_at: l.updatedAt,
+    notes: l.notes ?? null,
+    permuta_type: l.permutaType ?? null,
+    permuta_property_region: l.permutaPropertyRegion ?? null,
+    permuta_property_value: l.permutaPropertyValue ?? null,
+    permuta_car_model: l.permutaCarModel ?? null,
+    permuta_car_value: l.permutaCarValue ?? null,
+    radar_property_type: l.radarPropertyType ?? null,
+    radar_region: l.radarRegion ?? null,
+    radar_value_min: l.radarValueMin ?? null,
+    radar_value_max: l.radarValueMax ?? null,
+    radar_area_min: l.radarAreaMin ?? null,
+    radar_bedrooms: l.radarBedrooms ?? null,
+    created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }
 

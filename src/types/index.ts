@@ -40,6 +40,10 @@ export interface Property {
   status: PropertyStatus
   ownerId?: string          // não aplicável para off_plan
   images: string[]
+  // Permuta
+  acceptsPermuta?: boolean
+  permutaTypes?: Array<'imovel' | 'carro'>
+  permutaRegions?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -175,7 +179,7 @@ export interface Goal {
 
 export type LeadOrigin       = 'felicita' | 'meta_ads' | 'portal' | 'offline' | 'campanha'
 export type LeadFunnelStage  = 'lead' | 'followup' | 'atendimento' | 'visita' | 'proposta' | 'venda'
-export type LeadDiscardReason    = 'sem_condicao' | 'fora_de_nicho' | 'parou_de_responder' | 'nunca_respondeu' | 'telefone_invalido'
+export type LeadDiscardReason    = 'sem_condicao' | 'fora_de_nicho' | 'parou_de_responder' | 'nunca_respondeu' | 'telefone_invalido' | 'permuta'
 export type LeadInteractionType  = 'ligacao' | 'whatsapp' | 'email' | 'visita' | 'reuniao' | 'nota'
 export type LeadInteractionOutcome = 'interessado' | 'nao_interessado' | 'agendado' | 'sem_resposta' | 'proposta_enviada' | 'fechado' | 'reagendado'
 
@@ -207,6 +211,19 @@ export interface Lead {
   visitaTaskId?: string       // ID da tarefa de visita criada automaticamente
   flagged?: boolean           // prioridade máxima — destaca o card no funil
   notes?: string
+  // Permuta
+  permutaType?: 'imovel' | 'carro'
+  permutaPropertyRegion?: string
+  permutaPropertyValue?: number
+  permutaCarModel?: string
+  permutaCarValue?: number
+  // Radar de Interesse
+  radarPropertyType?: string
+  radarRegion?: string
+  radarValueMin?: number
+  radarValueMax?: number
+  radarAreaMin?: number
+  radarBedrooms?: number
   createdAt: string
   updatedAt: string
 }

@@ -60,6 +60,10 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
   const [showOwnerDropdown, setShowOwnerDropdown] = useState(false)
   const [newContactOpen,  setNewContactOpen]  = useState(false)
   const [errors,          setErrors]          = useState<Record<string, string>>({})
+  // Permuta
+  const [acceptsPermuta,  setAcceptsPermuta]  = useState(property?.acceptsPermuta ?? false)
+  const [permutaTypes,    setPermutaTypes]    = useState<Array<'imovel' | 'carro'>>(property?.permutaTypes ?? [])
+  const [permutaRegions,  setPermutaRegions]  = useState<string[]>(property?.permutaRegions ?? [])
 
   useEffect(() => {
     if (!isOpen) return
@@ -82,6 +86,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     setOwnerId(property?.ownerId ?? '')
     setImages(property?.images ?? [])
     setOwnerSearch(property ? (getById(property.ownerId ?? '')?.name ?? '') : '')
+    setAcceptsPermuta(property?.acceptsPermuta ?? false)
+    setPermutaTypes(property?.permutaTypes ?? [])
+    setPermutaRegions(property?.permutaRegions ?? [])
     setErrors({})
   }, [isOpen, property])
 
@@ -149,6 +156,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
       status,
       ownerId:         kind === 'ready' ? ownerId : undefined,
       images,
+      acceptsPermuta,
+      permutaTypes:    acceptsPermuta ? permutaTypes : [],
+      permutaRegions:  acceptsPermuta && permutaTypes.includes('imovel') ? permutaRegions : [],
     }
 
     if (isEditing && property) {
@@ -448,6 +458,73 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               placeholder="Informações adicionais, diferenciais do imóvel, condições especiais…"
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
             />
+          </div>
+
+          {/* Permuta */}
+          <div className="flex flex-col gap-3 bg-white/3 border border-white/8 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-200">Aceita Permuta</p>
+                <p className="text-xs text-slate-500 mt-0.5">Permite troca por imóvel ou carro como parte do pagamento</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setAcceptsPermuta(v => !v); if (acceptsPermuta) { setPermutaTypes([]); setPermutaRegions([]) } }}
+                className={`relative w-10 h-6 rounded-full transition-colors ${acceptsPermuta ? 'bg-indigo-500' : 'bg-white/15'}`}
+              >
+                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${acceptsPermuta ? 'left-5' : 'left-1'}`} />
+              </button>
+            </div>
+
+            {acceptsPermuta && (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tipos aceitos</p>
+                  <div className="flex gap-2">
+                    {(['imovel', 'carro'] as const).map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setPermutaTypes(prev =>
+                          prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
+                        )}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-all ${
+                          permutaTypes.includes(t)
+                            ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
+                            : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {permutaTypes.includes('imovel') && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Regiões aceitas para imóvel</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Balneário Camboriú','Camboriú','Itajaí','Navegantes','Itapema','Porto Belo','Florianópolis','Blumenau','São José','Palhoça','Biguaçu'].map(region => (
+                        <button
+                          key={region}
+                          type="button"
+                          onClick={() => setPermutaRegions(prev =>
+                            prev.includes(region) ? prev.filter(r => r !== region) : [...prev, region]
+                          )}
+                          className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
+                            permutaRegions.includes(region)
+                              ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
+                              : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20'
+                          }`}
+                        >
+                          {region}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="flex gap-3 pt-1">

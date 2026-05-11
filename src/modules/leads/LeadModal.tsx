@@ -13,6 +13,7 @@ import { formatPhone, formatCurrencyFull, whatsappUrl } from '../../lib/formatte
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
+import { LeadRadarTab } from './LeadRadarTab'
 import toast from 'react-hot-toast'
 
 const DISCARD_REASONS: { value: LeadDiscardReason; label: string; icon: string }[] = [
@@ -21,6 +22,7 @@ const DISCARD_REASONS: { value: LeadDiscardReason; label: string; icon: string }
   { value: 'parou_de_responder',  label: 'Parou de responder',      icon: '🔇' },
   { value: 'nunca_respondeu',     label: 'Nunca respondeu',         icon: '📵' },
   { value: 'telefone_invalido',   label: 'Telefone inválido',       icon: '❌' },
+  { value: 'permuta',             label: 'Quer fazer permuta',      icon: '🔄' },
 ]
 
 const STAGE_CONFIG = {
@@ -46,7 +48,7 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
-  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, leads } = useLeadsStore()
+  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, leads, update } = useLeadsStore()
   // Always read the live version from the store so edits are reflected immediately
   const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
 
@@ -54,12 +56,18 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const { add: addInteraction } = useLeadInteractionsStore()
   const { properties } = usePropertiesStore()
 
-  const [activeTab, setActiveTab] = useState<'detalhes' | 'historico'>('detalhes')
+  const [activeTab, setActiveTab] = useState<'detalhes' | 'historico' | 'radar'>('detalhes')
   const [showDiscard, setShowDiscard] = useState(false)
   const [selectedReason, setSelectedReason] = useState<LeadDiscardReason | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [showTaskForm, setShowTaskForm] = useState(false)
+  // Permuta form state
+  const [permutaType, setPermutaType] = useState<'imovel' | 'carro'>('imovel')
+  const [permutaPropertyRegion, setPermutaPropertyRegion] = useState('')
+  const [permutaPropertyValue, setPermutaPropertyValue] = useState('')
+  const [permutaCarModel, setPermutaCarModel] = useState('')
+  const [permutaCarValue, setPermutaCarValue] = useState('')
 
   const property = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact = lead.contactId ? getById(lead.contactId) : undefined
@@ -88,6 +96,15 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   function handleDiscard() {
     if (!selectedReason) { toast.error('Selecione um motivo'); return }
+    if (selectedReason === 'permuta') {
+      update(lead.id, {
+        permutaType,
+        permutaPropertyRegion: permutaType === 'imovel' ? (permutaPropertyRegion || undefined) : undefined,
+        permutaPropertyValue: permutaType === 'imovel' && permutaPropertyValue ? Number(permutaPropertyValue.replace(/\D/g, '')) : undefined,
+        permutaCarModel: permutaType === 'carro' ? (permutaCarModel || undefined) : undefined,
+        permutaCarValue: permutaType === 'carro' && permutaCarValue ? Number(permutaCarValue.replace(/\D/g, '')) : undefined,
+      })
+    }
     discard(lead.id, selectedReason)
     toast.success('Lead descartado')
     setShowDiscard(false)
@@ -168,7 +185,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
           {/* Tabs */}
           <div className="flex gap-1 px-5 pt-3 pb-0 border-b border-white/6">
-            {(['detalhes', 'historico'] as const).map(tab => (
+            {(['detalhes', 'historico', 'radar'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -178,7 +195,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     : 'text-slate-500 border-transparent hover:text-slate-300'
                 }`}
               >
-                {tab === 'detalhes' ? 'Detalhes' : 'Histórico'}
+                {tab === 'detalhes' ? 'Detalhes' : tab === 'historico' ? 'Histórico' : '🎯 Radar'}
               </button>
             ))}
           </div>
@@ -187,6 +204,8 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
           <div className="px-5 py-4 space-y-4 max-h-[55vh] overflow-y-auto">
             {activeTab === 'historico' ? (
               <LeadTimeline leadId={lead.id} />
+            ) : activeTab === 'radar' ? (
+              <LeadRadarTab lead={lead} properties={properties} />
             ) : (<>
 
             {/* Contatos */}
@@ -293,15 +312,35 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
             {/* Descarte */}
             {isDiscarded && lead.discardReason && (
-              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3">
+              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3 space-y-2">
                 <p className="text-xs font-medium text-red-300 mb-1">Motivo do descarte</p>
                 <p className="text-sm text-slate-300">
                   {DISCARD_REASONS.find(r => r.value === lead.discardReason)?.label}
                 </p>
                 {lead.discardedAt && (
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500">
                     {new Date(lead.discardedAt).toLocaleDateString('pt-BR')}
                   </p>
+                )}
+                {lead.discardReason === 'permuta' && lead.permutaType && (
+                  <div className="mt-2 pt-2 border-t border-red-500/10 space-y-1">
+                    <p className="text-xs font-medium text-slate-400">Detalhes da permuta</p>
+                    <p className="text-xs text-slate-300">
+                      Tipo: {lead.permutaType === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+                    </p>
+                    {lead.permutaType === 'imovel' && (
+                      <>
+                        {lead.permutaPropertyRegion && <p className="text-xs text-slate-400">Região: {lead.permutaPropertyRegion}</p>}
+                        {lead.permutaPropertyValue && <p className="text-xs text-slate-400">Valor: {formatCurrencyFull(lead.permutaPropertyValue)}</p>}
+                      </>
+                    )}
+                    {lead.permutaType === 'carro' && (
+                      <>
+                        {lead.permutaCarModel && <p className="text-xs text-slate-400">Modelo: {lead.permutaCarModel}</p>}
+                        {lead.permutaCarValue && <p className="text-xs text-slate-400">Valor de entrada: {formatCurrencyFull(lead.permutaCarValue)}</p>}
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -416,7 +455,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               </div>
             </div>
 
-            <div className="px-5 py-4 space-y-2">
+            <div className="px-5 py-4 space-y-2 max-h-[60vh] overflow-y-auto">
               {DISCARD_REASONS.map(r => (
                 <button
                   key={r.value}
@@ -432,6 +471,115 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   {selectedReason === r.value && <ArrowRight size={13} className="ml-auto text-red-400" />}
                 </button>
               ))}
+
+              {/* Permuta detail form */}
+              {selectedReason === 'permuta' && (
+                <div className="bg-white/3 border border-white/8 rounded-xl p-3 space-y-3">
+                  <p className="text-xs font-medium text-slate-300">Tipo de permuta</p>
+                  <div className="flex gap-2">
+                    {(['imovel', 'carro'] as const).map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setPermutaType(t)}
+                        className={`flex-1 py-2 rounded-xl border text-sm transition-all ${
+                          permutaType === t
+                            ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
+                            : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {permutaType === 'imovel' ? (
+                    <div className="space-y-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500">Região do imóvel</label>
+                        <input
+                          type="text"
+                          value={permutaPropertyRegion}
+                          onChange={e => setPermutaPropertyRegion(e.target.value)}
+                          placeholder="Ex: Balneário Camboriú"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500">Valor do imóvel</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">R$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={permutaPropertyValue}
+                            onChange={e => setPermutaPropertyValue(e.target.value.replace(/\D/g, ''))}
+                            placeholder="850000"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500">Modelo do carro</label>
+                        <input
+                          type="text"
+                          value={permutaCarModel}
+                          onChange={e => setPermutaCarModel(e.target.value)}
+                          placeholder="Ex: Toyota Corolla 2022"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500">Valor de entrada do carro</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">R$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={permutaCarValue}
+                            onChange={e => setPermutaCarValue(e.target.value.replace(/\D/g, ''))}
+                            placeholder="80000"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Properties that accept permuta */}
+                  {(() => {
+                    const matchingProps = properties.filter(p => {
+                      if (!p.acceptsPermuta) return false
+                      if (permutaType === 'imovel') {
+                        if (!p.permutaTypes?.includes('imovel')) return false
+                        if (permutaPropertyRegion && p.permutaRegions && p.permutaRegions.length > 0) {
+                          return p.permutaRegions.some(r => r.toLowerCase().includes(permutaPropertyRegion.toLowerCase()))
+                        }
+                        return true
+                      }
+                      return p.permutaTypes?.includes('carro')
+                    })
+                    if (matchingProps.length === 0) return null
+                    return (
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-slate-400 pt-1">Imóveis que aceitam permuta</p>
+                        {matchingProps.slice(0, 4).map(p => (
+                          <div key={p.id} className="bg-violet-500/8 border border-violet-500/20 rounded-xl p-2.5 flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-slate-200 truncate">{p.name}</p>
+                              <p className="text-[10px] text-slate-500">{p.neighborhood}</p>
+                            </div>
+                            <span className="text-xs font-semibold text-violet-400 flex-shrink-0">{formatCurrencyFull(p.value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
 
               {/* Separador — excluir permanentemente */}
               <div className="pt-2 border-t border-white/6">
