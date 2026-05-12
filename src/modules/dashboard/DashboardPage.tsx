@@ -126,7 +126,7 @@ function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
 // ─── Metas Widget ─────────────────────────────────────────────────────────────
 
 function GoalsWidget() {
-  const { getAllInteractions } = useLeadInteractionsStore()
+  const { getAllInteractions, loadAll, allLoaded } = useLeadInteractionsStore()
   const { sales }             = useSalesStore()
   const { tasks }             = useTasksStore()
   const { countDay: disparosDb, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
@@ -135,36 +135,40 @@ function GoalsWidget() {
   const disparosHoje = Math.max(disparosDb, getDailySends())
 
   useEffect(() => { loadDisparos() }, [loadDisparos])
+  useEffect(() => { if (!allLoaded) loadAll() }, [allLoaded, loadAll])
+
+  // Computados fora do useMemo para entrar nas deps e evitar weekStart congelada
+  // (getAllInteractions é referência estável no Zustand — não muda quando byLead muda)
+  const weekStart  = getWeekStart()
+  const monthStart = getMonthStart()
+  const weekStartMs  = weekStart.getTime()
+  const monthStartMs = monthStart.getTime()
 
   const metrics = useMemo(() => {
-    const all        = getAllInteractions()
-    const now = new Date()
+    const all  = getAllInteractions()
+    const wStart = new Date(weekStartMs)
+    const mStart = new Date(monthStartMs)
+
+    const now   = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-    const weekStart  = getWeekStart()
-    const monthStart = getMonthStart()
 
     // Compara data local da interação (evita bug UTC vs local)
     const toLocal = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+
     const daily         = all.filter(i => REAL_TYPES.has(i.type) && toLocal(i.interactedAt) === today).length
-    const weekInteract  = all.filter(i => new Date(i.interactedAt) >= weekStart)
-    const monthInteract = all.filter(i => new Date(i.interactedAt) >= monthStart)
-    const monthProp     = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
+    const weekInteract  = all.filter(i => new Date(i.interactedAt) >= wStart)
+    const monthInteract = all.filter(i => new Date(i.interactedAt) >= mStart)
     const weekProp      = weekInteract.filter(i  => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
-    const monthSales    = sales.filter(s => s.date >= monthStart.toISOString().slice(0, 10)).length
+    const monthProp     = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
+    const monthSales    = sales.filter(s => s.date >= mStart.toISOString().slice(0, 10)).length
 
     // Visitas = tarefas concluídas com categoria 'visita', usando completedAt (ou dueDate como fallback)
     const visitasDone = tasks.filter(t => t.status === 'done' && t.category === 'visita')
-    const weekVisits  = visitasDone.filter(t => {
-      const d = t.completedAt ?? t.dueDate
-      return d && new Date(d) >= weekStart
-    }).length
-    const monthVisits = visitasDone.filter(t => {
-      const d = t.completedAt ?? t.dueDate
-      return d && new Date(d) >= monthStart
-    }).length
+    const weekVisits  = visitasDone.filter(t => { const d = t.completedAt ?? t.dueDate; return d && new Date(d) >= wStart }).length
+    const monthVisits = visitasDone.filter(t => { const d = t.completedAt ?? t.dueDate; return d && new Date(d) >= mStart }).length
 
     return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
-  }, [getAllInteractions, sales, tasks])
+  }, [getAllInteractions, allLoaded, sales, tasks, weekStartMs, monthStartMs])
 
   return (
     <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
