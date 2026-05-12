@@ -24,6 +24,7 @@ import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
+import { getDailySends } from '../campaigns/dailyCounter'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -128,17 +129,23 @@ function GoalsWidget() {
   const { getAllInteractions } = useLeadInteractionsStore()
   const { sales }             = useSalesStore()
   const { tasks }             = useTasksStore()
-  const { countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
+  const { countDay: disparosDb, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
+  // Usa o maior entre Supabase e localStorage: durante a migração o localStorage pode ter
+  // sends anteriores à criação da tabela disparo_logs que ainda não estão no banco
+  const disparosHoje = Math.max(disparosDb, getDailySends())
 
   useEffect(() => { loadDisparos() }, [loadDisparos])
 
   const metrics = useMemo(() => {
     const all        = getAllInteractions()
-    const today      = new Date().toISOString().slice(0, 10)
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
     const weekStart  = getWeekStart()
     const monthStart = getMonthStart()
 
-    const daily         = all.filter(i => REAL_TYPES.has(i.type) && i.interactedAt.slice(0, 10) === today).length
+    // Compara data local da interação (evita bug UTC vs local)
+    const toLocal = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+    const daily         = all.filter(i => REAL_TYPES.has(i.type) && toLocal(i.interactedAt) === today).length
     const weekInteract  = all.filter(i => new Date(i.interactedAt) >= weekStart)
     const monthInteract = all.filter(i => new Date(i.interactedAt) >= monthStart)
     const monthProp     = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length

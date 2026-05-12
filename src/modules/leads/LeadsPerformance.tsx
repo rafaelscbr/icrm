@@ -15,7 +15,11 @@ const REAL_INTERACTION_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita'
 function startOfWeek(offsetWeeks = 0): Date {
   const d = new Date()
   d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() - d.getDay() + 1 - offsetWeeks * 7) // segunda-feira
+  // getDay(): 0=dom, 1=seg ... 6=sab
+  // Domingo (0) → volta 6 dias para segunda; demais → (getDay() - 1) dias
+  const dayOfWeek = d.getDay()
+  const distToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  d.setDate(d.getDate() - distToMonday - offsetWeeks * 7)
   return d
 }
 
@@ -93,20 +97,30 @@ export function LeadsPerformance({ leads }: Props) {
   }, [allInteractions, leads])
 
   // ── Ritmo diário — últimos 30 dias ────────────────────────────────────────
+
+  // Retorna "YYYY-MM-DD" no fuso local (evita o bug toISOString() que usa UTC)
+  function localDateOf(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  }
+
   const dailyRhythm = useMemo(() => {
     return Array.from({ length: 30 }, (_, i) => {
       const d = new Date()
       d.setHours(0, 0, 0, 0)
       d.setDate(d.getDate() - (29 - i))
-      const dateStr = d.toISOString().split('T')[0]
+      // Data local — não usa toISOString() que retorna UTC e pode errar o dia
+      const dateStr = localDateOf(d)
       const label = i === 29 ? 'Hoje' : i === 28 ? 'Ontem'
         : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-      const contacts = allInteractions.filter(x =>
-        REAL_INTERACTION_TYPES.has(x.type) && x.interactedAt.startsWith(dateStr)
-      ).length
-      const advances = allInteractions.filter(x =>
-        x.type === 'stage_change' && x.interactedAt.startsWith(dateStr)
-      ).length
+      // Compara data local da interação com data local do dia
+      const contacts = allInteractions.filter(x => {
+        if (!REAL_INTERACTION_TYPES.has(x.type)) return false
+        return localDateOf(new Date(x.interactedAt)) === dateStr
+      }).length
+      const advances = allInteractions.filter(x => {
+        if (x.type !== 'stage_change') return false
+        return localDateOf(new Date(x.interactedAt)) === dateStr
+      }).length
       const dow = d.getDay() // 0=dom, 6=sab
       return { dateStr, label, contacts, advances, dow }
     })
