@@ -23,7 +23,7 @@ const CATEGORY_ICON: Record<GoalCategory, typeof Target> = {
 }
 
 const CATEGORY_COLOR: Record<GoalCategory, { text: string; bar: string }> = {
-  visita:       { text: 'text-indigo-400', bar: 'bg-indigo-500' },
+  visita:       { text: 'text-brand', bar: 'bg-indigo-500' },
   agenciamento: { text: 'text-cyan-400',   bar: 'bg-cyan-500'   },
   proposta:     { text: 'text-amber-400',  bar: 'bg-amber-500'  },
   venda:        { text: 'text-green-400',  bar: 'bg-green-500'  },
@@ -55,7 +55,7 @@ function WeekCard({ snapshot }: { snapshot: WeekSnapshot }) {
   const { range, year } = formatWeekLabel(snapshot.weekStart, snapshot.weekEnd)
 
   return (
-    <Card className="border border-white/8">
+    <Card className="border border-line">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
@@ -83,7 +83,7 @@ function WeekCard({ snapshot }: { snapshot: WeekSnapshot }) {
                 </span>
                 <span className="text-xs text-slate-600 tabular-nums w-8 text-right">{pct}%</span>
               </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${done ? 'bg-green-500' : colors.bar}`}
                   style={{ width: `${pct}%` }}
@@ -140,15 +140,15 @@ export function WeekHistoryPage() {
         <>
           {/* Summary strip */}
           <div className="grid grid-cols-3 gap-3 mb-8">
-            <Card className="text-center border border-white/8">
+            <Card className="text-center border border-line">
               <p className="text-2xl font-bold text-slate-100 tabular-nums">{avgScore}%</p>
               <p className="text-xs text-slate-500 mt-1">Média geral</p>
             </Card>
-            <Card className="text-center border border-white/8">
+            <Card className="text-center border border-line">
               <p className="text-2xl font-bold text-green-400 tabular-nums">{bestScore}%</p>
               <p className="text-xs text-slate-500 mt-1">Melhor semana</p>
             </Card>
-            <Card className="text-center border border-white/8">
+            <Card className="text-center border border-line">
               <div className="flex items-center justify-center gap-1">
                 <Trophy size={16} className="text-amber-400" />
                 <p className="text-2xl font-bold text-amber-400 tabular-nums">{perfect}</p>

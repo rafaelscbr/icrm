@@ -129,10 +129,10 @@ function MessagePickerModal({ isOpen, onClose, templates, onPick }: {
       <div className="flex flex-col gap-2">
         {templates.map((t, i) => (
           <button key={i} onClick={() => { onPick(t, i); onClose() }}
-            className="flex items-start gap-3 text-left p-3 rounded-xl bg-white/4 border border-white/8 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-pointer group">
-            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[11px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+            className="flex items-start gap-3 text-left p-3 rounded-xl bg-s2/60 border border-line hover:bg-indigo-500/10 hover:border-brand/30 transition-all cursor-pointer group">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-brand-tint text-brand text-[11px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
             <p className="flex-1 text-xs text-slate-300 line-clamp-3 leading-relaxed">{t}</p>
-            <ChevronRight size={14} className="text-slate-700 group-hover:text-indigo-400 transition-colors flex-shrink-0 mt-0.5" />
+            <ChevronRight size={14} className="text-slate-700 group-hover:text-brand transition-colors flex-shrink-0 mt-0.5" />
           </button>
         ))}
       </div>
@@ -311,7 +311,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           clearTimeout(deleteTimeoutRef.current!)
           setExcludedIds(prev => { const s = new Set(prev); s.delete(lead.id); return s })
           toast.dismiss(t.id)
-        }} className="text-xs text-indigo-400 font-semibold underline cursor-pointer">Desfazer</button>
+        }} className="text-xs text-brand font-semibold underline cursor-pointer">Desfazer</button>
       </div>
     ), { duration: 5000 })
   }
@@ -358,7 +358,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               </div>
             )}
             {!atLim && onCd && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-slate-300 text-xs">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-line text-slate-300 text-xs">
                 <Clock size={12} className="text-slate-500" />
                 <span>Próximo disparo em</span>
                 <span className="font-black tabular-nums text-white text-sm">{secs}s</span>
@@ -380,15 +380,15 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar nome ou telefone…"
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
           />
         </div>
         {/* Mini resumo inline */}
         <div className="flex items-center gap-3 text-xs text-slate-500 flex-shrink-0">
-          <span><span className="text-white font-bold tabular-nums">{queueLeads.length}</span> na fila</span>
-          <span className="text-white/10">|</span>
+          <span><span className="text-t1 font-bold tabular-nums">{queueLeads.length}</span> na fila</span>
+          <span className="text-line">|</span>
           <span><span className="text-cyan-400 font-bold tabular-nums">{contactedLeads.length}</span> acionados</span>
-          <span className="text-white/10">|</span>
+          <span className="text-line">|</span>
           <span><span className="text-green-400 font-bold tabular-nums">{leads.filter(l => l.funnelStage === 'sale').length}</span> vendas</span>
         </div>
       </div>
@@ -407,7 +407,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           <div className="flex items-center gap-3 mb-3">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <h3 className="text-sm font-bold text-white">Fila de disparo</h3>
+              <h3 className="text-sm font-bold text-t1">Fila de disparo</h3>
             </div>
             <span className="text-xs bg-green-500/15 text-green-400 border border-green-500/25 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
               {queueLeads.length}
@@ -425,21 +425,21 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-white/8 overflow-hidden bg-[#0D1117]">
+            <div className="rounded-xl border border-line overflow-hidden bg-page">
               {/* Header da tabela */}
-              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-white/6 text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
                 <span>Nome</span>
                 <span>Telefone</span>
                 <span className="w-28 text-center">Ação</span>
               </div>
 
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-line">
                 {queueLeads.slice(0, visibleQueue).map((lead, idx) => {
                   const isNext = idx === 0 && !onCd && !atLim
                   return (
                     <div key={lead.id}
                       className={`grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-3 items-center transition-colors
-                        ${isNext ? 'bg-green-500/5' : 'hover:bg-white/3'}`}>
+                        ${isNext ? 'bg-green-500/5' : 'hover:bg-s2/50'}`}>
 
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Avatar */}
@@ -448,7 +448,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                           {lead.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className={`text-sm font-medium truncate ${isNext ? 'text-white' : 'text-slate-300'}`}>
+                          <p className={`text-sm font-medium truncate ${isNext ? 'text-t1' : 'text-t3'}`}>
                             {lead.name}
                           </p>
                           {lead.extra && (
@@ -466,7 +466,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         {atLim ? (
                           <span className="text-[11px] text-red-400/60">limite atingido</span>
                         ) : onCd ? (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-white/8 text-slate-400 text-xs tabular-nums">
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-line text-slate-400 text-xs tabular-nums">
                             <Clock size={11} /> {secs}s
                           </div>
                         ) : (
@@ -490,7 +490,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
               <div ref={sentinelQRef} className="h-1" />
               {visibleQueue < queueLeads.length && (
-                <div className="flex items-center justify-center gap-2 py-3 border-t border-white/5">
+                <div className="flex items-center justify-center gap-2 py-3 border-t border-line">
                   <Loader2 size={13} className="animate-spin text-slate-600" />
                   <span className="text-xs text-slate-600">Carregando mais…</span>
                 </div>
@@ -520,21 +520,21 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             </button>
 
             {showContacted && (
-              <div className="rounded-xl border border-white/8 overflow-hidden bg-[#0D1117]">
-                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-white/6 text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+              <div className="rounded-xl border border-line overflow-hidden bg-page">
+                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
                   <span>Etapa</span>
                   <span>Nome</span>
                   <span>Telefone</span>
                   <span className="w-24 text-right">Ações</span>
                 </div>
 
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-line">
                   {contactedLeads.slice(0, visibleContacted).map(lead => {
                     const cdActive = onCd || atLim
                     const situCfg  = lead.situation ? SITUATION_CONFIG.find(s => s.value === lead.situation) : null
                     return (
                       <div key={lead.id}
-                        className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 items-center hover:bg-white/3 transition-colors group">
+                        className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 items-center hover:bg-s2/50 transition-colors group">
 
                         <div className="flex items-center gap-2">
                           <StageBadge stage={lead.funnelStage} />
@@ -570,12 +570,12 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                             <ThumbsUp size={13} />
                           </button>
                           <button onClick={() => setParecerLead(lead)}
-                            className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-indigo-400 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-brand transition-colors cursor-pointer"
                             title="Parecer">
                             <FileText size={13} />
                           </button>
                           <button onClick={() => setEditLead(lead)}
-                            className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
                             title="Editar">
                             <Pencil size={13} />
                           </button>
@@ -592,7 +592,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
                 <div ref={sentinelCRef} className="h-1" />
                 {visibleContacted < contactedLeads.length && (
-                  <div className="flex items-center justify-center gap-2 py-3 border-t border-white/5">
+                  <div className="flex items-center justify-center gap-2 py-3 border-t border-line">
                     <Loader2 size={13} className="animate-spin text-slate-600" />
                     <span className="text-xs text-slate-600">Carregando mais…</span>
                   </div>
@@ -615,29 +615,29 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                 <span className="w-2 h-2 rounded-full bg-slate-600" />
                 <h3 className="text-sm font-bold text-slate-600 group-hover:text-slate-400 transition-colors">Sem interesse / Inválidos</h3>
               </div>
-              <span className="text-xs bg-white/5 text-slate-600 border border-white/8 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+              <span className="text-xs bg-s3/50 text-slate-600 border border-line px-2.5 py-0.5 rounded-full font-bold tabular-nums">
                 {disqualLeads.length}
               </span>
-              <div className="flex-1 h-px bg-white/4" />
+              <div className="flex-1 h-px bg-s2/60" />
               <ChevronDown size={13} className={`text-slate-700 transition-transform ${showDisqualified ? 'rotate-180' : ''}`} />
             </button>
 
             {showDisqualified && (
-              <div className="rounded-xl border border-white/5 overflow-hidden opacity-60">
+              <div className="rounded-xl border border-line overflow-hidden opacity-60">
                 <div className="divide-y divide-white/4">
                   {disqualLeads.map(lead => {
                     const situCfg = SITUATION_CONFIG.find(s => s.value === lead.situation)
                     return (
                       <div key={lead.id}
-                        className="flex items-center gap-4 px-5 py-2.5 hover:bg-white/2 transition-colors group">
-                        <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium ${situCfg?.bg ?? 'bg-white/5'} ${situCfg?.color ?? 'text-slate-500'}`}>
+                        className="flex items-center gap-4 px-5 py-2.5 hover:bg-s2/30 transition-colors group">
+                        <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium ${situCfg?.bg ?? 'bg-s3/50'} ${situCfg?.color ?? 'text-slate-500'}`}>
                           {situCfg?.short ?? '—'}
                         </span>
                         <p className="flex-1 text-sm text-slate-500 truncate">{lead.name}</p>
                         <span className="text-xs text-slate-700 tabular-nums font-mono">{formatPhone(lead.phone)}</span>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => setEditLead(lead)}
-                            className="p-1.5 rounded-lg hover:bg-white/8 text-slate-700 hover:text-slate-400 transition-colors cursor-pointer">
+                            className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-700 hover:text-slate-400 transition-colors cursor-pointer">
                             <Pencil size={12} />
                           </button>
                           <button onClick={() => setDeleteLead(lead)}

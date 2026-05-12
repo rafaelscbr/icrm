@@ -279,11 +279,11 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
               <Sparkles size={16} className="text-blue-300" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-t1">
                 {isEdit ? 'Editar Lead' : 'Novo Lead'}
               </h2>
               {!isEdit && (
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-t3 mt-0.5">
                   {step === 1 ? '① Identificar contato' : '② Detalhes do funil'}
                 </p>
               )}
@@ -291,7 +291,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-slate-500 hover:text-slate-200 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-s3 text-t3 hover:text-t1 transition-all"
           >
             <X size={16} />
           </button>
@@ -301,7 +301,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
         {!isEdit && (
           <div className="flex gap-1.5 px-6 pb-4 flex-shrink-0">
             <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600" />
-            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-gradient-to-r from-blue-400 to-cyan-500' : 'bg-white/8'}`} />
+            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-gradient-to-r from-blue-400 to-cyan-500' : 'bg-s3'}`} />
           </div>
         )}
 
@@ -313,13 +313,13 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
             <div className={`space-y-4 ${animDir === 'forward' ? 'animate-in fade-in slide-in-from-right-4' : 'animate-in fade-in slide-in-from-left-4'} duration-200`}>
 
               {/* Toggle */}
-              <div className="flex gap-1 p-1 bg-white/4 rounded-xl border border-white/8">
+              <div className="flex gap-1 p-1 bg-s2/60 rounded-xl border border-line">
                 <button
                   onClick={() => { setContactMode('search'); clearContact() }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     contactMode === 'search'
                       ? 'bg-gradient-to-br bg-blue-600/30 text-blue-100 shadow-sm border border-blue-500/30'
-                      : 'text-slate-500 hover:text-slate-300'
+                      : 'text-t3 hover:text-t2'
                   }`}
                 >
                   <Users size={14} /> Contato existente
@@ -329,7 +329,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     contactMode === 'create'
                       ? 'bg-gradient-to-br from-emerald-600/40 to-teal-600/30 text-emerald-200 shadow-sm border border-emerald-500/30'
-                      : 'text-slate-500 hover:text-slate-300'
+                      : 'text-t3 hover:text-t2'
                   }`}
                 >
                   <UserPlus size={14} /> Novo contato
@@ -346,14 +346,14 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                         {selectedContact.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white truncate">{selectedContact.name}</p>
-                        <p className="text-xs text-slate-400">{formatPhone(selectedContact.phone)}</p>
+                        <p className="text-sm font-semibold text-t1 truncate">{selectedContact.name}</p>
+                        <p className="text-xs text-t2">{formatPhone(selectedContact.phone)}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 size={16} className="text-violet-400" />
                         <button
                           onClick={clearContact}
-                          className="text-xs text-slate-500 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-blue-500/10 transition-all"
+                          className="text-xs text-t3 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-blue-500/10 transition-all"
                         >
                           Trocar
                         </button>
@@ -361,25 +361,25 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-slate-400">Buscar contato *</label>
+                      <label className="text-xs font-medium text-t2">Buscar contato *</label>
                       <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3 pointer-events-none" />
                         <input
                           ref={searchRef}
                           value={contactQuery}
                           onChange={e => setContactQuery(e.target.value)}
                           autoFocus
                           placeholder="Nome ou telefone..."
-                          className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600
+                          className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4
                             focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 focus:ring-1 focus:ring-violet-500/20 transition-all"
                         />
                       </div>
 
                       {contactQuery.length >= 1 && (
-                        <div className="rounded-xl border border-white/10 overflow-hidden bg-[#1A1D2E] animate-in fade-in slide-in-from-top-1 duration-150">
+                        <div className="rounded-xl border border-line overflow-hidden bg-s2 animate-in fade-in slide-in-from-top-1 duration-150">
                           {contactResults.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 py-6 px-4">
-                              <p className="text-xs text-slate-500 text-center">Nenhum contato com "{contactQuery}"</p>
+                              <p className="text-xs text-t3 text-center">Nenhum contato com "{contactQuery}"</p>
                               <button
                                 onClick={() => { setContactMode('create'); setNewName(contactQuery) }}
                                 className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/15 px-3 py-1.5 rounded-lg border border-emerald-500/20 transition-all"
@@ -389,7 +389,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                             </div>
                           ) : (
                             <>
-                              <p className="text-[10px] font-semibold text-slate-600 px-3 pt-2.5 pb-1 uppercase tracking-widest">
+                              <p className="text-[10px] font-semibold text-t4 px-3 pt-2.5 pb-1 uppercase tracking-widest">
                                 {contactResults.length} encontrado{contactResults.length > 1 ? 's' : ''}
                               </p>
                               <div className="max-h-52 overflow-y-auto">
@@ -397,16 +397,16 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                                   <button
                                     key={c.id}
                                     onClick={() => selectContact(c.id)}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-violet-500/12 text-left transition-all group border-t border-white/5 first:border-0"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-violet-500/12 text-left transition-all group border-t border-line first:border-0"
                                   >
-                                    <div className="w-8 h-8 rounded-full bg-white/8 group-hover:bg-blue-500/20 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:text-blue-200 transition-all flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-s3 group-hover:bg-blue-500/20 flex items-center justify-center text-xs font-bold text-t2 group-hover:text-blue-200 transition-all flex-shrink-0">
                                       {c.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-slate-200 group-hover:text-white truncate">{c.name}</p>
-                                      <p className="text-xs text-slate-500">{formatPhone(c.phone)}</p>
+                                      <p className="text-sm font-medium text-t1 group-hover:text-t1 truncate">{c.name}</p>
+                                      <p className="text-xs text-t3">{formatPhone(c.phone)}</p>
                                     </div>
-                                    <ChevronRight size={13} className="text-slate-600 group-hover:text-blue-400 flex-shrink-0 transition-colors" />
+                                    <ChevronRight size={13} className="text-t4 group-hover:text-blue-400 flex-shrink-0 transition-colors" />
                                   </button>
                                 ))}
                               </div>
@@ -415,7 +415,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                         </div>
                       )}
                       {contactQuery.length === 0 && (
-                        <p className="text-xs text-slate-600 text-center py-2">
+                        <p className="text-xs text-t4 text-center py-2">
                           {contacts.length} contatos disponíveis — comece a digitar
                         </p>
                       )}
@@ -428,45 +428,45 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
               {contactMode === 'create' && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-200">
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Nome completo *</label>
+                    <label className="text-xs font-medium text-t2 mb-1.5 block">Nome completo *</label>
                     <div className="relative">
-                      <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                       <input
                         autoFocus
                         value={newName}
                         onChange={e => setNewName(e.target.value)}
                         placeholder="Nome do lead"
-                        className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                        className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">Telefone *</label>
+                      <label className="text-xs font-medium text-t2 mb-1.5 block">Telefone *</label>
                       <div className="relative">
-                        <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                         <input
                           value={newPhone}
                           onChange={e => setNewPhone(formatPhoneInput(e.target.value))}
                           placeholder="(11) 99999-9999"
-                          className={`w-full bg-white/5 border rounded-xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 transition-all ${
+                          className={`w-full bg-s3/50 border rounded-xl pl-9 pr-3 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-1 transition-all ${
                             duplicateContact
                               ? 'border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/20 bg-amber-500/5'
-                              : 'border-white/12 focus:border-violet-500/60 focus:ring-violet-500/20'
+                              : 'border-line-input focus:border-violet-500/60 focus:ring-violet-500/20'
                           }`}
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-slate-400 mb-1.5 block">E-mail</label>
+                      <label className="text-xs font-medium text-t2 mb-1.5 block">E-mail</label>
                       <div className="relative">
-                        <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                         <input
                           value={newEmail}
                           onChange={e => setNewEmail(e.target.value)}
                           placeholder="email@..."
                           type="email"
-                          className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                          className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-3 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                         />
                       </div>
                     </div>
@@ -511,13 +511,13 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 const c = selectedContact ?? (lead?.contactId ? getById(lead.contactId) : undefined)
                 if (!c) return null
                 return (
-                  <div className="flex items-center gap-2.5 px-3 py-2.5 bg-white/4 border border-white/8 rounded-xl">
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 bg-s2/60 border border-line rounded-xl">
                     <div className="w-7 h-7 rounded-full bg-violet-500/25 flex items-center justify-center text-xs font-bold text-blue-200 flex-shrink-0">
                       {c.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-500">Contato</p>
-                      <p className="text-sm font-semibold text-white truncate">{c.name}</p>
+                      <p className="text-xs text-t3">Contato</p>
+                      <p className="text-sm font-semibold text-t1 truncate">{c.name}</p>
                     </div>
                     <CheckCircle2 size={14} className="text-blue-400 flex-shrink-0" />
                   </div>
@@ -534,7 +534,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Origem */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 mb-2 block uppercase tracking-wider">Origem</label>
+                <label className="text-xs font-semibold text-t2 mb-2 block uppercase tracking-wider">Origem</label>
                 <div className="grid grid-cols-2 gap-2">
                   {ORIGINS.map(o => (
                     <button
@@ -543,7 +543,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                       className={`relative flex items-center gap-2.5 px-3 py-3 rounded-xl border text-sm font-medium transition-all duration-200 overflow-hidden ${
                         origin === o.value
                           ? `bg-gradient-to-r ${o.grad} bg-opacity-20 border-white/30 text-white shadow-lg ring-2 ${o.ring}`
-                          : 'bg-white/4 border-white/8 text-slate-500 hover:bg-white/8 hover:text-slate-300 hover:border-white/15'
+                          : 'bg-s2/60 border-line text-t3 hover:bg-s3 hover:text-t2 hover:border-line-strong'
                       }`}
                     >
                       <span className="text-lg leading-none">{o.emoji}</span>
@@ -558,13 +558,13 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Produto */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 mb-2 block uppercase tracking-wider">Produto / Imóvel</label>
+                <label className="text-xs font-semibold text-t2 mb-2 block uppercase tracking-wider">Produto / Imóvel</label>
 
                 {propertyMode === 'selected' && (
                   <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-xl animate-in fade-in zoom-in-95 duration-150">
                     <Building2 size={14} className="text-blue-400 flex-shrink-0" />
-                    <p className="flex-1 text-sm font-medium text-slate-200 truncate">{propertySearch}</p>
-                    <button onClick={clearProperty} className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
+                    <p className="flex-1 text-sm font-medium text-t1 truncate">{propertySearch}</p>
+                    <button onClick={clearProperty} className="text-xs text-t3 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
                   </div>
                 )}
 
@@ -573,43 +573,43 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                     <PenLine size={14} className="text-amber-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-amber-400/70">Nome livre (não cadastrado)</p>
-                      <p className="text-sm font-medium text-slate-200 truncate">{freePropertyName}</p>
+                      <p className="text-sm font-medium text-t1 truncate">{freePropertyName}</p>
                     </div>
-                    <button onClick={clearProperty} className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
+                    <button onClick={clearProperty} className="text-xs text-t3 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
                   </div>
                 )}
 
                 {propertyMode === 'search' && (
                   <div className="space-y-1">
                     <div className="relative">
-                      <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                       <input
                         value={propertySearch}
                         onChange={e => setPropertySearch(e.target.value)}
                         placeholder="Buscar no sistema ou digitar nome livre..."
-                        className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                        className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                       />
                     </div>
                     {propertySearch.length >= 1 && (
-                      <div className="rounded-xl border border-white/10 overflow-hidden bg-[#1A1D2E] animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="rounded-xl border border-line overflow-hidden bg-s2 animate-in fade-in slide-in-from-top-1 duration-150">
                         {filteredProperties.length > 0 ? (
                           <>
                             {filteredProperties.map(p => (
                               <button
                                 key={p.id}
                                 onClick={() => selectProperty(p.id)}
-                                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/6 text-left transition-all border-t border-white/5 first:border-0 group"
+                                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-s3 text-left transition-all border-t border-line first:border-0 group"
                               >
                                 <div>
-                                  <p className="text-sm font-medium text-slate-200 group-hover:text-white">{p.name}</p>
-                                  <p className="text-xs text-slate-500">{p.neighborhood} · {p.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</p>
+                                  <p className="text-sm font-medium text-t1 group-hover:text-t1">{p.name}</p>
+                                  <p className="text-xs text-t3">{p.neighborhood} · {p.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</p>
                                 </div>
                                 <span className="text-xs font-bold text-blue-400 ml-3 flex-shrink-0">{formatCurrencyFull(p.value)}</span>
                               </button>
                             ))}
                             <button
                               onClick={useFreeProperty}
-                              className="w-full flex items-center gap-2 px-3 py-2.5 text-amber-400 hover:bg-amber-500/8 border-t border-white/5 transition-all text-left"
+                              className="w-full flex items-center gap-2 px-3 py-2.5 text-amber-400 hover:bg-amber-500/8 border-t border-line transition-all text-left"
                             >
                               <PenLine size={13} />
                               <span className="text-xs font-medium">Usar "{propertySearch}" como nome livre</span>
@@ -617,7 +617,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           </>
                         ) : (
                           <div className="flex flex-col items-start gap-1 px-3 py-3">
-                            <p className="text-xs text-slate-500">Nenhum imóvel cadastrado encontrado</p>
+                            <p className="text-xs text-t3">Nenhum imóvel cadastrado encontrado</p>
                             <button
                               onClick={useFreeProperty}
                               className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/15 px-3 py-1.5 rounded-lg border border-amber-500/20 transition-all mt-1"
@@ -640,21 +640,21 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Ticket */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider">Ticket Médio (R$)</label>
+                <label className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider">Ticket Médio (R$)</label>
                 <div className="relative">
-                  <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                   <input
                     value={averageTicket ? Number(averageTicket).toLocaleString('pt-BR') : ''}
                     onChange={e => handleAverageTicketChange(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-white/5 border border-white/12 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                    className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                   />
                 </div>
               </div>
 
               {/* Etapa */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 mb-2 block uppercase tracking-wider">Etapa do Funil</label>
+                <label className="text-xs font-semibold text-t2 mb-2 block uppercase tracking-wider">Etapa do Funil</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {STAGES.map(s => (
                     <button
@@ -663,7 +663,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                       className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all duration-200 ${
                         stage === s.value
                           ? `${s.active} shadow-sm scale-[1.02]`
-                          : `bg-white/3 border-white/8 text-slate-500 hover:text-slate-300 hover:bg-white/6`
+                          : `bg-s2 border-line text-t3 hover:text-t2 hover:bg-s3`
                       }`}
                     >
                       <span className="text-base leading-none">{s.emoji}</span>
@@ -681,7 +681,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Data de entrada */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar size={11} />
                   Data de entrada
                   {isRetroactive && (
@@ -695,7 +695,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   value={entryDate}
                   max={localDateStr()}
                   onChange={e => setEntryDate(e.target.value)}
-                  className="w-full bg-white/5 border border-white/12 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                  className="w-full bg-s3/50 border border-line-input rounded-xl px-4 py-3 text-sm text-t1 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                 />
                 {isRetroactive && (
                   <p className="text-xs text-blue-400 mt-1 flex items-center gap-1">
@@ -706,13 +706,13 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Notas */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider">Observações</label>
+                <label className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider">Observações</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Informações adicionais sobre o lead..."
                   rows={3}
-                  className="w-full bg-white/5 border border-white/12 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none"
+                  className="w-full bg-s3/50 border border-line-input rounded-xl px-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none"
                 />
               </div>
             </div>
@@ -720,10 +720,10 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
         </div>
 
         {/* ── Footer ── */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/8 bg-white/2 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-line bg-s2/50 flex-shrink-0">
           <button
             onClick={() => { if (step === 1 || isEdit) onClose(); else goBack() }}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/6 rounded-xl transition-all"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-t2 hover:text-t1 hover:bg-s3 rounded-xl transition-all"
           >
             {step === 2 && !isEdit && <ChevronLeft size={14} />}
             {step === 1 || isEdit ? 'Cancelar' : 'Voltar'}

@@ -27,7 +27,7 @@ const PIE_COLORS = {
 function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#0D1117] border border-white/10 rounded-xl px-4 py-3 shadow-xl">
+    <div className="bg-page border border-line rounded-xl px-4 py-3 shadow-xl">
       <p className="text-xs text-slate-500 mb-1">{label}</p>
       <p className="text-sm font-semibold text-slate-100">{formatCurrency(payload[0].value)}</p>
     </div>
@@ -37,7 +37,7 @@ function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: 
 function ActivityTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#0D1117] border border-white/10 rounded-xl px-4 py-3 shadow-xl">
+    <div className="bg-page border border-line rounded-xl px-4 py-3 shadow-xl">
       <p className="text-xs text-slate-500 mb-2">{label}</p>
       {payload.map(p => (
         <div key={p.name} className="flex items-center gap-2 text-xs">
@@ -101,11 +101,11 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
             const isCurrentMonth = new Date().getMonth() === i
             const isBest = d.month === bestMonth.month && d.total > 0
             return (
-              <div key={d.month} className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${isCurrentMonth ? 'bg-indigo-500/8 border border-indigo-500/20' : ''}`}>
-                <span className={`text-xs w-8 flex-shrink-0 font-medium ${isCurrentMonth ? 'text-indigo-400' : 'text-slate-500'}`}>
+              <div key={d.month} className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${isCurrentMonth ? 'bg-indigo-500/8 border border-brand/25' : ''}`}>
+                <span className={`text-xs w-8 flex-shrink-0 font-medium ${isCurrentMonth ? 'text-brand' : 'text-slate-500'}`}>
                   {d.month}
                 </span>
-                <div className="flex-1 h-2.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="flex-1 h-2.5 bg-s3/50 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${isBest ? 'bg-amber-400' : isCurrentMonth ? 'bg-indigo-400' : 'bg-indigo-600'}`}
                     style={{ width: `${d.barPct}%` }}
@@ -401,14 +401,14 @@ export function ReportsTab() {
                       <span className="text-xs font-semibold text-slate-200">{d.value}</span>
                     </div>
                   ))}
-                  <div className="border-t border-white/8 pt-3 mt-1">
+                  <div className="border-t border-line pt-3 mt-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-slate-500">Planta</span>
                       <span className="text-xs font-semibold text-purple-400">{formatCurrency(salesByType[1]?.value ?? 0)}</span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-slate-500">Pronto</span>
-                      <span className="text-xs font-semibold text-indigo-400">{formatCurrency(salesByType[0]?.value ?? 0)}</span>
+                      <span className="text-xs font-semibold text-brand">{formatCurrency(salesByType[0]?.value ?? 0)}</span>
                     </div>
                   </div>
                 </div>

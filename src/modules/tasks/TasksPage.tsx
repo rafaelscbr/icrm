@@ -32,7 +32,7 @@ const PRIORITY_DOT: Record<TaskPriority, string> = {
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; label: string; motto: string }> = {
   visita:             { icon: Home,       color: 'text-cyan-400',    label: 'Visita',                motto: 'bora fechar negócio! 🏠'                },
-  agenciamento:       { icon: Building2,  color: 'text-indigo-400',  label: 'Agenciamento',          motto: 'hora de ampliar o portfólio! 📋'        },
+  agenciamento:       { icon: Building2,  color: 'text-brand',  label: 'Agenciamento',          motto: 'hora de ampliar o portfólio! 📋'        },
   proposta:           { icon: FileText,   color: 'text-amber-400',   label: 'Proposta',              motto: 'proposta enviada é venda garantida! 💰'  },
   busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel',       motto: 'encontre o imóvel certo para o lead! 🔍' },
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis', motto: 'novos imóveis no portfólio! 🏘️'          },
@@ -118,9 +118,9 @@ function SmartBanner({ tasks }: { tasks: Task[] }) {
   }
 
   return (
-    <div className={`border border-white/8 rounded-xl bg-gradient-to-r ${accent} px-6 py-5 mb-6`}>
+    <div className={`border border-line rounded-xl bg-gradient-to-r ${accent} px-6 py-5 mb-6`}>
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">
+        <div className="w-10 h-10 bg-s3/70 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">
           {total === 0 && overdue.length === 0 ? '✅' : total >= 5 ? '🔥' : '💼'}
         </div>
         <div className="flex-1 min-w-0">
@@ -161,8 +161,8 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
   const catColor = t.category ? CATEGORY_CONFIG[t.category].color : ''
 
   return (
-    <div className={`flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 group relative
-      ${!isLast ? 'border-b border-white/5' : ''}
+    <div className={`flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s2/50 group relative
+      ${!isLast ? 'border-b border-line' : ''}
       ${isDone ? 'opacity-55' : ''}
       ${isToday && !isDone ? 'bg-indigo-500/3' : ''}
     `}>
@@ -178,7 +178,7 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
       <button onClick={onToggle} className="mt-0.5 flex-shrink-0 cursor-pointer transition-all hover:scale-110">
         {isDone
           ? <CheckCircle2 size={20} className="text-green-400" />
-          : <Circle       size={20} className="text-slate-600 hover:text-indigo-400 transition-colors" />
+          : <Circle       size={20} className="text-slate-600 hover:text-brand transition-colors" />
         }
       </button>
 
@@ -190,7 +190,7 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
           </p>
           <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[t.priority]}`} />
           {isToday && !isDone && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-indigo-300 border border-indigo-500/30">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-brand-text border border-brand/30">
               HOJE
             </span>
           )}
@@ -214,7 +214,7 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
 
         <div className="flex items-center gap-3 flex-wrap">
           <span className={`flex items-center gap-1 text-xs font-medium
-            ${overdue && !isDone ? 'text-red-400' : isToday && !isDone ? 'text-indigo-400' : 'text-slate-500'}`}>
+            ${overdue && !isDone ? 'text-red-400' : isToday && !isDone ? 'text-brand' : 'text-slate-500'}`}>
             <Clock size={11} />
             {dateLabel}
           </span>
@@ -229,7 +229,7 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
           {contact && (
             <button
               onClick={() => navigate('/contatos')}
-              className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 hover:underline transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs text-brand hover:text-brand-text hover:underline transition-colors cursor-pointer"
             >
               <User size={11} /> {contact.name}
             </button>
@@ -256,13 +256,13 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
         {t.dueDate && (
           <button onClick={onCalendar}
-            className="p-2 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-indigo-400 transition-colors cursor-pointer"
+            className="p-2 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-brand transition-colors cursor-pointer"
             title="Google Agenda">
             <CalendarClock size={13} />
           </button>
         )}
         <button onClick={onEdit}
-          className="p-2 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
+          className="p-2 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
           <Pencil size={13} />
         </button>
         <button onClick={onDelete}
@@ -299,7 +299,7 @@ function Section({
         <span className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${color}`}>
           {icon} {title}
         </span>
-        <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-white/8 text-slate-400">{count}</span>
+        <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-s3/70 text-slate-400">{count}</span>
         {collapsible && (open
           ? <ChevronUp size={12} className="text-slate-600 group-hover:text-slate-400 ml-1" />
           : <ChevronDown size={12} className="text-slate-600 group-hover:text-slate-400 ml-1" />
@@ -415,7 +415,7 @@ export function TasksPage() {
   // Blocos temporais a renderizar
   const timeBlocks = [
     { key: 'overdue',  title: 'Atrasadas',     tasks: overdue,   icon: <AlertTriangle size={12} />, color: 'text-red-400',    defaultOpen: true  },
-    { key: 'today',    title: 'Hoje',           tasks: todayT,    icon: <Flame size={12} />,         color: 'text-indigo-400', defaultOpen: true  },
+    { key: 'today',    title: 'Hoje',           tasks: todayT,    icon: <Flame size={12} />,         color: 'text-brand', defaultOpen: true  },
     { key: 'tomorrow', title: 'Amanhã',         tasks: tomorrowT, icon: <CalendarClock size={12} />, color: 'text-amber-400',  defaultOpen: true  },
     { key: 'week',     title: 'Esta semana',    tasks: thisWeek,  icon: <TrendingUp size={12} />,    color: 'text-cyan-400',   defaultOpen: true  },
     { key: 'later',    title: 'Próximos dias',  tasks: later,     icon: <CheckCheck size={12} />,    color: 'text-slate-400',  defaultOpen: false },
@@ -430,7 +430,7 @@ export function TasksPage() {
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
       {/* Tabs — estilo sem barra de fundo, igual Performance */}
-      <div className="flex gap-1 mb-6 border-b border-white/8">
+      <div className="flex gap-1 mb-6 border-b border-line">
         {([
           { key: 'tasks',   label: 'Tarefas',       icon: <ListTodo size={14} /> },
           { key: 'history', label: 'Resumo por dia', icon: <BarChart2 size={14} /> },
@@ -440,7 +440,7 @@ export function TasksPage() {
             onClick={() => setActiveTab(tab.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all cursor-pointer border-b-2 -mb-px
               ${activeTab === tab.key
-                ? 'text-indigo-300 border-indigo-400'
+                ? 'text-brand-text border-indigo-400'
                 : 'text-slate-500 border-transparent hover:text-slate-300'
               }`}
           >
@@ -462,12 +462,12 @@ export function TasksPage() {
       {!isEmpty && (
         <div className="grid grid-cols-4 gap-3 mb-6">
           {[
-            { label: 'Hoje',       value: todayCount,    color: 'text-indigo-400', bg: 'bg-indigo-500/10', icon: <Flame size={13} />         },
+            { label: 'Hoje',       value: todayCount,    color: 'text-brand', bg: 'bg-indigo-500/10', icon: <Flame size={13} />         },
             { label: 'Em atraso',  value: overdueCount,  color: 'text-red-400',    bg: 'bg-red-500/10',    icon: <AlertTriangle size={13} /> },
             { label: 'Próximas',   value: upcomingCount, color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   icon: <TrendingUp size={13} />    },
             { label: 'Concluídas', value: doneCount,     color: 'text-green-400',  bg: 'bg-green-500/10',  icon: <CheckCheck size={13} />    },
           ].map(s => (
-            <div key={s.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl ${s.bg} border border-white/8`}>
+            <div key={s.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl ${s.bg} border border-line`}>
               <span className={s.color}>{s.icon}</span>
               <div>
                 <p className={`text-xl font-bold tabular-nums leading-none ${s.color}`}>{s.value}</p>

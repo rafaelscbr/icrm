@@ -26,10 +26,10 @@ interface CampaignFormProps {
 
 const PLACEHOLDER = 'Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de...'
 const HINT = (
-  <div className="flex items-start gap-2 bg-indigo-500/8 border border-indigo-500/20 rounded-xl px-3 py-2.5">
-    <Info size={13} className="text-indigo-400 flex-shrink-0 mt-0.5" />
-    <p className="text-xs text-indigo-300/80">
-      Use <code className="bg-white/10 px-1 rounded text-indigo-300">{'{nome}'}</code> para inserir o nome do lead automaticamente.
+  <div className="flex items-start gap-2 bg-indigo-500/8 border border-brand/25 rounded-xl px-3 py-2.5">
+    <Info size={13} className="text-brand flex-shrink-0 mt-0.5" />
+    <p className="text-xs text-brand-text/80">
+      Use <code className="bg-s3/70 px-1 rounded text-brand-text">{'{nome}'}</code> para inserir o nome do lead automaticamente.
       Ter múltiplas mensagens diferentes ajuda a evitar bloqueio no WhatsApp.
     </p>
   </div>
@@ -139,7 +139,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
                 setTicketRaw(n > 0 ? formatBRL(n) : '')
               }}
               placeholder="Ex: 500.000"
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full bg-s3/50 border border-line rounded-xl pl-12 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             />
           </div>
           <p className="text-[11px] text-slate-600">Usado para calcular o VGV esperado na aba de Previsão</p>
@@ -161,7 +161,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Mensagem 1 <span className="text-indigo-400 normal-case font-normal">(principal)</span>
+              Mensagem 1 <span className="text-brand normal-case font-normal">(principal)</span>
             </label>
             <span className="text-[10px] text-slate-600">{allCount} template{allCount !== 1 ? 's' : ''} no total</span>
           </div>
@@ -170,7 +170,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
             onChange={e => setMessage(e.target.value)}
             rows={4}
             placeholder={PLACEHOLDER}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
           />
           {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
         </div>
@@ -196,7 +196,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
               onChange={e => updateMessage(idx, e.target.value)}
               rows={4}
               placeholder={PLACEHOLDER}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
             />
           </div>
         ))}
@@ -205,7 +205,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
         <button
           type="button"
           onClick={addExtraMessage}
-          className="flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer py-1"
+          className="flex items-center gap-2 text-xs text-brand hover:text-brand-text transition-colors cursor-pointer py-1"
         >
           <Plus size={13} />
           Adicionar mensagem alternativa

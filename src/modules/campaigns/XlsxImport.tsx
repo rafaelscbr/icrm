@@ -82,16 +82,16 @@ export function XlsxImport({ campaignId, onDone }: XlsxImportProps) {
           onDrop={handleDrop}
           onDragOver={e => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-white/10 hover:border-indigo-500/40 rounded-2xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-colors group"
+          className="border-2 border-dashed border-line hover:border-brand/40 rounded-2xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-colors group"
         >
-          <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors">
-            <Upload size={22} className="text-indigo-400" />
+          <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center group-hover:bg-brand-tint transition-colors">
+            <Upload size={22} className="text-brand" />
           </div>
           <div className="text-center">
             <p className="text-sm font-medium text-slate-300">Arraste seu arquivo ou clique para selecionar</p>
             <p className="text-xs text-slate-600 mt-1">Suporta .xlsx e .xls · Colunas: Nome, Telefone, E-mail (opcional)</p>
           </div>
-          {loading && <p className="text-xs text-indigo-400 animate-pulse">Processando...</p>}
+          {loading && <p className="text-xs text-brand animate-pulse">Processando...</p>}
         </div>
       )}
 
@@ -128,13 +128,13 @@ export function XlsxImport({ campaignId, onDone }: XlsxImportProps) {
           </div>
 
           {/* Table preview */}
-          <div className="bg-white/3 rounded-xl border border-white/8 overflow-hidden">
-            <div className="grid grid-cols-3 gap-0 px-4 py-2 border-b border-white/8 text-xs text-slate-600 uppercase tracking-wider font-medium">
+          <div className="bg-s2/50 rounded-xl border border-line overflow-hidden">
+            <div className="grid grid-cols-3 gap-0 px-4 py-2 border-b border-line text-xs text-slate-600 uppercase tracking-wider font-medium">
               <span>Nome</span><span>Telefone</span><span>E-mail</span>
             </div>
             <div className="max-h-48 overflow-y-auto">
               {preview.slice(0, 50).map((l, i) => (
-                <div key={i} className="grid grid-cols-3 gap-0 px-4 py-2.5 border-b border-white/5 text-sm last:border-0">
+                <div key={i} className="grid grid-cols-3 gap-0 px-4 py-2.5 border-b border-line text-sm last:border-0">
                   <span className="text-slate-200 truncate">{l.name}</span>
                   <span className="text-slate-400 truncate tabular-nums">{formatPhone(l.phone)}</span>
                   <span className="text-slate-500 truncate">{l.email ?? '—'}</span>

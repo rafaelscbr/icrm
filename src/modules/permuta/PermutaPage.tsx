@@ -82,7 +82,7 @@ function ScoreBadge({ score }: { score: number }) {
   const cls =
     score >= 5 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
     score >= 3 ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
-                 'bg-white/8 text-slate-400 border-white/10'
+                 'bg-s3/70 text-slate-400 border-line'
   const label =
     score >= 5 ? 'Ótimo match' :
     score >= 3 ? 'Bom match' : 'Match parcial'
@@ -95,7 +95,7 @@ function ScoreBadge({ score }: { score: number }) {
 
 function PropertyDetails({ property }: { property: Property }) {
   return (
-    <div className="mt-2 pt-2 border-t border-white/8 flex flex-wrap gap-x-4 gap-y-1">
+    <div className="mt-2 pt-2 border-t border-line flex flex-wrap gap-x-4 gap-y-1">
       {property.neighborhood && (
         <span className="text-[11px] text-slate-400">
           📍 <span className="text-slate-300">{property.neighborhood}</span>
@@ -143,7 +143,7 @@ function PropertyDetails({ property }: { property: Property }) {
 function ContactCard({ contact }: { contact: Contact }) {
   const items = contact.permutaItems ?? []
   return (
-    <div className="bg-white/3 border border-white/8 rounded-xl p-3">
+    <div className="bg-s2/50 border border-line rounded-xl p-3">
       <div className="flex items-center gap-2.5 mb-2">
         <div className="w-7 h-7 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
           <Users size={13} className="text-orange-400" />
@@ -158,9 +158,9 @@ function ContactCard({ contact }: { contact: Contact }) {
       </div>
       <div className="flex flex-col gap-1.5">
         {items.map(item => (
-          <div key={item.id} className="flex items-start gap-2 bg-white/3 rounded-lg px-2.5 py-1.5">
+          <div key={item.id} className="flex items-start gap-2 bg-s2/50 rounded-lg px-2.5 py-1.5">
             <span className="flex-shrink-0 mt-0.5">
-              {item.type === 'imovel' ? <Home size={11} className="text-indigo-400" /> : <Car size={11} className="text-amber-400" />}
+              {item.type === 'imovel' ? <Home size={11} className="text-brand" /> : <Car size={11} className="text-amber-400" />}
             </span>
             <div className="flex-1 min-w-0 text-[11px]">
               {item.type === 'imovel' ? (
@@ -185,7 +185,7 @@ function ContactCard({ contact }: { contact: Contact }) {
 function PropertyCard({ property }: { property: Property }) {
   const [expanded, setExpanded] = useState(false)
   return (
-    <div className="bg-white/3 border border-white/8 rounded-xl p-3">
+    <div className="bg-s2/50 border border-line rounded-xl p-3">
       <div className="flex items-start gap-3">
         <div className="w-7 h-7 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
           <Building2 size={13} className="text-violet-400" />
@@ -198,7 +198,7 @@ function PropertyCard({ property }: { property: Property }) {
               {formatCurrencyFull(property.value)}
             </span>
             {(property.permutaTypes ?? []).map(t => (
-              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
+              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-slate-400 border border-line">
                 {t === 'imovel' ? 'Aceita imóvel' : 'Aceita carro'}
               </span>
             ))}
@@ -206,7 +206,7 @@ function PropertyCard({ property }: { property: Property }) {
         </div>
         <button
           onClick={() => setExpanded(v => !v)}
-          className="flex-shrink-0 flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/8 border border-white/8 transition-all"
+          className="flex-shrink-0 flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 px-2 py-1 rounded-lg bg-s3/50 hover:bg-s3/70 border border-line transition-all"
         >
           + info
           <ChevronDown size={10} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
@@ -290,21 +290,21 @@ export function PermutaPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3">
+        <div className="bg-s2/50 border border-line rounded-xl px-4 py-3 flex items-center gap-3">
           <Users size={16} className="text-orange-400 flex-shrink-0" />
           <div>
             <p className="text-xl font-bold text-slate-100">{contactsWithPermuta.length}</p>
             <p className="text-[11px] text-slate-500">Contatos c/ permuta</p>
           </div>
         </div>
-        <div className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3">
+        <div className="bg-s2/50 border border-line rounded-xl px-4 py-3 flex items-center gap-3">
           <Building2 size={16} className="text-violet-400 flex-shrink-0" />
           <div>
             <p className="text-xl font-bold text-slate-100">{propertiesWithPermuta.length}</p>
             <p className="text-[11px] text-slate-500">Imóveis c/ permuta</p>
           </div>
         </div>
-        <div className="bg-white/3 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+        <div className="bg-s2/50 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
           <Zap size={16} className="text-amber-400 flex-shrink-0" />
           <div>
             <p className="text-xl font-bold text-amber-300">{allMatches.length}</p>
@@ -321,12 +321,12 @@ export function PermutaPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por contato ou imóvel..."
-          className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all"
+          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all"
         />
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 bg-white/3 border border-white/8 rounded-xl p-1">
+      <div className="flex gap-1 mb-5 bg-s2/50 border border-line rounded-xl p-1">
         {tabs.map(({ id, label, count, icon: Icon }) => (
           <button
             key={id}
@@ -340,7 +340,7 @@ export function PermutaPage() {
             <Icon size={13} />
             {label}
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-              activeTab === id ? 'bg-orange-500/30 text-orange-200' : 'bg-white/8 text-slate-500'
+              activeTab === id ? 'bg-orange-500/30 text-orange-200' : 'bg-s3/70 text-slate-500'
             }`}>
               {count}
             </span>
@@ -419,12 +419,12 @@ function MatchCard({ match }: { match: PermutaMatch }) {
   const offerValue = item.type === 'imovel' ? item.value : item.carValue
 
   return (
-    <div className="bg-white/3 border border-white/8 hover:border-white/14 rounded-xl p-4 transition-all">
+    <div className="bg-s2/50 border border-line hover:border-white/14 rounded-xl p-4 transition-all">
       {/* Badge + reasons */}
       <div className="flex items-center flex-wrap gap-1.5 mb-3">
         <ScoreBadge score={match.score} />
         {match.reasons.map(r => (
-          <span key={r} className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/8">
+          <span key={r} className="text-[10px] text-slate-500 bg-s3/50 px-1.5 py-0.5 rounded-md border border-line">
             {r}
           </span>
         ))}
@@ -433,7 +433,7 @@ function MatchCard({ match }: { match: PermutaMatch }) {
       {/* Contato ↔ Imóvel */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
         {/* Lado contato */}
-        <div className="bg-white/3 border border-orange-500/15 rounded-xl p-3">
+        <div className="bg-s2/50 border border-orange-500/15 rounded-xl p-3">
           <div className="flex items-center gap-2 mb-1.5">
             <div className="w-6 h-6 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
               {item.type === 'imovel' ? <Home size={11} className="text-orange-400" /> : <Car size={11} className="text-orange-400" />}
@@ -445,13 +445,13 @@ function MatchCard({ match }: { match: PermutaMatch }) {
               Quer dar {item.type === 'imovel' ? 'imóvel' : 'carro'}
             </span>
             {item.type === 'imovel' && item.region && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">{item.region}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-slate-400 border border-line">{item.region}</span>
             )}
             {item.type === 'carro' && item.carModel && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">{item.carModel}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-slate-400 border border-line">{item.carModel}</span>
             )}
             {offerValue && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-slate-400 border border-line">
                 {formatCurrencyFull(offerValue)}
               </span>
             )}
@@ -466,7 +466,7 @@ function MatchCard({ match }: { match: PermutaMatch }) {
         </div>
 
         {/* Lado imóvel */}
-        <div className="bg-white/3 border border-violet-500/15 rounded-xl p-3">
+        <div className="bg-s2/50 border border-violet-500/15 rounded-xl p-3">
           <div className="flex items-center gap-2 mb-1.5">
             <div className="w-6 h-6 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
               <Building2 size={11} className="text-violet-400" />
@@ -478,7 +478,7 @@ function MatchCard({ match }: { match: PermutaMatch }) {
               {formatCurrencyFull(property.value)}
             </span>
             {(property.permutaTypes ?? []).map(t => (
-              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/8">
+              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-slate-400 border border-line">
                 {t === 'imovel' ? 'Aceita imóvel' : 'Aceita carro'}
               </span>
             ))}

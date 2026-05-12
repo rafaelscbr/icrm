@@ -85,48 +85,48 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
   }
 
   return (
-    <div className="bg-[#0D1117] border border-blue-500/30 rounded-xl overflow-hidden">
+    <div className="bg-page border border-blue-500/30 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-blue-500/8 border-b border-blue-500/20">
         <span className="text-xs font-semibold text-blue-300">{isEdit ? 'Editar item' : 'Novo item'}</span>
-        <button onClick={onCancel} className="text-slate-500 hover:text-slate-300 transition-colors">
+        <button onClick={onCancel} className="text-t3 hover:text-t2 transition-colors">
           <X size={14} />
         </button>
       </div>
       <div className="p-4 space-y-4">
         <div className="flex gap-3">
           <div className="w-20 flex-shrink-0">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">Emoji</label>
+            <label className="text-[10px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">Emoji</label>
             <input
               value={emoji}
               onChange={e => setEmoji(e.target.value)}
               placeholder="💸"
               maxLength={2}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
+              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2.5 text-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
             />
           </div>
           <div className="flex-1">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">Nome</label>
+            <label className="text-[10px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">Nome</label>
             <input
               value={label}
               onChange={e => handleLabel(e.target.value)}
               placeholder={type === 'origin' ? 'Ex: Google Ads' : 'Ex: Sem retorno'}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
+              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
             />
           </div>
         </div>
 
         {!isEdit && (
           <div>
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">
+            <label className="text-[10px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">
               Identificador interno
             </label>
             <input
               value={slug}
               onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               placeholder="sem_retorno"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-400 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
+              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2 text-sm text-t2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
             />
-            <p className="text-[10px] text-slate-700 mt-1">Gerado automaticamente · só letras, números e _</p>
+            <p className="text-[10px] text-t4 mt-1">Gerado automaticamente · só letras, números e _</p>
           </div>
         )}
 
@@ -140,8 +140,8 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
                   onClick={() => setColor(c.value)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                     color === c.value
-                      ? 'bg-white/10 border-white/25 text-slate-200'
-                      : 'bg-white/3 border-white/8 text-slate-500 hover:border-white/15 hover:text-slate-300'
+                      ? 'bg-s3 border-line-strong text-t1'
+                      : 'bg-s2 border-line text-t3 hover:border-line-strong hover:text-t2'
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${c.dot}`} />
@@ -155,7 +155,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
         <div className="flex gap-2 pt-1">
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 text-sm text-slate-500 hover:text-slate-300 bg-white/3 border border-white/8 rounded-xl transition-all"
+            className="flex-1 py-2.5 text-sm text-t3 hover:text-t2 bg-s2 border border-line rounded-xl transition-all"
           >
             Cancelar
           </button>
@@ -216,12 +216,12 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
     COLORS.find(c => c.value === color)?.dot ?? 'bg-slate-400'
 
   return (
-    <div className="bg-white/2 border border-white/8 rounded-2xl overflow-hidden">
+    <div className="bg-s2/50 border border-line rounded-2xl overflow-hidden">
       {/* Header — single line: title left, badge + button right */}
-      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-white/6">
+      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-slate-200 truncate">{title}</h3>
-          <p className="text-[11px] text-slate-600 mt-0.5 truncate">{subtitle}</p>
+          <h3 className="text-sm font-semibold text-t1 truncate">{title}</h3>
+          <p className="text-[11px] text-t4 mt-0.5 truncate">{subtitle}</p>
         </div>
         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 flex-shrink-0">
           {active.length} {active.length === 1 ? 'ativo' : 'ativos'}
@@ -230,7 +230,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
           onClick={() => { setShowAdd(v => !v); setEditId(null) }}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all flex-shrink-0 ${
             showAdd
-              ? 'bg-white/5 border-white/15 text-slate-300'
+              ? 'bg-s3 border-line-strong text-t2'
               : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20'
           }`}
         >
@@ -265,7 +265,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
                 <span className="text-sm text-red-300 flex-1">Remover <strong>{item.label}</strong>?</span>
                 <button
                   onClick={() => setDelId(null)}
-                  className="text-xs px-3 py-1.5 text-slate-400 hover:text-slate-200 bg-white/5 border border-white/10 rounded-lg transition-all"
+                  className="text-xs px-3 py-1.5 text-t3 hover:text-t2 bg-s2 border border-line rounded-lg transition-all"
                 >
                   Não
                 </button>
@@ -278,9 +278,9 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
               </div>
             ) : (
               /* Normal row */
-              <div className="group flex items-center gap-2.5 px-4 py-2.5 bg-white/3 hover:bg-white/4 border border-white/8 hover:border-white/12 rounded-xl transition-all">
+              <div className="group flex items-center gap-2.5 px-4 py-2.5 bg-s2 hover:bg-s3 border border-line hover:border-line-strong rounded-xl transition-all">
                 {/* Emoji */}
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-base flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-s3 border border-line flex items-center justify-center text-base flex-shrink-0">
                   {item.emoji || '·'}
                 </div>
 
@@ -289,10 +289,10 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
                   {type === 'origin' && item.color && (
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colorDot(item.color)}`} />
                   )}
-                  <span className={`text-sm font-medium truncate ${type === 'origin' && item.color ? item.color : 'text-slate-200'}`}>
+                  <span className={`text-sm font-medium truncate ${type === 'origin' && item.color ? item.color : 'text-t1'}`}>
                     {item.label}
                   </span>
-                  <span className="text-[11px] text-slate-700 font-mono truncate hidden sm:block">{item.slug}</span>
+                  <span className="text-[11px] text-t4 font-mono truncate hidden sm:block">{item.slug}</span>
                 </div>
 
                 {/* Actions */}
@@ -301,21 +301,21 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
                     <>
                       <button
                         onClick={() => { setEditId(item.id); setShowAdd(false) }}
-                        className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-200 hover:bg-white/8 rounded-lg transition-all"
+                        className="w-8 h-8 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-lg transition-all"
                         title="Editar"
                       >
                         <Pencil size={13} />
                       </button>
                       <button
                         onClick={() => handleToggle(item)}
-                        className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all"
+                        className="w-8 h-8 flex items-center justify-center text-t4 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all"
                         title="Desativar"
                       >
                         <span className="text-[10px] font-bold">OFF</span>
                       </button>
                       <button
                         onClick={() => setDelId(item.id)}
-                        className="w-8 h-8 flex items-center justify-center text-slate-700 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                        className="w-8 h-8 flex items-center justify-center text-t4 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                         title="Remover"
                       >
                         <Trash2 size={13} />
@@ -330,7 +330,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
 
         {active.length === 0 && !showAdd && (
           <div className="text-center py-6">
-            <p className="text-sm text-slate-600">Nenhum item ativo</p>
+            <p className="text-sm text-t4">Nenhum item ativo</p>
           </div>
         )}
 
@@ -424,7 +424,7 @@ export function LeadSettings() {
 
       {/* SQL expandido */}
       {showSql && !dbAvailable && (
-        <div className="rounded-xl border border-white/10 overflow-hidden">
+        <div className="rounded-xl border border-line overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 bg-white/3 border-b border-white/8">
             <span className="text-xs font-semibold text-slate-400">SQL · Supabase SQL Editor</span>
             <button

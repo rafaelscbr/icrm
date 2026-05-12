@@ -190,11 +190,11 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                   onClick={() => setKind(opt.value)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all cursor-pointer text-left
                     ${kind === opt.value
-                      ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                      : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20'
+                      ? 'bg-brand-tint border-brand/40 text-brand-text'
+                      : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
                     }`}
                 >
-                  <opt.icon size={16} className={kind === opt.value ? 'text-indigo-400' : 'text-slate-600'} />
+                  <opt.icon size={16} className={kind === opt.value ? 'text-brand' : 'text-slate-600'} />
                   <div>
                     <p className="text-sm font-medium">{opt.label}</p>
                     <p className="text-[10px] opacity-70">{opt.desc}</p>
@@ -223,7 +223,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="w-16 h-16 rounded-xl bg-white/5 border border-dashed border-white/20 flex items-center justify-center text-slate-500 hover:bg-white/10 hover:text-slate-300 transition-colors cursor-pointer"
+                className="w-16 h-16 rounded-xl bg-s3/50 border border-dashed border-line-strong flex items-center justify-center text-slate-500 hover:bg-s3/70 hover:text-slate-300 transition-colors cursor-pointer"
               >
                 <ImagePlus size={18} />
               </button>
@@ -313,7 +313,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 value={bedrooms}
                 onChange={e => setBedrooms(e.target.value)}
                 placeholder="0"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -324,7 +324,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 value={suites}
                 onChange={e => setSuites(e.target.value)}
                 placeholder="0"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -335,7 +335,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                   value={areaSqm}
                   onChange={e => setAreaSqm(e.target.value.replace(/[^0-9,]/g, ''))}
                   placeholder="85"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-3 pr-9 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-3 pr-9 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 pointer-events-none">m²</span>
               </div>
@@ -352,7 +352,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 value={fmtInput(condoFee)}
                 onChange={e => setCondoFee(e.target.value.replace(/\D/g, ''))}
                 placeholder="800"
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
             </div>
           </div>
@@ -371,9 +371,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 value={fmtInput(value)}
                 onChange={e => setValue(e.target.value.replace(/\D/g, ''))}
                 placeholder="850.000"
-                className={`w-full bg-white/5 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100
+                className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100
                   placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-                  ${errors.value ? 'border-red-500/50' : 'border-white/10'}`}
+                  ${errors.value ? 'border-red-500/50' : 'border-line'}`}
               />
             </div>
             {errors.value && <p className="text-xs text-red-400">{errors.value}</p>}
@@ -394,7 +394,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                       ? opt.value === 'opportunity' ? 'bg-green-500/20 border-green-500/40 text-green-300'
                         : opt.value === 'market_price' ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'
                         : 'bg-red-500/20 border-red-500/40 text-red-300'
-                      : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                      : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
                     }
                   `}
                 >
@@ -417,20 +417,20 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 onBlur={() => setTimeout(() => setShowOwnerDropdown(false), 150)}
                 placeholder="Buscar contato..."
                 className={`
-                  w-full bg-white/5 border rounded-xl px-3 py-2.5 text-sm text-slate-100
+                  w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100
                   placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-                  ${errors.owner ? 'border-red-500/50' : 'border-white/10'}
+                  ${errors.owner ? 'border-red-500/50' : 'border-line'}
                 `}
               />
               {errors.owner && <p className="text-xs text-red-400">{errors.owner}</p>}
               {showOwnerDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
                   {filteredContacts.map(c => (
                     <button
                       key={c.id}
                       type="button"
                       onMouseDown={() => { setOwnerId(c.id); setOwnerSearch(c.name); setShowOwnerDropdown(false) }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer"
                     >
                       {c.name}
                       {c.company && <span className="text-slate-600 ml-2 text-xs">{c.company}</span>}
@@ -439,7 +439,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                   <button
                     type="button"
                     onMouseDown={() => { setShowOwnerDropdown(false); setNewContactOpen(true) }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-indigo-400 hover:bg-indigo-500/10 border-t border-white/5 flex items-center gap-2 transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-xs text-brand hover:bg-indigo-500/10 border-t border-line flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <Plus size={12} /> Criar novo contato
                   </button>
@@ -456,12 +456,12 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Informações adicionais, diferenciais do imóvel, condições especiais…"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
             />
           </div>
 
           {/* Permuta */}
-          <div className="flex flex-col gap-3 bg-white/3 border border-white/8 rounded-xl p-4">
+          <div className="flex flex-col gap-3 bg-s2/50 border border-line rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-200">Aceita Permuta</p>
@@ -470,7 +470,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               <button
                 type="button"
                 onClick={() => { setAcceptsPermuta(v => !v); if (acceptsPermuta) { setPermutaTypes([]); setPermutaRegions([]) } }}
-                className={`relative w-10 h-6 rounded-full transition-colors ${acceptsPermuta ? 'bg-indigo-500' : 'bg-white/15'}`}
+                className={`relative w-10 h-6 rounded-full transition-colors ${acceptsPermuta ? 'bg-indigo-500' : 'bg-s3/90'}`}
               >
                 <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${acceptsPermuta ? 'left-5' : 'left-1'}`} />
               </button>
@@ -490,8 +490,8 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                         )}
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-all ${
                           permutaTypes.includes(t)
-                            ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                            : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                            ? 'bg-brand-tint border-brand/40 text-brand-text'
+                            : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
                         }`}
                       >
                         {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
@@ -514,7 +514,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                           className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
                             permutaRegions.includes(region)
                               ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                              : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20'
+                              : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
                           }`}
                         >
                           {region}

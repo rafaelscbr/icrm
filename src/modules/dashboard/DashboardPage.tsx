@@ -42,7 +42,7 @@ const MONTHLY_TARGET_SALES       = 2
 const MONTHLY_TARGET_DISPAROS    = 600   // 30 × 5 × 4 semanas
 
 const STAGE_LABELS: Partial<Record<LeadFunnelStage, { label: string; color: string }>> = {
-  lead:        { label: 'Lead',        color: 'text-slate-400'  },
+  lead:        { label: 'Lead',        color: 'text-t2'  },
   followup:    { label: 'Followup',    color: 'text-blue-400'   },
   atendimento: { label: 'Atendimento', color: 'text-violet-400' },
   visita:      { label: 'Visita',      color: 'text-amber-400'  },
@@ -68,13 +68,13 @@ function daysOverdue(dueDate: string): number {
   return Math.floor((today.getTime() - new Date(dueDate + 'T00:00:00').getTime()) / 86_400_000)
 }
 function dueDateLabel(dueDate?: string): { text: string; color: string } {
-  if (!dueDate) return { text: 'Sem prazo', color: 'text-slate-600' }
+  if (!dueDate) return { text: 'Sem prazo', color: 'text-t4' }
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const diffDays = Math.round((new Date(dueDate + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
   if (diffDays === 0) return { text: 'Hoje!', color: 'text-amber-400' }
   if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
-  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-slate-400' }
-  return { text: dueDate.split('-').reverse().join('/'), color: 'text-slate-500' }
+  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-t2' }
+  return { text: dueDate.split('-').reverse().join('/'), color: 'text-t3' }
 }
 
 // ─── GoalCard ─────────────────────────────────────────────────────────────────
@@ -87,12 +87,12 @@ function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
   const pct  = Math.min(100, Math.round((value / target) * 100))
   const done = value >= target
   return (
-    <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex flex-col gap-2">
-      <p className="text-[10px] text-slate-500 uppercase tracking-wide leading-none">{label}</p>
+    <div className="bg-s2 border border-line rounded-xl p-3 flex flex-col gap-2">
+      <p className="text-[10px] text-t3 uppercase tracking-wide leading-none">{label}</p>
       <div className="flex items-center gap-1">
         <div className="flex items-baseline gap-1 flex-1">
-          <span className={`text-2xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-white'}`}>{value}</span>
-          <span className="text-xs text-slate-600">/{target}</span>
+          <span className={`text-2xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-t1'}`}>{value}</span>
+          <span className="text-xs text-t4">/{target}</span>
           {done && <CheckCircle2 size={12} className="text-green-400 ml-0.5" />}
         </div>
         {(onAdd || onRemove) && (
@@ -100,7 +100,7 @@ function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
             {onRemove && (
               <button
                 onClick={onRemove}
-                className="w-6 h-6 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-500 hover:text-slate-300 text-base leading-none transition-all active:scale-90"
+                className="w-6 h-6 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3 text-t3 hover:text-t2 text-base leading-none transition-all active:scale-90"
                 title="Remover 1"
               >−</button>
             )}
@@ -115,7 +115,7 @@ function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
           </div>
         )}
       </div>
-      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-1 bg-s3/50 rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-700 ${done ? 'bg-green-500' : barColor}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -160,21 +160,21 @@ function GoalsWidget() {
   }, [getAllInteractions, sales, tasks])
 
   return (
-    <div className="rounded-xl border border-white/8 bg-[#0D1117] overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-white/7">
+    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-line">
         <div className="w-7 h-7 bg-blue-500/15 rounded-lg flex items-center justify-center">
           <Target size={14} className="text-blue-400" />
         </div>
         <div>
-          <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Metas</p>
-          <h2 className="text-sm font-bold text-white leading-none">Progresso automático</h2>
+          <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Metas</p>
+          <h2 className="text-sm font-bold text-t1 leading-none">Progresso automático</h2>
         </div>
       </div>
       <div className="p-4 space-y-4">
 
         {/* Hoje */}
         <div>
-          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Hoje</p>
+          <p className="text-[10px] font-bold text-t4 uppercase tracking-wider mb-2">Hoje</p>
           <div className="grid grid-cols-2 gap-3">
             <GoalCard label="Interações c/ leads"  value={metrics.daily}         target={DAILY_TARGET_INTERACTIONS} barColor="bg-blue-500"   />
             <GoalCard label="Disparos lista fria"  value={disparosHoje}          target={DAILY_TARGET_DISPAROS}     barColor="bg-violet-500" />
@@ -183,7 +183,7 @@ function GoalsWidget() {
 
         {/* Semana */}
         <div>
-          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Esta semana</p>
+          <p className="text-[10px] font-bold text-t4 uppercase tracking-wider mb-2">Esta semana</p>
           <div className="grid grid-cols-3 gap-3">
             <GoalCard label="Visitas"         value={metrics.weekVisits}     target={WEEKLY_TARGET_VISITS}     barColor="bg-amber-500"  />
             <GoalCard label="Propostas"       value={metrics.weekProp}       target={WEEKLY_TARGET_PROPOSALS}  barColor="bg-orange-500" />
@@ -193,7 +193,7 @@ function GoalsWidget() {
 
         {/* Mês */}
         <div>
-          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Este mês</p>
+          <p className="text-[10px] font-bold text-t4 uppercase tracking-wider mb-2">Este mês</p>
           <div className="grid grid-cols-2 gap-3">
             <GoalCard label="Visitas"         value={metrics.monthVisits}    target={MONTHLY_TARGET_VISITS}    barColor="bg-amber-500"  />
             <GoalCard label="Propostas"       value={metrics.monthProp}      target={MONTHLY_TARGET_PROPOSALS} barColor="bg-orange-500" />
@@ -226,27 +226,27 @@ function PipelineWidget({ onNavigate }: { onNavigate: () => void }) {
   const hasAnyTicket     = active.some(l => l.averageTicket)
 
   return (
-    <div className="rounded-xl border border-white/8 bg-[#0D1117] overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-white/7">
+    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-line">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 bg-violet-500/15 rounded-lg flex items-center justify-center">
             <DollarSign size={14} className="text-violet-400" />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Pipeline</p>
-            <h2 className="text-sm font-bold text-white leading-none">Valor por etapa do funil</h2>
+            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Pipeline</p>
+            <h2 className="text-sm font-bold text-t1 leading-none">Valor por etapa do funil</h2>
           </div>
         </div>
         {hasAnyTicket && (
           <div className="text-right">
-            <p className="text-[10px] text-slate-600">Pipeline total</p>
+            <p className="text-[10px] text-t4">Pipeline total</p>
             <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrency(totalPipeline)}</p>
             <p className="text-[10px] text-emerald-400 tabular-nums">💰 {formatCurrency(totalCommission)} sua comissão</p>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-5 divide-x divide-white/5">
+      <div className="grid grid-cols-5 divide-x divide-line">
         {stages.map(({ stage, label, color, text }) => {
           const stageLeads  = active.filter(l => l.funnelStage === stage)
           const pipeline    = stageLeads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
@@ -255,20 +255,20 @@ function PipelineWidget({ onNavigate }: { onNavigate: () => void }) {
             <button
               key={stage}
               onClick={onNavigate}
-              className="p-3 text-center hover:bg-white/3 transition-colors cursor-pointer"
+              className="p-3 text-center hover:bg-s2 transition-colors cursor-pointer"
             >
               <p className={`text-[10px] font-bold ${text} uppercase tracking-wide mb-1.5`}>{label}</p>
-              <p className="text-xl font-black text-white tabular-nums">{stageLeads.length}</p>
-              <p className="text-[10px] text-slate-600 mb-2">leads</p>
+              <p className="text-xl font-black text-t1 tabular-nums">{stageLeads.length}</p>
+              <p className="text-[10px] text-t4 mb-2">leads</p>
               {pipeline > 0 ? (
                 <>
                   <div className={`rounded-lg px-2 py-1 ${color} mb-1`}>
-                    <p className="text-[11px] font-semibold text-white tabular-nums">{formatCurrency(pipeline)}</p>
+                    <p className="text-[11px] font-semibold text-t1 tabular-nums">{formatCurrency(pipeline)}</p>
                   </div>
                   <p className="text-[10px] text-emerald-400 tabular-nums">💰 {formatCurrency(commission)}</p>
                 </>
               ) : (
-                <p className="text-[11px] text-slate-700">sem ticket</p>
+                <p className="text-[11px] text-t4">sem ticket</p>
               )}
             </button>
           )
@@ -336,12 +336,12 @@ function LeadAlertsWidget({
               onClick={() => onOpenLead(lead)}
               className="flex items-center gap-3 px-5 py-3 hover:bg-sky-500/5 transition-colors cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-sm font-bold text-slate-300 flex-shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-s3/50 border border-line flex items-center justify-center text-sm font-bold text-t2 flex-shrink-0">
                 {lead.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-200 truncate">{lead.name}</p>
-                <span className={`text-[10px] ${stageConf?.color ?? 'text-slate-500'}`}>
+                <p className="text-sm font-medium text-t1 truncate">{lead.name}</p>
+                <span className={`text-[10px] ${stageConf?.color ?? 'text-t3'}`}>
                   {stageConf?.label ?? lead.funnelStage}
                 </span>
               </div>
@@ -365,7 +365,7 @@ function LeadAlertsWidget({
         })}
         {alertLeads.length > 7 && (
           <div className="px-5 py-2.5 text-center">
-            <button onClick={onNavigate} className="text-xs text-slate-600 hover:text-sky-400 transition-colors cursor-pointer">
+            <button onClick={onNavigate} className="text-xs text-t4 hover:text-sky-400 transition-colors cursor-pointer">
               +{alertLeads.length - 7} leads mais precisam de contato →
             </button>
           </div>
@@ -411,10 +411,10 @@ function OverdueCard({
                 <AlertTriangle size={13} className="text-red-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-200 truncate">{t.title}</p>
+                <p className="text-sm font-medium text-t1 truncate">{t.title}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  {contact  && <span className="text-xs text-slate-500 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
-                  {property && <span className="text-xs text-slate-500 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
+                  {contact  && <span className="text-xs text-t3 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
+                  {property && <span className="text-xs text-t3 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
                 </div>
               </div>
               <span className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-lg border border-red-500/20">
@@ -435,15 +435,15 @@ function UpcomingCard({
 }: { tasks: Task[]; contacts: Contact[]; properties: Property[]; onNavigate: () => void }) {
   const shown = tasks.slice(0, 6)
   return (
-    <div className="relative rounded-xl border border-white/8 card-surface overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/7">
+    <div className="relative rounded-xl border border-line bg-surface overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-500/15 rounded-lg flex items-center justify-center">
             <CalendarCheck size={15} className="text-blue-400" />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Próximas Tarefas</p>
-            <h2 className="text-sm font-bold text-white leading-none mt-0.5">
+            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Próximas Tarefas</p>
+            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
               {tasks.length > 0 ? `${tasks.length} agendada${tasks.length !== 1 ? 's' : ''}` : 'Agenda livre'}
             </h2>
           </div>
@@ -455,23 +455,23 @@ function UpcomingCard({
       {tasks.length === 0 ? (
         <div className="flex flex-col items-center py-8 gap-2">
           <CheckCircle2 size={30} className="text-green-500/40" />
-          <p className="text-sm text-slate-500">Nenhuma tarefa futura por enquanto</p>
-          <button onClick={onNavigate} className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer mt-1">+ Criar tarefa →</button>
+          <p className="text-sm text-t3">Nenhuma tarefa futura por enquanto</p>
+          <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">+ Criar tarefa →</button>
         </div>
       ) : (
-        <div className="flex flex-col divide-y divide-white/5">
+        <div className="flex flex-col divide-y divide-line">
           {shown.map(t => {
             const due      = dueDateLabel(t.dueDate)
             const contact  = contacts.find(c => c.id === t.contactId)
             const property = properties.find(p => p.id === t.propertyId)
             return (
-              <div key={t.id} onClick={onNavigate} className="flex items-center gap-3 px-5 py-3 hover:bg-white/4 transition-colors cursor-pointer">
-                <Circle size={16} className="text-slate-700 flex-shrink-0" />
+              <div key={t.id} onClick={onNavigate} className="flex items-center gap-3 px-5 py-3 hover:bg-s2/60 transition-colors cursor-pointer">
+                <Circle size={16} className="text-t4 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-200 truncate">{t.title}</p>
+                  <p className="text-sm font-medium text-t1 truncate">{t.title}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    {contact  && <span className="text-xs text-slate-600 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
-                    {property && <span className="text-xs text-slate-600 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
+                    {contact  && <span className="text-xs text-t4 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
+                    {property && <span className="text-xs text-t4 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
                   </div>
                 </div>
                 {t.dueDate && (
@@ -484,7 +484,7 @@ function UpcomingCard({
           })}
           {tasks.length > 6 && (
             <div className="px-5 py-2.5 text-center">
-              <button onClick={onNavigate} className="text-xs text-slate-600 hover:text-indigo-400 transition-colors cursor-pointer">
+              <button onClick={onNavigate} className="text-xs text-t4 hover:text-brand transition-colors cursor-pointer">
                 +{tasks.length - 6} mais tarefas →
               </button>
             </div>
@@ -498,12 +498,12 @@ function UpcomingCard({
 // ─── Campanhas ativas ─────────────────────────────────────────────────────────
 
 function smartCampaignMessage(total: number, acionados: number, interessados: number): { text: string; color: string } {
-  if (total === 0) return { text: 'Importe leads para começar a prospectar.', color: 'text-slate-500' }
+  if (total === 0) return { text: 'Importe leads para começar a prospectar.', color: 'text-t3' }
   const acRate  = acionados / total
   const intRate = acionados > 0 ? interessados / acionados : 0
   if (acionados === 0)  return { text: `${total.toLocaleString('pt-BR')} leads aguardando o 1º contato — vamos lá! 📋`, color: 'text-amber-400' }
   if (acRate < 0.15)   return { text: `Ainda há muitos leads para acionar — ${(total - acionados).toLocaleString('pt-BR')} esperando! 📲`, color: 'text-orange-400' }
-  if (intRate === 0)   return { text: `Acionamento em curso, mas nenhum interesse ainda. Revise a abordagem. 🔍`, color: 'text-slate-400' }
+  if (intRate === 0)   return { text: `Acionamento em curso, mas nenhum interesse ainda. Revise a abordagem. 🔍`, color: 'text-t2' }
   if (intRate < 0.15)  return { text: `Conversão de interesse baixa (${Math.round(intRate * 100)}%). Tente outra abordagem. 💡`, color: 'text-yellow-400' }
   if (intRate < 0.30)  return { text: `Boa conversão! ${Math.round(intRate * 100)}% demonstraram interesse. 📈`, color: 'text-cyan-400' }
   return { text: `Excelente! ${Math.round(intRate * 100)}% de interesse — avance para propostas. 🎯`, color: 'text-green-400' }
@@ -516,19 +516,19 @@ function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
   if (active.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-white/8 bg-[#0D1117] overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/7">
+    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center">
             <Megaphone size={15} className="text-purple-400" />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Campanhas ativas</p>
-            <h2 className="text-sm font-bold text-white leading-none mt-0.5">{active.length} em andamento</h2>
+            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Campanhas ativas</p>
+            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">{active.length} em andamento</h2>
           </div>
         </div>
       </div>
-      <div className="flex flex-col divide-y divide-white/5">
+      <div className="flex flex-col divide-y divide-line">
         {active.map(c => {
           const cLeads       = leads.filter(l => l.campaignId === c.id)
           const total        = cLeads.length
@@ -538,25 +538,25 @@ function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
           const acPct        = total     > 0 ? Math.round(acionados    / total     * 100) : 0
           const intPct       = acionados > 0 ? Math.round(interessados / acionados * 100) : 0
           return (
-            <div key={c.id} onClick={() => onNavigate(c.id)} className="px-5 py-4 hover:bg-white/3 transition-colors cursor-pointer group">
+            <div key={c.id} onClick={() => onNavigate(c.id)} className="px-5 py-4 hover:bg-s2 transition-colors cursor-pointer group">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-200 group-hover:text-indigo-300 transition-colors">{c.name}</p>
+                  <p className="text-sm font-semibold text-t1 group-hover:text-brand-text transition-colors">{c.name}</p>
                   <p className={`text-[11px] mt-0.5 ${msg.color}`}>{msg.text}</p>
                 </div>
-                <ArrowRight size={14} className="text-slate-700 group-hover:text-indigo-400 transition-colors mt-0.5 flex-shrink-0" />
+                <ArrowRight size={14} className="text-t4 group-hover:text-brand transition-colors mt-0.5 flex-shrink-0" />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { icon: <Users size={11} />,    label: 'Leads',     value: total.toLocaleString('pt-BR'),        pct: null,   color: 'text-slate-400' },
+                  { icon: <Users size={11} />,    label: 'Leads',     value: total.toLocaleString('pt-BR'),        pct: null,   color: 'text-t2' },
                   { icon: <Zap size={11} />,      label: 'Acionados', value: acionados.toLocaleString('pt-BR'),    pct: acPct,  color: 'text-blue-400'  },
                   { icon: <ThumbsUp size={11} />, label: 'Interesse', value: interessados.toLocaleString('pt-BR'), pct: intPct, color: 'text-cyan-400'  },
                 ].map(m => (
-                  <div key={m.label} className="flex flex-col gap-1 bg-white/3 rounded-xl px-3 py-2.5 border border-white/5">
+                  <div key={m.label} className="flex flex-col gap-1 bg-s2 rounded-xl px-3 py-2.5 border border-line">
                     <div className={`flex items-center gap-1 ${m.color} text-[10px] font-medium`}>{m.icon} {m.label}</div>
                     <div className="flex items-baseline gap-1.5">
                       <span className={`text-base font-bold tabular-nums ${m.color}`}>{m.value}</span>
-                      {m.pct !== null && <span className="text-[10px] text-slate-600">{m.pct}%</span>}
+                      {m.pct !== null && <span className="text-[10px] text-t4">{m.pct}%</span>}
                     </div>
                   </div>
                 ))}
@@ -618,18 +618,18 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
           return (
             <div key={cid} className="px-5 py-3 hover:bg-blue-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-slate-300">{campaign?.name ?? 'Campanha'}</p>
+                <p className="text-xs font-semibold text-t2">{campaign?.name ?? 'Campanha'}</p>
                 <span className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-400/20">{cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}</span>
               </div>
               <div className="flex flex-col gap-1">
                 {cLeads.slice(0, 3).map(l => (
                   <div key={l.id} className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-500 w-24 truncate">{l.name}</span>
+                    <span className="text-[10px] text-t3 w-24 truncate">{l.name}</span>
                     <span className="text-[10px] text-blue-400/70 bg-blue-500/8 px-1.5 py-0.5 rounded border border-blue-400/15">{FROZEN_LABELS[l.funnelStage] ?? l.funnelStage}</span>
-                    <span className="text-[10px] text-slate-600 ml-auto">{l.days}d sem mov.</span>
+                    <span className="text-[10px] text-t4 ml-auto">{l.days}d sem mov.</span>
                   </div>
                 ))}
-                {cLeads.length > 3 && <p className="text-[10px] text-slate-700">+{cLeads.length - 3} mais</p>}
+                {cLeads.length > 3 && <p className="text-[10px] text-t4">+{cLeads.length - 3} mais</p>}
               </div>
             </div>
           )
@@ -666,8 +666,8 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
             <RefreshCw size={15} className="text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-200 leading-none">Potencial de recompra</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">Clientes que compraram há +6 meses</p>
+            <h2 className="text-sm font-semibold text-t1 leading-none">Potencial de recompra</h2>
+            <p className="text-[11px] text-t3 mt-0.5">Clientes que compraram há +6 meses</p>
           </div>
           <span className="ml-1 bg-emerald-500/15 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-xl border border-emerald-500/20 tabular-nums">{candidates.length}</span>
         </div>
@@ -680,8 +680,8 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
           <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-emerald-500/5 transition-colors">
             <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-200 truncate">{c.name}</p>
-              <p className="text-[10px] text-slate-500">{totalSales} compra{totalSales !== 1 ? 's' : ''} · última: {lastSale ? formatDate(lastSale.date) : '—'}</p>
+              <p className="text-sm font-medium text-t1 truncate">{c.name}</p>
+              <p className="text-[10px] text-t3">{totalSales} compra{totalSales !== 1 ? 's' : ''} · última: {lastSale ? formatDate(lastSale.date) : '—'}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-[10px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">{daysSince}d sem compra</span>
@@ -693,7 +693,7 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
         ))}
         {candidates.length > 5 && (
           <div className="px-5 py-2 text-center">
-            <button onClick={onNavigate} className="text-[11px] text-slate-600 hover:text-emerald-400 transition-colors cursor-pointer">+{candidates.length - 5} outros candidatos →</button>
+            <button onClick={onNavigate} className="text-[11px] text-t4 hover:text-emerald-400 transition-colors cursor-pointer">+{candidates.length - 5} outros candidatos →</button>
           </div>
         )}
       </div>
@@ -756,7 +756,7 @@ export function DashboardPage() {
       <div className="flex items-center justify-between mb-6 px-1">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-4 rounded-full bg-blue-500" />
-          <p className="text-xs text-slate-500">Período: <span className="text-slate-300 font-semibold">{periodLabel}</span></p>
+          <p className="text-xs text-t3">Período: <span className="text-t1 font-semibold">{periodLabel}</span></p>
         </div>
         <PeriodSelector />
       </div>
@@ -783,22 +783,22 @@ export function DashboardPage() {
 
       {/* 5. KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        <div className="relative bg-[#0D1117] border border-white/8 rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-white/15 hover:shadow-2xl hover:shadow-black/40">
+        <div className="relative bg-page border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
           <div className="p-5">
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
+            <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
             <div className="flex items-center gap-4 mb-3">
               <div className="flex-1">
-                <p className="text-3xl font-black text-white tabular-nums leading-none">{tasksDoneInPeriod}</p>
-                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1"><ClipboardCheck size={9} className="text-green-500" /> realizadas</p>
+                <p className="text-3xl font-black text-t1 tabular-nums leading-none">{tasksDoneInPeriod}</p>
+                <p className="text-[10px] text-t4 mt-1 flex items-center gap-1"><ClipboardCheck size={9} className="text-green-500" /> realizadas</p>
               </div>
-              <div className="w-px h-8 bg-white/8 flex-shrink-0" />
+              <div className="w-px h-8 bg-line flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-3xl font-black text-violet-300 tabular-nums leading-none">{tasksPendingInPeriod}</p>
-                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1"><ListTodo size={9} className="text-violet-500" /> pendentes</p>
+                <p className="text-[10px] text-t4 mt-1 flex items-center gap-1"><ListTodo size={9} className="text-violet-500" /> pendentes</p>
               </div>
             </div>
-            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+            <div className="h-1 bg-s3/50 rounded-full overflow-hidden">
               <div className="h-full rounded-full bg-green-500 transition-all duration-700" style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }} />
             </div>
           </div>
@@ -821,15 +821,15 @@ export function DashboardPage() {
         <Card accent="yellow" className="animate-slide-up">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-7 h-7 bg-yellow-500/15 rounded-lg flex items-center justify-center"><Cake size={14} className="text-yellow-400" /></div>
-            <h2 className="text-sm font-semibold text-slate-200">Aniversários do mês</h2>
+            <h2 className="text-sm font-semibold text-t1">Aniversários do mês</h2>
             {birthdays.length > 0 && (
               <span className="ml-auto bg-yellow-500/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-yellow-500/30">{birthdays.length}</span>
             )}
           </div>
           {birthdays.length === 0 ? (
             <div className="flex flex-col items-center py-6 gap-2">
-              <Gift size={28} className="text-slate-700" />
-              <p className="text-xs text-slate-600 text-center">Nenhum aniversário este mês</p>
+              <Gift size={28} className="text-t4" />
+              <p className="text-xs text-t4 text-center">Nenhum aniversário este mês</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -837,7 +837,7 @@ export function DashboardPage() {
                 <div key={c.id} className="flex items-center gap-3 group">
                   <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-200 truncate font-medium">{c.name}</p>
+                    <p className="text-sm text-t1 truncate font-medium">{c.name}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-yellow-400 tabular-nums">{getBirthdayDay(c.birthdate!).replace(/^0/, '')}/{c.birthdate!.split('-')[1]}</span>
@@ -847,7 +847,7 @@ export function DashboardPage() {
                   </div>
                 </div>
               ))}
-              {birthdays.length > 5 && <p className="text-xs text-slate-600 text-center pt-1">+{birthdays.length - 5} mais</p>}
+              {birthdays.length > 5 && <p className="text-xs text-t4 text-center pt-1">+{birthdays.length - 5} mais</p>}
             </div>
           )}
         </Card>
@@ -856,32 +856,32 @@ export function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center"><TrendingUp size={14} className="text-green-400" /></div>
-              <h2 className="text-sm font-semibold text-slate-200">Últimas vendas</h2>
+              <h2 className="text-sm font-semibold text-t1">Últimas vendas</h2>
             </div>
-            <button onClick={() => navigate('/vendas')} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer hover:gap-2">
+            <button onClick={() => navigate('/vendas')} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer hover:gap-2">
               Ver todas <ArrowRight size={12} />
             </button>
           </div>
           {recentSales.length === 0 ? (
             <div className="flex flex-col items-center py-8 gap-2">
-              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center"><Sparkles size={20} className="text-slate-600" /></div>
-              <p className="text-sm text-slate-500">Nenhuma venda registrada ainda</p>
-              <button onClick={() => navigate('/vendas?new=1')} className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer mt-1">Registrar primeira venda →</button>
+              <div className="w-12 h-12 bg-s3/50 rounded-xl flex items-center justify-center"><Sparkles size={20} className="text-t4" /></div>
+              <p className="text-sm text-t3">Nenhuma venda registrada ainda</p>
+              <button onClick={() => navigate('/vendas?new=1')} className="text-xs text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">Registrar primeira venda →</button>
             </div>
           ) : (
             <div className="flex flex-col gap-1">
               {recentSales.map(s => {
                 const client = contacts.find(c => c.id === s.clientId)
                 return (
-                  <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/4 transition-colors -mx-3">
+                  <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-s2/60 transition-colors -mx-3">
                     <Avatar name={client?.name ?? s.propertyName} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-200 truncate">{client?.name ?? '—'}</p>
-                      <p className="text-xs text-slate-500 truncate">{s.propertyName}</p>
+                      <p className="text-sm font-medium text-t1 truncate">{client?.name ?? '—'}</p>
+                      <p className="text-xs text-t3 truncate">{s.propertyName}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-sm font-bold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</p>
-                      <p className="text-xs text-slate-600">{formatDate(s.date)}</p>
+                      <p className="text-xs text-t4">{formatDate(s.date)}</p>
                     </div>
                   </div>
                 )

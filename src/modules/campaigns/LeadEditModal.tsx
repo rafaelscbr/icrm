@@ -68,13 +68,13 @@ export function LeadEditModal({ isOpen, onClose, lead }: LeadEditModalProps) {
         <button
           type="button"
           onClick={handleConvertToContact}
-          className="flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer py-1"
+          className="flex items-center gap-2 text-xs text-brand hover:text-brand-text transition-colors cursor-pointer py-1"
         >
           <UserPlus size={13} />
           Converter em contato
         </button>
 
-        <div className="flex gap-3 pt-1 border-t border-white/8">
+        <div className="flex gap-3 pt-1 border-t border-line">
           <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button type="submit" className="flex-1">Salvar</Button>
         </div>

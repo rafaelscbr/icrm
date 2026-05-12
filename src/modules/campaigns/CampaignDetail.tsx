@@ -77,7 +77,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header bar */}
-      <div ref={headerRef} className="sticky top-0 z-10 nav-bg-blur border-b border-white/7 px-6 py-4">
+      <div ref={headerRef} className="sticky top-0 z-10 nav-bg-blur border-b border-line px-6 py-4">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
@@ -96,19 +96,19 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => setImportOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-2 transition-all cursor-pointer"
             >
               <Upload size={13} /> Importar XLSX
             </button>
             <button
               onClick={() => setEditOpen(true)}
-              className="p-2 rounded-xl hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
             >
               <Pencil size={14} />
             </button>
             <button
               onClick={toggleStatus}
-              className="p-2 rounded-xl hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
               title={campaign.status === 'active' ? 'Pausar' : 'Reativar'}
             >
               {campaign.status === 'active' ? <Pause size={14} /> : <Play size={14} />}
@@ -133,15 +133,15 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
               onClick={() => setTab(value)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer
                 ${tab === value
-                  ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                  ? 'bg-brand-tint border-brand/40 text-brand-text'
+                  : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
                 }`}
             >
               <Icon size={12} />
               {label}
               {value === 'leads' && (
                 <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
-                  ${tab === value ? 'bg-indigo-500/30 text-indigo-300' : 'bg-white/8 text-slate-500'}`}>
+                  ${tab === value ? 'bg-indigo-500/30 text-brand-text' : 'bg-s3/70 text-slate-500'}`}>
                   {campaignLeads.length}
                 </span>
               )}

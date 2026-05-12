@@ -51,7 +51,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-all cursor-pointer border-b border-white/5 last:border-0 group
+      className={`flex items-center gap-3 px-4 py-3 hover:bg-s2 transition-all cursor-pointer border-b border-line last:border-0 group
         ${isDiscarded ? 'opacity-50' : ''}
       `}
     >
@@ -62,25 +62,25 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-slate-200 truncate">{displayName}</span>
+          <span className="text-sm font-medium text-t1 truncate">{displayName}</span>
           {lead.contactId && (
             <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 flex-shrink-0">
               <UserCheck size={8} /> No CRM
             </span>
           )}
         </div>
-        <p className="text-xs text-slate-500 mt-0.5">{formatPhone(displayPhone)}</p>
+        <p className="text-xs text-t3 mt-0.5">{formatPhone(displayPhone)}</p>
       </div>
 
       <div className="hidden md:block text-right flex-shrink-0 max-w-[120px]">
         {property ? (
-          <p className="text-xs text-slate-400 truncate">{property.name}</p>
+          <p className="text-xs text-t2 truncate">{property.name}</p>
         ) : lead.propertyName ? (
           <p className="text-xs text-amber-400/80 truncate">🏠 {lead.propertyName}</p>
         ) : lead.averageTicket ? (
           <p className="text-xs font-semibold text-violet-400">{formatCurrency(lead.averageTicket)}</p>
         ) : (
-          <p className="text-xs text-slate-600">—</p>
+          <p className="text-xs text-t4">—</p>
         )}
       </div>
 
@@ -103,7 +103,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
             <MessageCircle size={13} />
           </button>
         )}
-        <ChevronRight size={14} className="text-slate-600" />
+        <ChevronRight size={14} className="text-t4" />
       </div>
     </div>
   )
@@ -165,12 +165,12 @@ export function LeadsPage() {
     <div className="flex flex-col h-full">
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 sticky top-0 z-10 nav-bg-blur border-b border-white/7 px-6 py-4">
+      <div className="flex-shrink-0 sticky top-0 z-10 nav-bg-blur border-b border-line px-6 py-4">
         {/* Título + ações */}
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-white leading-none tracking-tight">Leads</h1>
-            <p className="text-xs text-slate-500 mt-1">Funil de prospecção · <span className="text-slate-300 font-semibold">{active.length} ativos</span></p>
+            <h1 className="text-xl font-bold text-t1 leading-none tracking-tight">Leads</h1>
+            <p className="text-xs text-t3 mt-1">Funil de prospecção · <span className="text-t1 font-semibold">{active.length} ativos</span></p>
           </div>
 
           <button
@@ -183,22 +183,22 @@ export function LeadsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 mt-4 border-b border-white/8">
+        <div className="flex gap-0 mt-4 border-b border-line">
           {TABS.map(({ value, label, icon: Icon, badge }) => (
             <button
               key={value}
               onClick={() => setTab(value)}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 -mb-px transition-all cursor-pointer
                 ${tab === value
-                  ? 'border-blue-500 text-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-300 hover:border-white/20'
+                  ? 'border-blue-500 text-t1'
+                  : 'border-transparent text-t3 hover:text-t2 hover:border-line-strong'
                 }`}
             >
               <Icon size={12} />
               {label}
               {badge !== undefined && (
                 <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
-                  ${tab === value ? 'bg-blue-500/20 text-blue-300' : 'bg-white/8 text-slate-500'}`}>
+                  ${tab === value ? 'bg-blue-500/20 text-blue-300' : 'bg-s3/50 text-t3'}`}>
                   {badge}
                 </span>
               )}
@@ -232,15 +232,15 @@ export function LeadsPage() {
       {(isListTab || isKanbanTab) && (
         <>
           {/* Toolbar filtros */}
-          <div className="flex-shrink-0 px-6 py-3 border-b border-white/7 flex items-center gap-3 flex-wrap">
+          <div className="flex-shrink-0 px-6 py-3 border-b border-line flex items-center gap-3 flex-wrap">
             {/* Search */}
             <div className="relative flex-1 min-w-[180px] max-w-xs">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar lead..."
-                className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/40 transition-all"
+                className="w-full bg-s3/50 border border-line-input rounded-lg pl-8 pr-4 py-2 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-blue-500/40 transition-all"
               />
             </div>
 
@@ -249,7 +249,7 @@ export function LeadsPage() {
               <button
                 onClick={() => setFilterStage(null)}
                 className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all
-                  ${!filterStage ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
+                  ${!filterStage ? 'bg-blue-600 border-blue-600 text-white' : 'bg-s2 border-line text-t3 hover:text-t2'}`}
               >
                 Todas
               </button>
@@ -260,7 +260,7 @@ export function LeadsPage() {
                     key={s}
                     onClick={() => setFilterStage(filterStage === s ? null : s)}
                     className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all
-                      ${filterStage === s ? `${conf.bg} ${conf.border} ${conf.color}` : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
+                      ${filterStage === s ? `${conf.bg} ${conf.border} ${conf.color}` : 'bg-s2 border-line text-t3 hover:text-t2'}`}
                   >
                     {conf.label}
                   </button>
@@ -272,7 +272,7 @@ export function LeadsPage() {
             <button
               onClick={() => setShowDiscarded(v => !v)}
               className={`ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all
-                ${showDiscarded ? 'bg-red-500/15 border-red-500/25 text-red-300' : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300'}`}
+                ${showDiscarded ? 'bg-red-500/15 border-red-500/25 text-red-300' : 'bg-s2 border-line text-t3 hover:text-t2'}`}
             >
               <Trash2 size={11} />
               <span className="hidden sm:inline">{showDiscarded ? 'Descartados' : 'Ver descartados'}</span>
@@ -295,10 +295,10 @@ export function LeadsPage() {
                   <Users size={28} className="text-blue-400/60" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-slate-400">
+                  <p className="text-sm font-medium text-t2">
                     {showDiscarded ? 'Nenhum lead descartado' : 'Nenhum lead encontrado'}
                   </p>
-                  <p className="text-xs text-slate-600 mt-1">
+                  <p className="text-xs text-t4 mt-1">
                     {search || filterStage ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
                   </p>
                 </div>
@@ -316,13 +316,13 @@ export function LeadsPage() {
                 <LeadKanban leads={filtered} />
               </div>
             ) : (
-              <div className="bg-[#0D1117] mx-4 my-4 rounded-2xl border border-white/8 overflow-hidden">
-                <div className="grid grid-cols-[32px_1fr_auto_auto_auto_auto] gap-3 px-4 py-2.5 border-b border-white/8 bg-white/2">
+              <div className="bg-page mx-4 my-4 rounded-2xl border border-line overflow-hidden">
+                <div className="grid grid-cols-[32px_1fr_auto_auto_auto_auto] gap-3 px-4 py-2.5 border-b border-line bg-s2/50">
                   <div />
-                  <span className="text-xs font-semibold text-slate-500">Nome</span>
-                  <span className="text-xs font-semibold text-slate-500 hidden md:block">Produto</span>
-                  <span className="text-xs font-semibold text-slate-500 hidden sm:block">Origem</span>
-                  <span className="text-xs font-semibold text-slate-500">Etapa</span>
+                  <span className="text-xs font-semibold text-t3">Nome</span>
+                  <span className="text-xs font-semibold text-t3 hidden md:block">Produto</span>
+                  <span className="text-xs font-semibold text-t3 hidden sm:block">Origem</span>
+                  <span className="text-xs font-semibold text-t3">Etapa</span>
                   <div />
                 </div>
                 {filtered.map(lead => (

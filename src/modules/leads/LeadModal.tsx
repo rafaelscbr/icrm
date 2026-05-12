@@ -203,7 +203,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-base font-bold text-white leading-tight">{lead.name}</h2>
+                  <h2 className="text-base font-bold text-t1 leading-tight">{lead.name}</h2>
                   {isLinked && (
                     <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20">
                       <UserCheck size={8} /> CRM
@@ -216,13 +216,13 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  <a href={`tel:${contact?.phone ?? lead.phone}`} className="text-sm text-slate-400 hover:text-green-400 transition-colors tabular-nums">
+                  <a href={`tel:${contact?.phone ?? lead.phone}`} className="text-sm text-t2 hover:text-green-400 transition-colors tabular-nums">
                     {formatPhone(contact?.phone ?? lead.phone)}
                   </a>
-                  <span className="text-slate-700">·</span>
+                  <span className="text-t4">·</span>
                   <span className={`text-xs font-medium ${originConf.color}`}>{originConf.emoji} {originConf.label}</span>
-                  <span className="text-slate-700">·</span>
-                  <span className="text-xs text-slate-600">{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
+                  <span className="text-t4">·</span>
+                  <span className="text-xs text-t4">{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
 
@@ -231,21 +231,21 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 <button
                   onClick={() => { toggleFlag(lead.id); toast.success(lead.flagged ? 'Prioridade removida' : '🔥 Prioridade máxima!') }}
                   className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all
-                    ${lead.flagged ? 'text-orange-400 bg-orange-500/15 border border-orange-500/30' : 'text-slate-600 hover:text-orange-400 hover:bg-orange-500/10'}`}
+                    ${lead.flagged ? 'text-orange-400 bg-orange-500/15 border border-orange-500/30' : 'text-t4 hover:text-orange-400 hover:bg-orange-500/10'}`}
                   title={lead.flagged ? 'Remover prioridade' : 'Prioridade máxima'}
                 >
                   <Flame size={13} />
                 </button>
                 <button
                   onClick={() => setShowEdit(true)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-600 hover:text-slate-200 hover:bg-white/8 transition-all"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-t4 hover:text-t1 hover:bg-s3 transition-all"
                   title="Editar informações"
                 >
                   <Edit2 size={13} />
                 </button>
                 <button
                   onClick={onClose}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/8 transition-all"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-t3 hover:text-t1 hover:bg-s3 transition-all"
                 >
                   <X size={15} />
                 </button>
@@ -268,14 +268,14 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                         ${isCurrent
                           ? `${meta.activeBg} ${meta.color} ${meta.border} shadow-sm`
                           : isPast
-                            ? 'bg-white/5 text-slate-500 border-transparent hover:bg-white/8 hover:text-slate-300'
-                            : 'bg-transparent text-slate-700 border-transparent hover:bg-white/5 hover:text-slate-500'
+                            ? 'bg-s3/50 text-t3 border-transparent hover:bg-s3 hover:text-t2'
+                            : 'bg-transparent text-t4 border-transparent hover:bg-s3/50 hover:text-t3'
                         } ${isDiscarded ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       {meta.label}
                     </button>
                     {i < STAGES.length - 1 && (
-                      <ChevronRight size={10} className={`flex-shrink-0 mx-0.5 ${i < currentIndex ? 'text-slate-500' : 'text-slate-700'}`} />
+                      <ChevronRight size={10} className={`flex-shrink-0 mx-0.5 ${i < currentIndex ? 'text-t3' : 'text-t4'}`} />
                     )}
                   </div>
                 )
@@ -331,7 +331,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                       className={`flex-1 h-8 rounded-lg text-xs font-bold transition-all border
                         ${step <= lead.followupStep
                           ? 'bg-blue-500/30 border-blue-400/40 text-blue-300 hover:bg-blue-500/50'
-                          : 'bg-white/5 border-white/8 text-slate-600 hover:bg-blue-500/15 hover:border-blue-400/30 hover:text-blue-400'
+                          : 'bg-s3/50 border-line text-t4 hover:bg-blue-500/15 hover:border-blue-400/30 hover:text-blue-400'
                         }`}
                     >
                       {step}
@@ -346,16 +346,16 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
             {/* Imóvel + ticket + comissão */}
             {(property || lead.propertyName || ticket) && (
-              <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex items-center gap-3">
+              <div className="bg-s2 border border-line rounded-xl p-3 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
                   <Building2 size={14} className="text-violet-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-200 truncate">
+                  <p className="text-sm font-medium text-t1 truncate">
                     {property?.name ?? lead.propertyName ?? 'Sem imóvel vinculado'}
                   </p>
                   {property && (
-                    <p className="text-xs text-slate-500">{property.neighborhood} · {property.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</p>
+                    <p className="text-xs text-t3">{property.neighborhood} · {property.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</p>
                   )}
                 </div>
                 {ticket && (
@@ -382,7 +382,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
                 <button
                   onClick={handleCall}
-                  className="flex flex-col items-center gap-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 rounded-xl transition-all active:scale-95"
+                  className="flex flex-col items-center gap-1 py-3 bg-s3/50 hover:bg-s3 border border-line text-t2 rounded-xl transition-all active:scale-95"
                 >
                   <PhoneCall size={16} />
                   <span className="text-[10px] font-semibold">Ligar</span>
@@ -402,20 +402,20 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             {!isDiscarded && (
               <div>
                 {showNoteInput ? (
-                  <div className="bg-white/3 border border-white/10 rounded-xl p-3 space-y-2">
+                  <div className="bg-s2 border border-line rounded-xl p-3 space-y-2">
                     <textarea
                       autoFocus
                       value={noteText}
                       onChange={e => setNoteText(e.target.value)}
                       placeholder="Escreva sua observação..."
                       rows={3}
-                      className="w-full bg-transparent text-sm text-slate-200 placeholder:text-slate-600 resize-none focus:outline-none leading-relaxed"
+                      className="w-full bg-transparent text-sm text-t1 placeholder:text-t4 resize-none focus:outline-none leading-relaxed"
                     />
                     <div className="flex gap-2">
                       <button onClick={handleSaveNote} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-all">
                         Salvar nota
                       </button>
-                      <button onClick={() => { setShowNoteInput(false); setNoteText('') }} className="px-3 py-1.5 bg-white/5 text-slate-400 text-xs rounded-lg hover:bg-white/8 transition-all">
+                      <button onClick={() => { setShowNoteInput(false); setNoteText('') }} className="px-3 py-1.5 bg-s3/50 text-t2 text-xs rounded-lg hover:bg-s3 transition-all">
                         Cancelar
                       </button>
                     </div>
@@ -423,7 +423,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 ) : (
                   <button
                     onClick={() => setShowNoteInput(true)}
-                    className="w-full flex items-center gap-2 py-2 px-3 rounded-xl text-xs text-slate-500 hover:text-slate-300 bg-white/2 hover:bg-white/5 border border-white/6 transition-all"
+                    className="w-full flex items-center gap-2 py-2 px-3 rounded-xl text-xs text-t3 hover:text-t2 bg-s2/50 hover:bg-s2 border border-line transition-all"
                   >
                     <StickyNote size={12} /> Adicionar nota rápida
                   </button>
@@ -438,15 +438,15 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 className="flex items-center justify-between w-full mb-2 group"
               >
                 <div className="flex items-center gap-1.5">
-                  <History size={12} className="text-slate-600" />
-                  <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-300 transition-colors">
+                  <History size={12} className="text-t4" />
+                  <span className="text-xs font-semibold text-t3 group-hover:text-t2 transition-colors">
                     Histórico
                   </span>
                   {interactions.length > 0 && (
-                    <span className="text-[10px] bg-white/8 text-slate-500 px-1.5 py-0.5 rounded-full">{interactions.length}</span>
+                    <span className="text-[10px] bg-s3 text-t3 px-1.5 py-0.5 rounded-full">{interactions.length}</span>
                   )}
                 </div>
-                <ChevronDown size={12} className={`text-slate-600 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+                <ChevronDown size={12} className={`text-t4 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
               </button>
 
               {showHistory ? (
@@ -454,12 +454,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               ) : (
                 <div className="space-y-1.5">
                   {recentItems.length === 0 ? (
-                    <p className="text-xs text-slate-700 py-1">Nenhuma interação registrada</p>
+                    <p className="text-xs text-t4 py-1">Nenhuma interação registrada</p>
                   ) : recentItems.map(i => (
                     <div key={i.id} className="flex items-center gap-2 py-1">
                       <span className="text-sm flex-shrink-0">{INTERACTION_ICON[i.type] ?? '📝'}</span>
-                      <p className="flex-1 text-xs text-slate-400 truncate">{i.description ?? i.type}</p>
-                      <span className="text-[10px] text-slate-600 flex-shrink-0">{relativeTime(i.interactedAt)}</span>
+                      <p className="flex-1 text-xs text-t2 truncate">{i.description ?? i.type}</p>
+                      <span className="text-[10px] text-t4 flex-shrink-0">{relativeTime(i.interactedAt)}</span>
                     </div>
                   ))}
                   {interactions.length > 3 && (
@@ -475,12 +475,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             <div className="space-y-2">
               <button
                 onClick={() => setShowRadar(v => !v)}
-                className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-white/3 hover:bg-white/5 border border-white/8 transition-all"
+                className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-s2 hover:bg-s3 border border-line transition-all"
               >
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                <div className="flex items-center gap-2 text-xs font-medium text-t2">
                   <Target size={12} /> 🎯 Radar de interesse
                 </div>
-                <ChevronDown size={12} className={`text-slate-600 transition-transform ${showRadar ? 'rotate-180' : ''}`} />
+                <ChevronDown size={12} className={`text-t4 transition-transform ${showRadar ? 'rotate-180' : ''}`} />
               </button>
               {showRadar && (
                 <div className="px-1">
@@ -490,12 +490,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
               <button
                 onClick={() => setShowPermuta(v => !v)}
-                className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-white/3 hover:bg-white/5 border border-white/8 transition-all"
+                className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-s2 hover:bg-s3 border border-line transition-all"
               >
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                <div className="flex items-center gap-2 text-xs font-medium text-t2">
                   <ArrowLeftRight size={12} /> 🔄 Permuta
                 </div>
-                <ChevronDown size={12} className={`text-slate-600 transition-transform ${showPermuta ? 'rotate-180' : ''}`} />
+                <ChevronDown size={12} className={`text-t4 transition-transform ${showPermuta ? 'rotate-180' : ''}`} />
               </button>
               {showPermuta && (
                 <div className="px-1">
@@ -506,9 +506,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
             {/* Notas salvas */}
             {lead.notes && (
-              <div className="bg-white/3 border border-white/8 rounded-xl p-3">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Observações</p>
-                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{lead.notes}</p>
+              <div className="bg-s2 border border-line rounded-xl p-3">
+                <p className="text-[10px] font-semibold text-t3 uppercase tracking-wider mb-1.5">Observações</p>
+                <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap">{lead.notes}</p>
               </div>
             )}
 
@@ -521,7 +521,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-0.5">Descartado</p>
                     <p className="text-sm font-medium text-slate-300">{r?.label ?? lead.discardReason}</p>
-                    {lead.discardedAt && <p className="text-[11px] text-slate-600 mt-0.5">{new Date(lead.discardedAt).toLocaleDateString('pt-BR')}</p>}
+                    {lead.discardedAt && <p className="text-[11px] text-t4 mt-0.5">{new Date(lead.discardedAt).toLocaleDateString('pt-BR')}</p>}
                   </div>
                 </div>
               )
@@ -529,7 +529,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
           </div>
 
           {/* ── Footer ─────────────────────────────────────────────────────── */}
-          <div className="flex-shrink-0 px-5 py-3 border-t border-white/8 flex items-center gap-2">
+          <div className="flex-shrink-0 px-5 py-3 border-t border-line flex items-center gap-2">
             {!isLinked && !isDiscarded && (
               <button onClick={handleConvert} className="flex items-center gap-1.5 px-3 py-2 text-xs text-violet-300 hover:text-violet-200 bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 rounded-lg transition-all">
                 <UserCheck size={12} /> Criar contato
@@ -552,10 +552,10 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               <div className="flex items-center gap-1">
                 <span className="text-xs text-red-400">Confirmar exclusão?</span>
                 <button onClick={handleDelete} className="px-2 py-1.5 text-xs bg-red-600 text-white rounded-lg">Sim</button>
-                <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1.5 text-xs bg-white/8 text-slate-400 rounded-lg">Não</button>
+                <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1.5 text-xs bg-s3 text-t2 rounded-lg">Não</button>
               </div>
             ) : (
-              <button onClick={() => setShowDeleteConfirm(true)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Excluir lead">
+              <button onClick={() => setShowDeleteConfirm(true)} className="w-8 h-8 flex items-center justify-center text-t4 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Excluir lead">
                 <Trash2 size={13} />
               </button>
             )}
@@ -569,37 +569,37 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => { setShowDiscard(false); setSelectedReason(null); setDiscardSearch('') }} />
           <div className="relative w-full sm:max-w-md modal-surface rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col max-h-[90vh]">
 
-            <div className="px-5 pt-5 pb-4 border-b border-white/8 flex-shrink-0">
+            <div className="px-5 pt-5 pb-4 border-b border-line flex-shrink-0">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-red-500/15 flex items-center justify-center flex-shrink-0">
                     <AlertTriangle size={16} className="text-red-400" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-100">Descartar lead</h3>
-                    <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[220px]">{lead.name}</p>
+                    <h3 className="text-sm font-bold text-t1">Descartar lead</h3>
+                    <p className="text-xs text-t3 mt-0.5 truncate max-w-[220px]">{lead.name}</p>
                   </div>
                 </div>
-                <button onClick={() => { setShowDiscard(false); setSelectedReason(null); setDiscardSearch('') }} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-all">
+                <button onClick={() => { setShowDiscard(false); setSelectedReason(null); setDiscardSearch('') }} className="w-7 h-7 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3 text-t3 hover:text-t2 transition-all">
                   <X size={13} />
                 </button>
               </div>
               {discardReasons.length > 4 && (
                 <div className="relative mt-3">
-                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3 pointer-events-none" />
                   <input
                     type="text"
                     value={discardSearch}
                     onChange={e => setDiscardSearch(e.target.value)}
                     placeholder="Filtrar motivos..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                    className="w-full bg-s3/50 border border-line rounded-xl pl-8 pr-3 py-2 text-xs text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-red-500/30"
                   />
                 </div>
               )}
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-              <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider px-1 mb-2">Motivo do descarte</p>
+              <p className="text-[10px] font-semibold text-t4 uppercase tracking-wider px-1 mb-2">Motivo do descarte</p>
               {discardReasons
                 .filter(r => !discardSearch || r.label.toLowerCase().includes(discardSearch.toLowerCase()))
                 .map(r => {
@@ -609,11 +609,11 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                       key={r.id}
                       onClick={() => setSelectedReason(r.slug as LeadDiscardReason)}
                       className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all
-                        ${isSelected ? 'bg-red-500/12 border-red-500/40' : 'bg-white/2 border-white/6 hover:bg-white/5 hover:border-white/12'}`}
+                        ${isSelected ? 'bg-red-500/12 border-red-500/40' : 'bg-s2/50 border-line hover:bg-s2 hover:border-line-strong'}`}
                     >
                       <span className="text-base flex-shrink-0 w-7 text-center">{r.emoji ?? '📋'}</span>
-                      <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-red-200' : 'text-slate-300'}`}>{r.label}</span>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'bg-red-500 border-red-500' : 'border-white/20 bg-white/3'}`}>
+                      <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-red-200' : 'text-t2'}`}>{r.label}</span>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'bg-red-500 border-red-500' : 'border-line-strong bg-s2'}`}>
                         {isSelected && <Check size={10} className="text-white" strokeWidth={3} />}
                       </div>
                     </button>
@@ -621,7 +621,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 })}
             </div>
 
-            <div className="px-4 py-3 border-t border-white/8 flex-shrink-0">
+            <div className="px-4 py-3 border-t border-line flex-shrink-0">
               <button
                 onClick={handleDiscard}
                 disabled={!selectedReason}

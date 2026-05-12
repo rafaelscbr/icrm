@@ -1,32 +1,40 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success'
   size?: 'sm' | 'md' | 'lg'
   children: ReactNode
 }
 
 const variants = {
-  primary: 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40',
-  secondary: 'bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 hover:border-white/20',
-  ghost: 'hover:bg-white/8 text-slate-400 hover:text-slate-200',
-  danger: 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/40',
+  primary:   'bg-brand hover:bg-brand-dark text-white shadow-brand active:opacity-90',
+  secondary: 'bg-surface border border-line hover:bg-s2 text-t2 hover:text-t1 hover:border-line-strong',
+  ghost:     'hover:bg-s2 text-t3 hover:text-t1',
+  danger:    'bg-error-bg hover:bg-error/20 text-error border border-error-line hover:border-error/50',
+  success:   'bg-success-bg hover:bg-success/20 text-success border border-success-line hover:border-success/50',
 }
 
 const sizes = {
-  sm: 'px-3 py-2 text-xs gap-1.5 min-h-[34px]',
-  md: 'px-4 py-2 text-sm gap-2 min-h-[38px]',
-  lg: 'px-5 py-2.5 text-sm gap-2 min-h-[42px]',
+  sm: 'px-3 py-1.5 text-xs gap-1.5 min-h-[32px]',
+  md: 'px-4 py-2 text-sm gap-2 min-h-[36px]',
+  lg: 'px-5 py-2.5 text-sm gap-2 min-h-[40px]',
 }
 
-export function Button({ variant = 'primary', size = 'md', children, className = '', disabled, ...props }: ButtonProps) {
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  children,
+  className = '',
+  disabled,
+  ...props
+}: ButtonProps) {
   return (
     <button
       {...props}
       disabled={disabled}
       className={`
-        inline-flex items-center justify-center font-medium rounded-lg
-        transition-all duration-200 active:scale-[0.97] cursor-pointer
+        inline-flex items-center justify-center font-semibold rounded-lg
+        transition-all duration-150 active:scale-[0.98] cursor-pointer
         disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
         ${variants[variant]} ${sizes[size]} ${className}
       `}

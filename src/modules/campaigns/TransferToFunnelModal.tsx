@@ -84,7 +84,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
       <div className="flex flex-col gap-5">
 
         {/* Lead info */}
-        <div className="flex items-center gap-3 p-3.5 bg-white/4 border border-white/8 rounded-xl">
+        <div className="flex items-center gap-3 p-3.5 bg-s2/60 border border-line rounded-xl">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center text-sm font-bold text-violet-200 flex-shrink-0">
             {lead.name[0].toUpperCase()}
           </div>
@@ -130,7 +130,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
                   className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
                     active
                       ? `${conf.bg} ${conf.border} ${conf.color}`
-                      : 'bg-white/3 border-white/8 text-slate-500 hover:border-white/20 hover:text-slate-300'
+                      : 'bg-s2/50 border-line text-slate-500 hover:border-line-strong hover:text-slate-300'
                   }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? conf.dot : 'bg-slate-700'}`} />
@@ -158,7 +158,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
               value={ticket ? Number(ticket.replace(/\D/g, '')).toLocaleString('pt-BR') : ''}
               onChange={e => setTicket(e.target.value.replace(/\D/g, ''))}
               placeholder="0"
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+              className="w-full bg-s3/50 border border-line rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
             />
           </div>
         </div>
@@ -173,7 +173,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
             onChange={e => setNotes(e.target.value)}
             rows={2}
             placeholder="Observações que vão para o lead no funil..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
           />
         </div>
 

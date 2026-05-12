@@ -38,7 +38,7 @@ interface ItemFormProps {
 }
 
 function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
-  const inputClass = 'w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all'
+  const inputClass = 'w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all'
   const labelClass = 'text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block'
 
   function set(patch: Partial<PermutaItem>) {
@@ -46,7 +46,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
   }
 
   return (
-    <div className="bg-white/3 border border-white/8 rounded-xl p-3 space-y-3">
+    <div className="bg-s2/50 border border-line rounded-xl p-3 space-y-3">
       {/* Header do item */}
       <div className="flex items-center gap-2">
         <div className="flex gap-1.5 flex-1">
@@ -55,7 +55,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-medium transition-all ${
               item.type === 'imovel'
                 ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
-                : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300 hover:border-white/15'
+                : 'bg-s2/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-input'
             }`}
           >
             <Home size={12} /> Imóvel
@@ -65,7 +65,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-medium transition-all ${
               item.type === 'carro'
                 ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
-                : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300 hover:border-white/15'
+                : 'bg-s2/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-input'
             }`}
           >
             <Car size={12} /> Carro
@@ -94,7 +94,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
                   className={`text-[11px] px-2 py-0.5 rounded-lg border transition-all ${
                     item.region === r
                       ? 'bg-orange-500/20 border-orange-500/40 text-orange-300 font-medium'
-                      : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300 hover:border-white/15'
+                      : 'bg-s2/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-input'
                   }`}
                 >
                   {r}
@@ -252,7 +252,7 @@ export function LeadPermutaTab({ contact }: LeadPermutaTabProps) {
       {/* Botão adicionar */}
       <button
         onClick={handleAdd}
-        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-white/15 text-xs text-slate-500 hover:text-slate-300 hover:border-white/25 transition-all"
+        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-line-input text-xs text-slate-500 hover:text-slate-300 hover:border-white/25 transition-all"
       >
         <Plus size={12} /> Adicionar outro bem para permuta
       </button>

@@ -128,20 +128,20 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               onFocus={() => setShowClientDrop(true)}
               onBlur={() => setTimeout(() => setShowClientDrop(false), 150)}
               placeholder="Buscar contato..."
-              className={`w-full bg-white/5 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.client ? 'border-red-500/50' : 'border-white/10'}`}
+              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.client ? 'border-red-500/50' : 'border-line'}`}
             />
             {errors.client && <p className="text-xs text-red-400">{errors.client}</p>}
             {showClientDrop && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
                 {filteredClients.map(c => (
                   <button key={c.id} type="button"
                     onMouseDown={() => { setClientId(c.id); setClientSearch(c.name); setShowClientDrop(false) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer"
                   >{c.name}</button>
                 ))}
                 <button type="button"
                   onMouseDown={() => { setShowClientDrop(false); setNewContactOpen(true) }}
-                  className="w-full text-left px-4 py-2.5 text-xs text-indigo-400 hover:bg-indigo-500/10 border-t border-white/5 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full text-left px-4 py-2.5 text-xs text-brand hover:bg-indigo-500/10 border-t border-line flex items-center gap-2 transition-colors cursor-pointer"
                 ><Plus size={12} /> Criar novo contato</button>
               </div>
             )}
@@ -158,15 +158,15 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               onFocus={() => setShowPropDrop(true)}
               onBlur={() => setTimeout(() => setShowPropDrop(false), 150)}
               placeholder="Buscar imóvel ou digitar nome..."
-              className={`w-full bg-white/5 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.property ? 'border-red-500/50' : 'border-white/10'}`}
+              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.property ? 'border-red-500/50' : 'border-line'}`}
             />
             {errors.property && <p className="text-xs text-red-400">{errors.property}</p>}
             {showPropDrop && filteredProps.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
                 {filteredProps.map(p => (
                   <button key={p.id} type="button"
                     onMouseDown={() => { setPropertyId(p.id); setPropertyName(p.name); setShowPropDrop(false) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer"
                   >
                     {p.name}
                     <span className="text-slate-600 ml-2 text-xs">{p.neighborhood}</span>
@@ -197,7 +197,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                 onChange={e => setValue(e.target.value)}
                 inputMode="numeric"
                 placeholder="600.000"
-                className={`w-full bg-white/5 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.value ? 'border-red-500/50' : 'border-white/10'}`}
+                className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.value ? 'border-red-500/50' : 'border-line'}`}
               />
             </div>
             {errors.value && <p className="text-xs text-red-400 mt-1">{errors.value}</p>}
@@ -220,7 +220,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   className={`flex-1 text-xs py-2 rounded-xl border transition-all cursor-pointer ${
                     commMode === mode
                       ? 'bg-violet-500/20 border-violet-500/40 text-violet-300 font-semibold'
-                      : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                      : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
                   }`}
                 >
                   {label}
@@ -239,7 +239,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                     step="0.1"
                     value={commPct}
                     onChange={e => setCommPct(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                     placeholder="5"
                   />
                 </div>
@@ -253,7 +253,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   onChange={e => setCommFixed(e.target.value)}
                   inputMode="numeric"
                   placeholder="30.000"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                 />
               </div>
             )}
@@ -270,7 +270,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   step="1"
                   value={brokerPct}
                   onChange={e => setBrokerPct(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 text-center"
+                  className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 text-center"
                 />
               </div>
               <span className="text-xs text-slate-400">% da comissão</span>
@@ -279,11 +279,11 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
             {/* Preview calculado */}
             {preview && preview.totalComm > 0 && (
               <div className="grid grid-cols-2 gap-3 pt-1 border-t border-violet-500/15">
-                <div className="bg-white/3 rounded-xl px-3 py-2.5 text-center">
+                <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
                   <p className="text-[10px] text-slate-500 mb-0.5">Comissão total</p>
                   <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
                 </div>
-                <div className="bg-white/3 rounded-xl px-3 py-2.5 text-center">
+                <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
                   <p className="text-[10px] text-slate-500 mb-0.5">Sua comissão ({brokerPct}%)</p>
                   <p className="text-sm font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.brokerComm)}</p>
                 </div>
@@ -299,7 +299,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               onChange={e => setNotes(e.target.value)}
               placeholder="Informações adicionais..."
               rows={2}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
             />
           </div>
 

@@ -30,14 +30,14 @@ function MetaCard({ label, value, target, color }: {
   const p    = pct(value, target)
   const done = value >= target
   return (
-    <div className="bg-white/3 border border-white/8 rounded-xl p-4 flex flex-col gap-2">
+    <div className="bg-s2/50 border border-line rounded-xl p-4 flex flex-col gap-2">
       <p className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</p>
       <div className="flex items-baseline gap-1">
-        <span className={`text-3xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-white'}`}>{value}</span>
+        <span className={`text-3xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-t1'}`}>{value}</span>
         <span className="text-sm text-slate-600">/ {target}</span>
         {done && <span className="ml-1 text-green-400 text-base">✓</span>}
       </div>
-      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ${done ? 'bg-green-500' : color}`}
           style={{ width: `${p}%` }}
@@ -53,7 +53,7 @@ function MetaCard({ label, value, target, color }: {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#0D1117] border border-white/12 rounded-xl px-3 py-2.5 text-xs space-y-1 shadow-xl">
+    <div className="bg-page border border-line rounded-xl px-3 py-2.5 text-xs space-y-1 shadow-xl">
       <p className="text-slate-400 font-semibold mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.name} style={{ color: p.color }}>{p.name}: <span className="font-bold">{p.value}</span></p>
@@ -151,7 +151,7 @@ export function CampaignPerformanceTab({ leads }: Props) {
             { label: 'Taxa de resposta',   value: `${responseRate}%`,                color: 'text-cyan-400'   },
             { label: 'Vendas convertidas', value: sales.toString(),                  color: 'text-green-400'  },
           ].map(kpi => (
-            <div key={kpi.label} className="bg-white/3 border border-white/8 rounded-xl p-3">
+            <div key={kpi.label} className="bg-s2/50 border border-line rounded-xl p-3">
               <p className="text-[10px] text-slate-500 mb-1">{kpi.label}</p>
               <p className={`text-2xl font-black tabular-nums ${kpi.color}`}>{kpi.value}</p>
             </div>
@@ -213,7 +213,7 @@ export function CampaignPerformanceTab({ leads }: Props) {
             return (
               <div key={row.label} className="flex items-center gap-3">
                 <p className="text-[11px] text-slate-500 w-36 flex-shrink-0">{row.label}</p>
-                <div className="flex-1 h-5 bg-white/4 rounded-md overflow-hidden">
+                <div className="flex-1 h-5 bg-s2/60 rounded-md overflow-hidden">
                   <div className={`h-full ${row.color} opacity-70 rounded-md transition-all duration-700`} style={{ width: `${barPct}%` }} />
                 </div>
                 <span className={`text-sm font-bold tabular-nums w-8 text-right ${row.text}`}>{row.value}</span>
@@ -225,7 +225,7 @@ export function CampaignPerformanceTab({ leads }: Props) {
           })}
         </div>
         {avgDaysToInterest !== null && (
-          <p className="text-[11px] text-slate-600 mt-4 pt-3 border-t border-white/6">
+          <p className="text-[11px] text-slate-600 mt-4 pt-3 border-t border-line">
             ⏱ Tempo médio até demonstrar interesse: <span className="text-cyan-400 font-semibold">{avgDaysToInterest} dias</span> após o primeiro contato
           </p>
         )}

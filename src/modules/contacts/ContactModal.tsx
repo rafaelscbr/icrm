@@ -40,7 +40,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const STATUS_CONFIG = {
-  pending:   { icon: Circle,       color: 'text-indigo-400',  label: 'Pendente'   },
+  pending:   { icon: Circle,       color: 'text-brand',  label: 'Pendente'   },
   done:      { icon: CheckCircle2, color: 'text-green-400',   label: 'Concluída'  },
   cancelled: { icon: AlertTriangle,color: 'text-slate-500',   label: 'Cancelada'  },
 }
@@ -158,7 +158,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
       <div className="flex flex-col gap-6">
 
         {/* Header do contato */}
-        <div className="flex items-start gap-4 pb-4 border-b border-white/8">
+        <div className="flex items-start gap-4 pb-4 border-b border-line">
           <Avatar name={contact.name} photoUrl={contact.photoUrl} size="lg" />
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-slate-100">{contact.name}</h2>
@@ -192,7 +192,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
         {(contact.birthdate || contact.isMarried || contact.hasChildren) && (
           <div className="grid grid-cols-2 gap-3">
             {contact.birthdate && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white/3 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                 <Cake size={13} className="text-yellow-400 flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-slate-500">Aniversário</p>
@@ -201,7 +201,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               </div>
             )}
             {contact.isMarried && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white/3 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                 <Heart size={13} className="text-pink-400 flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-slate-500">Cônjuge</p>
@@ -210,7 +210,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               </div>
             )}
             {contact.hasChildren && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white/3 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                 <Baby size={13} className="text-cyan-400 flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-slate-500">Filhos</p>
@@ -219,8 +219,8 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               </div>
             )}
             {ownedProperties.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white/3 rounded-xl border border-white/5">
-                <Building2 size={13} className="text-indigo-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
+                <Building2 size={13} className="text-brand flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-slate-500">Imóveis próprios</p>
                   <p className="text-xs text-slate-200 font-medium">{ownedProperties.length} imóvel{ownedProperties.length > 1 ? 's' : ''}</p>
@@ -260,7 +260,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                 const prop = properties.find(p => p.id === sale.propertyId)
                 const { brokerCommission } = calcSaleCommissions(sale)
                 return (
-                  <div key={sale.id} className="flex items-center gap-3 px-3 py-2.5 bg-white/3 rounded-xl border border-white/5">
+                  <div key={sale.id} className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-slate-200 truncate">{sale.propertyName}</p>
                       {prop && <p className="text-[10px] text-slate-500 truncate">{prop.neighborhood}{prop.city ? ` · ${prop.city}` : ''}</p>}
@@ -297,7 +297,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                   <button
                     key={lead.id}
                     onClick={() => setSelectedLead(lead.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 bg-white/3 hover:bg-white/5 border border-white/8 rounded-xl transition-all text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 bg-s2/50 hover:bg-s3/50 border border-line rounded-xl transition-all text-left"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -330,7 +330,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               (contact?.permutaItems?.length ?? 0) > 0 ? (
                 <button
                   onClick={openPermutaEdit}
-                  className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/8 border border-white/8 text-slate-400 hover:text-slate-200 transition-all"
+                  className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-slate-400 hover:text-slate-200 transition-all"
                 >
                   <Pencil size={9} /> Editar
                 </button>
@@ -353,10 +353,10 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
           {!editingPermuta && (contact?.permutaItems?.length ?? 0) > 0 && (
             <div className="flex flex-col gap-2">
               {contact!.permutaItems.map(item => (
-                <div key={item.id} className="flex items-start gap-2 px-3 py-2.5 bg-white/3 rounded-xl border border-white/8">
+                <div key={item.id} className="flex items-start gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                   <span className={`inline-flex self-start text-[10px] font-medium px-2 py-0.5 rounded-full border flex-shrink-0 ${
                     item.type === 'imovel'
-                      ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25'
+                      ? 'bg-brand-tint text-brand-text border-indigo-500/25'
                       : 'bg-amber-500/15 text-amber-300 border-amber-500/25'
                   }`}>
                     {item.type === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
@@ -384,7 +384,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
           {editingPermuta && (
             <div className="space-y-3">
               {permutaItems.map((item, idx) => (
-                <div key={item.id} className="bg-white/3 border border-white/8 rounded-xl p-3 space-y-2">
+                <div key={item.id} className="bg-s2/50 border border-line rounded-xl p-3 space-y-2">
                   {/* Tipo */}
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1.5 flex-1">
@@ -395,8 +395,8 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                           onClick={() => updatePermutaItem(item.id, { type: t, region: undefined, value: undefined, carModel: undefined, carValue: undefined })}
                           className={`flex-1 py-1.5 rounded-xl border text-xs font-medium transition-all ${
                             item.type === t
-                              ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                              : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                              ? 'bg-brand-tint border-brand/40 text-brand-text'
+                              : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
                           }`}
                         >
                           {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
@@ -420,7 +420,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                         value={item.region ?? ''}
                         onChange={e => updatePermutaItem(item.id, { region: e.target.value || undefined })}
                         placeholder="Região (ex: Balneário Camboriú)"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       />
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">R$</span>
@@ -430,7 +430,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                           value={item.value ? item.value.toLocaleString('pt-BR') : ''}
                           onChange={e => updatePermutaItem(item.id, { value: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
                           placeholder="Valor do imóvel"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         />
                       </div>
                     </div>
@@ -441,7 +441,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                         value={item.carModel ?? ''}
                         onChange={e => updatePermutaItem(item.id, { carModel: e.target.value || undefined })}
                         placeholder="Modelo (ex: Toyota Corolla 2022)"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       />
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">R$</span>
@@ -451,7 +451,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                           value={item.carValue ? item.carValue.toLocaleString('pt-BR') : ''}
                           onChange={e => updatePermutaItem(item.id, { carValue: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
                           placeholder="Valor de entrada"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         />
                       </div>
                     </div>
@@ -460,7 +460,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                   {idx === permutaItems.length - 1 && (
                     <button
                       onClick={addPermutaItem}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] text-slate-500 hover:text-slate-300 border border-dashed border-white/12 hover:border-white/22 rounded-lg transition-all"
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] text-slate-500 hover:text-slate-300 border border-dashed border-line hover:border-white/22 rounded-lg transition-all"
                     >
                       <Plus size={10} /> Adicionar outro bem
                     </button>
@@ -471,7 +471,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={cancelPermuta}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-slate-400 hover:text-slate-200 bg-white/5 rounded-lg border border-white/10 transition-all"
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-slate-400 hover:text-slate-200 bg-s3/50 rounded-lg border border-line transition-all"
                 >
                   <X size={11} /> Cancelar
                 </button>
@@ -490,12 +490,12 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
         <div>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Tag size={13} className="text-indigo-400" />
+              <Tag size={13} className="text-brand" />
               <h3 className="text-sm font-semibold text-slate-300">Tarefas vinculadas</h3>
             </div>
             <div className="flex gap-2 text-[10px]">
               {pendingTasks.length > 0 && (
-                <span className="bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full font-medium border border-indigo-500/20">
+                <span className="bg-brand-tint text-brand px-2 py-0.5 rounded-full font-medium border border-brand/25">
                   {pendingTasks.length} pendente{pendingTasks.length > 1 ? 's' : ''}
                 </span>
               )}
@@ -519,7 +519,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                   <div
                     key={task.id}
                     className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border transition-all
-                      ${task.status === 'done' ? 'bg-white/2 border-white/5 opacity-60' : 'bg-white/3 border-white/8'}
+                      ${task.status === 'done' ? 'bg-s2/30 border-line opacity-60' : 'bg-s2/50 border-line'}
                     `}
                   >
                     <Icon size={13} className={`${cfg.color} flex-shrink-0 mt-0.5`} />

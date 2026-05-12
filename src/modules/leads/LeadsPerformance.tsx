@@ -176,7 +176,7 @@ export function LeadsPerformance({ leads }: Props) {
     <div className="p-5 space-y-5 max-w-5xl mx-auto">
 
       {/* ── BLOCO 1 — Atividade da semana ──────────────────────────────────── */}
-      <div className="bg-[#0D1117] border border-white/10 rounded-xl p-5">
+      <div className="bg-page border border-line rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-7 h-7 bg-violet-500/15 rounded-lg flex items-center justify-center">
             <Zap size={13} className="text-violet-400" />
@@ -194,7 +194,7 @@ export function LeadsPerformance({ leads }: Props) {
             { label: 'Leads novos',         icon: UserPlus,      color: 'text-sky-400',    bg: 'bg-sky-500/10',    ...weekStats.newLeads },
             { label: 'Descartes',           icon: XCircle,       color: 'text-rose-400',   bg: 'bg-rose-500/10',   ...weekStats.discards },
           ].map(({ label, icon: Icon, color, bg, now, prev }) => (
-            <div key={label} className="bg-white/3 border border-white/8 rounded-xl p-4">
+            <div key={label} className="bg-s2/50 border border-line rounded-xl p-4">
               <div className={`w-7 h-7 ${bg} rounded-lg flex items-center justify-center mb-3`}>
                 <Icon size={13} className={color} />
               </div>
@@ -207,7 +207,7 @@ export function LeadsPerformance({ leads }: Props) {
       </div>
 
       {/* ── BLOCO 2 — Ritmo diário 30 dias ─────────────────────────────────── */}
-      <div className="bg-[#0D1117] border border-white/10 rounded-xl p-5">
+      <div className="bg-page border border-line rounded-xl p-5">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-blue-500/15 rounded-lg flex items-center justify-center">
@@ -242,7 +242,7 @@ export function LeadsPerformance({ leads }: Props) {
                       isToday        ? 'bg-violet-500'
                       : isWeekend    ? 'bg-slate-700/60'
                       : day.contacts > 0 ? 'bg-blue-500/70 group-hover:bg-blue-400'
-                      : 'bg-white/5'
+                      : 'bg-s3/50'
                     }`}
                     style={{ height: `${Math.max(heightPct, day.contacts > 0 ? 4 : 1)}%` }}
                   />
@@ -261,7 +261,7 @@ export function LeadsPerformance({ leads }: Props) {
       </div>
 
       {/* ── BLOCO 3 — Eficiência do funil ──────────────────────────────────── */}
-      <div className="bg-[#0D1117] border border-white/10 rounded-xl p-5">
+      <div className="bg-page border border-line rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-7 h-7 bg-amber-500/15 rounded-lg flex items-center justify-center">
             <Target size={13} className="text-amber-400" />
@@ -307,7 +307,7 @@ export function LeadsPerformance({ leads }: Props) {
                         item.convRate >= 40 ? 'text-amber-400' : 'text-red-400'
                       }`}>{item.convRate}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-s3/70 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
                           item.convRate >= 70 ? 'bg-emerald-500' :

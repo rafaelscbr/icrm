@@ -73,7 +73,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
             value: total.toString(),
             sub: 'no portfólio',
             icon: <Building2 size={15} />,
-            color: 'text-indigo-400',
+            color: 'text-brand',
             bg: 'bg-indigo-500/10',
           },
           {
@@ -129,7 +129,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
                   <div className="w-32 shrink-0">
                     <p className="text-xs text-slate-300 truncate">{region}</p>
                   </div>
-                  <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-indigo-500 rounded-full transition-all duration-500"
                       style={{ width: `${barPct}%` }}
@@ -211,7 +211,7 @@ export function PropertiesPage() {
             value={query}
             onChange={e => { setQuery(e.target.value) }}
             placeholder="Buscar imóvel ou bairro..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -222,8 +222,8 @@ export function PropertiesPage() {
               className={`
                 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
                 ${activeStatus === opt.value && !query
-                  ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                  ? 'bg-brand-tint border-brand/40 text-brand-text'
+                  : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
                 }
               `}
             >
@@ -236,7 +236,7 @@ export function PropertiesPage() {
               flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
               ${onlyWithTasks
                 ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
-                : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
               }
             `}
           >
@@ -263,7 +263,7 @@ export function PropertiesPage() {
                 {/* Image (clicável) */}
                 <div
                   onClick={() => setViewProperty(p)}
-                  className="h-36 bg-white/3 flex items-center justify-center flex-shrink-0 cursor-pointer"
+                  className="h-36 bg-s2/50 flex items-center justify-center flex-shrink-0 cursor-pointer"
                 >
                   {p.images[0] ? (
                     <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
@@ -281,7 +281,7 @@ export function PropertiesPage() {
                     <p className="text-sm font-semibold text-slate-100 mb-0.5">
                       {p.name}
                       {p.unit && (
-                        <span className="ml-2 text-xs font-normal text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-md">
+                        <span className="ml-2 text-xs font-normal text-brand bg-indigo-500/10 px-1.5 py-0.5 rounded-md">
                           {p.unit}
                         </span>
                       )}
@@ -327,19 +327,19 @@ export function PropertiesPage() {
                     <p className="text-xs text-slate-600 italic line-clamp-2">"{p.notes}"</p>
                   )}
 
-                  <div className="flex gap-2 mt-auto pt-2 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                  <div className="flex gap-2 mt-auto pt-2 border-t border-line" onClick={e => e.stopPropagation()}>
                     {/* Botão tarefas com badge de contagem */}
                     {(() => {
                       const count = tasks.filter(t => t.propertyId === p.id).length
                       return (
                         <button
                           onClick={() => setTasksProperty(p)}
-                          className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer text-xs font-medium border border-white/8 hover:border-indigo-500/30"
+                          className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-500 hover:text-brand transition-colors cursor-pointer text-xs font-medium border border-line hover:border-brand/30"
                           title="Ver tarefas vinculadas"
                         >
                           <ClipboardList size={13} />
                           {count > 0
-                            ? <span className="text-indigo-400 font-bold">{count}</span>
+                            ? <span className="text-brand font-bold">{count}</span>
                             : <span>Tarefas</span>
                           }
                         </button>

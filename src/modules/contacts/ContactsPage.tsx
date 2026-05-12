@@ -102,7 +102,7 @@ export function ContactsPage() {
             value={query}
             onChange={e => { setQuery(e.target.value); setPage(1) }}
             placeholder="Buscar contato..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all min-h-[44px]"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all min-h-[44px]"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">
@@ -113,8 +113,8 @@ export function ContactsPage() {
               className={`
                 flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
                 ${activeTag === opt.value && !query
-                  ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                  ? 'bg-brand-tint border-brand/40 text-brand-text'
+                  : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
                 }
               `}
             >
@@ -127,7 +127,7 @@ export function ContactsPage() {
               flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
               ${onlyWithTasks
                 ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
-                : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
               }
             `}
           >
@@ -152,8 +152,8 @@ export function ContactsPage() {
               key={c.id}
               onClick={() => setViewContact(c)}
               className={`
-                flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/5 row-accent cursor-pointer
-                ${i < paginated.length - 1 ? 'border-b border-white/5' : ''}
+                flex items-center gap-4 px-6 py-4 transition-colors hover:bg-s3/50 row-accent cursor-pointer
+                ${i < paginated.length - 1 ? 'border-b border-line' : ''}
               `}
             >
               <Avatar name={c.name} photoUrl={c.photoUrl} size="md" />
@@ -185,7 +185,7 @@ export function ContactsPage() {
                   return (
                     <button
                       onClick={() => setTasksContact(c)}
-                      className="relative p-2 rounded-lg hover:bg-indigo-500/10 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer"
+                      className="relative p-2 rounded-lg hover:bg-indigo-500/10 text-slate-500 hover:text-brand transition-colors cursor-pointer"
                       title="Ver tarefas vinculadas"
                     >
                       <ClipboardList size={15} />
@@ -208,7 +208,7 @@ export function ContactsPage() {
                 </a>
                 <button
                   onClick={() => { setEditing(c); setFormOpen(true) }}
-                  className="p-2 rounded-lg hover:bg-white/8 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                  className="p-2 rounded-lg hover:bg-s3/70 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
                   title="Editar"
                 >
                   <Pencil size={15} />

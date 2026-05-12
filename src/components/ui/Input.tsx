@@ -3,12 +3,15 @@ import { InputHTMLAttributes, CSSProperties, forwardRef } from 'react'
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
+  hint?: string
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, className = '', style, ...props }, ref) => {
-    // Garante tema escuro em inputs de data/hora no Safari (evita fundo branco)
-    const isDateOrTime = props.type === 'date' || props.type === 'time' || props.type === 'datetime-local'
+  ({ label, error, hint, className = '', style, ...props }, ref) => {
+    const isDateOrTime =
+      props.type === 'date' ||
+      props.type === 'time' ||
+      props.type === 'datetime-local'
     const mergedStyle: CSSProperties = isDateOrTime
       ? { colorScheme: 'dark', ...style }
       : (style ?? {})
@@ -16,9 +19,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
             {label}
-            {props.required && <span className="text-red-400 ml-1">*</span>}
+            {props.required && <span className="text-error ml-1">*</span>}
           </label>
         )}
         <input
@@ -26,15 +29,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
           style={mergedStyle}
           className={`
-            w-full bg-white/5 border rounded-xl px-3 py-3 text-sm text-slate-100 min-h-[44px]
-            placeholder:text-slate-600
-            focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50
+            w-full bg-surface border rounded-lg px-3 py-2.5 text-sm text-t1 min-h-[40px]
+            placeholder:text-t4
+            focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand
+            hover:border-line-strong
             transition-all duration-150
-            ${error ? 'border-red-500/50' : 'border-white/10 hover:border-white/20'}
+            ${error ? 'border-error-line ring-1 ring-error/20' : 'border-line-input'}
             ${className}
           `}
         />
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {hint && !error && <p className="text-xs text-t4">{hint}</p>}
+        {error && <p className="text-xs text-error">{error}</p>}
       </div>
     )
   }

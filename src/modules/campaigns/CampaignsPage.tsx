@@ -66,7 +66,7 @@ export function CampaignsPage() {
       </div>
 
       {/* Abas principais */}
-      <div className="flex items-center gap-1 mb-6 bg-white/3 border border-white/8 rounded-xl p-1 w-fit">
+      <div className="flex items-center gap-1 mb-6 bg-s2/50 border border-line rounded-xl p-1 w-fit">
         {([
           { value: 'campanhas',   label: 'Campanhas',  icon: <Megaphone size={13} /> },
           { value: 'performance', label: 'Performance', icon: <Zap       size={13} /> },
@@ -96,7 +96,7 @@ export function CampaignsPage() {
       {campaigns.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Campanhas ativas',   value: totalActive,    color: 'text-indigo-400'  },
+            { label: 'Campanhas ativas',   value: totalActive,    color: 'text-brand'  },
             { label: 'Leads na base',      value: totalLeads,     color: 'text-blue-400'    },
             { label: 'Leads acionados',    value: totalContacted, color: 'text-cyan-400'    },
             { label: 'Convertidos (venda)',value: totalSales,     color: 'text-green-400'   },
@@ -129,12 +129,12 @@ export function CampaignsPage() {
             const statusCfg     = STATUS_CONFIG[c.status]
 
             return (
-              <Card key={c.id} className="group flex flex-col gap-4 hover:border-indigo-500/20 transition-all duration-200 border border-white/5">
+              <Card key={c.id} className="group flex flex-col gap-4 hover:border-brand/25 transition-all duration-200 border border-line">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-9 h-9 bg-indigo-500/15 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Megaphone size={15} className="text-indigo-400" />
+                    <div className="w-9 h-9 bg-brand-tint rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Megaphone size={15} className="text-brand" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-200 truncate">{c.name}</p>
@@ -145,12 +145,12 @@ export function CampaignsPage() {
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <button onClick={() => setStatus(c.id, c.status === 'active' ? 'paused' : 'active')}
-                      className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
                       title={c.status === 'active' ? 'Pausar' : 'Reativar'}>
                       {c.status === 'active' ? <Pause size={13} /> : <Play size={13} />}
                     </button>
                     <button onClick={() => setEditCampaign(c)}
-                      className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
+                      className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
                       <Pencil size={13} />
                     </button>
                     <button onClick={() => setDeleteCampaign(c)}
@@ -167,7 +167,7 @@ export function CampaignsPage() {
                     { icon: <TrendingUp size={11} />, label: 'Acionados', value: `${contactRate}%`,   color: 'text-blue-400'  },
                     { icon: <CheckCheck size={11} />, label: 'Vendas',    value: sales,               color: 'text-green-400' },
                   ].map(s => (
-                    <div key={s.label} className="flex flex-col items-center py-2 bg-white/3 rounded-xl border border-white/5">
+                    <div key={s.label} className="flex flex-col items-center py-2 bg-s2/50 rounded-xl border border-line">
                       <span className="text-slate-600 mb-1">{s.icon}</span>
                       <span className={`text-sm font-bold tabular-nums ${s.color}`}>{s.value}</span>
                       <span className="text-[10px] text-slate-600">{s.label}</span>
@@ -182,7 +182,7 @@ export function CampaignsPage() {
                       <span className="text-slate-600">Avanço no funil</span>
                       <span className="text-slate-500 tabular-nums">{inFunnel}/{campaignLeads.length}</span>
                     </div>
-                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
                         style={{ width: `${campaignLeads.length > 0 ? Math.round(inFunnel/campaignLeads.length*100) : 0}%` }}
@@ -192,16 +192,16 @@ export function CampaignsPage() {
                 )}
 
                 {/* CTA */}
-                <div className="flex gap-2 pt-1 border-t border-white/5">
+                <div className="flex gap-2 pt-1 border-t border-line">
                   <button
                     onClick={() => setSelectedId(c.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/8 transition-all cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-brand hover:text-brand-text hover:bg-indigo-500/8 transition-all cursor-pointer"
                   >
                     <Users size={12} /> Ver Leads <ArrowRight size={11} />
                   </button>
                   <button
                     onClick={() => { setSelectedId(c.id) }}
-                    className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-s3/50 transition-all cursor-pointer"
                   >
                     <BarChart3 size={12} />
                   </button>

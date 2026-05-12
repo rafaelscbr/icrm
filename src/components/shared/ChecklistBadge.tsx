@@ -20,7 +20,7 @@ function ProgressRing({ pct, color }: { pct: number; color: string }) {
         <circle
           cx={SIZE / 2} cy={SIZE / 2} r={R}
           fill="none"
-          stroke="rgba(255,255,255,0.07)"
+          stroke="var(--line)"
           strokeWidth={3}
         />
         {/* Progresso */}
@@ -70,10 +70,10 @@ export function ChecklistBadge({ checklist, size = 'md' }: ChecklistBadgeProps) 
                 : pct >= 0.33   ? 'text-indigo-400'
                 :                 'text-slate-500'
 
-  const bgCls   = allDone       ? 'bg-green-500/10  border-green-500/25'
-                : pct >= 0.66   ? 'bg-violet-500/10 border-violet-500/25'
-                : pct >= 0.33   ? 'bg-indigo-500/10 border-indigo-500/20'
-                :                 'bg-white/4       border-white/10'
+  const bgCls   = allDone       ? 'bg-success-bg  border-success-line'
+                : pct >= 0.66   ? 'bg-purple-500/10 border-purple-500/25'
+                : pct >= 0.33   ? 'bg-brand-tint border-brand/20'
+                :                 'bg-s2 border-line'
 
   return (
     <div className={`inline-flex items-center gap-1.5 rounded-xl border ${bgCls}
@@ -83,7 +83,7 @@ export function ChecklistBadge({ checklist, size = 'md' }: ChecklistBadgeProps) 
         <span className={`font-bold tabular-nums ${textCls} ${size === 'sm' ? 'text-[10px]' : 'text-xs'}`}>
           {done}/{total}
         </span>
-        <span className="text-[9px] text-slate-600 mt-0.5">
+        <span className="text-[9px] text-t4 mt-0.5">
           {allDone ? 'completo ✓' : 'checklist'}
         </span>
       </div>

@@ -103,7 +103,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-16 h-16 rounded-full bg-s3/50 border border-line flex items-center justify-center overflow-hidden hover:bg-s3/70 transition-colors cursor-pointer"
           >
             {photoUrl ? (
               <img src={photoUrl} alt="foto" className="w-full h-full object-cover" />
@@ -112,7 +112,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
             )}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
-          <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-indigo-400 hover:text-indigo-300 cursor-pointer">
+          <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-brand hover:text-brand-text cursor-pointer">
             {photoUrl ? 'Alterar foto' : 'Adicionar foto'}
           </button>
         </div>
@@ -177,8 +177,8 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
                 className={`
                   px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
                   ${tags.includes(opt.value)
-                    ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                    : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20'
+                    ? 'bg-brand-tint border-brand/40 text-brand-text'
+                    : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
                   }
                 `}
               >
@@ -189,7 +189,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
         </div>
 
         {/* Divider */}
-        <div className="border-t border-white/8" />
+        <div className="border-t border-line" />
 
         {/* Casado */}
         <div className="flex flex-col gap-3">

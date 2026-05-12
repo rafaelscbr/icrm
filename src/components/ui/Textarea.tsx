@@ -3,31 +3,35 @@ import { TextareaHTMLAttributes, forwardRef } from 'react'
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string
   error?: string
+  hint?: string
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, className = '', ...props }, ref) => {
+  ({ label, error, hint, className = '', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
             {label}
-            {props.required && <span className="text-red-400 ml-1">*</span>}
+            {props.required && <span className="text-error ml-1">*</span>}
           </label>
         )}
         <textarea
           ref={ref}
           {...props}
+          style={{ backgroundColor: 'var(--surface)', color: 'var(--t1)' }}
           className={`
-            w-full bg-white/5 border rounded-xl px-3 py-3 text-sm text-slate-100
-            placeholder:text-slate-600
-            focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50
+            w-full border rounded-lg px-3 py-2.5 text-sm
+            placeholder:text-t4
+            focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand
+            hover:border-line-strong
             transition-all duration-150 resize-none
-            ${error ? 'border-red-500/50' : 'border-white/10 hover:border-white/20'}
+            ${error ? 'border-error-line ring-1 ring-error/20' : 'border-line-input'}
             ${className}
           `}
         />
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {hint && !error && <p className="text-xs text-t4">{hint}</p>}
+        {error && <p className="text-xs text-error">{error}</p>}
       </div>
     )
   }

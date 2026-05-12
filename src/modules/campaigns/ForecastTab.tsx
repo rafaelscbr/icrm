@@ -72,7 +72,7 @@ function Stepper({ value, onChange }: { value: number; onChange: (v: number) => 
       onBlur={() => commit(raw)}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') commit(raw) }}
       style={{ colorScheme: 'dark' }}
-      className="w-14 text-center text-sm font-bold text-indigo-300 border border-indigo-500/60 rounded-lg py-1 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+      className="w-14 text-center text-sm font-bold text-brand-text border border-indigo-500/60 rounded-lg py-1 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
     />
   )
 
@@ -80,20 +80,20 @@ function Stepper({ value, onChange }: { value: number; onChange: (v: number) => 
     <div className="flex items-center gap-1.5">
       <button
         onClick={() => onChange(Math.max(0, value - 1))}
-        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 border border-white/8 text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
+        className="w-7 h-7 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
       >
         <Minus size={11} />
       </button>
       <button
         onClick={() => { setRaw(String(value)); setEditing(true) }}
         title="Clique para digitar"
-        className="min-w-[3.5rem] text-center text-sm font-bold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/18 border border-indigo-500/25 rounded-lg px-2 py-1 transition-colors cursor-pointer"
+        className="min-w-[3.5rem] text-center text-sm font-bold text-brand-text bg-indigo-500/10 hover:bg-indigo-500/18 border border-indigo-500/25 rounded-lg px-2 py-1 transition-colors cursor-pointer"
       >
         {value}%
       </button>
       <button
         onClick={() => onChange(Math.min(100, value + 1))}
-        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 border border-white/8 text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
+        className="w-7 h-7 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
       >
         <Plus size={11} />
       </button>
@@ -247,8 +247,8 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
       label:       'Apresentação',
       sublabel:    null,
       dotColor:    'bg-indigo-500',
-      textColor:   'text-indigo-300',
-      borderColor: 'border-indigo-500/20',
+      textColor:   'text-brand-text',
+      borderColor: 'border-brand/25',
       bgColor:     'bg-indigo-500/5',
       realCount:   count.presentation,
       projIn:      projAfter.presentation,
@@ -281,7 +281,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Ticket Médio</p>
             {!editingTicket && (
-              <button onClick={() => setEditingTicket(true)} className="p-1 rounded-lg text-slate-600 hover:text-slate-300 hover:bg-white/5 transition-colors cursor-pointer">
+              <button onClick={() => setEditingTicket(true)} className="p-1 rounded-lg text-slate-600 hover:text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer">
                 <Pencil size={12} />
               </button>
             )}
@@ -301,7 +301,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                 />
               </div>
               <button onClick={saveTicket} className="p-1.5 rounded-lg bg-green-500/15 hover:bg-green-500/25 text-green-400 cursor-pointer transition-colors"><Check size={13} /></button>
-              <button onClick={() => { setEditingTicket(false); setTicketRaw(campaign.averageTicket ? fmtBRLInput(campaign.averageTicket) : '') }} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-500 cursor-pointer transition-colors"><X size={13} /></button>
+              <button onClick={() => { setEditingTicket(false); setTicketRaw(campaign.averageTicket ? fmtBRLInput(campaign.averageTicket) : '') }} className="p-1.5 rounded-lg bg-s3/50 hover:bg-s3/70 text-slate-500 cursor-pointer transition-colors"><X size={13} /></button>
             </div>
           ) : (
             <p className={`text-2xl font-bold tabular-nums ${hasTicket ? 'text-slate-100' : 'text-slate-600'}`}>
@@ -322,8 +322,8 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
 
         {/* VGV esperado */}
         <Card accent="indigo" className="flex flex-col gap-3">
-          <p className="text-[10px] font-semibold text-indigo-400/70 uppercase tracking-wider">VGV Esperado</p>
-          <p className={`text-2xl font-bold tabular-nums ${hasTicket ? 'text-indigo-300' : 'text-slate-600'}`}>
+          <p className="text-[10px] font-semibold text-brand/70 uppercase tracking-wider">VGV Esperado</p>
+          <p className={`text-2xl font-bold tabular-nums ${hasTicket ? 'text-brand-text' : 'text-slate-600'}`}>
             {hasTicket ? fmtCompact(totalVGV) : '—'}
           </p>
           <p className="text-[11px] text-slate-600">{hasTicket ? `${fmtLeads(totalSales)} vendas × ${fmtFull(ticket)}` : 'Defina o ticket médio'}</p>
@@ -343,19 +343,19 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
       {/* ── Funil cascata ──────────────────────────────────────────────────── */}
       <Card className="!p-0 overflow-hidden">
 
-        <div className="px-5 py-4 border-b border-white/8 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-line flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-slate-200">Funil de Previsibilidade</h3>
             <p className="text-[11px] text-slate-600 mt-0.5">Cada taxa aplica sobre o resultado da etapa anterior em cascata</p>
           </div>
           <div className="flex items-center gap-2">
             {hasCustomRates && (
-              <button onClick={resetRates} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-white/5 hover:bg-white/8 border border-white/10 rounded-xl px-3 py-1.5 transition-all cursor-pointer">
+              <button onClick={resetRates} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-1.5 transition-all cursor-pointer">
                 <RotateCcw size={11} /> Sugeridas
               </button>
             )}
             {dirty && (
-              <button onClick={saveRates} className="flex items-center gap-1.5 text-xs text-indigo-300 hover:text-indigo-200 bg-indigo-500/15 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl px-3 py-1.5 transition-all cursor-pointer">
+              <button onClick={saveRates} className="flex items-center gap-1.5 text-xs text-brand-text hover:text-indigo-200 bg-brand-tint hover:bg-brand-tint border border-brand/30 rounded-xl px-3 py-1.5 transition-all cursor-pointer">
                 <Save size={11} /> Salvar taxas
               </button>
             )}
@@ -388,7 +388,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
 
                 {/* Projeção entrada (exceto topo) */}
                 {block.projIn !== null && (
-                  <div className="text-right flex-shrink-0 pl-3 border-l border-white/8">
+                  <div className="text-right flex-shrink-0 pl-3 border-l border-line">
                     <p className="text-[10px] text-slate-600 mb-0.5">proj. da base</p>
                     <p className="text-sm font-semibold tabular-nums text-slate-400">
                       {fmtLeads(block.projIn)}
@@ -401,13 +401,13 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
               <div className="flex items-center gap-0 my-1.5 pl-4">
                 {/* Linha vertical */}
                 <div className="flex flex-col items-center w-8 flex-shrink-0">
-                  <div className="w-px h-3 bg-white/10" />
+                  <div className="w-px h-3 bg-s3/70" />
                   <ArrowDown size={12} className="text-slate-600" />
-                  <div className="w-px h-3 bg-white/10" />
+                  <div className="w-px h-3 bg-s3/70" />
                 </div>
 
                 {/* Taxa + label + resultado projetado */}
-                <div className="flex items-center gap-3 flex-1 bg-white/2 border border-white/6 rounded-xl px-4 py-2.5">
+                <div className="flex items-center gap-3 flex-1 bg-s2/30 border border-line rounded-xl px-4 py-2.5">
                   <Stepper
                     value={rates[block.transitionKey]}
                     onChange={v => handleRate(block.transitionKey, v)}
@@ -483,7 +483,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
             {hasTicket && (
               <div className="text-right flex-shrink-0 pl-3 border-l border-green-500/20">
                 <p className="text-[10px] text-slate-500 mb-0.5">VGV esperado</p>
-                <p className="text-xl font-bold tabular-nums text-indigo-300">{fmtCompact(totalVGV)}</p>
+                <p className="text-xl font-bold tabular-nums text-brand-text">{fmtCompact(totalVGV)}</p>
               </div>
             )}
           </div>
@@ -491,11 +491,11 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         </div>
 
         {/* Rodapé info */}
-        <div className="px-5 py-3 border-t border-white/8 flex items-center gap-2">
+        <div className="px-5 py-3 border-t border-line flex items-center gap-2">
           <Sparkles size={11} className="text-indigo-500/60 flex-shrink-0" />
           <p className="text-[11px] text-slate-600">
             Projeção calculada em cascata. "Acumulado" exibe todos os leads que já passaram ou estão na etapa. Leads avançados contribuem com as taxas restantes.
-            {hasCustomRates && <span className="text-indigo-400/80"> Taxas personalizadas ativas.</span>}
+            {hasCustomRates && <span className="text-brand/80"> Taxas personalizadas ativas.</span>}
           </p>
         </div>
       </Card>

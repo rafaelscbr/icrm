@@ -33,7 +33,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const STATUS_CONFIG = {
-  pending:   { icon: Circle,        color: 'text-indigo-400', label: 'Pendente'  },
+  pending:   { icon: Circle,        color: 'text-brand', label: 'Pendente'  },
   done:      { icon: CheckCircle2,  color: 'text-green-400',  label: 'Concluída' },
   cancelled: { icon: AlertTriangle, color: 'text-slate-500',  label: 'Cancelada' },
 }
@@ -84,7 +84,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           </div>
         )}
         {!property.images[0] && (
-          <div className="w-full h-28 rounded-xl bg-white/3 border border-white/8 flex items-center justify-center -mt-1">
+          <div className="w-full h-28 rounded-xl bg-s2/50 border border-line flex items-center justify-center -mt-1">
             <ImageOff size={24} className="text-slate-600" />
           </div>
         )}
@@ -94,7 +94,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-bold text-slate-100">{property.name}</h2>
               {property.unit && (
-                <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md font-medium">
+                <span className="text-xs text-brand bg-indigo-500/10 px-2 py-0.5 rounded-md font-medium">
                   {property.unit}
                 </span>
               )}
@@ -113,7 +113,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         {/* Specs + financeiro */}
         <div className="grid grid-cols-2 gap-3">
           {(property.bedrooms || property.suites || property.areaSqm) && (
-            <div className="flex flex-col gap-2 px-3 py-3 bg-white/3 rounded-xl border border-white/5">
+            <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Características</p>
               <div className="flex flex-col gap-1">
                 {property.bedrooms && (
@@ -138,7 +138,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
             </div>
           )}
 
-          <div className="flex flex-col gap-2 px-3 py-3 bg-white/3 rounded-xl border border-white/5">
+          <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Financeiro</p>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1.5 text-xs">
@@ -158,8 +158,8 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
 
         {/* Proprietário */}
         {owner && (
-          <div className="flex items-center gap-3 px-3 py-2.5 bg-white/3 rounded-xl border border-white/5">
-            <User size={13} className="text-indigo-400 flex-shrink-0" />
+          <div className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
+            <User size={13} className="text-brand flex-shrink-0" />
             <div>
               <p className="text-[10px] text-slate-500">Proprietário</p>
               <p className="text-xs font-medium text-slate-200">{owner.name}</p>
@@ -169,7 +169,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
 
         {/* Notas */}
         {property.notes && (
-          <div className="px-3 py-2.5 bg-white/3 rounded-xl border border-white/5">
+          <div className="px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
             <p className="text-[10px] text-slate-500 mb-1">Observações</p>
             <p className="text-xs text-slate-300 leading-relaxed">{property.notes}</p>
           </div>
@@ -190,7 +190,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
                 const client = contacts.find(c => c.id === sale.clientId)
                 const { brokerCommission } = calcSaleCommissions(sale)
                 return (
-                  <div key={sale.id} className="flex items-center gap-3 px-3 py-2.5 bg-white/3 rounded-xl border border-white/5">
+                  <div key={sale.id} className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-slate-200">{client?.name ?? '—'}</p>
                     </div>
@@ -212,12 +212,12 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         <div>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Clock size={13} className="text-indigo-400" />
+              <Clock size={13} className="text-brand" />
               <h3 className="text-sm font-semibold text-slate-300">Tarefas vinculadas</h3>
             </div>
             <div className="flex gap-2 text-[10px]">
               {pendingTasks.length > 0 && (
-                <span className="bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full font-medium border border-indigo-500/20">
+                <span className="bg-brand-tint text-brand px-2 py-0.5 rounded-full font-medium border border-brand/25">
                   {pendingTasks.length} pendente{pendingTasks.length > 1 ? 's' : ''}
                 </span>
               )}
@@ -240,7 +240,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
                   <div
                     key={task.id}
                     className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border transition-all
-                      ${task.status === 'done' ? 'bg-white/2 border-white/5 opacity-60' : 'bg-white/3 border-white/8'}
+                      ${task.status === 'done' ? 'bg-s2/30 border-line opacity-60' : 'bg-s2/50 border-line'}
                     `}
                   >
                     <Icon size={13} className={`${cfg.color} flex-shrink-0 mt-0.5`} />

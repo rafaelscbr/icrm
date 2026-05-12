@@ -209,15 +209,15 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
           {templateStats.map(item => (
             <div
               key={item.idx}
-              className="flex flex-col gap-2 p-3 rounded-xl bg-white/3 border border-white/5"
+              className="flex flex-col gap-2 p-3 rounded-xl bg-s2/50 border border-line"
             >
               {/* Label do template + badge de leads */}
               <div className="flex items-center gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-[11px] font-bold flex items-center justify-center">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-tint text-brand text-[11px] font-bold flex items-center justify-center">
                   {item.idx + 1}
                 </span>
                 <span className="flex-1 text-xs font-semibold text-slate-300">{item.label}</span>
-                <span className="flex-shrink-0 text-[11px] font-semibold bg-white/8 text-slate-300 px-2 py-0.5 rounded-full whitespace-nowrap">
+                <span className="flex-shrink-0 text-[11px] font-semibold bg-s3/70 text-slate-300 px-2 py-0.5 rounded-full whitespace-nowrap">
                   {item.total} lead{item.total !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -239,7 +239,7 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
 
               {/* Progress bar + percentage */}
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full bg-white/8 overflow-hidden">
+                <div className="flex-1 h-1.5 rounded-full bg-s3/70 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-green-500 transition-all"
                     style={{ width: `${item.rate}%` }}
@@ -333,7 +333,7 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
             <h2 className="text-sm font-semibold text-slate-300 mb-4">Situação dos leads</h2>
             <div className="flex flex-col gap-2">
               {situationData.map(s => (
-                <div key={s.value} className="flex items-center gap-2 py-2 px-3 rounded-xl bg-white/3 border border-white/5">
+                <div key={s.value} className="flex items-center gap-2 py-2 px-3 rounded-xl bg-s2/50 border border-line">
                   <span className={`flex-1 text-xs ${s.color}`}>{s.label}</span>
                   <span className="text-sm font-bold tabular-nums text-slate-200">{s.count}</span>
                   <span className="text-[10px] text-slate-600 w-8 text-right">
@@ -341,7 +341,7 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
                   </span>
                 </div>
               ))}
-              <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-white/3 border border-white/5">
+              <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-s2/50 border border-line">
                 <span className="flex-1 text-xs text-slate-400">Sem situação</span>
                 <span className="text-sm font-bold tabular-nums text-slate-200">
                   {leads.filter(l => !l.situation).length}
@@ -353,14 +353,14 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
           <Card>
             <h2 className="text-sm font-semibold text-slate-300 mb-4">Volume financeiro</h2>
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between py-2 border-b border-white/8">
+              <div className="flex items-center justify-between py-2 border-b border-line">
                 <span className="text-xs text-slate-400">Propostas abertas</span>
                 <div className="text-right">
                   <p className="text-sm font-bold text-amber-400 tabular-nums">{proposals}</p>
                   {proposalValue > 0 && <p className="text-[10px] text-slate-500">{formatCurrency(proposalValue)}</p>}
                 </div>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-white/8">
+              <div className="flex items-center justify-between py-2 border-b border-line">
                 <span className="text-xs text-slate-400">Vendas convertidas</span>
                 <p className="text-sm font-bold text-green-400 tabular-nums">{sales}</p>
               </div>

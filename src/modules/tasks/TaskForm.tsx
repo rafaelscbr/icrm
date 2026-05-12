@@ -41,7 +41,7 @@ const CATEGORY_OPTIONS: { value: TaskCategory; label: string }[] = [
 
 // Classes base para inputs inline (busca de contato/imóvel)
 const inputBase =
-  'w-full bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-150'
+  'w-full bg-s3/50 border border-line hover:border-line-strong rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-150'
 
 function todayStr() { return localDateStr() }
 
@@ -241,15 +241,15 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             onClick={e => { if (!calendarUrl) { e.preventDefault(); toast.error('Preencha o título para adicionar ao Google Agenda') } }}
             className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all group no-underline
               ${calendarUrl
-                ? 'border-white/10 hover:border-indigo-500/40 hover:bg-indigo-500/5 cursor-pointer'
-                : 'border-white/5 opacity-40 cursor-not-allowed'
+                ? 'border-line hover:border-brand/40 hover:bg-indigo-500/5 cursor-pointer'
+                : 'border-line opacity-40 cursor-not-allowed'
               }`}
           >
-            <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-              <Calendar size={14} className="text-indigo-400" />
+            <div className="w-7 h-7 rounded-lg bg-s3/50 flex items-center justify-center flex-shrink-0">
+              <Calendar size={14} className="text-brand" />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-xs font-medium text-slate-300 group-hover:text-indigo-300 transition-colors">
+              <p className="text-xs font-medium text-slate-300 group-hover:text-brand-text transition-colors">
                 Adicionar ao Google Agenda
               </p>
               <p className="text-xs text-slate-600">
@@ -258,18 +258,18 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                   : 'Preencha o título primeiro'}
               </p>
             </div>
-            <ExternalLink size={13} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
+            <ExternalLink size={13} className="text-slate-600 group-hover:text-brand transition-colors" />
           </a>
 
           {/* Marcar como concluída */}
           <div className={`flex flex-col gap-3 px-4 py-3 rounded-xl border transition-all
-            ${markDone ? 'bg-green-500/8 border-green-500/25' : 'bg-white/3 border-white/8'}`}>
+            ${markDone ? 'bg-green-500/8 border-green-500/25' : 'bg-s2/50 border-line'}`}>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setMarkDone(v => !v)}
                 className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer flex-shrink-0
-                  ${markDone ? 'bg-green-500 border-green-500' : 'border-white/20 hover:border-green-500/50'}`}
+                  ${markDone ? 'bg-green-500 border-green-500' : 'border-line-strong hover:border-green-500/50'}`}
               >
                 {markDone && <CheckCircle2 size={12} className="text-white" />}
               </button>
@@ -300,26 +300,26 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                 if (!showChecklist) setTimeout(() => newItemRef.current?.focus(), 50)
               }}
               className={`flex items-center gap-2 text-xs font-medium transition-colors cursor-pointer mb-3
-                ${showChecklist ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
+                ${showChecklist ? 'text-brand' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <ListChecks size={14} />
               {showChecklist ? 'Checklist' : 'Adicionar checklist'}
               {!showChecklist && checklist.length > 0 && (
-                <span className="text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-md text-[10px] font-bold">
+                <span className="text-brand bg-brand-tint px-1.5 py-0.5 rounded-md text-[10px] font-bold">
                   {checklist.filter(i => i.done).length}/{checklist.length}
                 </span>
               )}
             </button>
 
             {showChecklist && (
-              <div className="flex flex-col gap-2 pl-1 border-l-2 border-indigo-500/20 ml-1">
+              <div className="flex flex-col gap-2 pl-1 border-l-2 border-brand/25 ml-1">
                 {/* Progress bar */}
                 {checklist.length > 0 && (() => {
                   const done = checklist.filter(i => i.done).length
                   const pct  = Math.round((done / checklist.length) * 100)
                   return (
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${pct === 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
                           style={{ width: `${pct}%` }}
@@ -360,7 +360,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
 
                 {/* New item input */}
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="w-4 h-4 rounded border border-white/15 flex-shrink-0" />
+                  <div className="w-4 h-4 rounded border border-line-input flex-shrink-0" />
                   <input
                     ref={newItemRef}
                     value={newItemText}
@@ -386,7 +386,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                       setNewItemText('')
                       newItemRef.current?.focus()
                     }}
-                    className="text-indigo-500 hover:text-indigo-400 transition-colors cursor-pointer p-1 rounded-lg hover:bg-indigo-500/10"
+                    className="text-indigo-500 hover:text-brand transition-colors cursor-pointer p-1 rounded-lg hover:bg-indigo-500/10"
                   >
                     <Plus size={13} />
                   </button>
@@ -407,7 +407,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             </button>
 
             {showOptional && (
-              <div className="flex flex-col gap-4 pl-1 border-l-2 border-white/8 ml-1">
+              <div className="flex flex-col gap-4 pl-1 border-l-2 border-line ml-1">
 
                 {/* Busca de contato */}
                 <div className="flex flex-col gap-1.5 relative">
@@ -432,13 +432,13 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                     </button>
                   )}
                   {showContactDrop && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
                       {filteredContacts.map(c => (
                         <button key={c.id} type="button"
                           onMouseDown={() => { setContactId(c.id); setContactSearch(c.name); setShowContactDrop(false) }}
-                          className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-2"
+                          className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer flex items-center gap-2"
                         >
-                          <div className="w-5 h-5 bg-indigo-500/20 rounded-full flex items-center justify-center text-[10px] font-bold text-indigo-300 flex-shrink-0">
+                          <div className="w-5 h-5 bg-brand-tint rounded-full flex items-center justify-center text-[10px] font-bold text-brand-text flex-shrink-0">
                             {c.name[0].toUpperCase()}
                           </div>
                           <span>{c.name}</span>
@@ -448,7 +448,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                       <button
                         type="button"
                         onMouseDown={() => { setShowContactDrop(false); setNewContactOpen(true) }}
-                        className="w-full text-left px-4 py-2.5 text-xs text-indigo-400 hover:bg-indigo-500/10 border-t border-white/5 flex items-center gap-2 transition-colors cursor-pointer"
+                        className="w-full text-left px-4 py-2.5 text-xs text-brand hover:bg-indigo-500/10 border-t border-line flex items-center gap-2 transition-colors cursor-pointer"
                       >
                         <Plus size={12} /> Criar novo contato
                       </button>
@@ -479,11 +479,11 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                     </button>
                   )}
                   {showPropertyDrop && filteredProperties.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1117] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
                       {filteredProperties.map(p => (
                         <button key={p.id} type="button"
                           onMouseDown={() => { setPropertyId(p.id); setPropertySearch(p.name); setShowPropertyDrop(false) }}
-                          className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors cursor-pointer"
+                          className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer"
                         >
                           {p.name}
                           <span className="text-slate-600 ml-2 text-xs">{p.neighborhood}</span>

@@ -17,8 +17,8 @@ const TYPE_CONFIG: Record<LeadInteractionType, {
   whatsapp:     { label: 'WhatsApp',    Icon: MessageCircle, color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25'  },
   email:        { label: 'Email',       Icon: Mail,          color: 'text-sky-400',    bg: 'bg-sky-500/10',    border: 'border-sky-500/25'    },
   visita:       { label: 'Visita',      Icon: Home,          color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25'  },
-  reuniao:      { label: 'Reunião',     Icon: Users,         color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25' },
-  nota:         { label: 'Nota',        Icon: FileText,      color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/25'  },
+  reuniao:      { label: 'Reunião',     Icon: Users,         color: 'text-brand', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25' },
+  nota:         { label: 'Nota',        Icon: FileText,      color: 'text-t2',         bg: 'bg-slate-500/10',  border: 'border-slate-500/25'  },
   stage_change: { label: 'Etapa',       Icon: ArrowRight,    color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/25' },
   discard:      { label: 'Descartado',  Icon: XCircle,       color: 'text-rose-400',   bg: 'bg-rose-500/10',   border: 'border-rose-500/25'   },
 }
@@ -120,14 +120,14 @@ export function LeadTimeline({ leadId }: Props) {
       ) : (
 
         /* ── Form ────────────────────────────────────────────────────────── */
-        <div className="rounded-xl border border-white/10 overflow-hidden">
+        <div className="rounded-xl border border-line overflow-hidden">
 
           {/* Form header */}
-          <div className="px-4 py-3 bg-white/3 border-b border-white/8 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Nova Interação</span>
+          <div className="px-4 py-3 bg-s2/50 border-b border-line flex items-center justify-between">
+            <span className="text-xs font-semibold text-t2 uppercase tracking-wider">Nova Interação</span>
             <button
               onClick={() => setShowForm(false)}
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-xs text-t3 hover:text-t2 transition-colors"
             >
               Cancelar
             </button>
@@ -137,7 +137,7 @@ export function LeadTimeline({ leadId }: Props) {
 
             {/* Tipo */}
             <div>
-              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-2.5">Tipo de contato</p>
+              <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest mb-2.5">Tipo de contato</p>
               <div className="grid grid-cols-3 gap-2">
                 {TYPES.map(t => {
                   const c = TYPE_CONFIG[t]
@@ -149,7 +149,7 @@ export function LeadTimeline({ leadId }: Props) {
                       className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border text-xs font-medium transition-all ${
                         isSelected
                           ? `${c.bg} ${c.border} ${c.color}`
-                          : 'bg-white/2 border-white/8 text-slate-500 hover:text-slate-300 hover:border-white/15 hover:bg-white/4'
+                          : 'bg-s2/50 border-line text-t3 hover:text-t2 hover:border-line-input hover:bg-s2'
                       }`}
                     >
                       <c.Icon size={15} />
@@ -162,14 +162,14 @@ export function LeadTimeline({ leadId }: Props) {
 
             {/* Data e hora */}
             <div>
-              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-2">Data e hora</p>
+              <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest mb-2">Data e hora</p>
               <div className="relative">
-                <Clock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                <Clock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-t3 pointer-events-none" />
                 <input
                   type="datetime-local"
                   value={datetime}
                   onChange={e => setDatetime(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-all [color-scheme:dark]"
+                  className="w-full pl-10 pr-3 py-2.5 bg-s3/50 border border-line rounded-xl text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-all [color-scheme:dark]"
                 />
               </div>
             </div>
@@ -177,8 +177,8 @@ export function LeadTimeline({ leadId }: Props) {
             {/* Resultado */}
             <div>
               <div className="flex items-baseline gap-2 mb-2.5">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">Resultado</p>
-                <span className="text-[11px] text-slate-700">(opcional)</span>
+                <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest">Resultado</p>
+                <span className="text-[11px] text-t4">(opcional)</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {OUTCOMES.map(o => {
@@ -191,7 +191,7 @@ export function LeadTimeline({ leadId }: Props) {
                       className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
                         isSelected
                           ? `${c.bg} ${c.border} ${c.color}`
-                          : 'bg-white/3 border-white/8 text-slate-500 hover:text-slate-300 hover:border-white/15 hover:bg-white/5'
+                          : 'bg-s2/50 border-line text-t3 hover:text-t2 hover:border-line-input hover:bg-s3/50'
                       }`}
                     >
                       {c.label}
@@ -204,15 +204,15 @@ export function LeadTimeline({ leadId }: Props) {
             {/* Observações */}
             <div>
               <div className="flex items-baseline gap-2 mb-2">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">Observações</p>
-                <span className="text-[11px] text-slate-700">(opcional)</span>
+                <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest">Observações</p>
+                <span className="text-[11px] text-t4">(opcional)</span>
               </div>
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
                 placeholder={`Detalhes sobre a ${selectedType.label.toLowerCase()}…`}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 resize-none transition-all leading-relaxed"
+                className="w-full bg-s3/50 border border-line rounded-xl px-3.5 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 resize-none transition-all leading-relaxed"
               />
             </div>
 
@@ -232,26 +232,26 @@ export function LeadTimeline({ leadId }: Props) {
       {/* ── Timeline list ─────────────────────────────────────────────────── */}
       {!isLoaded ? (
         <div className="flex flex-col items-center justify-center py-12 gap-2">
-          <Loader2 size={18} className="animate-spin text-slate-600" />
-          <span className="text-xs text-slate-700">Carregando histórico…</span>
+          <Loader2 size={18} className="animate-spin text-t4" />
+          <span className="text-xs text-t4">Carregando histórico…</span>
         </div>
       ) : interactions.length === 0 ? (
         <div className="text-center py-12 space-y-1">
-          <div className="w-10 h-10 rounded-xl bg-white/4 border border-white/8 flex items-center justify-center mx-auto mb-3">
-            <Clock size={18} className="text-slate-600" />
+          <div className="w-10 h-10 rounded-xl bg-s2/60 border border-line flex items-center justify-center mx-auto mb-3">
+            <Clock size={18} className="text-t4" />
           </div>
-          <p className="text-sm font-medium text-slate-500">Nenhuma interação registrada</p>
-          <p className="text-xs text-slate-700">Registre ligações, visitas e conversas acima</p>
+          <p className="text-sm font-medium text-t3">Nenhuma interação registrada</p>
+          <p className="text-xs text-t4">Registre ligações, visitas e conversas acima</p>
         </div>
       ) : (
         <div>
-          <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-widest mb-4 px-0.5">
+          <p className="text-[11px] font-semibold text-t4 uppercase tracking-widest mb-4 px-0.5">
             {interactions.length} {interactions.length === 1 ? 'interação' : 'interações'}
           </p>
 
           <div className="relative">
             {/* Linha da timeline */}
-            <div className="absolute left-[17px] top-4 bottom-4 w-px bg-white/6" />
+            <div className="absolute left-[17px] top-4 bottom-4 w-px bg-line" />
 
             <div className="space-y-3">
               {interactions.map(item => {
@@ -266,7 +266,7 @@ export function LeadTimeline({ leadId }: Props) {
                     </div>
 
                     {/* Card */}
-                    <div className="flex-1 min-w-0 bg-white/3 hover:bg-white/[0.04] border border-white/8 hover:border-white/12 rounded-xl p-3.5 transition-all">
+                    <div className="flex-1 min-w-0 bg-s2/50 hover:bg-s3/50 border border-line hover:border-line-strong rounded-xl p-3.5 transition-all">
 
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -278,12 +278,12 @@ export function LeadTimeline({ leadId }: Props) {
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className="text-[11px] text-slate-600 whitespace-nowrap">
+                          <span className="text-[11px] text-t4 whitespace-nowrap">
                             {formatInteractionDate(item.interactedAt)}
                           </span>
                           <button
                             onClick={() => handleRemove(item.id)}
-                            className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-slate-700 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-t4 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                           >
                             <Trash2 size={11} />
                           </button>
@@ -291,7 +291,7 @@ export function LeadTimeline({ leadId }: Props) {
                       </div>
 
                       {item.description && (
-                        <p className="text-sm text-slate-400 leading-relaxed">{item.description}</p>
+                        <p className="text-sm text-t2 leading-relaxed">{item.description}</p>
                       )}
                     </div>
                   </div>

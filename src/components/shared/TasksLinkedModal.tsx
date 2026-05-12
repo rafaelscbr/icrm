@@ -33,13 +33,13 @@ function fmtDate(d?: string) {
 function TaskLine({ task, isLast }: { task: Task; isLast: boolean }) {
   const isDone = task.status === 'done'
   return (
-    <div className={`flex items-start gap-3 py-3 ${!isLast ? 'border-b border-white/5' : ''}`}>
+    <div className={`flex items-start gap-3 py-3 ${!isLast ? 'border-b border-line' : ''}`}>
       {isDone
-        ? <CheckCircle2 size={15} className="text-green-400 mt-0.5 flex-shrink-0" />
-        : <Circle       size={15} className="text-slate-600 mt-0.5 flex-shrink-0" />
+        ? <CheckCircle2 size={15} className="text-success mt-0.5 flex-shrink-0" />
+        : <Circle       size={15} className="text-t4 mt-0.5 flex-shrink-0" />
       }
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}>
+        <p className={`text-sm font-medium ${isDone ? 'line-through text-t3' : 'text-t1'}`}>
           {task.title}
         </p>
         {task.description && (
@@ -128,27 +128,27 @@ export function TasksLinkedModal({
       <Modal isOpen={isOpen} onClose={onClose} title={`Tarefas — ${title}`} size="md">
         {/* Subtitle */}
         {subtitle && (
-          <p className="text-xs text-slate-500 -mt-3 mb-4">{subtitle}</p>
+          <p className="text-xs text-t3 -mt-3 mb-4">{subtitle}</p>
         )}
 
         {/* Stats + Nova tarefa */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-1 p-1 bg-white/5 rounded-xl border border-white/8">
+          <div className="flex gap-1 p-1 rounded-lg" style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}>
             <button
               onClick={() => setTab('pending')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer
-                ${tab === 'pending'
-                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                  : 'text-slate-500 hover:text-slate-300'}`}
+              className="px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
+              style={tab === 'pending'
+                ? { background: 'var(--brand-tint)', color: 'var(--brand-text)', border: '1px solid var(--brand)/25' }
+                : { color: 'var(--t3)', border: '1px solid transparent' }}
             >
               Pendentes ({pending.length})
             </button>
             <button
               onClick={() => setTab('done')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer
-                ${tab === 'done'
-                  ? 'bg-green-500/15 text-green-300 border border-green-500/25'
-                  : 'text-slate-500 hover:text-slate-300'}`}
+              className="px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
+              style={tab === 'done'
+                ? { background: 'var(--success-bg)', color: 'var(--success)', border: '1px solid var(--success-line)' }
+                : { color: 'var(--t3)', border: '1px solid transparent' }}
             >
               Concluídas ({done.length})
             </button>
@@ -156,7 +156,8 @@ export function TasksLinkedModal({
 
           <button
             onClick={() => setNewTaskOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-medium hover:bg-indigo-500/25 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer text-white"
+            style={{ background: 'var(--brand)' }}
           >
             <Plus size={12} /> Nova tarefa
           </button>
@@ -165,19 +166,19 @@ export function TasksLinkedModal({
         {/* Lista */}
         {current.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-2">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2" style={{ background: 'var(--s2)' }}>
               {tab === 'pending'
-                ? <Circle size={18} className="text-slate-600" />
-                : <CheckCircle2 size={18} className="text-slate-600" />
+                ? <Circle size={18} className="text-t4" />
+                : <CheckCircle2 size={18} className="text-t4" />
               }
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-t3">
               {tab === 'pending' ? 'Nenhuma tarefa pendente' : 'Nenhuma tarefa concluída'}
             </p>
             {tab === 'pending' && (
               <button
                 onClick={() => setNewTaskOpen(true)}
-                className="mt-3 text-xs text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                className="mt-3 text-xs text-brand hover:text-brand-dark underline cursor-pointer"
               >
                 Criar primeira tarefa
               </button>
@@ -192,7 +193,7 @@ export function TasksLinkedModal({
                   <p className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider mb-1 ${cfg.color}`}>
                     <CatIcon size={11} /> {cfg.label} · {catTasks.length}
                   </p>
-                  <div className="bg-white/3 rounded-xl px-3">
+                  <div className="rounded-xl px-3" style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}>
                     {catTasks.map((t, i) => (
                       <TaskLine key={t.id} task={t} isLast={i === catTasks.length - 1} />
                     ))}
@@ -206,7 +207,7 @@ export function TasksLinkedModal({
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
                   Sem categoria · {uncategorized.length}
                 </p>
-                <div className="bg-white/3 rounded-xl px-3">
+                <div className="rounded-xl px-3" style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}>
                   {uncategorized.map((t, i) => (
                     <TaskLine key={t.id} task={t} isLast={i === uncategorized.length - 1} />
                   ))}

@@ -26,7 +26,7 @@ const CATEGORY_ICON: Record<GoalCategory, typeof Target> = {
 }
 
 const CATEGORY_COLOR: Record<GoalCategory, { bg: string; text: string; bar: string; border: string }> = {
-  visita:       { bg: 'bg-indigo-500/15',  text: 'text-indigo-400',  bar: 'bg-indigo-500',  border: 'border-indigo-500/30'  },
+  visita:       { bg: 'bg-brand-tint',  text: 'text-brand',  bar: 'bg-indigo-500',  border: 'border-brand/30'  },
   agenciamento: { bg: 'bg-cyan-500/15',    text: 'text-cyan-400',    bar: 'bg-cyan-500',    border: 'border-cyan-500/30'    },
   proposta:     { bg: 'bg-amber-500/15',   text: 'text-amber-400',   bar: 'bg-amber-500',   border: 'border-amber-500/30'   },
   venda:        { bg: 'bg-green-500/15',   text: 'text-green-400',   bar: 'bg-green-500',   border: 'border-green-500/30'   },
@@ -109,8 +109,8 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: { goal: Goal; p
         <ProgressRing value={progress} target={goal.target} category={goal.category} />
       </div>
       <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={onPause} className="flex-1 text-xs text-slate-500 hover:text-slate-300 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">Pausar</button>
-        <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"><Pencil size={13} /></button>
+        <button onClick={onPause} className="flex-1 text-xs text-slate-500 hover:text-slate-300 py-1.5 rounded-lg hover:bg-s3/50 transition-colors cursor-pointer">Pausar</button>
+        <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"><Pencil size={13} /></button>
         <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer"><Trash2 size={13} /></button>
       </div>
     </Card>
@@ -128,7 +128,7 @@ function ProgressBar({ value, target, barClass }: { value: number; target: numbe
         </span>
         <span className="text-xs text-slate-600">{pct}%</span>
       </div>
-      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-2 bg-s3/50 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-green-500' : barClass}`}
           style={{ width: `${pct}%` }}
@@ -158,16 +158,16 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
   const mesOk    = realizadasMes    >= metaMensal
 
   return (
-    <Card className="border border-indigo-500/30">
+    <Card className="border border-brand/30">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-indigo-500/15 rounded-xl flex items-center justify-center">
-            <Footprints size={16} className="text-indigo-400" />
+          <div className="w-9 h-9 bg-brand-tint rounded-xl flex items-center justify-center">
+            <Footprints size={16} className="text-brand" />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-100">Visitas</p>
-            <p className="text-xs text-indigo-400">Meta: {metaSemanal}/semana · {metaMensal}/mês</p>
+            <p className="text-xs text-brand">Meta: {metaSemanal}/semana · {metaMensal}/mês</p>
           </div>
         </div>
         {/* ações dos goals de visita */}
@@ -176,13 +176,13 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
             <div key={g.id} className="flex gap-1">
               <button
                 onClick={() => onPause(g.id)}
-                className="text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                className="text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded-lg hover:bg-s3/50 transition-colors cursor-pointer"
               >
                 Pausar
               </button>
               <button
                 onClick={() => onEdit(g)}
-                className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
               >
                 <Pencil size={13} />
               </button>
@@ -194,16 +194,16 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
       {/* 3 métricas */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {/* Agendadas no mês */}
-        <div className="bg-white/3 rounded-xl p-3 text-center border border-white/5">
+        <div className="bg-s2/50 rounded-xl p-3 text-center border border-line">
           <div className="flex items-center justify-center mb-1.5">
-            <ClipboardList size={13} className="text-indigo-400" />
+            <ClipboardList size={13} className="text-brand" />
           </div>
-          <p className="text-2xl font-bold tabular-nums text-indigo-400">{agendadasMes}</p>
+          <p className="text-2xl font-bold tabular-nums text-brand">{agendadasMes}</p>
           <p className="text-[10px] text-slate-500 mt-1 leading-tight">Agendadas<br/>no mês</p>
         </div>
 
         {/* Realizadas na semana */}
-        <div className={`bg-white/3 rounded-xl p-3 text-center border ${semanaOk ? 'border-green-500/30' : 'border-white/5'}`}>
+        <div className={`bg-s2/50 rounded-xl p-3 text-center border ${semanaOk ? 'border-green-500/30' : 'border-line'}`}>
           <div className="flex items-center justify-center mb-1.5">
             <CalendarCheck size={13} className={semanaOk ? 'text-green-400' : 'text-slate-400'} />
           </div>
@@ -214,7 +214,7 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
         </div>
 
         {/* Realizadas no mês */}
-        <div className={`bg-white/3 rounded-xl p-3 text-center border ${mesOk ? 'border-green-500/30' : 'border-white/5'}`}>
+        <div className={`bg-s2/50 rounded-xl p-3 text-center border ${mesOk ? 'border-green-500/30' : 'border-line'}`}>
           <div className="flex items-center justify-center mb-1.5">
             <CalendarDays size={13} className={mesOk ? 'text-green-400' : 'text-slate-400'} />
           </div>
@@ -366,7 +366,7 @@ export function GoalsPage() {
                   const Icon   = CATEGORY_ICON[goal.category]
                   return (
                     <div key={goal.id}
-                      className="flex items-center gap-4 px-5 py-3.5 bg-white/3 rounded-xl border border-white/5 group hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-4 px-5 py-3.5 bg-s2/50 rounded-xl border border-line group hover:bg-s3/50 transition-colors"
                     >
                       <div className={`w-8 h-8 ${colors.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
                         <Icon size={14} className={`${colors.text} opacity-50`} />
@@ -378,13 +378,13 @@ export function GoalsPage() {
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => update(goal.id, { active: true })}
-                          className="text-xs text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-lg hover:bg-indigo-500/10 transition-colors cursor-pointer"
+                          className="text-xs text-brand hover:text-brand-text px-3 py-1.5 rounded-lg hover:bg-indigo-500/10 transition-colors cursor-pointer"
                         >
                           Reativar
                         </button>
                         <button
                           onClick={() => { setEditing(goal); setFormOpen(true) }}
-                          className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
                         >
                           <Pencil size={13} />
                         </button>

@@ -43,7 +43,7 @@ function Counter({ label, icon, value, target, disabled, accent, barColor, onCha
   const p    = pct(value, target)
 
   return (
-    <Card className={`flex flex-col gap-4 border ${done ? 'border-green-500/30' : 'border-white/5'} transition-all duration-300`}>
+    <Card className={`flex flex-col gap-4 border ${done ? 'border-green-500/30' : 'border-line'} transition-all duration-300`}>
       <div className="flex items-center gap-2.5">
         <div className={`w-8 h-8 ${accent} rounded-xl flex items-center justify-center`}>
           {icon}
@@ -61,7 +61,7 @@ function Counter({ label, icon, value, target, disabled, accent, barColor, onCha
           type="button"
           disabled={disabled || value <= 0}
           onClick={() => onChange(Math.max(0, value - 1))}
-          className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 text-xl font-light transition-all cursor-pointer flex items-center justify-center"
+          className="w-10 h-10 rounded-xl bg-s3/50 hover:bg-s3/70 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 text-xl font-light transition-all cursor-pointer flex items-center justify-center"
         >
           −
         </button>
@@ -73,7 +73,7 @@ function Counter({ label, icon, value, target, disabled, accent, barColor, onCha
           type="button"
           disabled={disabled}
           onClick={() => onChange(value + 1)}
-          className="w-10 h-10 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 disabled:opacity-30 disabled:cursor-not-allowed text-indigo-300 text-xl font-light transition-all cursor-pointer flex items-center justify-center"
+          className="w-10 h-10 rounded-xl bg-brand-tint hover:bg-indigo-500/30 disabled:opacity-30 disabled:cursor-not-allowed text-brand-text text-xl font-light transition-all cursor-pointer flex items-center justify-center"
         >
           +
         </button>
@@ -87,7 +87,7 @@ function Counter({ label, icon, value, target, disabled, accent, barColor, onCha
           </span>
           <span className="text-xs text-slate-600 tabular-nums">{p}%</span>
         </div>
-        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+        <div className="h-2 bg-s3/50 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-green-500' : barColor}`}
             style={{ width: `${p}%` }}
@@ -146,36 +146,36 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
             max={new Date(Date.now() - 86400000).toISOString().split('T')[0]}
             value={date}
             onChange={e => setDate(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         </div>
 
         {/* Counters */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Novos leads', value: newLeads,   set: setNewLeads,   color: 'text-indigo-400' },
+            { label: 'Novos leads', value: newLeads,   set: setNewLeads,   color: 'text-brand' },
             { label: 'Contatos com Propr.', value: ownerCalls, set: setOwnerCalls, color: 'text-cyan-400' },
           ].map(({ label, value, set, color }) => (
-            <div key={label} className="bg-white/5 rounded-xl p-3 flex flex-col items-center gap-2">
+            <div key={label} className="bg-s3/50 rounded-xl p-3 flex flex-col items-center gap-2">
               <span className="text-xs text-slate-500">{label}</span>
               <div className="flex items-center gap-3">
                 <button onClick={() => set(Math.max(0, value - 1))}
-                  className="w-7 h-7 rounded-lg bg-white/8 hover:bg-white/15 text-slate-300 text-lg flex items-center justify-center cursor-pointer">−</button>
+                  className="w-7 h-7 rounded-lg bg-s3/70 hover:bg-s3/90 text-slate-300 text-lg flex items-center justify-center cursor-pointer">−</button>
                 <span className={`text-2xl font-bold tabular-nums ${color}`}>{value}</span>
                 <button onClick={() => set(value + 1)}
-                  className="w-7 h-7 rounded-lg bg-white/8 hover:bg-white/15 text-slate-300 text-lg flex items-center justify-center cursor-pointer">+</button>
+                  className="w-7 h-7 rounded-lg bg-s3/70 hover:bg-s3/90 text-slate-300 text-lg flex items-center justify-center cursor-pointer">+</button>
               </div>
             </div>
           ))}
         </div>
 
         {/* Funnel toggle */}
-        <div className="flex items-center gap-3 px-3 py-2.5 bg-white/5 rounded-xl">
+        <div className="flex items-center gap-3 px-3 py-2.5 bg-s3/50 rounded-xl">
           <MessageSquare size={14} className="text-green-400 flex-shrink-0" />
           <span className="flex-1 text-sm text-slate-300">Followup do funil</span>
           <button
             onClick={() => setFunnel(v => !v)}
-            className={`relative w-12 h-6 rounded-full transition-all duration-300 cursor-pointer flex-shrink-0 ${funnelFollowup ? 'bg-green-500' : 'bg-white/10'}`}
+            className={`relative w-12 h-6 rounded-full transition-all duration-300 cursor-pointer flex-shrink-0 ${funnelFollowup ? 'bg-green-500' : 'bg-s3/70'}`}
           >
             <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-300 ${funnelFollowup ? 'left-6' : 'left-0.5'}`} />
           </button>
@@ -188,16 +188,16 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
           onChange={e => setNotes(e.target.value)}
           rows={2}
           placeholder="Observações (opcional)"
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+          className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
         />
 
         {/* Closed toggle */}
-        <div className="flex items-center gap-3 px-3 py-2 bg-white/5 rounded-xl">
+        <div className="flex items-center gap-3 px-3 py-2 bg-s3/50 rounded-xl">
           <Lock size={13} className="text-slate-500 flex-shrink-0" />
           <span className="flex-1 text-xs text-slate-400">Marcar dia como fechado</span>
           <button
             onClick={() => setClosed(v => !v)}
-            className={`relative w-11 rounded-full transition-all cursor-pointer h-6 ${closed ? 'bg-amber-500' : 'bg-white/10'}`}
+            className={`relative w-11 rounded-full transition-all cursor-pointer h-6 ${closed ? 'bg-amber-500' : 'bg-s3/70'}`}
           >
             <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${closed ? 'left-5' : 'left-0.5'}`} />
           </button>
@@ -222,7 +222,7 @@ function HistoryRow({ log, onEdit }: { log: DailyLog; onEdit: (log: DailyLog) =>
   const scoreColor = score === 3 ? 'text-green-400' : score >= 1 ? 'text-yellow-400' : 'text-red-400'
 
   return (
-    <div className="group flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-white/3 transition-colors -mx-4">
+    <div className="group flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-s2/50 transition-colors -mx-4">
       <div className="w-20 flex-shrink-0">
         <p className="text-sm font-medium text-slate-300 tabular-nums">{formatDateShort(log.date)}</p>
         {log.closed && <p className="text-[10px] text-slate-600">Fechado</p>}
@@ -244,7 +244,7 @@ function HistoryRow({ log, onEdit }: { log: DailyLog; onEdit: (log: DailyLog) =>
       <div className={`text-xs font-semibold ${scoreColor}`}>{score}/3</div>
       <button
         onClick={() => onEdit(log)}
-        className="ml-auto opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-all cursor-pointer"
+        className="ml-auto opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-all cursor-pointer"
       >
         <Pencil size={12} />
       </button>
@@ -310,8 +310,8 @@ export function DailyProductivityTab() {
       {/* Header card */}
       <Card accent="indigo" className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-indigo-500/20 rounded-xl flex items-center justify-center">
-            <Calendar size={16} className="text-indigo-400" />
+          <div className="w-9 h-9 bg-brand-tint rounded-xl flex items-center justify-center">
+            <Calendar size={16} className="text-brand" />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-200 capitalize">{formatDateFull(today.date)}</p>
@@ -326,7 +326,7 @@ export function DailyProductivityTab() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setEditingLog(undefined); setPastModal(true) }}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-2 transition-all cursor-pointer"
           >
             <PlusCircle size={13} /> Lançar dia anterior
           </button>
@@ -346,11 +346,11 @@ export function DailyProductivityTab() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Counter
           label="Novos Leads Gerados"
-          icon={<UserPlus size={15} className="text-indigo-400" />}
+          icon={<UserPlus size={15} className="text-brand" />}
           value={today.newLeads}
           target={DAILY_TARGETS.newLeads}
           disabled={locked}
-          accent="bg-indigo-500/15"
+          accent="bg-brand-tint"
           barColor="bg-indigo-500"
           onChange={v => updateToday({ newLeads: v })}
         />
@@ -368,7 +368,7 @@ export function DailyProductivityTab() {
 
       {/* Funnel followup toggle */}
       <Card className={`flex items-center gap-4 border transition-all duration-300
-        ${today.funnelFollowup ? 'border-green-500/30' : 'border-white/5'}`}>
+        ${today.funnelFollowup ? 'border-green-500/30' : 'border-line'}`}>
         <div className="w-9 h-9 bg-green-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
           <MessageSquare size={16} className="text-green-400" />
         </div>
@@ -382,7 +382,7 @@ export function DailyProductivityTab() {
           onClick={() => updateToday({ funnelFollowup: !today.funnelFollowup })}
           className={`relative w-12 h-6 rounded-full transition-all duration-300 flex-shrink-0 cursor-pointer
             disabled:opacity-50 disabled:cursor-not-allowed
-            ${today.funnelFollowup ? 'bg-green-500' : 'bg-white/10'}`}
+            ${today.funnelFollowup ? 'bg-green-500' : 'bg-s3/70'}`}
         >
           <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-300
             ${today.funnelFollowup ? 'left-6' : 'left-0.5'}`} />
@@ -410,7 +410,7 @@ export function DailyProductivityTab() {
             onChange={e => updateToday({ notes: e.target.value })}
             rows={3}
             placeholder="Como foi o dia? Algum destaque, oportunidade ou ponto de atenção..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none disabled:opacity-50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none disabled:opacity-50"
           />
         )}
       </div>
@@ -418,7 +418,7 @@ export function DailyProductivityTab() {
       {/* Week summary strip */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Leads esta semana',       value: weekLeads,      sub: `meta ${WEEK_TARGET_LEADS} (7 dias)`,   color: 'text-indigo-400' },
+          { label: 'Leads esta semana',       value: weekLeads,      sub: `meta ${WEEK_TARGET_LEADS} (7 dias)`,   color: 'text-brand' },
           { label: 'Contatos com Propr. esta semana', value: weekCalls, sub: `meta ${WEEK_TARGET_CALLS} (seg–sex)`, color: 'text-cyan-400' },
           { label: 'Dias de funil',            value: weekFunnel,     sub: `meta ${WEEK_TARGET_FUNNEL} (seg–sáb)`,color: 'text-green-400'  },
           { label: 'Dias fechados na semana',  value: weekDayClosed,  sub: 'de 5 dias úteis',                    color: 'text-amber-400'  },

@@ -214,7 +214,7 @@ export function SalesPage() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar por cliente ou imóvel..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[44px]"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[44px]"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">
@@ -225,8 +225,8 @@ export function SalesPage() {
               className={`
                 flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
                 ${typeFilter === opt.value
-                  ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                  ? 'bg-brand-tint border-brand/40 text-brand-text'
+                  : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
                 }
               `}
             >
@@ -273,7 +273,7 @@ export function SalesPage() {
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => { setEditing(s); setFormOpen(true) }}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/8 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-s3/70 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
                       ><Pencil size={15} /></button>
                       <button
                         onClick={() => setDeleteTarget(s)}
@@ -286,7 +286,7 @@ export function SalesPage() {
                       <p className="text-sm text-slate-400 truncate flex-1 mr-2">{s.propertyName}</p>
                       <Badge variant={variant}>{label}</Badge>
                     </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <div className="flex items-center justify-between pt-2 border-t border-line">
                       <span className="text-xs text-slate-500">{formatDateShort(s.date)}</span>
                       <span className="text-sm font-bold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</span>
                     </div>
@@ -304,7 +304,7 @@ export function SalesPage() {
               )
             })}
             {/* Mobile footer */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white/3 rounded-xl border border-white/8">
+            <div className="flex items-center justify-between px-4 py-3 bg-s2/50 rounded-xl border border-line">
               <p className="text-xs text-slate-500">{filtered.length} venda{filtered.length !== 1 ? 's' : ''}</p>
               <div className="text-right">
                 <p className="text-sm font-bold text-slate-100 tabular-nums">
@@ -319,7 +319,7 @@ export function SalesPage() {
 
           {/* ── Desktop table ──────────────────────────────────────────── */}
           <Card className="!p-0 overflow-hidden hidden lg:block">
-            <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 border-b border-white/8">
+            <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 border-b border-line">
               {['Cliente', 'Empreendimento', 'Data', 'Valor', 'Comissão', ''].map((h, i) => (
                 <p key={i} className="text-xs font-medium text-slate-500 uppercase tracking-wider">{h}</p>
               ))}
@@ -336,7 +336,7 @@ export function SalesPage() {
               return (
                 <div
                   key={s.id}
-                  className={`grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-4 hover:bg-white/5 row-accent transition-colors ${i < filtered.length - 1 ? 'border-b border-white/5' : ''}`}
+                  className={`grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-4 hover:bg-s3/50 row-accent transition-colors ${i < filtered.length - 1 ? 'border-b border-line' : ''}`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar name={client?.name ?? '?'} size="sm" />
@@ -366,7 +366,7 @@ export function SalesPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => { setEditing(s); setFormOpen(true) }}
-                      className="p-2 rounded-lg hover:bg-white/8 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                      className="p-2 rounded-lg hover:bg-s3/70 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
                     ><Pencil size={14} /></button>
                     <button
                       onClick={() => setDeleteTarget(s)}
@@ -376,7 +376,7 @@ export function SalesPage() {
                 </div>
               )
             })}
-            <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-3 border-t border-white/8 bg-white/2">
+            <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-3 border-t border-line bg-s2/30">
               <p className="text-xs text-slate-500 col-span-3">
                 {filtered.length} venda{filtered.length !== 1 ? 's' : ''}
               </p>

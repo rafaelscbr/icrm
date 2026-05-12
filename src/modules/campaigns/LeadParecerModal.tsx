@@ -102,8 +102,8 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
         <div className="flex flex-col gap-6">
 
           {/* Lead identity */}
-          <div className="flex items-center gap-3 p-3 bg-white/4 rounded-xl border border-white/8">
-            <div className="w-9 h-9 bg-indigo-500/20 rounded-full flex items-center justify-center text-sm font-bold text-indigo-300 flex-shrink-0">
+          <div className="flex items-center gap-3 p-3 bg-s2/60 rounded-xl border border-line">
+            <div className="w-9 h-9 bg-brand-tint rounded-full flex items-center justify-center text-sm font-bold text-brand-text flex-shrink-0">
               {lead.name[0].toUpperCase()}
             </div>
             <div>
@@ -126,7 +126,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all cursor-pointer
                       ${active
                         ? `${s.bg} ${s.border} ${s.color}`
-                        : 'bg-white/3 border-white/8 text-slate-500 hover:border-white/20 hover:text-slate-300'
+                        : 'bg-s2/50 border-line text-slate-500 hover:border-line-strong hover:text-slate-300'
                       }`}
                   >
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${active ? s.dot : 'bg-slate-700'}`} />
@@ -153,7 +153,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
                   value={proposalValue}
                   onChange={e => setProposalValue(e.target.value.replace(/\D/g, ''))}
                   placeholder="0"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                 />
               </div>
             </div>
@@ -193,8 +193,8 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
                     onClick={() => setSituationL(active ? undefined : s.value)}
                     className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm transition-all cursor-pointer text-left
                       ${active
-                        ? `${s.bg} border-white/20 ${s.color}`
-                        : 'bg-white/3 border-white/8 text-slate-500 hover:border-white/15 hover:text-slate-300'
+                        ? `${s.bg} border-line-strong ${s.color}`
+                        : 'bg-s2/50 border-line text-slate-500 hover:border-line-input hover:text-slate-300'
                       }`}
                   >
                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0
@@ -216,12 +216,12 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Anotações sobre este lead..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
             />
           </div>
 
           {/* Transferir para Funil Principal */}
-          <div className="pt-1 border-t border-white/8">
+          <div className="pt-1 border-t border-line">
             <button
               type="button"
               onClick={() => setShowTransfer(true)}

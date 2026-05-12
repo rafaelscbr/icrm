@@ -19,7 +19,7 @@ import { Home, FileText, TrendingUp, Zap } from 'lucide-react'
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; bar: string; label: string }> = {
   visita:             { icon: Home,       color: 'text-cyan-400',    bar: '#22d3ee', label: 'Visita'                },
-  agenciamento:       { icon: Building2,  color: 'text-indigo-400',  bar: '#818cf8', label: 'Agenciamento'          },
+  agenciamento:       { icon: Building2,  color: 'text-brand',  bar: '#818cf8', label: 'Agenciamento'          },
   proposta:           { icon: FileText,   color: 'text-amber-400',   bar: '#fbbf24', label: 'Proposta'              },
   busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  bar: '#a78bfa', label: 'Busca de Imóvel'       },
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', bar: '#34d399', label: 'Prospecção de Imóveis' },
@@ -50,7 +50,7 @@ function fmtFull(d: string): string {
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#0D1117] border border-white/10 rounded-xl px-3 py-2 shadow-xl">
+    <div className="bg-page border border-line rounded-xl px-3 py-2 shadow-xl">
       <p className="text-xs text-slate-400 mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.name} className="text-xs font-semibold" style={{ color: p.fill }}>
@@ -73,8 +73,8 @@ function TaskDayRow({ task, isLast }: { task: Task; isLast: boolean }) {
   const isDone   = task.status === 'done'
 
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/3
-      ${!isLast ? 'border-b border-white/5' : ''}
+    <div className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-s2/50
+      ${!isLast ? 'border-b border-line' : ''}
       ${isDone ? 'opacity-60' : ''}
     `}>
       {isDone
@@ -98,7 +98,7 @@ function TaskDayRow({ task, isLast }: { task: Task; isLast: boolean }) {
           {contact && (
             <button
               onClick={() => navigate('/contatos')}
-              className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 hover:underline transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs text-brand hover:text-brand-text hover:underline transition-colors cursor-pointer"
             >
               <User size={10} /> {contact.name}
             </button>
@@ -189,16 +189,16 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setSelectedDate(d => offsetDay(d, -1))}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/8 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
           >
             <ChevronLeft size={16} />
           </button>
 
           <div className="flex items-center gap-2">
-            <CalendarDays size={15} className="text-indigo-400" />
+            <CalendarDays size={15} className="text-brand" />
             <span className="text-sm font-semibold text-slate-100 capitalize">{dateLabel}</span>
             {isToday && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-indigo-300 border border-indigo-500/30">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-brand-text border border-brand/30">
                 HOJE
               </span>
             )}
@@ -207,7 +207,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
           <button
             onClick={() => setSelectedDate(d => offsetDay(d, 1))}
             disabled={isToday}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/8 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight size={16} />
           </button>
@@ -225,19 +225,19 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                 onClick={() => setSelectedDate(date)}
                 className={`flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all cursor-pointer
                   ${sel
-                    ? 'bg-indigo-500/20 border border-indigo-500/40'
-                    : 'hover:bg-white/5 border border-transparent'
+                    ? 'bg-brand-tint border border-brand/40'
+                    : 'hover:bg-s3/50 border border-transparent'
                   }`}
               >
                 <span className="text-[10px] text-slate-600 uppercase">
                   {dt.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3)}
                 </span>
-                <span className={`text-sm font-bold ${sel ? 'text-indigo-300' : 'text-slate-300'}`}>
+                <span className={`text-sm font-bold ${sel ? 'text-brand-text' : 'text-slate-300'}`}>
                   {pad(dt.getDate())}
                 </span>
                 {count > 0 ? (
                   <div className="flex flex-col items-center gap-0.5 w-full px-1">
-                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="w-full h-1 bg-s3/70 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-green-400 rounded-full transition-all"
                         style={{ width: `${pct}%` }}
@@ -246,7 +246,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                     <span className="text-[9px] text-slate-600">{done}/{count}</span>
                   </div>
                 ) : (
-                  <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-s3/70" />
                 )}
               </button>
             )
@@ -258,7 +258,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
       {total > 0 ? (
         <>
           <div className="grid grid-cols-3 gap-3">
-            <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-white/3 border border-white/8">
+            <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-s2/50 border border-line">
               <p className="text-xs text-slate-600">Total</p>
               <p className="text-2xl font-bold text-slate-100 tabular-nums">{total}</p>
               <p className="text-[11px] text-slate-600">tarefas no dia</p>
@@ -268,10 +268,10 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
               <p className="text-2xl font-bold text-green-400 tabular-nums">{doneTasks.length}</p>
               <p className="text-[11px] text-slate-600">de {total}</p>
             </div>
-            <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-indigo-500/8 border border-indigo-500/20">
+            <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-indigo-500/8 border border-brand/25">
               <p className="text-xs text-slate-600">Conclusão</p>
-              <p className="text-2xl font-bold text-indigo-400 tabular-nums">{pct}%</p>
-              <div className="w-full h-1.5 bg-white/10 rounded-full mt-1">
+              <p className="text-2xl font-bold text-brand tabular-nums">{pct}%</p>
+              <div className="w-full h-1.5 bg-s3/70 rounded-full mt-1">
                 <div
                   className="h-full bg-indigo-400 rounded-full transition-all duration-500"
                   style={{ width: `${pct}%` }}
@@ -359,7 +359,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
         </>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-s3/50 flex items-center justify-center mb-3">
             <CalendarDays size={20} className="text-slate-600" />
           </div>
           <p className="text-sm font-medium text-slate-400">

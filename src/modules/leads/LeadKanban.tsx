@@ -129,10 +129,10 @@ function LeadCard({
         ${lead.flagged
           ? 'bg-gradient-to-br from-orange-500/10 to-red-500/5 border-orange-500/50 shadow-lg shadow-orange-500/10 hover:border-orange-500/70 hover:shadow-orange-500/20'
           : lead.funnelStage === 'venda'
-            ? 'bg-green-500/5 border-green-500/25 hover:border-white/20 hover:shadow-lg hover:shadow-black/20'
+            ? 'bg-green-500/5 border-green-500/25 hover:border-line-strong hover:shadow-lg hover:shadow-black/20'
             : isLinked
-              ? 'bg-[#0E1420] border-violet-500/25 hover:border-white/20 hover:shadow-lg hover:shadow-black/30'
-              : 'bg-[#0E1420] border-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-black/30'
+              ? 'bg-surface border-violet-500/25 hover:border-line-strong hover:shadow-lg hover:shadow-black/30'
+              : 'bg-surface border-line hover:border-line-strong hover:shadow-lg hover:shadow-black/30'
         }
       `}
     >
@@ -170,14 +170,14 @@ function LeadCard({
       </div>
 
       <div className="flex items-start gap-2 pr-12 mb-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-white/10 flex items-center justify-center text-sm font-black text-slate-300 flex-shrink-0">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-line flex items-center justify-center text-sm font-black text-t2 flex-shrink-0">
           {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-white truncate leading-tight">{displayName}</p>
+          <p className="text-[13px] font-semibold text-t1 truncate leading-tight">{displayName}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] text-slate-600">{ORIGIN_EMOJI[lead.origin]}</span>
-            <span className="text-[10px] text-slate-600 tabular-nums">{formatPhone(displayPhone)}</span>
+            <span className="text-[10px] text-t4">{ORIGIN_EMOJI[lead.origin]}</span>
+            <span className="text-[10px] text-t4 tabular-nums">{formatPhone(displayPhone)}</span>
             {!isOverlay && (
               <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${stageDaysClass}`}>
                 {stageDays}d
@@ -202,7 +202,7 @@ function LeadCard({
                 className={`flex-1 h-2.5 rounded-full transition-all cursor-pointer hover:opacity-90 active:scale-95
                   ${step <= lead.followupStep
                     ? 'bg-blue-400 hover:bg-blue-300'
-                    : 'bg-white/10 hover:bg-blue-400/40'
+                    : 'bg-s3 hover:bg-blue-400/40'
                   }`}
               />
             ))}
@@ -231,7 +231,7 @@ function LeadCard({
       )}
 
       {lastInteraction && (
-        <p className="text-[10px] text-slate-600 mb-2 truncate leading-snug">
+        <p className="text-[10px] text-t4 mb-2 truncate leading-snug">
           {lastInteraction.type === 'ligacao' ? '📞' : lastInteraction.type === 'whatsapp' ? '💬' : lastInteraction.type === 'visita' ? '🏠' : lastInteraction.type === 'reuniao' ? '🤝' : lastInteraction.type === 'email' ? '📧' : '📝'}{' '}
           {lastInteraction.description ?? lastInteraction.type}
         </p>
@@ -245,7 +245,7 @@ function LeadCard({
         </div>
       )}
 
-      <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5">
+      <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5">
         <button
           onClick={handleWhatsApp}
           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium text-green-300 hover:text-white bg-green-500/10 hover:bg-green-500 border border-green-500/20 hover:border-green-500 rounded-lg transition-all active:scale-95"
@@ -259,7 +259,7 @@ function LeadCard({
         </button>
         <button
           onClick={handleWhatsAppOpen}
-          className="w-7 h-7 flex items-center justify-center text-green-500/70 hover:text-green-300 bg-white/3 hover:bg-green-500/10 border border-white/10 hover:border-green-500/20 rounded-lg transition-all"
+          className="w-7 h-7 flex items-center justify-center text-green-500/70 hover:text-green-300 bg-s2 hover:bg-green-500/10 border border-line hover:border-green-500/20 rounded-lg transition-all"
           title="Só abrir WhatsApp"
         >
           <MessageCircle size={11} />
@@ -267,7 +267,7 @@ function LeadCard({
         <a
           href={`tel:${displayPhone}`}
           onClick={e => e.stopPropagation()}
-          className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-200 bg-white/3 hover:bg-white/8 border border-white/10 rounded-lg transition-all"
+          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-lg transition-all"
         >
           <Phone size={11} />
         </a>
@@ -299,7 +299,7 @@ function KanbanColumn({
         <div className="flex items-center gap-2.5">
           <div className={`w-2 h-2 rounded-full ${conf.dot} shadow-sm flex-shrink-0`} />
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Etapa</p>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-t4">Etapa</p>
             <span className={`text-sm font-bold leading-tight ${conf.headerText}`}>{conf.label}</span>
           </div>
           <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${conf.bg} ${conf.color} border ${conf.border} tabular-nums`}>
@@ -319,12 +319,12 @@ function KanbanColumn({
         <div
           ref={setNodeRef}
           className={`flex-1 min-h-[420px] rounded-b-xl border ${conf.border} page-bg p-2 flex flex-col gap-2 transition-all duration-150
-            ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-white/15 bg-white/3' : ''}
+            ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-line-strong bg-s2' : ''}
           `}
         >
           {leads.length === 0 && (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-[11px] text-slate-700 text-center">Arraste cards aqui</p>
+              <p className="text-[11px] text-t4 text-center">Arraste cards aqui</p>
             </div>
           )}
           {leads.map(lead => (

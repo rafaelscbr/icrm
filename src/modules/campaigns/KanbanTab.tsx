@@ -131,7 +131,7 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
             autoFocus
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         </div>
         <div>
@@ -140,7 +140,7 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
             type="date"
             value={dueDate}
             onChange={e => setDueDate(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         </div>
         <div className="flex gap-2 mt-1">
@@ -191,7 +191,7 @@ function LeadCard({
         {...listeners}
         {...attributes}
         onClick={() => !isDragging && onParecer(lead)}
-        className={`bg-white/4 hover:bg-white/7 border border-white/8 hover:border-white/15 rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all group select-none
+        className={`bg-s2/60 hover:bg-white/7 border border-line hover:border-line-input rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all group select-none
           ${isDragging || ghost ? 'opacity-40 scale-[0.98]' : ''}
           ${cold ? 'lead-cold' : ''}`}
       >
@@ -209,7 +209,7 @@ function LeadCard({
             <button onClick={handleWhatsApp} className="p-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors" title="WhatsApp">
               <MessageCircle size={11} />
             </button>
-            <button onClick={() => onParecer(lead)} className="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors" title="Parecer">
+            <button onClick={() => onParecer(lead)} className="p-1 rounded-lg bg-indigo-500/10 text-brand hover:bg-brand-tint transition-colors" title="Parecer">
               <FileText size={11} />
             </button>
           </div>
@@ -277,7 +277,7 @@ function KanbanColumn({
   }, [leads, ticket, showVgv, stage.value])
 
   return (
-    <div className="flex-shrink-0 w-60 flex flex-col bg-white/2 rounded-2xl p-3">
+    <div className="flex-shrink-0 w-60 flex flex-col bg-s2/30 rounded-2xl p-3">
       <div className={`flex flex-col px-3 py-2.5 rounded-xl ${stage.bg} border ${stage.border} mb-3`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -301,7 +301,7 @@ function KanbanColumn({
         </div>
         {/* VGV da coluna */}
         {showVgv && colVGV > 0 && (
-          <div className="mt-1.5 pt-1.5 border-t border-white/10">
+          <div className="mt-1.5 pt-1.5 border-t border-line">
             <p className={`text-[10px] font-semibold tabular-nums ${stage.color} opacity-80`}>
               VGV: {formatCurrency(colVGV)}
             </p>
@@ -314,7 +314,7 @@ function KanbanColumn({
         className={`flex flex-col gap-2 flex-1 rounded-xl p-1 -m-1 transition-colors ${isOver ? 'bg-indigo-500/8 ring-1 ring-indigo-500/30' : ''}`}
       >
         {leads.length === 0 ? (
-          <div className={`flex items-center justify-center py-8 border border-dashed ${isOver ? 'border-indigo-500/40' : 'border-white/8'} rounded-xl transition-colors`}>
+          <div className={`flex items-center justify-center py-8 border border-dashed ${isOver ? 'border-brand/40' : 'border-line'} rounded-xl transition-colors`}>
             <p className="text-xs text-slate-700">Nenhum lead</p>
           </div>
         ) : (
@@ -325,7 +325,7 @@ function KanbanColumn({
             {hasMore && (
               <button
                 onClick={() => setVisible(v => v + COLUMN_PAGE)}
-                className="flex items-center justify-center gap-1.5 py-2 text-xs text-slate-500 hover:text-slate-300 border border-dashed border-white/10 hover:border-white/20 rounded-xl transition-all cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2 text-xs text-slate-500 hover:text-slate-300 border border-dashed border-line hover:border-line-strong rounded-xl transition-all cursor-pointer"
               >
                 <ChevronDown size={12} />
                 Ver mais {Math.min(COLUMN_PAGE, sorted.length - visible).toLocaleString('pt-BR')} de {(sorted.length - visible).toLocaleString('pt-BR')}
@@ -381,8 +381,8 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
             onClick={() => setDateFilter(f.value)}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
               dateFilter === f.value
-                ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                : 'bg-white/4 border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20'
+                ? 'bg-brand-tint border-brand/40 text-brand-text'
+                : 'bg-s2/60 border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
             }`}
           >
             {f.label}
@@ -395,9 +395,9 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
         ))}
         {/* Info do ticket médio */}
         {campaign.averageTicket && campaign.averageTicket > 0 && (
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 bg-white/4 border border-white/10 rounded-xl px-3 py-1.5">
+          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 bg-s2/60 border border-line rounded-xl px-3 py-1.5">
             Ticket médio:
-            <span className="text-indigo-300 font-semibold">{formatCurrency(campaign.averageTicket)}</span>
+            <span className="text-brand-text font-semibold">{formatCurrency(campaign.averageTicket)}</span>
           </div>
         )}
       </div>
