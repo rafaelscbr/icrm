@@ -38,8 +38,8 @@ interface ItemFormProps {
 }
 
 function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
-  const inputClass = 'w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all'
-  const labelClass = 'text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block'
+  const inputClass = 'w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all'
+  const labelClass = 'text-xs font-semibold text-t3 uppercase tracking-wider mb-1 block'
 
   function set(patch: Partial<PermutaItem>) {
     onChange({ ...item, ...patch })
