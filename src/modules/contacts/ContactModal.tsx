@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react'
 import {
   Phone, Building2, Cake, Heart, Baby, Tag, CheckCircle2,
   Clock, Circle, AlertTriangle, TrendingUp, MessageCircle,
-  UserPlus, ArrowLeftRight, Pencil, Plus, X,
+  UserPlus, ArrowLeftRight, Pencil, Plus, X, Home, Bed, Square,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Badge } from '../../components/ui/Badge'
 import { Avatar } from '../../components/ui/Avatar'
+import { StatusBadge } from '../../components/shared/StatusBadge'
 import { Contact, ContactTag, PermutaItem } from '../../types'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
@@ -16,6 +17,7 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { formatPhone, formatDate, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { calcSaleCommissions } from '../../types'
 import { LeadModal } from '../leads/LeadModal'
+import { PropertyModal } from '../properties/PropertyModal'
 
 const TAG_LABELS: Record<ContactTag, string> = {
   owner:    'Proprietário',
@@ -26,6 +28,15 @@ const TAG_VARIANTS: Record<ContactTag, 'indigo' | 'purple' | 'green'> = {
   owner:    'indigo',
   investor: 'purple',
   buyer:    'green',
+}
+
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  apartment:        'Apartamento',
+  apartment_duplex: 'Apê Duplex',
+  penthouse_duplex: 'Cobertura',
+  house:            'Casa',
+  commercial:       'Comercial',
+  land:             'Terreno',
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -75,6 +86,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
   const { leads }      = useLeadsStore()
   const { update: updateContact } = useContactsStore()
   const [selectedLead, setSelectedLead] = useState<string | null>(null)
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
 
   // Permuta edit state
   const [editingPermuta, setEditingPermuta] = useState(false)
@@ -218,15 +230,67 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                 </div>
               </div>
             )}
-            {ownedProperties.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                <Building2 size={13} className="text-brand flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[10px] text-slate-500">Imóveis próprios</p>
-                  <p className="text-xs text-slate-200 font-medium">{ownedProperties.length} imóvel{ownedProperties.length > 1 ? 's' : ''}</p>
-                </div>
-              </div>
-            )}
+          </div>
+        )}
+
+        {/* Imóveis cadastrados */}
+        {ownedProperties.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Home size={13} className="text-indigo-400" />
+              <h3 className="text-sm font-semibold text-slate-300">Imóveis cadastrados</h3>
+              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/20 font-medium">
+                {ownedProperties.length} imóvel{ownedProperties.length > 1 ? 'is' : ''}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {ownedProperties.map(prop => (
+                <button
+                  key={prop.id}
+                  onClick={() => setSelectedPropertyId(prop.id)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 bg-s2/50 hover:bg-s3/50 border border-line hover:border-indigo-500/30 rounded-xl transition-all text-left group"
+                >
+                  {/* Thumbnail */}
+                  <div className="w-14 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-s3/60 border border-line">
+                    {prop.images[0] ? (
+                      <img src={prop.images[0]} alt={prop.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Building2 size={18} className="text-slate-600" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-white transition-colors">
+                      {prop.name}
+                    </p>
+                    <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                      {PROPERTY_TYPE_LABELS[prop.type] ?? prop.type} · {prop.neighborhood}{prop.city ? ` · ${prop.city}` : ''}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {prop.bedrooms != null && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-slate-500">
+                          <Bed size={9} /> {prop.bedrooms} dorm{prop.bedrooms !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {prop.areaSqm != null && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-slate-500">
+                          <Square size={9} /> {prop.areaSqm}m²
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Valor + status */}
+                  <div className="text-right flex-shrink-0 space-y-1">
+                    <p className="text-xs font-bold text-slate-100 tabular-nums">{formatCurrencyFull(prop.value)}</p>
+                    <StatusBadge status={prop.status} />
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -561,6 +625,17 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
     {selectedLead && (() => {
       const lead = leads.find(l => l.id === selectedLead)
       return lead ? <LeadModal lead={lead} onClose={() => setSelectedLead(null)} /> : null
+    })()}
+
+    {selectedPropertyId && (() => {
+      const prop = properties.find(p => p.id === selectedPropertyId)
+      return prop ? (
+        <PropertyModal
+          property={prop}
+          isOpen={true}
+          onClose={() => setSelectedPropertyId(null)}
+        />
+      ) : null
     })()}
     </>
   )
