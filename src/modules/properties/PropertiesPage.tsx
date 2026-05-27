@@ -16,6 +16,7 @@ import { TasksLinkedModal } from '../../components/shared/TasksLinkedModal'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useTasksStore } from '../../store/useTasksStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { Property, PropertyStatus } from '../../types'
 import { formatCurrencyFull } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -154,6 +155,7 @@ export function PropertiesPage() {
   const { properties, load, remove, search, filterByStatus } = usePropertiesStore()
   const { load: loadContacts, getById } = useContactsStore()
   const { tasks } = useTasksStore()
+  const { isAdmin } = useAuthStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [activeStatus, setActiveStatus] = useState<PropertyStatus | null>(null)
@@ -318,7 +320,7 @@ export function PropertiesPage() {
                   </div>
 
                   <StatusBadge status={p.status} />
-                  {owner && (
+                  {isAdmin && owner && (
                     <p className="text-xs text-slate-500">
                       Prop: <span className="text-slate-300">{owner.name}</span>
                     </p>

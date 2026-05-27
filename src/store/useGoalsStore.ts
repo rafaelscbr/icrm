@@ -20,7 +20,8 @@ interface GoalsStore {
   goals: Goal[]
   loading: boolean
   load: () => Promise<void>
-  add: (data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>) => Goal
+  loadForBroker: (brokerId: string) => Promise<void>
+  add: (data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>, brokerId?: string) => Goal
   update: (id: string, data: Partial<Goal>) => void
   remove: (id: string) => void
 }
@@ -54,10 +55,22 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
     }
   },
 
-  add: (data) => {
+  loadForBroker: async (brokerId) => {
+    set({ loading: true })
+    try {
+      const goals = await db.goals.fetchForBroker(brokerId)
+      set({ goals })
+    } catch (err) {
+      console.error('[goals] loadForBroker:', err)
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  add: (data, brokerId?) => {
     const goal = makeGoal(data)
     set(s => ({ goals: [...s.goals, goal] }))
-    db.goals.upsert(goal).catch(err => console.error('[goals] add:', err))
+    db.goals.upsert(goal, brokerId).catch(err => console.error('[goals] add:', err))
     return goal
   },
 

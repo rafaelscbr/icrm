@@ -8,9 +8,10 @@ import { useGoalsStore } from '../../store/useGoalsStore'
 import toast from 'react-hot-toast'
 
 interface GoalFormProps {
-  isOpen:  boolean
-  onClose: () => void
-  goal?:   Goal
+  isOpen:     boolean
+  onClose:    () => void
+  goal?:      Goal
+  forBrokerId?: string
 }
 
 const CATEGORY_OPTIONS: { value: GoalCategory; label: string }[] = [
@@ -25,7 +26,7 @@ const PERIOD_OPTIONS: { value: GoalPeriod; label: string }[] = [
   { value: 'monthly', label: 'Mensal'   },
 ]
 
-export function GoalForm({ isOpen, onClose, goal }: GoalFormProps) {
+export function GoalForm({ isOpen, onClose, goal, forBrokerId }: GoalFormProps) {
   const { add, update } = useGoalsStore()
   const isEditing = Boolean(goal)
 
@@ -68,7 +69,7 @@ export function GoalForm({ isOpen, onClose, goal }: GoalFormProps) {
       update(goal.id, data)
       toast.success('Meta atualizada')
     } else {
-      add(data)
+      add(data, forBrokerId)
       toast.success('Meta criada')
     }
     onClose()

@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
   Building2, Megaphone, BarChart3, X,
   Search, Home, Tv2, ExternalLink, Plus, UserPlus, ArrowLeftRight,
+  LogOut, ShieldCheck,
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
+import { useAuthStore } from '../../store/useAuthStore'
 
 const mainNav = [
   { to: '/',         icon: LayoutDashboard, label: 'Início',   end: true  },
@@ -32,7 +34,16 @@ const tools = [
 export function BottomNav() {
   const [drawerOpen, setDrawerOpen]   = useState(false)
   const [taskFormOpen, setTaskFormOpen] = useState(false)
-  const location = useLocation()
+  const location  = useLocation()
+  const navigate  = useNavigate()
+  const { profile, isAdmin, logout } = useAuthStore()
+
+  const initial = (profile?.name ?? 'U').charAt(0).toUpperCase()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   const isMoreActive = moreNav.some(item => location.pathname === item.to)
 
@@ -187,6 +198,23 @@ export function BottomNav() {
               </div>
             </div>
 
+            {/* Admin link */}
+            {isAdmin && (
+              <div className="px-4 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
+                <NavLink
+                  to="/admin"
+                  onClick={() => setDrawerOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-t3 active:scale-95 transition-all"
+                  style={{ background: 'var(--s2)' }}
+                >
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--brand-tint)' }}>
+                    <ShieldCheck size={15} style={{ color: 'var(--brand)' }} />
+                  </div>
+                  <span className="text-sm font-medium text-t2 flex-1">Administração</span>
+                </NavLink>
+              </div>
+            )}
+
             {/* User */}
             <div className="px-4 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
               <div
@@ -194,18 +222,19 @@ export function BottomNav() {
                 style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}
               >
                 <div className="w-9 h-9 bg-brand rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
-                  R
+                  {initial}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-t1">Rafael</p>
-                  <p className="text-xs text-t3">Corretor</p>
+                  <p className="text-sm font-semibold text-t1">{profile?.name ?? 'Usuário'}</p>
+                  <p className="text-xs text-t3">{isAdmin ? 'Administrador' : 'Corretor'}</p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-success relative flex-shrink-0">
-                    <div className="absolute inset-0 rounded-full bg-success animate-ping opacity-40" />
-                  </div>
-                  <span className="text-[11px] text-success font-medium">Online</span>
-                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-t4 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                  title="Sair"
+                >
+                  <LogOut size={15} />
+                </button>
               </div>
             </div>
           </div>

@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import {
   Target, Pencil, Trash2, TrendingUp, CheckCircle2,
   Calendar, CalendarDays, Footprints, Handshake, FileText, BadgeDollarSign,
-  CalendarCheck, ClipboardList, History,
+  CalendarCheck, ClipboardList, History, Users,
 } from 'lucide-react'
+import { useAuthStore, Profile } from '../../store/useAuthStore'
 import confetti from 'canvas-confetti'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -261,15 +262,31 @@ function VisitasSection({ tasks, visitGoals, onEdit, onDelete, onPause }: Visita
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export function GoalsPage() {
-  const { goals, load, remove, update }   = useGoalsStore()
+  const { goals, load, loadForBroker, remove, update } = useGoalsStore()
   const { tasks, load: loadTasks }        = useTasksStore()
   const { sales, load: loadSales }        = useSalesStore()
   const { checkAndSave, snapshots }       = useWeekSnapshotStore()
+  const { isAdmin, fetchAllProfiles }     = useAuthStore()
   const [formOpen,     setFormOpen]       = useState(false)
   const [editing,      setEditing]        = useState<Goal | undefined>()
   const [deleteTarget, setDeleteTarget]   = useState<Goal | undefined>()
+  const [brokers,      setBrokers]        = useState<Profile[]>([])
+  const [viewBrokerId, setViewBrokerId]   = useState<string | null>(null)
 
   useEffect(() => { load(); loadTasks(); loadSales() }, [load, loadTasks, loadSales])
+
+  useEffect(() => {
+    if (isAdmin) fetchAllProfiles().then(p => setBrokers(p.filter(x => x.role === 'broker'))).catch(() => {})
+  }, [isAdmin, fetchAllProfiles])
+
+  async function handleSelectBroker(id: string | null) {
+    setViewBrokerId(id)
+    if (id) {
+      await loadForBroker(id)
+    } else {
+      await load()
+    }
+  }
 
   // Archive past weeks whenever data loads
   useEffect(() => {
@@ -298,6 +315,31 @@ export function GoalsPage() {
       ctaLabel="Nova Meta"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
+      {/* Admin: seletor de corretor */}
+      {isAdmin && brokers.length > 0 && (
+        <div className="flex items-center gap-3 mb-5 p-3 rounded-xl border border-line bg-s2/30">
+          <Users size={14} className="text-t4 flex-shrink-0" />
+          <p className="text-xs text-t3 flex-shrink-0">Visualizando metas de:</p>
+          <div className="flex gap-2 overflow-x-auto">
+            <button
+              onClick={() => handleSelectBroker(null)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex-shrink-0 cursor-pointer ${!viewBrokerId ? 'bg-brand-tint border-brand/40 text-brand-text' : 'bg-s3/50 border-line text-t3 hover:text-t1'}`}
+            >
+              Minhas metas
+            </button>
+            {brokers.map(b => (
+              <button
+                key={b.id}
+                onClick={() => handleSelectBroker(b.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex-shrink-0 cursor-pointer ${viewBrokerId === b.id ? 'bg-brand-tint border-brand/40 text-brand-text' : 'bg-s3/50 border-line text-t3 hover:text-t1'}`}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* History shortcut */}
       {snapshots.length > 0 && (
         <Link
@@ -404,7 +446,7 @@ export function GoalsPage() {
         </>
       )}
 
-      <GoalForm isOpen={formOpen} onClose={() => setFormOpen(false)} goal={editing} />
+      <GoalForm isOpen={formOpen} onClose={() => setFormOpen(false)} goal={editing} forBrokerId={viewBrokerId ?? undefined} />
 
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir meta" size="sm">
         <p className="text-sm text-slate-400 mb-6">

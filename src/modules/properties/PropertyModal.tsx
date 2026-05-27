@@ -9,6 +9,7 @@ import { Property } from '../../types'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useSalesStore } from '../../store/useSalesStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { formatCurrencyFull, formatDate } from '../../lib/formatters'
 import { calcSaleCommissions } from '../../types'
 
@@ -50,6 +51,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
   const { tasks }    = useTasksStore()
   const { contacts } = useContactsStore()
   const { sales }    = useSalesStore()
+  const { isAdmin }  = useAuthStore()
 
   const linkedTasks = useMemo(
     () => property ? tasks.filter(t => t.propertyId === property.id).sort((a, b) => {
@@ -156,8 +158,8 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           </div>
         </div>
 
-        {/* Proprietário */}
-        {owner && (
+        {/* Proprietário — visível apenas para admin */}
+        {isAdmin && owner && (
           <div className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
             <User size={13} className="text-brand flex-shrink-0" />
             <div>

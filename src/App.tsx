@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useThemeStore, applyTheme } from './store/useThemeStore'
+import { useAuthStore } from './store/useAuthStore'
 import { Sidebar } from './components/layout/Sidebar'
 import { BottomNav } from './components/layout/BottomNav'
 import { GlobalSearch } from './components/shared/GlobalSearch'
@@ -14,6 +15,8 @@ import { TasksPage } from './modules/tasks/TasksPage'
 import { CampaignsPage } from './modules/campaigns/CampaignsPage'
 import { LeadsPage } from './modules/leads/LeadsPage'
 import { PermutaPage } from './modules/permuta/PermutaPage'
+import { LoginPage } from './pages/LoginPage'
+import { AdminPage } from './pages/AdminPage'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -28,10 +31,9 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 }
 
 // ── AppRoutes ────────────────────────────────────────────────────────────────
-// Lives inside BrowserRouter so it can use useLocation for the keyboard
-// shortcut listener that opens GlobalSearch.
 function AppRoutes() {
   const [searchOpen, setSearchOpen] = useState(false)
+  const { user, isAdmin } = useAuthStore()
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -43,6 +45,8 @@ function AppRoutes() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  if (!user) return <Navigate to="/login" replace />
 
   return (
     <>
@@ -59,6 +63,7 @@ function AppRoutes() {
             <Route path="/leads" element={<PageWrapper><LeadsPage /></PageWrapper>} />
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
             <Route path="/permuta" element={<PageWrapper><PermutaPage /></PageWrapper>} />
+            {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
           </Routes>
         </main>
         <BottomNav />
@@ -72,14 +77,25 @@ function AppRoutes() {
 // ── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const { theme } = useThemeStore()
+  const { init, loading } = useAuthStore()
 
-  useEffect(() => {
-    applyTheme(theme)
-  }, [theme])
+  useEffect(() => { applyTheme(theme) }, [theme])
+  useEffect(() => { init() }, [init])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-bg)' }}>
+        <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/*" element={<AppRoutes />} />
+      </Routes>
       <Toaster
         position="bottom-right"
         toastOptions={{

@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
   ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight, ArrowLeftRight,
-  Bell,
+  Bell, ShieldCheck, LogOut,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import logoLight from '../../assets/logo.png'
 import logoDark from '../../assets/logo-dark.png'
 
@@ -47,6 +48,15 @@ const tools = [
 export function Sidebar() {
   const [toolsOpen, setToolsOpen] = useState(false)
   const { theme, toggle } = useThemeStore()
+  const { profile, isAdmin, logout } = useAuthStore()
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
+  const initial = (profile?.name ?? 'U').charAt(0).toUpperCase()
 
   return (
     <aside
@@ -142,6 +152,38 @@ export function Sidebar() {
             </div>
           </div>
         ))}
+
+        {/* ── Admin ───────────────────────────────────────────────── */}
+        {isAdmin && (
+          <div>
+            <p
+              className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest select-none"
+              style={{ color: 'var(--nav-muted)' }}
+            >
+              Administração
+            </p>
+            <NavLink
+              to="/admin"
+              end
+              className={({ isActive }) =>
+                `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive ? 'sf-nav-active' : 'sf-nav-item'}`
+              }
+              style={({ isActive }) =>
+                isActive
+                  ? { background: 'var(--nav-active-bg)', color: 'var(--nav-active-text)', borderLeft: '3px solid var(--brand)', paddingLeft: 'calc(0.75rem - 3px)' }
+                  : { color: 'var(--nav-text)', borderLeft: '3px solid transparent', paddingLeft: 'calc(0.75rem - 3px)' }
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <ShieldCheck size={16} style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }} className="flex-shrink-0" />
+                  <span className="flex-1 truncate">Corretores</span>
+                  {isActive && <ChevronRight size={12} style={{ color: 'var(--brand-text)' }} className="flex-shrink-0" />}
+                </>
+              )}
+            </NavLink>
+          </div>
+        )}
 
         {/* ── Ferramentas ─────────────────────────────────────────── */}
         <div>
@@ -244,24 +286,30 @@ export function Sidebar() {
 
         {/* User */}
         <div
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all mt-0.5"
-          style={{
-            background: 'var(--nav-hover-bg)',
-            border: '1px solid var(--nav-line)',
-          }}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg mt-0.5"
+          style={{ background: 'var(--nav-hover-bg)', border: '1px solid var(--nav-line)' }}
         >
           <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm">
-            R
+            {initial}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold truncate leading-none" style={{ color: 'var(--nav-active-text)' }}>
-              Rafael
+              {profile?.name ?? 'Usuário'}
             </p>
-            <p className="text-[10px] mt-0.5" style={{ color: 'var(--nav-muted)' }}>Corretor</p>
+            <p className="text-[10px] mt-0.5" style={{ color: 'var(--nav-muted)' }}>
+              {isAdmin ? 'Administrador' : 'Corretor'}
+            </p>
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <div className="w-2 h-2 rounded-full bg-success shadow-sm" />
-          </div>
+          <button
+            onClick={handleLogout}
+            title="Sair"
+            className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer flex-shrink-0"
+            style={{ color: 'var(--nav-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--nav-muted)'; e.currentTarget.style.background = '' }}
+          >
+            <LogOut size={13} />
+          </button>
         </div>
       </div>
     </aside>

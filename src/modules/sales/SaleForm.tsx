@@ -43,7 +43,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
   const [commMode,     setCommMode]     = useState<'pct' | 'fixed'>(sale?.commissionFixed != null ? 'fixed' : 'pct')
   const [commPct,      setCommPct]      = useState(sale?.commissionPct   != null ? String(sale.commissionPct)   : '5')
   const [commFixed,    setCommFixed]    = useState(sale?.commissionFixed  != null ? String(sale.commissionFixed) : '')
-  const [brokerPct,    setBrokerPct]    = useState(sale?.brokerPct        != null ? String(sale.brokerPct)       : '40')
+  const [brokerPct,    setBrokerPct]    = useState(sale?.brokerPct        != null ? String(sale.brokerPct)       : '100')
 
   const [newContactOpen, setNewContactOpen] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -212,7 +212,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
             {/* Modo: % ou valor fixo */}
             <div className="flex gap-2">
-              {([['pct', 'Por percentual (%)'], ['fixed', 'Valor fixo (R$)']] as const).map(([mode, label]) => (
+              {([['pct', 'Por % da venda'], ['fixed', 'Valor fixo (R$)']] as const).map(([mode, label]) => (
                 <button
                   key={mode}
                   type="button"
@@ -228,22 +228,39 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               ))}
             </div>
 
-            {/* Input de comissão */}
+            {/* Input + presets de % */}
             {commMode === 'pct' ? (
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={commPct}
-                    onChange={e => setCommPct(e.target.value)}
-                    className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                    placeholder="5"
-                  />
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={commPct}
+                      onChange={e => setCommPct(e.target.value)}
+                      className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                      placeholder="5"
+                    />
+                  </div>
+                  <span className="text-slate-400 text-sm font-medium">% do valor</span>
                 </div>
-                <span className="text-slate-400 text-sm font-medium">% do valor</span>
+                {/* Presets rápidos de % */}
+                <div className="flex gap-1.5">
+                  {['3', '4', '5', '6', '7'].map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setCommPct(p)}
+                      className={`flex-1 text-xs py-1.5 rounded-lg border transition-all cursor-pointer ${
+                        commPct === p
+                          ? 'bg-violet-500/25 border-violet-500/50 text-violet-300 font-semibold'
+                          : 'bg-s3/30 border-line text-slate-600 hover:text-slate-300 hover:border-slate-500'
+                      }`}
+                    >{p}%</button>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="relative flex items-center">
@@ -258,35 +275,67 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               </div>
             )}
 
-            {/* % do corretor */}
-            <div className="flex items-center gap-2">
-              <DollarSign size={12} className="text-slate-500 flex-shrink-0" />
-              <span className="text-xs text-slate-400 flex-shrink-0">Sua parte:</span>
-              <div className="relative w-20">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={brokerPct}
-                  onChange={e => setBrokerPct(e.target.value)}
-                  className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 text-center"
-                />
+            {/* Split — presets rápidos */}
+            <div className="flex flex-col gap-2 pt-1 border-t border-violet-500/10">
+              <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Divisão da comissão</p>
+              <div className="flex gap-1.5">
+                {([['100', 'Autônomo', '100%'], ['50', 'Parceria', '50/50'], ['40', 'Com imob.', '40%']] as const).map(([val, label, sub]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setBrokerPct(val)}
+                    className={`flex-1 flex flex-col items-center py-2 rounded-xl border transition-all cursor-pointer ${
+                      brokerPct === val
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                        : 'bg-s3/30 border-line text-slate-500 hover:text-slate-300 hover:border-slate-500'
+                    }`}
+                  >
+                    <span className="text-xs font-semibold">{label}</span>
+                    <span className="text-[10px] opacity-70">{sub}</span>
+                  </button>
+                ))}
+                {/* Input manual de split */}
+                <div className="flex items-center gap-1 bg-s3/30 border border-line rounded-xl px-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={brokerPct}
+                    onChange={e => setBrokerPct(e.target.value)}
+                    className="w-10 bg-transparent text-xs text-slate-300 focus:outline-none text-center"
+                    placeholder="—"
+                  />
+                  <span className="text-[10px] text-slate-600">%</span>
+                </div>
               </div>
-              <span className="text-xs text-slate-400">% da comissão</span>
             </div>
 
             {/* Preview calculado */}
             {preview && preview.totalComm > 0 && (
-              <div className="grid grid-cols-2 gap-3 pt-1 border-t border-violet-500/15">
-                <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
-                  <p className="text-[10px] text-slate-500 mb-0.5">Comissão total</p>
-                  <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
-                </div>
-                <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
-                  <p className="text-[10px] text-slate-500 mb-0.5">Sua comissão ({brokerPct}%)</p>
-                  <p className="text-sm font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.brokerComm)}</p>
-                </div>
+              <div className="pt-1 border-t border-violet-500/15">
+                {parseFloat(brokerPct) === 100 ? (
+                  /* Modo autônomo: exibe só um valor */
+                  <div className="bg-s2/50 rounded-xl px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={14} className="text-emerald-400" />
+                      <p className="text-xs text-slate-400">Sua comissão</p>
+                    </div>
+                    <p className="text-base font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
+                  </div>
+                ) : (
+                  /* Modo split: exibe divisão */
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
+                      <p className="text-[10px] text-slate-500 mb-0.5">Comissão total</p>
+                      <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
+                    </div>
+                    <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
+                      <p className="text-[10px] text-slate-500 mb-0.5">Sua parte ({brokerPct}%)</p>
+                      <p className="text-sm font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.brokerComm)}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
