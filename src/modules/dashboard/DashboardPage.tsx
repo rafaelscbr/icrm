@@ -24,6 +24,8 @@ import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
+import { useAuthStore } from '../../store/useAuthStore'
+import { usePresenceStore, pageLabel } from '../../store/usePresenceStore'
 import { getDailySends } from '../campaigns/dailyCounter'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 
@@ -712,12 +714,97 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
   )
 }
 
+// ─── Corretores online (admin only) ──────────────────────────────────────────
+
+const PAGE_ICONS: Record<string, string> = {
+  '/':            '📊',
+  '/leads':       '🎯',
+  '/contatos':    '👥',
+  '/imoveis':     '🏠',
+  '/vendas':      '💰',
+  '/campanhas':   '📣',
+  '/tarefas':     '✅',
+  '/performance': '📈',
+  '/permuta':     '🔄',
+  '/admin':       '⚙️',
+  '/admin/logs':  '📋',
+}
+
+function OnlineBrokersPanel() {
+  const { onlineBrokers } = usePresenceStore()
+  const brokers = onlineBrokers.filter(b => b.role === 'broker')
+
+  if (brokers.length === 0) {
+    return (
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-line bg-s2/30">
+        <span className="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0" />
+        <p className="text-sm text-t3">Nenhum corretor online por enquanto.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {brokers.map(b => {
+        const hasLocation = b.lat != null && b.lng != null
+        const mapsUrl = hasLocation
+          ? `https://www.google.com/maps?q=${b.lat},${b.lng}`
+          : undefined
+        const locationText = [b.city, b.region, b.country].filter(Boolean).join(', ')
+
+        return (
+          <div key={b.userId} className="flex items-center gap-3 px-4 py-3 bg-s2/50 rounded-xl border border-line">
+            {/* Avatar + pulse */}
+            <div className="relative flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-brand/20 flex items-center justify-center text-sm font-bold text-brand">
+                {b.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-s1 animate-pulse" />
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-t1 truncate">{b.name}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs">{PAGE_ICONS[b.currentPage] ?? '🖥️'}</span>
+                <span className="text-xs text-t3">{pageLabel(b.currentPage)}</span>
+                {locationText && (
+                  <>
+                    <span className="text-t4">·</span>
+                    <span className="text-xs text-t4 truncate">{locationText}</span>
+                    <span className="text-[9px] text-t4 uppercase tracking-wide">
+                      {b.locationSource === 'gps' ? 'GPS' : 'IP'}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Map link */}
+            {mapsUrl && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 text-[10px] text-brand/70 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors"
+              >
+                Ver mapa
+              </a>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Dashboard principal ──────────────────────────────────────────────────────
 
 export function DashboardPage() {
   const navigate = useNavigate()
   const [taskFormOpen,  setTaskFormOpen]  = useState(false)
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
+  const { isAdmin } = useAuthStore()
 
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
   const { properties, load: loadProperties }                    = usePropertiesStore()
@@ -771,6 +858,17 @@ export function DashboardPage() {
         </div>
         <PeriodSelector />
       </div>
+
+      {/* 0. Corretores online — visível só para admin */}
+      {isAdmin && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-t3">Corretores Online</h2>
+          </div>
+          <OnlineBrokersPanel />
+        </div>
+      )}
 
       {/* 1. Metas — progresso automático */}
       <GoalsWidget />

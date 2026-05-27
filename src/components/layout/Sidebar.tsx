@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
   ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight, ArrowLeftRight,
-  Bell, ShieldCheck, LogOut,
+  Bell, ShieldCheck, LogOut, ScrollText,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -178,6 +178,26 @@ export function Sidebar() {
                 <>
                   <ShieldCheck size={16} style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }} className="flex-shrink-0" />
                   <span className="flex-1 truncate">Corretores</span>
+                  {isActive && <ChevronRight size={12} style={{ color: 'var(--brand-text)' }} className="flex-shrink-0" />}
+                </>
+              )}
+            </NavLink>
+            <NavLink
+              to="/admin/logs"
+              end
+              className={({ isActive }) =>
+                `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive ? 'sf-nav-active' : 'sf-nav-item'}`
+              }
+              style={({ isActive }) =>
+                isActive
+                  ? { background: 'var(--nav-active-bg)', color: 'var(--nav-active-text)', borderLeft: '3px solid var(--brand)', paddingLeft: 'calc(0.75rem - 3px)' }
+                  : { color: 'var(--nav-text)', borderLeft: '3px solid transparent', paddingLeft: 'calc(0.75rem - 3px)' }
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <ScrollText size={16} style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }} className="flex-shrink-0" />
+                  <span className="flex-1 truncate">Logs</span>
                   {isActive && <ChevronRight size={12} style={{ color: 'var(--brand-text)' }} className="flex-shrink-0" />}
                 </>
               )}

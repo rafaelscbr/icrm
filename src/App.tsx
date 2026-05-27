@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-route
 import { Toaster } from 'react-hot-toast'
 import { useThemeStore, applyTheme } from './store/useThemeStore'
 import { useAuthStore } from './store/useAuthStore'
+import { usePresenceStore } from './store/usePresenceStore'
+import { getUserLocation } from './lib/geolocation'
+import { logActivity } from './lib/activityLogger'
 import { Sidebar } from './components/layout/Sidebar'
 import { BottomNav } from './components/layout/BottomNav'
 import { GlobalSearch } from './components/shared/GlobalSearch'
@@ -17,6 +20,7 @@ import { LeadsPage } from './modules/leads/LeadsPage'
 import { PermutaPage } from './modules/permuta/PermutaPage'
 import { LoginPage } from './pages/LoginPage'
 import { AdminPage } from './pages/AdminPage'
+import { ActivityLogsPage } from './pages/ActivityLogsPage'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -28,6 +32,30 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
       {children}
     </div>
   )
+}
+
+// ── PresenceTracker ───────────────────────────────────────────────────────────
+// Tracks current page in Supabase Realtime Presence and logs page visits.
+function PresenceTracker() {
+  const location = useLocation()
+  const { user, profile } = useAuthStore()
+  const { init, updatePage, cleanup } = usePresenceStore()
+
+  useEffect(() => {
+    if (!user || !profile) return
+    getUserLocation().then(loc => {
+      init(user.id, profile.name, profile.role, loc)
+    })
+    return () => { cleanup() }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user) return
+    updatePage(location.pathname)
+    logActivity('page_visit', { path: location.pathname }, location.pathname)
+  }, [location.pathname])
+
+  return null
 }
 
 // ── AppRoutes ────────────────────────────────────────────────────────────────
@@ -50,6 +78,7 @@ function AppRoutes() {
 
   return (
     <>
+      <PresenceTracker />
       <div className="flex min-h-screen page-bg">
         <Sidebar />
         <main className="flex-1 overflow-auto pb-16 lg:pb-0">
@@ -64,6 +93,7 @@ function AppRoutes() {
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
             <Route path="/permuta" element={<PageWrapper><PermutaPage /></PageWrapper>} />
             {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
+            {isAdmin && <Route path="/admin/logs" element={<PageWrapper><ActivityLogsPage /></PageWrapper>} />}
           </Routes>
         </main>
         <BottomNav />
