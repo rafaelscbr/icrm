@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Users, Shield, UserCheck, UserX, Pencil, Plus, X, Check } from 'lucide-react'
+import { Users, Shield, UserCheck, UserX, Pencil } from 'lucide-react'
 import { PageLayout } from '../components/layout/PageLayout'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -220,7 +220,7 @@ function ProfileRow({ profile, onEdit, onToggle }: { profile: Profile; onEdit: (
               <Badge variant="indigo">Admin</Badge>
             )}
             {!profile.active && (
-              <Badge variant="default">Inativo</Badge>
+              <Badge variant="slate">Inativo</Badge>
             )}
           </div>
         </div>
