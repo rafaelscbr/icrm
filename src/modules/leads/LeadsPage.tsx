@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
@@ -112,7 +113,9 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function LeadsPage() {
-  const { leads, loading, load } = useLeadsStore()
+  const { leads: allLeads, loading, load } = useLeadsStore()
+  const { isAdmin, viewAsBrokerId } = useAuthStore()
+  const leads = isAdmin && viewAsBrokerId ? allLeads.filter(l => l.brokerId === viewAsBrokerId) : allLeads
   const { load: loadProps }    = usePropertiesStore()
   const { load: loadContacts } = useContactsStore()
   const { load: loadConfig }   = useLeadConfigStore()

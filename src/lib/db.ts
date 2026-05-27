@@ -187,6 +187,7 @@ function toSale(r: SaleRow): Sale {
     commissionPct:   r.commission_pct   ?? undefined,
     commissionFixed: r.commission_fixed ?? undefined,
     brokerPct:       r.broker_pct       ?? undefined,
+    brokerId:        r.broker_id        ?? undefined,
     createdAt: r.created_at,
   }
 }
@@ -276,6 +277,7 @@ function toCampaign(r: CampaignRow): Campaign {
     status: r.status as Campaign['status'],
     averageTicket: r.average_ticket ?? undefined,
     conversionRates: r.conversion_rates ?? undefined,
+    brokerId:        r.broker_id        ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -374,6 +376,7 @@ function toLead(r: LeadRow): Lead {
     radarBedrooms: r.radar_bedrooms ?? undefined,
     kanbanOrder: r.kanban_order ?? undefined,
     stageChangedAt: r.stage_changed_at ?? undefined,
+    brokerId:       r.broker_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }

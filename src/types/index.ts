@@ -105,6 +105,7 @@ export interface Sale {
   commissionPct?:   number   // % da venda (ex: 5 = 5%)
   commissionFixed?: number   // valor fixo (alternativa ao %)
   brokerPct?:       number   // % do corretor (default 40)
+  brokerId?:        string | null
   createdAt: string
 }
 
@@ -129,6 +130,7 @@ export interface Campaign {
   status: CampaignStatus
   averageTicket?: number                               // ticket médio do produto (R$)
   conversionRates?: Partial<Record<FunnelStage, number>> // % de conversão por etapa (0-100)
+  brokerId?:        string | null
   createdAt: string
   updatedAt: string
 }
@@ -240,6 +242,7 @@ export interface Lead {
   radarBedrooms?: number
   kanbanOrder?: number      // float para ordenação manual dentro da coluna (maior = primeiro)
   stageChangedAt?: string   // quando entrou na etapa atual — base para tempo em etapa
+  brokerId?:      string | null
   createdAt: string
   updatedAt: string
 }

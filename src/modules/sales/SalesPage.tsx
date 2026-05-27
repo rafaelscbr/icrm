@@ -13,6 +13,7 @@ import { SaleForm } from './SaleForm'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { Sale, SaleType, calcSaleCommissions } from '../../types'
 import { formatCurrency, formatCurrencyFull, formatDateShort } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -29,7 +30,9 @@ const FILTER_OPTIONS: { value: SaleType | null; label: string }[] = [
 ]
 
 export function SalesPage() {
-  const { sales, load, remove, getByPeriod, getValueByPeriod } = useSalesStore()
+  const { sales: allSales, load, remove } = useSalesStore()
+  const { isAdmin, viewAsBrokerId } = useAuthStore()
+  const sales = isAdmin && viewAsBrokerId ? allSales.filter(s => s.brokerId === viewAsBrokerId) : allSales
   const { contacts, load: loadContacts } = useContactsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
   const [query, setQuery] = useState('')
@@ -59,8 +62,8 @@ export function SalesPage() {
 
   // Todos os KPIs respeitam o período selecionado
   const periodLabel   = getLabel()
-  const salesInPeriod = getByPeriod(startDate, endDate)
-  const valueInPeriod = getValueByPeriod(startDate, endDate)
+  const salesInPeriod = sales.filter(s => matchesPeriod(s.date, startDate, endDate))
+  const valueInPeriod = salesInPeriod.reduce((acc, s) => acc + s.value, 0)
   const avgTicket     = salesInPeriod.length > 0 ? valueInPeriod / salesInPeriod.length : 0
   const periodComm    = salesInPeriod.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0)
   const periodBroker  = salesInPeriod.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0)

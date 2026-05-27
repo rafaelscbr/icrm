@@ -14,6 +14,9 @@ interface AuthStore {
   profile: Profile | null
   isAdmin: boolean
   loading: boolean
+  allProfiles: Profile[]
+  viewAsBrokerId: string | null
+  setViewAsBroker: (id: string | null) => void
   init: () => Promise<void>
   login: (email: string, password: string) => Promise<string | null>
   logout: () => Promise<void>
@@ -34,20 +37,34 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   }
 }
 
+async function fetchProfiles(): Promise<Profile[]> {
+  const { data } = await supabase.from('profiles').select('*').order('created_at')
+  return (data ?? []).map(r => ({
+    id: r.id, name: r.name, role: r.role as 'admin' | 'broker',
+    active: r.active, avatarUrl: r.avatar_url ?? undefined,
+  }))
+}
+
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   profile: null,
   isAdmin: false,
   loading: true,
+  allProfiles: [],
+  viewAsBrokerId: null,
+  setViewAsBroker: (id) => set({ viewAsBrokerId: id }),
 
   init: async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.user) {
       const profile = await loadProfile(session.user.id)
+      const isAdmin = profile?.role === 'admin'
+      const allProfiles = isAdmin ? await fetchProfiles() : []
       set({
         user: { id: session.user.id, email: session.user.email! },
         profile,
-        isAdmin: profile?.role === 'admin',
+        isAdmin,
+        allProfiles,
         loading: false,
       })
     } else {
@@ -88,15 +105,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   fetchAllProfiles: async () => {
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at')
-    if (error) throw error
-    return (data ?? []).map(r => ({
-      id: r.id,
-      name: r.name,
-      role: r.role as 'admin' | 'broker',
-      active: r.active,
-      avatarUrl: r.avatar_url ?? undefined,
-    }))
+    const profiles = await fetchProfiles()
+    set({ allProfiles: profiles })
+    return profiles
   },
 
   updateProfile: async (id, data) => {

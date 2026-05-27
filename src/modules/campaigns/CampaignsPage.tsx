@@ -14,13 +14,16 @@ import { CampaignPerformanceTab } from './CampaignPerformanceTab'
 import { DailyLimitBar } from './DailyLimitBar'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { Campaign } from '../../types'
 import { STATUS_CONFIG } from './config'
 
 type PageTab = 'campanhas' | 'performance'
 
 export function CampaignsPage() {
-  const { campaigns, load: loadCampaigns, remove, setStatus } = useCampaignsStore()
+  const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus } = useCampaignsStore()
+  const { isAdmin, viewAsBrokerId } = useAuthStore()
+  const campaigns = isAdmin && viewAsBrokerId ? allCampaigns.filter(c => c.brokerId === viewAsBrokerId) : allCampaigns
   const { leads, load: loadLeads, removeForCampaign } = useCampaignLeadsStore()
 
   const [selectedId,     setSelectedId]     = useState<string>('')
