@@ -3,7 +3,7 @@ import { Search, RefreshCw } from 'lucide-react'
 import { PageLayout } from '../components/layout/PageLayout'
 import { Card } from '../components/ui/Card'
 import { Avatar } from '../components/ui/Avatar'
-import { useAuthStore, Profile } from '../store/useAuthStore'
+import { useAuthStore } from '../store/useAuthStore'
 import { supabase } from '../lib/supabase'
 import { pageLabel } from '../store/usePresenceStore'
 
