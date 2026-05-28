@@ -4,7 +4,7 @@ import {
   Users, Building2, TrendingUp, DollarSign, Cake,
   ArrowRight, Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
   AlertTriangle, Clock, CalendarCheck, Siren, ClipboardCheck,
-  ListTodo, Snowflake, RefreshCw, Megaphone, Zap, ThumbsUp,
+  ListTodo, Snowflake, RefreshCw, Megaphone,
   ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { Task, Contact, Property, Lead, LeadFunnelStage, FunnelStage, calcSaleCommissions } from '../../types'
