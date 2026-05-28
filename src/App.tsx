@@ -23,6 +23,8 @@ import { AdminPage } from './pages/AdminPage'
 import { ActivityLogsPage } from './pages/ActivityLogsPage'
 import { GoalsPage } from './modules/goals/GoalsPage'
 import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
+import { NotificationsPage } from './pages/NotificationsPage'
+import { useNotificationsStore } from './store/useNotificationsStore'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -64,6 +66,7 @@ function PresenceTracker() {
 function AppRoutes() {
   const [searchOpen, setSearchOpen] = useState(false)
   const { user, isAdmin } = useAuthStore()
+  const { load: loadNotifications, subscribe: subscribeNotifications } = useNotificationsStore()
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -75,6 +78,14 @@ function AppRoutes() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  // Carrega e assina notificações realtime quando usuário está disponível
+  useEffect(() => {
+    if (!user) return
+    loadNotifications(user.id)
+    const unsubscribe = subscribeNotifications(user.id)
+    return unsubscribe
+  }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) return <Navigate to="/login" replace />
 
@@ -96,6 +107,7 @@ function AppRoutes() {
             <Route path="/permuta" element={<PageWrapper><PermutaPage /></PageWrapper>} />
             <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
             <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />
+            <Route path="/notificacoes" element={<PageWrapper><NotificationsPage /></PageWrapper>} />
             {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
             {isAdmin && <Route path="/admin/logs" element={<PageWrapper><ActivityLogsPage /></PageWrapper>} />}
           </Routes>

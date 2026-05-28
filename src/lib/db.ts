@@ -6,6 +6,7 @@ import {
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
   LeadInteraction, LeadInteractionType, LeadInteractionOutcome,
   LeadConfigEntry, LeadConfigType, PermutaItem,
+  AppNotification, NotificationType,
 } from '../types'
 
 // ─── Row types (snake_case vindos do Supabase) ────────────────────────────────
@@ -649,6 +650,38 @@ export const db = {
       if (error) throw error
     },
     delete: (id: string) => deleteOne('lead_config', id),
+  },
+
+  notifications: {
+    fetchForUser: async (userId: string): Promise<AppNotification[]> => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(100)
+      if (error) throw error
+      return (data as Array<{
+        id: string; user_id: string; type: string; title: string
+        body: string | null; resource_id: string | null; resource_type: string | null
+        read: boolean; created_at: string
+      }>).map(r => ({
+        id: r.id, userId: r.user_id, type: r.type as NotificationType,
+        title: r.title, body: r.body ?? undefined,
+        resourceId: r.resource_id ?? undefined, resourceType: r.resource_type ?? undefined,
+        read: r.read, createdAt: r.created_at,
+      }))
+    },
+    markRead: async (id: string) => {
+      const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id)
+      if (error) throw error
+    },
+    markAllRead: async (userId: string) => {
+      const { error } = await supabase
+        .from('notifications').update({ read: true })
+        .eq('user_id', userId).eq('read', false)
+      if (error) throw error
+    },
   },
 
   campaignLeads: {

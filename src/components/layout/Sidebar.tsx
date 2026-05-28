@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useUnreadCount } from '../../store/useNotificationsStore'
+import { NotificationsPopover } from './NotificationsPopover'
 import logoLight from '../../assets/logo.png'
 import logoDark from '../../assets/logo-dark.png'
 
@@ -47,9 +49,12 @@ const tools = [
 ]
 
 export function Sidebar() {
-  const [toolsOpen, setToolsOpen] = useState(false)
+  const [toolsOpen,    setToolsOpen]    = useState(false)
+  const [notifOpen,    setNotifOpen]    = useState(false)
+  const bellRef = useRef<HTMLButtonElement>(null)
   const { theme, toggle } = useThemeStore()
   const { profile, isAdmin, logout, allProfiles, viewAsBrokerId, setViewAsBroker } = useAuthStore()
+  const unreadCount = useUnreadCount()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -314,17 +319,32 @@ export function Sidebar() {
 
       {/* ── Footer ───────────────────────────────────────────────── */}
       <div className="px-3 py-3 flex flex-col gap-1" style={{ borderTop: '1px solid var(--nav-line)' }}>
-        {/* Notificações */}
+        {/* Notificações — popover real */}
         <button
+          ref={bellRef}
+          onClick={() => setNotifOpen(v => !v)}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer"
-          style={{ color: 'var(--nav-text)' }}
+          style={{
+            color: 'var(--nav-text)',
+            background: notifOpen ? 'var(--nav-hover-bg)' : '',
+          }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover-bg)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = '' }}
+          onMouseLeave={e => { if (!notifOpen) e.currentTarget.style.background = '' }}
         >
-          <Bell size={14} style={{ color: 'var(--nav-muted)' }} />
+          <Bell size={14} style={{ color: unreadCount > 0 ? 'var(--brand)' : 'var(--nav-muted)' }} />
           <span className="flex-1 text-left text-xs">Notificações</span>
-          <span className="w-4 h-4 rounded-full bg-brand text-white text-[9px] font-bold flex items-center justify-center">2</span>
+          {unreadCount > 0 && (
+            <span className="min-w-[16px] h-4 rounded-full bg-brand text-white text-[9px] font-bold flex items-center justify-center px-1">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
+
+        <NotificationsPopover
+          isOpen={notifOpen}
+          onClose={() => setNotifOpen(false)}
+          anchorEl={bellRef.current}
+        />
 
         {/* Tema toggle */}
         <button

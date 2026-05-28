@@ -285,3 +285,19 @@ export interface WeekSnapshot {
   score:     number   // 0–100
   savedAt:   string
 }
+
+// ─── Notificações ─────────────────────────────────────────────────────────────
+
+export type NotificationType = 'task_assigned'
+
+export interface AppNotification {
+  id: string
+  userId: string
+  type: NotificationType
+  title: string
+  body?: string        // ex: título da tarefa
+  resourceId?: string  // ex: task UUID
+  resourceType?: string // 'task'
+  read: boolean
+  createdAt: string
+}
