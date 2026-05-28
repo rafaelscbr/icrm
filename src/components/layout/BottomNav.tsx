@@ -23,6 +23,7 @@ const moreNav = [
   { to: '/campanhas',   icon: Megaphone,      label: 'Campanhas'   },
   { to: '/permuta',     icon: ArrowLeftRight, label: 'Permuta'     },
   { to: '/performance', icon: BarChart3,      label: 'Performance' },
+  { to: '/escritorio',  icon: Tv2,            label: 'Escritório'  },
 ]
 
 const tools = [
@@ -53,7 +54,8 @@ export function BottomNav() {
       {/* ── FAB nova tarefa ──────────────────────────────────────── */}
       <button
         onClick={() => setTaskFormOpen(true)}
-        className="lg:hidden fixed bottom-20 right-4 z-50 w-12 h-12 rounded-full bg-brand hover:bg-brand-dark active:scale-95 flex items-center justify-center shadow-brand text-white transition-all duration-150"
+        className="lg:hidden fixed right-4 z-50 w-12 h-12 rounded-full bg-brand hover:bg-brand-dark active:scale-95 flex items-center justify-center shadow-brand text-white transition-all duration-150"
+        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
         title="Nova tarefa"
       >
         <Plus size={20} strokeWidth={2.5} />
@@ -67,6 +69,7 @@ export function BottomNav() {
           borderTop: '1px solid var(--nav-line)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         <div className="flex items-center justify-around h-16 px-1">
@@ -135,8 +138,9 @@ export function BottomNav() {
           onClick={() => setDrawerOpen(false)}
         >
           <div
-            className="absolute bottom-16 inset-x-0 rounded-t-2xl pb-2 animate-in"
+            className="absolute inset-x-0 rounded-t-2xl pb-2 animate-in slide-in-from-bottom-4 duration-200"
             style={{
+              bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
               background: 'var(--surface)',
               borderTop: '1px solid var(--line)',
             }}

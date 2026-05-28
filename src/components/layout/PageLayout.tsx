@@ -16,7 +16,7 @@ export function PageLayout({ title, subtitle, ctaLabel, onCta, actions, children
     <div className="flex-1 min-h-screen bg-page">
       {/* ── Sticky page header ──────────────────────────────────── */}
       <div
-        className="sticky top-0 z-10 nav-bg-blur"
+        className="sticky top-0 z-10 nav-bg-blur pt-safe"
         style={{ borderBottom: '1px solid var(--line)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">

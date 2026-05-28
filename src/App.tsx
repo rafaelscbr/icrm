@@ -95,7 +95,7 @@ function AppRoutes() {
       <PresenceTracker />
       <div className="flex min-h-screen page-bg">
         <Sidebar />
-        <main className="flex-1 overflow-auto pb-16 lg:pb-0">
+        <main className="flex-1 overflow-auto pb-nav-safe lg:!pb-0">
           <Routes>
             <Route path="/" element={<PageWrapper><DashboardPage /></PageWrapper>} />
             <Route path="/contatos" element={<PageWrapper><ContactsPage /></PageWrapper>} />

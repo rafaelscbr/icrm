@@ -84,7 +84,7 @@ export function Sidebar() {
       }}
     >
       {/* ── Logo ─────────────────────────────────────────────────── */}
-      <div className="px-5 py-5 border-b" style={{ borderColor: 'var(--nav-line)' }}>
+      <div className="px-5 pt-safe border-b" style={{ borderColor: 'var(--nav-line)', paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))', paddingBottom: '1.25rem' }}>
         <img
           src={theme === 'dark' ? logoLight : logoDark}
           alt="Souza Imobiliária"

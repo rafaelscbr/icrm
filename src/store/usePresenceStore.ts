@@ -77,9 +77,15 @@ export const usePresenceStore = create<PresenceStore>((set, get) => ({
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState<TrackPayload>()
-        const brokers: BrokerPresence[] = Object.entries(state).flatMap(([uid, presences]) =>
-          (presences as TrackPayload[]).map(p => ({ userId: uid, ...p }))
-        )
+        // Para cada userId, pega apenas a entrada mais recente (evita duplicatas
+        // quando o mesmo usuário tem múltiplas abas ou conexões antigas pendentes)
+        const brokers: BrokerPresence[] = Object.entries(state).map(([uid, presences]) => {
+          const arr = presences as TrackPayload[]
+          const latest = arr.reduce((a, b) =>
+            new Date(a.lastSeen) >= new Date(b.lastSeen) ? a : b
+          )
+          return { userId: uid, ...latest }
+        })
         set({ onlineBrokers: brokers })
       })
       .subscribe(async status => {

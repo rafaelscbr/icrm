@@ -189,6 +189,23 @@ html.light {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   iOS / PWA SAFE AREA UTILITIES
+   Garante que o conteúdo não fique atrás do Dynamic Island (topo)
+   ou da home indicator bar (baixo) no iPhone com viewport-fit=cover
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  /* Padding inferior = altura do BottomNav (4rem) + home indicator */
+  .pb-nav-safe {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+  /* Padding superior para o Dynamic Island / status bar */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
    SEMANTIC SURFACE CLASSES
    ══════════════════════════════════════════════════════════════════════════════ */
 
