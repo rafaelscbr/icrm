@@ -24,6 +24,7 @@ import { ActivityLogsPage } from './pages/ActivityLogsPage'
 import { GoalsPage } from './modules/goals/GoalsPage'
 import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
 import { NotificationsPage } from './pages/NotificationsPage'
+import { VirtualOfficePage } from './modules/office/VirtualOfficePage'
 import { useNotificationsStore } from './store/useNotificationsStore'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
@@ -108,6 +109,7 @@ function AppRoutes() {
             <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
             <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />
             <Route path="/notificacoes" element={<PageWrapper><NotificationsPage /></PageWrapper>} />
+            <Route path="/escritorio" element={<PageWrapper><VirtualOfficePage /></PageWrapper>} />
             {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
             {isAdmin && <Route path="/admin/logs" element={<PageWrapper><ActivityLogsPage /></PageWrapper>} />}
           </Routes>

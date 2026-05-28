@@ -17,9 +17,10 @@ const navSections = [
   {
     label: 'Principal',
     items: [
-      { key: 'dashboard',   to: '/',        icon: LayoutDashboard, label: 'Dashboard',   end: true  },
-      { key: 'tarefas',     to: '/tarefas', icon: CheckSquare,     label: 'Tarefas',     end: false },
-      { key: 'metas',       to: '/metas',   icon: Target,          label: 'Metas',       end: false },
+      { key: 'dashboard',   to: '/',           icon: LayoutDashboard, label: 'Dashboard',          end: true  },
+      { key: 'tarefas',     to: '/tarefas',    icon: CheckSquare,     label: 'Tarefas',             end: false },
+      { key: 'metas',       to: '/metas',      icon: Target,          label: 'Metas',               end: false },
+      { key: 'escritorio',  to: '/escritorio', icon: Tv2,             label: 'Escritório Virtual',  end: false },
     ],
   },
   {
