@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent, useMemo, useRef } from 'react'
-import { Calendar, User, Building2, Plus, ExternalLink, ChevronDown, ChevronUp, CheckCircle2, ListChecks, X } from 'lucide-react'
+import { Calendar, User, Building2, Plus, ExternalLink, ChevronDown, ChevronUp, CheckCircle2, ListChecks, X, UserCheck } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { Textarea } from '../../components/ui/Textarea'
@@ -10,6 +10,7 @@ import { generateId } from '../../lib/formatters'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
 import { localDateStr } from '../../lib/formatters'
 import { ContactForm } from '../contacts/ContactForm'
@@ -46,9 +47,10 @@ const inputBase =
 function todayStr() { return localDateStr() }
 
 export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormProps) {
-  const { add, update } = useTasksStore()
-  const { contacts }    = useContactsStore()
-  const { properties }  = usePropertiesStore()
+  const { add, update }                              = useTasksStore()
+  const { contacts }                                 = useContactsStore()
+  const { properties }                               = usePropertiesStore()
+  const { isAdmin, profile, allProfiles, fetchAllProfiles } = useAuthStore()
   const isEditing = Boolean(task)
 
   const today = todayStr()
@@ -73,6 +75,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
   const [propertySearch,   setPropertySearch]   = useState(
     task?.propertyId ? (properties.find(p => p.id === task.propertyId)?.name ?? '') : ''
   )
+  const [assignedToId,  setAssignedToId]  = useState(task?.assignedToId ?? '')
   const [showOptional,  setShowOptional]  = useState(Boolean(task?.contactId || task?.propertyId))
   const [markDone,      setMarkDone]      = useState(task?.status === 'done')
   const [completedDate, setCompletedDate] = useState(
@@ -86,6 +89,14 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
   const [showChecklist,  setShowChecklist]  = useState(Boolean(task?.checklist?.length))
   const [newItemText,    setNewItemText]    = useState('')
   const newItemRef = useRef<HTMLInputElement>(null)
+
+  // Perfis disponíveis para delegação
+  // Admin → vê corretores ativos (exceto si mesmo)
+  // Corretor → vê admins ativos
+  const assignableProfiles = useMemo(() => {
+    if (isAdmin) return allProfiles.filter(p => p.role === 'broker' && p.active && p.id !== profile?.id)
+    return allProfiles.filter(p => p.role === 'admin' && p.active)
+  }, [isAdmin, allProfiles, profile?.id])
 
   useEffect(() => {
     if (!isOpen) return
@@ -101,6 +112,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
     setPropertyId(task?.propertyId ?? '')
     setContactSearch(resolvedContactId ? (contacts.find(c => c.id === resolvedContactId)?.name ?? '') : '')
     setPropertySearch(task?.propertyId ? (properties.find(p => p.id === task.propertyId)?.name ?? '') : '')
+    setAssignedToId(task?.assignedToId ?? '')
     setShowOptional(Boolean(resolvedContactId || task?.propertyId))
     setMarkDone(task?.status === 'done')
     setCompletedDate(task?.completedAt ? task.completedAt.split('T')[0] : todayStr())
@@ -108,6 +120,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
     setShowChecklist(Boolean(task?.checklist?.length))
     setNewItemText('')
     setErrors({})
+    // Carrega perfis para seleção de delegação (se ainda não carregados)
+    if (allProfiles.length === 0) fetchAllProfiles()
   }, [task, isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredContacts = contactSearch.trim()
@@ -159,6 +173,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
       contactId:   contactId  || undefined,
       propertyId:  propertyId || undefined,
       checklist:   checklist.length > 0 ? checklist : undefined,
+      assignedToId: assignedToId || undefined,
     }
 
     if (isEditing && task) {
@@ -496,6 +511,57 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               </div>
             )}
           </div>
+
+          {/* ── Delegação ────────────────────────────────────────────────── */}
+          {assignableProfiles.length > 0 && (
+            <div className={`flex flex-col gap-2 px-4 py-3 rounded-xl border transition-all
+              ${assignedToId ? 'bg-violet-500/8 border-violet-500/30' : 'bg-s2/50 border-line'}`}>
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <UserCheck size={12} className={assignedToId ? 'text-violet-400' : 'text-slate-500'} />
+                {isAdmin ? 'Atribuir para corretor' : 'Delegar para admin'}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {/* Opção: nenhum (eu mesmo) */}
+                <button
+                  type="button"
+                  onClick={() => setAssignedToId('')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border
+                    ${!assignedToId
+                      ? 'bg-s3/70 border-line-strong text-slate-200'
+                      : 'border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
+                    }`}
+                >
+                  {isAdmin ? 'Nenhum (minha tarefa)' : 'Não delegar'}
+                </button>
+                {assignableProfiles.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setAssignedToId(assignedToId === p.id ? '' : p.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border
+                      ${assignedToId === p.id
+                        ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
+                        : 'border-line text-slate-400 hover:text-slate-200 hover:border-line-strong'
+                      }`}
+                  >
+                    <div className="w-4 h-4 rounded-full bg-violet-500/30 flex items-center justify-center text-[9px] font-bold text-violet-300 flex-shrink-0">
+                      {p.name[0].toUpperCase()}
+                    </div>
+                    {p.name}
+                    {p.role === 'admin' && <span className="text-[9px] text-violet-400/70">admin</span>}
+                  </button>
+                ))}
+              </div>
+              {assignedToId && (
+                <p className="text-[11px] text-violet-400/70 mt-0.5">
+                  {isAdmin
+                    ? `Esta tarefa aparecerá na lista de ${assignableProfiles.find(p => p.id === assignedToId)?.name ?? ''}`
+                    : 'O admin será notificado sobre esta tarefa delegada'
+                  }
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>

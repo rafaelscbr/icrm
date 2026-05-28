@@ -88,6 +88,7 @@ export interface Task {
   googleEventId?: string
   checklist?: ChecklistItem[]   // stored in localStorage, not in Supabase
   brokerId?: string
+  assignedToId?: string   // delegação: pessoa para quem a tarefa foi atribuída
   createdAt: string
   updatedAt: string
 }

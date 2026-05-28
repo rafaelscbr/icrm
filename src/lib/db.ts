@@ -54,6 +54,7 @@ interface TaskRow {
   completed_at: string | null; contact_id: string | null
   property_id: string | null; google_event_id: string | null
   broker_id: string | null
+  assigned_to_id: string | null   // delegação
   created_at: string; updated_at: string
 }
 
@@ -219,6 +220,7 @@ function toTask(r: TaskRow): Task {
     completedAt: r.completed_at ?? undefined, contactId: r.contact_id ?? undefined,
     propertyId: r.property_id ?? undefined, googleEventId: r.google_event_id ?? undefined,
     brokerId: r.broker_id ?? undefined,
+    assignedToId: r.assigned_to_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -230,7 +232,9 @@ function fromTask(t: Task): TaskRow {
     status: t.status, priority: t.priority, category: t.category ?? null,
     completed_at: t.completedAt ?? null, contact_id: t.contactId ?? null,
     property_id: t.propertyId ?? null, google_event_id: t.googleEventId ?? null,
-    broker_id: getCurrentUserId(),
+    // brokerId explícito (ao editar) ou usuário atual — o trigger do banco garante auth.uid() se vier null
+    broker_id: t.brokerId ?? getCurrentUserId(),
+    assigned_to_id: t.assignedToId ?? null,
     created_at: t.createdAt, updated_at: t.updatedAt,
   }
 }

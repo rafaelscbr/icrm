@@ -4,7 +4,7 @@ import {
   CheckCircle2, Circle, Clock, Trash2, Pencil, User,
   Building2, AlertTriangle, CheckCheck, ListTodo, CalendarClock,
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
-  BarChart2
+  BarChart2, UserCheck
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -144,6 +144,8 @@ interface TaskRowProps {
   task:         Task
   contacts:     ReturnType<typeof useContactsStore.getState>['contacts']
   properties:   ReturnType<typeof usePropertiesStore.getState>['properties']
+  allProfiles:  { id: string; name: string }[]
+  currentUserId?: string
   isLast:       boolean
   showCategory?: boolean
   onToggle:     () => void
@@ -152,7 +154,7 @@ interface TaskRowProps {
   onCalendar:   () => void
 }
 
-function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, onToggle, onEdit, onDelete, onCalendar }: TaskRowProps) {
+function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, isLast, showCategory = true, onToggle, onEdit, onDelete, onCalendar }: TaskRowProps) {
   const navigate = useNavigate()
   const contact  = contacts.find(c => c.id === t.contactId)
   const property = properties.find(p => p.id === t.propertyId)
@@ -160,6 +162,12 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
   const isDone   = t.status === 'done'
   const CatIcon  = t.category ? CATEGORY_CONFIG[t.category].icon : null
   const catColor = t.category ? CATEGORY_CONFIG[t.category].color : ''
+
+  // Delegação
+  const isAssignedToMe = t.assignedToId && t.assignedToId === currentUserId
+  const isDelegatedByMe = t.assignedToId && t.brokerId === currentUserId
+  const assignedToName = t.assignedToId ? (allProfiles.find(p => p.id === t.assignedToId)?.name ?? '') : ''
+  const delegatedByName = t.brokerId && t.brokerId !== currentUserId ? (allProfiles.find(p => p.id === t.brokerId)?.name ?? '') : ''
 
   return (
     <div className={`flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s2/50 group relative
@@ -244,6 +252,19 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
             </button>
           )}
 
+          {/* Delegação: recebida de outro usuário */}
+          {isAssignedToMe && delegatedByName && (
+            <span className="flex items-center gap-1 text-xs font-medium text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-md">
+              <UserCheck size={10} /> De: {delegatedByName}
+            </span>
+          )}
+          {/* Delegação: enviada para outro usuário */}
+          {isDelegatedByMe && assignedToName && (
+            <span className="flex items-center gap-1 text-xs font-medium text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-md">
+              <UserCheck size={10} /> Para: {assignedToName}
+            </span>
+          )}
+
           {isDone && t.completedAt && (
             <span className="flex items-center gap-1 text-xs text-green-400/70">
               <CheckCircle2 size={10} />
@@ -278,12 +299,13 @@ function TaskRow({ task: t, contacts, properties, isLast, showCategory = true, o
 // ─── Section ─────────────────────────────────────────────────────────────────
 
 function Section({
-  title, icon, count, color, tasks, contacts, properties,
+  title, icon, count, color, tasks, contacts, properties, allProfiles, currentUserId,
   onToggle, onEdit, onDelete, onCalendar,
   collapsible = false, defaultOpen = true, showCategory = true,
 }: {
   title: string; icon: React.ReactNode; count: number; color: string
   tasks: Task[]; contacts: any[]; properties: any[]
+  allProfiles: { id: string; name: string }[]; currentUserId?: string
   onToggle: (id: string) => void; onEdit: (t: Task) => void
   onDelete: (t: Task) => void; onCalendar: (t: Task) => void
   collapsible?: boolean; defaultOpen?: boolean; showCategory?: boolean
@@ -315,6 +337,8 @@ function Section({
               task={t}
               contacts={contacts}
               properties={properties}
+              allProfiles={allProfiles}
+              currentUserId={currentUserId}
               isLast={i === tasks.length - 1}
               showCategory={showCategory}
               onToggle={() => onToggle(t.id)}
@@ -342,11 +366,12 @@ export function TasksPage() {
   const { tasks: allTasks, load, remove, toggleDone } = useTasksStore()
   const { contacts, load: loadContacts }              = useContactsStore()
   const { properties, load: loadProperties }          = usePropertiesStore()
-  const { isAdmin, viewAsBrokerId }                   = useAuthStore()
+  const { isAdmin, viewAsBrokerId, profile, allProfiles } = useAuthStore()
 
-  // Quando admin está no modo "ver como corretor", filtra as tarefas daquele corretor
+  // Quando admin está no modo "ver como corretor", filtra tarefas do corretor
+  // (criadas por ele OU delegadas para ele)
   const tasks = isAdmin && viewAsBrokerId
-    ? allTasks.filter(t => t.brokerId === viewAsBrokerId)
+    ? allTasks.filter(t => t.brokerId === viewAsBrokerId || t.assignedToId === viewAsBrokerId)
     : allTasks
 
   const [formOpen,     setFormOpen]     = useState(false)
@@ -413,6 +438,8 @@ export function TasksPage() {
   const sharedProps = {
     contacts,
     properties,
+    allProfiles,
+    currentUserId: profile?.id,
     onToggle:   toggleDone,
     onEdit:     (t: Task) => { setEditing(t); setFormOpen(true) },
     onDelete:   setDeleteTarget,
@@ -531,6 +558,8 @@ export function TasksPage() {
                       task={t}
                       contacts={contacts}
                       properties={properties}
+                      allProfiles={allProfiles}
+                      currentUserId={profile?.id}
                       isLast={i === doneList.length - 1}
                       onToggle={() => toggleDone(t.id)}
                       onEdit={() => { setEditing(t); setFormOpen(true) }}
