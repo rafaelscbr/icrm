@@ -23,6 +23,7 @@ interface ContactRow {
   permuta_property_value: number | null
   permuta_car_model: string | null
   permuta_car_value: number | null
+  broker_id: string | null
   created_at: string; updated_at: string
 }
 
@@ -119,6 +120,7 @@ function toContact(r: ContactRow): Contact {
     hasChildren: r.has_children, childrenNames: r.children_names ?? undefined,
     isMarried: r.is_married, spouseName: r.spouse_name ?? undefined,
     permutaItems,
+    brokerId: r.broker_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -137,6 +139,7 @@ function fromContact(c: Contact): ContactRow {
     permuta_property_value: null,
     permuta_car_model: null,
     permuta_car_value: null,
+    broker_id: c.brokerId ?? getCurrentUserId(),
     created_at: c.createdAt, updated_at: c.updatedAt,
   }
 }
@@ -215,6 +218,7 @@ function toTask(r: TaskRow): Task {
     category: r.category as Task['category'] ?? undefined,
     completedAt: r.completed_at ?? undefined, contactId: r.contact_id ?? undefined,
     propertyId: r.property_id ?? undefined, googleEventId: r.google_event_id ?? undefined,
+    brokerId: r.broker_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }

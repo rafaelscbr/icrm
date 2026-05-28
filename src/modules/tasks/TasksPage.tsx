@@ -16,6 +16,7 @@ import { TaskHistoryView } from './TaskHistoryView'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { Task, TaskPriority, TaskCategory } from '../../types'
 import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
 import { localDateStr } from '../../lib/formatters'
@@ -338,9 +339,15 @@ function offsetStr(days: number) {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function TasksPage() {
-  const { tasks, load, remove, toggleDone } = useTasksStore()
-  const { contacts, load: loadContacts }    = useContactsStore()
-  const { properties, load: loadProperties } = usePropertiesStore()
+  const { tasks: allTasks, load, remove, toggleDone } = useTasksStore()
+  const { contacts, load: loadContacts }              = useContactsStore()
+  const { properties, load: loadProperties }          = usePropertiesStore()
+  const { isAdmin, viewAsBrokerId }                   = useAuthStore()
+
+  // Quando admin está no modo "ver como corretor", filtra as tarefas daquele corretor
+  const tasks = isAdmin && viewAsBrokerId
+    ? allTasks.filter(t => t.brokerId === viewAsBrokerId)
+    : allTasks
 
   const [formOpen,     setFormOpen]     = useState(false)
   const [editing,      setEditing]      = useState<Task | undefined>()

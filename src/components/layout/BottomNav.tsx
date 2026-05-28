@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
   Building2, Megaphone, BarChart3, X,
   Search, Home, Tv2, ExternalLink, Plus, UserPlus, ArrowLeftRight,
-  LogOut, ShieldCheck,
+  LogOut, ShieldCheck, Target,
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -19,6 +19,7 @@ const mainNav = [
 const moreNav = [
   { to: '/imoveis',     icon: Building2,      label: 'Imóveis'     },
   { to: '/leads',       icon: UserPlus,       label: 'Leads'       },
+  { to: '/metas',       icon: Target,         label: 'Metas'       },
   { to: '/campanhas',   icon: Megaphone,      label: 'Campanhas'   },
   { to: '/permuta',     icon: ArrowLeftRight, label: 'Permuta'     },
   { to: '/performance', icon: BarChart3,      label: 'Performance' },

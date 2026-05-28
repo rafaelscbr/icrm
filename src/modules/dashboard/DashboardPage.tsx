@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   Users, Building2, TrendingUp, DollarSign, Cake,
   ArrowRight, Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
-  AlertTriangle, Clock, Target, CalendarCheck, Siren, ClipboardCheck,
+  AlertTriangle, Clock, CalendarCheck, Siren, ClipboardCheck,
   ListTodo, Snowflake, RefreshCw, Megaphone, Zap, ThumbsUp,
+  ChevronDown, ChevronUp,
 } from 'lucide-react'
-import { Task, Contact, Property, Lead, LeadFunnelStage, calcSaleCommissions } from '../../types'
+import { Task, Contact, Property, Lead, LeadFunnelStage, FunnelStage, calcSaleCommissions } from '../../types'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadModal } from '../leads/LeadModal'
 import { PageLayout } from '../../components/layout/PageLayout'
@@ -23,26 +24,14 @@ import { useLeadsStore } from '../../store/useLeadsStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
-import { useDisparosStore } from '../../store/useDisparosStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePresenceStore, pageLabel } from '../../store/usePresenceStore'
-import { getDailySends } from '../campaigns/dailyCounter'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
 const COOLING_DAYS = 2
-
-const DAILY_TARGET_INTERACTIONS  = 10
-const DAILY_TARGET_DISPAROS      = 30
-const WEEKLY_TARGET_VISITS       = 2
-const WEEKLY_TARGET_PROPOSALS    = 1
-const WEEKLY_TARGET_DISPAROS     = 150   // 30 × 5 dias úteis
-const MONTHLY_TARGET_VISITS      = 8
-const MONTHLY_TARGET_PROPOSALS   = 4
-const MONTHLY_TARGET_SALES       = 2
-const MONTHLY_TARGET_DISPAROS    = 600   // 30 × 5 × 4 semanas
 
 const STAGE_LABELS: Partial<Record<LeadFunnelStage, { label: string; color: string }>> = {
   lead:        { label: 'Lead',        color: 'text-t2'  },
@@ -53,16 +42,192 @@ const STAGE_LABELS: Partial<Record<LeadFunnelStage, { label: string; color: stri
   venda:       { label: 'Venda',       color: 'text-green-400'  },
 }
 
+// ─── Pipeline de Campanhas ────────────────────────────────────────────────────
+
+const CAMPAIGN_STAGES: Array<{
+  stage: FunnelStage
+  label: string
+  shortLabel: string
+  bg: string
+  text: string
+  border: string
+}> = [
+  { stage: 'new',          label: 'Para Ativar',   shortLabel: 'Ativar',   bg: 'bg-amber-500/12',   text: 'text-amber-400',   border: 'border-amber-500/25' },
+  { stage: 'sent',         label: 'Em Abordagem',  shortLabel: 'Abordagem', bg: 'bg-blue-500/12',    text: 'text-blue-400',    border: 'border-blue-500/25'  },
+  { stage: 'attended',     label: 'Demonstrou Interesse', shortLabel: 'Interesse', bg: 'bg-cyan-500/12', text: 'text-cyan-400', border: 'border-cyan-500/25' },
+  { stage: 'scheduled',    label: 'Visita Agendada', shortLabel: 'Visita', bg: 'bg-violet-500/12',  text: 'text-violet-400',  border: 'border-violet-500/25'},
+  { stage: 'presentation', label: 'Apresentação',  shortLabel: 'Apresentação', bg: 'bg-purple-500/12', text: 'text-purple-400', border: 'border-purple-500/25' },
+  { stage: 'proposal',     label: 'Em Proposta',   shortLabel: 'Proposta', bg: 'bg-orange-500/12',  text: 'text-orange-400',  border: 'border-orange-500/25'},
+]
+
+function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
+  const { campaigns }         = useCampaignsStore()
+  const { leads: campLeads }  = useCampaignLeadsStore()
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const activeCampaigns = campaigns.filter(c => c.status === 'active')
+  if (activeCampaigns.length === 0) return null
+
+  // Totais gerais (todas as campanhas ativas)
+  const activeLeads = campLeads.filter(l => activeCampaigns.some(c => c.id === l.campaignId))
+
+  const totalPerStage = CAMPAIGN_STAGES.map(({ stage }) => ({
+    stage,
+    count: activeLeads.filter(l => l.funnelStage === stage && !l.situation).length,
+  }))
+  const totalSales = activeLeads.filter(l => l.funnelStage === 'sale').length
+  const grandTotal = activeLeads.length
+
+  return (
+    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center">
+            <Megaphone size={15} className="text-purple-400" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Pipeline de Campanhas</p>
+            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
+              {activeCampaigns.length} campanha{activeCampaigns.length !== 1 ? 's' : ''} ativa{activeCampaigns.length !== 1 ? 's' : ''} · {grandTotal.toLocaleString('pt-BR')} leads
+            </h2>
+          </div>
+        </div>
+        {totalSales > 0 && (
+          <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 px-3 py-1.5 rounded-xl">
+            <span className="text-green-400 text-xs font-bold tabular-nums">{totalSales}</span>
+            <span className="text-green-500/70 text-[10px]">venda{totalSales !== 1 ? 's' : ''}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Funil geral */}
+      <div className="px-5 pt-4 pb-3 border-b border-line">
+        <p className="text-[10px] font-bold text-t4 uppercase tracking-widest mb-3">Resumo geral</p>
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
+          {CAMPAIGN_STAGES.map(({ stage, shortLabel, bg, text, border }) => {
+            const count = totalPerStage.find(s => s.stage === stage)?.count ?? 0
+            const pct   = grandTotal > 0 ? Math.round(count / grandTotal * 100) : 0
+            return (
+              <div key={stage} className={`flex flex-col items-center gap-1 rounded-xl p-3 border ${bg} ${border}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
+                <p className="text-2xl font-black text-t1 tabular-nums leading-none">{count.toLocaleString('pt-BR')}</p>
+                <p className="text-[10px] text-t4 tabular-nums">{pct}%</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Por campanha */}
+      <div className="flex flex-col divide-y divide-line">
+        {activeCampaigns.map(campaign => {
+          const cLeads    = campLeads.filter(l => l.campaignId === campaign.id)
+          const total     = cLeads.length
+          const expanded  = expandedId === campaign.id
+          const stageCounts = CAMPAIGN_STAGES.map(({ stage }) => ({
+            stage,
+            count: cLeads.filter(l => l.funnelStage === stage && !l.situation).length,
+          }))
+          const sales = cLeads.filter(l => l.funnelStage === 'sale').length
+
+          return (
+            <div key={campaign.id} className="hover:bg-s2/40 transition-colors">
+              {/* Row header */}
+              <button
+                onClick={() => setExpandedId(expanded ? null : campaign.id)}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left cursor-pointer"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-t1 truncate">{campaign.name}</p>
+                  <p className="text-[11px] text-t4 mt-0.5">{total.toLocaleString('pt-BR')} leads · {sales > 0 ? `${sales} venda${sales !== 1 ? 's' : ''}` : 'Sem vendas ainda'}</p>
+                </div>
+
+                {/* Mini funnel preview */}
+                <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+                  {CAMPAIGN_STAGES.slice(0, 4).map(({ stage, text, bg }) => {
+                    const cnt = stageCounts.find(s => s.stage === stage)?.count ?? 0
+                    if (cnt === 0) return null
+                    return (
+                      <span key={stage} className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${bg} ${text}`}>
+                        {cnt}
+                      </span>
+                    )
+                  })}
+                </div>
+
+                <button
+                  onClick={e => { e.stopPropagation(); onNavigate(campaign.id) }}
+                  className="flex-shrink-0 text-[10px] text-brand/60 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors mr-1"
+                >
+                  Abrir
+                </button>
+
+                {expanded
+                  ? <ChevronUp size={14} className="text-t4 flex-shrink-0" />
+                  : <ChevronDown size={14} className="text-t4 flex-shrink-0" />
+                }
+              </button>
+
+              {/* Expanded funnel */}
+              {expanded && (
+                <div className="px-5 pb-4">
+                  <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 mt-1">
+                    {CAMPAIGN_STAGES.map(({ stage, shortLabel, bg, text, border }) => {
+                      const cnt = stageCounts.find(s => s.stage === stage)?.count ?? 0
+                      const pct = total > 0 ? Math.round(cnt / total * 100) : 0
+                      return (
+                        <div key={stage} className={`flex flex-col items-center gap-1 rounded-xl p-2.5 border ${bg} ${border}`}>
+                          <p className={`text-[10px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
+                          <p className="text-xl font-black text-t1 tabular-nums leading-none">{cnt}</p>
+                          <p className="text-[10px] text-t4">{pct}%</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Conversão progressiva */}
+                  <div className="mt-3 flex items-center gap-1 overflow-x-auto">
+                    {CAMPAIGN_STAGES.map(({ stage, shortLabel, text }, idx) => {
+                      const cur  = stageCounts.find(s => s.stage === stage)?.count ?? 0
+                      const prev = idx > 0
+                        ? (stageCounts.find(s => s.stage === CAMPAIGN_STAGES[idx - 1].stage)?.count ?? 0)
+                        : total
+                      const conv = prev > 0 ? Math.round(cur / prev * 100) : 0
+                      return (
+                        <div key={stage} className="flex items-center gap-1 flex-shrink-0">
+                          {idx > 0 && (
+                            <span className="text-[10px] text-t4 tabular-nums">→ {conv}%</span>
+                          )}
+                          <div className="flex flex-col items-center">
+                            <span className={`text-[9px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</span>
+                            <span className="text-xs font-bold text-t1">{cur}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {sales > 0 && (
+                      <>
+                        <span className="text-[10px] text-t4">→</span>
+                        <div className="flex flex-col items-center">
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-green-400">Vendas</span>
+                          <span className="text-xs font-bold text-green-400">{sales}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Helpers de data ──────────────────────────────────────────────────────────
 
-function getWeekStart(): Date {
-  const d = new Date(); d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-  return d
-}
-function getMonthStart(): Date {
-  const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1)
-}
 function daysAgo(iso: string): number {
   return (Date.now() - new Date(iso).getTime()) / 86_400_000
 }
@@ -78,217 +243,6 @@ function dueDateLabel(dueDate?: string): { text: string; color: string } {
   if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
   if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-t2' }
   return { text: dueDate.split('-').reverse().join('/'), color: 'text-t3' }
-}
-
-// ─── GoalCard ─────────────────────────────────────────────────────────────────
-
-function GoalCard({ label, value, target, barColor, onAdd, onRemove }: {
-  label: string; value: number; target: number; barColor: string
-  onAdd?:    () => void
-  onRemove?: () => void
-}) {
-  const pct  = Math.min(100, Math.round((value / target) * 100))
-  const done = value >= target
-  return (
-    <div className="bg-s2 border border-line rounded-xl p-3 flex flex-col gap-2">
-      <p className="text-[10px] text-t3 uppercase tracking-wide leading-none">{label}</p>
-      <div className="flex items-center gap-1">
-        <div className="flex items-baseline gap-1 flex-1">
-          <span className={`text-2xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-t1'}`}>{value}</span>
-          <span className="text-xs text-t4">/{target}</span>
-          {done && <CheckCircle2 size={12} className="text-green-400 ml-0.5" />}
-        </div>
-        {(onAdd || onRemove) && (
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {onRemove && (
-              <button
-                onClick={onRemove}
-                className="w-6 h-6 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3 text-t3 hover:text-t2 text-base leading-none transition-all active:scale-90"
-                title="Remover 1"
-              >−</button>
-            )}
-            {onAdd && (
-              <button
-                onClick={onAdd}
-                className={`w-6 h-6 flex items-center justify-center rounded-lg text-base leading-none font-bold transition-all active:scale-90
-                  ${done ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400' : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300'}`}
-                title="Registrar +1"
-              >+</button>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="h-1 bg-s3/50 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all duration-700 ${done ? 'bg-green-500' : barColor}`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  )
-}
-
-// ─── Metas Widget ─────────────────────────────────────────────────────────────
-
-function GoalsWidget() {
-  const { getAllInteractions, loadAll, allLoaded } = useLeadInteractionsStore()
-  const { sales }             = useSalesStore()
-  const { tasks }             = useTasksStore()
-  const { countDay: disparosDb, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
-  // Usa o maior entre Supabase e localStorage: durante a migração o localStorage pode ter
-  // sends anteriores à criação da tabela disparo_logs que ainda não estão no banco
-  const disparosHoje = Math.max(disparosDb, getDailySends())
-
-  useEffect(() => { loadDisparos() }, [loadDisparos])
-  useEffect(() => { if (!allLoaded) loadAll() }, [allLoaded, loadAll])
-
-  // Computados fora do useMemo para entrar nas deps e evitar weekStart congelada
-  // (getAllInteractions é referência estável no Zustand — não muda quando byLead muda)
-  const weekStart  = getWeekStart()
-  const monthStart = getMonthStart()
-  const weekStartMs  = weekStart.getTime()
-  const monthStartMs = monthStart.getTime()
-
-  const metrics = useMemo(() => {
-    const all  = getAllInteractions()
-    const wStart = new Date(weekStartMs)
-    const mStart = new Date(monthStartMs)
-
-    const now   = new Date()
-    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-
-    // Compara data local da interação (evita bug UTC vs local)
-    const toLocal = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
-
-    const daily         = all.filter(i => REAL_TYPES.has(i.type) && toLocal(i.interactedAt) === today).length
-    const weekInteract  = all.filter(i => new Date(i.interactedAt) >= wStart)
-    const monthInteract = all.filter(i => new Date(i.interactedAt) >= mStart)
-    const weekProp      = weekInteract.filter(i  => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
-    const monthProp     = monthInteract.filter(i => i.type === 'stage_change' && i.description?.includes('→ Proposta')).length
-    const monthSales    = sales.filter(s => s.date >= mStart.toISOString().slice(0, 10)).length
-
-    // Visitas = tarefas concluídas com categoria 'visita', usando completedAt (ou dueDate como fallback)
-    const visitasDone = tasks.filter(t => t.status === 'done' && t.category === 'visita')
-    const weekVisits  = visitasDone.filter(t => { const d = t.completedAt ?? t.dueDate; return d && new Date(d) >= wStart }).length
-    const monthVisits = visitasDone.filter(t => { const d = t.completedAt ?? t.dueDate; return d && new Date(d) >= mStart }).length
-
-    return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
-  }, [getAllInteractions, allLoaded, sales, tasks, weekStartMs, monthStartMs])
-
-  return (
-    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-line">
-        <div className="w-7 h-7 bg-blue-500/15 rounded-lg flex items-center justify-center">
-          <Target size={14} className="text-blue-400" />
-        </div>
-        <div>
-          <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Metas</p>
-          <h2 className="text-sm font-bold text-t1 leading-none">Progresso automático</h2>
-        </div>
-      </div>
-      <div className="p-4 space-y-4">
-
-        {/* Hoje */}
-        <div>
-          <p className="text-[10px] font-bold text-t4 uppercase tracking-wider mb-2">Hoje</p>
-          <div className="grid grid-cols-2 gap-3">
-            <GoalCard label="Interações c/ leads"  value={metrics.daily}         target={DAILY_TARGET_INTERACTIONS} barColor="bg-blue-500"   />
-            <GoalCard label="Disparos lista fria"  value={disparosHoje}          target={DAILY_TARGET_DISPAROS}     barColor="bg-violet-500" />
-          </div>
-        </div>
-
-        {/* Semana */}
-        <div>
-          <p className="text-[10px] font-bold text-t4 uppercase tracking-wider mb-2">Esta semana</p>
-          <div className="grid grid-cols-3 gap-3">
-            <GoalCard label="Visitas"         value={metrics.weekVisits}     target={WEEKLY_TARGET_VISITS}     barColor="bg-amber-500"  />
-            <GoalCard label="Propostas"       value={metrics.weekProp}       target={WEEKLY_TARGET_PROPOSALS}  barColor="bg-orange-500" />
-            <GoalCard label="Disparos"        value={disparosSemana}         target={WEEKLY_TARGET_DISPAROS}   barColor="bg-violet-500" />
-          </div>
-        </div>
-
-        {/* Mês */}
-        <div>
-          <p className="text-[10px] font-bold text-t4 uppercase tracking-wider mb-2">Este mês</p>
-          <div className="grid grid-cols-2 gap-3">
-            <GoalCard label="Visitas"         value={metrics.monthVisits}    target={MONTHLY_TARGET_VISITS}    barColor="bg-amber-500"  />
-            <GoalCard label="Propostas"       value={metrics.monthProp}      target={MONTHLY_TARGET_PROPOSALS} barColor="bg-orange-500" />
-            <GoalCard label="Vendas"          value={metrics.monthSales}     target={MONTHLY_TARGET_SALES}     barColor="bg-green-500"  />
-            <GoalCard label="Disparos"        value={disparosMes}            target={MONTHLY_TARGET_DISPAROS}  barColor="bg-violet-500" />
-          </div>
-        </div>
-
-      </div>
-    </div>
-  )
-}
-
-// ─── Pipeline Widget ──────────────────────────────────────────────────────────
-
-function PipelineWidget({ onNavigate }: { onNavigate: () => void }) {
-  const { leads } = useLeadsStore()
-  const active = leads.filter(l => !l.discardReason)
-
-  const stages: Array<{ stage: LeadFunnelStage; label: string; color: string; text: string }> = [
-    { stage: 'followup',    label: 'Followup',    color: 'bg-blue-500/15',   text: 'text-blue-300'   },
-    { stage: 'atendimento', label: 'Atendimento', color: 'bg-violet-500/15', text: 'text-violet-300' },
-    { stage: 'visita',      label: 'Visita',      color: 'bg-amber-500/15',  text: 'text-amber-300'  },
-    { stage: 'proposta',    label: 'Proposta',    color: 'bg-orange-500/15', text: 'text-orange-300' },
-    { stage: 'venda',       label: 'Venda',       color: 'bg-green-500/15',  text: 'text-green-300'  },
-  ]
-
-  const totalPipeline    = active.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
-  const totalCommission  = totalPipeline * 0.02
-  const hasAnyTicket     = active.some(l => l.averageTicket)
-
-  return (
-    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-violet-500/15 rounded-lg flex items-center justify-center">
-            <DollarSign size={14} className="text-violet-400" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Pipeline</p>
-            <h2 className="text-sm font-bold text-t1 leading-none">Valor por etapa do funil</h2>
-          </div>
-        </div>
-        {hasAnyTicket && (
-          <div className="text-right">
-            <p className="text-[10px] text-t4">Pipeline total</p>
-            <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrency(totalPipeline)}</p>
-            <p className="text-[10px] text-emerald-400 tabular-nums">💰 {formatCurrency(totalCommission)} sua comissão</p>
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-5 divide-x divide-line">
-        {stages.map(({ stage, label, color, text }) => {
-          const stageLeads  = active.filter(l => l.funnelStage === stage)
-          const pipeline    = stageLeads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
-          const commission  = pipeline * 0.02
-          return (
-            <button
-              key={stage}
-              onClick={onNavigate}
-              className="p-3 text-center hover:bg-s2 transition-colors cursor-pointer"
-            >
-              <p className={`text-[10px] font-bold ${text} uppercase tracking-wide mb-1.5`}>{label}</p>
-              <p className="text-xl font-black text-t1 tabular-nums">{stageLeads.length}</p>
-              <p className="text-[10px] text-t4 mb-2">leads</p>
-              {pipeline > 0 ? (
-                <>
-                  <div className={`rounded-lg px-2 py-1 ${color} mb-1`}>
-                    <p className="text-[11px] font-semibold text-t1 tabular-nums">{formatCurrency(pipeline)}</p>
-                  </div>
-                  <p className="text-[10px] text-emerald-400 tabular-nums">💰 {formatCurrency(commission)}</p>
-                </>
-              ) : (
-                <p className="text-[11px] text-t4">sem ticket</p>
-              )}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
 }
 
 // ─── Alertas de leads ─────────────────────────────────────────────────────────
@@ -354,21 +308,16 @@ function LeadAlertsWidget({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-t1 truncate">{lead.name}</p>
-                <span className={`text-[10px] ${stageConf?.color ?? 'text-t3'}`}>
-                  {stageConf?.label ?? lead.funnelStage}
-                </span>
+                <span className={`text-[10px] ${stageConf?.color ?? 'text-t3'}`}>{stageConf?.label ?? lead.funnelStage}</span>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border tabular-nums ${daysBadge}`}>
-                  {daysInt}d
-                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border tabular-nums ${daysBadge}`}>{daysInt}d</span>
                 <a
                   href={whatsappUrl(lead.phone)}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={e => e.stopPropagation()}
                   className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors"
-                  title="WhatsApp"
                 >
                   <MessageCircle size={12} />
                 </a>
@@ -405,9 +354,7 @@ function OverdueCard({
             <h2 className="text-sm font-bold text-red-300 leading-none">Tarefas em atraso</h2>
             <p className="text-[11px] text-red-500/70 mt-0.5">Atenção imediata necessária</p>
           </div>
-          <span className="ml-1 bg-red-500/25 text-red-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-red-500/30 tabular-nums animate-pulse">
-            {tasks.length}
-          </span>
+          <span className="ml-1 bg-red-500/25 text-red-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-red-500/30 tabular-nums animate-pulse">{tasks.length}</span>
         </div>
         <button onClick={onNavigate} className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors cursor-pointer">
           Resolver <ArrowRight size={12} />
@@ -504,80 +451,6 @@ function UpcomingCard({
           )}
         </div>
       )}
-    </div>
-  )
-}
-
-// ─── Campanhas ativas ─────────────────────────────────────────────────────────
-
-function smartCampaignMessage(total: number, acionados: number, interessados: number): { text: string; color: string } {
-  if (total === 0) return { text: 'Importe leads para começar a prospectar.', color: 'text-t3' }
-  const acRate  = acionados / total
-  const intRate = acionados > 0 ? interessados / acionados : 0
-  if (acionados === 0)  return { text: `${total.toLocaleString('pt-BR')} leads aguardando o 1º contato — vamos lá! 📋`, color: 'text-amber-400' }
-  if (acRate < 0.15)   return { text: `Ainda há muitos leads para acionar — ${(total - acionados).toLocaleString('pt-BR')} esperando! 📲`, color: 'text-orange-400' }
-  if (intRate === 0)   return { text: `Acionamento em curso, mas nenhum interesse ainda. Revise a abordagem. 🔍`, color: 'text-t2' }
-  if (intRate < 0.15)  return { text: `Conversão de interesse baixa (${Math.round(intRate * 100)}%). Tente outra abordagem. 💡`, color: 'text-yellow-400' }
-  if (intRate < 0.30)  return { text: `Boa conversão! ${Math.round(intRate * 100)}% demonstraram interesse. 📈`, color: 'text-cyan-400' }
-  return { text: `Excelente! ${Math.round(intRate * 100)}% de interesse — avance para propostas. 🎯`, color: 'text-green-400' }
-}
-
-function CampaignsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
-  const { campaigns } = useCampaignsStore()
-  const { leads }     = useCampaignLeadsStore()
-  const active        = campaigns.filter(c => c.status === 'active')
-  if (active.length === 0) return null
-
-  return (
-    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center">
-            <Megaphone size={15} className="text-purple-400" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Campanhas ativas</p>
-            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">{active.length} em andamento</h2>
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col divide-y divide-line">
-        {active.map(c => {
-          const cLeads       = leads.filter(l => l.campaignId === c.id)
-          const total        = cLeads.length
-          const acionados    = cLeads.filter(l => l.firstContactAt).length
-          const interessados = cLeads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
-          const msg          = smartCampaignMessage(total, acionados, interessados)
-          const acPct        = total     > 0 ? Math.round(acionados    / total     * 100) : 0
-          const intPct       = acionados > 0 ? Math.round(interessados / acionados * 100) : 0
-          return (
-            <div key={c.id} onClick={() => onNavigate(c.id)} className="px-5 py-4 hover:bg-s2 transition-colors cursor-pointer group">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div>
-                  <p className="text-sm font-semibold text-t1 group-hover:text-brand-text transition-colors">{c.name}</p>
-                  <p className={`text-[11px] mt-0.5 ${msg.color}`}>{msg.text}</p>
-                </div>
-                <ArrowRight size={14} className="text-t4 group-hover:text-brand transition-colors mt-0.5 flex-shrink-0" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { icon: <Users size={11} />,    label: 'Leads',     value: total.toLocaleString('pt-BR'),        pct: null,   color: 'text-t2' },
-                  { icon: <Zap size={11} />,      label: 'Acionados', value: acionados.toLocaleString('pt-BR'),    pct: acPct,  color: 'text-blue-400'  },
-                  { icon: <ThumbsUp size={11} />, label: 'Interesse', value: interessados.toLocaleString('pt-BR'), pct: intPct, color: 'text-cyan-400'  },
-                ].map(m => (
-                  <div key={m.label} className="flex flex-col gap-1 bg-s2 rounded-xl px-3 py-2.5 border border-line">
-                    <div className={`flex items-center gap-1 ${m.color} text-[10px] font-medium`}>{m.icon} {m.label}</div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className={`text-base font-bold tabular-nums ${m.color}`}>{m.value}</span>
-                      {m.pct !== null && <span className="text-[10px] text-t4">{m.pct}%</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })}
-      </div>
     </div>
   )
 }
@@ -726,6 +599,7 @@ const PAGE_ICONS: Record<string, string> = {
   '/tarefas':     '✅',
   '/performance': '📈',
   '/permuta':     '🔄',
+  '/metas':       '🎯',
   '/admin':       '⚙️',
   '/admin/logs':  '📋',
 }
@@ -746,23 +620,17 @@ function OnlineBrokersPanel() {
   return (
     <div className="flex flex-col gap-2">
       {brokers.map(b => {
-        const hasLocation = b.lat != null && b.lng != null
-        const mapsUrl = hasLocation
-          ? `https://www.google.com/maps?q=${b.lat},${b.lng}`
-          : undefined
+        const hasLocation  = b.lat != null && b.lng != null
+        const mapsUrl      = hasLocation ? `https://www.google.com/maps?q=${b.lat},${b.lng}` : undefined
         const locationText = [b.city, b.region, b.country].filter(Boolean).join(', ')
-
         return (
           <div key={b.userId} className="flex items-center gap-3 px-4 py-3 bg-s2/50 rounded-xl border border-line">
-            {/* Avatar + pulse */}
             <div className="relative flex-shrink-0">
               <div className="w-9 h-9 rounded-full bg-brand/20 flex items-center justify-center text-sm font-bold text-brand">
                 {b.name.charAt(0).toUpperCase()}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-s1 animate-pulse" />
             </div>
-
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-t1 truncate">{b.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -779,13 +647,8 @@ function OnlineBrokersPanel() {
                 )}
               </div>
             </div>
-
-            {/* Map link */}
             {mapsUrl && (
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
                 className="flex-shrink-0 text-[10px] text-brand/70 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors"
               >
                 Ver mapa
@@ -870,19 +733,16 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* 1. Metas — progresso automático */}
-      <GoalsWidget />
+      {/* 1. Pipeline de Campanhas */}
+      <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
-      {/* 2. Pipeline do funil */}
-      <PipelineWidget onNavigate={() => navigate('/leads?tab=kanban')} />
-
-      {/* 3. Alertas de leads sem contato */}
+      {/* 2. Alertas de leads sem contato */}
       <LeadAlertsWidget
         onOpenLead={setSelectedLead}
         onNavigate={() => navigate('/leads')}
       />
 
-      {/* 4. Tarefas em atraso */}
+      {/* 3. Tarefas em atraso */}
       <OverdueCard
         tasks={overdueTasks}
         contacts={contacts}
@@ -890,7 +750,7 @@ export function DashboardPage() {
         onNavigate={() => navigate('/tarefas')}
       />
 
-      {/* 5. KPI strip */}
+      {/* 4. KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         <div className="relative bg-page border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
@@ -917,7 +777,7 @@ export function DashboardPage() {
         <StatCard label={`Vendas — ${periodLabel}`} value={formatCurrency(valueInPeriod)} sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`} icon={<TrendingUp size={16} />} accent="purple" />
       </div>
 
-      {/* 6. Comissões do período */}
+      {/* 5. Comissões do período */}
       {salesInPeriod.length > 0 && (
         <div className="grid grid-cols-2 gap-4 mb-8">
           <StatCard label={`Comissão gerada — ${periodLabel}`} value={formatCurrencyFull(periodComm)} sub="soma das comissões negociadas" icon={<DollarSign size={18} />} accent="purple" />
@@ -925,7 +785,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* 7. Aniversários + Últimas vendas */}
+      {/* 6. Aniversários + Últimas vendas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card accent="yellow" className="animate-slide-up">
           <div className="flex items-center gap-2 mb-4">
@@ -950,7 +810,7 @@ export function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-yellow-400 tabular-nums">{getBirthdayDay(c.birthdate!).replace(/^0/, '')}/{c.birthdate!.split('-')[1]}</span>
-                    <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all" title="Mandar parabéns!">
+                    <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all">
                       <MessageCircle size={12} />
                     </a>
                   </div>
@@ -1000,16 +860,13 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* 8. Próximas tarefas */}
+      {/* 7. Próximas tarefas */}
       <UpcomingCard tasks={upcomingTasks} contacts={contacts} properties={properties} onNavigate={() => navigate('/tarefas')} />
 
-      {/* 9. Campanhas ativas */}
-      <CampaignsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
-
-      {/* 10. Leads congelados em campanhas */}
+      {/* 8. Leads congelados em campanhas */}
       <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
-      {/* 11. Potencial de recompra */}
+      {/* 9. Potencial de recompra */}
       <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
 
       {/* Modais */}

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
   ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight, ArrowLeftRight,
-  Bell, ShieldCheck, LogOut, ScrollText,
+  Bell, ShieldCheck, LogOut, ScrollText, Target,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -15,25 +15,26 @@ const navSections = [
   {
     label: 'Principal',
     items: [
-      { to: '/',        icon: LayoutDashboard, label: 'Dashboard',   end: true  },
-      { to: '/tarefas', icon: CheckSquare,     label: 'Tarefas',     end: false },
+      { key: 'dashboard',   to: '/',        icon: LayoutDashboard, label: 'Dashboard',   end: true  },
+      { key: 'tarefas',     to: '/tarefas', icon: CheckSquare,     label: 'Tarefas',     end: false },
+      { key: 'metas',       to: '/metas',   icon: Target,          label: 'Metas',       end: false },
     ],
   },
   {
     label: 'Comercial',
     items: [
-      { to: '/leads',     icon: UserPlus,       label: 'Leads',      end: false },
-      { to: '/contatos',  icon: Users,          label: 'Contatos',   end: false },
-      { to: '/imoveis',   icon: Building2,      label: 'Imóveis',    end: false },
-      { to: '/vendas',    icon: TrendingUp,     label: 'Vendas',     end: false },
-      { to: '/campanhas', icon: Megaphone,      label: 'Campanhas',  end: false },
-      { to: '/permuta',   icon: ArrowLeftRight, label: 'Permuta',    end: false },
+      { key: 'leads',     to: '/leads',     icon: UserPlus,       label: 'Leads',      end: false },
+      { key: 'contatos',  to: '/contatos',  icon: Users,          label: 'Contatos',   end: false },
+      { key: 'imoveis',   to: '/imoveis',   icon: Building2,      label: 'Imóveis',    end: false },
+      { key: 'vendas',    to: '/vendas',    icon: TrendingUp,     label: 'Vendas',     end: false },
+      { key: 'campanhas', to: '/campanhas', icon: Megaphone,      label: 'Campanhas',  end: false },
+      { key: 'permuta',   to: '/permuta',   icon: ArrowLeftRight, label: 'Permuta',    end: false },
     ],
   },
   {
     label: 'Análise',
     items: [
-      { to: '/performance', icon: BarChart3, label: 'Performance', end: false },
+      { key: 'performance', to: '/performance', icon: BarChart3, label: 'Performance', end: false },
     ],
   },
 ]
@@ -57,6 +58,16 @@ export function Sidebar() {
   }
 
   const initial = (profile?.name ?? 'U').charAt(0).toUpperCase()
+
+  const allowedMenus = profile?.allowedMenus ?? null
+  const visibleSections = navSections
+    .map(section => ({
+      ...section,
+      items: section.items.filter(item =>
+        isAdmin || allowedMenus === null || allowedMenus.includes(item.key)
+      ),
+    }))
+    .filter(section => section.items.length > 0)
 
   return (
     <aside
@@ -99,7 +110,7 @@ export function Sidebar() {
 
       {/* ── Nav ──────────────────────────────────────────────────── */}
       <nav className="flex-1 px-3 overflow-y-auto flex flex-col gap-5 py-2">
-        {navSections.map(section => (
+        {visibleSections.map(section => (
           <div key={section.label}>
             {/* Section label */}
             <p

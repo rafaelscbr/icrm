@@ -7,6 +7,7 @@ export interface Profile {
   role: 'admin' | 'broker'
   active: boolean
   avatarUrl?: string
+  allowedMenus: string[] | null  // null = todos os menus liberados
 }
 
 interface AuthStore {
@@ -23,26 +24,29 @@ interface AuthStore {
   createBroker: (email: string, password: string, name: string) => Promise<string | null>
   fetchAllProfiles: () => Promise<Profile[]>
   updateProfile: (id: string, data: Partial<Pick<Profile, 'name' | 'role' | 'active'>>) => Promise<void>
+  updateBrokerMenus: (brokerId: string, menus: string[] | null) => Promise<void>
+}
+
+function mapProfile(r: Record<string, unknown>): Profile {
+  return {
+    id: r.id as string,
+    name: r.name as string,
+    role: r.role as 'admin' | 'broker',
+    active: r.active as boolean,
+    avatarUrl: (r.avatar_url as string | null) ?? undefined,
+    allowedMenus: (r.allowed_menus as string[] | null) ?? null,
+  }
 }
 
 async function loadProfile(userId: string): Promise<Profile | null> {
   const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
   if (!data) return null
-  return {
-    id: data.id,
-    name: data.name,
-    role: data.role as 'admin' | 'broker',
-    active: data.active,
-    avatarUrl: data.avatar_url ?? undefined,
-  }
+  return mapProfile(data)
 }
 
 async function fetchProfiles(): Promise<Profile[]> {
   const { data } = await supabase.from('profiles').select('*').order('created_at')
-  return (data ?? []).map(r => ({
-    id: r.id, name: r.name, role: r.role as 'admin' | 'broker',
-    active: r.active, avatarUrl: r.avatar_url ?? undefined,
-  }))
+  return (data ?? []).map(mapProfile)
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -120,6 +124,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+    if (error) throw error
+  },
+
+  updateBrokerMenus: async (brokerId, menus) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ allowed_menus: menus, updated_at: new Date().toISOString() })
+      .eq('id', brokerId)
     if (error) throw error
   },
 }))

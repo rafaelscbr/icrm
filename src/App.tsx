@@ -21,6 +21,8 @@ import { PermutaPage } from './modules/permuta/PermutaPage'
 import { LoginPage } from './pages/LoginPage'
 import { AdminPage } from './pages/AdminPage'
 import { ActivityLogsPage } from './pages/ActivityLogsPage'
+import { GoalsPage } from './modules/goals/GoalsPage'
+import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -92,6 +94,8 @@ function AppRoutes() {
             <Route path="/leads" element={<PageWrapper><LeadsPage /></PageWrapper>} />
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
             <Route path="/permuta" element={<PageWrapper><PermutaPage /></PageWrapper>} />
+            <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
+            <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />
             {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
             {isAdmin && <Route path="/admin/logs" element={<PageWrapper><ActivityLogsPage /></PageWrapper>} />}
           </Routes>

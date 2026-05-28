@@ -26,6 +26,7 @@ export interface Contact {
   spouseName?: string
   // Permuta — lista de bens para permuta (imóveis e/ou carros)
   permutaItems: PermutaItem[]
+  brokerId?: string
   createdAt: string
   updatedAt: string
 }
@@ -86,6 +87,7 @@ export interface Task {
   propertyId?: string
   googleEventId?: string
   checklist?: ChecklistItem[]   // stored in localStorage, not in Supabase
+  brokerId?: string
   createdAt: string
   updatedAt: string
 }
