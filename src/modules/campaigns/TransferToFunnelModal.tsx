@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { ArrowRight, AlertTriangle, CheckCircle2, GitMerge } from 'lucide-react'
+import { ArrowRight, AlertTriangle, CheckCircle2, GitMerge, ExternalLink } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { CampaignLead, FunnelStage, LeadFunnelStage, Campaign } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
+import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { formatPhone } from '../../lib/formatters'
 import { STAGE_CONFIG } from '../leads/LeadKanban'
 import toast from 'react-hot-toast'
@@ -32,7 +33,8 @@ interface Props {
 }
 
 export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props) {
-  const { add, leads } = useLeadsStore()
+  const { add, leads }             = useLeadsStore()
+  const { markAsTransferred }      = useCampaignLeadsStore()
 
   const [funnelStage, setFunnelStage] = useState<LeadFunnelStage>('atendimento')
   const [ticket,      setTicket]      = useState('')
@@ -56,13 +58,13 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
   function handleTransfer() {
     if (!lead) return
 
-    add({
+    const newLead = add({
       name:          lead.name,
       phone:         lead.phone,
       email:         lead.email,
       origin:        'campanha',
       funnelStage,
-      followupStep:  funnelStage === 'followup' ? 0 : 0,
+      followupStep:  0,
       propertyId:    lead.propertyId,
       averageTicket: ticket ? Number(ticket.replace(/\D/g, '')) : undefined,
       notes:         [
@@ -71,7 +73,8 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
       ].filter(Boolean).join('\n') || undefined,
     })
 
-    toast.success(`${lead.name} transferido para o funil principal`)
+    markAsTransferred(lead.id, newLead.id)
+    toast.success(`${lead.name} migrado para o funil principal`)
     onClose()
   }
 
@@ -99,6 +102,20 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
             </div>
           )}
         </div>
+
+        {/* Já transferido anteriormente */}
+        {lead.transferredAt && (
+          <div className="flex items-start gap-2.5 p-3.5 bg-violet-500/8 border border-violet-500/25 rounded-xl">
+            <ExternalLink size={14} className="text-violet-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-violet-300">Já migrado para o funil principal</p>
+              <p className="text-[11px] text-violet-400/70 mt-0.5">
+                Este lead foi transferido em {new Date(lead.transferredAt).toLocaleDateString('pt-BR')}.
+                Migrar novamente criará uma segunda entrada no funil.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Duplicate warning */}
         {duplicate && (

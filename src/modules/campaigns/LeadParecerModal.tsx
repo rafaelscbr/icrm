@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, Zap, DollarSign, ArrowRight, GitMerge } from 'lucide-react'
+import { CheckCircle2, Zap, DollarSign, ArrowRight, GitMerge, Sparkles } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { CampaignLead, FunnelStage, LeadSituation } from '../../types'
@@ -224,6 +224,37 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
             />
           </div>
 
+          {/* Sugestão de migração quando seleciona 'scheduled' e ainda não migrou */}
+          {stage === 'scheduled' && !lead.transferredAt && (
+            <div className="flex items-start gap-3 p-3.5 bg-violet-500/8 border border-violet-500/30 rounded-xl">
+              <Sparkles size={14} className="text-violet-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-violet-200">Pronto para o funil principal</p>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  Lead agendado — migre agora com histórico e produto vinculado para contar na pipeline de visitas.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowTransfer(true)}
+                  className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-violet-300 hover:text-violet-100 transition-colors"
+                >
+                  <ArrowRight size={11} />
+                  Migrar para o funil principal
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Já migrado — info */}
+          {lead.transferredAt && (
+            <div className="flex items-center gap-2.5 p-3 bg-violet-500/5 border border-violet-500/15 rounded-xl">
+              <GitMerge size={13} className="text-violet-400 flex-shrink-0" />
+              <p className="text-xs text-violet-300/80">
+                Migrado para o funil principal em {new Date(lead.transferredAt).toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+          )}
+
           {/* Transferir para Funil Principal */}
           <div className="pt-1 border-t border-line">
             <button
@@ -232,7 +263,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-violet-300 hover:text-white bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/25 hover:border-violet-500/40 rounded-xl transition-all"
             >
               <GitMerge size={13} />
-              Enviar para o Funil Principal
+              {lead.transferredAt ? 'Migrar novamente para o Funil' : 'Enviar para o Funil Principal'}
             </button>
           </div>
 

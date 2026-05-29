@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   MessageCircle, FileText, ChevronDown, Eye,
-  Download, Plus, Snowflake, Clock,
+  Download, Plus, Snowflake, Clock, GitMerge, ArrowRight,
 } from 'lucide-react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
@@ -9,6 +9,7 @@ import {
 } from '@dnd-kit/core'
 import * as XLSX from 'xlsx'
 import { LeadParecerModal } from './LeadParecerModal'
+import { TransferToFunnelModal } from './TransferToFunnelModal'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { CampaignLead, Campaign, FunnelStage, Task } from '../../types'
@@ -230,6 +231,13 @@ function LeadCard({
           <p className="mt-1.5 text-[10px] text-slate-700 line-clamp-1 italic">"{lead.lastMessage}"</p>
         )}
 
+        {lead.transferredAt && (
+          <span className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/20">
+            <GitMerge size={8} />
+            Migrado p/ funil
+          </span>
+        )}
+
         {situation && (
           <span className={`mt-2 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${situation.bg} ${situation.color}`}>
             {situation.label}
@@ -348,10 +356,13 @@ const DATE_FILTERS: { value: DateFilter; label: string }[] = [
 ]
 
 export function KanbanTab({ leads, campaign }: KanbanTabProps) {
-  const { setStage } = useCampaignLeadsStore()
-  const [parecerLead,  setParecerLead]  = useState<CampaignLead | undefined>()
-  const [dateFilter,   setDateFilter]   = useState<DateFilter>('all')
-  const [activeLead,   setActiveLead]   = useState<CampaignLead | null>(null)
+  const { setStage }                           = useCampaignLeadsStore()
+  const [parecerLead,     setParecerLead]      = useState<CampaignLead | undefined>()
+  const [dateFilter,      setDateFilter]        = useState<DateFilter>('all')
+  const [activeLead,      setActiveLead]        = useState<CampaignLead | null>(null)
+  // Sugestão de migração ao arrastar para 'scheduled'
+  const [migrateSuggest,  setMigrateSuggest]    = useState<{ lead: CampaignLead; targetStage: FunnelStage } | null>(null)
+  const [showTransfer,    setShowTransfer]       = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -367,8 +378,26 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
     if (!lead) return
     const newStage = over.id as FunnelStage
     if (lead.funnelStage === newStage) return
+
+    // Sugerir migração ao mover para 'scheduled' se ainda não foi transferido
+    if (newStage === 'scheduled' && !lead.transferredAt) {
+      setMigrateSuggest({ lead, targetStage: newStage })
+      return
+    }
+
     setStage(lead.id, newStage)
     toast.success(`${lead.name} movido para "${FUNNEL_STAGES.find(s => s.value === newStage)?.label}"`)
+  }
+
+  function confirmMoveOnly() {
+    if (!migrateSuggest) return
+    setStage(migrateSuggest.lead.id, migrateSuggest.targetStage)
+    toast.success(`${migrateSuggest.lead.name} movido para "${FUNNEL_STAGES.find(s => s.value === migrateSuggest.targetStage)?.label}"`)
+    setMigrateSuggest(null)
+  }
+
+  function openTransferFromSuggest() {
+    setShowTransfer(true)
   }
 
   return (
@@ -436,6 +465,51 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
         isOpen={Boolean(parecerLead)}
         onClose={() => setParecerLead(undefined)}
         lead={parecerLead}
+        campaign={campaign}
+      />
+
+      {/* Modal de sugestão de migração ao arrastar para 'scheduled' */}
+      {migrateSuggest && !showTransfer && (
+        <Modal isOpen onClose={() => { confirmMoveOnly() }} title="Lead pronto para visita" size="sm">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-3 p-3.5 bg-violet-500/8 border border-violet-500/25 rounded-xl">
+              <GitMerge size={18} className="text-violet-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-violet-200">Migrar para o funil principal?</p>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  <span className="font-medium text-slate-300">{migrateSuggest.lead.name}</span> agendou apresentação —
+                  este é o momento ideal para entrar no funil comercial com todo o histórico preservado.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={confirmMoveOnly}>
+                Só mover na campanha
+              </Button>
+              <Button
+                className="flex-1 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500"
+                onClick={openTransferFromSuggest}
+              >
+                <ArrowRight size={14} />
+                Migrar para Funil
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* TransferToFunnelModal acionado pela sugestão de drag */}
+      <TransferToFunnelModal
+        isOpen={showTransfer}
+        onClose={() => {
+          setShowTransfer(false)
+          // Após fechar o modal de transferência, move o lead também na campanha
+          if (migrateSuggest) {
+            setStage(migrateSuggest.lead.id, migrateSuggest.targetStage)
+            setMigrateSuggest(null)
+          }
+        }}
+        lead={migrateSuggest?.lead}
         campaign={campaign}
       />
     </div>

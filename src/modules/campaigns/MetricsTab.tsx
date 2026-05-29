@@ -14,11 +14,15 @@ interface MetricsTabProps {
 
 const axisStyle = { fill: '#475569', fontSize: 11 }
 
-// Larguras fixas decrescentes para cada etapa (0 = mais largo, 6 = mais estreito)
-// Independente dos dados — cria o visual de funil real
-const STAGE_WIDTHS_PCT = [100, 84, 69, 55, 42, 30, 20]
+// Funil da campanha vai só até 'scheduled' — a partir daí passa para o funil principal
+const CAMPAIGN_FUNNEL_STAGES = FUNNEL_STAGES.filter(
+  s => ['new', 'sent', 'attended', 'scheduled'].includes(s.value)
+)
 
-// ─── Funil SVG — pirâmide invertida ──────────────────────────────────────────
+// Larguras fixas decrescentes para as 4 etapas da campanha
+const STAGE_WIDTHS_PCT = [100, 78, 58, 40]
+
+// ─── Funil SVG — pirâmide invertida (somente etapas da campanha) ─────────────
 
 function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
   const total = leads.length
@@ -26,7 +30,7 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
   // Ordem das etapas para comparação de índice
   const STAGE_ORDER = FUNNEL_STAGES.map(s => s.value)
 
-  const stageData = FUNNEL_STAGES.map((s, i) => {
+  const stageData = CAMPAIGN_FUNNEL_STAGES.map((s, i) => {
     // Conta leads que estão nesta etapa OU em etapas posteriores (já passaram por aqui)
     const stageIdx = STAGE_ORDER.indexOf(s.value)
     const count    = leads.filter(l => STAGE_ORDER.indexOf(l.funnelStage) >= stageIdx).length
@@ -268,11 +272,12 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
 
   const total      = funnelLeads.length
   const contacted  = funnelLeads.filter(l => l.firstContactAt).length
-  const engaged    = funnelLeads.filter(l => ['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)).length
+  const engaged    = funnelLeads.filter(l => ['attended','scheduled'].includes(l.funnelStage)).length
+  const migrated   = funnelLeads.filter(l => l.transferredAt).length
   const proposals  = funnelLeads.filter(l => l.funnelStage === 'proposal').length
   const sales      = funnelLeads.filter(l => l.funnelStage === 'sale').length
   const responseRate  = contacted > 0 ? Math.round((engaged   / contacted) * 100) : 0
-  const convRate      = total     > 0 ? Math.round((sales     / total)     * 100) : 0
+  const migratedRate  = contacted > 0 ? Math.round((migrated  / contacted) * 100) : 0
   const proposalValue = funnelLeads.reduce((a, l) => a + (l.proposalValue ?? 0), 0)
 
   const dailyData = useMemo(() => {
@@ -298,10 +303,10 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
       {/* KPIs topo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total no funil',    value: total.toLocaleString('pt-BR'),                                                                   color: 'text-slate-200'  },
-          { label: 'Leads acionados',   value: `${contacted.toLocaleString('pt-BR')} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400'   },
-          { label: 'Taxa de resposta',  value: `${responseRate}%`,                                                                              color: 'text-cyan-400'   },
-          { label: 'Conversão (venda)', value: `${convRate}%`,                                                                                  color: 'text-green-400'  },
+          { label: 'Total na campanha',   value: total.toLocaleString('pt-BR'),                                                                    color: 'text-slate-200'  },
+          { label: 'Leads acionados',    value: `${contacted.toLocaleString('pt-BR')} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400'   },
+          { label: 'Taxa de engajamento',value: `${responseRate}%`,                                                                               color: 'text-cyan-400'   },
+          { label: 'Migrados p/ funil',  value: `${migrated} (${migratedRate}%)`,                                                                 color: 'text-violet-400' },
         ].map(kpi => (
           <Card key={kpi.label} className="!py-4">
             <p className="text-xs text-slate-600 mb-1">{kpi.label}</p>
@@ -315,7 +320,12 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
 
         {/* ── Funil ── (ocupa 3/5 do espaço) */}
         <Card className="lg:col-span-3">
-          <h2 className="text-sm font-semibold text-slate-300 mb-4">Funil de conversão</h2>
+          <div className="flex items-start justify-between mb-4">
+            <h2 className="text-sm font-semibold text-slate-300">Funil de campanha</h2>
+            <span className="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">
+              até agendamento → funil principal
+            </span>
+          </div>
           {total === 0 ? (
             <div className="flex items-center justify-center h-52">
               <p className="text-sm text-slate-600">Nenhum lead importado ainda</p>
@@ -351,24 +361,31 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
           </Card>
 
           <Card>
-            <h2 className="text-sm font-semibold text-slate-300 mb-4">Volume financeiro</h2>
+            <h2 className="text-sm font-semibold text-slate-300 mb-4">Pipeline de campanha</h2>
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between py-2 border-b border-line">
-                <span className="text-xs text-slate-400">Propostas abertas</span>
+                <span className="text-xs text-slate-400">Agendados</span>
+                <p className="text-sm font-bold text-violet-400 tabular-nums">
+                  {funnelLeads.filter(l => l.funnelStage === 'scheduled').length}
+                </p>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-line">
+                <span className="text-xs text-slate-400">Migrados p/ funil principal</span>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-violet-400 tabular-nums">{migrated}</p>
+                  {total > 0 && <p className="text-[10px] text-slate-500">{migratedRate}% do total</p>}
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-line">
+                <span className="text-xs text-slate-400">Propostas (na campanha)</span>
                 <div className="text-right">
                   <p className="text-sm font-bold text-amber-400 tabular-nums">{proposals}</p>
                   {proposalValue > 0 && <p className="text-[10px] text-slate-500">{formatCurrency(proposalValue)}</p>}
                 </div>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-line">
-                <span className="text-xs text-slate-400">Vendas convertidas</span>
-                <p className="text-sm font-bold text-green-400 tabular-nums">{sales}</p>
-              </div>
               <div className="flex items-center justify-between py-2">
-                <span className="text-xs text-slate-400">Proposta → Venda</span>
-                <p className="text-sm font-bold text-slate-200 tabular-nums">
-                  {proposals + sales > 0 ? `${Math.round(sales / (proposals + sales) * 100)}%` : '—'}
-                </p>
+                <span className="text-xs text-slate-400">Vendas (na campanha)</span>
+                <p className="text-sm font-bold text-green-400 tabular-nums">{sales}</p>
               </div>
             </div>
           </Card>

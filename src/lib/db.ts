@@ -158,6 +158,7 @@ interface CampaignLeadRow {
   message_index: number | null
   proposal_value: number | null
   property_id: string | null; stage_updated_at: string | null
+  transferred_at: string | null; transferred_to_lead_id: string | null
   broker_id: string | null
   created_at: string; updated_at: string
 }
@@ -383,6 +384,8 @@ function toCampaignLead(r: CampaignLeadRow): CampaignLead {
     messageIndex: r.message_index ?? undefined,
     proposalValue: r.proposal_value ?? undefined, propertyId: r.property_id ?? undefined,
     stageUpdatedAt: r.stage_updated_at ?? undefined,
+    transferredAt: r.transferred_at ?? undefined,
+    transferredToLeadId: r.transferred_to_lead_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -397,6 +400,8 @@ function fromCampaignLead(l: CampaignLead): CampaignLeadRow {
     message_index: l.messageIndex ?? null,
     proposal_value: l.proposalValue ?? null, property_id: l.propertyId ?? null,
     stage_updated_at: l.stageUpdatedAt ?? null,
+    transferred_at: l.transferredAt ?? null,
+    transferred_to_lead_id: l.transferredToLeadId ?? null,
     broker_id: getCurrentUserId(),
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
