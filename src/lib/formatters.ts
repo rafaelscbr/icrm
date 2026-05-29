@@ -33,6 +33,20 @@ export function formatDateShort(iso: string): string {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
+/**
+ * Normaliza número para armazenamento: apenas dígitos, sem +55 ou 0 inicial.
+ * Retorna null se o número tiver menos de 8 dígitos (inválido).
+ */
+export function normalizePhone(raw: string): string | null {
+  let d = raw.replace(/\D/g, '')
+  // Remove +55 ou 55 prefixo (13 ou 12 dígitos)
+  if ((d.length === 13 || d.length === 12) && d.startsWith('55')) d = d.slice(2)
+  // Remove 0 prefixo de DDD
+  if (d.length === 12 && d.startsWith('0')) d = d.slice(1)
+  if (d.length < 8) return null
+  return d
+}
+
 export function whatsappUrl(phone: string, message?: string): string {
   const digits = phone.replace(/\D/g, '')
   const withCountry = digits.startsWith('55') ? digits : `55${digits}`

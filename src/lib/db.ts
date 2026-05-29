@@ -7,7 +7,74 @@ import {
   LeadInteraction, LeadInteractionType, LeadInteractionOutcome,
   LeadConfigEntry, LeadConfigType, PermutaItem,
   AppNotification, NotificationType,
+  LeadList, LeadListMember, CampaignList, LeadCampaignDispatch, BaseLeadProfile,
 } from '../types'
+
+// ─── Row types — Base de Leads ────────────────────────────────────────────────
+
+interface LeadListRow {
+  id: string; name: string; description: string | null
+  product_profile: BaseLeadProfile | null
+  total_count: number; status: string
+  broker_id: string | null
+  created_at: string; updated_at: string
+}
+
+interface LeadListMemberRow {
+  id: string; list_id: string; contact_id: string
+  imported_at: string; import_batch: string | null; raw_phone: string | null
+}
+
+interface CampaignListRow {
+  id: string; campaign_id: string; list_id: string; added_at: string
+}
+
+interface LeadCampaignDispatchRow {
+  id: string; contact_id: string; campaign_id: string; list_id: string | null
+  broker_id: string | null; dispatched_at: string; message_index: number | null
+  channel: string; notes: string | null; warmup_score: number
+}
+
+function toLeadList(r: LeadListRow): LeadList {
+  return {
+    id: r.id, name: r.name, description: r.description ?? undefined,
+    productProfile: r.product_profile ?? undefined,
+    totalCount: r.total_count, status: r.status as LeadList['status'],
+    brokerId: r.broker_id ?? undefined,
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  }
+}
+
+function fromLeadList(l: LeadList): LeadListRow {
+  return {
+    id: l.id, name: l.name, description: l.description ?? null,
+    product_profile: l.productProfile ?? null,
+    total_count: l.totalCount, status: l.status,
+    broker_id: l.brokerId ?? getCurrentUserId(),
+    created_at: l.createdAt, updated_at: l.updatedAt,
+  }
+}
+
+function toLeadListMember(r: LeadListMemberRow): LeadListMember {
+  return {
+    id: r.id, listId: r.list_id, contactId: r.contact_id,
+    importedAt: r.imported_at,
+    importBatch: r.import_batch ?? undefined, rawPhone: r.raw_phone ?? undefined,
+  }
+}
+
+function toCampaignList(r: CampaignListRow): CampaignList {
+  return { id: r.id, campaignId: r.campaign_id, listId: r.list_id, addedAt: r.added_at }
+}
+
+function toDispatch(r: LeadCampaignDispatchRow): LeadCampaignDispatch {
+  return {
+    id: r.id, contactId: r.contact_id, campaignId: r.campaign_id,
+    listId: r.list_id ?? undefined, brokerId: r.broker_id ?? undefined,
+    dispatchedAt: r.dispatched_at, messageIndex: r.message_index ?? undefined,
+    channel: r.channel, notes: r.notes ?? undefined, warmupScore: r.warmup_score,
+  }
+}
 
 // ─── Row types (snake_case vindos do Supabase) ────────────────────────────────
 
@@ -16,14 +83,14 @@ interface ContactRow {
   company: string | null; birthdate: string | null; photo_url: string | null
   tags: string[]; has_children: boolean; children_names: string | null
   is_married: boolean; spouse_name: string | null
-  // novo: array de itens de permuta (JSONB)
   permuta_items: PermutaItem[] | null
-  // legado: mantidos no banco para migração transparente
   permuta_type: string | null
   permuta_property_region: string | null
   permuta_property_value: number | null
   permuta_car_model: string | null
   permuta_car_value: number | null
+  is_base_lead: boolean | null
+  base_lead_profile: BaseLeadProfile | null
   broker_id: string | null
   created_at: string; updated_at: string
 }
@@ -122,6 +189,8 @@ function toContact(r: ContactRow): Contact {
     hasChildren: r.has_children, childrenNames: r.children_names ?? undefined,
     isMarried: r.is_married, spouseName: r.spouse_name ?? undefined,
     permutaItems,
+    isBaseLead:      r.is_base_lead ?? undefined,
+    baseLeadProfile: r.base_lead_profile ?? undefined,
     brokerId: r.broker_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
@@ -135,12 +204,13 @@ function fromContact(c: Contact): ContactRow {
     has_children: c.hasChildren, children_names: c.childrenNames ?? null,
     is_married: c.isMarried, spouse_name: c.spouseName ?? null,
     permuta_items: c.permutaItems.length > 0 ? c.permutaItems : null,
-    // nulifica campos legados ao salvar no novo modelo
     permuta_type: null,
     permuta_property_region: null,
     permuta_property_value: null,
     permuta_car_model: null,
     permuta_car_value: null,
+    is_base_lead:      c.isBaseLead ?? null,
+    base_lead_profile: c.baseLeadProfile ?? null,
     broker_id: c.brokerId ?? getCurrentUserId(),
     created_at: c.createdAt, updated_at: c.updatedAt,
   }
@@ -681,6 +751,103 @@ export const db = {
         .from('notifications').update({ read: true })
         .eq('user_id', userId).eq('read', false)
       if (error) throw error
+    },
+  },
+
+  leadLists: {
+    fetchAll: () => fetchAll<LeadListRow, LeadList>('lead_lists', toLeadList),
+    upsert:   (l: LeadList) => upsertOne('lead_lists', fromLeadList(l)),
+    delete:   (id: string)  => deleteOne('lead_lists', id),
+    updateCount: async (id: string, count: number) => {
+      const { error } = await supabase
+        .from('lead_lists').update({ total_count: count, updated_at: new Date().toISOString() }).eq('id', id)
+      if (error) throw error
+    },
+  },
+
+  leadListMembers: {
+    fetchForList: async (listId: string): Promise<LeadListMember[]> => {
+      const PAGE = 1000
+      const result: LeadListMemberRow[] = []
+      let from = 0
+      while (true) {
+        const { data, error } = await supabase
+          .from('lead_list_members').select('*').eq('list_id', listId)
+          .order('imported_at', { ascending: false }).range(from, from + PAGE - 1)
+        if (error) { toast.error('Erro ao carregar membros'); throw error }
+        result.push(...(data as LeadListMemberRow[]))
+        if (data.length < PAGE) break
+        from += PAGE
+      }
+      return result.map(toLeadListMember)
+    },
+    fetchForContact: async (contactId: string): Promise<LeadListMember[]> => {
+      const { data, error } = await supabase
+        .from('lead_list_members').select('*').eq('contact_id', contactId)
+        .order('imported_at', { ascending: false })
+      if (error) throw error
+      return (data as LeadListMemberRow[]).map(toLeadListMember)
+    },
+    insertMany: async (members: Omit<LeadListMember, 'id' | 'importedAt'>[]) => {
+      const rows = members.map(m => ({
+        list_id: m.listId, contact_id: m.contactId,
+        import_batch: m.importBatch ?? null, raw_phone: m.rawPhone ?? null,
+      }))
+      // upsert com onConflict ignora duplicatas na mesma lista
+      const { error } = await supabase
+        .from('lead_list_members').upsert(rows, { onConflict: 'list_id,contact_id', ignoreDuplicates: true })
+      if (error) throw error
+    },
+    checkExisting: async (contactIds: string[], listId: string): Promise<string[]> => {
+      const { data, error } = await supabase
+        .from('lead_list_members').select('contact_id').eq('list_id', listId)
+        .in('contact_id', contactIds)
+      if (error) throw error
+      return (data as { contact_id: string }[]).map(r => r.contact_id)
+    },
+  },
+
+  campaignLists: {
+    fetchForCampaign: async (campaignId: string): Promise<CampaignList[]> => {
+      const { data, error } = await supabase
+        .from('campaign_lists').select('*').eq('campaign_id', campaignId)
+        .order('added_at')
+      if (error) throw error
+      return (data as CampaignListRow[]).map(toCampaignList)
+    },
+    upsert: (cl: CampaignList) => upsertOne('campaign_lists', {
+      id: cl.id, campaign_id: cl.campaignId, list_id: cl.listId, added_at: cl.addedAt,
+    }),
+    delete: (id: string) => deleteOne('campaign_lists', id),
+    deleteForCampaign: async (campaignId: string) => {
+      const { error } = await supabase.from('campaign_lists').delete().eq('campaign_id', campaignId)
+      if (error) throw error
+    },
+  },
+
+  dispatches: {
+    fetchForContact: async (contactId: string): Promise<LeadCampaignDispatch[]> => {
+      const { data, error } = await supabase
+        .from('lead_campaign_dispatches').select('*').eq('contact_id', contactId)
+        .order('dispatched_at', { ascending: false })
+      if (error) throw error
+      return (data as LeadCampaignDispatchRow[]).map(toDispatch)
+    },
+    insert: async (d: Omit<LeadCampaignDispatch, 'id' | 'dispatchedAt' | 'warmupScore'>) => {
+      const { error } = await supabase.from('lead_campaign_dispatches').insert({
+        contact_id: d.contactId, campaign_id: d.campaignId,
+        list_id: d.listId ?? null, broker_id: d.brokerId ?? getCurrentUserId(),
+        message_index: d.messageIndex ?? null, channel: d.channel,
+        notes: d.notes ?? null, warmup_score: 0,
+      })
+      if (error) throw error
+    },
+    fetchForCampaign: async (campaignId: string): Promise<LeadCampaignDispatch[]> => {
+      const { data, error } = await supabase
+        .from('lead_campaign_dispatches').select('*').eq('campaign_id', campaignId)
+        .order('dispatched_at', { ascending: false })
+      if (error) throw error
+      return (data as LeadCampaignDispatchRow[]).map(toDispatch)
     },
   },
 

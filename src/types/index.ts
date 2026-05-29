@@ -1,5 +1,14 @@
 export type ContactTag = 'owner' | 'investor' | 'buyer'
 
+export interface BaseLeadProfile {
+  type?:     string
+  region?:   string
+  valueMin?: number
+  valueMax?: number
+  bedrooms?: number
+  source?:   string
+}
+
 // Um único bem que o contato quer dar em permuta
 export interface PermutaItem {
   id: string
@@ -26,6 +35,9 @@ export interface Contact {
   spouseName?: string
   // Permuta — lista de bens para permuta (imóveis e/ou carros)
   permutaItems: PermutaItem[]
+  // Base de leads frios
+  isBaseLead?:       boolean
+  baseLeadProfile?:  BaseLeadProfile
   brokerId?: string
   createdAt: string
   updatedAt: string
@@ -284,6 +296,51 @@ export interface WeekSnapshot {
   entries:   WeekSnapshotEntry[]
   score:     number   // 0–100
   savedAt:   string
+}
+
+// ─── Base de Leads ────────────────────────────────────────────────────────────
+
+export type LeadListStatus = 'active' | 'archived'
+
+export interface LeadList {
+  id:             string
+  name:           string
+  description?:   string
+  productProfile?: BaseLeadProfile
+  totalCount:     number
+  status:         LeadListStatus
+  brokerId?:      string
+  createdAt:      string
+  updatedAt:      string
+}
+
+export interface LeadListMember {
+  id:          string
+  listId:      string
+  contactId:   string
+  importedAt:  string
+  importBatch?: string
+  rawPhone?:   string
+}
+
+export interface CampaignList {
+  id:         string
+  campaignId: string
+  listId:     string
+  addedAt:    string
+}
+
+export interface LeadCampaignDispatch {
+  id:           string
+  contactId:    string
+  campaignId:   string
+  listId?:      string
+  brokerId?:    string
+  dispatchedAt: string
+  messageIndex?: number
+  channel:      string
+  notes?:       string
+  warmupScore:  number
 }
 
 // ─── Notificações ─────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   Phone, Building2, Cake, Heart, Baby, Tag, CheckCircle2,
   Clock, Circle, AlertTriangle, TrendingUp, MessageCircle,
-  UserPlus, ArrowLeftRight, Pencil, Plus, X, Home, Bed, Square,
+  UserPlus, ArrowLeftRight, Pencil, Plus, X, Home, Bed, Square, Megaphone,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Badge } from '../../components/ui/Badge'
@@ -18,6 +18,7 @@ import { formatPhone, formatDate, formatCurrencyFull, whatsappUrl } from '../../
 import { calcSaleCommissions } from '../../types'
 import { LeadModal } from '../leads/LeadModal'
 import { PropertyModal } from '../properties/PropertyModal'
+import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 
 const TAG_LABELS: Record<ContactTag, string> = {
   owner:    'Proprietário',
@@ -617,6 +618,14 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               )}
             </div>
           )}
+        </div>
+
+        {/* ── Base de Leads & Campanhas ── */}
+        <div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <Megaphone size={11} /> Base de Leads & Campanhas
+          </p>
+          <ContactCampaignHistory contactId={contact.id} />
         </div>
 
       </div>

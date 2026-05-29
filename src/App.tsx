@@ -25,6 +25,7 @@ import { GoalsPage } from './modules/goals/GoalsPage'
 import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
 import { NotificationsPage } from './pages/NotificationsPage'
 import { VirtualOfficePage } from './modules/office/VirtualOfficePage'
+import { LeadListsPage } from './modules/lead-lists/LeadListsPage'
 import { useNotificationsStore } from './store/useNotificationsStore'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
@@ -109,7 +110,8 @@ function AppRoutes() {
             <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
             <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />
             <Route path="/notificacoes" element={<PageWrapper><NotificationsPage /></PageWrapper>} />
-            <Route path="/escritorio" element={<PageWrapper><VirtualOfficePage /></PageWrapper>} />
+            <Route path="/escritorio"  element={<PageWrapper><VirtualOfficePage /></PageWrapper>} />
+            <Route path="/base-leads" element={<PageWrapper><LeadListsPage /></PageWrapper>} />
             {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
             {isAdmin && <Route path="/admin/logs" element={<PageWrapper><ActivityLogsPage /></PageWrapper>} />}
           </Routes>

@@ -1,8 +1,10 @@
 import * as XLSX from 'xlsx'
+import { normalizePhone } from './formatters'
 
 export interface ParsedLead {
   name:   string
-  phone:  string
+  phone:  string   // normalizado (só dígitos, sem 55)
+  rawPhone: string // original do arquivo
   email?: string
   extra?: string
 }
@@ -11,11 +13,12 @@ export interface ParseResult {
   leads:           ParsedLead[]
   errors:          string[]
   duplicatePhones: number
+  invalidPhones:   number
 }
 
 const PHONE_KEYS = ['telefone', 'phone', 'cel', 'celular', 'fone', 'tel', 'whatsapp', 'contato']
 const NAME_KEYS  = ['nome', 'name', 'cliente', 'prospect', 'contato', 'lead']
-const EMAIL_KEYS = ['email', 'email', 'emailaddress', 'correio', 'mail']
+const EMAIL_KEYS = ['email', 'emailaddress', 'correio', 'mail']
 
 function norm(k: string) {
   return k.toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -39,37 +42,43 @@ export function parseXlsx(file: File): Promise<ParseResult> {
         const errors: string[]     = []
         const seen = new Set<string>()
         let duplicatePhones = 0
+        let invalidPhones   = 0
 
         rows.forEach((row, i) => {
           const phoneKey = findCol(row, PHONE_KEYS)
-          const phone    = String(row[phoneKey ?? ''] ?? '').trim()
+          const rawPhone = String(row[phoneKey ?? ''] ?? '').trim()
 
-          if (!phone) {
+          if (!rawPhone) {
             errors.push(`Linha ${i + 2}: telefone não encontrado`)
             return
           }
 
-          const normalized = phone.replace(/\D/g, '')
-          if (seen.has(normalized)) { duplicatePhones++; return }
-          seen.add(normalized)
+          const phone = normalizePhone(rawPhone)
+          if (!phone) {
+            invalidPhones++
+            errors.push(`Linha ${i + 2}: número inválido — "${rawPhone}"`)
+            return
+          }
+
+          if (seen.has(phone)) { duplicatePhones++; return }
+          seen.add(phone)
 
           const nameKey  = findCol(row, NAME_KEYS)
           const emailKey = findCol(row, EMAIL_KEYS)
           const name     = String(row[nameKey ?? ''] ?? '').trim() || `Lead ${i + 2}`
           const email    = emailKey ? String(row[emailKey] ?? '').trim() || undefined : undefined
 
-          // Any other columns become "extra"
           const usedKeys = new Set([phoneKey, nameKey, emailKey].filter(Boolean) as string[])
           const extras   = Object.entries(row)
             .filter(([k, v]) => !usedKeys.has(k) && String(v).trim())
             .map(([k, v]) => `${k}: ${v}`)
 
-          leads.push({ name, phone, email, extra: extras.length ? extras.join(' | ') : undefined })
+          leads.push({ name, phone, rawPhone, email, extra: extras.length ? extras.join(' | ') : undefined })
         })
 
-        resolve({ leads, errors, duplicatePhones })
+        resolve({ leads, errors, duplicatePhones, invalidPhones })
       } catch {
-        resolve({ leads: [], errors: ['Erro ao ler o arquivo. Verifique se é um XLSX válido.'], duplicatePhones: 0 })
+        resolve({ leads: [], errors: ['Erro ao ler o arquivo. Verifique se é um XLSX válido.'], duplicatePhones: 0, invalidPhones: 0 })
       }
     }
     reader.readAsArrayBuffer(file)
