@@ -1,226 +1,466 @@
-import { useState, useEffect, FormEvent } from 'react'
-import { MessageSquarePlus, Info, Plus, Trash2, GripVertical, DollarSign } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import {
+  Megaphone, MessageSquare, Users, ChevronRight, ChevronLeft,
+  Plus, Trash2, Info, DollarSign, Check, Loader2, ListChecks,
+} from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
-import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
-import { Select } from '../../components/ui/Select'
-import { Campaign, CampaignStatus } from '../../types'
+import { Campaign } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
-import { STATUS_CONFIG } from './config'
+import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useLeadListsStore } from '../../store/useLeadListsStore'
+import { db } from '../../lib/db'
+import { generateId } from '../../lib/formatters'
+import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
-function parseBRL(raw: string): number {
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+function parseBRL(raw: string) {
   return parseFloat(raw.replace(/\./g, '').replace(',', '.')) || 0
 }
-
-function formatBRL(value: number): string {
-  if (!value) return ''
-  return value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+function formatBRL(v: number) {
+  return v ? v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ''
 }
 
-interface CampaignFormProps {
-  isOpen:   boolean
-  onClose:  () => void
+async function importContactsFromLists(
+  campaignId: string,
+  listIds: string[],
+  addBulk: ReturnType<typeof useCampaignLeadsStore.getState>['addBulk'],
+) {
+  const CHUNK = 500
+  const allContactIds: string[] = []
+
+  for (const listId of listIds) {
+    const members = await db.leadListMembers.fetchForList(listId)
+    allContactIds.push(...members.map(m => m.contactId))
+  }
+
+  const uniqueIds = [...new Set(allContactIds)]
+  const contacts: { name: string; phone: string }[] = []
+
+  for (let i = 0; i < uniqueIds.length; i += CHUNK) {
+    const chunk = uniqueIds.slice(i, i + CHUNK)
+    const { data } = await supabase
+      .from('contacts')
+      .select('name, phone')
+      .in('id', chunk)
+    if (data) contacts.push(...(data as { name: string; phone: string }[]))
+  }
+
+  const result = addBulk(contacts.map(c => ({ campaignId, name: c.name, phone: c.phone })))
+  return result
+}
+
+// ─── Step indicator ────────────────────────────────────────────────────────────
+
+const STEPS = [
+  { label: 'Identidade', icon: Megaphone },
+  { label: 'Mensagens',  icon: MessageSquare },
+  { label: 'Audiência',  icon: Users },
+]
+
+function StepBar({ current }: { current: number }) {
+  return (
+    <div className="flex items-center justify-center gap-0 mb-8">
+      {STEPS.map((s, i) => {
+        const done    = i < current
+        const active  = i === current
+        const Icon    = s.icon
+        return (
+          <div key={i} className="flex items-center">
+            <div className="flex flex-col items-center gap-1.5">
+              <div className={`
+                w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300
+                ${done   ? 'bg-indigo-500 border-indigo-500 text-white' : ''}
+                ${active ? 'bg-brand-tint border-indigo-500 text-brand-text shadow-[0_0_0_4px_rgba(99,102,241,0.15)]' : ''}
+                ${!done && !active ? 'bg-s3/40 border-line text-slate-600' : ''}
+              `}>
+                {done
+                  ? <Check size={15} strokeWidth={2.5} />
+                  : <Icon size={15} />
+                }
+              </div>
+              <span className={`text-[11px] font-medium transition-colors duration-300 ${active ? 'text-brand-text' : done ? 'text-indigo-400' : 'text-slate-600'}`}>
+                {s.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`h-px w-12 mx-1 mb-5 transition-colors duration-500 ${i < current ? 'bg-indigo-500' : 'bg-line'}`} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
+interface Props {
+  isOpen:    boolean
+  onClose:   () => void
   campaign?: Campaign
 }
 
-const PLACEHOLDER = 'Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de...'
-const HINT = (
-  <div className="flex items-start gap-2 bg-indigo-500/8 border border-brand/25 rounded-xl px-3 py-2.5">
-    <Info size={13} className="text-brand flex-shrink-0 mt-0.5" />
-    <p className="text-xs text-brand-text/80">
-      Use <code className="bg-s3/70 px-1 rounded text-brand-text">{'{nome}'}</code> para inserir o nome do lead automaticamente.
-      Ter múltiplas mensagens diferentes ajuda a evitar bloqueio no WhatsApp.
-    </p>
-  </div>
-)
+const MSG_PLACEHOLDER = 'Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de apresentar...'
 
-export function CampaignForm({ isOpen, onClose, campaign }: CampaignFormProps) {
-  const { add, update } = useCampaignsStore()
+export function CampaignForm({ isOpen, onClose, campaign }: Props) {
+  const { add, update }  = useCampaignsStore()
+  const { addBulk }      = useCampaignLeadsStore()
+  const { lists, load: loadLists } = useLeadListsStore()
   const isEditing = Boolean(campaign)
 
-  const [name,        setName]        = useState(campaign?.name    ?? '')
-  const [message,     setMessage]     = useState(campaign?.message ?? '')
-  const [messages,    setMessages]    = useState<string[]>(campaign?.messages ?? [])
-  const [status,      setStatus]      = useState<CampaignStatus>(campaign?.status ?? 'active')
-  const [ticketRaw,   setTicketRaw]   = useState(campaign?.averageTicket ? formatBRL(campaign.averageTicket) : '')
+  // form state
+  const [step,        setStep]        = useState(0)
+  const [name,        setName]        = useState('')
+  const [ticketRaw,   setTicketRaw]   = useState('')
+  const [message,     setMessage]     = useState('')
+  const [messages,    setMessages]    = useState<string[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [errors,      setErrors]      = useState<Record<string, string>>({})
+  const [saving,      setSaving]      = useState(false)
 
+  // reset on open
   useEffect(() => {
     if (!isOpen) return
+    setStep(0)
     setName(campaign?.name ?? '')
+    setTicketRaw(campaign?.averageTicket ? formatBRL(campaign.averageTicket) : '')
     setMessage(campaign?.message ?? '')
     setMessages(campaign?.messages ?? [])
-    setStatus(campaign?.status ?? 'active')
-    setTicketRaw(campaign?.averageTicket ? formatBRL(campaign.averageTicket) : '')
+    setSelectedIds(new Set())
     setErrors({})
-  }, [campaign, isOpen])
+    setSaving(false)
+    loadLists()
+  }, [isOpen])
 
-  function addExtraMessage() {
-    setMessages(m => [...m, ''])
-  }
+  // ── navigation ──
 
-  function updateMessage(idx: number, val: string) {
-    setMessages(m => m.map((v, i) => i === idx ? val : v))
-  }
-
-  function removeMessage(idx: number) {
-    setMessages(m => m.filter((_, i) => i !== idx))
-  }
-
-  function validate() {
+  function validateStep(s: number) {
     const e: Record<string, string> = {}
-    if (!name.trim())    e.name    = 'Nome é obrigatório'
-    if (!message.trim()) e.message = 'Mensagem principal é obrigatória'
+    if (s === 0 && !name.trim()) e.name = 'Nome é obrigatório'
+    if (s === 1 && !message.trim()) e.message = 'Mensagem principal é obrigatória'
     setErrors(e)
     return !Object.keys(e).length
   }
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    if (!validate()) return
-    const cleanMessages = messages.filter(m => m.trim())
-    const ticket = parseBRL(ticketRaw)
-    if (isEditing && campaign) {
-      update(campaign.id, {
-        name: name.trim(),
-        message: message.trim(),
-        messages: cleanMessages.length > 0 ? cleanMessages : undefined,
-        status,
-        averageTicket: ticket > 0 ? ticket : undefined,
-      })
-      toast.success('Campanha atualizada')
-    } else {
-      add({
-        name: name.trim(),
-        message: message.trim(),
-        messages: cleanMessages.length > 0 ? cleanMessages : undefined,
+  function next() {
+    if (!validateStep(step)) return
+    setStep(s => s + 1)
+  }
+  function back() { setStep(s => s - 1) }
+
+  function toggleList(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  // ── submit ──
+
+  async function handleSubmit() {
+    if (!validateStep(step)) return
+    setSaving(true)
+    try {
+      const cleanMessages = messages.filter(m => m.trim())
+      const ticket = parseBRL(ticketRaw)
+      const now = new Date().toISOString()
+
+      if (isEditing && campaign) {
+        update(campaign.id, {
+          name: name.trim(), message: message.trim(),
+          messages: cleanMessages.length ? cleanMessages : undefined,
+          averageTicket: ticket > 0 ? ticket : undefined,
+        })
+        toast.success('Campanha atualizada')
+        onClose()
+        return
+      }
+
+      // create campaign
+      const newCampaign = add({
+        name: name.trim(), message: message.trim(),
+        messages: cleanMessages.length ? cleanMessages : undefined,
         status: 'active',
         averageTicket: ticket > 0 ? ticket : undefined,
       })
-      toast.success('Campanha criada!')
+
+      const listIds = [...selectedIds]
+
+      // link lists to campaign
+      for (const listId of listIds) {
+        await db.campaignLists.upsert({ id: generateId(), campaignId: newCampaign.id, listId, addedAt: now })
+      }
+
+      // import contacts
+      if (listIds.length > 0) {
+        const result = await importContactsFromLists(newCampaign.id, listIds, addBulk)
+        toast.success(`Campanha criada! ${result.added} lead${result.added !== 1 ? 's' : ''} importado${result.added !== 1 ? 's' : ''}.`)
+      } else {
+        toast.success('Campanha criada!')
+      }
+
+      onClose()
+    } catch (err) {
+      toast.error('Erro ao criar campanha. Tente novamente.')
+      console.error(err)
+    } finally {
+      setSaving(false)
     }
-    onClose()
   }
 
+  // ── computed ──
+
+  const activeLists = lists.filter(l => l.status === 'active' || l.status !== 'archived')
+  const totalLeads  = activeLists
+    .filter(l => selectedIds.has(l.id))
+    .reduce((acc, l) => acc + l.totalCount, 0)
   const allCount = 1 + messages.filter(m => m.trim()).length
 
+  // ─── render ─────────────────────────────────────────────────────────────────
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Campanha' : 'Nova Campanha'} size="md">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title=""
+      size="md"
+    >
+      <div className="-mt-2">
+        <StepBar current={step} />
 
-        <Input
-          label="Nome da campanha"
-          required
-          autoFocus
-          value={name}
-          onChange={e => setName(e.target.value)}
-          error={errors.name}
-          placeholder="Ex: Proprietários Pinheiros - Abr/2026"
-        />
-
-        {/* Ticket médio */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-            Ticket Médio <span className="text-slate-600 normal-case font-normal">(opcional)</span>
-          </label>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-500 pointer-events-none">
-              <DollarSign size={13} />
-              <span className="text-xs">R$</span>
+        {/* ── Step 0: Identidade ── */}
+        {step === 0 && (
+          <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-right-4 duration-200">
+            <div className="text-center mb-1">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
+                <Megaphone size={26} className="text-indigo-400" />
+              </div>
+              <h2 className="text-base font-semibold text-t1">Identidade da campanha</h2>
+              <p className="text-xs text-t4 mt-1">Dê um nome claro para identificar facilmente</p>
             </div>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={ticketRaw}
-              onChange={e => setTicketRaw(e.target.value.replace(/[^\d.,]/g, ''))}
-              onBlur={() => {
-                const n = parseBRL(ticketRaw)
-                setTicketRaw(n > 0 ? formatBRL(n) : '')
-              }}
-              placeholder="Ex: 500.000"
-              className="w-full bg-s3/50 border border-line rounded-xl pl-12 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
-          </div>
-          <p className="text-[11px] text-slate-600">Usado para calcular o VGV esperado na aba de Previsão</p>
-        </div>
 
-        {isEditing && (
-          <Select
-            label="Status"
-            value={status}
-            onChange={e => setStatus(e.target.value as CampaignStatus)}
-          >
-            {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-              <option key={k} value={k}>{v.label}</option>
-            ))}
-          </Select>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Nome da campanha</label>
+              <input
+                autoFocus
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && next()}
+                placeholder="Ex: Liber.ATO – Proprietários Maio/26"
+                className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+              />
+              {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
+                Ticket médio <span className="normal-case font-normal text-t5">(opcional)</span>
+              </label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-500 pointer-events-none">
+                  <DollarSign size={13} />
+                  <span className="text-xs">R$</span>
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={ticketRaw}
+                  onChange={e => setTicketRaw(e.target.value.replace(/[^\d.,]/g, ''))}
+                  onBlur={() => { const n = parseBRL(ticketRaw); setTicketRaw(n > 0 ? formatBRL(n) : '') }}
+                  placeholder="Ex: 500.000"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-12 pr-4 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                />
+              </div>
+              <p className="text-[11px] text-t5">Usado para calcular VGV esperado na aba de Previsão</p>
+            </div>
+
+            <Button className="w-full gap-2 mt-1" onClick={next}>
+              Próximo <ChevronRight size={15} />
+            </Button>
+          </div>
         )}
 
-        {/* Mensagem principal */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Mensagem 1 <span className="text-brand normal-case font-normal">(principal)</span>
-            </label>
-            <span className="text-[10px] text-slate-600">{allCount} template{allCount !== 1 ? 's' : ''} no total</span>
-          </div>
-          <textarea
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            rows={4}
-            placeholder={PLACEHOLDER}
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
-          />
-          {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
-        </div>
-
-        {/* Mensagens extras */}
-        {messages.map((msg, idx) => (
-          <div key={idx} className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <GripVertical size={12} className="text-slate-600" />
-                Mensagem {idx + 2}
-              </label>
-              <button
-                type="button"
-                onClick={() => removeMessage(idx)}
-                className="text-slate-600 hover:text-red-400 transition-colors cursor-pointer p-1"
-              >
-                <Trash2 size={12} />
-              </button>
+        {/* ── Step 1: Mensagens ── */}
+        {step === 1 && (
+          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
+            <div className="text-center mb-1">
+              <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-3">
+                <MessageSquare size={26} className="text-green-400" />
+              </div>
+              <h2 className="text-base font-semibold text-t1">Templates de mensagem</h2>
+              <p className="text-xs text-t4 mt-1">Use <code className="bg-s3/70 px-1 rounded">{'{nome}'}</code> para personalizar automaticamente</p>
             </div>
-            <textarea
-              value={msg}
-              onChange={e => updateMessage(idx, e.target.value)}
-              rows={4}
-              placeholder={PLACEHOLDER}
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
-            />
+
+            {/* Hint */}
+            <div className="flex items-start gap-2 bg-indigo-500/8 border border-brand/25 rounded-xl px-3 py-2.5">
+              <Info size={13} className="text-brand flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-brand-text/80">
+                Múltiplos templates ajudam a evitar bloqueio no WhatsApp — o sistema rotaciona entre eles automaticamente.
+              </p>
+            </div>
+
+            {/* Mensagem principal */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
+                  Mensagem 1 <span className="text-brand normal-case font-normal">(principal)</span>
+                </label>
+                <span className="text-[10px] text-t5">{allCount} template{allCount !== 1 ? 's' : ''}</span>
+              </div>
+              <textarea
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                rows={4}
+                placeholder={MSG_PLACEHOLDER}
+                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
+              />
+              {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
+            </div>
+
+            {/* Mensagens extras */}
+            {messages.map((msg, idx) => (
+              <div key={idx} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Mensagem {idx + 2}</label>
+                  <button
+                    type="button"
+                    onClick={() => setMessages(m => m.filter((_, i) => i !== idx))}
+                    className="text-slate-600 hover:text-red-400 transition-colors cursor-pointer p-1"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+                <textarea
+                  value={msg}
+                  onChange={e => setMessages(m => m.map((v, i) => i === idx ? e.target.value : v))}
+                  rows={4}
+                  placeholder={MSG_PLACEHOLDER}
+                  className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
+                />
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setMessages(m => [...m, ''])}
+              className="flex items-center gap-2 text-xs text-brand hover:text-brand-text transition-colors cursor-pointer py-1 w-fit"
+            >
+              <Plus size={13} /> Adicionar mensagem alternativa
+            </button>
+
+            <div className="flex gap-3 mt-1">
+              <Button variant="secondary" className="gap-1.5" onClick={back}>
+                <ChevronLeft size={15} /> Voltar
+              </Button>
+              <Button className="flex-1 gap-2" onClick={next}>
+                Próximo <ChevronRight size={15} />
+              </Button>
+            </div>
           </div>
-        ))}
+        )}
 
-        {/* Botão adicionar mensagem */}
-        <button
-          type="button"
-          onClick={addExtraMessage}
-          className="flex items-center gap-2 text-xs text-brand hover:text-brand-text transition-colors cursor-pointer py-1"
-        >
-          <Plus size={13} />
-          Adicionar mensagem alternativa
-        </button>
+        {/* ── Step 2: Audiência ── */}
+        {step === 2 && (
+          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
+            <div className="text-center mb-1">
+              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-3">
+                <Users size={26} className="text-purple-400" />
+              </div>
+              <h2 className="text-base font-semibold text-t1">Selecionar audiência</h2>
+              <p className="text-xs text-t4 mt-1">Escolha uma ou mais listas da Base de Leads</p>
+            </div>
 
-        {HINT}
+            {activeLists.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <ListChecks size={32} className="text-slate-600" />
+                <p className="text-sm text-t3">Nenhuma lista cadastrada ainda</p>
+                <p className="text-xs text-t5">Vá em Base de Leads e importe uma lista primeiro</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+                {activeLists.map(list => {
+                  const selected = selectedIds.has(list.id)
+                  return (
+                    <button
+                      key={list.id}
+                      type="button"
+                      onClick={() => toggleList(list.id)}
+                      className={`
+                        flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all duration-150 cursor-pointer
+                        ${selected
+                          ? 'bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_0_1px_rgba(99,102,241,0.2)]'
+                          : 'bg-s3/30 border-line hover:border-line/80 hover:bg-s3/50'
+                        }
+                      `}
+                    >
+                      {/* Checkbox */}
+                      <div className={`
+                        w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-all
+                        ${selected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-s3/50'}
+                      `}>
+                        {selected && <Check size={11} strokeWidth={3} className="text-white" />}
+                      </div>
 
-        <div className="flex gap-3 pt-1">
-          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" className="flex-1 flex items-center gap-2 justify-center">
-            <MessageSquarePlus size={14} />
-            {isEditing ? 'Salvar alterações' : 'Criar campanha'}
-          </Button>
-        </div>
-      </form>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${selected ? 'text-t1' : 'text-t2'}`}>
+                          {list.name}
+                        </p>
+                        {list.description && (
+                          <p className="text-[11px] text-t5 truncate">{list.description}</p>
+                        )}
+                      </div>
+
+                      {/* Count */}
+                      <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg ${
+                        selected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-s3/70 text-t4'
+                      }`}>
+                        {list.totalCount.toLocaleString()} leads
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Total selecionado */}
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2 bg-green-500/8 border border-green-500/20 rounded-xl px-3 py-2.5">
+                <Check size={13} className="text-green-400 flex-shrink-0" />
+                <p className="text-xs text-green-400">
+                  <span className="font-bold">{selectedIds.size}</span> lista{selectedIds.size !== 1 ? 's' : ''} selecionada{selectedIds.size !== 1 ? 's' : ''} · <span className="font-bold">{totalLeads.toLocaleString()}</span> leads no total
+                </p>
+              </div>
+            )}
+
+            {isEditing && (
+              <p className="text-[11px] text-t5 text-center">
+                Ao salvar, as listas anteriores serão mantidas e as novas serão adicionadas.
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-1">
+              <Button variant="secondary" className="gap-1.5" onClick={back} disabled={saving}>
+                <ChevronLeft size={15} /> Voltar
+              </Button>
+              <Button
+                className="flex-1 gap-2"
+                onClick={handleSubmit}
+                disabled={saving}
+              >
+                {saving
+                  ? <><Loader2 size={14} className="animate-spin" /> Criando…</>
+                  : isEditing ? 'Salvar alterações' : 'Criar campanha'
+                }
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </Modal>
   )
 }
