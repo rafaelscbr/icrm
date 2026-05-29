@@ -6,7 +6,7 @@ import {
 import { Modal }  from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { parseXlsx, ParsedLead } from '../../lib/xlsxParser'
-import { normalizePhone } from '../../lib/formatters'
+import { normalizePhone, generateId } from '../../lib/formatters'
 import { supabase } from '../../lib/supabase'
 import { db } from '../../lib/db'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
@@ -118,6 +118,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
       for (let i = 0; i < toCreate.length; i += CHUNK) {
         const chunk = toCreate.slice(i, i + CHUNK)
         const rows = chunk.map(l => ({
+          id: generateId(),
           name: l.name, phone: l.phone,
           tags: [], has_children: false, is_married: false,
           permuta_items: null,
