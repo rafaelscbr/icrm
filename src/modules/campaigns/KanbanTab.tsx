@@ -10,9 +10,10 @@ import {
 import * as XLSX from 'xlsx'
 import { LeadParecerModal } from './LeadParecerModal'
 import { TransferToFunnelModal } from './TransferToFunnelModal'
+import { VisitaTaskModal } from './VisitaTaskModal'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
-import { CampaignLead, Campaign, FunnelStage, Task } from '../../types'
+import { CampaignLead, Campaign, FunnelStage, Lead, Task } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
@@ -28,8 +29,13 @@ const COLUMN_PAGE = 20
 
 type DateFilter = 'all' | 'today' | 'week' | 'cold'
 
-// Etapas que mostram VGV
-const VGV_STAGES: FunnelStage[] = ['attended', 'scheduled', 'presentation', 'proposal', 'sale']
+// Somente etapas da campanha — a partir de 'scheduled' o lead migra para o funil principal
+const CAMPAIGN_KANBAN_STAGES = FUNNEL_STAGES.filter(s =>
+  ['new', 'sent', 'attended', 'scheduled'].includes(s.value)
+)
+
+// Etapas que mostram VGV no kanban
+const VGV_STAGES: FunnelStage[] = ['attended', 'scheduled']
 
 function sortByRecent(leads: CampaignLead[]): CampaignLead[] {
   return [...leads].sort((a, b) => {
@@ -363,6 +369,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
   // Sugestão de migração ao arrastar para 'scheduled'
   const [migrateSuggest,  setMigrateSuggest]    = useState<{ lead: CampaignLead; targetStage: FunnelStage } | null>(null)
   const [showTransfer,    setShowTransfer]       = useState(false)
+  const [visitaLead,      setVisitaLead]         = useState<Lead | undefined>()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -441,7 +448,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
         onDragEnd={handleDragEnd}
       >
         <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
-          {FUNNEL_STAGES.map(stage => (
+          {CAMPAIGN_KANBAN_STAGES.map(stage => (
             <KanbanColumn
               key={stage.value}
               stage={stage}
@@ -503,7 +510,6 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
         isOpen={showTransfer}
         onClose={() => {
           setShowTransfer(false)
-          // Após fechar o modal de transferência, move o lead também na campanha
           if (migrateSuggest) {
             setStage(migrateSuggest.lead.id, migrateSuggest.targetStage)
             setMigrateSuggest(null)
@@ -511,7 +517,16 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
         }}
         lead={migrateSuggest?.lead}
         campaign={campaign}
+        onTransferred={newLead => setVisitaLead(newLead)}
       />
+
+      {visitaLead && (
+        <VisitaTaskModal
+          isOpen
+          onClose={() => setVisitaLead(undefined)}
+          lead={visitaLead}
+        />
+      )}
     </div>
   )
 }

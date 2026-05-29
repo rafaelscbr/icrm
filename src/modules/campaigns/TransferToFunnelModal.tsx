@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { ArrowRight, AlertTriangle, CheckCircle2, GitMerge, ExternalLink } from 'lucide-react'
+import { ArrowRight, AlertTriangle, CheckCircle2, GitMerge, ExternalLink, Lock } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
-import { CampaignLead, FunnelStage, LeadFunnelStage, Campaign } from '../../types'
+import { CampaignLead, FunnelStage, Lead, LeadFunnelStage, Campaign } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { formatPhone } from '../../lib/formatters'
@@ -26,17 +26,21 @@ const FUNNEL_STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'vi
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
-  isOpen:    boolean
-  onClose:   () => void
-  lead?:     CampaignLead
-  campaign?: Campaign
+  isOpen:         boolean
+  onClose:        () => void
+  lead?:          CampaignLead
+  campaign?:      Campaign
+  onTransferred?: (lead: Lead) => void   // chamado após transferência bem-sucedida
 }
 
-export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props) {
-  const { add, leads }             = useLeadsStore()
-  const { markAsTransferred }      = useCampaignLeadsStore()
+export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTransferred }: Props) {
+  const { add, leads }        = useLeadsStore()
+  const { markAsTransferred } = useCampaignLeadsStore()
 
-  const [funnelStage, setFunnelStage] = useState<LeadFunnelStage>('atendimento')
+  // Quando vem de 'scheduled', travar em 'visita'
+  const isScheduledHandoff = lead?.funnelStage === 'scheduled'
+
+  const [funnelStage, setFunnelStage] = useState<LeadFunnelStage>('visita')
   const [ticket,      setTicket]      = useState('')
   const [notes,       setNotes]       = useState('')
 
@@ -53,7 +57,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
     setNotes(lead.notes ?? '')
   }, [isOpen, lead, campaign])
 
-  const duplicate = lead ? leads.find(l => l.phone === lead.phone) : undefined
+  const duplicate = lead ? leads.find(l => l.phone === lead.phone && !l.discardedAt) : undefined
 
   function handleTransfer() {
     if (!lead) return
@@ -76,6 +80,8 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
     markAsTransferred(lead.id, newLead.id)
     toast.success(`${lead.name} migrado para o funil principal`)
     onClose()
+    // Abre modal de tarefa de visita após fechar
+    onTransferred?.(newLead)
   }
 
   if (!lead) return null
@@ -83,7 +89,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
   const stageConf = STAGE_CONFIG[funnelStage]
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Enviar para o Funil Principal" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Migrar para o Funil Principal" size="md">
       <div className="flex flex-col gap-5">
 
         {/* Lead info */}
@@ -110,7 +116,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
             <div>
               <p className="text-xs font-semibold text-violet-300">Já migrado para o funil principal</p>
               <p className="text-[11px] text-violet-400/70 mt-0.5">
-                Este lead foi transferido em {new Date(lead.transferredAt).toLocaleDateString('pt-BR')}.
+                Transferido em {new Date(lead.transferredAt).toLocaleDateString('pt-BR')}.
                 Migrar novamente criará uma segunda entrada no funil.
               </p>
             </div>
@@ -125,42 +131,58 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
               <p className="text-xs font-semibold text-amber-300">Lead já existe no funil</p>
               <p className="text-[11px] text-amber-400/70 mt-0.5">
                 Já há um lead com este telefone na etapa <span className="font-medium">{STAGE_CONFIG[duplicate.funnelStage].label}</span>.
-                Você pode transferir mesmo assim — ficará como entrada duplicada.
               </p>
             </div>
           </div>
         )}
 
         {/* Etapa de entrada */}
-        <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
-            Etapa de entrada no funil
-          </p>
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-            {FUNNEL_STAGES.map(stage => {
-              const conf   = STAGE_CONFIG[stage]
-              const active = funnelStage === stage
-              return (
-                <button
-                  key={stage}
-                  onClick={() => setFunnelStage(stage)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
-                    active
-                      ? `${conf.bg} ${conf.border} ${conf.color}`
-                      : 'bg-s2/50 border-line text-slate-500 hover:border-line-strong hover:text-slate-300'
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? conf.dot : 'bg-slate-700'}`} />
-                  {conf.label}
-                  {active && <CheckCircle2 size={11} className="ml-auto flex-shrink-0" />}
-                </button>
-              )
-            })}
+        {isScheduledHandoff ? (
+          /* Handoff de 'scheduled' → trava em Visita */
+          <div className="flex items-center gap-3 p-3.5 bg-cyan-500/8 border border-cyan-500/25 rounded-xl">
+            <Lock size={14} className="text-cyan-400 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-cyan-200">Entrará diretamente em Visita</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Lead agendado → etapa mapeada automaticamente para o funil comercial.
+              </p>
+            </div>
+            <span className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-lg ${STAGE_CONFIG.visita.bg} ${STAGE_CONFIG.visita.border} border ${STAGE_CONFIG.visita.color}`}>
+              Visita
+            </span>
           </div>
-          <p className="text-[11px] text-slate-600 mt-2">
-            Etapa mapeada automaticamente da campanha: <span className="text-slate-500 font-medium">{stageConf.label}</span>
-          </p>
-        </div>
+        ) : (
+          /* Outros casos — seletor livre */
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
+              Etapa de entrada no funil
+            </p>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+              {FUNNEL_STAGES.map(stage => {
+                const conf   = STAGE_CONFIG[stage]
+                const active = funnelStage === stage
+                return (
+                  <button
+                    key={stage}
+                    onClick={() => setFunnelStage(stage)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                      active
+                        ? `${conf.bg} ${conf.border} ${conf.color}`
+                        : 'bg-s2/50 border-line text-slate-500 hover:border-line-strong hover:text-slate-300'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? conf.dot : 'bg-slate-700'}`} />
+                    {conf.label}
+                    {active && <CheckCircle2 size={11} className="ml-auto flex-shrink-0" />}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-[11px] text-slate-600 mt-2">
+              Etapa mapeada da campanha: <span className="text-slate-500 font-medium">{stageConf.label}</span>
+            </p>
+          </div>
+        )}
 
         {/* Ticket médio */}
         <div>
@@ -200,8 +222,20 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
           <span className="text-[11px] text-slate-500">Campanha</span>
           <ArrowRight size={11} className="text-slate-700 flex-shrink-0" />
           <span className={`text-[11px] font-semibold ${stageConf.color}`}>{stageConf.label}</span>
+          {isScheduledHandoff && (
+            <>
+              <ArrowRight size={11} className="text-slate-700 flex-shrink-0" />
+              <span className="text-[11px] text-cyan-400 font-semibold">Tarefa de visita</span>
+            </>
+          )}
           <span className="ml-auto text-[10px] text-slate-600">origem: campanha</span>
         </div>
+
+        {isScheduledHandoff && (
+          <p className="text-[11px] text-slate-500 -mt-2">
+            Após migrar, você poderá cadastrar a data e horário da visita.
+          </p>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3">
@@ -213,7 +247,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign }: Props
             onClick={handleTransfer}
           >
             <ArrowRight size={14} />
-            Transferir para Funil
+            {isScheduledHandoff ? 'Migrar e Agendar Visita' : 'Transferir para Funil'}
           </Button>
         </div>
 

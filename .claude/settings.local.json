@@ -22,7 +22,32 @@
       "Bash(grep -v \"\\\\.toISOString\\(\\)$\\\\|updatedAt\\\\|createdAt\\\\|completedAt\")",
       "Bash(python3 -c \" import openpyxl wb = openpyxl.load_workbook\\('/Users/rafasouza/Downloads/planilha_contratos_porto_velas.xlsx'\\) for sheet in wb.sheetnames: ws = wb[sheet] print\\(f'=== Sheet: {sheet} ==='\\) for i, row in enumerate\\(ws.iter_rows\\(values_only=True\\)\\): if i > 40: break print\\(row\\) \")",
       "Bash(python3 -c \" import csv, subprocess result = subprocess.run\\(['python3', '-c', ''' import openpyxl '''], capture_output=True\\) print\\('trying pandas...'\\) import pandas as pd df = pd.read_excel\\('/Users/rafasouza/Downloads/planilha_contratos_porto_velas.xlsx', sheet_name=None\\) for name, sheet in df.items\\(\\): print\\(f'=== {name} ==='\\) print\\(sheet.to_string\\(\\)\\) \")",
-      "Bash(grep -v '\"bg-\\\\|hover:text-white\\\\|/\\\\*\\\\|text-white\\\\\"\\\\s*>\\\\s*$')"
+      "Bash(grep -v '\"bg-\\\\|hover:text-white\\\\|/\\\\*\\\\|text-white\\\\\"\\\\s*>\\\\s*$')",
+      "Bash(git pull *)",
+      "Bash(sed -n '182,215p' /Users/rafasouza/Documents/icrm/src/lib/db.ts)",
+      "Bash(sed -n '270,300p' /Users/rafasouza/Documents/icrm/src/lib/db.ts)",
+      "Bash(git commit -m 'Fix: remove import Profile não usado em ActivityLogsPage *)",
+      "Bash(npx vercel *)",
+      "Bash(gh api *)",
+      "Bash(git remote *)",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(xargs ls -la)",
+      "Bash(npx vite *)",
+      "Bash(pkill -f \"vite --port\")",
+      "Bash(kill -9 21025 20590 20193)",
+      "Bash(kill -9 27995 27980)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(sleep 5 && cat /tmp/vite-icrm.log)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5176/)",
+      "Bash(kill -9 28905)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm status)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm log --oneline -5)",
+      "Bash(git commit -m 'fix: remove unused imports nos arquivos do módulo Base de Leads *)",
+      "Bash(grep -n \"ticketRaw\\\\|averageTicket\\\\|R\\\\$\\\\|inputMode\" /Users/rafasouza/Documents/icrm/src/modules/campaigns/CampaignForm.tsx)",
+      "Bash(grep -n \"averageTicket\\\\|ticket\\\\|Ticket\\\\|valor\\\\|value\\\\|Value\\\\|R\\\\$\\\\|inputMode\" /Users/rafasouza/Documents/icrm/src/modules/leads/LeadForm.tsx)",
+      "Bash(grep -n \"proposalValue\\\\|proposta\\\\|Proposta\\\\|R\\\\$\\\\|inputMode\" /Users/rafasouza/Documents/icrm/src/modules/campaigns/LeadParecerModal.tsx)",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__list_projects",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__apply_migration"
     ]
   }
 }

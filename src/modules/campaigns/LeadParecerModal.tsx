@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, Zap, DollarSign, ArrowRight, GitMerge, Sparkles } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
-import { CampaignLead, FunnelStage, LeadSituation } from '../../types'
+import { CampaignLead, FunnelStage, Lead, LeadSituation } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
@@ -11,6 +11,7 @@ import { Campaign } from '../../types'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone } from '../../lib/formatters'
 import { TransferToFunnelModal } from './TransferToFunnelModal'
+import { VisitaTaskModal } from './VisitaTaskModal'
 import toast from 'react-hot-toast'
 
 interface LeadParecerModalProps {
@@ -30,7 +31,8 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
   const [situation,      setSituationL]   = useState<LeadSituation | undefined>()
   const [notes,          setNotes]        = useState('')
   const [proposalValue,  setProposalValue]= useState('')
-  const [showTransfer,   setShowTransfer] = useState(false)
+  const [showTransfer,   setShowTransfer]   = useState(false)
+  const [visitaLead,     setVisitaLead]     = useState<Lead | undefined>()
 
   useEffect(() => {
     if (!isOpen || !lead) return
@@ -279,7 +281,16 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
         onClose={() => setShowTransfer(false)}
         lead={lead}
         campaign={campaign}
+        onTransferred={newLead => setVisitaLead(newLead)}
       />
+
+      {visitaLead && (
+        <VisitaTaskModal
+          isOpen
+          onClose={() => setVisitaLead(undefined)}
+          lead={visitaLead}
+        />
+      )}
     </Modal>
   )
 }

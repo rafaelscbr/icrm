@@ -4,7 +4,7 @@ import {
   CheckCircle2, Circle, Clock, Trash2, Pencil, User,
   Building2, AlertTriangle, CheckCheck, ListTodo, CalendarClock,
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
-  BarChart2, UserCheck
+  BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -361,6 +361,157 @@ function offsetStr(days: number) {
   return localDateStr(d)
 }
 
+// ─── CalendarView ─────────────────────────────────────────────────────────────
+
+function CalendarView({
+  tasks, onEdit,
+}: {
+  tasks: Task[]
+  onEdit: (t: Task) => void
+}) {
+  const today = new Date()
+  const [year,  setYear]  = useState(today.getFullYear())
+  const [month, setMonth] = useState(today.getMonth())    // 0-indexed
+
+  const firstDay  = new Date(year, month, 1)
+  const lastDay   = new Date(year, month + 1, 0)
+  const startDow  = firstDay.getDay()   // 0=Sun
+  const totalDays = lastDay.getDate()
+
+  // Grid: preenche com nulls antes do primeiro dia
+  const cells: (number | null)[] = [
+    ...Array(startDow).fill(null),
+    ...Array.from({ length: totalDays }, (_, i) => i + 1),
+  ]
+  // Completa até múltiplo de 7
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const todayStr2 = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+  function dateStr(day: number) {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  }
+
+  function tasksForDay(day: number) {
+    const ds = dateStr(day)
+    return tasks
+      .filter(t => t.dueDate === ds)
+      .sort((a, b) => (a.dueTime ?? '23:59').localeCompare(b.dueTime ?? '23:59'))
+  }
+
+  const monthLabel = firstDay.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+  const PRIORITY_PILL: Record<string, string> = {
+    high:   'bg-red-500/20 text-red-300 border-red-500/30',
+    medium: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    low:    'bg-slate-500/15 text-slate-400 border-slate-500/20',
+  }
+
+  const CAT_DOT: Record<string, string> = {
+    visita:             'bg-cyan-400',
+    agenciamento:       'bg-brand',
+    proposta:           'bg-amber-400',
+    busca_imovel:       'bg-violet-400',
+    prospeccao_imoveis: 'bg-emerald-400',
+    campanhas:          'bg-pink-400',
+    administrativo:     'bg-slate-400',
+    souza_financeiro:   'bg-green-400',
+    outro:              'bg-slate-500',
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Nav do mês */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }}
+          className="p-2 rounded-xl bg-s2/60 border border-line text-slate-400 hover:text-slate-200 hover:border-line-strong transition-all"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <h2 className="text-sm font-semibold text-slate-200 capitalize">{monthLabel}</h2>
+        <button
+          onClick={() => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }}
+          className="p-2 rounded-xl bg-s2/60 border border-line text-slate-400 hover:text-slate-200 hover:border-line-strong transition-all"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      {/* Grade */}
+      <div className="rounded-2xl border border-line overflow-hidden">
+        {/* Header dias da semana */}
+        <div className="grid grid-cols-7 bg-s2/60 border-b border-line">
+          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
+            <div key={d} className="py-2 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{d}</div>
+          ))}
+        </div>
+
+        {/* Células */}
+        <div className="grid grid-cols-7">
+          {cells.map((day, idx) => {
+            const isToday  = day !== null && dateStr(day) === todayStr2
+            const dayTasks = day !== null ? tasksForDay(day) : []
+            const MAX_SHOWN = 3
+
+            return (
+              <div
+                key={idx}
+                className={`min-h-[90px] p-1.5 border-b border-r border-line last:border-r-0
+                  ${day === null ? 'bg-s2/20' : 'bg-s2/40 hover:bg-s2/70 transition-colors'}
+                  ${idx % 7 === 6 ? 'border-r-0' : ''}
+                `}
+              >
+                {day !== null && (
+                  <>
+                    <div className={`text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1
+                      ${isToday ? 'bg-indigo-500 text-white' : 'text-slate-500'}`}>
+                      {day}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {dayTasks.slice(0, MAX_SHOWN).map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => onEdit(t)}
+                          className={`w-full text-left flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium border truncate transition-all
+                            ${t.status === 'done' ? 'opacity-40' : ''}
+                            ${PRIORITY_PILL[t.priority]}`}
+                          title={`${t.dueTime ? t.dueTime + ' — ' : ''}${t.title}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${t.category ? (CAT_DOT[t.category] ?? 'bg-slate-500') : 'bg-slate-500'}`} />
+                          <span className="truncate">
+                            {t.dueTime && <span className="opacity-70 mr-1">{t.dueTime}</span>}
+                            {t.title}
+                          </span>
+                        </button>
+                      ))}
+                      {dayTasks.length > MAX_SHOWN && (
+                        <p className="text-[9px] text-slate-600 pl-1.5">
+                          +{dayTasks.length - MAX_SHOWN} mais
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Legenda de categorias */}
+      <div className="flex flex-wrap gap-3 px-1">
+        {Object.entries(CAT_DOT).slice(0, 6).map(([cat, dot]) => (
+          <div key={cat} className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${dot}`} />
+            <span className="text-[10px] text-slate-500 capitalize">{cat.replace(/_/g, ' ')}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function TasksPage() {
@@ -379,9 +530,18 @@ export function TasksPage() {
   const [editing,      setEditing]      = useState<Task | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Task | undefined>()
   const [showDone,     setShowDone]     = useState(false)
-  const [activeTab,    setActiveTab]    = useState<'tasks' | 'history'>('tasks')
+  const [activeTab,    setActiveTab]    = useState<'tasks' | 'calendar' | 'history'>('tasks')
 
   useEffect(() => { load(); loadContacts(); loadProperties() }, [load, loadContacts, loadProperties])
+
+  // Recarrega tarefas ao voltar para a aba/janela (sincroniza com iPhone ou outra sessão)
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') load()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [load])
 
   const today    = todayStr()
   const tomorrow = offsetStr(1)
@@ -467,8 +627,9 @@ export function TasksPage() {
       {/* Tabs — estilo sem barra de fundo, igual Performance */}
       <div className="flex gap-1 mb-6 border-b border-line">
         {([
-          { key: 'tasks',   label: 'Tarefas',       icon: <ListTodo size={14} /> },
-          { key: 'history', label: 'Resumo por dia', icon: <BarChart2 size={14} /> },
+          { key: 'tasks',    label: 'Tarefas',       icon: <ListTodo size={14} />     },
+          { key: 'calendar', label: 'Calendário',    icon: <CalendarDays size={14} /> },
+          { key: 'history',  label: 'Resumo por dia', icon: <BarChart2 size={14} />   },
         ] as const).map(tab => (
           <button
             key={tab.key}
@@ -486,6 +647,14 @@ export function TasksPage() {
 
       {/* ── Aba Histórico ── */}
       {activeTab === 'history' && <TaskHistoryView tasks={tasks} />}
+
+      {/* ── Aba Calendário ── */}
+      {activeTab === 'calendar' && (
+        <CalendarView
+          tasks={tasks}
+          onEdit={t => { setEditing(t); setFormOpen(true) }}
+        />
+      )}
 
       {/* ── Aba Tarefas ── */}
       {activeTab === 'tasks' && <>
