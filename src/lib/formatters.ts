@@ -38,12 +38,28 @@ export function formatDateShort(iso: string): string {
  * Retorna null se o número tiver menos de 8 dígitos (inválido).
  */
 export function normalizePhone(raw: string): string | null {
+  // Suporta células com múltiplos números separados por ";" — tenta cada parte
+  const parts = String(raw).split(';')
+  for (const part of parts) {
+    const result = _normalizeSinglePhone(part.trim())
+    if (result) return result
+  }
+  return null
+}
+
+function _normalizeSinglePhone(raw: string): string | null {
   let d = raw.replace(/\D/g, '')
+  if (!d || d === '-') return null
   // Remove +55 ou 55 prefixo (13 ou 12 dígitos)
   if ((d.length === 13 || d.length === 12) && d.startsWith('55')) d = d.slice(2)
   // Remove 0 prefixo de DDD
   if (d.length === 12 && d.startsWith('0')) d = d.slice(1)
   if (d.length < 8) return null
+  // Adiciona 9º dígito em celulares com 10 dígitos (DDD + 8 dígitos sem o 9)
+  // Só adiciona se o 3º dígito (1º do número após DDD) não for 9
+  if (d.length === 10 && d[2] !== '9') {
+    d = d.slice(0, 2) + '9' + d.slice(2)
+  }
   return d
 }
 

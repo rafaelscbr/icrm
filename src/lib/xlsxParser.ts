@@ -53,6 +53,8 @@ export function parseXlsx(file: File): Promise<ParseResult> {
             return
           }
 
+          // Para células com múltiplos números (ex: "(47) 9999-1234;47999991234"),
+          // normalizePhone tenta cada parte e retorna o primeiro válido
           const phone = normalizePhone(rawPhone)
           if (!phone) {
             invalidPhones++
