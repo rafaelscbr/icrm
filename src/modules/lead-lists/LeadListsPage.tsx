@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Database, Users, Archive, Plus, Pencil, Trash2, FolderOpen,
+  Database, Users, Archive, Pencil, Trash2, FolderOpen,
   TrendingUp, Calendar, ChevronRight, BarChart3,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'

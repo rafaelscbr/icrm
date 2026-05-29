@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft, Database, Users, Upload, Search, Phone,
-  ChevronLeft, ChevronRight, Pencil, ExternalLink, Calendar,
+  ChevronLeft, ChevronRight, Pencil, Calendar,
   MapPin, Banknote, BedDouble,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
@@ -29,7 +29,7 @@ interface MemberWithContact {
 }
 
 export function LeadListDetail({ list, onBack }: Props) {
-  const { loadMembers, updateCount, lists } = useLeadListsStore()
+  const { loadMembers, lists } = useLeadListsStore()
   const currentList = lists.find(l => l.id === list.id) ?? list
 
   const [members,     setMembers]     = useState<MemberWithContact[]>([])

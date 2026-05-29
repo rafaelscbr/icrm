@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Megaphone, Database, MessageSquare, User, Clock } from 'lucide-react'
+import { Megaphone, Database, MessageSquare, Clock } from 'lucide-react'
 import { db } from '../../lib/db'
 import { LeadListMember, LeadCampaignDispatch } from '../../types'
 import { useLeadListsStore } from '../../store/useLeadListsStore'

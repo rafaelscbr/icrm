@@ -10,7 +10,6 @@ import { normalizePhone } from '../../lib/formatters'
 import { supabase } from '../../lib/supabase'
 import { db } from '../../lib/db'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
-import { Contact } from '../../types'
 import toast from 'react-hot-toast'
 
 interface Props {
