@@ -4,7 +4,6 @@ import {
   Plus, Trash2, Info, DollarSign, Check, Loader2, ListChecks,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
-import { Button } from '../../components/ui/Button'
 import { Campaign } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
@@ -30,26 +29,18 @@ async function importContactsFromLists(
 ) {
   const CHUNK = 500
   const allContactIds: string[] = []
-
   for (const listId of listIds) {
     const members = await db.leadListMembers.fetchForList(listId)
     allContactIds.push(...members.map(m => m.contactId))
   }
-
   const uniqueIds = [...new Set(allContactIds)]
   const contacts: { name: string; phone: string }[] = []
-
   for (let i = 0; i < uniqueIds.length; i += CHUNK) {
     const chunk = uniqueIds.slice(i, i + CHUNK)
-    const { data } = await supabase
-      .from('contacts')
-      .select('name, phone')
-      .in('id', chunk)
+    const { data } = await supabase.from('contacts').select('name, phone').in('id', chunk)
     if (data) contacts.push(...(data as { name: string; phone: string }[]))
   }
-
-  const result = addBulk(contacts.map(c => ({ campaignId, name: c.name, phone: c.phone })))
-  return result
+  return addBulk(contacts.map(c => ({ campaignId, name: c.name, phone: c.phone })))
 }
 
 // ─── Step indicator ────────────────────────────────────────────────────────────
@@ -62,31 +53,29 @@ const STEPS = [
 
 function StepBar({ current }: { current: number }) {
   return (
-    <div className="flex items-center justify-center gap-0 mb-8">
+    <div className="flex items-center justify-center gap-0 mb-4 lg:mb-6">
       {STEPS.map((s, i) => {
-        const done    = i < current
-        const active  = i === current
-        const Icon    = s.icon
+        const done   = i < current
+        const active = i === current
+        const Icon   = s.icon
         return (
           <div key={i} className="flex items-center">
-            <div className="flex flex-col items-center gap-1.5">
+            <div className="flex flex-col items-center gap-1">
               <div className={`
-                w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300
+                w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300
                 ${done   ? 'bg-indigo-500 border-indigo-500 text-white' : ''}
                 ${active ? 'bg-brand-tint border-indigo-500 text-brand-text shadow-[0_0_0_4px_rgba(99,102,241,0.15)]' : ''}
                 ${!done && !active ? 'bg-s3/40 border-line text-slate-600' : ''}
               `}>
-                {done
-                  ? <Check size={15} strokeWidth={2.5} />
-                  : <Icon size={15} />
-                }
+                {done ? <Check size={13} strokeWidth={2.5} /> : <Icon size={13} />}
               </div>
-              <span className={`text-[11px] font-medium transition-colors duration-300 ${active ? 'text-brand-text' : done ? 'text-indigo-400' : 'text-slate-600'}`}>
+              {/* Label — só visível em telas maiores */}
+              <span className={`hidden sm:block text-[10px] font-medium transition-colors ${active ? 'text-brand-text' : done ? 'text-indigo-400' : 'text-slate-600'}`}>
                 {s.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`h-px w-12 mx-1 mb-5 transition-colors duration-500 ${i < current ? 'bg-indigo-500' : 'bg-line'}`} />
+              <div className={`h-px w-8 lg:w-12 mx-1 ${i < current ? 'bg-indigo-500' : 'bg-line'} ${active || done ? 'mb-0 sm:mb-4' : 'mb-0 sm:mb-4'}`} />
             )}
           </div>
         )
@@ -103,15 +92,12 @@ interface Props {
   campaign?: Campaign
 }
 
-const MSG_PLACEHOLDER = 'Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de apresentar...'
-
 export function CampaignForm({ isOpen, onClose, campaign }: Props) {
-  const { add, update }  = useCampaignsStore()
-  const { addBulk }      = useCampaignLeadsStore()
+  const { add, update }            = useCampaignsStore()
+  const { addBulk }                = useCampaignLeadsStore()
   const { lists, load: loadLists } = useLeadListsStore()
   const isEditing = Boolean(campaign)
 
-  // form state
   const [step,        setStep]        = useState(0)
   const [name,        setName]        = useState('')
   const [ticketRaw,   setTicketRaw]   = useState('')
@@ -121,7 +107,6 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
   const [errors,      setErrors]      = useState<Record<string, string>>({})
   const [saving,      setSaving]      = useState(false)
 
-  // reset on open
   useEffect(() => {
     if (!isOpen) return
     setStep(0)
@@ -135,8 +120,6 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
     loadLists()
   }, [isOpen])
 
-  // ── navigation ──
-
   function validateStep(s: number) {
     const e: Record<string, string> = {}
     if (s === 0 && !name.trim()) e.name = 'Nome é obrigatório'
@@ -145,10 +128,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
     return !Object.keys(e).length
   }
 
-  function next() {
-    if (!validateStep(step)) return
-    setStep(s => s + 1)
-  }
+  function next() { if (validateStep(step)) setStep(s => s + 1) }
   function back() { setStep(s => s - 1) }
 
   function toggleList(id: string) {
@@ -158,8 +138,6 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
       return next
     })
   }
-
-  // ── submit ──
 
   async function handleSubmit() {
     if (!validateStep(step)) return
@@ -180,7 +158,6 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
         return
       }
 
-      // create campaign
       const newCampaign = add({
         name: name.trim(), message: message.trim(),
         messages: cleanMessages.length ? cleanMessages : undefined,
@@ -189,69 +166,86 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
       })
 
       const listIds = [...selectedIds]
-
-      // link lists to campaign
       for (const listId of listIds) {
         await db.campaignLists.upsert({ id: generateId(), campaignId: newCampaign.id, listId, addedAt: now })
       }
 
-      // import contacts
       if (listIds.length > 0) {
         const result = await importContactsFromLists(newCampaign.id, listIds, addBulk)
         toast.success(`Campanha criada! ${result.added} lead${result.added !== 1 ? 's' : ''} importado${result.added !== 1 ? 's' : ''}.`)
       } else {
         toast.success('Campanha criada!')
       }
-
       onClose()
     } catch (err) {
-      toast.error('Erro ao criar campanha. Tente novamente.')
+      toast.error('Erro ao criar campanha.')
       console.error(err)
     } finally {
       setSaving(false)
     }
   }
 
-  // ── computed ──
+  const activeLists = lists.filter(l => l.status !== 'archived')
+  const totalLeads  = activeLists.filter(l => selectedIds.has(l.id)).reduce((acc, l) => acc + l.totalCount, 0)
+  const allCount    = 1 + messages.filter(m => m.trim()).length
 
-  const activeLists = lists.filter(l => l.status === 'active' || l.status !== 'archived')
-  const totalLeads  = activeLists
-    .filter(l => selectedIds.has(l.id))
-    .reduce((acc, l) => acc + l.totalCount, 0)
-  const allCount = 1 + messages.filter(m => m.trim()).length
+  // ── Footer de navegação — FORA do scroll ──────────────────────────────────
+  const footer = (
+    <div className="flex gap-3 w-full">
+      {step > 0 && (
+        <button
+          type="button"
+          onClick={back}
+          disabled={saving}
+          className="flex items-center justify-center gap-1.5 px-4 min-h-[48px] rounded-xl text-sm text-slate-400 hover:text-slate-200 border border-line hover:border-line-strong transition-all cursor-pointer disabled:opacity-50"
+        >
+          <ChevronLeft size={16} />
+          <span className="hidden sm:inline">Voltar</span>
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={step < 2 ? next : handleSubmit}
+        disabled={saving}
+        className="flex-1 flex items-center justify-center gap-2 min-h-[48px] rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer shadow-lg shadow-indigo-500/20 disabled:opacity-60"
+      >
+        {saving
+          ? <><Loader2 size={15} className="animate-spin" /> Criando…</>
+          : step < 2
+            ? <>Próximo <ChevronRight size={15} /></>
+            : isEditing ? 'Salvar alterações' : 'Criar campanha'
+        }
+      </button>
+    </div>
+  )
 
   // ─── render ─────────────────────────────────────────────────────────────────
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title=""
-      size="md"
-    >
-      <div className="-mt-2">
+    <Modal isOpen={isOpen} onClose={onClose} title="" size="md" footer={footer}>
+      <div>
         <StepBar current={step} />
 
         {/* ── Step 0: Identidade ── */}
         {step === 0 && (
-          <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-right-4 duration-200">
-            <div className="text-center mb-1">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
-                <Megaphone size={26} className="text-indigo-400" />
+          <div className="flex flex-col gap-4">
+            <div className="text-center mb-2">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-2">
+                <Megaphone size={22} className="text-indigo-400" />
               </div>
               <h2 className="text-base font-semibold text-t1">Identidade da campanha</h2>
-              <p className="text-xs text-t4 mt-1">Dê um nome claro para identificar facilmente</p>
+              <p className="text-xs text-t4 mt-0.5">Nome claro para identificar facilmente</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Nome da campanha</label>
+              <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Nome</label>
               <input
                 autoFocus
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && next()}
                 placeholder="Ex: Liber.ATO – Proprietários Maio/26"
-                className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px]"
               />
               {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
             </div>
@@ -272,106 +266,93 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                   onChange={e => setTicketRaw(e.target.value.replace(/[^\d.,]/g, ''))}
                   onBlur={() => { const n = parseBRL(ticketRaw); setTicketRaw(n > 0 ? formatBRL(n) : '') }}
                   placeholder="Ex: 500.000"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-12 pr-4 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-12 pr-4 py-3.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px]"
                 />
               </div>
-              <p className="text-[11px] text-t5">Usado para calcular VGV esperado na aba de Previsão</p>
+              <p className="text-[11px] text-t5">Usado para calcular VGV na aba de Previsão</p>
             </div>
-
-            <Button className="w-full gap-2 mt-1" onClick={next}>
-              Próximo <ChevronRight size={15} />
-            </Button>
           </div>
         )}
 
         {/* ── Step 1: Mensagens ── */}
         {step === 1 && (
-          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
-            <div className="text-center mb-1">
-              <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-3">
-                <MessageSquare size={26} className="text-green-400" />
+          <div className="flex flex-col gap-4">
+            <div className="text-center mb-2">
+              <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-2">
+                <MessageSquare size={22} className="text-green-400" />
               </div>
               <h2 className="text-base font-semibold text-t1">Templates de mensagem</h2>
-              <p className="text-xs text-t4 mt-1">Use <code className="bg-s3/70 px-1 rounded">{'{nome}'}</code> para personalizar automaticamente</p>
+              <p className="text-xs text-t4 mt-0.5">Use <code className="bg-s3/70 px-1 rounded">{'{nome}'}</code> para personalizar</p>
             </div>
 
-            {/* Hint */}
             <div className="flex items-start gap-2 bg-indigo-500/8 border border-brand/25 rounded-xl px-3 py-2.5">
               <Info size={13} className="text-brand flex-shrink-0 mt-0.5" />
               <p className="text-xs text-brand-text/80">
-                Múltiplos templates ajudam a evitar bloqueio no WhatsApp — o sistema rotaciona entre eles automaticamente.
+                Múltiplos templates evitam bloqueio no WhatsApp — o sistema rotaciona entre eles.
               </p>
             </div>
 
-            {/* Mensagem principal */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
-                  Mensagem 1 <span className="text-brand normal-case font-normal">(principal)</span>
-                </label>
-                <span className="text-[10px] text-t5">{allCount} template{allCount !== 1 ? 's' : ''}</span>
-              </div>
-              <textarea
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                rows={4}
-                placeholder={MSG_PLACEHOLDER}
-                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
-              />
-              {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
-            </div>
-
-            {/* Mensagens extras */}
-            {messages.map((msg, idx) => (
-              <div key={idx} className="flex flex-col gap-1.5">
+            {/* Área de mensagens com scroll no mobile */}
+            <div className="flex flex-col gap-3 max-h-[45vh] lg:max-h-none overflow-y-auto pr-0.5">
+              <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Mensagem {idx + 2}</label>
-                  <button
-                    type="button"
-                    onClick={() => setMessages(m => m.filter((_, i) => i !== idx))}
-                    className="text-slate-600 hover:text-red-400 transition-colors cursor-pointer p-1"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
+                    Mensagem 1 <span className="text-brand normal-case font-normal">(principal)</span>
+                  </label>
+                  <span className="text-[10px] text-t5">{allCount} template{allCount !== 1 ? 's' : ''}</span>
                 </div>
                 <textarea
-                  value={msg}
-                  onChange={e => setMessages(m => m.map((v, i) => i === idx ? e.target.value : v))}
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
                   rows={4}
-                  placeholder={MSG_PLACEHOLDER}
-                  className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
+                  placeholder="Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de apresentar..."
+                  className="w-full bg-s3/50 border border-line rounded-xl px-3 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
                 />
+                {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
               </div>
-            ))}
 
-            <button
-              type="button"
-              onClick={() => setMessages(m => [...m, ''])}
-              className="flex items-center gap-2 text-xs text-brand hover:text-brand-text transition-colors cursor-pointer py-1 w-fit"
-            >
-              <Plus size={13} /> Adicionar mensagem alternativa
-            </button>
+              {messages.map((msg, idx) => (
+                <div key={idx} className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Mensagem {idx + 2}</label>
+                    <button
+                      type="button"
+                      onClick={() => setMessages(m => m.filter((_, i) => i !== idx))}
+                      className="text-slate-600 hover:text-red-400 transition-colors cursor-pointer p-1"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                  <textarea
+                    value={msg}
+                    onChange={e => setMessages(m => m.map((v, i) => i === idx ? e.target.value : v))}
+                    rows={4}
+                    placeholder="Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de apresentar..."
+                    className="w-full bg-s3/50 border border-line rounded-xl px-3 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
+                  />
+                </div>
+              ))}
 
-            <div className="flex gap-3 mt-1">
-              <Button variant="secondary" className="gap-1.5" onClick={back}>
-                <ChevronLeft size={15} /> Voltar
-              </Button>
-              <Button className="flex-1 gap-2" onClick={next}>
-                Próximo <ChevronRight size={15} />
-              </Button>
+              <button
+                type="button"
+                onClick={() => setMessages(m => [...m, ''])}
+                className="flex items-center gap-2 text-xs text-brand hover:text-brand-text transition-colors cursor-pointer py-1 w-fit"
+              >
+                <Plus size={13} /> Adicionar mensagem alternativa
+              </button>
             </div>
           </div>
         )}
 
         {/* ── Step 2: Audiência ── */}
         {step === 2 && (
-          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
-            <div className="text-center mb-1">
-              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-3">
-                <Users size={26} className="text-purple-400" />
+          <div className="flex flex-col gap-4">
+            <div className="text-center mb-2">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-2">
+                <Users size={22} className="text-purple-400" />
               </div>
               <h2 className="text-base font-semibold text-t1">Selecionar audiência</h2>
-              <p className="text-xs text-t4 mt-1">Escolha uma ou mais listas da Base de Leads</p>
+              <p className="text-xs text-t4 mt-0.5">Escolha uma ou mais listas da Base de Leads</p>
             </div>
 
             {activeLists.length === 0 ? (
@@ -381,7 +362,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                 <p className="text-xs text-t5">Vá em Base de Leads e importe uma lista primeiro</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+              <div className="flex flex-col gap-2 max-h-[42vh] overflow-y-auto pr-0.5">
                 {activeLists.map(list => {
                   const selected = selectedIds.has(list.id)
                   return (
@@ -397,29 +378,15 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                         }
                       `}
                     >
-                      {/* Checkbox */}
-                      <div className={`
-                        w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-all
-                        ${selected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-s3/50'}
-                      `}>
+                      <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-all ${selected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-s3/50'}`}>
                         {selected && <Check size={11} strokeWidth={3} className="text-white" />}
                       </div>
-
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${selected ? 'text-t1' : 'text-t2'}`}>
-                          {list.name}
-                        </p>
-                        {list.description && (
-                          <p className="text-[11px] text-t5 truncate">{list.description}</p>
-                        )}
+                        <p className={`text-sm font-medium truncate ${selected ? 'text-t1' : 'text-t2'}`}>{list.name}</p>
+                        {list.description && <p className="text-[11px] text-t5 truncate">{list.description}</p>}
                       </div>
-
-                      {/* Count */}
-                      <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg ${
-                        selected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-s3/70 text-t4'
-                      }`}>
-                        {list.totalCount.toLocaleString()} leads
+                      <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg flex-shrink-0 ${selected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-s3/70 text-t4'}`}>
+                        {list.totalCount.toLocaleString()}
                       </span>
                     </button>
                   )
@@ -427,37 +394,14 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
               </div>
             )}
 
-            {/* Total selecionado */}
             {selectedIds.size > 0 && (
               <div className="flex items-center gap-2 bg-green-500/8 border border-green-500/20 rounded-xl px-3 py-2.5">
                 <Check size={13} className="text-green-400 flex-shrink-0" />
                 <p className="text-xs text-green-400">
-                  <span className="font-bold">{selectedIds.size}</span> lista{selectedIds.size !== 1 ? 's' : ''} selecionada{selectedIds.size !== 1 ? 's' : ''} · <span className="font-bold">{totalLeads.toLocaleString()}</span> leads no total
+                  <span className="font-bold">{selectedIds.size}</span> lista{selectedIds.size !== 1 ? 's' : ''} · <span className="font-bold">{totalLeads.toLocaleString()}</span> leads
                 </p>
               </div>
             )}
-
-            {isEditing && (
-              <p className="text-[11px] text-t5 text-center">
-                Ao salvar, as listas anteriores serão mantidas e as novas serão adicionadas.
-              </p>
-            )}
-
-            <div className="flex gap-3 mt-1">
-              <Button variant="secondary" className="gap-1.5" onClick={back} disabled={saving}>
-                <ChevronLeft size={15} /> Voltar
-              </Button>
-              <Button
-                className="flex-1 gap-2"
-                onClick={handleSubmit}
-                disabled={saving}
-              >
-                {saving
-                  ? <><Loader2 size={14} className="animate-spin" /> Criando…</>
-                  : isEditing ? 'Salvar alterações' : 'Criar campanha'
-                }
-              </Button>
-            </div>
           </div>
         )}
       </div>

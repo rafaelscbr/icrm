@@ -637,10 +637,58 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
     ? ['Editar tarefa', 'Editar tarefa', 'Editar tarefa']
     : ['Nova tarefa', 'Nova tarefa', 'Nova tarefa']
 
+  // ── Footer fixo — fora do scroll, sempre visível no mobile ─────────────────
+  const footer = (
+    <div className="flex items-center gap-2 w-full">
+      {/* Voltar / Cancelar */}
+      {step > 0 ? (
+        <button type="button" onClick={handleBack}
+          className="flex items-center justify-center gap-1 px-3 min-h-[48px] rounded-xl text-sm text-slate-500 hover:text-slate-300 border border-line hover:border-line-strong transition-all cursor-pointer"
+        >
+          <ChevronLeft size={15} />
+          <span className="hidden sm:inline">Voltar</span>
+        </button>
+      ) : (
+        <button type="button" onClick={onClose}
+          className="flex items-center justify-center gap-1 px-3 min-h-[48px] rounded-xl text-sm text-slate-500 hover:text-slate-300 border border-line hover:border-line-strong transition-all cursor-pointer"
+        >
+          <span>Cancelar</span>
+        </button>
+      )}
+
+      <div className="flex-1" />
+
+      {/* Criar rápido — só no step 1 */}
+      {step === 1 && (
+        <button type="button" onClick={handleSubmit}
+          className="flex items-center gap-1.5 px-3 min-h-[48px] rounded-xl text-sm text-slate-400 hover:text-slate-200 border border-line hover:border-line-strong transition-all cursor-pointer"
+        >
+          <Zap size={14} />
+          <span className="hidden sm:inline">Criar rápido</span>
+        </button>
+      )}
+
+      {/* Próximo / Salvar */}
+      {step < 2 ? (
+        <button type="button" onClick={handleNext}
+          className="flex items-center gap-1.5 px-5 min-h-[48px] rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+        >
+          Próximo <ChevronRight size={15} />
+        </button>
+      ) : (
+        <button type="button" onClick={handleSubmit}
+          className="flex items-center gap-1.5 px-5 min-h-[48px] rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+        >
+          {isEditing ? 'Salvar' : 'Criar tarefa'} ✓
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title={stepTitles[step]} size="md">
-        <div className="flex flex-col gap-6">
+      <Modal isOpen={isOpen} onClose={onClose} title={stepTitles[step]} size="md" footer={footer}>
+        <div className="flex flex-col gap-5">
 
           {/* Step indicator */}
           <div className="flex items-center gap-1">
@@ -657,7 +705,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                 }}
                 className="flex items-center gap-1.5 group cursor-pointer"
               >
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold transition-all
+                <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold transition-all
                   ${i < step  ? 'bg-indigo-500 text-white'
                   : i === step ? 'bg-indigo-500 text-white ring-2 ring-indigo-500/30 ring-offset-1 ring-offset-surface'
                   : 'bg-s3/50 text-slate-600'}`}
@@ -681,56 +729,11 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               className="transition-all duration-180"
               style={{
                 opacity: animating ? 0 : 1,
-                transform: animating
-                  ? `translateX(${direction * 20}px)`
-                  : 'translateX(0)',
+                transform: animating ? `translateX(${direction * 20}px)` : 'translateX(0)',
               }}
             >
               {steps[step]}
             </div>
-          </div>
-
-          {/* Footer actions */}
-          <div className="flex items-center gap-3 pt-1">
-            {step > 0 ? (
-              <button type="button" onClick={handleBack}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:text-slate-300 border border-line hover:border-line-strong transition-all cursor-pointer"
-              >
-                <ChevronLeft size={15} /> Voltar
-              </button>
-            ) : (
-              <button type="button" onClick={onClose}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:text-slate-300 border border-line hover:border-line-strong transition-all cursor-pointer"
-              >
-                Cancelar
-              </button>
-            )}
-
-            <div className="flex-1" />
-
-            {/* Criar direto a partir da etapa 2 */}
-            {step === 1 && (
-              <button type="button" onClick={handleSubmit}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm text-slate-400 hover:text-slate-200 border border-line hover:border-line-strong transition-all cursor-pointer"
-              >
-                <Zap size={14} />
-                Criar rápido
-              </button>
-            )}
-
-            {step < 2 ? (
-              <button type="button" onClick={handleNext}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
-              >
-                Próximo <ChevronRight size={15} />
-              </button>
-            ) : (
-              <button type="button" onClick={handleSubmit}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
-              >
-                {isEditing ? 'Salvar alterações' : 'Criar tarefa'} ✓
-              </button>
-            )}
           </div>
         </div>
       </Modal>
