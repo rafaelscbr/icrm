@@ -53,8 +53,11 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
 
   const [radarPropertyType, setRadarPropertyType] = useState(lead.radarPropertyType ?? '')
   const [radarRegion, setRadarRegion] = useState(lead.radarRegion ?? '')
-  const [radarValueMin, setRadarValueMin] = useState(lead.radarValueMin !== undefined ? String(lead.radarValueMin) : '')
-  const [radarValueMax, setRadarValueMax] = useState(lead.radarValueMax !== undefined ? String(lead.radarValueMax) : '')
+  function fmtBRL(n: number) { return n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }
+  function parseBRL(s: string) { return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0 }
+
+  const [radarValueMin, setRadarValueMin] = useState(lead.radarValueMin !== undefined ? fmtBRL(lead.radarValueMin) : '')
+  const [radarValueMax, setRadarValueMax] = useState(lead.radarValueMax !== undefined ? fmtBRL(lead.radarValueMax) : '')
   const [radarAreaMin, setRadarAreaMin] = useState(lead.radarAreaMin !== undefined ? String(lead.radarAreaMin) : '')
   const [radarBedrooms, setRadarBedrooms] = useState(lead.radarBedrooms !== undefined ? String(lead.radarBedrooms) : '')
 
@@ -78,8 +81,8 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
     update(lead.id, autofill)
     setRadarPropertyType(linked.type)
     setRadarRegion(linked.neighborhood)
-    setRadarValueMin(String(Math.round(linked.value * 0.8)))
-    setRadarValueMax(String(Math.round(linked.value * 1.2)))
+    setRadarValueMin(fmtBRL(Math.round(linked.value * 0.8)))
+    setRadarValueMax(fmtBRL(Math.round(linked.value * 1.2)))
     setRadarAreaMin(linked.areaSqm !== undefined ? String(linked.areaSqm) : '')
     setRadarBedrooms(linked.bedrooms !== undefined ? String(linked.bedrooms) : '')
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,13 +106,23 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
   }
 
   function handleValueMin(val: string) {
-    setRadarValueMin(val)
-    scheduleUpdate({ radarValueMin: val ? Number(val) : undefined })
+    setRadarValueMin(val.replace(/[^\d.,]/g, ''))
+  }
+  function blurValueMin() {
+    const n = parseBRL(radarValueMin)
+    const formatted = n > 0 ? fmtBRL(n) : ''
+    setRadarValueMin(formatted)
+    scheduleUpdate({ radarValueMin: n > 0 ? n : undefined })
   }
 
   function handleValueMax(val: string) {
-    setRadarValueMax(val)
-    scheduleUpdate({ radarValueMax: val ? Number(val) : undefined })
+    setRadarValueMax(val.replace(/[^\d.,]/g, ''))
+  }
+  function blurValueMax() {
+    const n = parseBRL(radarValueMax)
+    const formatted = n > 0 ? fmtBRL(n) : ''
+    setRadarValueMax(formatted)
+    scheduleUpdate({ radarValueMax: n > 0 ? n : undefined })
   }
 
   function handleAreaMin(val: string) {
@@ -126,8 +139,8 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
     ...lead,
     radarPropertyType: radarPropertyType || undefined,
     radarRegion: radarRegion || undefined,
-    radarValueMin: radarValueMin ? Number(radarValueMin) : undefined,
-    radarValueMax: radarValueMax ? Number(radarValueMax) : undefined,
+    radarValueMin: radarValueMin ? parseBRL(radarValueMin) || undefined : undefined,
+    radarValueMax: radarValueMax ? parseBRL(radarValueMax) || undefined : undefined,
     radarAreaMin: radarAreaMin ? Number(radarAreaMin) : undefined,
     radarBedrooms: radarBedrooms ? Number(radarBedrooms) : undefined,
   }
@@ -183,27 +196,33 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label className={labelClass}>Valor mín (R$)</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={radarValueMin}
-              onChange={e => handleValueMin(e.target.value)}
-              placeholder="500000"
-              className={inputClass}
-            />
-            {radarValueMin && <p className="text-[10px] text-brand mt-0.5">{formatCurrencyFull(Number(radarValueMin))}</p>}
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-t4 pointer-events-none">R$</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={radarValueMin}
+                onChange={e => handleValueMin(e.target.value)}
+                onBlur={blurValueMin}
+                placeholder="500.000"
+                className={`${inputClass} pl-8`}
+              />
+            </div>
           </div>
           <div className="flex flex-col gap-1">
             <label className={labelClass}>Valor máx (R$)</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={radarValueMax}
-              onChange={e => handleValueMax(e.target.value)}
-              placeholder="1500000"
-              className={inputClass}
-            />
-            {radarValueMax && <p className="text-[10px] text-brand mt-0.5">{formatCurrencyFull(Number(radarValueMax))}</p>}
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-t4 pointer-events-none">R$</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={radarValueMax}
+                onChange={e => handleValueMax(e.target.value)}
+                onBlur={blurValueMax}
+                placeholder="1.500.000"
+                className={`${inputClass} pl-8`}
+              />
+            </div>
           </div>
         </div>
 

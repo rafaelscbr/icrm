@@ -37,7 +37,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
     setStageLocal(lead.funnelStage)
     setSituationL(lead.situation)
     setNotes(lead.notes ?? '')
-    setProposalValue(lead.proposalValue ? String(lead.proposalValue) : '')
+    setProposalValue(lead.proposalValue ? lead.proposalValue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '')
   }, [lead, isOpen])
 
   function handleSave() {
@@ -55,7 +55,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
     }
 
     if (stage === 'proposal' && proposalValue) {
-      patch.proposalValue = Number(proposalValue.replace(/\D/g, ''))
+      patch.proposalValue = parseFloat(proposalValue.replace(/\./g, '').replace(',', '.')) || undefined
     }
 
     update(lead.id, patch)
@@ -151,8 +151,12 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
                   type="text"
                   inputMode="numeric"
                   value={proposalValue}
-                  onChange={e => setProposalValue(e.target.value.replace(/\D/g, ''))}
-                  placeholder="0"
+                  onChange={e => setProposalValue(e.target.value.replace(/[^\d.,]/g, ''))}
+                  onBlur={() => {
+                    const n = parseFloat(proposalValue.replace(/\./g, '').replace(',', '.')) || 0
+                    setProposalValue(n > 0 ? n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '')
+                  }}
+                  placeholder="Ex: 450.000"
                   className="w-full bg-s3/50 border border-line rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                 />
               </div>

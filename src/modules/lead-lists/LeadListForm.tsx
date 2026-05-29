@@ -5,6 +5,14 @@ import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { LeadList, BaseLeadProfile } from '../../types'
 import { generateId } from '../../lib/formatters'
 
+function parseBRL(raw: string): number {
+  return parseFloat(raw.replace(/\./g, '').replace(',', '.')) || 0
+}
+function formatBRL(value: number): string {
+  if (!value) return ''
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
 const PROPERTY_TYPES = [
   { value: 'apartment',          label: 'Apartamento' },
   { value: 'apartment_duplex',   label: 'Apartamento Duplex' },
@@ -27,8 +35,8 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
   const [description, setDescription] = useState('')
   const [type,        setType]        = useState('')
   const [region,      setRegion]      = useState('')
-  const [valueMin,    setValueMin]    = useState('')
-  const [valueMax,    setValueMax]    = useState('')
+  const [valueMinRaw, setValueMinRaw] = useState('')
+  const [valueMaxRaw, setValueMaxRaw] = useState('')
   const [bedrooms,    setBedrooms]    = useState('')
   const [source,      setSource]      = useState('')
   const [saving,      setSaving]      = useState(false)
@@ -41,13 +49,13 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
       const p = list.productProfile ?? {}
       setType(p.type ?? '')
       setRegion(p.region ?? '')
-      setValueMin(p.valueMin ? String(p.valueMin) : '')
-      setValueMax(p.valueMax ? String(p.valueMax) : '')
+      setValueMinRaw(p.valueMin ? formatBRL(p.valueMin) : '')
+      setValueMaxRaw(p.valueMax ? formatBRL(p.valueMax) : '')
       setBedrooms(p.bedrooms ? String(p.bedrooms) : '')
       setSource(p.source ?? '')
     } else {
       setName(''); setDescription(''); setType(''); setRegion('')
-      setValueMin(''); setValueMax(''); setBedrooms(''); setSource('')
+      setValueMinRaw(''); setValueMaxRaw(''); setBedrooms(''); setSource('')
     }
   }, [isOpen, list])
 
@@ -56,10 +64,12 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
     if (!name.trim()) return
 
     const profile: BaseLeadProfile = {}
-    if (type)     profile.type     = type
-    if (region)   profile.region   = region.trim()
-    if (valueMin) profile.valueMin = Number(valueMin)
-    if (valueMax) profile.valueMax = Number(valueMax)
+    if (type)        profile.type     = type
+    if (region)      profile.region   = region.trim()
+    const vMin = parseBRL(valueMinRaw)
+    const vMax = parseBRL(valueMaxRaw)
+    if (vMin > 0)    profile.valueMin = vMin
+    if (vMax > 0)    profile.valueMax = vMax
     if (bedrooms) profile.bedrooms = Number(bedrooms)
     if (source)   profile.source   = source.trim()
 
@@ -148,23 +158,33 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
             </div>
             <div>
               <label className={labelCls}>Valor mínimo (R$)</label>
-              <input
-                className={inputCls}
-                type="number"
-                placeholder="300000"
-                value={valueMin}
-                onChange={e => setValueMin(e.target.value)}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-t4 pointer-events-none">R$</span>
+                <input
+                  className={`${inputCls} pl-9`}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="300.000"
+                  value={valueMinRaw}
+                  onChange={e => setValueMinRaw(e.target.value.replace(/[^\d.,]/g, ''))}
+                  onBlur={() => { const n = parseBRL(valueMinRaw); setValueMinRaw(n > 0 ? formatBRL(n) : '') }}
+                />
+              </div>
             </div>
             <div>
               <label className={labelCls}>Valor máximo (R$)</label>
-              <input
-                className={inputCls}
-                type="number"
-                placeholder="600000"
-                value={valueMax}
-                onChange={e => setValueMax(e.target.value)}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-t4 pointer-events-none">R$</span>
+                <input
+                  className={`${inputCls} pl-9`}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="600.000"
+                  value={valueMaxRaw}
+                  onChange={e => setValueMaxRaw(e.target.value.replace(/[^\d.,]/g, ''))}
+                  onBlur={() => { const n = parseBRL(valueMaxRaw); setValueMaxRaw(n > 0 ? formatBRL(n) : '') }}
+                />
+              </div>
             </div>
             <div>
               <label className={labelCls}>Quartos</label>

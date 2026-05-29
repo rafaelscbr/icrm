@@ -94,7 +94,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       setOrigin(lead.origin)
       setStage(lead.funnelStage)
       setPropertyId(lead.propertyId)
-      setAverageTicket(lead.averageTicket ? String(lead.averageTicket) : '')
+      setAverageTicket(lead.averageTicket ? lead.averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '')
       setNotes(lead.notes ?? '')
       setEntryDate(lead.createdAt.split('T')[0])
       if (lead.propertyId) {
@@ -170,7 +170,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     setPropertyId(id)
     setPropertySearch(p.name)
     setPropertyMode('selected')
-    setAverageTicket(String(p.value))
+    setAverageTicket(p.value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }))
     setFreePropertyName('')
   }
 
@@ -188,8 +188,12 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
   }
 
   function handleAverageTicketChange(v: string) {
-    const digits = v.replace(/\D/g, '')
-    setAverageTicket(digits ? String(Number(digits)) : '')
+    setAverageTicket(v.replace(/[^\d.,]/g, ''))
+  }
+  function handleAverageTicketBlur() {
+    const raw = averageTicket.replace(/\./g, '').replace(',', '.')
+    const n = parseFloat(raw) || 0
+    setAverageTicket(n > 0 ? n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '')
   }
 
   function canAdvanceStep1() {
@@ -236,7 +240,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       discardedAt: lead?.discardedAt,
       propertyId: propertyMode === 'selected' ? propertyId : undefined,
       propertyName: resolvedPropertyName,
-      averageTicket: averageTicket ? Number(averageTicket) : undefined,
+      averageTicket: averageTicket ? (parseFloat(averageTicket.replace(/\./g, '').replace(',', '.')) || undefined) : undefined,
       contactId: resolvedContactId,
       convertedAt: lead?.convertedAt,
       visitaTaskId: lead?.visitaTaskId,
@@ -644,9 +648,12 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 <div className="relative">
                   <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                   <input
-                    value={averageTicket ? Number(averageTicket).toLocaleString('pt-BR') : ''}
+                    type="text"
+                    inputMode="numeric"
+                    value={averageTicket}
                     onChange={e => handleAverageTicketChange(e.target.value)}
-                    placeholder="0"
+                    onBlur={handleAverageTicketBlur}
+                    placeholder="Ex: 500.000"
                     className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
                   />
                 </div>
