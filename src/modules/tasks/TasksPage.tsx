@@ -39,6 +39,7 @@ const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; 
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis', motto: 'novos imóveis no portfólio! 🏘️'          },
   campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas',             motto: 'marketing em ação! 📣'                   },
   administrativo:     { icon: FileText,   color: 'text-slate-300',   label: 'Administrativo',        motto: 'mantendo a casa em ordem! 📁'            },
+  souza_financeiro:   { icon: Zap,        color: 'text-green-400',   label: 'Souza Financeiro',      motto: 'financeiro em dia! 💵'                   },
   outro:              { icon: Zap,        color: 'text-slate-400',   label: 'Outro',                 motto: ''                                        },
 }
 

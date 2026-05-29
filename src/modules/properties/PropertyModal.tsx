@@ -30,6 +30,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   campanhas:          'Campanhas',
   administrativo:     'Administrativo',
   prospeccao_imoveis: 'Prospecção',
+  souza_financeiro:   'Souza Financeiro',
   outro:              'Outro',
 }
 

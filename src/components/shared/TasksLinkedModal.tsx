@@ -19,9 +19,10 @@ const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; 
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis' },
   campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas'             },
   administrativo:     { icon: FileText,   color: 'text-slate-300',   label: 'Administrativo'        },
+  souza_financeiro:   { icon: Zap,        color: 'text-green-400',   label: 'Souza Financeiro'      },
   outro:              { icon: Zap,        color: 'text-slate-400',   label: 'Outro'                 },
 }
-const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'outro']
+const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'souza_financeiro', 'outro']
 
 function fmtDate(d?: string) {
   if (!d) return null

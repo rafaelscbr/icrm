@@ -77,7 +77,7 @@ export interface Property {
 
 export type TaskStatus    = 'pending' | 'done' | 'cancelled'
 export type TaskPriority  = 'low' | 'medium' | 'high'
-export type TaskCategory  = 'visita' | 'agenciamento' | 'proposta' | 'busca_imovel' | 'campanhas' | 'administrativo' | 'prospeccao_imoveis' | 'outro'
+export type TaskCategory  = 'visita' | 'agenciamento' | 'proposta' | 'busca_imovel' | 'campanhas' | 'administrativo' | 'prospeccao_imoveis' | 'souza_financeiro' | 'outro'
 
 export interface ChecklistItem {
   id: string

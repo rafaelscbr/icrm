@@ -31,7 +31,8 @@ const CATEGORY_OPTIONS: { value: TaskCategory; label: string; icon: string }[] =
   { value: 'prospeccao_imoveis', label: 'Prospecção',      icon: '📡' },
   { value: 'campanhas',          label: 'Campanha',        icon: '📢' },
   { value: 'administrativo',     label: 'Admin',           icon: '⚙️' },
-  { value: 'outro',              label: 'Outro',           icon: '💬' },
+  { value: 'souza_financeiro',   label: 'Souza Financeiro', icon: '$'  },
+  { value: 'outro',              label: 'Outro',            icon: '💬' },
 ]
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string; bg: string; border: string; dot: string }[] = [

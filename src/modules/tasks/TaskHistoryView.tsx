@@ -25,9 +25,10 @@ const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; 
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', bar: '#34d399', label: 'Prospecção de Imóveis' },
   campanhas:          { icon: Zap,        color: 'text-pink-400',    bar: '#f472b6', label: 'Campanhas'             },
   administrativo:     { icon: FileText,   color: 'text-slate-300',   bar: '#94a3b8', label: 'Administrativo'        },
+  souza_financeiro:   { icon: Zap,        color: 'text-green-400',   bar: '#4ade80', label: 'Souza Financeiro'      },
   outro:              { icon: Zap,        color: 'text-slate-400',   bar: '#64748b', label: 'Outro'                 },
 }
-const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'outro']
+const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'souza_financeiro', 'outro']
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 function todayStr() { return localDateStr() }
