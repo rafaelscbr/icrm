@@ -136,6 +136,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
           .select('id, phone')
 
         if (error) {
+          toast.error(`Erro ao inserir contatos: ${error.message}`)
           s.errors.push(`Erro ao inserir contatos: ${error.message}`)
         } else if (data) {
           (data as { id: string; phone: string }[]).forEach(c => {
