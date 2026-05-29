@@ -199,6 +199,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   const statusCfg     = STATUS_CONFIG[campaign.status]
 
   function toggleStatus() {
+    if (!campaign) return
     if (campaign.status === 'active')   setStatus(campaignId, 'paused')
     if (campaign.status === 'paused')   setStatus(campaignId, 'active')
     if (campaign.status === 'finished') setStatus(campaignId, 'active')
