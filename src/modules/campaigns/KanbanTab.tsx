@@ -182,13 +182,19 @@ function LeadCard({
     data: { lead },
   })
 
-  function handleWhatsApp(e: React.MouseEvent) {
+  function handleSendAndRegister(e: React.MouseEvent) {
     e.stopPropagation()
     const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     const wasNew = lead.funnelStage === 'new'
     markContacted(lead.id, msg)
     if (wasNew) toast.success('1ª mensagem registrada!')
+    else toast.success('Mensagem registrada!')
+  }
+
+  function handleOpenOnly(e: React.MouseEvent) {
+    e.stopPropagation()
+    window.open(whatsappUrl(lead.phone), '_blank')
   }
 
   return (
@@ -213,9 +219,6 @@ function LeadCard({
             <button onClick={() => setShowTask(true)} className="p-1 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors" title="Criar tarefa">
               <Plus size={11} />
             </button>
-            <button onClick={handleWhatsApp} className="p-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors" title="WhatsApp">
-              <MessageCircle size={11} />
-            </button>
             <button onClick={() => onParecer(lead)} className="p-1 rounded-lg bg-indigo-500/10 text-brand hover:bg-brand-tint transition-colors" title="Parecer">
               <FileText size={11} />
             </button>
@@ -225,7 +228,6 @@ function LeadCard({
         <div className="flex items-center gap-1.5 flex-wrap">
           <p className="text-xs text-slate-500 tabular-nums">{formatPhone(lead.phone)}</p>
           {cold && <span className="flex items-center gap-0.5 text-[9px] text-blue-400/70 font-medium"><Snowflake size={9} />Frio</span>}
-          {/* Tempo na etapa */}
           {ageBadge && (
             <span className={`flex items-center gap-0.5 text-[9px] font-semibold px-1 rounded ${ageBadge.bg} ${ageBadge.color}`}>
               <Clock size={8} />{ageBadge.label}
@@ -253,6 +255,25 @@ function LeadCard({
         {lead.proposalValue && lead.funnelStage === 'proposal' && (
           <p className="text-xs text-amber-400 font-medium mt-1">{formatCurrency(lead.proposalValue)}</p>
         )}
+
+        {/* Barra de ações WhatsApp — igual ao funil principal */}
+        <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+          <button
+            onClick={handleSendAndRegister}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium text-green-300 hover:text-white bg-green-500/10 hover:bg-green-500 border border-green-500/20 hover:border-green-500 rounded-lg transition-all active:scale-95"
+            title="Enviar template e registrar disparo"
+          >
+            <MessageCircle size={11} />
+            Enviar e registrar
+          </button>
+          <button
+            onClick={handleOpenOnly}
+            className="w-7 h-7 flex items-center justify-center text-green-500/70 hover:text-green-300 bg-s2 hover:bg-green-500/10 border border-line hover:border-green-500/20 rounded-lg transition-all"
+            title="Só abrir WhatsApp"
+          >
+            <MessageCircle size={11} />
+          </button>
+        </div>
       </div>
 
       {showMsg && lead.lastMessage && <LastMessageModal message={lead.lastMessage} onClose={() => setShowMsg(false)} />}
