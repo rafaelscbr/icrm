@@ -169,7 +169,7 @@ function LeadCard({
   onParecer: (l: CampaignLead) => void
   ghost?: boolean
 }) {
-  const { markContacted } = useCampaignLeadsStore()
+  const { markContacted, update } = useCampaignLeadsStore()
   const situation = SITUATION_CONFIG.find(s => s.value === lead.situation)
   const [showMsg,  setShowMsg]  = useState(false)
   const [showTask, setShowTask] = useState(false)
@@ -182,8 +182,24 @@ function LeadCard({
     data: { lead },
   })
 
+  // Step de disparo no estágio "attended" (0 = nenhuma mensagem enviada ainda)
+  const dispatchStep = lead.funnelStage === 'attended'
+    ? (lead.messageIndex !== undefined ? lead.messageIndex + 1 : 0)
+    : 0
+
+  const templates = [campaign.message, ...(campaign.messages ?? [])]
+
   function handleSendAndRegister(e: React.MouseEvent) {
     e.stopPropagation()
+    // No estágio "attended", seleciona o próximo template e avança a barrinha
+    if (lead.funnelStage === 'attended') {
+      const templateIndex = Math.min(dispatchStep, templates.length - 1)
+      const msg = templates[templateIndex].replace(/\{nome\}/gi, lead.name)
+      window.open(whatsappUrl(lead.phone, msg), '_blank')
+      markContacted(lead.id, msg, templateIndex)
+      toast.success(`${dispatchStep + 1}ª mensagem registrada!`)
+      return
+    }
     const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     const wasNew = lead.funnelStage === 'new'
@@ -256,6 +272,34 @@ function LeadCard({
           <p className="text-xs text-amber-400 font-medium mt-1">{formatCurrency(lead.proposalValue)}</p>
         )}
 
+        {/* Barrinhas de progresso — apenas no estágio "attended" */}
+        {lead.funnelStage === 'attended' && (
+          <div className="mb-2" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-1 mb-1">
+              {[1, 2, 3, 4, 5].map(step => (
+                <div
+                  key={step}
+                  onClick={e => {
+                    e.stopPropagation()
+                    const newStep = dispatchStep === step ? step - 1 : step
+                    update(lead.id, { messageIndex: newStep <= 0 ? undefined : newStep - 1 })
+                    toast.success(newStep > 0 ? `${newStep}ª mensagem marcada` : 'Progresso removido')
+                  }}
+                  title={`Marcar ${step}ª mensagem`}
+                  className={`flex-1 h-2.5 rounded-full transition-all cursor-pointer hover:opacity-90 active:scale-95
+                    ${step <= dispatchStep
+                      ? 'bg-blue-400 hover:bg-blue-300'
+                      : 'bg-s3 hover:bg-blue-400/40'
+                    }`}
+                />
+              ))}
+            </div>
+            <p className="text-[10px] text-blue-400/70">
+              {dispatchStep === 0 ? 'Clique para marcar envios' : `${dispatchStep}ª de 5 mensagens`}
+            </p>
+          </div>
+        )}
+
         {/* Barra de ações WhatsApp — igual ao funil principal */}
         <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
           <button
@@ -265,6 +309,9 @@ function LeadCard({
           >
             <MessageCircle size={11} />
             Enviar e registrar
+            {lead.funnelStage === 'attended' && dispatchStep > 0 && (
+              <span className="opacity-60">· {dispatchStep}ª</span>
+            )}
           </button>
           <button
             onClick={handleOpenOnly}
