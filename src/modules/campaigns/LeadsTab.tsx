@@ -10,6 +10,7 @@ import { LeadParecerModal } from './LeadParecerModal'
 import { LeadEditModal } from './LeadEditModal'
 import { CampaignLead, FunnelStage, Campaign } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone, whatsappUrl } from '../../lib/formatters'
 import { DAILY_WARN, DAILY_LIMIT, useDailyCounter } from './dailyCounter'
@@ -166,6 +167,8 @@ const PAGE_SIZE = 60
 
 export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const { remove, markContacted, update } = useCampaignLeadsStore()
+  const { profile } = useAuthStore()
+  const sentBy = profile ? { id: profile.id, name: profile.name } : undefined
 
   const [search,          setSearch]          = useState('')
   const [visibleQueue,    setVisibleQueue]    = useState(PAGE_SIZE)
@@ -252,7 +255,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     persistDisparo()      // persiste no Supabase (fonte de verdade para metas)
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'
-    markContacted(lead.id, msg, templateIndex)
+    markContacted(lead.id, msg, templateIndex, sentBy)
     if (total >= DAILY_WARN && total < DAILY_LIMIT) {
       toast(`⚠️ ${total} disparos hoje — limite ${DAILY_WARN} recomendado. Cuidado com o ban!`, { duration: 5000, icon: '⚠️' })
     } else if (wasNew) {
@@ -545,7 +548,15 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                           )}
                         </div>
 
-                        <p className="text-sm text-slate-300 truncate">{lead.name}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm text-slate-300 truncate">{lead.name}</p>
+                          {lead.lastSentByName && (
+                            <p className="text-[10px] text-violet-400/70 truncate">
+                              💬 {lead.lastSentByName}{lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                              {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
+                            </p>
+                          )}
+                        </div>
 
                         <span className="text-sm text-slate-600 tabular-nums font-mono">
                           {formatPhone(lead.phone)}

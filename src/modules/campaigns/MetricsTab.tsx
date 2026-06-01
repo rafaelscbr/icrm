@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card'
 import { Campaign, CampaignLead } from '../../types'
 import { FUNNEL_STAGES, FUNNEL_COLORS, SITUATION_CONFIG } from './config'
 import { formatCurrency } from '../../lib/formatters'
+import { UserCircle2 } from 'lucide-react'
 
 interface MetricsTabProps {
   leads: CampaignLead[]
@@ -264,6 +265,72 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
   )
 }
 
+// ─── Breakdown por corretor ───────────────────────────────────────────────────
+
+function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
+  const data = useMemo(() => {
+    const map = new Map<string, { name: string; dispatches: number; interested: number; sales: number }>()
+    for (const l of leads) {
+      if (!l.lastSentByName) continue
+      const key = l.lastSentById ?? l.lastSentByName
+      const row = map.get(key) ?? { name: l.lastSentByName, dispatches: 0, interested: 0, sales: 0 }
+      row.dispatches++
+      if (['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)) row.interested++
+      if (l.funnelStage === 'sale') row.sales++
+      map.set(key, row)
+    }
+    return [...map.values()].sort((a, b) => b.dispatches - a.dispatches)
+  }, [leads])
+
+  if (data.length === 0) return null
+
+  return (
+    <Card>
+      <h2 className="text-sm font-semibold text-slate-300 mb-4">Performance por corretor</h2>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-[11px] text-slate-600 uppercase tracking-wider border-b border-line">
+              <th className="text-left pb-2 font-semibold">Corretor</th>
+              <th className="text-right pb-2 font-semibold">Disparos</th>
+              <th className="text-right pb-2 font-semibold">Interessados</th>
+              <th className="text-right pb-2 font-semibold">Taxa</th>
+              <th className="text-right pb-2 font-semibold">Vendas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map(row => {
+              const taxa = row.dispatches > 0 ? Math.round(row.interested / row.dispatches * 100) : 0
+              return (
+                <tr key={row.name} className="border-b border-line/50 hover:bg-s2/30 transition-colors">
+                  <td className="py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                        <UserCircle2 size={12} className="text-violet-400" />
+                      </div>
+                      <span className="text-slate-300 font-medium">{row.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-2.5 text-right tabular-nums text-slate-400">{row.dispatches}</td>
+                  <td className="py-2.5 text-right tabular-nums text-cyan-400">{row.interested}</td>
+                  <td className="py-2.5 text-right tabular-nums">
+                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                      taxa >= 10 ? 'bg-green-500/15 text-green-400' :
+                      taxa >= 5  ? 'bg-amber-500/15 text-amber-400' :
+                                   'bg-slate-500/15 text-slate-500'
+                    }`}>{taxa}%</span>
+                  </td>
+                  <td className="py-2.5 text-right tabular-nums text-green-400 font-semibold">{row.sales}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  )
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export function MetricsTab({ leads, campaign }: MetricsTabProps) {
@@ -420,6 +487,9 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
 
       {/* Conversão por modelo de mensagem */}
       <ConversionByMessage leads={funnelLeads} campaign={campaign} />
+
+      {/* Performance por corretor */}
+      <BrokerBreakdown leads={leads} />
     </div>
   )
 }

@@ -42,9 +42,9 @@ interface CampaignLeadsStore {
   update: (id: string, data: Partial<CampaignLead>) => void
   remove: (id: string) => void
   removeForCampaign: (campaignId: string) => void
-  setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>) => void
+  setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>, actorBy?: { id: string; name: string }) => void
   setSituation: (id: string, situation: LeadSituation | undefined) => void
-  markContacted: (id: string, message?: string, messageIndex?: number) => void
+  markContacted: (id: string, message?: string, messageIndex?: number, sentBy?: { id: string; name: string }) => void
   markAsTransferred: (id: string, leadId: string) => void
   backfillMessageIndex: (campaign: Campaign) => Promise<number>
   transferLeadsToBroker: (campaignId: string, brokerId: string | null) => Promise<void>
@@ -172,23 +172,56 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     db.campaignLeads.deleteForCampaign(campaignId).catch(err => console.error('[campaignLeads] removeForCampaign:', err))
   },
 
-  setStage: (id, stage, extra) => {
+  setStage: (id, stage, extra, actorBy) => {
+    const lead = get().leads.find(l => l.id === id)
     get().update(id, { funnelStage: stage, stageUpdatedAt: new Date().toISOString(), ...extra })
+    if (lead && actorBy) {
+      db.campaignActivity.insert({
+        id:         `${Date.now()}-act-${Math.random().toString(36).slice(2,7)}`,
+        campaignId: lead.campaignId,
+        leadId:     lead.id,
+        leadName:   lead.name,
+        brokerId:   actorBy.id,
+        brokerName: actorBy.name,
+        actionType: 'stage_change',
+        metadata:   { from: lead.funnelStage, to: stage },
+      }).catch(err => console.error('[activity] stage_change:', err))
+    }
   },
 
   setSituation: (id, situation) => {
     get().update(id, { situation })
   },
 
-  markContacted: (id, message, messageIndex) => {
+  markContacted: (id, message, messageIndex, sentBy) => {
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
+    const now = new Date().toISOString()
     const patch: Partial<CampaignLead> = {}
-    if (!lead.firstContactAt) patch.firstContactAt = new Date().toISOString()
+    if (!lead.firstContactAt) patch.firstContactAt = now
     if (lead.funnelStage === 'new') patch.funnelStage = 'sent'
     if (message) patch.lastMessage = message
     if (messageIndex !== undefined) patch.messageIndex = messageIndex
+    // Rastreabilidade: quem disparou
+    if (sentBy) {
+      patch.lastSentById   = sentBy.id
+      patch.lastSentByName = sentBy.name
+      patch.lastSentAt     = now
+    }
     if (Object.keys(patch).length) get().update(id, patch)
+    // Registra no activity log
+    if (message && sentBy) {
+      db.campaignActivity.insert({
+        id:          `${Date.now()}-act-${Math.random().toString(36).slice(2,7)}`,
+        campaignId:  lead.campaignId,
+        leadId:      lead.id,
+        leadName:    lead.name,
+        brokerId:    sentBy.id,
+        brokerName:  sentBy.name,
+        actionType:  'dispatch',
+        metadata:    { messageIndex, message },
+      }).catch(err => console.error('[activity] dispatch:', err))
+    }
   },
 
   markAsTransferred: (id, leadId) => {

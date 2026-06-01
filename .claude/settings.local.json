@@ -47,7 +47,13 @@
       "Bash(grep -n \"averageTicket\\\\|ticket\\\\|Ticket\\\\|valor\\\\|value\\\\|Value\\\\|R\\\\$\\\\|inputMode\" /Users/rafasouza/Documents/icrm/src/modules/leads/LeadForm.tsx)",
       "Bash(grep -n \"proposalValue\\\\|proposta\\\\|Proposta\\\\|R\\\\$\\\\|inputMode\" /Users/rafasouza/Documents/icrm/src/modules/campaigns/LeadParecerModal.tsx)",
       "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__list_projects",
-      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__apply_migration"
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__apply_migration",
+      "Read(//Users/rafasouza/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/fabf2b99-6d8c-4778-a711-1bee96c3bbd4/e76def55-5c17-4d70-92e4-49e78521f5c3/skills/xlsx/**)",
+      "Bash(python3 -c ' *)",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__get_logs",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__execute_sql",
+      "Bash(git commit *)",
+      "Bash(xargs cat -n)"
     ]
   }
 }

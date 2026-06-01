@@ -8,6 +8,7 @@ import {
   LeadConfigEntry, LeadConfigType, PermutaItem,
   AppNotification, NotificationType,
   LeadList, LeadListMember, CampaignList, LeadCampaignDispatch, BaseLeadProfile,
+  CampaignParticipant, CampaignParticipantRole, CampaignActivity, CampaignActivityType,
 } from '../types'
 
 // ─── Row types — Base de Leads ────────────────────────────────────────────────
@@ -160,7 +161,21 @@ interface CampaignLeadRow {
   property_id: string | null; stage_updated_at: string | null
   transferred_at: string | null; transferred_to_lead_id: string | null
   broker_id: string | null
+  last_sent_by_id: string | null; last_sent_by_name: string | null; last_sent_at: string | null
+  assigned_to_id: string | null; assigned_to_name: string | null
   created_at: string; updated_at: string
+}
+
+interface CampaignParticipantRow {
+  id: string; campaign_id: string; broker_id: string; role: string; added_at: string
+}
+
+interface CampaignActivityRow {
+  id: string; campaign_id: string
+  lead_id: string | null; lead_name: string | null
+  broker_id: string | null; broker_name: string | null
+  action_type: string; metadata: Record<string, unknown> | null
+  created_at: string
 }
 
 // ─── Mappers: row → tipo do app ───────────────────────────────────────────────
@@ -386,7 +401,12 @@ function toCampaignLead(r: CampaignLeadRow): CampaignLead {
     stageUpdatedAt: r.stage_updated_at ?? undefined,
     transferredAt: r.transferred_at ?? undefined,
     transferredToLeadId: r.transferred_to_lead_id ?? undefined,
-    brokerId: r.broker_id ?? undefined,
+    brokerId:       r.broker_id        ?? undefined,
+    lastSentById:   r.last_sent_by_id  ?? undefined,
+    lastSentByName: r.last_sent_by_name ?? undefined,
+    lastSentAt:     r.last_sent_at     ?? undefined,
+    assignedToId:   r.assigned_to_id   ?? undefined,
+    assignedToName: r.assigned_to_name ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -403,8 +423,34 @@ function fromCampaignLead(l: CampaignLead): CampaignLeadRow {
     stage_updated_at: l.stageUpdatedAt ?? null,
     transferred_at: l.transferredAt ?? null,
     transferred_to_lead_id: l.transferredToLeadId ?? null,
-    broker_id: l.brokerId ?? getCurrentUserId(),
+    broker_id:         l.brokerId       ?? getCurrentUserId(),
+    last_sent_by_id:   l.lastSentById   ?? null,
+    last_sent_by_name: l.lastSentByName ?? null,
+    last_sent_at:      l.lastSentAt     ?? null,
+    assigned_to_id:    l.assignedToId   ?? null,
+    assigned_to_name:  l.assignedToName ?? null,
     created_at: l.createdAt, updated_at: l.updatedAt,
+  }
+}
+
+function toCampaignParticipant(r: CampaignParticipantRow): CampaignParticipant {
+  return {
+    id: r.id, campaignId: r.campaign_id,
+    brokerId: r.broker_id, role: r.role as CampaignParticipantRole,
+    addedAt: r.added_at,
+  }
+}
+
+function toCampaignActivity(r: CampaignActivityRow): CampaignActivity {
+  return {
+    id: r.id, campaignId: r.campaign_id,
+    leadId:     r.lead_id     ?? undefined,
+    leadName:   r.lead_name   ?? undefined,
+    brokerId:   r.broker_id   ?? undefined,
+    brokerName: r.broker_name ?? undefined,
+    actionType: r.action_type as CampaignActivityType,
+    metadata:   r.metadata    ?? undefined,
+    createdAt:  r.created_at,
   }
 }
 
@@ -881,6 +927,50 @@ export const db = {
         .from('campaign_leads')
         .update({ broker_id: brokerId ?? getCurrentUserId() })
         .eq('campaign_id', campaignId)
+      if (error) throw error
+    },
+  },
+
+  campaignParticipants: {
+    fetchForCampaign: async (campaignId: string): Promise<CampaignParticipant[]> => {
+      const { data, error } = await supabase
+        .from('campaign_participants').select('*').eq('campaign_id', campaignId)
+      if (error) throw error
+      return (data as CampaignParticipantRow[]).map(toCampaignParticipant)
+    },
+    upsert: async (p: CampaignParticipant): Promise<void> => {
+      const { error } = await supabase.from('campaign_participants').upsert({
+        id: p.id, campaign_id: p.campaignId, broker_id: p.brokerId,
+        role: p.role, added_at: p.addedAt,
+      }, { onConflict: 'id' })
+      if (error) throw error
+    },
+    delete: async (id: string): Promise<void> => {
+      const { error } = await supabase.from('campaign_participants').delete().eq('id', id)
+      if (error) throw error
+    },
+  },
+
+  campaignActivity: {
+    fetchForCampaign: async (campaignId: string, limit = 100): Promise<CampaignActivity[]> => {
+      const { data, error } = await supabase
+        .from('campaign_activity_log').select('*')
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (error) throw error
+      return (data as CampaignActivityRow[]).map(toCampaignActivity)
+    },
+    insert: async (a: Omit<CampaignActivity, 'createdAt'>): Promise<void> => {
+      const { error } = await supabase.from('campaign_activity_log').insert({
+        id: a.id, campaign_id: a.campaignId,
+        lead_id:    a.leadId    ?? null,
+        lead_name:  a.leadName  ?? null,
+        broker_id:  a.brokerId  ?? getCurrentUserId(),
+        broker_name: a.brokerName ?? null,
+        action_type: a.actionType,
+        metadata:    a.metadata ?? null,
+      })
       if (error) throw error
     },
   },

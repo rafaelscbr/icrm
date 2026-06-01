@@ -169,8 +169,39 @@ export interface CampaignLead {
   transferredAt?: string          // quando foi migrado para o funil principal
   transferredToLeadId?: string    // ID do lead criado no funil principal
   brokerId?: string
+  // Rastreabilidade de disparos
+  lastSentById?:   string
+  lastSentByName?: string
+  lastSentAt?:     string
+  // Delegação
+  assignedToId?:   string
+  assignedToName?: string
   createdAt: string
   updatedAt: string
+}
+
+export type CampaignParticipantRole = 'owner' | 'collaborator'
+
+export interface CampaignParticipant {
+  id:         string
+  campaignId: string
+  brokerId:   string
+  role:       CampaignParticipantRole
+  addedAt:    string
+}
+
+export type CampaignActivityType = 'dispatch' | 'stage_change' | 'transfer' | 'assignment'
+
+export interface CampaignActivity {
+  id:          string
+  campaignId:  string
+  leadId?:     string
+  leadName?:   string
+  brokerId?:   string
+  brokerName?: string
+  actionType:  CampaignActivityType
+  metadata?:   Record<string, unknown>
+  createdAt:   string
 }
 
 // ─── Produtividade Diária ────────────────────────────────────────────────────

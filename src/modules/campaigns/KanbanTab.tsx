@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/Button'
 import { CampaignLead, Campaign, FunnelStage, Lead, Task } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useTasksStore } from '../../store/useTasksStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone, whatsappUrl, formatCurrency } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -170,6 +171,8 @@ function LeadCard({
   ghost?: boolean
 }) {
   const { markContacted, update } = useCampaignLeadsStore()
+  const { profile } = useAuthStore()
+  const sentBy = profile ? { id: profile.id, name: profile.name } : undefined
   const situation = SITUATION_CONFIG.find(s => s.value === lead.situation)
   const [showMsg,  setShowMsg]  = useState(false)
   const [showTask, setShowTask] = useState(false)
@@ -196,14 +199,14 @@ function LeadCard({
       const templateIndex = Math.min(dispatchStep, templates.length - 1)
       const msg = templates[templateIndex].replace(/\{nome\}/gi, lead.name)
       window.open(whatsappUrl(lead.phone, msg), '_blank')
-      markContacted(lead.id, msg, templateIndex)
+      markContacted(lead.id, msg, templateIndex, sentBy)
       toast.success(`${dispatchStep + 1}ª mensagem registrada!`)
       return
     }
     const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     const wasNew = lead.funnelStage === 'new'
-    markContacted(lead.id, msg)
+    markContacted(lead.id, msg, 0, sentBy)
     if (wasNew) toast.success('1ª mensagem registrada!')
     else toast.success('Mensagem registrada!')
   }
@@ -251,8 +254,15 @@ function LeadCard({
           )}
         </div>
 
+        {lead.lastSentByName && (
+          <p className="mt-1 text-[10px] text-violet-400/70 truncate">
+            💬 {lead.lastSentByName}
+            {lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+            {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
+          </p>
+        )}
         {lead.lastMessage && (
-          <p className="mt-1.5 text-[10px] text-slate-700 line-clamp-1 italic">"{lead.lastMessage}"</p>
+          <p className="mt-1 text-[10px] text-slate-700 line-clamp-1 italic">"{lead.lastMessage}"</p>
         )}
 
         {lead.transferredAt && (

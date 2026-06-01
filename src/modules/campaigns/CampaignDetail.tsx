@@ -10,6 +10,8 @@ import { LeadsTab } from './LeadsTab'
 import { KanbanTab } from './KanbanTab'
 import { MetricsTab } from './MetricsTab'
 import { ForecastTab } from './ForecastTab'
+import { ActivityTab } from './ActivityTab'
+import { ParticipantsManager } from './ParticipantsManager'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
@@ -19,13 +21,14 @@ import { supabase } from '../../lib/supabase'
 import { STATUS_CONFIG } from './config'
 import toast from 'react-hot-toast'
 
-type Tab = 'leads' | 'kanban' | 'metrics' | 'forecast'
+type Tab = 'leads' | 'kanban' | 'metrics' | 'forecast' | 'activity'
 
 const TABS: { value: Tab; label: string; icon: typeof List }[] = [
   { value: 'leads',    label: 'Leads',       icon: List       },
   { value: 'kanban',   label: 'Kanban',       icon: LayoutGrid },
   { value: 'metrics',  label: 'Métricas',     icon: BarChart3  },
   { value: 'forecast', label: 'Previsão VGV', icon: TrendingUp },
+  { value: 'activity', label: 'Atividade',    icon: CheckCheck },
 ]
 
 // ─── Add lists modal ───────────────────────────────────────────────────────────
@@ -227,6 +230,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
           </span>
 
           <div className="ml-auto flex items-center gap-2">
+            <ParticipantsManager campaignId={campaignId} compact />
             <button
               onClick={() => setAddListOpen(true)}
               className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-2 transition-all cursor-pointer"
@@ -289,6 +293,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
         {tab === 'kanban'   && <KanbanTab   leads={campaignLeads} campaign={campaign} />}
         {tab === 'metrics'  && <MetricsTab  leads={campaignLeads} campaign={campaign} />}
         {tab === 'forecast' && <ForecastTab leads={campaignLeads} campaign={campaign} />}
+        {tab === 'activity' && <ActivityTab campaignId={campaignId} />}
       </div>
 
       <CampaignForm isOpen={editOpen}    onClose={() => setEditOpen(false)}    campaign={campaign} />
