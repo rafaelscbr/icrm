@@ -82,6 +82,10 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   // Subscription realtime — escuta INSERT, UPDATE e DELETE na tabela campaign_leads.
   // Retorna função de cleanup para usar no useEffect.
   subscribe: () => {
+    // Evita canal duplicado se já existe uma subscription ativa
+    const existing = supabase.getChannels().find(c => c.topic === 'realtime:campaign-leads-realtime')
+    if (existing) return () => {}
+
     const channel = supabase
       .channel('campaign-leads-realtime')
       .on(
@@ -90,7 +94,6 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
         (payload) => {
           const incoming = rowToLead(payload.new as Record<string, unknown>)
           set(s => {
-            // Ignora se já existe localmente (inserção própria já foi aplicada otimisticamente)
             if (s.leads.some(l => l.id === incoming.id)) return s
             return { leads: [incoming, ...s.leads] }
           })
