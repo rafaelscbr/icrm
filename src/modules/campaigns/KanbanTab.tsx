@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
-  MessageCircle, FileText, ChevronDown, Eye,
-  Download, Plus, Snowflake, Clock, GitMerge, ArrowRight,
+  MessageCircle, FileText, ChevronDown, Eye, Phone,
+  Download, Plus, Snowflake, GitMerge, ArrowRight, GripVertical,
 } from 'lucide-react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
@@ -220,69 +220,110 @@ function LeadCard({
     <>
       <div
         ref={setNodeRef}
-        {...listeners}
-        {...attributes}
         onClick={() => !isDragging && onParecer(lead)}
-        className={`bg-s2/60 hover:bg-white/7 border border-line hover:border-line-input rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all group select-none
-          ${isDragging || ghost ? 'opacity-40 scale-[0.98]' : ''}
-          ${cold ? 'lead-cold' : ''}`}
+        className={`group relative border rounded-xl p-3 cursor-pointer transition-all duration-150 hover:translate-y-[-1px] active:scale-[0.98] select-none
+          ${isDragging || ghost ? 'opacity-30 scale-95' : ''}
+          ${ghost ? 'rotate-1 shadow-2xl shadow-amber-500/15 border-amber-500/40' : ''}
+          ${cold
+            ? 'bg-sky-500/5 border-sky-500/25 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/10'
+            : lead.funnelStage === 'scheduled'
+              ? 'bg-green-500/5 border-green-500/25 hover:border-line-strong hover:shadow-lg hover:shadow-black/20'
+              : lead.transferredAt
+                ? 'bg-violet-500/5 border-violet-500/25 hover:border-line-strong hover:shadow-lg hover:shadow-black/20'
+                : 'bg-surface border-line hover:border-line-strong hover:shadow-lg hover:shadow-black/30'
+          }
+        `}
       >
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <p className="text-sm font-medium text-slate-200 truncate flex-1">{lead.name}</p>
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={e => e.stopPropagation()}>
+        {/* Indicador frio */}
+        {cold && (
+          <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/50 z-10" title="Sem contato há +3 dias">
+            <Snowflake size={10} className="text-white" />
+          </div>
+        )}
+
+        {/* Grip + ações no hover */}
+        <div className="absolute top-2 right-2 flex items-center gap-0.5">
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             {lead.lastMessage && (
-              <button onClick={() => setShowMsg(true)} className="p-1 rounded-lg bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 transition-colors" title="Ver última mensagem">
+              <button onClick={() => setShowMsg(true)}
+                className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-slate-300 transition-colors"
+                title="Ver última mensagem">
                 <Eye size={11} />
               </button>
             )}
-            <button onClick={() => setShowTask(true)} className="p-1 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors" title="Criar tarefa">
+            <button onClick={() => setShowTask(true)}
+              className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-cyan-400 transition-colors"
+              title="Criar tarefa">
               <Plus size={11} />
             </button>
-            <button onClick={() => onParecer(lead)} className="p-1 rounded-lg bg-indigo-500/10 text-brand hover:bg-brand-tint transition-colors" title="Parecer">
+            <button onClick={e => { e.stopPropagation(); onParecer(lead) }}
+              className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-brand transition-colors"
+              title="Parecer">
               <FileText size={11} />
             </button>
           </div>
+          <div
+            {...listeners}
+            {...attributes}
+            onClick={e => e.stopPropagation()}
+            className="w-5 h-5 flex items-center justify-center text-slate-700 hover:text-slate-400 cursor-grab active:cursor-grabbing transition-colors"
+          >
+            <GripVertical size={12} />
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="text-xs text-slate-500 tabular-nums">{formatPhone(lead.phone)}</p>
-          {cold && <span className="flex items-center gap-0.5 text-[9px] text-blue-400/70 font-medium"><Snowflake size={9} />Frio</span>}
-          {ageBadge && (
-            <span className={`flex items-center gap-0.5 text-[9px] font-semibold px-1 rounded ${ageBadge.bg} ${ageBadge.color}`}>
-              <Clock size={8} />{ageBadge.label}
-            </span>
-          )}
+        {/* Avatar + nome + info */}
+        <div className="flex items-start gap-2 pr-12 mb-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-line flex items-center justify-center text-sm font-black text-t2 flex-shrink-0">
+            {lead.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-t1 truncate leading-tight">{lead.name}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-[10px] text-t4 tabular-nums">{formatPhone(lead.phone)}</span>
+              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${ageBadge ? `${ageBadge.bg} ${ageBadge.color}` : 'text-slate-600 bg-transparent border-transparent'}`}>
+                {days > 0 ? `${days}d` : ''}
+              </span>
+            </div>
+          </div>
         </div>
 
+        {/* Quem disparou por último */}
         {lead.lastSentByName && (
-          <p className="mt-1 text-[10px] text-violet-400/70 truncate">
+          <p className="mb-1.5 text-[10px] text-violet-400/80 truncate">
             💬 {lead.lastSentByName}
             {lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
             {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
           </p>
         )}
+
+        {/* Última mensagem */}
         {lead.lastMessage && (
-          <p className="mt-1 text-[10px] text-slate-700 line-clamp-1 italic">"{lead.lastMessage}"</p>
+          <p className="mb-1.5 text-[10px] text-slate-600 line-clamp-1 italic">"{lead.lastMessage}"</p>
         )}
 
+        {/* Migrado */}
         {lead.transferredAt && (
-          <span className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/20">
-            <GitMerge size={8} />
-            Migrado p/ funil
+          <span className="mb-1.5 inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/20">
+            <GitMerge size={8} /> Migrado p/ funil
           </span>
         )}
 
+        {/* Situação */}
         {situation && (
-          <span className={`mt-2 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${situation.bg} ${situation.color}`}>
+          <span className={`mb-1.5 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${situation.bg} ${situation.color}`}>
             {situation.label}
           </span>
         )}
 
-        {lead.proposalValue && lead.funnelStage === 'proposal' && (
-          <p className="text-xs text-amber-400 font-medium mt-1">{formatCurrency(lead.proposalValue)}</p>
+        {/* Valor proposta */}
+        {lead.proposalValue && (
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-semibold text-amber-400">{formatCurrency(lead.proposalValue)}</span>
+          </div>
         )}
 
-        {/* Barrinhas de progresso — apenas no estágio "attended" */}
+        {/* Barrinhas de progresso — estágio "attended" */}
         {lead.funnelStage === 'attended' && (
           <div className="mb-2" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-1 mb-1">
@@ -297,10 +338,7 @@ function LeadCard({
                   }}
                   title={`Marcar ${step}ª mensagem`}
                   className={`flex-1 h-2.5 rounded-full transition-all cursor-pointer hover:opacity-90 active:scale-95
-                    ${step <= dispatchStep
-                      ? 'bg-blue-400 hover:bg-blue-300'
-                      : 'bg-s3 hover:bg-blue-400/40'
-                    }`}
+                    ${step <= dispatchStep ? 'bg-blue-400 hover:bg-blue-300' : 'bg-s3 hover:bg-blue-400/40'}`}
                 />
               ))}
             </div>
@@ -310,7 +348,7 @@ function LeadCard({
           </div>
         )}
 
-        {/* Barra de ações WhatsApp — igual ao funil principal */}
+        {/* Barra de ações */}
         <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
           <button
             onClick={handleSendAndRegister}
@@ -318,7 +356,7 @@ function LeadCard({
             title="Enviar template e registrar disparo"
           >
             <MessageCircle size={11} />
-            Enviar e registrar
+            Registrar
             {lead.funnelStage === 'attended' && dispatchStep > 0 && (
               <span className="opacity-60">· {dispatchStep}ª</span>
             )}
@@ -330,6 +368,14 @@ function LeadCard({
           >
             <MessageCircle size={11} />
           </button>
+          <a
+            href={`tel:${lead.phone}`}
+            onClick={e => e.stopPropagation()}
+            className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-lg transition-all"
+            title="Ligar"
+          >
+            <Phone size={11} />
+          </a>
         </div>
       </div>
 
@@ -369,15 +415,17 @@ function KanbanColumn({
   }, [leads, ticket, showVgv, stage.value])
 
   return (
-    <div className="flex-shrink-0 w-60 flex flex-col bg-s2/30 rounded-2xl p-3">
-      <div className={`flex flex-col px-3 py-2.5 rounded-xl ${stage.bg} border ${stage.border} mb-3`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
-            <span className={`text-xs font-semibold ${stage.color}`}>{stage.label}</span>
+    <div className="flex flex-col w-72 flex-shrink-0">
+      {/* Header da coluna — mesmo padrão do funil principal */}
+      <div className={`flex flex-col px-3 py-2.5 rounded-t-xl border border-b-0 ${stage.bg} ${stage.border}`}>
+        <div className="flex items-center gap-2.5">
+          <div className={`w-2 h-2 rounded-full ${stage.dot} shadow-sm flex-shrink-0`} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-t4">Etapa</p>
+            <span className={`text-sm font-bold leading-tight ${stage.color}`}>{stage.label}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className={`text-xs font-bold tabular-nums ${stage.color} opacity-70`}>
+            <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${stage.bg} ${stage.color} border ${stage.border} tabular-nums`}>
               {leads.length.toLocaleString('pt-BR')}
             </span>
             {leads.length > 0 && (
@@ -393,21 +441,23 @@ function KanbanColumn({
         </div>
         {/* VGV da coluna */}
         {showVgv && colVGV > 0 && (
-          <div className="mt-1.5 pt-1.5 border-t border-line">
-            <p className={`text-[10px] font-semibold tabular-nums ${stage.color} opacity-80`}>
+          <div className="flex items-center gap-1.5 mt-1.5 pl-4">
+            <span className={`text-[10px] font-semibold tabular-nums ${stage.color} opacity-80`}>
               VGV: {formatCurrency(colVGV)}
-            </p>
+            </span>
           </div>
         )}
       </div>
 
+      {/* Área droppable */}
       <div
         ref={setNodeRef}
-        className={`flex flex-col gap-2 flex-1 rounded-xl p-1 -m-1 transition-colors ${isOver ? 'bg-indigo-500/8 ring-1 ring-indigo-500/30' : ''}`}
+        className={`flex-1 min-h-[420px] rounded-b-xl border ${stage.border} page-bg p-2 flex flex-col gap-2 transition-all duration-150
+          ${isOver ? 'ring-1 ring-inset ring-line-strong bg-s2' : ''}`}
       >
         {leads.length === 0 ? (
-          <div className={`flex items-center justify-center py-8 border border-dashed ${isOver ? 'border-brand/40' : 'border-line'} rounded-xl transition-colors`}>
-            <p className="text-xs text-slate-700">Nenhum lead</p>
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-[11px] text-t4 text-center">Arraste cards aqui</p>
           </div>
         ) : (
           <>
@@ -420,7 +470,7 @@ function KanbanColumn({
                 className="flex items-center justify-center gap-1.5 py-2 text-xs text-slate-500 hover:text-slate-300 border border-dashed border-line hover:border-line-strong rounded-xl transition-all cursor-pointer"
               >
                 <ChevronDown size={12} />
-                Ver mais {Math.min(COLUMN_PAGE, sorted.length - visible).toLocaleString('pt-BR')} de {(sorted.length - visible).toLocaleString('pt-BR')}
+                +{(sorted.length - visible).toLocaleString('pt-BR')} leads
               </button>
             )}
           </>
@@ -525,7 +575,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
         }}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
+        <div className="flex gap-3 overflow-x-auto pb-6 min-h-[520px]">
           {CAMPAIGN_KANBAN_STAGES.map(stage => (
             <KanbanColumn
               key={stage.value}
@@ -539,7 +589,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
 
         <DragOverlay>
           {activeLead && (
-            <div className="w-60 opacity-90 rotate-1 scale-105 shadow-2xl">
+            <div className="w-72 opacity-90 rotate-1 scale-105 shadow-2xl shadow-black/40">
               <LeadCard lead={activeLead} campaign={campaign} onParecer={() => {}} ghost />
             </div>
           )}
