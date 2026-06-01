@@ -667,7 +667,8 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const [taskFormOpen,  setTaskFormOpen]  = useState(false)
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
-  const { isAdmin } = useAuthStore()
+  const { isAdmin, profile } = useAuthStore()
+  const firstName = profile?.name?.split(' ')[0] ?? 'Corretor'
 
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
   const { properties, load: loadProperties }                    = usePropertiesStore()
@@ -708,7 +709,7 @@ export function DashboardPage() {
 
   return (
     <PageLayout
-      title={`${greeting()}, Rafael`}
+      title={`${greeting()}, ${firstName}`}
       subtitle={todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1)}
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}

@@ -70,7 +70,7 @@ function formatDateLabel(date?: string, time?: string): { label: string; isToday
 
 // ─── SmartBanner ─────────────────────────────────────────────────────────────
 
-function SmartBanner({ tasks }: { tasks: Task[] }) {
+function SmartBanner({ tasks, firstName }: { tasks: Task[]; firstName: string }) {
   const today   = todayStr()
   const pending = tasks.filter(t => t.status !== 'done' && t.dueDate === today)
   const overdue = tasks.filter(t => t.status !== 'done' && t.dueDate && t.dueDate < today)
@@ -106,15 +106,15 @@ function SmartBanner({ tasks }: { tasks: Task[] }) {
   let accent = 'from-blue-500/10 to-blue-600/5'
 
   if (total === 0 && overdue.length === 0) {
-    headline = `${greeting}, Chefe! 🎉`
+    headline = `${greeting}, ${firstName}! 🎉`
     sub = 'Agenda limpa hoje. Aproveite para prospectar ou adiantar tarefas futuras.'
     accent = 'from-green-500/15 to-emerald-500/5'
   } else if (total === 0 && overdue.length > 0) {
-    headline = `${greeting}, Chefe!`
+    headline = `${greeting}, ${firstName}!`
     sub = `Nada para hoje, mas você tem ${overdue.length} tarefa${overdue.length > 1 ? 's' : ''} em atraso. Hora de colocar em dia! ⚡`
     accent = 'from-red-500/15 to-orange-500/5'
   } else {
-    headline = `${greeting}, Chefe! Temos ${total} tarefa${total > 1 ? 's' : ''} para hoje.`
+    headline = `${greeting}, ${firstName}! Temos ${total} tarefa${total > 1 ? 's' : ''} para hoje.`
     sub = lines.length > 0 ? lines.join(' · ') : 'Foco no que importa — cada tarefa concluída é um passo à frente!'
     accent = total >= 5 ? 'from-amber-500/20 to-orange-500/10' : 'from-blue-500/10 to-blue-600/5'
   }
@@ -660,7 +660,7 @@ export function TasksPage() {
       {activeTab === 'tasks' && <>
 
       {/* Smart greeting banner */}
-      {!isEmpty && <SmartBanner tasks={tasks} />}
+      {!isEmpty && <SmartBanner tasks={tasks} firstName={profile?.name?.split(' ')[0] ?? 'Corretor'} />}
 
       {/* Stats strip */}
       {!isEmpty && (
