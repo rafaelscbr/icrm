@@ -19,6 +19,7 @@ interface CampaignLeadsStore {
   markContacted: (id: string, message?: string, messageIndex?: number) => void
   markAsTransferred: (id: string, leadId: string) => void
   backfillMessageIndex: (campaign: Campaign) => Promise<number>
+  transferLeadsToBroker: (campaignId: string, brokerId: string | null) => Promise<void>
   getForCampaign: (campaignId: string) => CampaignLead[]
 }
 
@@ -140,6 +141,16 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
       patched++
     }
     return patched
+  },
+
+  transferLeadsToBroker: async (campaignId, brokerId) => {
+    await db.campaignLeads.transferBroker(campaignId, brokerId)
+    // Atualiza o estado local para refletir imediatamente
+    set(s => ({
+      leads: s.leads.map(l =>
+        l.campaignId === campaignId ? { ...l, brokerId: brokerId ?? undefined } : l
+      ),
+    }))
   },
 
   getForCampaign: (campaignId) =>

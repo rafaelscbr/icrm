@@ -402,7 +402,7 @@ function fromCampaignLead(l: CampaignLead): CampaignLeadRow {
     stage_updated_at: l.stageUpdatedAt ?? null,
     transferred_at: l.transferredAt ?? null,
     transferred_to_lead_id: l.transferredToLeadId ?? null,
-    broker_id: getCurrentUserId(),
+    broker_id: l.brokerId ?? getCurrentUserId(),
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }
@@ -870,6 +870,13 @@ export const db = {
       const { error } = await supabase
         .from('campaign_leads')
         .delete()
+        .eq('campaign_id', campaignId)
+      if (error) throw error
+    },
+    transferBroker: async (campaignId: string, brokerId: string | null) => {
+      const { error } = await supabase
+        .from('campaign_leads')
+        .update({ broker_id: brokerId ?? getCurrentUserId() })
         .eq('campaign_id', campaignId)
       if (error) throw error
     },
