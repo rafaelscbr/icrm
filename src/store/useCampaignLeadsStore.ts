@@ -2,13 +2,41 @@ import { create } from 'zustand'
 import { Campaign, CampaignLead, FunnelStage, LeadSituation } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
+import { supabase } from '../lib/supabase'
 
 type NewLead = Omit<CampaignLead, 'id' | 'funnelStage' | 'createdAt' | 'updatedAt'>
+
+// Mapeia uma linha crua do postgres_changes para CampaignLead
+function rowToLead(r: Record<string, unknown>): CampaignLead {
+  return {
+    id:                   r.id as string,
+    campaignId:           r.campaign_id as string,
+    name:                 r.name as string,
+    phone:                r.phone as string,
+    email:                (r.email as string | null) ?? undefined,
+    extra:                (r.extra as string | null) ?? undefined,
+    funnelStage:          r.funnel_stage as FunnelStage,
+    situation:            (r.situation as LeadSituation | null) ?? undefined,
+    notes:                (r.notes as string | null) ?? undefined,
+    firstContactAt:       (r.first_contact_at as string | null) ?? undefined,
+    lastMessage:          (r.last_message as string | null) ?? undefined,
+    messageIndex:         (r.message_index as number | null) ?? undefined,
+    proposalValue:        (r.proposal_value as number | null) ?? undefined,
+    propertyId:           (r.property_id as string | null) ?? undefined,
+    stageUpdatedAt:       (r.stage_updated_at as string | null) ?? undefined,
+    transferredAt:        (r.transferred_at as string | null) ?? undefined,
+    transferredToLeadId:  (r.transferred_to_lead_id as string | null) ?? undefined,
+    brokerId:             (r.broker_id as string | null) ?? undefined,
+    createdAt:            r.created_at as string,
+    updatedAt:            r.updated_at as string,
+  }
+}
 
 interface CampaignLeadsStore {
   leads: CampaignLead[]
   loading: boolean
   load: () => Promise<void>
+  subscribe: () => () => void
   addBulk: (data: NewLead[]) => { added: number; skipped: number }
   add: (data: NewLead) => CampaignLead
   update: (id: string, data: Partial<CampaignLead>) => void
@@ -49,6 +77,46 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     } finally {
       set({ loading: false })
     }
+  },
+
+  // Subscription realtime — escuta INSERT, UPDATE e DELETE na tabela campaign_leads.
+  // Retorna função de cleanup para usar no useEffect.
+  subscribe: () => {
+    const channel = supabase
+      .channel('campaign-leads-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'campaign_leads' },
+        (payload) => {
+          const incoming = rowToLead(payload.new as Record<string, unknown>)
+          set(s => {
+            // Ignora se já existe localmente (inserção própria já foi aplicada otimisticamente)
+            if (s.leads.some(l => l.id === incoming.id)) return s
+            return { leads: [incoming, ...s.leads] }
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'campaign_leads' },
+        (payload) => {
+          const incoming = rowToLead(payload.new as Record<string, unknown>)
+          set(s => ({
+            leads: s.leads.map(l => l.id === incoming.id ? incoming : l),
+          }))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'campaign_leads' },
+        (payload) => {
+          const id = (payload.old as { id: string }).id
+          set(s => ({ leads: s.leads.filter(l => l.id !== id) }))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   },
 
   addBulk: (data) => {
@@ -145,7 +213,6 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
 
   transferLeadsToBroker: async (campaignId, brokerId) => {
     await db.campaignLeads.transferBroker(campaignId, brokerId)
-    // Atualiza o estado local para refletir imediatamente
     set(s => ({
       leads: s.leads.map(l =>
         l.campaignId === campaignId ? { ...l, brokerId: brokerId ?? undefined } : l
