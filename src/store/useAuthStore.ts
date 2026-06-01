@@ -20,7 +20,7 @@ interface AuthStore {
   setViewAsBroker: (id: string | null) => void
   init: () => Promise<void>
   login: (email: string, password: string) => Promise<string | null>
-  logout: () => Promise<void>
+  logout: () => void
   createBroker: (email: string, password: string, name: string) => Promise<string | null>
   fetchAllProfiles: () => Promise<Profile[]>
   updateProfile: (id: string, data: Partial<Pick<Profile, 'name' | 'role' | 'active'>>) => Promise<void>
@@ -94,17 +94,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
     return error ? error.message : null
   },
 
-  logout: async () => {
-    try {
-      // Remove todos os canais realtime antes de deslogar
-      // (evita reconexão automática que poderia re-autenticar)
-      supabase.getChannels().forEach(c => supabase.removeChannel(c))
-      await supabase.auth.signOut()
-    } catch (_) {
-      // ignora erro — força logout local de qualquer forma
-    } finally {
-      set({ user: null, profile: null, isAdmin: false, allProfiles: [], viewAsBrokerId: null })
-    }
+  logout: () => {
+    // 1. Limpa estado local IMEDIATAMENTE (síncrono) — usuário sai na hora
+    set({ user: null, profile: null, isAdmin: false, allProfiles: [], viewAsBrokerId: null })
+
+    // 2. Remove canais realtime em background
+    try { supabase.getChannels().forEach(c => supabase.removeChannel(c)) } catch (_) {}
+
+    // 3. Dispara signOut no servidor em background — não bloqueia a UI
+    supabase.auth.signOut({ scope: 'local' }).catch(() => {})
   },
 
   createBroker: async (email, password, name) => {
