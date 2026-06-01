@@ -368,7 +368,7 @@ function fromCampaign(c: Campaign): CampaignRow {
     messages: c.messages && c.messages.length > 0 ? c.messages : null,
     average_ticket: c.averageTicket ?? null,
     conversion_rates: c.conversionRates ?? null,
-    broker_id: getCurrentUserId(),
+    broker_id: c.brokerId ?? getCurrentUserId(),
     created_at: c.createdAt, updated_at: c.updatedAt,
   }
 }

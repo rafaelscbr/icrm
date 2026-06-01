@@ -8,6 +8,7 @@ import { Campaign } from '../../types'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { db } from '../../lib/db'
 import { generateId } from '../../lib/formatters'
 import { supabase } from '../../lib/supabase'
@@ -96,16 +97,19 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
   const { add, update }            = useCampaignsStore()
   const { addBulk }                = useCampaignLeadsStore()
   const { lists, load: loadLists } = useLeadListsStore()
+  const { isAdmin, allProfiles }   = useAuthStore()
+  const brokers = allProfiles.filter(p => p.role === 'broker')
   const isEditing = Boolean(campaign)
 
-  const [step,        setStep]        = useState(0)
-  const [name,        setName]        = useState('')
-  const [ticketRaw,   setTicketRaw]   = useState('')
-  const [message,     setMessage]     = useState('')
-  const [messages,    setMessages]    = useState<string[]>([])
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [errors,      setErrors]      = useState<Record<string, string>>({})
-  const [saving,      setSaving]      = useState(false)
+  const [step,           setStep]           = useState(0)
+  const [name,           setName]           = useState('')
+  const [ticketRaw,      setTicketRaw]      = useState('')
+  const [message,        setMessage]        = useState('')
+  const [messages,       setMessages]       = useState<string[]>([])
+  const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set())
+  const [responsavelId,  setResponsavelId]  = useState<string>('')
+  const [errors,         setErrors]         = useState<Record<string, string>>({})
+  const [saving,         setSaving]         = useState(false)
 
   useEffect(() => {
     if (!isOpen) return
@@ -114,6 +118,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
     setTicketRaw(campaign?.averageTicket ? formatBRL(campaign.averageTicket) : '')
     setMessage(campaign?.message ?? '')
     setMessages(campaign?.messages ?? [])
+    setResponsavelId(campaign?.brokerId ?? '')
     setSelectedIds(new Set())
     setErrors({})
     setSaving(false)
@@ -152,6 +157,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
           name: name.trim(), message: message.trim(),
           messages: cleanMessages.length ? cleanMessages : undefined,
           averageTicket: ticket > 0 ? ticket : undefined,
+          brokerId: isAdmin && responsavelId ? responsavelId : campaign.brokerId,
         })
         toast.success('Campanha atualizada')
         onClose()
@@ -163,6 +169,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
         messages: cleanMessages.length ? cleanMessages : undefined,
         status: 'active',
         averageTicket: ticket > 0 ? ticket : undefined,
+        brokerId: isAdmin && responsavelId ? responsavelId : undefined,
       })
 
       const listIds = [...selectedIds]
@@ -271,6 +278,25 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
               </div>
               <p className="text-[11px] text-t5">Usado para calcular VGV na aba de Previsão</p>
             </div>
+
+            {isAdmin && brokers.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
+                  Responsável <span className="normal-case font-normal text-t5">(opcional)</span>
+                </label>
+                <select
+                  value={responsavelId}
+                  onChange={e => setResponsavelId(e.target.value)}
+                  className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px] appearance-none"
+                >
+                  <option value="">Minha conta (admin)</option>
+                  {brokers.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-t5">O corretor selecionado verá e fará os disparos desta campanha</p>
+              </div>
+            )}
           </div>
         )}
 

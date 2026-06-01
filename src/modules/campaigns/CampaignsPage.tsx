@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Megaphone, Users, TrendingUp, Calendar, Pencil, Trash2, ArrowRight,
-  Play, Pause, CheckCheck, BarChart3, Zap
+  Play, Pause, CheckCheck, BarChart3, Zap, ArrowLeftRight, UserCircle2
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -21,16 +21,19 @@ import { STATUS_CONFIG } from './config'
 type PageTab = 'campanhas' | 'performance'
 
 export function CampaignsPage() {
-  const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus } = useCampaignsStore()
-  const { isAdmin, viewAsBrokerId } = useAuthStore()
+  const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus, update } = useCampaignsStore()
+  const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const campaigns = isAdmin && viewAsBrokerId ? allCampaigns.filter(c => c.brokerId === viewAsBrokerId) : allCampaigns
   const { leads, load: loadLeads, removeForCampaign } = useCampaignLeadsStore()
+  const brokers = allProfiles.filter(p => p.role === 'broker')
 
-  const [selectedId,     setSelectedId]     = useState<string>('')
-  const [pageTab,        setPageTab]        = useState<PageTab>('campanhas')
-  const [createOpen,     setCreateOpen]     = useState(false)
-  const [editCampaign,   setEditCampaign]   = useState<Campaign | undefined>()
-  const [deleteCampaign, setDeleteCampaign] = useState<Campaign | undefined>()
+  const [selectedId,        setSelectedId]        = useState<string>('')
+  const [pageTab,           setPageTab]           = useState<PageTab>('campanhas')
+  const [createOpen,        setCreateOpen]        = useState(false)
+  const [editCampaign,      setEditCampaign]      = useState<Campaign | undefined>()
+  const [deleteCampaign,    setDeleteCampaign]    = useState<Campaign | undefined>()
+  const [transferCampaign,  setTransferCampaign]  = useState<Campaign | undefined>()
+  const [transferBrokerId,  setTransferBrokerId]  = useState<string>('')
 
   useEffect(() => { loadCampaigns(); loadLeads() }, [loadCampaigns, loadLeads])
 
@@ -49,6 +52,13 @@ export function CampaignsPage() {
     removeForCampaign(deleteCampaign.id)
     remove(deleteCampaign.id)
     setDeleteCampaign(undefined)
+  }
+
+  function handleTransfer() {
+    if (!transferCampaign) return
+    update(transferCampaign.id, { brokerId: transferBrokerId || null })
+    setTransferCampaign(undefined)
+    setTransferBrokerId('')
   }
 
   const totalLeads   = leads.length
@@ -131,6 +141,10 @@ export function CampaignsPage() {
             const contactRate   = campaignLeads.length > 0 ? Math.round(contacted / campaignLeads.length * 100) : 0
             const statusCfg     = STATUS_CONFIG[c.status]
 
+            const brokerName = c.brokerId
+              ? (allProfiles.find(p => p.id === c.brokerId)?.name ?? 'Corretor')
+              : null
+
             return (
               <Card key={c.id} className="group flex flex-col gap-4 hover:border-brand/25 transition-all duration-200 border border-line">
                 {/* Header */}
@@ -141,9 +155,16 @@ export function CampaignsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-200 truncate">{c.name}</p>
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border} border`}>
-                        {statusCfg.label}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border} border`}>
+                          {statusCfg.label}
+                        </span>
+                        {isAdmin && brokerName && (
+                          <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                            <UserCircle2 size={9} /> {brokerName}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -152,6 +173,13 @@ export function CampaignsPage() {
                       title={c.status === 'active' ? 'Pausar' : 'Reativar'}>
                       {c.status === 'active' ? <Pause size={13} /> : <Play size={13} />}
                     </button>
+                    {isAdmin && (
+                      <button onClick={() => { setTransferCampaign(c); setTransferBrokerId(c.brokerId ?? '') }}
+                        className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-violet-400 transition-colors cursor-pointer"
+                        title="Transferir campanha">
+                        <ArrowLeftRight size={13} />
+                      </button>
+                    )}
                     <button onClick={() => setEditCampaign(c)}
                       className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
                       <Pencil size={13} />
@@ -238,6 +266,29 @@ export function CampaignsPage() {
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteCampaign(undefined)}>Cancelar</Button>
           <Button variant="danger"    className="flex-1" onClick={handleDelete}>Excluir tudo</Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={Boolean(transferCampaign)} onClose={() => setTransferCampaign(undefined)} title="Transferir campanha" size="sm">
+        <p className="text-sm text-slate-400 mb-4">
+          Defina o responsável por <span className="text-slate-200 font-medium">"{transferCampaign?.name}"</span>:
+        </p>
+        <div className="flex flex-col gap-1.5 mb-6">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Responsável</label>
+          <select
+            value={transferBrokerId}
+            onChange={e => setTransferBrokerId(e.target.value)}
+            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px] appearance-none"
+          >
+            <option value="">Admin (sem corretor)</option>
+            {brokers.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="secondary" className="flex-1" onClick={() => setTransferCampaign(undefined)}>Cancelar</Button>
+          <Button variant="primary"   className="flex-1" onClick={handleTransfer}>Transferir</Button>
         </div>
       </Modal>
     </PageLayout>
