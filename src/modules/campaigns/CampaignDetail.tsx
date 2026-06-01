@@ -165,7 +165,7 @@ interface CampaignDetailProps {
 
 export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   const { campaigns, setStatus } = useCampaignsStore()
-  const { leads, load: loadLeads, backfillMessageIndex, subscribe } = useCampaignLeadsStore()
+  const { leads, load: loadLeads, backfillMessageIndex } = useCampaignLeadsStore()
 
   const [tab,         setTab]         = useState<Tab>('leads')
   const [editOpen,    setEditOpen]    = useState(false)
@@ -185,7 +185,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   useEffect(() => { loadLeads() }, [loadLeads])
 
   // Realtime: sincroniza mudanças feitas por outros usuários (corretores/admin)
-  useEffect(() => subscribe(), [subscribe])
+  useEffect(() => useCampaignLeadsStore.getState().subscribe(), [])
 
   const campaign = campaigns.find(c => c.id === campaignId)
 

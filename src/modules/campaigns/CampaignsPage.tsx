@@ -24,7 +24,7 @@ export function CampaignsPage() {
   const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus, update } = useCampaignsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const campaigns = isAdmin && viewAsBrokerId ? allCampaigns.filter(c => c.brokerId === viewAsBrokerId) : allCampaigns
-  const { leads, load: loadLeads, removeForCampaign, transferLeadsToBroker, subscribe } = useCampaignLeadsStore()
+  const { leads, load: loadLeads, removeForCampaign, transferLeadsToBroker } = useCampaignLeadsStore()
   const brokers = allProfiles.filter(p => p.role === 'broker')
 
   const [selectedId,        setSelectedId]        = useState<string>('')
@@ -36,7 +36,7 @@ export function CampaignsPage() {
   const [transferBrokerId,  setTransferBrokerId]  = useState<string>('')
 
   useEffect(() => { loadCampaigns(); loadLeads() }, [loadCampaigns, loadLeads])
-  useEffect(() => subscribe(), [subscribe])
+  useEffect(() => useCampaignLeadsStore.getState().subscribe(), [])
 
   // Show detail view
   if (selectedId) {
