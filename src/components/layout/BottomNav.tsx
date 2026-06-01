@@ -44,7 +44,11 @@ export function BottomNav() {
   const initial = (profile?.name ?? 'U').charAt(0).toUpperCase()
 
   async function handleLogout() {
-    await logout()
+    try {
+      await logout()
+    } catch (_) {
+      // força navegação mesmo se logout falhar
+    }
     navigate('/login', { replace: true })
   }
 

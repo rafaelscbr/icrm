@@ -95,8 +95,16 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   logout: async () => {
-    await supabase.auth.signOut()
-    set({ user: null, profile: null, isAdmin: false })
+    try {
+      // Remove todos os canais realtime antes de deslogar
+      // (evita reconexão automática que poderia re-autenticar)
+      supabase.getChannels().forEach(c => supabase.removeChannel(c))
+      await supabase.auth.signOut()
+    } catch (_) {
+      // ignora erro — força logout local de qualquer forma
+    } finally {
+      set({ user: null, profile: null, isAdmin: false, allProfiles: [], viewAsBrokerId: null })
+    }
   },
 
   createBroker: async (email, password, name) => {

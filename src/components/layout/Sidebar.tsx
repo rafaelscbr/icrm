@@ -58,7 +58,11 @@ export function Sidebar() {
   const navigate = useNavigate()
 
   async function handleLogout() {
-    await logout()
+    try {
+      await logout()
+    } catch (_) {
+      // força navegação mesmo se logout falhar
+    }
     navigate('/login', { replace: true })
   }
 
