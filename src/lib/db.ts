@@ -386,6 +386,7 @@ function toCampaignLead(r: CampaignLeadRow): CampaignLead {
     stageUpdatedAt: r.stage_updated_at ?? undefined,
     transferredAt: r.transferred_at ?? undefined,
     transferredToLeadId: r.transferred_to_lead_id ?? undefined,
+    brokerId: r.broker_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -584,7 +585,9 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
 }
 
 async function upsertOne<R>(table: string, row: R): Promise<void> {
-  const { error } = await supabase.from(table).upsert(row as object)
+  const { error } = await supabase
+    .from(table)
+    .upsert(row as object, { onConflict: 'id' })
   if (error) {
     toast.error(`Erro ao salvar em ${table}: ${error.message}`)
     throw error
@@ -862,7 +865,7 @@ export const db = {
     upsertMany: async (leads: CampaignLead[]) => {
       const { error } = await supabase
         .from('campaign_leads')
-        .upsert(leads.map(fromCampaignLead))
+        .upsert(leads.map(fromCampaignLead), { onConflict: 'id' })
       if (error) throw error
     },
     delete:   (id: string)        => deleteOne('campaign_leads', id),
