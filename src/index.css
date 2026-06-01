@@ -1,48 +1,50 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Hanken+Grotesk:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   DESIGN TOKENS — Salesforce Lightning Design System inspired
-   Dark mode = :root (default, nenhuma classe no html)
-   Light mode = html.light (classe adicionada pelo useThemeStore)
+   DESIGN TOKENS — Souza Imobiliária · Marinho & Areia
+   Dark mode = :root (default)
+   Light mode = html.light
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Brand — SF blue dark variant */
-  --brand:         #1B96FF;
-  --brand-dark:    #0176D3;
-  --brand-tint:    rgba(27, 150, 255, 0.14);
-  --brand-text:    #93CAFF;
-  --brand-shadow:  rgba(27, 150, 255, 0.35);
+  /* Brand — Areia (dourado Souza) */
+  --brand:         #E4B23C;
+  --brand-dark:    #C2922A;
+  --brand-tint:    rgba(228, 178, 60, 0.14);
+  --brand-text:    #F0CC78;
+  --brand-shadow:  rgba(228, 178, 60, 0.30);
+  --brand-btn-text:#0F1730;
 
-  /* Surfaces */
-  --page-bg:   #111320;
-  --surface:   #1A1E30;
-  --surface-2: #22273D;
-  --surface-3: #2B3050;
+  /* Surfaces — Marinho escuro */
+  --page-bg:   #0F1730;
+  --surface:   #18224A;
+  --surface-2: #1E2A57;
+  --surface-3: #243260;
 
-  /* Navigation */
-  --nav-bg:          #0D1019;
-  --nav-text:        rgba(255, 255, 255, 0.72);
-  --nav-muted:       rgba(255, 255, 255, 0.35);
-  --nav-active-text: #FFFFFF;
-  --nav-active-bg:   rgba(27, 150, 255, 0.18);
-  --nav-hover-bg:    rgba(255, 255, 255, 0.06);
+  /* Navigation — sempre Marinho */
+  --nav-bg:          #0A1128;
+  --nav-text:        rgba(246, 243, 236, 0.78);
+  --nav-muted:       rgba(246, 243, 236, 0.38);
+  --nav-active-text: #F6F3EC;
+  --nav-active-bg:   rgba(228, 178, 60, 0.16);
+  --nav-hover-bg:    rgba(255, 255, 255, 0.05);
   --nav-line:        rgba(255, 255, 255, 0.07);
 
   /* Text */
-  --t1: #F0F2F7;
-  --t2: #C8CDDB;
-  --t3: #8891A8;
-  --t4: #555E75;
+  --t1: #F6F3EC;
+  --t2: #CFC9BC;
+  --t3: #8A90A6;
+  --t4: #545E78;
+  --t5: #3A4260;
 
   /* Lines / borders */
-  --line:       rgba(255, 255, 255, 0.08);
-  --line-strong:rgba(255, 255, 255, 0.16);
-  --line-input: rgba(255, 255, 255, 0.12);
+  --line:        rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.15);
+  --line-input:  rgba(255, 255, 255, 0.12);
 
   /* Status */
   --success:      #4ADE80;
@@ -54,68 +56,78 @@
   --error:        #F87171;
   --error-bg:     rgba(248, 113, 113, 0.10);
   --error-line:   rgba(248, 113, 113, 0.28);
-  --info:         #60A5FA;
-  --info-bg:      rgba(96, 165, 250, 0.10);
-  --info-line:    rgba(96, 165, 250, 0.28);
+  --info:         #93C5FD;
+  --info-bg:      rgba(147, 197, 253, 0.10);
+  --info-line:    rgba(147, 197, 253, 0.28);
 
   /* Shadows */
-  --shadow-card:    0 1px 3px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-modal:   0 25px 50px rgba(0,0,0,0.75), 0 10px 20px rgba(0,0,0,0.5);
-  --shadow-dropdown:0 10px 30px rgba(0,0,0,0.6), 0 4px 10px rgba(0,0,0,0.5);
+  --shadow-card:    0 1px 3px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.45);
+  --shadow-modal:   0 25px 50px rgba(0,0,0,0.80), 0 10px 20px rgba(0,0,0,0.55);
+  --shadow-dropdown:0 10px 30px rgba(0,0,0,0.65), 0 4px 10px rgba(0,0,0,0.50);
+}
+
+/* ── MODO ESCURO MÁXIMO (Carvão) ── quando html.dark for usado explicitamente */
+html.dark {
+  --page-bg:   #070B1A;
+  --surface:   #0F1730;
+  --surface-2: #18224A;
+  --surface-3: #1E2A57;
 }
 
 html.light {
-  /* Brand — SF blue */
-  --brand:         #0176D3;
-  --brand-dark:    #014486;
-  --brand-tint:    #EAF4FF;
-  --brand-text:    #0176D3;
-  --brand-shadow:  rgba(1, 118, 211, 0.28);
+  /* Brand — Areia mais escura para contraste em fundo claro */
+  --brand:         #B8841E;
+  --brand-dark:    #9A6E16;
+  --brand-tint:    rgba(228, 178, 60, 0.12);
+  --brand-text:    #8A6210;
+  --brand-shadow:  rgba(228, 178, 60, 0.25);
+  --brand-btn-text:#FFFFFF;
 
-  /* Surfaces — Salesforce Lightning */
-  --page-bg:   #F4F6F9;
+  /* Surfaces — Papel */
+  --page-bg:   #F6F3EC;
   --surface:   #FFFFFF;
-  --surface-2: #F3F3F3;
-  --surface-3: #E8E8E6;
+  --surface-2: #ECE7DA;
+  --surface-3: #E0D9CE;
 
-  /* Navigation */
-  --nav-bg:          #FFFFFF;
-  --nav-text:        #444444;
-  --nav-muted:       #706E6B;
-  --nav-active-text: #0176D3;
-  --nav-active-bg:   #EAF4FF;
-  --nav-hover-bg:    rgba(0, 0, 0, 0.04);
-  --nav-line:        #E5E5E5;
+  /* Navigation — sempre Marinho mesmo no modo claro */
+  --nav-bg:          #0F1730;
+  --nav-text:        rgba(246, 243, 236, 0.78);
+  --nav-muted:       rgba(246, 243, 236, 0.40);
+  --nav-active-text: #F6F3EC;
+  --nav-active-bg:   rgba(228, 178, 60, 0.18);
+  --nav-hover-bg:    rgba(255, 255, 255, 0.06);
+  --nav-line:        rgba(255, 255, 255, 0.07);
 
   /* Text */
-  --t1: #181818;
-  --t2: #444444;
-  --t3: #706E6B;
-  --t4: #AEAEAC;
+  --t1: #0F1730;
+  --t2: #2A3660;
+  --t3: #4A5573;
+  --t4: #8A90A6;
+  --t5: #AEAEAD;
 
   /* Lines */
-  --line:       #D8DDE6;
-  --line-strong:#B0BABF;
-  --line-input: #C8CDD6;
+  --line:        #D8D2C5;
+  --line-strong: #C0B8A8;
+  --line-input:  #C8C2B4;
 
   /* Status */
-  --success:      #2E844A;
-  --success-bg:   #EFF7EF;
-  --success-line: #91C590;
-  --warning:      #A07700;
-  --warning-bg:   #FEF7EE;
-  --warning-line: #FFB75D;
-  --error:        #C23934;
-  --error-bg:     #FEF1EE;
-  --error-line:   #E57373;
-  --info:         #0176D3;
-  --info-bg:      #EAF4FF;
-  --info-line:    #57A3FD;
+  --success:      #166534;
+  --success-bg:   #DCFCE7;
+  --success-line: #86EFAC;
+  --warning:      #92400E;
+  --warning-bg:   #FEF3C7;
+  --warning-line: #FCD34D;
+  --error:        #991B1B;
+  --error-bg:     #FEE2E2;
+  --error-line:   #FCA5A5;
+  --info:         #1E40AF;
+  --info-bg:      #DBEAFE;
+  --info-line:    #93C5FD;
 
   /* Shadows */
-  --shadow-card:    0 1px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-modal:   0 25px 50px rgba(0,0,0,0.14), 0 10px 20px rgba(0,0,0,0.08);
-  --shadow-dropdown:0 10px 30px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.07);
+  --shadow-card:    0 1px 4px rgba(15,23,48,0.08), 0 1px 2px rgba(15,23,48,0.05);
+  --shadow-modal:   0 25px 50px rgba(15,23,48,0.18), 0 10px 20px rgba(15,23,48,0.10);
+  --shadow-dropdown:0 10px 30px rgba(15,23,48,0.12), 0 4px 10px rgba(15,23,48,0.08);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -129,37 +141,52 @@ html.light {
     font-size: 15px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.01em;
   }
 
   body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
     font-weight: 400;
+    line-height: 1.6;
     background-color: var(--page-bg);
     color: var(--t1);
     transition: background-color 200ms, color 200ms;
   }
 
-  h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
+  /* Títulos — Schibsted Grotesk pesado */
+  h1, h2, h3 {
+    font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  h4, h5, h6 {
+    font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
 
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  /* Seleção de texto — Areia com texto Marinho */
+  ::selection {
+    background-color: rgba(228, 178, 60, 0.35);
+    color: var(--t1);
+  }
+
+  /* Scrollbar fina e discreta */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 99px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--t4); }
+  ::-webkit-scrollbar-thumb { background: #4A5573; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #6A7593; }
 
+  /* Foco — Areia */
   *:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
 
-  /* Safari date/time inputs */
+  /* Inputs */
   input[type='date'],
   input[type='time'],
-  input[type='datetime-local'] {
-    -webkit-appearance: none;
-  }
+  input[type='datetime-local'] { -webkit-appearance: none; }
 
-  /* Number inputs — reset browser chrome */
   input[type='number'] {
     -webkit-appearance: none;
     -moz-appearance: textfield;
@@ -177,11 +204,10 @@ html.light {
     appearance: none;
   }
 
-  /* Dark mode: force form elements to use dark color-scheme so browser
-     doesn't override backgrounds with its own light-mode paint */
   input,
   textarea,
   select {
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
     color-scheme: dark;
     background-color: var(--surface-2);
     color: var(--t1);
@@ -190,16 +216,12 @@ html.light {
 
 /* ══════════════════════════════════════════════════════════════════════════════
    iOS / PWA SAFE AREA UTILITIES
-   Garante que o conteúdo não fique atrás do Dynamic Island (topo)
-   ou da home indicator bar (baixo) no iPhone com viewport-fit=cover
    ══════════════════════════════════════════════════════════════════════════════ */
 
 @layer utilities {
-  /* Padding inferior = altura do BottomNav (4rem) + home indicator */
   .pb-nav-safe {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
-  /* Padding superior para o Dynamic Island / status bar */
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
   }
@@ -209,14 +231,14 @@ html.light {
    SEMANTIC SURFACE CLASSES
    ══════════════════════════════════════════════════════════════════════════════ */
 
-.page-bg       { background-color: var(--page-bg); }
-.nav-bg        { background-color: var(--nav-bg); }
-.nav-bg-blur   {
+.page-bg      { background-color: var(--page-bg); }
+.nav-bg       { background-color: var(--nav-bg); }
+.nav-bg-blur  {
   background-color: var(--nav-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
-.card-surface  {
+.card-surface {
   background-color: var(--surface);
   border-color: var(--line);
   box-shadow: var(--shadow-card);
@@ -227,25 +249,22 @@ html.light {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   LIGHT MODE — overrides para classes Tailwind herdadas nos módulos
+   LIGHT MODE — overrides para classes Tailwind herdadas
    ══════════════════════════════════════════════════════════════════════════════ */
 
-/* text-white/X opacidades → equivalentes escuros em modo claro */
-html.light .text-white\/60            { color: rgba(24,24,24,0.60) !important; }
-html.light .text-white\/70            { color: rgba(24,24,24,0.70) !important; }
-html.light .text-white\/80            { color: rgba(24,24,24,0.80) !important; }
-html.light .text-white\/90            { color: rgba(24,24,24,0.90) !important; }
+html.light .text-white\/60 { color: rgba(15,23,48,0.60) !important; }
+html.light .text-white\/70 { color: rgba(15,23,48,0.70) !important; }
+html.light .text-white\/80 { color: rgba(15,23,48,0.80) !important; }
+html.light .text-white\/90 { color: rgba(15,23,48,0.90) !important; }
 
-/* inputs com cores slate hardcoded → semântico em modo claro */
 html.light input.text-slate-100,
 html.light textarea.text-slate-100,
-html.light select.text-slate-100  { color: var(--t1) !important; }
+html.light select.text-slate-100 { color: var(--t1) !important; }
 html.light input.placeholder\:text-slate-600::placeholder,
 html.light textarea.placeholder\:text-slate-600::placeholder { color: var(--t4) !important; }
 html.light input.placeholder\:text-slate-500::placeholder,
 html.light textarea.placeholder\:text-slate-500::placeholder { color: var(--t4) !important; }
 
-/* text-slate → escala semântica */
 html.light .text-slate-100 { color: var(--t1) !important; }
 html.light .text-slate-200 { color: var(--t1) !important; }
 html.light .text-slate-300 { color: var(--t2) !important; }
@@ -255,15 +274,10 @@ html.light .text-slate-600 { color: var(--t3) !important; }
 html.light .text-slate-700 { color: var(--t4) !important; }
 html.light .text-slate-800 { color: var(--t4) !important; }
 
-/* bg hardcoded escuros → surface branca */
 html.light [class*="bg-\\[\\#0E1420\\]"],
 html.light [class*="bg-\\[\\#0e1420\\]"],
 html.light [class*="bg-\\[\\#0D1117\\]"],
 html.light [class*="bg-\\[\\#0d1117\\]"],
-html.light [class*="bg-\\[\\#060A12\\]"],
-html.light [class*="bg-\\[\\#060a12\\]"],
-html.light [class*="bg-\\[\\#070B13\\]"],
-html.light [class*="bg-\\[\\#070b13\\]"],
 html.light [class*="bg-\\[\\#0f1117\\]"],
 html.light [class*="bg-\\[\\#0F1117\\]"] { background-color: var(--page-bg) !important; }
 
@@ -276,26 +290,22 @@ html.light [class*="bg-\\[\\#1e2130\\]"],
 html.light [class*="bg-\\[\\#20243A\\]"],
 html.light [class*="bg-\\[\\#20243a\\]"] { background-color: var(--surface-2) !important; }
 
-html.light [class*="bg-\\[\\#0D1117\\]"] { background-color: var(--surface) !important; }
+html.light .bg-white\/2  { background-color: rgba(15,23,48,0.02) !important; }
+html.light .bg-white\/3  { background-color: rgba(15,23,48,0.03) !important; }
+html.light .bg-white\/4  { background-color: rgba(15,23,48,0.04) !important; }
+html.light .bg-white\/5  { background-color: rgba(15,23,48,0.04) !important; }
+html.light .bg-white\/6  { background-color: rgba(15,23,48,0.05) !important; }
+html.light .bg-white\/8  { background-color: rgba(15,23,48,0.06) !important; }
+html.light .bg-white\/10 { background-color: rgba(15,23,48,0.07) !important; }
+html.light .bg-white\/12 { background-color: rgba(15,23,48,0.08) !important; }
+html.light .bg-white\/15 { background-color: rgba(15,23,48,0.09) !important; }
 
-/* bg-white/X → bg-black/X equivalente claro */
-html.light .bg-white\/2  { background-color: rgba(0,0,0,0.02) !important; }
-html.light .bg-white\/3  { background-color: rgba(0,0,0,0.03) !important; }
-html.light .bg-white\/4  { background-color: rgba(0,0,0,0.04) !important; }
-html.light .bg-white\/5  { background-color: rgba(0,0,0,0.04) !important; }
-html.light .bg-white\/6  { background-color: rgba(0,0,0,0.05) !important; }
-html.light .bg-white\/8  { background-color: rgba(0,0,0,0.06) !important; }
-html.light .bg-white\/10 { background-color: rgba(0,0,0,0.07) !important; }
-html.light .bg-white\/12 { background-color: rgba(0,0,0,0.08) !important; }
-html.light .bg-white\/15 { background-color: rgba(0,0,0,0.09) !important; }
+html.light .hover\:bg-white\/3:hover  { background-color: rgba(15,23,48,0.03) !important; }
+html.light .hover\:bg-white\/4:hover  { background-color: rgba(15,23,48,0.04) !important; }
+html.light .hover\:bg-white\/5:hover  { background-color: rgba(15,23,48,0.04) !important; }
+html.light .hover\:bg-white\/8:hover  { background-color: rgba(15,23,48,0.06) !important; }
+html.light .hover\:bg-white\/10:hover { background-color: rgba(15,23,48,0.07) !important; }
 
-html.light .hover\:bg-white\/3:hover  { background-color: rgba(0,0,0,0.03) !important; }
-html.light .hover\:bg-white\/4:hover  { background-color: rgba(0,0,0,0.04) !important; }
-html.light .hover\:bg-white\/5:hover  { background-color: rgba(0,0,0,0.04) !important; }
-html.light .hover\:bg-white\/8:hover  { background-color: rgba(0,0,0,0.06) !important; }
-html.light .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.07) !important; }
-
-/* borders white/X → line equivalente */
 html.light .border-white\/5  { border-color: var(--line) !important; }
 html.light .border-white\/6  { border-color: var(--line) !important; }
 html.light .border-white\/7  { border-color: var(--line) !important; }
@@ -306,15 +316,11 @@ html.light .border-white\/15 { border-color: var(--line-input) !important; }
 html.light .border-white\/18 { border-color: var(--line-strong) !important; }
 html.light .border-white\/20 { border-color: var(--line-strong) !important; }
 html.light .divide-white\/5 > * + * { border-color: var(--line) !important; }
-
-/* divide-white */
 html.light [class*="divide-white"] > * + * { border-color: var(--line) !important; }
 
-/* ring */
 html.light .ring-white\/10 { --tw-ring-color: var(--line) !important; }
 html.light .ring-white\/20 { --tw-ring-color: var(--line-strong) !important; }
 
-/* inputs */
 html.light input,
 html.light textarea,
 html.light select {
@@ -336,17 +342,15 @@ html.light input[type='datetime-local']::-webkit-calendar-picker-indicator {
   filter: none !important; opacity: 0.55 !important;
 }
 
-/* scrollbar */
-html.light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15) !important; }
-html.light ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25) !important; }
+html.light ::-webkit-scrollbar-thumb { background: rgba(15,23,48,0.18) !important; }
+html.light ::-webkit-scrollbar-thumb:hover { background: rgba(15,23,48,0.30) !important; }
 
-/* aside/nav (sidebar) */
 html.light aside {
   background-color: var(--nav-bg) !important;
   border-right-color: var(--nav-line) !important;
 }
 
-/* Recharts tooltips */
+/* Recharts */
 html.light .recharts-tooltip-wrapper > div {
   background-color: var(--surface) !important;
   border-color: var(--line) !important;
@@ -354,40 +358,34 @@ html.light .recharts-tooltip-wrapper > div {
 }
 html.light .recharts-tooltip-wrapper p,
 html.light .recharts-tooltip-wrapper span { color: var(--t1) !important; }
-
-/* Recharts legends, axes */
 html.light .recharts-text { fill: var(--t3) !important; }
 html.light .recharts-cartesian-axis-tick text { fill: var(--t3) !important; }
 
-/* bg-black overlays */
 html.light .bg-black\/40 { background-color: rgba(0,0,0,0.20) !important; }
 html.light .bg-black\/50 { background-color: rgba(0,0,0,0.25) !important; }
 html.light .bg-black\/60 { background-color: rgba(0,0,0,0.35) !important; }
 
-/* shadows */
-html.light .shadow-black\/20 { --tw-shadow-color: rgba(0,0,0,0.08) !important; }
-html.light .shadow-black\/30 { --tw-shadow-color: rgba(0,0,0,0.10) !important; }
-html.light .shadow-black\/40 { --tw-shadow-color: rgba(0,0,0,0.12) !important; }
-html.light .shadow-black\/50 { --tw-shadow-color: rgba(0,0,0,0.14) !important; }
+html.light .shadow-black\/20 { --tw-shadow-color: rgba(0,0,0,0.07) !important; }
+html.light .shadow-black\/30 { --tw-shadow-color: rgba(0,0,0,0.09) !important; }
+html.light .shadow-black\/40 { --tw-shadow-color: rgba(0,0,0,0.11) !important; }
+html.light .shadow-black\/50 { --tw-shadow-color: rgba(0,0,0,0.13) !important; }
 
-/* Separadores w-px bg-white/X */
 html.light [class*="w-px"][class*="bg-white"] { background-color: var(--line) !important; }
 
 /* indigo → brand em modo claro */
 html.light .text-indigo-400 { color: var(--brand) !important; }
 html.light .text-indigo-300 { color: var(--brand-text) !important; }
 html.light .hover\:text-indigo-300:hover { color: var(--brand-dark) !important; }
-html.light .border-indigo-500\/20 { border-color: rgba(1,118,211,0.20) !important; }
-html.light .border-indigo-500\/30 { border-color: rgba(1,118,211,0.28) !important; }
-html.light .border-indigo-500\/40 { border-color: rgba(1,118,211,0.35) !important; }
+html.light .border-indigo-500\/20 { border-color: rgba(184,132,30,0.22) !important; }
+html.light .border-indigo-500\/30 { border-color: rgba(184,132,30,0.30) !important; }
+html.light .border-indigo-500\/40 { border-color: rgba(184,132,30,0.38) !important; }
 html.light nav a[aria-current="page"],
 html.light nav a.active {
   background: var(--brand-tint) !important;
-  border-color: rgba(1,118,211,0.25) !important;
+  border-color: rgba(184,132,30,0.25) !important;
   color: var(--brand) !important;
 }
 
-/* gradient-text */
 html.light .gradient-text {
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
   -webkit-background-clip: text;
@@ -395,20 +393,65 @@ html.light .gradient-text {
   background-clip: text;
 }
 
-/* row accent */
-html.light .row-accent:hover { border-left-color: rgba(1,118,211,0.4); }
+html.light .row-accent:hover { border-left-color: rgba(184,132,30,0.40); }
 
-/* ── Card accents ─────────────────────────────────────────────── */
-html.light .card-accent-indigo { border-top: 3px solid rgba(1,118,211,0.7);  box-shadow: var(--shadow-card); }
-html.light .card-accent-green  { border-top: 3px solid rgba(34,197,94,0.7);  box-shadow: var(--shadow-card); }
-html.light .card-accent-blue   { border-top: 3px solid rgba(59,130,246,0.7); box-shadow: var(--shadow-card); }
-html.light .card-accent-purple { border-top: 3px solid rgba(168,85,247,0.7); box-shadow: var(--shadow-card); }
-html.light .card-accent-yellow { border-top: 3px solid rgba(234,179,8,0.7);  box-shadow: var(--shadow-card); }
+html.light .card-accent-indigo { border-top: 3px solid rgba(184,132,30,0.70); box-shadow: var(--shadow-card); }
+html.light .card-accent-green  { border-top: 3px solid rgba(22,101,52,0.70);  box-shadow: var(--shadow-card); }
+html.light .card-accent-blue   { border-top: 3px solid rgba(30,64,175,0.70);  box-shadow: var(--shadow-card); }
+html.light .card-accent-purple { border-top: 3px solid rgba(88,28,135,0.70);  box-shadow: var(--shadow-card); }
+html.light .card-accent-yellow { border-top: 3px solid rgba(184,132,30,0.80); box-shadow: var(--shadow-card); }
 
-/* shimmer */
 html.light .shimmer {
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background: linear-gradient(90deg, #e8e3d8 25%, #f2ede4 50%, #e8e3d8 75%);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   REMAPEAMENTO INDIGO → AREIA (Souza Imobiliária)
+   Converte todas as classes Tailwind indigo herdadas para a paleta da marca
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Backgrounds indigo → Areia */
+.bg-indigo-600,
+.bg-indigo-500  { background-color: var(--brand) !important; }
+.hover\:bg-indigo-600:hover,
+.hover\:bg-indigo-500:hover { background-color: var(--brand-dark) !important; }
+.bg-indigo-500\/10 { background-color: var(--brand-tint) !important; }
+.bg-indigo-500\/8  { background-color: rgba(228,178,60,0.08) !important; }
+.bg-indigo-500\/15 { background-color: rgba(228,178,60,0.15) !important; }
+.bg-indigo-500\/20 { background-color: rgba(228,178,60,0.20) !important; }
+.bg-indigo-600\/10 { background-color: rgba(228,178,60,0.10) !important; }
+
+/* Bordas indigo → Areia */
+.border-indigo-500    { border-color: var(--brand) !important; }
+.border-indigo-600    { border-color: var(--brand) !important; }
+.border-indigo-500\/20{ border-color: rgba(228,178,60,0.20) !important; }
+.border-indigo-500\/25{ border-color: rgba(228,178,60,0.25) !important; }
+.border-indigo-500\/30{ border-color: rgba(228,178,60,0.30) !important; }
+.border-indigo-500\/40{ border-color: rgba(228,178,60,0.40) !important; }
+.border-indigo-500\/50{ border-color: rgba(228,178,60,0.50) !important; }
+.border-brand\/25     { border-color: rgba(228,178,60,0.25) !important; }
+.border-brand\/40     { border-color: rgba(228,178,60,0.40) !important; }
+
+/* Texto indigo → Areia */
+.text-indigo-400,
+.text-indigo-300 { color: var(--brand-text) !important; }
+.text-indigo-600,
+.text-indigo-500 { color: var(--brand) !important; }
+.hover\:text-indigo-300:hover { color: var(--brand-text) !important; }
+
+/* Shadows indigo → Areia */
+.shadow-indigo-500\/20 { --tw-shadow-color: rgba(228,178,60,0.20) !important; }
+.shadow-indigo-500\/30 { --tw-shadow-color: rgba(228,178,60,0.30) !important; }
+
+/* Ring indigo → Areia */
+.ring-indigo-500\/30  { --tw-ring-color: rgba(228,178,60,0.30) !important; }
+.focus\:ring-indigo-500\/50:focus { --tw-ring-color: rgba(228,178,60,0.35) !important; }
+
+/* Texto em fundo Areia = Marinho (contraste 6.5:1) */
+.bg-brand,
+.bg-brand-dark,
+.bg-indigo-600,
+.bg-indigo-500 { color: #0F1730 !important; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    UTILITIES
@@ -416,7 +459,7 @@ html.light .shimmer {
 
 @layer utilities {
 
-  /* ── Animação de entrada de modal / página ── */
+  /* ── Animações ── */
   .animate-in {
     animation: animateIn 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -425,7 +468,6 @@ html.light .shimmer {
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  /* ── Slide up ── */
   .animate-slide-up {
     animation: slideUp 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -434,14 +476,12 @@ html.light .shimmer {
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* ── Page fade ── */
   .page-fade { animation: pageFade 200ms ease-out; }
   @keyframes pageFade {
     from { opacity: 0; transform: translateY(5px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* ── Stagger ── */
   .stagger-children > * { animation: slideUp 240ms cubic-bezier(0.16,1,0.3,1) both; }
   .stagger-children > *:nth-child(1) { animation-delay:   0ms; }
   .stagger-children > *:nth-child(2) { animation-delay:  50ms; }
@@ -452,20 +492,20 @@ html.light .shimmer {
   .stagger-children > *:nth-child(7) { animation-delay: 300ms; }
   .stagger-children > *:nth-child(8) { animation-delay: 350ms; }
 
-  /* ── Glows ── */
-  .glow-brand  { box-shadow: 0 0 20px rgba(27,150,255,0.25); }
+  /* ── Glows — Areia ── */
+  .glow-brand  { box-shadow: 0 0 20px rgba(228,178,60,0.28); }
   .glow-green  { box-shadow: 0 0 20px rgba(74,222,128,0.22); }
   .glow-purple { box-shadow: 0 0 20px rgba(168,85,247,0.20); }
 
-  /* ── Gradient text ── */
+  /* ── Gradient text — Areia ── */
   .gradient-text {
-    background: linear-gradient(135deg, var(--brand) 0%, #60A5FA 100%);
+    background: linear-gradient(135deg, #E4B23C 0%, #F0CC78 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* ── Shimmer skeleton ── */
+  /* ── Shimmer ── */
   .shimmer {
     background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
     background-size: 200% 100%;
@@ -476,7 +516,6 @@ html.light .shimmer {
     to   { background-position: -200% 0; }
   }
 
-  /* ── Shake ── */
   .shake { animation: shake 320ms ease-in-out; }
   @keyframes shake {
     0%,100% { transform: translateX(0); }
@@ -486,21 +525,18 @@ html.light .shimmer {
     80%     { transform: translateX(3px); }
   }
 
-  /* ── WhatsApp pulse ── */
   .wapp-pulse { animation: wappPulse 1.4s ease-in-out infinite; }
   @keyframes wappPulse {
     0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
     50%     { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
   }
 
-  /* ── Counter roll ── */
   .count-up { animation: countUp 500ms cubic-bezier(0.16,1,0.3,1); }
   @keyframes countUp {
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* ── Badge bounce ── */
   .badge-bounce { animation: badgeBounce 500ms cubic-bezier(0.36,0.07,0.19,0.97); }
   @keyframes badgeBounce {
     0%,100% { transform: scale(1); }
@@ -509,7 +545,6 @@ html.light .shimmer {
     80%     { transform: scale(1.08); }
   }
 
-  /* ── Pulse dot ── */
   .pulse-dot::before {
     content: '';
     position: absolute;
@@ -524,31 +559,27 @@ html.light .shimmer {
     50%     { transform: scale(1.6); opacity: 0; }
   }
 
-  /* ── Lead frio ── */
   .lead-cold { opacity: 0.60; }
 
-  /* ── Card accent top bars ── */
-  .card-accent-indigo { border-top: 3px solid rgba(99,102,241,0.65);  box-shadow: var(--shadow-card); }
-  .card-accent-green  { border-top: 3px solid rgba(34,197,94,0.65);   box-shadow: var(--shadow-card); }
-  .card-accent-blue   { border-top: 3px solid rgba(59,130,246,0.65);  box-shadow: var(--shadow-card); }
+  /* ── Card accents — Areia nos estados principais ── */
+  .card-accent-indigo { border-top: 3px solid rgba(228,178,60,0.65);  box-shadow: var(--shadow-card); }
+  .card-accent-green  { border-top: 3px solid rgba(74,222,128,0.65);  box-shadow: var(--shadow-card); }
+  .card-accent-blue   { border-top: 3px solid rgba(147,197,253,0.65); box-shadow: var(--shadow-card); }
   .card-accent-purple { border-top: 3px solid rgba(168,85,247,0.65);  box-shadow: var(--shadow-card); }
-  .card-accent-yellow { border-top: 3px solid rgba(234,179,8,0.65);   box-shadow: var(--shadow-card); }
+  .card-accent-yellow { border-top: 3px solid rgba(228,178,60,0.80);  box-shadow: var(--shadow-card); }
 
-  /* ── Row accent (table hover) ── */
   .row-accent {
     border-left: 2px solid transparent;
     transition: border-color 150ms, background-color 150ms;
   }
-  .row-accent:hover { border-left-color: rgba(27,150,255,0.5); }
+  .row-accent:hover { border-left-color: rgba(228,178,60,0.45); }
 
-  /* ── Gradient fade divider ── */
   .divider-fade {
     height: 1px;
     background: linear-gradient(to right, transparent, var(--line), transparent);
     border: none;
   }
 
-  /* ── Section divider ── */
   .section-divider {
     height: 1px;
     background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 80%, transparent);
@@ -556,7 +587,6 @@ html.light .shimmer {
     margin: 0;
   }
 
-  /* ── Input base ── */
   .input-base {
     background-color: var(--surface);
     border: 1px solid var(--line-input);
@@ -570,10 +600,8 @@ html.light .shimmer {
     box-shadow: 0 0 0 3px var(--brand-tint);
   }
 
-  /* ── Table rows ── */
   .table-row-hover:hover { background-color: var(--surface-2); }
 
-  /* ── bg-white/X utilitários extras ── */
   .hover\:bg-white\/3:hover  { background-color: rgba(255,255,255,0.03); }
   .hover\:bg-white\/8:hover  { background-color: rgba(255,255,255,0.08); }
   .bg-white\/2               { background-color: rgba(255,255,255,0.02); }

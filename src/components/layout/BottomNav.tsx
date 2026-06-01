@@ -55,7 +55,7 @@ export function BottomNav() {
       {/* ── FAB nova tarefa ──────────────────────────────────────── */}
       <button
         onClick={() => setTaskFormOpen(true)}
-        className="lg:hidden fixed right-4 z-50 w-12 h-12 rounded-full bg-brand hover:bg-brand-dark active:scale-95 flex items-center justify-center shadow-brand text-white transition-all duration-150"
+        className="lg:hidden fixed right-4 z-50 w-12 h-12 rounded-full bg-brand hover:bg-brand-dark active:scale-95 flex items-center justify-center shadow-brand text-[#0F1730] transition-all duration-150"
         style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
         title="Nova tarefa"
       >

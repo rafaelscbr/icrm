@@ -30,6 +30,7 @@ export default {
         t2: 'var(--t2)',
         t3: 'var(--t3)',
         t4: 'var(--t4)',
+        t5: 'var(--t5)',
 
         // ── Lines / borders ──────────────────────────────────────────
         line:         'var(--line)',
@@ -51,7 +52,9 @@ export default {
         'info-line':     'var(--info-line)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans:     ['Hanken Grotesk', 'system-ui', 'sans-serif'],
+        heading:  ['Schibsted Grotesk', 'system-ui', 'sans-serif'],
+        label:    ['Space Grotesk', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         card:    'var(--shadow-card)',

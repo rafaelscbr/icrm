@@ -10,8 +10,6 @@ import { useThemeStore } from '../../store/useThemeStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useUnreadCount } from '../../store/useNotificationsStore'
 import { NotificationsPopover } from './NotificationsPopover'
-import logoLight from '../../assets/logo.png'
-import logoDark from '../../assets/logo-dark.png'
 
 const navSections = [
   {
@@ -84,13 +82,45 @@ export function Sidebar() {
         borderRight: '1px solid var(--nav-line)',
       }}
     >
-      {/* ── Logo ─────────────────────────────────────────────────── */}
-      <div className="px-5 pt-safe border-b" style={{ borderColor: 'var(--nav-line)', paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))', paddingBottom: '1.25rem' }}>
-        <img
-          src={theme === 'dark' ? logoLight : logoDark}
-          alt="Souza Imobiliária"
-          className="h-8 w-auto object-contain"
-        />
+      {/* ── Logo Souza Imobiliária ───────────────────────────────── */}
+      <div className="px-4 border-b flex items-center gap-3" style={{ borderColor: 'var(--nav-line)', paddingTop: 'calc(1.1rem + env(safe-area-inset-top, 0px))', paddingBottom: '1.1rem' }}>
+        {/* Símbolo: S dentro de quadrado arredondado Areia */}
+        <div
+          className="flex-shrink-0 flex items-center justify-center rounded-[22%] shadow-sm"
+          style={{ width: 36, height: 36, background: '#E4B23C' }}
+        >
+          <span
+            style={{
+              fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
+              fontWeight: 900,
+              fontSize: 20,
+              color: '#0F1730',
+              lineHeight: 1,
+              letterSpacing: '-0.04em',
+              userSelect: 'none',
+            }}
+          >S</span>
+        </div>
+        {/* Nome */}
+        <div className="flex flex-col leading-none select-none">
+          <span style={{
+            fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
+            fontWeight: 800,
+            fontSize: 15,
+            color: '#F6F3EC',
+            letterSpacing: '-0.01em',
+          }}>SOUZA</span>
+          <span style={{
+            fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
+            fontWeight: 600,
+            fontSize: 9.5,
+            color: 'rgba(246,243,236,0.55)',
+            letterSpacing: '0.14em',
+          }}>
+            IMOBILIÁRIA
+            <span style={{ color: '#E4B23C' }}>.</span>
+          </span>
+        </div>
       </div>
 
       {/* ── Search pill ──────────────────────────────────────────── */}
