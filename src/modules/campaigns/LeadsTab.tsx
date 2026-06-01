@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown,
-  ThumbsUp, Loader2, Clock, Moon, ChevronRight,
+  ThumbsUp, Loader2, Clock, Moon,
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
@@ -118,24 +118,121 @@ function isBusinessHours(): boolean {
 
 // ─── Message picker ───────────────────────────────────────────────────────────
 
-function MessagePickerModal({ isOpen, onClose, templates, onPick }: {
+function MessagePickerModal({ isOpen, onClose, templates, onPick, leadName }: {
   isOpen: boolean; onClose: () => void
   templates: string[]; onPick: (msg: string, index: number) => void
+  leadName?: string
 }) {
+  const [selected, setSelected] = useState<number | null>(null)
+
+  // Reset ao abrir
+  useEffect(() => { if (isOpen) setSelected(null) }, [isOpen])
+
+  function handleConfirm() {
+    if (selected === null) return
+    onPick(templates[selected], selected)
+    onClose()
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Qual mensagem enviar?" size="sm">
-      <p className="text-xs text-slate-500 -mt-2 mb-4">
-        Varie os templates a cada envio para reduzir risco de bloqueio.
-      </p>
-      <div className="flex flex-col gap-2">
-        {templates.map((t, i) => (
-          <button key={i} onClick={() => { onPick(t, i); onClose() }}
-            className="flex items-start gap-3 text-left p-3 rounded-xl bg-s2/60 border border-line hover:bg-indigo-500/10 hover:border-brand/30 transition-all cursor-pointer group">
-            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-brand-tint text-brand text-[11px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
-            <p className="flex-1 text-xs text-slate-300 line-clamp-3 leading-relaxed">{t}</p>
-            <ChevronRight size={14} className="text-slate-700 group-hover:text-brand transition-colors flex-shrink-0 mt-0.5" />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title=""
+      size="md"
+      footer={
+        <div className="flex items-center gap-3 w-full">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-t3 hover:text-t1 border border-line hover:border-line-strong bg-surface transition-all cursor-pointer">
+            Cancelar
           </button>
-        ))}
+          <button
+            onClick={handleConfirm}
+            disabled={selected === null}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-brand hover:bg-brand-dark text-[#0F1730] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <MessageCircle size={14} />
+            Enviar mensagem {selected !== null ? `${selected + 1}` : ''}
+          </button>
+        </div>
+      }
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-9 h-9 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
+          <MessageCircle size={18} className="text-green-400" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-t1">Escolher mensagem</h2>
+          {leadName && <p className="text-xs text-t4 mt-0.5">Para: <span className="text-t2 font-medium">{leadName}</span></p>}
+        </div>
+      </div>
+
+      <p className="text-xs text-t4 mb-4 leading-relaxed">
+        Selecione qual template enviar. Varie entre eles a cada contato para reduzir risco de bloqueio.
+      </p>
+
+      <div className="flex flex-col gap-2.5 max-h-[60vh] overflow-y-auto pr-0.5">
+        {templates.map((t, i) => {
+          const isSelected = selected === i
+          return (
+            <button
+              key={i}
+              onClick={() => setSelected(i)}
+              className={`group w-full text-left rounded-2xl border-2 transition-all duration-150 overflow-hidden cursor-pointer
+                ${isSelected
+                  ? 'border-brand bg-brand/8 shadow-sm shadow-brand/10'
+                  : 'border-line bg-surface hover:border-brand/30 hover:bg-brand/4'
+                }`}
+            >
+              {/* Badge + seleção */}
+              <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold transition-all
+                    ${isSelected ? 'bg-brand text-[#0F1730]' : 'bg-s3/70 text-t3'}`}>
+                    {i + 1}
+                  </div>
+                  <span className={`text-xs font-semibold transition-colors ${isSelected ? 'text-brand' : 'text-t3'}`}>
+                    {i === 0 ? 'Mensagem principal' : `Variação ${i}`}
+                  </span>
+                </div>
+                {/* Indicador de seleção */}
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all
+                  ${isSelected ? 'border-brand bg-brand' : 'border-line'}`}>
+                  {isSelected && (
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                      <path d="M1.5 4L3.5 6L6.5 2" stroke="#0F1730" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+              </div>
+
+              {/* Balão WhatsApp */}
+              <div className="px-4 pb-4">
+                <div className={`relative rounded-2xl rounded-tl-sm px-4 py-3 transition-all
+                  ${isSelected ? 'bg-green-500/15 border border-green-500/20' : 'bg-s2/80 border border-line'}`}>
+                  {/* Bolinha do balão */}
+                  <div className={`absolute -top-px left-0 w-3 h-3 transition-all
+                    ${isSelected ? 'text-green-500/20' : 'text-line'}`}>
+                    <svg viewBox="0 0 12 12" fill="currentColor">
+                      <path d="M0 0 Q12 0 12 12 L0 12 Z"/>
+                    </svg>
+                  </div>
+                  <p className="text-[13px] leading-[1.55] text-t1 whitespace-pre-wrap break-words">
+                    {t}
+                  </p>
+                  {/* Timestamp fake */}
+                  <div className="flex items-center justify-end gap-1 mt-2">
+                    <span className="text-[10px] text-t5">agora</span>
+                    <svg width="14" height="8" viewBox="0 0 16 9" fill="none" className={isSelected ? 'text-green-400' : 'text-t5'}>
+                      <path d="M1 4.5L4 7.5L9 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M7 4.5L10 7.5L15 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </button>
+          )
+        })}
       </div>
     </Modal>
   )
@@ -679,6 +776,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       <MessagePickerModal
         isOpen={Boolean(pickerLead)} onClose={() => setPickerLead(undefined)}
         templates={pickerLead ? getTemplates(pickerLead) : []}
+        leadName={pickerLead?.name}
         onPick={(msg, idx) => pickerLead && sendWhatsApp(pickerLead, msg, idx)}
       />
       <Modal isOpen={Boolean(deleteLead)} onClose={() => setDeleteLead(undefined)} title="Remover lead" size="sm">

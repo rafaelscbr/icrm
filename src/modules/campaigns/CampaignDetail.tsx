@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft, Pencil, LayoutGrid, List, BarChart3, Pause, Play, CheckCheck,
-  TrendingUp, ListPlus, Check, Loader2,
+  TrendingUp, ListPlus, Check, Loader2, MessageSquare,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
@@ -12,6 +12,7 @@ import { MetricsTab } from './MetricsTab'
 import { ForecastTab } from './ForecastTab'
 import { ActivityTab } from './ActivityTab'
 import { ParticipantsManager } from './ParticipantsManager'
+import { EditMessagesModal } from './EditMessagesModal'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
@@ -171,8 +172,9 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   const { leads, load: loadLeads, backfillMessageIndex } = useCampaignLeadsStore()
 
   const [tab,         setTab]         = useState<Tab>('leads')
-  const [editOpen,    setEditOpen]    = useState(false)
-  const [addListOpen, setAddListOpen] = useState(false)
+  const [editOpen,     setEditOpen]     = useState(false)
+  const [msgEditOpen,  setMsgEditOpen]  = useState(false)
+  const [addListOpen,  setAddListOpen]  = useState(false)
 
   const headerRef = useRef<HTMLDivElement>(null)
   const [headerH,  setHeaderH]  = useState(0)
@@ -238,8 +240,16 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
               <ListPlus size={13} /> Adicionar lista
             </button>
             <button
+              onClick={() => setMsgEditOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-green-300 bg-s3/50 hover:bg-green-500/10 border border-line hover:border-green-500/25 rounded-xl px-3 py-2 transition-all cursor-pointer"
+              title="Editar mensagens da campanha"
+            >
+              <MessageSquare size={13} /> Mensagens
+            </button>
+            <button
               onClick={() => setEditOpen(true)}
               className="p-2 rounded-xl hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+              title="Editar campanha"
             >
               <Pencil size={14} />
             </button>
@@ -297,6 +307,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
       </div>
 
       <CampaignForm isOpen={editOpen}    onClose={() => setEditOpen(false)}    campaign={campaign} />
+      <EditMessagesModal isOpen={msgEditOpen} onClose={() => setMsgEditOpen(false)} campaign={campaign} />
       <AddListsModal isOpen={addListOpen} onClose={() => setAddListOpen(false)} campaignId={campaignId} />
     </div>
   )
