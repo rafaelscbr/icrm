@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin } from '../types'
 import { generateId, localDateStr } from '../lib/formatters'
 import { db } from '../lib/db'
+import { supabase } from '../lib/supabase'
+import { getCurrentUserId } from '../lib/auth'
 import { useTasksStore } from './useTasksStore'
 import { useContactsStore } from './useContactsStore'
 import { useLeadInteractionsStore } from './useLeadInteractionsStore'
@@ -10,6 +12,7 @@ interface LeadsStore {
   leads: Lead[]
   loading: boolean
   load: () => Promise<void>
+  subscribe: () => () => void
   add: (data: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'> & { createdAt?: string }) => Lead
   update: (id: string, data: Partial<Lead>) => void
   remove: (id: string) => void
@@ -49,10 +52,82 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     }
   },
 
+  subscribe: () => {
+    const channelName = 'leads-realtime'
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
+    if (existing) return () => {}
+
+    const channel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, (payload) => {
+        const incoming = payload.new as Record<string, unknown>
+        // Usa o mapper do db — reimportar seria circular; mapeamos inline
+        set(s => {
+          if (s.leads.some(l => l.id === incoming.id)) return s
+          const lead: Lead = {
+            id: incoming.id as string,
+            name: incoming.name as string,
+            phone: incoming.phone as string,
+            email: (incoming.email as string | null) ?? undefined,
+            origin: incoming.origin as LeadOrigin,
+            funnelStage: incoming.funnel_stage as LeadFunnelStage,
+            followupStep: (incoming.followup_step as number) ?? 0,
+            discardReason: (incoming.discard_reason as LeadDiscardReason) ?? undefined,
+            discardedAt: (incoming.discarded_at as string | null) ?? undefined,
+            propertyId: (incoming.property_id as string | null) ?? undefined,
+            propertyName: (incoming.property_name as string | null) ?? undefined,
+            averageTicket: (incoming.average_ticket as number | null) ?? undefined,
+            contactId: (incoming.contact_id as string | null) ?? undefined,
+            convertedAt: (incoming.converted_at as string | null) ?? undefined,
+            flagged: (incoming.flagged as boolean | null) ?? undefined,
+            notes: (incoming.notes as string | null) ?? undefined,
+            kanbanOrder: (incoming.kanban_order as number | null) ?? undefined,
+            stageChangedAt: (incoming.stage_changed_at as string | null) ?? undefined,
+            brokerId: (incoming.broker_id as string | null) ?? undefined,
+            createdAt: incoming.created_at as string,
+            updatedAt: incoming.updated_at as string,
+          }
+          return { leads: [lead, ...s.leads] }
+        })
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'leads' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        set(s => ({
+          leads: s.leads.map(l => l.id !== r.id ? l : {
+            ...l,
+            name: r.name as string,
+            phone: r.phone as string,
+            funnelStage: r.funnel_stage as LeadFunnelStage,
+            followupStep: (r.followup_step as number) ?? 0,
+            discardReason: (r.discard_reason as LeadDiscardReason) ?? undefined,
+            discardedAt: (r.discarded_at as string | null) ?? undefined,
+            propertyId: (r.property_id as string | null) ?? undefined,
+            averageTicket: (r.average_ticket as number | null) ?? undefined,
+            contactId: (r.contact_id as string | null) ?? undefined,
+            flagged: (r.flagged as boolean | null) ?? undefined,
+            notes: (r.notes as string | null) ?? undefined,
+            kanbanOrder: (r.kanban_order as number | null) ?? undefined,
+            stageChangedAt: (r.stage_changed_at as string | null) ?? undefined,
+            brokerId: (r.broker_id as string | null) ?? undefined,
+            updatedAt: r.updated_at as string,
+          }),
+        }))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'leads' }, (payload) => {
+        const id = (payload.old as { id: string }).id
+        set(s => ({ leads: s.leads.filter(l => l.id !== id) }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  },
+
   add: (data) => {
     const now = new Date().toISOString()
     const { createdAt: customCreatedAt, ...rest } = data
-    const lead: Lead = { ...rest, id: generateId(), createdAt: customCreatedAt ?? now, updatedAt: now, stageChangedAt: customCreatedAt ?? now }
+    // Garante que brokerId está populado antes do upsert — evita broker_id: null no banco
+    const brokerId = rest.brokerId ?? getCurrentUserId() ?? undefined
+    const lead: Lead = { ...rest, brokerId, id: generateId(), createdAt: customCreatedAt ?? now, updatedAt: now, stageChangedAt: customCreatedAt ?? now }
 
     // Auto-link or create contact
     const { contacts, add: addContact } = useContactsStore.getState()

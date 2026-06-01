@@ -536,7 +536,7 @@ function fromLead(l: Lead): LeadRow {
     radar_bedrooms: l.radarBedrooms ?? null,
     kanban_order: l.kanbanOrder ?? null,
     stage_changed_at: l.stageChangedAt ?? null,
-    broker_id: getCurrentUserId(),
+    broker_id: l.brokerId ?? getCurrentUserId(),
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }
