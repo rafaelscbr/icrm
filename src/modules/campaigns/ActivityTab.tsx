@@ -25,7 +25,7 @@ interface ActivityTabProps {
 }
 
 export function ActivityTab({ campaignId }: ActivityTabProps) {
-  const { activities, loading, loadForCampaign, subscribe, getForCampaign } = useCampaignActivityStore()
+  const { loading, loadForCampaign, subscribe, getForCampaign } = useCampaignActivityStore()
 
   useEffect(() => { loadForCampaign(campaignId) }, [campaignId])
   useEffect(() => subscribe(campaignId), [campaignId])

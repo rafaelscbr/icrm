@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Users, Plus, X, Crown, UserCheck } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
-import { Button } from '../../components/ui/Button'
 import { useCampaignParticipantsStore } from '../../store/useCampaignParticipantsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import toast from 'react-hot-toast'
@@ -13,7 +12,7 @@ interface ParticipantsManagerProps {
 }
 
 export function ParticipantsManager({ campaignId, compact = false }: ParticipantsManagerProps) {
-  const { participants, loadForCampaign, add, remove, getForCampaign } = useCampaignParticipantsStore()
+  const { loadForCampaign, add, remove, getForCampaign } = useCampaignParticipantsStore()
   const { isAdmin, allProfiles } = useAuthStore()
   const [open, setOpen] = useState(false)
 
