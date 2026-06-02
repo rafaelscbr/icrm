@@ -126,18 +126,6 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
             </div>
           </div>
 
-          {/* Agendou Apresentação — lembrete de transferir ao funil principal */}
-          {stage === 'scheduled' && (
-            <div className="flex flex-col gap-2 p-3 bg-violet-500/8 border border-violet-500/20 rounded-xl">
-              <div className="flex items-center gap-2">
-                <GitMerge size={13} className="text-violet-400" />
-                <p className="text-xs font-semibold text-violet-300">Próximo passo: transferir ao funil principal</p>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Após salvar, use o botão "Transferir" na linha do lead para levá-lo ao funil principal.
-              </p>
-            </div>
-          )}
 
           {/* Situation */}
           <div>
