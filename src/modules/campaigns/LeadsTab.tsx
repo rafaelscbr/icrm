@@ -388,7 +388,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   }
 
   function handleInterested(lead: CampaignLead) {
-    if (['attended','scheduled','presentation','proposal','sale'].includes(lead.funnelStage)) {
+    if (['attended','scheduled'].includes(lead.funnelStage)) {
       toast('Lead já está em etapa avançada', { icon: 'ℹ️' }); return
     }
     update(lead.id, { funnelStage: 'attended' })
