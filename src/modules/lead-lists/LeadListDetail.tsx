@@ -243,17 +243,26 @@ export function LeadListDetail({ list, onBack }: Props) {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {m.contact?.phone && (
-                        <a
-                          href={whatsappUrl(m.contact.phone)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg hover:bg-green-500/10 text-t4 hover:text-green-400 transition-colors inline-flex"
-                          title="Abrir no WhatsApp"
+                      <div className="flex items-center gap-1">
+                        {m.contact?.phone && (
+                          <a
+                            href={whatsappUrl(m.contact.phone)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg hover:bg-green-500/10 text-t4 hover:text-green-400 transition-colors inline-flex"
+                            title="Abrir no WhatsApp"
+                          >
+                            <Phone size={13} />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => setDeleteLead({ id: m.contactId, name: m.contact?.name ?? 'Lead' })}
+                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors inline-flex"
+                          title="Remover lead"
                         >
-                          <Phone size={13} />
-                        </a>
-                      )}
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
