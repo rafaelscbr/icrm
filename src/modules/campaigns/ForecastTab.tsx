@@ -411,9 +411,9 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <Trophy size={16} className="text-green-400 flex-shrink-0" />
               <div>
-                <p className="text-sm font-bold text-green-300">Vendas Realizadas + Projetadas</p>
+                <p className="text-sm font-bold text-green-300">Vendas Projetadas</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  {count.sale} já vendidas · {fmtLeads(proj.fromProposal + proj.fromPresentation + proj.fromScheduled + proj.fromAttended + proj.fromCold)} projetadas da base
+                  {count.transferred} transferidos ao funil · {fmtLeads(proj.fromScheduled + proj.fromAttended + proj.fromCold)} projetadas da base fria
                 </p>
               </div>
             </div>
