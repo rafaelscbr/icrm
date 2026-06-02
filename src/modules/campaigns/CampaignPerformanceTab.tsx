@@ -106,8 +106,8 @@ export function CampaignPerformanceTab({ leads }: Props) {
   const total        = leads.length
   const contacted    = leads.filter(l => l.firstContactAt).length
   const interested   = leads.filter(l => !['new', 'sent'].includes(l.funnelStage)).length
-  const proposals    = leads.filter(l => l.funnelStage === 'proposal').length
-  const sales        = leads.filter(l => l.funnelStage === 'sale').length
+  const scheduled    = leads.filter(l => l.funnelStage === 'scheduled').length
+  const transferred  = leads.filter(l => l.transferredAt).length
   const responseRate = contacted > 0 ? Math.round(interested / contacted * 100) : 0
 
   // Tempo médio até interesse (dias entre firstContactAt → stageUpdatedAt para leads interessados)
