@@ -14,6 +14,8 @@ import { LeadListForm }  from './LeadListForm'
 import { LeadListDetail } from './LeadListDetail'
 import { DeleteListModal } from './DeleteListModal'
 import { supabase }      from '../../lib/supabase'
+import { batchListScores, ListScoreResult } from '../../lib/listScore'
+import { ScoreBadge } from '../../components/ui/ScoreBadge'
 import toast             from 'react-hot-toast'
 
 export function LeadListsPage() {
