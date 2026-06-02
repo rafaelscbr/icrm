@@ -146,10 +146,10 @@ export function CampaignPerformanceTab({ leads }: Props) {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: 'Total de leads',     value: total.toLocaleString('pt-BR'),     color: 'text-slate-200'  },
-            { label: 'Acionados',          value: `${contacted} (${pct(contacted, total)}%)`, color: 'text-blue-400'  },
-            { label: 'Taxa de resposta',   value: `${responseRate}%`,                color: 'text-cyan-400'   },
-            { label: 'Vendas convertidas', value: sales.toString(),                  color: 'text-green-400'  },
+            { label: 'Total de leads',     value: total.toLocaleString('pt-BR'),                   color: 'text-slate-200'  },
+            { label: 'Acionados',          value: `${contacted} (${pct(contacted, total)}%)`,       color: 'text-blue-400'   },
+            { label: 'Taxa de resposta',   value: `${responseRate}%`,                               color: 'text-cyan-400'   },
+            { label: 'Transferidos',       value: `${transferred} (${pct(transferred, total)}%)`,   color: 'text-violet-400' },
           ].map(kpi => (
             <div key={kpi.label} className="bg-s2/50 border border-line rounded-xl p-3">
               <p className="text-[10px] text-slate-500 mb-1">{kpi.label}</p>
