@@ -23,7 +23,6 @@ interface LeadParecerModalProps {
 
 export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParecerModalProps) {
   const { update } = useCampaignLeadsStore()
-  const tasksStore    = useTasksStore()
   const contactsStore = useContactsStore()
   const navigate      = useNavigate()
 
