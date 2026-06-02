@@ -38,7 +38,7 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
         onClick={() => isAdmin && setOpen(true)}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs transition-all
           ${isAdmin ? 'hover:border-violet-500/40 hover:bg-violet-500/8 cursor-pointer' : 'cursor-default'}
-          ${list.length > 0 ? 'border-violet-500/25 bg-violet-500/8 text-violet-300' : 'border-line text-slate-500'}`}
+          ${list.length > 0 ? 'border-violet-500/25 bg-violet-500/8 text-violet-300' : 'border-line text-t3'}`}
         title={isAdmin ? 'Gerenciar participantes' : 'Participantes da campanha'}
       >
         <Users size={11} />
@@ -51,7 +51,7 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line hover:border-violet-500/30 hover:bg-violet-500/8 text-slate-500 hover:text-violet-300 text-xs transition-all cursor-pointer"
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line hover:border-violet-500/30 hover:bg-violet-500/8 text-t3 hover:text-violet-300 text-xs transition-all cursor-pointer"
       >
         <Users size={12} /> Participantes {list.length > 0 && `(${list.length})`}
       </button>
@@ -70,15 +70,15 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
                       {profile?.name?.charAt(0).toUpperCase() ?? '?'}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-200 truncate">{profile?.name ?? p.brokerId}</p>
-                      <span className={`text-[10px] flex items-center gap-1 mt-0.5 ${p.role === 'owner' ? 'text-amber-400' : 'text-slate-500'}`}>
+                      <p className="text-sm font-medium text-t1 truncate">{profile?.name ?? p.brokerId}</p>
+                      <span className={`text-[10px] flex items-center gap-1 mt-0.5 ${p.role === 'owner' ? 'text-amber-400' : 'text-t3'}`}>
                         {p.role === 'owner' ? <><Crown size={9} /> Responsável</> : <><UserCheck size={9} /> Colaborador</>}
                       </span>
                     </div>
                     {isAdmin && (
                       <button
                         onClick={() => handleRemove(p.id, profile?.name ?? '')}
-                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer"
                         title="Remover"
                       >
                         <X size={12} />
@@ -100,18 +100,18 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
                   onClick={() => handleAdd(b.id)}
                   className="flex items-center gap-3 p-3 bg-s3/30 hover:bg-s3/60 rounded-xl border border-line hover:border-violet-500/30 transition-all text-left cursor-pointer group"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-slate-500/20 group-hover:bg-violet-500/20 flex items-center justify-center text-sm font-bold text-slate-400 group-hover:text-violet-300 flex-shrink-0 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-slate-500/20 group-hover:bg-violet-500/20 flex items-center justify-center text-sm font-bold text-t3 group-hover:text-violet-300 flex-shrink-0 transition-colors">
                     {b.name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-sm text-slate-400 group-hover:text-slate-200 transition-colors flex-1">{b.name}</span>
-                  <Plus size={13} className="text-slate-600 group-hover:text-violet-400 transition-colors" />
+                  <span className="text-sm text-t3 group-hover:text-t1 transition-colors flex-1">{b.name}</span>
+                  <Plus size={13} className="text-t4 group-hover:text-violet-400 transition-colors" />
                 </button>
               ))}
             </div>
           )}
 
           {list.length === 0 && brokers.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-4">Nenhum corretor cadastrado ainda</p>
+            <p className="text-sm text-t3 text-center py-4">Nenhum corretor cadastrado ainda</p>
           )}
         </div>
       </Modal>

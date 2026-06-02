@@ -100,7 +100,7 @@ function stageAgeBadge(days: number): { label: string; color: string; bg: string
 function LastMessageModal({ message, onClose }: { message: string; onClose: () => void }) {
   return (
     <Modal isOpen onClose={onClose} title="Última mensagem enviada" size="sm">
-      <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{message}</p>
+      <p className="text-sm text-t1 leading-relaxed whitespace-pre-wrap">{message}</p>
     </Modal>
   )
 }
@@ -134,7 +134,7 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
     <Modal isOpen onClose={onClose} title="Criar tarefa rápida" size="sm">
       <div className="flex flex-col gap-4">
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">Título</label>
+          <label className="text-xs text-t3 mb-1 block">Título</label>
           <input
             autoFocus
             value={title}
@@ -143,7 +143,7 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
           />
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">Data</label>
+          <label className="text-xs text-t3 mb-1 block">Data</label>
           <input
             type="date"
             value={dueDate}
@@ -246,18 +246,18 @@ function LeadCard({
           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             {lead.lastMessage && (
               <button onClick={() => setShowMsg(true)}
-                className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-slate-300 transition-colors"
+                className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 transition-colors"
                 title="Ver última mensagem">
                 <Eye size={11} />
               </button>
             )}
             <button onClick={() => setShowTask(true)}
-              className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-cyan-400 transition-colors"
+              className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-cyan-400 transition-colors"
               title="Criar tarefa">
               <Plus size={11} />
             </button>
             <button onClick={e => { e.stopPropagation(); onParecer(lead) }}
-              className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-brand transition-colors"
+              className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-brand transition-colors"
               title="Parecer">
               <FileText size={11} />
             </button>
@@ -266,7 +266,7 @@ function LeadCard({
             {...listeners}
             {...attributes}
             onClick={e => e.stopPropagation()}
-            className="w-5 h-5 flex items-center justify-center text-slate-700 hover:text-slate-400 cursor-grab active:cursor-grabbing transition-colors"
+            className="w-5 h-5 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors"
           >
             <GripVertical size={12} />
           </div>
@@ -281,7 +281,7 @@ function LeadCard({
             <p className="text-[13px] font-semibold text-t1 truncate leading-tight">{lead.name}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-[10px] text-t4 tabular-nums">{formatPhone(lead.phone)}</span>
-              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${ageBadge ? `${ageBadge.bg} ${ageBadge.color}` : 'text-slate-600 bg-transparent border-transparent'}`}>
+              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${ageBadge ? `${ageBadge.bg} ${ageBadge.color}` : 'text-t4 bg-transparent border-transparent'}`}>
                 {days > 0 ? `${days}d` : ''}
               </span>
             </div>
@@ -299,7 +299,7 @@ function LeadCard({
 
         {/* Última mensagem */}
         {lead.lastMessage && (
-          <p className="mb-1.5 text-[10px] text-slate-600 line-clamp-1 italic">"{lead.lastMessage}"</p>
+          <p className="mb-1.5 text-[10px] text-t4 line-clamp-1 italic">"{lead.lastMessage}"</p>
         )}
 
         {/* Migrado */}
@@ -470,7 +470,7 @@ function KanbanColumn({
             {hasMore && (
               <button
                 onClick={() => setVisible(v => v + COLUMN_PAGE)}
-                className="flex items-center justify-center gap-1.5 py-2 text-xs text-slate-500 hover:text-slate-300 border border-dashed border-line hover:border-line-strong rounded-xl transition-all cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2 text-xs text-t3 hover:text-t2 border border-dashed border-line hover:border-line-strong rounded-xl transition-all cursor-pointer"
               >
                 <ChevronDown size={12} />
                 +{(sorted.length - visible).toLocaleString('pt-BR')} leads
@@ -550,7 +550,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
             className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
               dateFilter === f.value
                 ? 'bg-brand-tint border-brand/40 text-brand-text'
-                : 'bg-s2/60 border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
+                : 'bg-s2/60 border-line text-t3 hover:text-t2 hover:border-line-strong'
             }`}
           >
             {f.label}
@@ -570,7 +570,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
           }}
           disabled={syncing}
           title="Atualizar kanban com dados mais recentes do banco"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-line text-slate-500 hover:text-brand hover:border-brand/30 hover:bg-brand/5 bg-s2/60 transition-all cursor-pointer disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-line text-t3 hover:text-brand hover:border-brand/30 hover:bg-brand/5 bg-s2/60 transition-all cursor-pointer disabled:opacity-50"
         >
           <RefreshCw size={11} className={syncing ? 'animate-spin' : ''} />
           {syncing ? 'Atualizando…' : 'Atualizar'}
@@ -578,7 +578,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
 
         {/* Info do ticket médio */}
         {campaign.averageTicket && campaign.averageTicket > 0 && (
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 bg-s2/60 border border-line rounded-xl px-3 py-1.5">
+          <div className="ml-auto flex items-center gap-1.5 text-xs text-t3 bg-s2/60 border border-line rounded-xl px-3 py-1.5">
             Ticket médio:
             <span className="text-brand-text font-semibold">{formatCurrency(campaign.averageTicket)}</span>
           </div>
@@ -630,8 +630,8 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
               <GitMerge size={18} className="text-violet-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-violet-200">Migrar para o funil principal?</p>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  <span className="font-medium text-slate-300">{migrateSuggest.lead.name}</span> agendou apresentação —
+                <p className="text-xs text-t3 mt-1 leading-relaxed">
+                  <span className="font-medium text-t2">{migrateSuggest.lead.name}</span> agendou apresentação —
                   este é o momento ideal para entrar no funil comercial com todo o histórico preservado.
                 </p>
               </div>

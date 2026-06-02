@@ -47,7 +47,7 @@ const CONFLICT_CONFIG: Record<ConflictType, {
   filterLabel: string
 }> = {
   other_list: {
-    icon: Database, color: 'text-blue-400', bg: 'bg-blue-500/10',
+    icon: Database, color: 'text-blue-400', bg: 'bg-s3/60',
     border: 'border-blue-500/20', dot: 'bg-blue-400',
     label: 'Outra lista', filterLabel: 'Em listas',
   },
@@ -366,9 +366,9 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
       {step === 'preview' && (
         <div className="flex flex-col gap-5">
           {/* Header do arquivo */}
-          <div className="flex items-center gap-3 p-4 bg-blue-500/8 border border-blue-500/20 rounded-xl">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-              <FileSpreadsheet size={18} className="text-blue-400" />
+          <div className="flex items-center gap-3 p-4 bg-s3/50 border border-blue-500/20 rounded-xl">
+            <div className="w-9 h-9 rounded-xl bg-s3/70 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <FileSpreadsheet size={18} className="text-t2" />
             </div>
             <div>
               <p className="text-sm font-semibold text-t1">{fileName}</p>
@@ -382,7 +382,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
               { label: 'Leads válidos',     value: parsed.length,      color: 'text-blue-400',   icon: <Users size={14} /> },
               { label: 'Duplicatas',        value: dupFile,            color: 'text-amber-400',  icon: <RefreshCw size={14} /> },
               { label: 'Números inválidos', value: invalidPh,          color: 'text-red-400',    icon: <XCircle size={14} /> },
-              { label: 'Avisos de parse',   value: parseErrors.length, color: 'text-slate-400',  icon: <AlertTriangle size={14} /> },
+              { label: 'Avisos de parse',   value: parseErrors.length, color: 'text-t3',  icon: <AlertTriangle size={14} /> },
             ].map(s => (
               <div key={s.label} className="flex items-center gap-3 p-3 bg-s2/50 border border-line rounded-xl">
                 <span className={s.color}>{s.icon}</span>
@@ -477,10 +477,10 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
             />
             {analysis.alreadyInList > 0 && (
               <SummaryCard
-                icon={<RefreshCw size={14} className="text-slate-500" />}
+                icon={<RefreshCw size={14} className="text-t3" />}
                 value={analysis.alreadyInList}
                 label="Já nesta lista"
-                color="text-slate-500"
+                color="text-t3"
                 bg="bg-s2/50 border-line"
               />
             )}
@@ -652,9 +652,9 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Novos contatos criados',    value: stats.newContacts,      color: 'text-green-400',  bg: 'bg-green-500/8 border-green-500/20'   },
-              { label: 'Já existiam no sistema',    value: stats.existingContacts, color: 'text-blue-400',   bg: 'bg-blue-500/8 border-blue-500/20'     },
+              { label: 'Já existiam no sistema',    value: stats.existingContacts, color: 'text-blue-400',   bg: 'bg-s3/50 border-blue-500/20'     },
               { label: 'Adicionados à lista',       value: stats.linkedToList,     color: 'text-brand',      bg: 'bg-brand/8 border-brand/20'           },
-              { label: 'Já estavam nesta lista',    value: stats.alreadyInList,    color: 'text-slate-500',  bg: 'bg-s2/50 border-line'                 },
+              { label: 'Já estavam nesta lista',    value: stats.alreadyInList,    color: 'text-t3',  bg: 'bg-s2/50 border-line'                 },
               { label: 'Pulados por sua escolha',   value: stats.skippedByUser,    color: 'text-amber-400',  bg: 'bg-amber-500/8 border-amber-500/20'   },
             ].map(s => (
               <div key={s.label} className={`p-3 rounded-xl border ${s.bg}`}>

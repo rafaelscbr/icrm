@@ -97,13 +97,13 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             {lead.name[0].toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-200 truncate">{lead.name}</p>
-            <p className="text-xs text-slate-500">{formatPhone(lead.phone)}</p>
+            <p className="text-sm font-semibold text-t1 truncate">{lead.name}</p>
+            <p className="text-xs text-t3">{formatPhone(lead.phone)}</p>
           </div>
           {campaign && (
             <div className="flex-shrink-0 text-right">
-              <p className="text-[10px] text-slate-600">Campanha</p>
-              <p className="text-xs text-slate-400 font-medium truncate max-w-[120px]">{campaign.name}</p>
+              <p className="text-[10px] text-t4">Campanha</p>
+              <p className="text-xs text-t3 font-medium truncate max-w-[120px]">{campaign.name}</p>
             </div>
           )}
         </div>
@@ -142,7 +142,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             <Lock size={14} className="text-cyan-400 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-xs font-semibold text-cyan-200">Entrará diretamente em Visita</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-t3 mt-0.5">
                 Lead agendado → etapa mapeada automaticamente para o funil comercial.
               </p>
             </div>
@@ -153,7 +153,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
         ) : (
           /* Outros casos — seletor livre */
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
+            <p className="text-xs font-semibold text-t3 uppercase tracking-wider mb-2.5">
               Etapa de entrada no funil
             </p>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
@@ -167,7 +167,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
                       active
                         ? `${conf.bg} ${conf.border} ${conf.color}`
-                        : 'bg-s2/50 border-line text-slate-500 hover:border-line-strong hover:text-slate-300'
+                        : 'bg-s2/50 border-line text-t3 hover:border-line-strong hover:text-t2'
                     }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? conf.dot : 'bg-slate-700'}`} />
@@ -177,33 +177,33 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
                 )
               })}
             </div>
-            <p className="text-[11px] text-slate-600 mt-2">
-              Etapa mapeada da campanha: <span className="text-slate-500 font-medium">{stageConf.label}</span>
+            <p className="text-[11px] text-t4 mt-2">
+              Etapa mapeada da campanha: <span className="text-t3 font-medium">{stageConf.label}</span>
             </p>
           </div>
         )}
 
         {/* Ticket médio */}
         <div>
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
             Ticket médio (opcional)
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">R$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-t3">R$</span>
             <input
               type="text"
               inputMode="numeric"
               value={ticket ? Number(ticket.replace(/\D/g, '')).toLocaleString('pt-BR') : ''}
               onChange={e => setTicket(e.target.value.replace(/\D/g, ''))}
               placeholder="0"
-              className="w-full bg-s3/50 border border-line rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+              className="w-full bg-s3/50 border border-line rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
             />
           </div>
         </div>
 
         {/* Notas */}
         <div>
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
             Notas (opcional)
           </label>
           <textarea
@@ -211,27 +211,27 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             onChange={e => setNotes(e.target.value)}
             rows={2}
             placeholder="Observações que vão para o lead no funil..."
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
           />
         </div>
 
         {/* Flow preview */}
         <div className="flex items-center gap-2 px-3 py-2.5 bg-violet-500/5 border border-violet-500/15 rounded-xl">
           <GitMerge size={13} className="text-violet-400 flex-shrink-0" />
-          <span className="text-[11px] text-slate-500">Campanha</span>
-          <ArrowRight size={11} className="text-slate-700 flex-shrink-0" />
+          <span className="text-[11px] text-t3">Campanha</span>
+          <ArrowRight size={11} className="text-t5 flex-shrink-0" />
           <span className={`text-[11px] font-semibold ${stageConf.color}`}>{stageConf.label}</span>
           {isScheduledHandoff && (
             <>
-              <ArrowRight size={11} className="text-slate-700 flex-shrink-0" />
+              <ArrowRight size={11} className="text-t5 flex-shrink-0" />
               <span className="text-[11px] text-cyan-400 font-semibold">Tarefa de visita</span>
             </>
           )}
-          <span className="ml-auto text-[10px] text-slate-600">origem: campanha</span>
+          <span className="ml-auto text-[10px] text-t4">origem: campanha</span>
         </div>
 
         {isScheduledHandoff && (
-          <p className="text-[11px] text-slate-500 -mt-2">
+          <p className="text-[11px] text-t3 -mt-2">
             Após migrar, você poderá cadastrar a data e horário da visita.
           </p>
         )}

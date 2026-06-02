@@ -402,7 +402,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       toast(t => (
         <span className="flex flex-col gap-1.5">
           <span className="font-semibold text-amber-300 flex items-center gap-1.5">🌙 Fora do horário comercial</span>
-          <span className="text-xs text-slate-300">Enviar entre 20h e 8h aumenta o risco de banimento.</span>
+          <span className="text-xs text-t2">Enviar entre 20h e 8h aumenta o risco de banimento.</span>
           <button onClick={() => { toast.dismiss(t.id); setForceOffHours(true) }}
             className="mt-1 text-xs underline text-amber-400 text-left cursor-pointer">
             Enviar mesmo assim →
@@ -495,8 +495,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               </div>
             )}
             {!atLim && onCd && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-line text-slate-300 text-xs">
-                <Clock size={12} className="text-slate-500" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-line text-t2 text-xs">
+                <Clock size={12} className="text-t3" />
                 <span>Próximo disparo em</span>
                 <span className="font-black tabular-nums text-white text-sm">{secs}s</span>
               </div>
@@ -513,15 +513,15 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       {/* ── Busca + resumo ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 mb-5">
         <div className="relative flex-1">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-t4 pointer-events-none" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar nome ou telefone…"
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
           />
         </div>
         {/* Mini resumo inline */}
-        <div className="flex items-center gap-3 text-xs text-slate-500 flex-shrink-0">
+        <div className="flex items-center gap-3 text-xs text-t3 flex-shrink-0">
           <span><span className="text-t1 font-bold tabular-nums">{queueLeads.length}</span> na fila</span>
           <span className="text-line">|</span>
           <span><span className="text-cyan-400 font-bold tabular-nums">{contactedLeads.length}</span> acionados</span>
@@ -550,7 +550,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               {queueLeads.length}
             </span>
             <div className="flex-1 h-px bg-white/6" />
-            <span className="text-[10px] text-slate-600 uppercase tracking-wider">não acionados · mais antigos primeiro</span>
+            <span className="text-[10px] text-t4 uppercase tracking-wider">não acionados · mais antigos primeiro</span>
           </div>
 
           {queueLeads.length === 0 ? (
@@ -558,13 +558,13 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               <span className="text-2xl">✅</span>
               <div>
                 <p className="text-sm font-semibold text-green-400">Fila zerada!</p>
-                <p className="text-xs text-slate-500">Todos os leads desta campanha já foram acionados.</p>
+                <p className="text-xs text-t3">Todos os leads desta campanha já foram acionados.</p>
               </div>
             </div>
           ) : (
             <div className="rounded-xl border border-line overflow-hidden bg-page">
               {/* Header da tabela */}
-              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold">
                 <span>Nome</span>
                 <span>Telefone</span>
                 <span className="w-28 text-center">Ação</span>
@@ -581,7 +581,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Avatar */}
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
-                          ${isNext ? 'bg-green-500/20 text-green-300' : 'bg-white/6 text-slate-400'}`}>
+                          ${isNext ? 'bg-green-500/20 text-green-300' : 'bg-white/6 text-t3'}`}>
                           {lead.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
@@ -598,12 +598,12 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                             </div>
                           )}
                           {lead.extra && (
-                            <p className="text-[10px] text-slate-600 truncate">{lead.extra}</p>
+                            <p className="text-[10px] text-t4 truncate">{lead.extra}</p>
                           )}
                         </div>
                       </div>
 
-                      <span className="text-sm text-slate-500 tabular-nums font-mono">
+                      <span className="text-sm text-t3 tabular-nums font-mono">
                         {formatPhone(lead.phone)}
                       </span>
 
@@ -612,7 +612,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         {atLim ? (
                           <span className="text-[11px] text-red-400/60">limite atingido</span>
                         ) : onCd ? (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-line text-slate-400 text-xs tabular-nums">
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-line text-t3 text-xs tabular-nums">
                             <Clock size={11} /> {secs}s
                           </div>
                         ) : (
@@ -637,8 +637,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               <div ref={sentinelQRef} className="h-1" />
               {visibleQueue < queueLeads.length && (
                 <div className="flex items-center justify-center gap-2 py-3 border-t border-line">
-                  <Loader2 size={13} className="animate-spin text-slate-600" />
-                  <span className="text-xs text-slate-600">Carregando mais…</span>
+                  <Loader2 size={13} className="animate-spin text-t4" />
+                  <span className="text-xs text-t4">Carregando mais…</span>
                 </div>
               )}
             </div>
@@ -656,18 +656,18 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             >
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-blue-400" />
-                <h3 className="text-sm font-bold text-slate-400 group-hover:text-slate-200 transition-colors">Já acionados</h3>
+                <h3 className="text-sm font-bold text-t3 group-hover:text-t1 transition-colors">Já acionados</h3>
               </div>
-              <span className="text-xs bg-blue-500/15 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+              <span className="text-xs bg-s3/70 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
                 {contactedLeads.length}
               </span>
               <div className="flex-1 h-px bg-white/6" />
-              <ChevronDown size={13} className={`text-slate-600 transition-transform ${showContacted ? 'rotate-180' : ''}`} />
+              <ChevronDown size={13} className={`text-t4 transition-transform ${showContacted ? 'rotate-180' : ''}`} />
             </button>
 
             {showContacted && (
               <div className="rounded-xl border border-line overflow-hidden bg-page">
-                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold">
                   <span>Etapa</span>
                   <span>Nome</span>
                   <span>Telefone</span>
@@ -692,7 +692,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         </div>
 
                         <div className="min-w-0">
-                          <p className="text-sm text-slate-300 truncate">{lead.name}</p>
+                          <p className="text-sm text-t2 truncate">{lead.name}</p>
                           {lead.lastSentByName && (
                             <p className="text-[10px] text-violet-400/70 truncate">
                               💬 {lead.lastSentByName}{lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
@@ -701,7 +701,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                           )}
                         </div>
 
-                        <span className="text-sm text-slate-600 tabular-nums font-mono">
+                        <span className="text-sm text-t4 tabular-nums font-mono">
                           {formatPhone(lead.phone)}
                         </span>
 
@@ -718,23 +718,23 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                               ['attended','scheduled'].includes(lead.funnelStage)
                                 ? 'text-cyan-500/30 cursor-default'
-                                : 'hover:bg-cyan-500/10 text-slate-600 hover:text-cyan-400'
+                                : 'hover:bg-cyan-500/10 text-t4 hover:text-cyan-400'
                             }`}
                             title="Marcar como interessado">
                             <ThumbsUp size={13} />
                           </button>
                           <button onClick={() => setParecerLead(lead)}
-                            className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-brand transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-t4 hover:text-brand transition-colors cursor-pointer"
                             title="Parecer">
                             <FileText size={13} />
                           </button>
                           <button onClick={() => setEditLead(lead)}
-                            className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"
                             title="Editar">
                             <Pencil size={13} />
                           </button>
                           <button onClick={() => setDeleteLead(lead)}
-                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer"
                             title="Remover">
                             <Trash2 size={13} />
                           </button>
@@ -747,8 +747,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                 <div ref={sentinelCRef} className="h-1" />
                 {visibleContacted < contactedLeads.length && (
                   <div className="flex items-center justify-center gap-2 py-3 border-t border-line">
-                    <Loader2 size={13} className="animate-spin text-slate-600" />
-                    <span className="text-xs text-slate-600">Carregando mais…</span>
+                    <Loader2 size={13} className="animate-spin text-t4" />
+                    <span className="text-xs text-t4">Carregando mais…</span>
                   </div>
                 )}
               </div>
@@ -767,13 +767,13 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             >
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-slate-600" />
-                <h3 className="text-sm font-bold text-slate-600 group-hover:text-slate-400 transition-colors">Sem interesse / Inválidos</h3>
+                <h3 className="text-sm font-bold text-t4 group-hover:text-t3 transition-colors">Sem interesse / Inválidos</h3>
               </div>
-              <span className="text-xs bg-s3/50 text-slate-600 border border-line px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+              <span className="text-xs bg-s3/50 text-t4 border border-line px-2.5 py-0.5 rounded-full font-bold tabular-nums">
                 {disqualLeads.length}
               </span>
               <div className="flex-1 h-px bg-s2/60" />
-              <ChevronDown size={13} className={`text-slate-700 transition-transform ${showDisqualified ? 'rotate-180' : ''}`} />
+              <ChevronDown size={13} className={`text-t5 transition-transform ${showDisqualified ? 'rotate-180' : ''}`} />
             </button>
 
             {showDisqualified && (
@@ -784,18 +784,18 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                     return (
                       <div key={lead.id}
                         className="flex items-center gap-4 px-5 py-2.5 hover:bg-s2/30 transition-colors group">
-                        <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium ${situCfg?.bg ?? 'bg-s3/50'} ${situCfg?.color ?? 'text-slate-500'}`}>
+                        <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium ${situCfg?.bg ?? 'bg-s3/50'} ${situCfg?.color ?? 'text-t3'}`}>
                           {situCfg?.short ?? '—'}
                         </span>
-                        <p className="flex-1 text-sm text-slate-500 truncate">{lead.name}</p>
-                        <span className="text-xs text-slate-700 tabular-nums font-mono">{formatPhone(lead.phone)}</span>
+                        <p className="flex-1 text-sm text-t3 truncate">{lead.name}</p>
+                        <span className="text-xs text-t5 tabular-nums font-mono">{formatPhone(lead.phone)}</span>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => setEditLead(lead)}
-                            className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-700 hover:text-slate-400 transition-colors cursor-pointer">
+                            className="p-1.5 rounded-lg hover:bg-s3/70 text-t5 hover:text-t3 transition-colors cursor-pointer">
                             <Pencil size={12} />
                           </button>
                           <button onClick={() => setDeleteLead(lead)}
-                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-700 hover:text-red-400 transition-colors cursor-pointer">
+                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-t5 hover:text-red-400 transition-colors cursor-pointer">
                             <Trash2 size={12} />
                           </button>
                         </div>
@@ -826,8 +826,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         onPick={(msg, idx) => pickerLead && sendWhatsApp(pickerLead, msg, idx)}
       />
       <Modal isOpen={Boolean(deleteLead)} onClose={() => setDeleteLead(undefined)} title="Remover lead" size="sm">
-        <p className="text-sm text-slate-400 mb-6">
-          Remover <span className="text-slate-200 font-medium">"{deleteLead?.name}"</span> desta campanha?
+        <p className="text-sm text-t3 mb-6">
+          Remover <span className="text-t1 font-medium">"{deleteLead?.name}"</span> desta campanha?
         </p>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteLead(undefined)}>Cancelar</Button>

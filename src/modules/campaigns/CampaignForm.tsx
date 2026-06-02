@@ -66,12 +66,12 @@ function StepBar({ current }: { current: number }) {
                 w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300
                 ${done   ? 'bg-indigo-500 border-indigo-500 text-white' : ''}
                 ${active ? 'bg-brand-tint border-indigo-500 text-brand-text shadow-[0_0_0_4px_rgba(99,102,241,0.15)]' : ''}
-                ${!done && !active ? 'bg-s3/40 border-line text-slate-600' : ''}
+                ${!done && !active ? 'bg-s3/40 border-line text-t4' : ''}
               `}>
                 {done ? <Check size={13} strokeWidth={2.5} /> : <Icon size={13} />}
               </div>
               {/* Label — só visível em telas maiores */}
-              <span className={`hidden sm:block text-[10px] font-medium transition-colors ${active ? 'text-brand-text' : done ? 'text-indigo-400' : 'text-slate-600'}`}>
+              <span className={`hidden sm:block text-[10px] font-medium transition-colors ${active ? 'text-brand-text' : done ? 'text-indigo-400' : 'text-t4'}`}>
                 {s.label}
               </span>
             </div>
@@ -204,7 +204,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
           type="button"
           onClick={back}
           disabled={saving}
-          className="flex items-center justify-center gap-1.5 px-4 min-h-[48px] rounded-xl text-sm text-slate-400 hover:text-slate-200 border border-line hover:border-line-strong transition-all cursor-pointer disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 px-4 min-h-[48px] rounded-xl text-sm text-t3 hover:text-t1 border border-line hover:border-line-strong transition-all cursor-pointer disabled:opacity-50"
         >
           <ChevronLeft size={16} />
           <span className="hidden sm:inline">Voltar</span>
@@ -262,7 +262,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                 Ticket médio <span className="normal-case font-normal text-t5">(opcional)</span>
               </label>
               <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-500 pointer-events-none">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-t3 pointer-events-none">
                   <DollarSign size={13} />
                   <span className="text-xs">R$</span>
                 </div>
@@ -344,7 +344,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                     <button
                       type="button"
                       onClick={() => setMessages(m => m.filter((_, i) => i !== idx))}
-                      className="text-slate-600 hover:text-red-400 transition-colors cursor-pointer p-1"
+                      className="text-t4 hover:text-red-400 transition-colors cursor-pointer p-1"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -383,7 +383,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
 
             {activeLists.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-8 text-center">
-                <ListChecks size={32} className="text-slate-600" />
+                <ListChecks size={32} className="text-t4" />
                 <p className="text-sm text-t3">Nenhuma lista cadastrada ainda</p>
                 <p className="text-xs text-t5">Vá em Base de Leads e importe uma lista primeiro</p>
               </div>

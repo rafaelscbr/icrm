@@ -80,7 +80,7 @@ function Stepper({ value, onChange }: { value: number; onChange: (v: number) => 
     <div className="flex items-center gap-1.5">
       <button
         onClick={() => onChange(Math.max(0, value - 1))}
-        className="w-7 h-7 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
+        className="w-7 h-7 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-t3 hover:text-t1 transition-colors cursor-pointer"
       >
         <Minus size={11} />
       </button>
@@ -93,7 +93,7 @@ function Stepper({ value, onChange }: { value: number; onChange: (v: number) => 
       </button>
       <button
         onClick={() => onChange(Math.min(100, value + 1))}
-        className="w-7 h-7 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
+        className="w-7 h-7 flex items-center justify-center rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-t3 hover:text-t1 transition-colors cursor-pointer"
       >
         <Plus size={11} />
       </button>
@@ -193,7 +193,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
       label:         'Base Fria',
       sublabel:      'Não Contactado + 1ª Mensagem',
       dotColor:      'bg-slate-500',
-      textColor:     'text-slate-300',
+      textColor:     'text-t2',
       borderColor:   'border-slate-500/20',
       bgColor:       'bg-slate-500/5',
       realCount:     count.cold,
@@ -238,9 +238,9 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         {/* Ticket médio */}
         <Card className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Ticket Médio</p>
+            <p className="text-[10px] font-semibold text-t3 uppercase tracking-wider">Ticket Médio</p>
             {!editingTicket && (
-              <button onClick={() => setEditingTicket(true)} className="p-1 rounded-lg text-slate-600 hover:text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer">
+              <button onClick={() => setEditingTicket(true)} className="p-1 rounded-lg text-t4 hover:text-t2 hover:bg-s3/50 transition-colors cursor-pointer">
                 <Pencil size={12} />
               </button>
             )}
@@ -248,7 +248,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
           {editingTicket ? (
             <div className="flex items-center gap-2">
               <div className="flex-1 relative">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-500 select-none">R$</span>
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-t3 select-none">R$</span>
                 <input
                   autoFocus type="text" inputMode="numeric"
                   value={ticketRaw}
@@ -256,18 +256,18 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   onKeyDown={e => { if (e.key === 'Enter') saveTicket(); if (e.key === 'Escape') setEditingTicket(false) }}
                   placeholder="500.000"
                   style={{ colorScheme: 'dark' }}
-                  className="w-full border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  className="w-full border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                 />
               </div>
               <button onClick={saveTicket} className="p-1.5 rounded-lg bg-green-500/15 hover:bg-green-500/25 text-green-400 cursor-pointer transition-colors"><Check size={13} /></button>
-              <button onClick={() => { setEditingTicket(false); setTicketRaw(campaign.averageTicket ? fmtBRLInput(campaign.averageTicket) : '') }} className="p-1.5 rounded-lg bg-s3/50 hover:bg-s3/70 text-slate-500 cursor-pointer transition-colors"><X size={13} /></button>
+              <button onClick={() => { setEditingTicket(false); setTicketRaw(campaign.averageTicket ? fmtBRLInput(campaign.averageTicket) : '') }} className="p-1.5 rounded-lg bg-s3/50 hover:bg-s3/70 text-t3 cursor-pointer transition-colors"><X size={13} /></button>
             </div>
           ) : (
-            <p className={`text-2xl font-bold tabular-nums ${hasTicket ? 'text-slate-100' : 'text-slate-600'}`}>
+            <p className={`text-2xl font-bold tabular-nums ${hasTicket ? 'text-slate-100' : 'text-t4'}`}>
               {hasTicket ? fmtFull(ticket) : 'Não definido'}
             </p>
           )}
-          <p className="text-[11px] text-slate-600">Valor médio do produto</p>
+          <p className="text-[11px] text-t4">Valor médio do produto</p>
         </Card>
 
         {/* Vendas projetadas */}
@@ -276,16 +276,16 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
           <p className="text-2xl font-bold tabular-nums text-green-400">
             {fmtLeads(totalSales)}
           </p>
-          <p className="text-[11px] text-slate-600">de {totalActive} leads ativos no funil</p>
+          <p className="text-[11px] text-t4">de {totalActive} leads ativos no funil</p>
         </Card>
 
         {/* VGV esperado */}
         <Card accent="indigo" className="flex flex-col gap-3">
           <p className="text-[10px] font-semibold text-brand/70 uppercase tracking-wider">VGV Esperado</p>
-          <p className={`text-2xl font-bold tabular-nums ${hasTicket ? 'text-brand-text' : 'text-slate-600'}`}>
+          <p className={`text-2xl font-bold tabular-nums ${hasTicket ? 'text-brand-text' : 'text-t4'}`}>
             {hasTicket ? fmtCompact(totalVGV) : '—'}
           </p>
-          <p className="text-[11px] text-slate-600">{hasTicket ? `${fmtLeads(totalSales)} vendas × ${fmtFull(ticket)}` : 'Defina o ticket médio'}</p>
+          <p className="text-[11px] text-t4">{hasTicket ? `${fmtLeads(totalSales)} vendas × ${fmtFull(ticket)}` : 'Defina o ticket médio'}</p>
         </Card>
       </div>
 
@@ -304,12 +304,12 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
 
         <div className="px-5 py-4 border-b border-line flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-slate-200">Funil de Previsibilidade</h3>
-            <p className="text-[11px] text-slate-600 mt-0.5">Cada taxa aplica sobre o resultado da etapa anterior em cascata</p>
+            <h3 className="text-sm font-semibold text-t1">Funil de Previsibilidade</h3>
+            <p className="text-[11px] text-t4 mt-0.5">Cada taxa aplica sobre o resultado da etapa anterior em cascata</p>
           </div>
           <div className="flex items-center gap-2">
             {hasCustomRates && (
-              <button onClick={resetRates} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-1.5 transition-all cursor-pointer">
+              <button onClick={resetRates} className="flex items-center gap-1.5 text-xs text-t3 hover:text-t1 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-1.5 transition-all cursor-pointer">
                 <RotateCcw size={11} /> Sugeridas
               </button>
             )}
@@ -333,14 +333,14 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${block.dotColor}`} />
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold ${block.textColor}`}>{block.label}</p>
-                    {block.sublabel && <p className="text-[11px] text-slate-600">{block.sublabel}</p>}
+                    {block.sublabel && <p className="text-[11px] text-t4">{block.sublabel}</p>}
                   </div>
                 </div>
 
                 {/* Leads reais (cumulativo para etapas intermediárias) */}
                 <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] text-slate-600 mb-0.5">{block.key === 'cold' ? 'leads reais' : 'acumulado'}</p>
-                  <p className={`text-lg font-bold tabular-nums ${block.realCount > 0 ? 'text-slate-200' : 'text-slate-600'}`}>
+                  <p className="text-[10px] text-t4 mb-0.5">{block.key === 'cold' ? 'leads reais' : 'acumulado'}</p>
+                  <p className={`text-lg font-bold tabular-nums ${block.realCount > 0 ? 'text-t1' : 'text-t4'}`}>
                     {block.realCount}
                   </p>
                 </div>
@@ -348,8 +348,8 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                 {/* Projeção entrada (exceto topo) */}
                 {block.projIn !== null && (
                   <div className="text-right flex-shrink-0 pl-3 border-l border-line">
-                    <p className="text-[10px] text-slate-600 mb-0.5">proj. da base</p>
-                    <p className="text-sm font-semibold tabular-nums text-slate-400">
+                    <p className="text-[10px] text-t4 mb-0.5">proj. da base</p>
+                    <p className="text-sm font-semibold tabular-nums text-t3">
                       {fmtLeads(block.projIn)}
                     </p>
                   </div>
@@ -361,7 +361,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                 {/* Linha vertical */}
                 <div className="flex flex-col items-center w-8 flex-shrink-0">
                   <div className="w-px h-3 bg-s3/70" />
-                  <ArrowDown size={12} className="text-slate-600" />
+                  <ArrowDown size={12} className="text-t4" />
                   <div className="w-px h-3 bg-s3/70" />
                 </div>
 
@@ -372,29 +372,29 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                     onChange={v => handleRate(block.transitionKey, v)}
                   />
                   <div className="flex-1">
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-t3">
                       {TRANSITION_LABELS[block.transitionKey]}
                     </span>
                   </div>
                   {idx === 0 && (
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-600">projeção</p>
-                      <p className="text-sm font-semibold tabular-nums text-slate-300">
+                      <p className="text-[10px] text-t4">projeção</p>
+                      <p className="text-sm font-semibold tabular-nums text-t2">
                         {fmtLeads(projAfter.attended)} leads
                       </p>
                     </div>
                   )}
                   {idx === 1 && (
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-600">projeção</p>
-                      <p className="text-sm font-semibold tabular-nums text-slate-300">
+                      <p className="text-[10px] text-t4">projeção</p>
+                      <p className="text-sm font-semibold tabular-nums text-t2">
                         {fmtLeads(projAfter.scheduled)} leads
                       </p>
                     </div>
                   )}
                   {idx === 2 && (
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-600">vendas projetadas</p>
+                      <p className="text-[10px] text-t4">vendas projetadas</p>
                       <p className="text-sm font-bold tabular-nums text-green-400">
                         {fmtLeads(projAfter.sale)}
                       </p>
@@ -412,20 +412,20 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
               <Trophy size={16} className="text-green-400 flex-shrink-0" />
               <div>
                 <p className="text-sm font-bold text-green-300">Vendas Projetadas</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-t3 mt-0.5">
                   {count.transferred} transferidos ao funil · {fmtLeads(proj.fromScheduled + proj.fromAttended + proj.fromCold)} projetadas da base fria
                 </p>
               </div>
             </div>
 
             <div className="text-right flex-shrink-0">
-              <p className="text-[10px] text-slate-500 mb-0.5">total projetado</p>
+              <p className="text-[10px] text-t3 mb-0.5">total projetado</p>
               <p className="text-xl font-bold tabular-nums text-green-400">{fmtLeads(totalSales)}</p>
             </div>
 
             {hasTicket && (
               <div className="text-right flex-shrink-0 pl-3 border-l border-green-500/20">
-                <p className="text-[10px] text-slate-500 mb-0.5">VGV esperado</p>
+                <p className="text-[10px] text-t3 mb-0.5">VGV esperado</p>
                 <p className="text-xl font-bold tabular-nums text-brand-text">{fmtCompact(totalVGV)}</p>
               </div>
             )}
@@ -436,7 +436,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         {/* Rodapé info */}
         <div className="px-5 py-3 border-t border-line flex items-center gap-2">
           <Sparkles size={11} className="text-indigo-500/60 flex-shrink-0" />
-          <p className="text-[11px] text-slate-600">
+          <p className="text-[11px] text-t4">
             Funil da campanha vai até "Agendou Apresentação". Após o agendamento, o lead é transferido para o funil principal e segue de lá. A taxa de fechamento representa a conversão combinada no funil principal.
             {hasCustomRates && <span className="text-brand/80"> Taxas personalizadas ativas.</span>}
           </p>

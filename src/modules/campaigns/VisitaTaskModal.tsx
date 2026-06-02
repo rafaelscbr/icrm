@@ -51,14 +51,14 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
             <Home size={16} className="text-cyan-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-200">{lead.name}</p>
-            <p className="text-xs text-slate-500">{formatPhone(lead.phone)} · Visita agendada</p>
+            <p className="text-sm font-semibold text-t1">{lead.name}</p>
+            <p className="text-xs text-t3">{formatPhone(lead.phone)} · Visita agendada</p>
           </div>
         </div>
 
         {/* Data */}
         <div>
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
             <Calendar size={11} className="inline mr-1.5" />
             Data da visita
           </label>
@@ -72,7 +72,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
 
         {/* Horário */}
         <div>
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
             <Clock size={11} className="inline mr-1.5" />
             Horário
           </label>
@@ -86,7 +86,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
 
         {/* Observações */}
         <div>
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
             Observações (opcional)
           </label>
           <textarea
@@ -94,7 +94,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
             onChange={e => setNotes(e.target.value)}
             rows={2}
             placeholder="Endereço, imóvel a visitar, ponto de encontro..."
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none"
           />
         </div>
 

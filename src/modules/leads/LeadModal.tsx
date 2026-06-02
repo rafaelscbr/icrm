@@ -26,8 +26,8 @@ const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 
 const STAGE_META: Record<LeadFunnelStage, {
   label: string; color: string; bg: string; border: string; activeBg: string;
 }> = {
-  lead:        { label: 'Lead',        color: 'text-slate-300',  bg: 'bg-slate-500/10',  border: 'border-slate-500/25',  activeBg: 'bg-slate-500/25'  },
-  followup:    { label: 'Followup',    color: 'text-blue-300',   bg: 'bg-blue-500/10',   border: 'border-blue-500/25',   activeBg: 'bg-blue-500/25'   },
+  lead:        { label: 'Lead',        color: 'text-t2',  bg: 'bg-slate-500/10',  border: 'border-slate-500/25',  activeBg: 'bg-slate-500/25'  },
+  followup:    { label: 'Followup',    color: 'text-blue-300',   bg: 'bg-s3/60',   border: 'border-blue-500/25',   activeBg: 'bg-blue-500/25'   },
   atendimento: { label: 'Atendimento', color: 'text-violet-300', bg: 'bg-violet-500/10', border: 'border-violet-500/25', activeBg: 'bg-violet-500/25' },
   visita:      { label: 'Visita',      color: 'text-amber-300',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25',  activeBg: 'bg-amber-500/25'  },
   proposta:    { label: 'Proposta',    color: 'text-orange-300', bg: 'bg-orange-500/10', border: 'border-orange-500/25', activeBg: 'bg-orange-500/25' },
@@ -118,7 +118,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   const property   = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact    = lead.contactId  ? getById(lead.contactId) : undefined
-  const originConf = ORIGIN_CONFIG[lead.origin] ?? { label: lead.origin, emoji: '📍', color: 'text-slate-400' }
+  const originConf = ORIGIN_CONFIG[lead.origin] ?? { label: lead.origin, emoji: '📍', color: 'text-t3' }
   const isDiscarded = !!lead.discardReason
   const isLinked    = !!lead.contactId
   const commission  = (lead.averageTicket ?? (property?.value)) ? ((lead.averageTicket ?? property?.value ?? 0) * 0.02) : 0
@@ -293,10 +293,10 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   ? 'bg-green-500/10 border-green-500/25'
                   : nextUrgent
                     ? 'bg-amber-500/10 border-amber-500/25'
-                    : 'bg-blue-500/8 border-blue-500/20'
+                    : 'bg-s3/50 border-blue-500/20'
                 }`}>
                 <div className={`w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5
-                  ${lead.funnelStage === 'venda' ? 'bg-green-500/20' : nextUrgent ? 'bg-amber-500/20' : 'bg-blue-500/15'}`}>
+                  ${lead.funnelStage === 'venda' ? 'bg-green-500/20' : nextUrgent ? 'bg-amber-500/20' : 'bg-s3/70'}`}>
                   {lead.funnelStage === 'venda'
                     ? <CheckCircle2 size={11} className="text-green-400" />
                     : <Zap size={11} className={nextUrgent ? 'text-amber-400' : 'text-blue-400'} />
@@ -307,7 +307,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     ${lead.funnelStage === 'venda' ? 'text-green-400' : nextUrgent ? 'text-amber-400' : 'text-blue-400'}`}>
                     {lead.funnelStage === 'venda' ? '✅ Venda realizada' : nextUrgent ? '⚠️ Ação urgente' : 'Próximo passo'}
                   </p>
-                  <p className="text-xs text-slate-200 mt-0.5 leading-relaxed">{nextMsg}</p>
+                  <p className="text-xs text-t1 mt-0.5 leading-relaxed">{nextMsg}</p>
                 </div>
               </div>
             )}
@@ -331,7 +331,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                       className={`flex-1 h-8 rounded-lg text-xs font-bold transition-all border
                         ${step <= lead.followupStep
                           ? 'bg-blue-500/30 border-blue-400/40 text-blue-300 hover:bg-blue-500/50'
-                          : 'bg-s3/50 border-line text-t4 hover:bg-blue-500/15 hover:border-blue-400/30 hover:text-blue-400'
+                          : 'bg-s3/50 border-line text-t4 hover:bg-s3/70 hover:border-blue-400/30 hover:text-blue-400'
                         }`}
                     >
                       {step}
@@ -520,7 +520,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <span className="text-xl flex-shrink-0">{r?.emoji ?? '🗑️'}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-0.5">Descartado</p>
-                    <p className="text-sm font-medium text-slate-300">{r?.label ?? lead.discardReason}</p>
+                    <p className="text-sm font-medium text-t2">{r?.label ?? lead.discardReason}</p>
                     {lead.discardedAt && <p className="text-[11px] text-t4 mt-0.5">{new Date(lead.discardedAt).toLocaleDateString('pt-BR')}</p>}
                   </div>
                 </div>
@@ -539,7 +539,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             <div className="flex-1" />
 
             {isDiscarded ? (
-              <button onClick={handleRestore} className="flex items-center gap-1.5 px-3 py-2 text-xs text-blue-300 hover:text-blue-200 bg-blue-500/10 hover:bg-blue-500/15 border border-blue-500/20 rounded-lg transition-all">
+              <button onClick={handleRestore} className="flex items-center gap-1.5 px-3 py-2 text-xs text-blue-300 hover:text-blue-200 bg-s3/60 hover:bg-s3/70 border border-blue-500/20 rounded-lg transition-all">
                 <RotateCcw size={12} /> Restaurar
               </button>
             ) : (

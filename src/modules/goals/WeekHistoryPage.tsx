@@ -60,7 +60,7 @@ function WeekCard({ snapshot }: { snapshot: WeekSnapshot }) {
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-slate-100">{range}</p>
-          <p className="text-xs text-slate-600 mt-0.5">{year}</p>
+          <p className="text-xs text-t4 mt-0.5">{year}</p>
         </div>
         <ScoreBadge score={snapshot.score} />
       </div>
@@ -77,11 +77,11 @@ function WeekCard({ snapshot }: { snapshot: WeekSnapshot }) {
             <div key={entry.goalId}>
               <div className="flex items-center gap-2 mb-1">
                 <Icon size={11} className={colors.text} />
-                <span className="text-xs text-slate-400 flex-1 truncate">{entry.goalName}</span>
-                <span className={`text-xs font-medium tabular-nums ${done ? 'text-green-400' : 'text-slate-400'}`}>
+                <span className="text-xs text-t3 flex-1 truncate">{entry.goalName}</span>
+                <span className={`text-xs font-medium tabular-nums ${done ? 'text-green-400' : 'text-t3'}`}>
                   {entry.achieved}/{entry.target}
                 </span>
-                <span className="text-xs text-slate-600 tabular-nums w-8 text-right">{pct}%</span>
+                <span className="text-xs text-t4 tabular-nums w-8 text-right">{pct}%</span>
               </div>
               <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
                 <div
@@ -125,7 +125,7 @@ export function WeekHistoryPage() {
       {/* Back link */}
       <Link
         to="/metas"
-        className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 mb-6 transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs text-t3 hover:text-t2 mb-6 transition-colors"
       >
         <ArrowLeft size={12} /> Voltar para Metas
       </Link>
@@ -142,18 +142,18 @@ export function WeekHistoryPage() {
           <div className="grid grid-cols-3 gap-3 mb-8">
             <Card className="text-center border border-line">
               <p className="text-2xl font-bold text-slate-100 tabular-nums">{avgScore}%</p>
-              <p className="text-xs text-slate-500 mt-1">Média geral</p>
+              <p className="text-xs text-t3 mt-1">Média geral</p>
             </Card>
             <Card className="text-center border border-line">
               <p className="text-2xl font-bold text-green-400 tabular-nums">{bestScore}%</p>
-              <p className="text-xs text-slate-500 mt-1">Melhor semana</p>
+              <p className="text-xs text-t3 mt-1">Melhor semana</p>
             </Card>
             <Card className="text-center border border-line">
               <div className="flex items-center justify-center gap-1">
                 <Trophy size={16} className="text-amber-400" />
                 <p className="text-2xl font-bold text-amber-400 tabular-nums">{perfect}</p>
               </div>
-              <p className="text-xs text-slate-500 mt-1">Semanas 100%</p>
+              <p className="text-xs text-t3 mt-1">Semanas 100%</p>
             </Card>
           </div>
 

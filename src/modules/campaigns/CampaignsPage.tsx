@@ -92,7 +92,7 @@ export function CampaignsPage() {
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all
               ${pageTab === t.value
                 ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-300'}`}
+                : 'text-t3 hover:text-t2'}`}
           >
             {t.icon} {t.label}
           </button>
@@ -117,7 +117,7 @@ export function CampaignsPage() {
             { label: 'Convertidos (venda)',value: totalSales,     color: 'text-green-400'   },
           ].map(s => (
             <Card key={s.label} className="!py-4">
-              <p className="text-xs text-slate-600 mb-1">{s.label}</p>
+              <p className="text-xs text-t4 mb-1">{s.label}</p>
               <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
             </Card>
           ))}
@@ -156,7 +156,7 @@ export function CampaignsPage() {
                       <Megaphone size={15} className="text-brand" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-200 truncate">{c.name}</p>
+                      <p className="text-sm font-semibold text-t1 truncate">{c.name}</p>
                       <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border} border`}>
                           {statusCfg.label}
@@ -171,23 +171,23 @@ export function CampaignsPage() {
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <button onClick={() => setStatus(c.id, c.status === 'active' ? 'paused' : 'active')}
-                      className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"
                       title={c.status === 'active' ? 'Pausar' : 'Reativar'}>
                       {c.status === 'active' ? <Pause size={13} /> : <Play size={13} />}
                     </button>
                     {isAdmin && (
                       <button onClick={() => { setTransferCampaign(c); setTransferBrokerId(c.brokerId ?? '') }}
-                        className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-violet-400 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-violet-400 transition-colors cursor-pointer"
                         title="Transferir campanha">
                         <ArrowLeftRight size={13} />
                       </button>
                     )}
                     <button onClick={() => setEditCampaign(c)}
-                      className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
+                      className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer">
                       <Pencil size={13} />
                     </button>
                     <button onClick={() => setDeleteCampaign(c)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer">
+                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer">
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -196,14 +196,14 @@ export function CampaignsPage() {
                 {/* Stats grid */}
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { icon: <Users size={11} />, label: 'Leads',        value: campaignLeads.length, color: 'text-slate-300'  },
+                    { icon: <Users size={11} />, label: 'Leads',        value: campaignLeads.length, color: 'text-t2'  },
                     { icon: <TrendingUp size={11} />, label: 'Acionados', value: `${contactRate}%`,   color: 'text-blue-400'   },
                     { icon: <CheckCheck size={11} />, label: 'Transferidos', value: transferred,       color: 'text-violet-400' },
                   ].map(s => (
                     <div key={s.label} className="flex flex-col items-center py-2 bg-s2/50 rounded-xl border border-line">
-                      <span className="text-slate-600 mb-1">{s.icon}</span>
+                      <span className="text-t4 mb-1">{s.icon}</span>
                       <span className={`text-sm font-bold tabular-nums ${s.color}`}>{s.value}</span>
-                      <span className="text-[10px] text-slate-600">{s.label}</span>
+                      <span className="text-[10px] text-t4">{s.label}</span>
                     </div>
                   ))}
                 </div>
@@ -212,8 +212,8 @@ export function CampaignsPage() {
                 {campaignLeads.length > 0 && (
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600">Avanço no funil</span>
-                      <span className="text-slate-500 tabular-nums">{inFunnel}/{campaignLeads.length}</span>
+                      <span className="text-t4">Avanço no funil</span>
+                      <span className="text-t3 tabular-nums">{inFunnel}/{campaignLeads.length}</span>
                     </div>
                     <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
                       <div
@@ -234,7 +234,7 @@ export function CampaignsPage() {
                   </button>
                   <button
                     onClick={() => { setSelectedId(c.id) }}
-                    className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-s3/50 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium text-t3 hover:text-t2 hover:bg-s3/50 transition-all cursor-pointer"
                   >
                     <BarChart3 size={12} />
                   </button>
@@ -242,8 +242,8 @@ export function CampaignsPage() {
 
                 {/* Date */}
                 <div className="flex items-center gap-1.5 -mt-2">
-                  <Calendar size={10} className="text-slate-700" />
-                  <span className="text-[10px] text-slate-700">
+                  <Calendar size={10} className="text-t5" />
+                  <span className="text-[10px] text-t5">
                     Criada em {new Date(c.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
@@ -259,8 +259,8 @@ export function CampaignsPage() {
       <CampaignForm isOpen={Boolean(editCampaign)} onClose={() => setEditCampaign(undefined)} campaign={editCampaign} />
 
       <Modal isOpen={Boolean(deleteCampaign)} onClose={() => setDeleteCampaign(undefined)} title="Excluir campanha" size="sm">
-        <p className="text-sm text-slate-400 mb-2">
-          Excluir <span className="text-slate-200 font-medium">"{deleteCampaign?.name}"</span>?
+        <p className="text-sm text-t3 mb-2">
+          Excluir <span className="text-t1 font-medium">"{deleteCampaign?.name}"</span>?
         </p>
         <p className="text-xs text-red-400/80 bg-red-500/8 border border-red-500/15 rounded-xl px-3 py-2 mb-6">
           Todos os leads desta campanha também serão removidos permanentemente.
@@ -272,8 +272,8 @@ export function CampaignsPage() {
       </Modal>
 
       <Modal isOpen={Boolean(transferCampaign)} onClose={() => setTransferCampaign(undefined)} title="Transferir campanha" size="sm">
-        <p className="text-sm text-slate-400 mb-4">
-          Defina o responsável por <span className="text-slate-200 font-medium">"{transferCampaign?.name}"</span>:
+        <p className="text-sm text-t3 mb-4">
+          Defina o responsável por <span className="text-t1 font-medium">"{transferCampaign?.name}"</span>:
         </p>
         <div className="flex flex-col gap-1.5 mb-6">
           <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Responsável</label>

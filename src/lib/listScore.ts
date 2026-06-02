@@ -30,6 +30,16 @@ function scoreToLabel(score: number): ListScoreResult['label'] {
   return 'Fria'
 }
 
+/**
+ * Nova fórmula — híbrida: bônus por existência + taxa de conversão.
+ *
+ * Calibrada para listas de 30–5000 leads (tamanho real do sistema):
+ *   • 1 venda → Morna (35 pts) independente do tamanho da lista
+ *   • 2-4 vendas → Quente (46+)
+ *   • 5+ vendas → caminho a Premium
+ *
+ * Qualquer % de percentual é bônus adicional por cima do piso.
+ */
 function computeListScore(data: {
   total:       number
   clients:     number
@@ -37,16 +47,35 @@ function computeListScore(data: {
   interested:  number
 }): number {
   if (data.total === 0) return 0
-  const pct = (n: number) => n / data.total
 
-  // C1: clientes (5% = 100 pts) — peso 40%
-  const c1 = Math.min(100, pct(data.clients) * 2000)
-  // C2: transferidos ao funil (15% = 100 pts) — peso 35%
-  const c2 = Math.min(100, pct(data.transferred) * 667)
-  // C3: interessados em campanha (20% = 100 pts) — peso 25%
-  const c3 = Math.min(100, pct(data.interested) * 500)
+  let score = 0
 
-  return Math.round(c1 * 0.40 + c2 * 0.35 + c3 * 0.25)
+  // ── Clientes (vendas registradas) ── peso principal ──────────────────────
+  // Piso por tier: garante que qualquer venda seja visível na UI
+  if      (data.clients >= 10) score += 70
+  else if (data.clients >=  5) score += 58
+  else if (data.clients >=  2) score += 46
+  else if (data.clients >=  1) score += 35  // 1 venda → Morna garantida
+
+  // Bônus percentual adicional (máximo 15 pts extras)
+  const clientRate = data.clients / data.total
+  score += Math.min(15, Math.round(clientRate * 300))
+
+  // ── Transferidos ao funil principal ──────────────────────────────────────
+  if (data.transferred > 0) {
+    score += 12  // bônus por existência
+    const pct = data.transferred / data.total
+    score += Math.min(13, Math.round(pct * 87))  // 15% = 13 pts extras
+  }
+
+  // ── Interessados em campanha ──────────────────────────────────────────────
+  if (data.interested > 0) {
+    score += 5   // bônus por existência
+    const pct = data.interested / data.total
+    score += Math.min(8, Math.round(pct * 40))   // 20% = 8 pts extras
+  }
+
+  return Math.min(100, score)
 }
 
 function buildResult(

@@ -192,7 +192,7 @@ export function DeleteListModal({ list, isOpen, onClose, onConfirm }: Props) {
 
             {/* Protegidos por outra lista */}
             {preview.keptInOtherLists > 0 && (
-              <div className="flex items-center gap-2.5 px-3 py-2.5 bg-blue-500/8 border border-blue-500/20 rounded-xl">
+              <div className="flex items-center gap-2.5 px-3 py-2.5 bg-s3/50 border border-blue-500/20 rounded-xl">
                 <Database size={13} className="text-blue-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-t3">

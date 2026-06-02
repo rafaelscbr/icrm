@@ -128,7 +128,7 @@ export function LeadListsPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-xl transition-all ${
                 sortByScore
                   ? 'bg-violet-500/15 border-violet-500/30 text-violet-400'
-                  : 'bg-s2/50 border-line text-slate-500 hover:text-violet-400 hover:border-violet-500/25 hover:bg-violet-500/8'
+                  : 'bg-s2/50 border-line text-t3 hover:text-violet-400 hover:border-violet-500/25 hover:bg-violet-500/8'
               }`}
               title="Ordenar por score de qualidade"
             >
@@ -137,7 +137,7 @@ export function LeadListsPage() {
           )}
           <button
             onClick={openCleanup}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-amber-400 bg-s2/50 hover:bg-amber-500/8 border border-line hover:border-amber-500/25 rounded-xl transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-t3 hover:text-amber-400 bg-s2/50 hover:bg-amber-500/8 border border-line hover:border-amber-500/25 rounded-xl transition-all"
             title="Limpar contatos órfãos de listas excluídas"
           >
             <Sparkles size={12} /> Limpar órfãos
@@ -154,7 +154,7 @@ export function LeadListsPage() {
             { label: 'Maior lista',       value: biggestList ? `${biggestList.totalCount.toLocaleString()} leads` : '—', color: 'text-cyan-400' },
           ].map(s => (
             <Card key={s.label} className="!py-4">
-              <p className="text-xs text-slate-500 mb-1">{s.label}</p>
+              <p className="text-xs text-t3 mb-1">{s.label}</p>
               <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
             </Card>
           ))}
@@ -171,11 +171,11 @@ export function LeadListsPage() {
             key={t.value}
             onClick={() => setTab(t.value)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all
-              ${tab === t.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              ${tab === t.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-t3 hover:text-t2'}`}
           >
             {t.icon} {t.label}
             {t.value === 'active' && lists.filter(l => l.status === 'active').length > 0 && (
-              <span className="ml-1 bg-white/20 rounded-full px-1.5 text-[10px] font-bold">
+              <span className="ml-1 bg-[#0B0F1C]/25 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none">
                 {lists.filter(l => l.status === 'active').length}
               </span>
             )}
@@ -200,25 +200,44 @@ export function LeadListsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {visible.map(list => {
-            const profile   = list.productProfile
-            const listScore = listScores.get(list.id)
+            const profile    = list.productProfile
+            const listScore  = listScores.get(list.id)
+            const hasClients = (listScore?.clients ?? 0) > 0
             return (
-              <Card key={list.id} className="group flex flex-col gap-4 hover:border-brand/25 transition-all duration-200 border border-line">
+              <Card
+                key={list.id}
+                className={`group flex flex-col gap-4 transition-all duration-200 border
+                  ${hasClients
+                    ? 'border-brand/40 hover:border-brand/70 ring-1 ring-brand/15'
+                    : 'border-line hover:border-brand/25'
+                  }`}
+              >
+                {/* Barra de destaque — listas com vendas */}
+                {hasClients && (
+                  <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl bg-gradient-to-r from-brand/60 via-brand to-brand/60" />
+                )}
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Database size={15} className="text-blue-400" />
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${hasClients ? 'bg-brand/15' : 'bg-s3/60'}`}>
+                      <Database size={15} className={hasClients ? 'text-brand' : 'text-t3'} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-200 truncate">{list.name}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-t1 truncate">{list.name}</p>
+                        {hasClients && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand bg-brand/10 border border-brand/25 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                            🏆 {listScore!.clients} venda{listScore!.clients > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
                       {profile?.region || profile?.type ? (
-                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                        <p className="text-[10px] text-t3 truncate mt-0.5">
                           {[profile.type, profile.region, profile.bedrooms ? `${profile.bedrooms}q` : null]
                             .filter(Boolean).join(' · ')}
                         </p>
                       ) : (
-                        <p className="text-[10px] text-slate-600 mt-0.5">Sem perfil definido</p>
+                        <p className="text-[10px] text-t4 mt-0.5">Sem perfil definido</p>
                       )}
                       {isAdmin && list.brokerId && (
                         <p className="text-[9px] text-violet-400/70 mt-0.5">
@@ -230,16 +249,16 @@ export function LeadListsPage() {
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     {list.status === 'active' && (
                       <button onClick={() => archive(list.id)} title="Arquivar"
-                        className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
+                        className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer">
                         <Archive size={13} />
                       </button>
                     )}
                     <button onClick={() => setEditList(list)}
-                      className="p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
+                      className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer">
                       <Pencil size={13} />
                     </button>
                     <button onClick={() => setDeleteList(list)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer">
+                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer">
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -248,16 +267,16 @@ export function LeadListsPage() {
                 {/* Contagem + score */}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
-                    <Users size={11} className="text-slate-600 mb-1" />
-                    <span className="text-sm font-bold tabular-nums text-blue-400">{list.totalCount.toLocaleString()}</span>
-                    <span className="text-[10px] text-slate-600">Leads</span>
+                    <Users size={11} className="text-t4 mb-1" />
+                    <span className="text-sm font-bold tabular-nums text-t1">{list.totalCount.toLocaleString()}</span>
+                    <span className="text-[10px] text-t4">Leads</span>
                   </div>
                   <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
-                    <TrendingUp size={11} className="text-slate-600 mb-1" />
-                    <span className="text-sm font-bold tabular-nums text-slate-400">
+                    <TrendingUp size={11} className="text-t4 mb-1" />
+                    <span className="text-sm font-bold tabular-nums text-t3">
                       {profile?.valueMin ? `R$ ${(profile.valueMin / 1000).toFixed(0)}k` : '—'}
                     </span>
-                    <span className="text-[10px] text-slate-600">Ticket mín</span>
+                    <span className="text-[10px] text-t4">Ticket mín</span>
                   </div>
                   {listScore ? (
                     <div className={`flex flex-col items-center py-2 rounded-xl border ${listScore.bg} ${listScore.border}`}>
@@ -268,13 +287,13 @@ export function LeadListsPage() {
                   ) : (
                     <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
                       <div className="w-3 h-3 border border-slate-600 border-t-transparent rounded-full animate-spin mb-1" />
-                      <span className="text-[10px] text-slate-700">score</span>
+                      <span className="text-[10px] text-t5">score</span>
                     </div>
                   )}
                 </div>
 
                 {list.description && (
-                  <p className="text-xs text-slate-500 line-clamp-2">{list.description}</p>
+                  <p className="text-xs text-t3 line-clamp-2">{list.description}</p>
                 )}
 
                 {/* CTA */}
@@ -287,7 +306,7 @@ export function LeadListsPage() {
                   </button>
                   <button
                     onClick={() => setEditList(list)}
-                    className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-s3/50 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium text-t3 hover:text-t2 hover:bg-s3/50 transition-all cursor-pointer"
                     title="Editar lista"
                   >
                     <BarChart3 size={12} />
@@ -296,8 +315,8 @@ export function LeadListsPage() {
 
                 {/* Data */}
                 <div className="flex items-center gap-1.5 -mt-2">
-                  <Calendar size={10} className="text-slate-700" />
-                  <span className="text-[10px] text-slate-700">
+                  <Calendar size={10} className="text-t5" />
+                  <span className="text-[10px] text-t5">
                     Criada em {new Date(list.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>

@@ -167,7 +167,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
     <div className="space-y-4">
       {/* Perfil form */}
       <div className="bg-s2/50 border border-line rounded-xl p-3 space-y-3">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Perfil de Busca</p>
+        <p className="text-xs font-semibold text-t3 uppercase tracking-wider">Perfil de Busca</p>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
@@ -256,30 +256,30 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
 
       {/* Results */}
       <div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Imóveis compatíveis</p>
+        <p className="text-xs font-semibold text-t3 uppercase tracking-wider mb-2">Imóveis compatíveis</p>
 
         {!hasCriteria ? (
           <div className="bg-s2/50 border border-line rounded-xl p-4 text-center">
-            <p className="text-sm text-slate-500">Preencha o perfil acima para ver sugestões</p>
+            <p className="text-sm text-t3">Preencha o perfil acima para ver sugestões</p>
           </div>
         ) : scored.length === 0 ? (
           <div className="bg-s2/50 border border-line rounded-xl p-4 text-center">
-            <p className="text-sm text-slate-500">Nenhum imóvel compatível na base</p>
+            <p className="text-sm text-t3">Nenhum imóvel compatível na base</p>
           </div>
         ) : (
           <div className="space-y-2">
             {scored.map(({ p, score }) => (
               <div key={p.id} className="bg-s2/50 border border-line rounded-xl p-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-200 truncate">{p.name}</p>
-                  <p className="text-xs text-slate-500 truncate">{p.neighborhood} · {TYPE_LABELS[p.type] ?? p.type}</p>
+                  <p className="text-sm font-medium text-t1 truncate">{p.name}</p>
+                  <p className="text-xs text-t3 truncate">{p.neighborhood} · {TYPE_LABELS[p.type] ?? p.type}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span className="text-sm font-semibold text-violet-400">{formatCurrencyFull(p.value)}</span>
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                     score >= 5 ? 'bg-green-500/20 text-green-300' :
                     score >= 3 ? 'bg-blue-500/20 text-blue-300' :
-                    'bg-s3/70 text-slate-400'
+                    'bg-s3/70 text-t3'
                   }`}>
                     {score}/6 critérios
                   </span>

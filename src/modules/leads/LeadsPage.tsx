@@ -20,7 +20,7 @@ import { LeadsPerformance } from './LeadsPerformance'
 
 const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string; border: string }> = {
   felicita: { label: 'Felicità', emoji: '✨', color: 'text-rose-400',   bg: 'bg-rose-500/15',   border: 'border-rose-500/25'   },
-  meta_ads: { label: 'Meta ADS', emoji: '📱', color: 'text-blue-400',   bg: 'bg-blue-500/15',   border: 'border-blue-500/25'   },
+  meta_ads: { label: 'Meta ADS', emoji: '📱', color: 'text-blue-400',   bg: 'bg-s3/70',   border: 'border-blue-500/25'   },
   portal:   { label: 'Portal',   emoji: '🌐', color: 'text-cyan-400',   bg: 'bg-cyan-500/15',   border: 'border-cyan-500/25'   },
   offline:  { label: 'Offline',  emoji: '🤝', color: 'text-amber-400',  bg: 'bg-amber-500/15',  border: 'border-amber-500/25'  },
   campanha: { label: 'Campanha', emoji: '📣', color: 'text-violet-400', bg: 'bg-violet-500/15', border: 'border-violet-500/25' },
@@ -58,7 +58,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       `}
     >
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
-        ${isDiscarded ? 'bg-slate-500/20 text-slate-500' : 'bg-brand/20 text-brand'}`}>
+        ${isDiscarded ? 'bg-slate-500/20 text-t3' : 'bg-brand/20 text-brand'}`}>
         {displayName.charAt(0).toUpperCase()}
       </div>
 

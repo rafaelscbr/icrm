@@ -42,7 +42,7 @@ const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string; bg:
 ]
 
 const inputBase =
-  'w-full bg-s3/50 border border-line hover:border-line-strong rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-150'
+  'w-full bg-s3/50 border border-line hover:border-line-strong rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-150'
 
 function todayStr()    { return localDateStr() }
 function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return localDateStr(d) }
@@ -219,7 +219,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             onChange={e => { setTitle(e.target.value); if (e.target.value.trim()) setTitleError('') }}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleNext() } }}
             placeholder="O que precisa ser feito?"
-            className="w-full bg-transparent px-4 py-4 text-lg font-medium text-slate-100 placeholder:text-slate-600 focus:outline-none"
+            className="w-full bg-transparent px-4 py-4 text-lg font-medium text-slate-100 placeholder:text-t4 focus:outline-none"
           />
         </div>
         {titleError && <p className="text-xs text-red-400 px-1">{titleError}</p>}
@@ -227,7 +227,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
 
       {/* Categoria — pills */}
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Categoria</p>
+        <p className="text-xs font-semibold text-t3 uppercase tracking-wider">Categoria</p>
         <div className="flex flex-wrap gap-2">
           {CATEGORY_OPTIONS.map(opt => (
             <button
@@ -237,7 +237,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer border
                 ${category === opt.value
                   ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-200'
-                  : 'bg-s3/40 border-line text-slate-400 hover:border-line-strong hover:text-slate-200'
+                  : 'bg-s3/40 border-line text-t3 hover:border-line-strong hover:text-t1'
                 }`}
             >
               <span>{opt.icon}</span>
@@ -252,7 +252,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
         <button
           type="button"
           onClick={() => { setShowDesc(true); setTimeout(() => document.getElementById('task-desc')?.focus(), 50) }}
-          className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer self-start"
+          className="flex items-center gap-2 text-xs text-t4 hover:text-t3 transition-colors cursor-pointer self-start"
         >
           <FileText size={13} />
           <span>Adicionar descrição</span>
@@ -265,13 +265,13 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             onChange={e => setDescription(e.target.value)}
             placeholder="Detalhes adicionais..."
             rows={2}
-            className="w-full bg-s3/40 border border-line hover:border-line-strong rounded-xl px-4 py-3 text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all resize-none"
+            className="w-full bg-s3/40 border border-line hover:border-line-strong rounded-xl px-4 py-3 text-sm text-t2 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all resize-none"
           />
           {!description && (
             <button
               type="button"
               onClick={() => setShowDesc(false)}
-              className="absolute top-2 right-2 text-slate-700 hover:text-slate-500 transition-colors cursor-pointer"
+              className="absolute top-2 right-2 text-t5 hover:text-t3 transition-colors cursor-pointer"
             >
               <X size={12} />
             </button>
@@ -284,7 +284,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
     <div key="step1" className="flex flex-col gap-5">
       {/* Data — shortcuts */}
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+        <p className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
           <Calendar size={12} /> Data
         </p>
         <div className="flex gap-2 flex-wrap">
@@ -296,7 +296,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all cursor-pointer
                 ${dueDate === s.value && !showCustomDate
                   ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-200'
-                  : 'bg-s3/40 border-line text-slate-400 hover:border-line-strong hover:text-slate-200'
+                  : 'bg-s3/40 border-line text-t3 hover:border-line-strong hover:text-t1'
                 }`}
             >
               {s.label}
@@ -311,7 +311,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all cursor-pointer flex items-center gap-1.5
               ${showCustomDate
                 ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-200'
-                : 'bg-s3/40 border-line text-slate-400 hover:border-line-strong hover:text-slate-200'
+                : 'bg-s3/40 border-line text-t3 hover:border-line-strong hover:text-t1'
               }`}
           >
             <Calendar size={13} />
@@ -331,8 +331,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
 
       {/* Horário */}
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-          <Clock size={12} /> Horário <span className="text-slate-700 normal-case font-normal tracking-normal">(opcional)</span>
+        <p className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+          <Clock size={12} /> Horário <span className="text-t5 normal-case font-normal tracking-normal">(opcional)</span>
         </p>
         <input
           type="time"
@@ -344,7 +344,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
 
       {/* Prioridade — cards */}
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+        <p className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
           <Flag size={12} /> Prioridade
         </p>
         <div className="grid grid-cols-3 gap-2">
@@ -356,7 +356,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               className={`flex flex-col items-center gap-2 px-3 py-3 rounded-xl border-2 transition-all cursor-pointer
                 ${priority === opt.value
                   ? `${opt.bg} ${opt.border} ${opt.color}`
-                  : 'bg-s3/30 border-line text-slate-500 hover:border-line-strong hover:text-slate-300'
+                  : 'bg-s3/30 border-line text-t3 hover:border-line-strong hover:text-t2'
                 }`}
             >
               <div className={`w-2.5 h-2.5 rounded-full transition-colors ${priority === opt.value ? opt.dot : 'bg-slate-700'}`} />
@@ -382,14 +382,14 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
           <Calendar size={14} className="text-brand" />
         </div>
         <div className="flex-1 text-left">
-          <p className="text-xs font-medium text-slate-300 group-hover:text-brand-text transition-colors">
+          <p className="text-xs font-medium text-t2 group-hover:text-brand-text transition-colors">
             Adicionar ao Google Agenda
           </p>
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-t4">
             {dueDate ? `${fmtDate(dueDate)}${dueTime ? ` às ${dueTime}` : ''}` : '—'}
           </p>
         </div>
-        <ExternalLink size={13} className="text-slate-600 group-hover:text-brand transition-colors" />
+        <ExternalLink size={13} className="text-t4 group-hover:text-brand transition-colors" />
       </a>
     </div>,
 
@@ -397,8 +397,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
     <div key="step2" className="flex flex-col gap-5">
       {/* Vincular lead */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-          <User size={12} /> Lead vinculado <span className="font-normal normal-case tracking-normal text-slate-700">(opcional)</span>
+        <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+          <User size={12} /> Lead vinculado <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
         </label>
         <div className="relative">
           <input
@@ -411,7 +411,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
           />
           {contactId && (
             <button type="button" onClick={() => { setContactId(''); setContactSearch('') }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-red-400 transition-colors cursor-pointer">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-t4 hover:text-red-400 transition-colors cursor-pointer">
               <X size={14} />
             </button>
           )}
@@ -420,13 +420,13 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               {filteredContacts.map(c => (
                 <button key={c.id} type="button"
                   onMouseDown={() => { setContactId(c.id); setContactSearch(c.name); setShowContactDrop(false) }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer flex items-center gap-2"
                 >
                   <div className="w-6 h-6 bg-brand-tint rounded-full flex items-center justify-center text-[10px] font-bold text-brand-text flex-shrink-0">
                     {c.name[0].toUpperCase()}
                   </div>
                   <span>{c.name}</span>
-                  {c.company && <span className="text-slate-600 text-xs ml-auto">{c.company}</span>}
+                  {c.company && <span className="text-t4 text-xs ml-auto">{c.company}</span>}
                 </button>
               ))}
               <button type="button"
@@ -442,8 +442,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
 
       {/* Vincular imóvel */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-          <Building2 size={12} /> Imóvel vinculado <span className="font-normal normal-case tracking-normal text-slate-700">(opcional)</span>
+        <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+          <Building2 size={12} /> Imóvel vinculado <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
         </label>
         <div className="relative">
           <input
@@ -456,7 +456,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
           />
           {propertyId && (
             <button type="button" onClick={() => { setPropertyId(''); setPropertySearch('') }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-red-400 transition-colors cursor-pointer">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-t4 hover:text-red-400 transition-colors cursor-pointer">
               <X size={14} />
             </button>
           )}
@@ -465,10 +465,10 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               {filteredProperties.map(p => (
                 <button key={p.id} type="button"
                   onMouseDown={() => { setPropertyId(p.id); setPropertySearch(p.name); setShowPropertyDrop(false) }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer"
+                  className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
                 >
                   {p.name}
-                  {p.neighborhood && <span className="text-slate-600 ml-2 text-xs">{p.neighborhood}</span>}
+                  {p.neighborhood && <span className="text-t4 ml-2 text-xs">{p.neighborhood}</span>}
                 </button>
               ))}
             </div>
@@ -479,17 +479,17 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
       {/* Delegação */}
       {assignableProfiles.length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
             <UserCheck size={12} className={assignedToId ? 'text-violet-400' : ''} />
             {isAdmin ? 'Atribuir para corretor' : 'Delegar para admin'}
-            <span className="font-normal normal-case tracking-normal text-slate-700">(opcional)</span>
+            <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
           </label>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setAssignedToId('')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
                 ${!assignedToId
-                  ? 'bg-s3/70 border-line-strong text-slate-200'
-                  : 'border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
+                  ? 'bg-s3/70 border-line-strong text-t1'
+                  : 'border-line text-t3 hover:text-t2 hover:border-line-strong'
                 }`}
             >
               {isAdmin ? 'Minha tarefa' : 'Não delegar'}
@@ -499,7 +499,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
                   ${assignedToId === p.id
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                    : 'border-line text-slate-400 hover:text-slate-200 hover:border-line-strong'
+                    : 'border-line text-t3 hover:text-t1 hover:border-line-strong'
                   }`}
               >
                 <div className="w-4 h-4 rounded-full bg-violet-500/30 flex items-center justify-center text-[9px] font-bold text-violet-300 flex-shrink-0">
@@ -517,7 +517,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
         <button type="button"
           onClick={() => { setShowChecklist(v => !v); if (!showChecklist) setTimeout(() => newItemRef.current?.focus(), 50) }}
           className={`flex items-center gap-2 text-xs font-medium transition-colors cursor-pointer mb-3
-            ${showChecklist ? 'text-brand' : 'text-slate-500 hover:text-slate-300'}`}
+            ${showChecklist ? 'text-brand' : 'text-t3 hover:text-t2'}`}
         >
           <ListChecks size={14} />
           {showChecklist ? 'Checklist' : 'Adicionar checklist'}
@@ -539,7 +539,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                     <div className={`h-full rounded-full transition-all duration-300 ${pct === 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
                       style={{ width: `${pct}%` }} />
                   </div>
-                  <span className={`text-[11px] font-bold tabular-nums flex-shrink-0 ${pct === 100 ? 'text-green-400' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] font-bold tabular-nums flex-shrink-0 ${pct === 100 ? 'text-green-400' : 'text-t3'}`}>
                     {done}/{checklist.length}
                   </span>
                 </div>
@@ -555,12 +555,12 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                 >
                   {item.done && <CheckCircle2 size={10} className="text-white" />}
                 </button>
-                <span className={`flex-1 text-sm transition-colors ${item.done ? 'line-through text-slate-600' : 'text-slate-300'}`}>
+                <span className={`flex-1 text-sm transition-colors ${item.done ? 'line-through text-t4' : 'text-t2'}`}>
                   {item.text}
                 </span>
                 <button type="button"
                   onClick={() => setChecklist(cl => cl.filter(i => i.id !== item.id))}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-700 hover:text-red-400 transition-all cursor-pointer"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-t5 hover:text-red-400 transition-all cursor-pointer"
                 >
                   <X size={11} />
                 </button>
@@ -583,7 +583,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                   }
                 }}
                 placeholder="Adicionar item..."
-                className="flex-1 bg-transparent text-sm text-slate-300 placeholder:text-slate-700 focus:outline-none focus:placeholder:text-slate-600 transition-colors"
+                className="flex-1 bg-transparent text-sm text-t2 placeholder:text-t5 focus:outline-none focus:placeholder:text-t4 transition-colors"
               />
               <button type="button"
                 onClick={() => {
@@ -612,13 +612,13 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
           >
             {markDone && <CheckCircle2 size={12} className="text-white" />}
           </button>
-          <span className={`text-sm font-medium transition-colors ${markDone ? 'text-green-300' : 'text-slate-400'}`}>
+          <span className={`text-sm font-medium transition-colors ${markDone ? 'text-green-300' : 'text-t3'}`}>
             Marcar como concluída
           </span>
         </div>
         {markDone && (
           <div className="flex items-center gap-3 pl-8">
-            <label className="text-xs text-slate-500 whitespace-nowrap">Data de conclusão</label>
+            <label className="text-xs text-t3 whitespace-nowrap">Data de conclusão</label>
             <input
               type="date"
               value={completedDate}
@@ -643,14 +643,14 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
       {/* Voltar / Cancelar */}
       {step > 0 ? (
         <button type="button" onClick={handleBack}
-          className="flex items-center justify-center gap-1 px-3 min-h-[48px] rounded-xl text-sm text-slate-500 hover:text-slate-300 border border-line hover:border-line-strong transition-all cursor-pointer"
+          className="flex items-center justify-center gap-1 px-3 min-h-[48px] rounded-xl text-sm text-t3 hover:text-t2 border border-line hover:border-line-strong transition-all cursor-pointer"
         >
           <ChevronLeft size={15} />
           <span className="hidden sm:inline">Voltar</span>
         </button>
       ) : (
         <button type="button" onClick={onClose}
-          className="flex items-center justify-center gap-1 px-3 min-h-[48px] rounded-xl text-sm text-slate-500 hover:text-slate-300 border border-line hover:border-line-strong transition-all cursor-pointer"
+          className="flex items-center justify-center gap-1 px-3 min-h-[48px] rounded-xl text-sm text-t3 hover:text-t2 border border-line hover:border-line-strong transition-all cursor-pointer"
         >
           <span>Cancelar</span>
         </button>
@@ -661,7 +661,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
       {/* Criar rápido — só no step 1 */}
       {step === 1 && (
         <button type="button" onClick={handleSubmit}
-          className="flex items-center gap-1.5 px-3 min-h-[48px] rounded-xl text-sm text-slate-400 hover:text-slate-200 border border-line hover:border-line-strong transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-3 min-h-[48px] rounded-xl text-sm text-t3 hover:text-t1 border border-line hover:border-line-strong transition-all cursor-pointer"
         >
           <Zap size={14} />
           <span className="hidden sm:inline">Criar rápido</span>
@@ -708,12 +708,12 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                 <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold transition-all
                   ${i < step  ? 'bg-indigo-500 text-white'
                   : i === step ? 'bg-indigo-500 text-white ring-2 ring-indigo-500/30 ring-offset-1 ring-offset-surface'
-                  : 'bg-s3/50 text-slate-600'}`}
+                  : 'bg-s3/50 text-t4'}`}
                 >
                   {i < step ? '✓' : i + 1}
                 </div>
                 <span className={`text-xs font-medium transition-colors hidden sm:block
-                  ${i === step ? 'text-slate-200' : i < step ? 'text-indigo-400' : 'text-slate-600'}`}>
+                  ${i === step ? 'text-t1' : i < step ? 'text-indigo-400' : 'text-t4'}`}>
                   {label}
                 </span>
                 {i < STEP_LABELS.length - 1 && (

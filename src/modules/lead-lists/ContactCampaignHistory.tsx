@@ -36,7 +36,7 @@ const KIND_CONFIG: Record<EventKind, {
   bg:     string
   border: string
 }> = {
-  list:     { icon: Database,    color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20'   },
+  list:     { icon: Database,    color: 'text-blue-400',   bg: 'bg-s3/60',   border: 'border-blue-500/20'   },
   campaign: { icon: Megaphone,   color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
   dispatch: { icon: MessageSquare,color:'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
   funnel:   { icon: TrendingUp,  color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },

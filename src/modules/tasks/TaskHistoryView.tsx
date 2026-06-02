@@ -24,9 +24,9 @@ const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; 
   busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  bar: '#a78bfa', label: 'Busca de Imóvel'       },
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', bar: '#34d399', label: 'Prospecção de Imóveis' },
   campanhas:          { icon: Zap,        color: 'text-pink-400',    bar: '#f472b6', label: 'Campanhas'             },
-  administrativo:     { icon: FileText,   color: 'text-slate-300',   bar: '#94a3b8', label: 'Administrativo'        },
+  administrativo:     { icon: FileText,   color: 'text-t2',   bar: '#94a3b8', label: 'Administrativo'        },
   souza_financeiro:   { icon: Zap,        color: 'text-green-400',   bar: '#4ade80', label: 'Souza Financeiro'      },
-  outro:              { icon: Zap,        color: 'text-slate-400',   bar: '#64748b', label: 'Outro'                 },
+  outro:              { icon: Zap,        color: 'text-t3',   bar: '#64748b', label: 'Outro'                 },
 }
 const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'souza_financeiro', 'outro']
 
@@ -52,7 +52,7 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-page border border-line rounded-xl px-3 py-2 shadow-xl">
-      <p className="text-xs text-slate-400 mb-1">{label}</p>
+      <p className="text-xs text-t3 mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.name} className="text-xs font-semibold" style={{ color: p.fill }}>
           {p.name === 'done' ? 'Concluídas' : 'Pendentes'}: {p.value}
@@ -80,19 +80,19 @@ function TaskDayRow({ task, isLast }: { task: Task; isLast: boolean }) {
     `}>
       {isDone
         ? <CheckCircle2 size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
-        : <Circle       size={16} className="text-slate-600 mt-0.5 flex-shrink-0" />
+        : <Circle       size={16} className="text-t4 mt-0.5 flex-shrink-0" />
       }
 
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}>
+        <p className={`text-sm font-medium ${isDone ? 'line-through text-t3' : 'text-slate-100'}`}>
           {task.title}
         </p>
         {task.description && (
-          <p className="text-xs text-slate-600 truncate mt-0.5">{task.description}</p>
+          <p className="text-xs text-t4 truncate mt-0.5">{task.description}</p>
         )}
         <div className="flex items-center gap-3 flex-wrap mt-1">
           {task.dueTime && (
-            <span className="flex items-center gap-1 text-xs text-slate-600">
+            <span className="flex items-center gap-1 text-xs text-t4">
               <Clock size={10} /> {task.dueTime}
             </span>
           )}
@@ -190,7 +190,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setSelectedDate(d => offsetDay(d, -1))}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-t3 hover:text-t1 transition-colors cursor-pointer"
           >
             <ChevronLeft size={16} />
           </button>
@@ -208,7 +208,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
           <button
             onClick={() => setSelectedDate(d => offsetDay(d, 1))}
             disabled={isToday}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-t3 hover:text-t1 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight size={16} />
           </button>
@@ -230,10 +230,10 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                     : 'hover:bg-s3/50 border border-transparent'
                   }`}
               >
-                <span className="text-[10px] text-slate-600 uppercase">
+                <span className="text-[10px] text-t4 uppercase">
                   {dt.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3)}
                 </span>
-                <span className={`text-sm font-bold ${sel ? 'text-brand-text' : 'text-slate-300'}`}>
+                <span className={`text-sm font-bold ${sel ? 'text-brand-text' : 'text-t2'}`}>
                   {pad(dt.getDate())}
                 </span>
                 {count > 0 ? (
@@ -244,7 +244,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="text-[9px] text-slate-600">{done}/{count}</span>
+                    <span className="text-[9px] text-t4">{done}/{count}</span>
                   </div>
                 ) : (
                   <div className="w-1.5 h-1.5 rounded-full bg-s3/70" />
@@ -260,17 +260,17 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
         <>
           <div className="grid grid-cols-3 gap-3">
             <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-s2/50 border border-line">
-              <p className="text-xs text-slate-600">Total</p>
+              <p className="text-xs text-t4">Total</p>
               <p className="text-2xl font-bold text-slate-100 tabular-nums">{total}</p>
-              <p className="text-[11px] text-slate-600">tarefas no dia</p>
+              <p className="text-[11px] text-t4">tarefas no dia</p>
             </div>
             <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-green-500/8 border border-green-500/20">
-              <p className="text-xs text-slate-600">Concluídas</p>
+              <p className="text-xs text-t4">Concluídas</p>
               <p className="text-2xl font-bold text-green-400 tabular-nums">{doneTasks.length}</p>
-              <p className="text-[11px] text-slate-600">de {total}</p>
+              <p className="text-[11px] text-t4">de {total}</p>
             </div>
             <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-indigo-500/8 border border-brand/25">
-              <p className="text-xs text-slate-600">Conclusão</p>
+              <p className="text-xs text-t4">Conclusão</p>
               <p className="text-2xl font-bold text-brand tabular-nums">{pct}%</p>
               <div className="w-full h-1.5 bg-s3/70 rounded-full mt-1">
                 <div
@@ -284,7 +284,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
           {/* ── Gráfico por categoria ──────────────────────────────── */}
           {chartData.length > 0 && (
             <Card>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
+              <p className="text-xs font-semibold text-t3 uppercase tracking-wider mb-4">
                 Tarefas por categoria — {isToday ? 'Hoje' : fmtLabel(selectedDate)}
               </p>
               <ResponsiveContainer width="100%" height={180}>
@@ -306,10 +306,10 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                 </BarChart>
               </ResponsiveContainer>
               <div className="flex items-center gap-4 mt-2 justify-center">
-                <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                <span className="flex items-center gap-1.5 text-xs text-t3">
                   <span className="w-2.5 h-2.5 rounded-sm bg-indigo-400" /> Concluídas
                 </span>
-                <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                <span className="flex items-center gap-1.5 text-xs text-t3">
                   <span className="w-2.5 h-2.5 rounded-sm bg-indigo-400 opacity-30" /> Pendentes
                 </span>
               </div>
@@ -326,7 +326,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                   <span className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${cfg.color}`}>
                     <CatIcon size={12} /> {cfg.label}
                   </span>
-                  <span className="text-xs text-slate-600 font-medium">
+                  <span className="text-xs text-t4 font-medium">
                     {doneInCat}/{catTasks.length}
                   </span>
                 </div>
@@ -346,8 +346,8 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
             return (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Sem categoria</span>
-                  <span className="text-xs text-slate-600">{uncategorized.length}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-t3">Sem categoria</span>
+                  <span className="text-xs text-t4">{uncategorized.length}</span>
                 </div>
                 <Card className="!p-0 overflow-hidden">
                   {uncategorized.map((t, i) => (
@@ -361,12 +361,12 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-12 h-12 rounded-2xl bg-s3/50 flex items-center justify-center mb-3">
-            <CalendarDays size={20} className="text-slate-600" />
+            <CalendarDays size={20} className="text-t4" />
           </div>
-          <p className="text-sm font-medium text-slate-400">
+          <p className="text-sm font-medium text-t3">
             {isFuture ? 'Nenhuma tarefa agendada para este dia' : 'Nenhuma tarefa registrada neste dia'}
           </p>
-          <p className="text-xs text-slate-600 mt-1">
+          <p className="text-xs text-t4 mt-1">
             {isFuture ? 'As tarefas futuras aparecerão aqui.' : 'Tarefas com essa data aparecerão aqui.'}
           </p>
         </div>

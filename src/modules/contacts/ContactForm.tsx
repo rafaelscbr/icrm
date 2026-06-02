@@ -108,7 +108,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
             {photoUrl ? (
               <img src={photoUrl} alt="foto" className="w-full h-full object-cover" />
             ) : (
-              <Camera size={20} className="text-slate-500" />
+              <Camera size={20} className="text-t3" />
             )}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
@@ -167,7 +167,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
 
         {/* Tags */}
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tags</p>
+          <p className="text-xs font-medium text-t3 uppercase tracking-wider">Tags</p>
           <div className="flex gap-2">
             {TAG_OPTIONS.map(opt => (
               <button
@@ -178,7 +178,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
                   px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
                   ${tags.includes(opt.value)
                     ? 'bg-brand-tint border-brand/40 text-brand-text'
-                    : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
+                    : 'bg-s3/50 border-line text-t3 hover:text-t2 hover:border-line-strong'
                   }
                 `}
               >

@@ -126,8 +126,8 @@ export function LeadListDetail({ list, onBack }: Props) {
         <Card className="flex-1 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                <Database size={18} className="text-blue-400" />
+              <div className="w-10 h-10 bg-s3/60 rounded-xl flex items-center justify-center">
+                <Database size={18} className="text-t2" />
               </div>
               <div>
                 <h2 className="text-base font-bold text-t1">{currentList.name}</h2>

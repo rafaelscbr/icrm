@@ -864,7 +864,7 @@ export function VirtualOfficePage() {
             </div>
           )
         })}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-line bg-s2/50 text-xs text-slate-500 ml-auto">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-line bg-s2/50 text-xs text-t3 ml-auto">
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"/>
           Tempo real · {onlineBrokers.length} online
         </div>
@@ -888,13 +888,13 @@ export function VirtualOfficePage() {
             <div key={room} className="flex flex-col gap-1.5 p-3 rounded-xl bg-s2/50 border border-line">
               <div className="flex items-center gap-1.5">
                 <span className={`w-2 h-2 rounded-full ${meta.dot}`}/>
-                <span className="text-xs font-semibold text-slate-300">{meta.label}</span>
+                <span className="text-xs font-semibold text-t2">{meta.label}</span>
               </div>
               {names.length === 0 ? (
-                <span className="text-[11px] text-slate-600">Vazia</span>
+                <span className="text-[11px] text-t4">Vazia</span>
               ) : (
                 names.map(n => (
-                  <span key={n} className="text-[11px] text-slate-400 flex items-center gap-1">
+                  <span key={n} className="text-[11px] text-t3 flex items-center gap-1">
                     <span className={`w-1.5 h-1.5 rounded-full ${room === 'break' ? 'bg-slate-600' : 'bg-green-400'}`}/>
                     {n}{room === 'break' && ' (offline)'}
                   </span>

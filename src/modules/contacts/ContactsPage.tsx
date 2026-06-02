@@ -97,12 +97,12 @@ export function ContactsPage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
           <input
             value={query}
             onChange={e => { setQuery(e.target.value); setPage(1) }}
             placeholder="Buscar contato..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all min-h-[44px]"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all min-h-[44px]"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">
@@ -114,7 +114,7 @@ export function ContactsPage() {
                 flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
                 ${activeTag === opt.value && !query
                   ? 'bg-brand-tint border-brand/40 text-brand-text'
-                  : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                  : 'bg-s3/50 border-line text-t3 hover:text-t2'
                 }
               `}
             >
@@ -127,7 +127,7 @@ export function ContactsPage() {
               flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
               ${onlyWithTasks
                 ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
-                : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                : 'bg-s3/50 border-line text-t3 hover:text-t2'
               }
             `}
           >
@@ -164,7 +164,7 @@ export function ContactsPage() {
                     <span className="text-sm">🎂</span>
                   )}
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-t3">
                   {[c.company, formatPhone(c.phone)].filter(Boolean).join(' · ')}
                 </p>
               </div>
@@ -185,7 +185,7 @@ export function ContactsPage() {
                   return (
                     <button
                       onClick={() => setTasksContact(c)}
-                      className="relative p-2 rounded-lg hover:bg-indigo-500/10 text-slate-500 hover:text-brand transition-colors cursor-pointer"
+                      className="relative p-2 rounded-lg hover:bg-indigo-500/10 text-t3 hover:text-brand transition-colors cursor-pointer"
                       title="Ver tarefas vinculadas"
                     >
                       <ClipboardList size={15} />
@@ -201,21 +201,21 @@ export function ContactsPage() {
                   href={whatsappUrl(c.phone)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg hover:bg-green-500/10 text-slate-500 hover:text-green-400 transition-colors"
+                  className="p-2 rounded-lg hover:bg-green-500/10 text-t3 hover:text-green-400 transition-colors"
                   title="Abrir WhatsApp"
                 >
                   <MessageCircle size={15} />
                 </a>
                 <button
                   onClick={() => { setEditing(c); setFormOpen(true) }}
-                  className="p-2 rounded-lg hover:bg-s3/70 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                  className="p-2 rounded-lg hover:bg-s3/70 text-t3 hover:text-t2 transition-colors cursor-pointer"
                   title="Editar"
                 >
                   <Pencil size={15} />
                 </button>
                 <button
                   onClick={() => setDeleteTarget(c)}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-colors cursor-pointer"
+                  className="p-2 rounded-lg hover:bg-red-500/10 text-t3 hover:text-red-400 transition-colors cursor-pointer"
                   title="Excluir"
                 >
                   <Trash2 size={15} />
@@ -229,7 +229,7 @@ export function ContactsPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-6">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-t3">
             Exibindo {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} de {total}
           </p>
           <div className="flex gap-2">
@@ -269,8 +269,8 @@ export function ContactsPage() {
 
       {/* Delete confirm */}
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir contato" size="sm">
-        <p className="text-sm text-slate-400 mb-6">
-          Tem certeza que deseja excluir <span className="text-slate-200 font-medium">{deleteTarget?.name}</span>? Esta ação não pode ser desfeita.
+        <p className="text-sm text-t3 mb-6">
+          Tem certeza que deseja excluir <span className="text-t1 font-medium">{deleteTarget?.name}</span>? Esta ação não pode ser desfeita.
         </p>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteTarget(undefined)}>

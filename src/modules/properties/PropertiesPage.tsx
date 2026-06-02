@@ -105,10 +105,10 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
           <Card key={kpi.label} className="!py-4">
             <div className="flex items-center gap-2 mb-2">
               <span className={`${kpi.color} ${kpi.bg} p-1.5 rounded-lg`}>{kpi.icon}</span>
-              <span className="text-xs text-slate-500">{kpi.label}</span>
+              <span className="text-xs text-t3">{kpi.label}</span>
             </div>
             <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
-            <p className="text-[10px] text-slate-600 mt-0.5">{kpi.sub}</p>
+            <p className="text-[10px] text-t4 mt-0.5">{kpi.sub}</p>
           </Card>
         ))}
       </div>
@@ -117,8 +117,8 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
       {byRegion.length > 0 && (
         <Card>
           <div className="flex items-center gap-2 mb-4">
-            <MapPin size={13} className="text-slate-400" />
-            <h2 className="text-sm font-semibold text-slate-300">Imóveis por região</h2>
+            <MapPin size={13} className="text-t3" />
+            <h2 className="text-sm font-semibold text-t2">Imóveis por região</h2>
           </div>
           <div className="flex flex-col gap-2">
             {byRegion.map(({ region, count, vgv: regionVgv }) => {
@@ -128,7 +128,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
               return (
                 <div key={region} className="flex items-center gap-3">
                   <div className="w-32 shrink-0">
-                    <p className="text-xs text-slate-300 truncate">{region}</p>
+                    <p className="text-xs text-t2 truncate">{region}</p>
                   </div>
                   <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
                     <div
@@ -136,8 +136,8 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
                       style={{ width: `${barPct}%` }}
                     />
                   </div>
-                  <span className="text-xs tabular-nums text-slate-400 w-5 text-right">{count}</span>
-                  <span className="text-[10px] text-slate-600 w-10 text-right">{pct}%</span>
+                  <span className="text-xs tabular-nums text-t3 w-5 text-right">{count}</span>
+                  <span className="text-[10px] text-t4 w-10 text-right">{pct}%</span>
                   <span className="text-xs tabular-nums text-emerald-400 w-28 text-right">{formatCurrencyFull(regionVgv)}</span>
                 </div>
               )
@@ -210,12 +210,12 @@ export function PropertiesPage() {
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
           <input
             value={query}
             onChange={e => { setQuery(e.target.value) }}
             placeholder="Buscar imóvel ou bairro..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -227,7 +227,7 @@ export function PropertiesPage() {
                 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
                 ${activeStatus === opt.value && !query
                   ? 'bg-brand-tint border-brand/40 text-brand-text'
-                  : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                  : 'bg-s3/50 border-line text-t3 hover:text-t2'
                 }
               `}
             >
@@ -240,7 +240,7 @@ export function PropertiesPage() {
               flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
               ${onlyWithTasks
                 ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
-                : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                : 'bg-s3/50 border-line text-t3 hover:text-t2'
               }
             `}
           >
@@ -272,7 +272,7 @@ export function PropertiesPage() {
                   {p.images[0] ? (
                     <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
                   ) : (
-                    <ImageOff size={24} className="text-slate-700" />
+                    <ImageOff size={24} className="text-t5" />
                   )}
                 </div>
 
@@ -290,9 +290,9 @@ export function PropertiesPage() {
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-slate-500">{TYPE_LABELS[p.type]} · {p.neighborhood}{p.city ? ` · ${p.city}` : ''}</p>
+                    <p className="text-xs text-t3">{TYPE_LABELS[p.type]} · {p.neighborhood}{p.city ? ` · ${p.city}` : ''}</p>
                     {p.address && (
-                      <p className="text-xs text-slate-600 mt-0.5 truncate">
+                      <p className="text-xs text-t4 mt-0.5 truncate">
                         {p.address}{p.complement ? `, ${p.complement}` : ''}
                       </p>
                     )}
@@ -300,7 +300,7 @@ export function PropertiesPage() {
 
                   {/* Specs */}
                   {(p.bedrooms || p.suites || p.areaSqm) && (
-                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <div className="flex items-center gap-3 text-xs text-t3">
                       {p.bedrooms && <span>🛏 {p.bedrooms} dorm{p.bedrooms > 1 ? 's' : '.'}</span>}
                       {p.suites   && <span>🚿 {p.suites} suíte{p.suites > 1 ? 's' : ''}</span>}
                       {p.areaSqm  && <span>📐 {p.areaSqm} m²</span>}
@@ -311,8 +311,8 @@ export function PropertiesPage() {
                   <div>
                     <p className="text-lg font-bold text-emerald-400">{formatCurrencyFull(p.value)}</p>
                     {p.condoFee && (
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Cond: <span className="text-slate-400">{formatCurrencyFull(p.condoFee)}/mês</span>
+                      <p className="text-xs text-t3 mt-0.5">
+                        Cond: <span className="text-t3">{formatCurrencyFull(p.condoFee)}/mês</span>
                       </p>
                     )}
                     <p className="text-xs text-violet-400 mt-0.5 flex items-center gap-1">
@@ -323,12 +323,12 @@ export function PropertiesPage() {
 
                   <StatusBadge status={p.status} />
                   {isAdmin && owner && (
-                    <p className="text-xs text-slate-500">
-                      Prop: <span className="text-slate-300">{owner.name}</span>
+                    <p className="text-xs text-t3">
+                      Prop: <span className="text-t2">{owner.name}</span>
                     </p>
                   )}
                   {p.notes && (
-                    <p className="text-xs text-slate-600 italic line-clamp-2">"{p.notes}"</p>
+                    <p className="text-xs text-t4 italic line-clamp-2">"{p.notes}"</p>
                   )}
 
                   <div className="flex gap-2 mt-auto pt-2 border-t border-line" onClick={e => e.stopPropagation()}>
@@ -338,7 +338,7 @@ export function PropertiesPage() {
                       return (
                         <button
                           onClick={() => setTasksProperty(p)}
-                          className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-indigo-500/10 text-slate-500 hover:text-brand transition-colors cursor-pointer text-xs font-medium border border-line hover:border-brand/30"
+                          className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-indigo-500/10 text-t3 hover:text-brand transition-colors cursor-pointer text-xs font-medium border border-line hover:border-brand/30"
                           title="Ver tarefas vinculadas"
                         >
                           <ClipboardList size={13} />
@@ -400,8 +400,8 @@ export function PropertiesPage() {
       />
 
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir imóvel" size="sm">
-        <p className="text-sm text-slate-400 mb-6">
-          Tem certeza que deseja excluir <span className="text-slate-200 font-medium">{deleteTarget?.name}</span>? Esta ação não pode ser desfeita.
+        <p className="text-sm text-t3 mb-6">
+          Tem certeza que deseja excluir <span className="text-t1 font-medium">{deleteTarget?.name}</span>? Esta ação não pode ser desfeita.
         </p>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteTarget(undefined)}>Cancelar</Button>

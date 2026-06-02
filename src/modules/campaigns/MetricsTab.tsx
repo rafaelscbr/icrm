@@ -203,9 +203,9 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
 
   return (
     <Card>
-      <h2 className="text-sm font-semibold text-slate-300 mb-4">Conversão por modelo de mensagem</h2>
+      <h2 className="text-sm font-semibold text-t2 mb-4">Conversão por modelo de mensagem</h2>
       {!hasData ? (
-        <p className="text-sm text-slate-600 text-center py-6">
+        <p className="text-sm text-t4 text-center py-6">
           Envie mensagens pelo sistema para ver a análise por template
         </p>
       ) : (
@@ -220,8 +220,8 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-tint text-brand text-[11px] font-bold flex items-center justify-center">
                   {item.idx + 1}
                 </span>
-                <span className="flex-1 text-xs font-semibold text-slate-300">{item.label}</span>
-                <span className="flex-shrink-0 text-[11px] font-semibold bg-s3/70 text-slate-300 px-2 py-0.5 rounded-full whitespace-nowrap">
+                <span className="flex-1 text-xs font-semibold text-t2">{item.label}</span>
+                <span className="flex-shrink-0 text-[11px] font-semibold bg-s3/70 text-t2 px-2 py-0.5 rounded-full whitespace-nowrap">
                   {item.total} lead{item.total !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -229,7 +229,7 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
               {/* Preview do template original */}
               {item.preview && (
                 <p
-                  className="text-xs italic text-slate-500 leading-5 ml-9"
+                  className="text-xs italic text-t3 leading-5 ml-9"
                   style={{
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
@@ -253,7 +253,7 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
                   {item.rate}%
                 </span>
               </div>
-              <p className="text-[10px] text-slate-600">
+              <p className="text-[10px] text-t4">
                 {item.engaged} de {item.total} engajaram
               </p>
             </div>
@@ -285,11 +285,11 @@ function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
 
   return (
     <Card>
-      <h2 className="text-sm font-semibold text-slate-300 mb-4">Performance por corretor</h2>
+      <h2 className="text-sm font-semibold text-t2 mb-4">Performance por corretor</h2>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[11px] text-slate-600 uppercase tracking-wider border-b border-line">
+            <tr className="text-[11px] text-t4 uppercase tracking-wider border-b border-line">
               <th className="text-left pb-2 font-semibold">Corretor</th>
               <th className="text-right pb-2 font-semibold">Disparos</th>
               <th className="text-right pb-2 font-semibold">Interessados</th>
@@ -307,16 +307,16 @@ function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
                       <div className="w-6 h-6 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
                         <UserCircle2 size={12} className="text-violet-400" />
                       </div>
-                      <span className="text-slate-300 font-medium">{row.name}</span>
+                      <span className="text-t2 font-medium">{row.name}</span>
                     </div>
                   </td>
-                  <td className="py-2.5 text-right tabular-nums text-slate-400">{row.dispatches}</td>
+                  <td className="py-2.5 text-right tabular-nums text-t3">{row.dispatches}</td>
                   <td className="py-2.5 text-right tabular-nums text-cyan-400">{row.interested}</td>
                   <td className="py-2.5 text-right tabular-nums">
                     <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
                       taxa >= 10 ? 'bg-green-500/15 text-green-400' :
                       taxa >= 5  ? 'bg-amber-500/15 text-amber-400' :
-                                   'bg-slate-500/15 text-slate-500'
+                                   'bg-slate-500/15 text-t3'
                     }`}>{taxa}%</span>
                   </td>
                   <td className="py-2.5 text-right tabular-nums text-violet-400 font-semibold">{row.sales}</td>
@@ -366,13 +366,13 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
       {/* KPIs topo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total na campanha',   value: total.toLocaleString('pt-BR'),                                                                    color: 'text-slate-200'  },
+          { label: 'Total na campanha',   value: total.toLocaleString('pt-BR'),                                                                    color: 'text-t1'  },
           { label: 'Leads acionados',    value: `${contacted.toLocaleString('pt-BR')} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400'   },
           { label: 'Taxa de engajamento',value: `${responseRate}%`,                                                                               color: 'text-cyan-400'   },
           { label: 'Migrados p/ funil',  value: `${migrated} (${migratedRate}%)`,                                                                 color: 'text-violet-400' },
         ].map(kpi => (
           <Card key={kpi.label} className="!py-4">
-            <p className="text-xs text-slate-600 mb-1">{kpi.label}</p>
+            <p className="text-xs text-t4 mb-1">{kpi.label}</p>
             <p className={`text-2xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
           </Card>
         ))}
@@ -384,14 +384,14 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
         {/* ── Funil ── (ocupa 3/5 do espaço) */}
         <Card className="lg:col-span-3">
           <div className="flex items-start justify-between mb-4">
-            <h2 className="text-sm font-semibold text-slate-300">Funil de campanha</h2>
+            <h2 className="text-sm font-semibold text-t2">Funil de campanha</h2>
             <span className="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">
               até agendamento → funil principal
             </span>
           </div>
           {total === 0 ? (
             <div className="flex items-center justify-center h-52">
-              <p className="text-sm text-slate-600">Nenhum lead importado ainda</p>
+              <p className="text-sm text-t4">Nenhum lead importado ainda</p>
             </div>
           ) : (
             <div className="px-2">
@@ -403,20 +403,20 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
         {/* ── Lateral: situação + volume ── (ocupa 2/5) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <Card className="flex-1">
-            <h2 className="text-sm font-semibold text-slate-300 mb-4">Situação dos leads</h2>
+            <h2 className="text-sm font-semibold text-t2 mb-4">Situação dos leads</h2>
             <div className="flex flex-col gap-2">
               {situationData.map(s => (
                 <div key={s.value} className="flex items-center gap-2 py-2 px-3 rounded-xl bg-s2/50 border border-line">
                   <span className={`flex-1 text-xs ${s.color}`}>{s.label}</span>
-                  <span className="text-sm font-bold tabular-nums text-slate-200">{s.count}</span>
-                  <span className="text-[10px] text-slate-600 w-8 text-right">
+                  <span className="text-sm font-bold tabular-nums text-t1">{s.count}</span>
+                  <span className="text-[10px] text-t4 w-8 text-right">
                     {total > 0 ? `${Math.round(s.count / total * 100)}%` : '—'}
                   </span>
                 </div>
               ))}
               <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-s2/50 border border-line">
-                <span className="flex-1 text-xs text-slate-400">Sem situação</span>
-                <span className="text-sm font-bold tabular-nums text-slate-200">
+                <span className="flex-1 text-xs text-t3">Sem situação</span>
+                <span className="text-sm font-bold tabular-nums text-t1">
                   {leads.filter(l => !l.situation).length}
                 </span>
               </div>
@@ -424,23 +424,23 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
           </Card>
 
           <Card>
-            <h2 className="text-sm font-semibold text-slate-300 mb-4">Pipeline de campanha</h2>
+            <h2 className="text-sm font-semibold text-t2 mb-4">Pipeline de campanha</h2>
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between py-2 border-b border-line">
-                <span className="text-xs text-slate-400">Agendados</span>
+                <span className="text-xs text-t3">Agendados</span>
                 <p className="text-sm font-bold text-violet-400 tabular-nums">
                   {funnelLeads.filter(l => l.funnelStage === 'scheduled').length}
                 </p>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-line">
-                <span className="text-xs text-slate-400">Migrados p/ funil principal</span>
+                <span className="text-xs text-t3">Migrados p/ funil principal</span>
                 <div className="text-right">
                   <p className="text-sm font-bold text-violet-400 tabular-nums">{migrated}</p>
-                  {total > 0 && <p className="text-[10px] text-slate-500">{migratedRate}% do total</p>}
+                  {total > 0 && <p className="text-[10px] text-t3">{migratedRate}% do total</p>}
                 </div>
               </div>
               <div className="flex items-center justify-between py-2">
-                <span className="text-xs text-slate-400">Agendamentos (máx etapa campanha)</span>
+                <span className="text-xs text-t3">Agendamentos (máx etapa campanha)</span>
                 <p className="text-sm font-bold text-violet-400 tabular-nums">{funnelLeads.filter(l => l.funnelStage === 'scheduled').length}</p>
               </div>
             </div>
@@ -450,7 +450,7 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
 
       {/* Leads acionados por dia */}
       <Card>
-        <h2 className="text-sm font-semibold text-slate-300 mb-5">Leads acionados por dia — últimos 21 dias</h2>
+        <h2 className="text-sm font-semibold text-t2 mb-5">Leads acionados por dia — últimos 21 dias</h2>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={dailyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <defs>

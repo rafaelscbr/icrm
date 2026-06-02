@@ -18,9 +18,9 @@ const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; 
   busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel'       },
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis' },
   campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas'             },
-  administrativo:     { icon: FileText,   color: 'text-slate-300',   label: 'Administrativo'        },
+  administrativo:     { icon: FileText,   color: 'text-t2',   label: 'Administrativo'        },
   souza_financeiro:   { icon: Zap,        color: 'text-green-400',   label: 'Souza Financeiro'      },
-  outro:              { icon: Zap,        color: 'text-slate-400',   label: 'Outro'                 },
+  outro:              { icon: Zap,        color: 'text-t3',   label: 'Outro'                 },
 }
 const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'souza_financeiro', 'outro']
 
@@ -44,7 +44,7 @@ function TaskLine({ task, isLast }: { task: Task; isLast: boolean }) {
           {task.title}
         </p>
         {task.description && (
-          <p className="text-xs text-slate-600 truncate mt-0.5">{task.description}</p>
+          <p className="text-xs text-t4 truncate mt-0.5">{task.description}</p>
         )}
         {/* Checklist progress */}
         {task.checklist && task.checklist.length > 0 && (
@@ -54,7 +54,7 @@ function TaskLine({ task, isLast }: { task: Task; isLast: boolean }) {
         )}
         <div className="flex items-center gap-3 flex-wrap mt-1">
           {task.dueDate && (
-            <span className="flex items-center gap-1 text-xs text-slate-500">
+            <span className="flex items-center gap-1 text-xs text-t3">
               <CalendarDays size={10} /> {fmtDate(task.dueDate)}{task.dueTime ? ` às ${task.dueTime}` : ''}
             </span>
           )}
@@ -205,7 +205,7 @@ export function TasksLinkedModal({
 
             {uncategorized.length > 0 && (
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-t4 mb-1">
                   Sem categoria · {uncategorized.length}
                 </p>
                 <div className="rounded-xl px-3" style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}>

@@ -38,9 +38,9 @@ const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; 
   busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel',       motto: 'encontre o imóvel certo para o lead! 🔍' },
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis', motto: 'novos imóveis no portfólio! 🏘️'          },
   campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas',             motto: 'marketing em ação! 📣'                   },
-  administrativo:     { icon: FileText,   color: 'text-slate-300',   label: 'Administrativo',        motto: 'mantendo a casa em ordem! 📁'            },
+  administrativo:     { icon: FileText,   color: 'text-t2',   label: 'Administrativo',        motto: 'mantendo a casa em ordem! 📁'            },
   souza_financeiro:   { icon: Zap,        color: 'text-green-400',   label: 'Souza Financeiro',      motto: 'financeiro em dia! 💵'                   },
-  outro:              { icon: Zap,        color: 'text-slate-400',   label: 'Outro',                 motto: ''                                        },
+  outro:              { icon: Zap,        color: 'text-t3',   label: 'Outro',                 motto: ''                                        },
 }
 
 function getGreeting() {
@@ -127,7 +127,7 @@ function SmartBanner({ tasks, firstName }: { tasks: Task[]; firstName: string })
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-base font-semibold text-slate-100 mb-0.5">{headline}</p>
-          <p className="text-sm text-slate-400 leading-relaxed">{sub}</p>
+          <p className="text-sm text-t3 leading-relaxed">{sub}</p>
           {overdue.length > 0 && total > 0 && (
             <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
               <AlertTriangle size={11} /> {overdue.length} tarefa{overdue.length > 1 ? 's' : ''} em atraso — não deixe acumular!
@@ -188,14 +188,14 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
       <button onClick={onToggle} className="mt-0.5 flex-shrink-0 cursor-pointer transition-all hover:scale-110">
         {isDone
           ? <CheckCircle2 size={20} className="text-green-400" />
-          : <Circle       size={20} className="text-slate-600 hover:text-brand transition-colors" />
+          : <Circle       size={20} className="text-t4 hover:text-brand transition-colors" />
         }
       </button>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <p className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}>
+          <p className={`text-sm font-medium ${isDone ? 'line-through text-t3' : 'text-slate-100'}`}>
             {t.title}
           </p>
           <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[t.priority]}`} />
@@ -212,7 +212,7 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
         </div>
 
         {t.description && (
-          <p className="text-xs text-slate-500 mb-1.5 truncate">{t.description}</p>
+          <p className="text-xs text-t3 mb-1.5 truncate">{t.description}</p>
         )}
 
         {/* Checklist progress */}
@@ -224,7 +224,7 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
 
         <div className="flex items-center gap-3 flex-wrap">
           <span className={`flex items-center gap-1 text-xs font-medium
-            ${overdue && !isDone ? 'text-red-400' : isToday && !isDone ? 'text-brand' : 'text-slate-500'}`}>
+            ${overdue && !isDone ? 'text-red-400' : isToday && !isDone ? 'text-brand' : 'text-t3'}`}>
             <Clock size={11} />
             {dateLabel}
           </span>
@@ -279,17 +279,17 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
         {t.dueDate && (
           <button onClick={onCalendar}
-            className="p-2 rounded-lg hover:bg-indigo-500/10 text-slate-600 hover:text-brand transition-colors cursor-pointer"
+            className="p-2 rounded-lg hover:bg-indigo-500/10 text-t4 hover:text-brand transition-colors cursor-pointer"
             title="Google Agenda">
             <CalendarClock size={13} />
           </button>
         )}
         <button onClick={onEdit}
-          className="p-2 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer">
+          className="p-2 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer">
           <Pencil size={13} />
         </button>
         <button onClick={onDelete}
-          className="p-2 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors cursor-pointer">
+          className="p-2 rounded-lg hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer">
           <Trash2 size={13} />
         </button>
       </div>
@@ -323,10 +323,10 @@ function Section({
         <span className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${color}`}>
           {icon} {title}
         </span>
-        <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-s3/70 text-slate-400">{count}</span>
+        <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-s3/70 text-t3">{count}</span>
         {collapsible && (open
-          ? <ChevronUp size={12} className="text-slate-600 group-hover:text-slate-400 ml-1" />
-          : <ChevronDown size={12} className="text-slate-600 group-hover:text-slate-400 ml-1" />
+          ? <ChevronUp size={12} className="text-t4 group-hover:text-t3 ml-1" />
+          : <ChevronDown size={12} className="text-t4 group-hover:text-t3 ml-1" />
         )}
       </button>
 
@@ -404,7 +404,7 @@ function CalendarView({
   const PRIORITY_PILL: Record<string, string> = {
     high:   'bg-red-500/20 text-red-300 border-red-500/30',
     medium: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    low:    'bg-slate-500/15 text-slate-400 border-slate-500/20',
+    low:    'bg-slate-500/15 text-t3 border-slate-500/20',
   }
 
   const CAT_DOT: Record<string, string> = {
@@ -425,14 +425,14 @@ function CalendarView({
       <div className="flex items-center justify-between">
         <button
           onClick={() => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }}
-          className="p-2 rounded-xl bg-s2/60 border border-line text-slate-400 hover:text-slate-200 hover:border-line-strong transition-all"
+          className="p-2 rounded-xl bg-s2/60 border border-line text-t3 hover:text-t1 hover:border-line-strong transition-all"
         >
           <ChevronLeft size={16} />
         </button>
-        <h2 className="text-sm font-semibold text-slate-200 capitalize">{monthLabel}</h2>
+        <h2 className="text-sm font-semibold text-t1 capitalize">{monthLabel}</h2>
         <button
           onClick={() => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }}
-          className="p-2 rounded-xl bg-s2/60 border border-line text-slate-400 hover:text-slate-200 hover:border-line-strong transition-all"
+          className="p-2 rounded-xl bg-s2/60 border border-line text-t3 hover:text-t1 hover:border-line-strong transition-all"
         >
           <ChevronRight size={16} />
         </button>
@@ -443,7 +443,7 @@ function CalendarView({
         {/* Header dias da semana */}
         <div className="grid grid-cols-7 bg-s2/60 border-b border-line">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} className="py-2 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{d}</div>
+            <div key={d} className="py-2 text-center text-[10px] font-semibold text-t3 uppercase tracking-wider">{d}</div>
           ))}
         </div>
 
@@ -465,7 +465,7 @@ function CalendarView({
                 {day !== null && (
                   <>
                     <div className={`text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1
-                      ${isToday ? 'bg-indigo-500 text-white' : 'text-slate-500'}`}>
+                      ${isToday ? 'bg-indigo-500 text-white' : 'text-t3'}`}>
                       {day}
                     </div>
                     <div className="flex flex-col gap-0.5">
@@ -486,7 +486,7 @@ function CalendarView({
                         </button>
                       ))}
                       {dayTasks.length > MAX_SHOWN && (
-                        <p className="text-[9px] text-slate-600 pl-1.5">
+                        <p className="text-[9px] text-t4 pl-1.5">
                           +{dayTasks.length - MAX_SHOWN} mais
                         </p>
                       )}
@@ -504,7 +504,7 @@ function CalendarView({
         {Object.entries(CAT_DOT).slice(0, 6).map(([cat, dot]) => (
           <div key={cat} className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${dot}`} />
-            <span className="text-[10px] text-slate-500 capitalize">{cat.replace(/_/g, ' ')}</span>
+            <span className="text-[10px] text-t3 capitalize">{cat.replace(/_/g, ' ')}</span>
           </div>
         ))}
       </div>
@@ -613,8 +613,8 @@ export function TasksPage() {
     { key: 'today',    title: 'Hoje',           tasks: todayT,    icon: <Flame size={12} />,         color: 'text-brand', defaultOpen: true  },
     { key: 'tomorrow', title: 'Amanhã',         tasks: tomorrowT, icon: <CalendarClock size={12} />, color: 'text-amber-400',  defaultOpen: true  },
     { key: 'week',     title: 'Esta semana',    tasks: thisWeek,  icon: <TrendingUp size={12} />,    color: 'text-cyan-400',   defaultOpen: true  },
-    { key: 'later',    title: 'Próximos dias',  tasks: later,     icon: <CheckCheck size={12} />,    color: 'text-slate-400',  defaultOpen: false },
-    { key: 'nodate',   title: 'Sem data',       tasks: noDate,    icon: <ListTodo size={12} />,      color: 'text-slate-500',  defaultOpen: false },
+    { key: 'later',    title: 'Próximos dias',  tasks: later,     icon: <CheckCheck size={12} />,    color: 'text-t3',  defaultOpen: false },
+    { key: 'nodate',   title: 'Sem data',       tasks: noDate,    icon: <ListTodo size={12} />,      color: 'text-t3',  defaultOpen: false },
   ]
 
   return (
@@ -637,7 +637,7 @@ export function TasksPage() {
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all cursor-pointer border-b-2 -mb-px
               ${activeTab === tab.key
                 ? 'text-brand-text border-indigo-400'
-                : 'text-slate-500 border-transparent hover:text-slate-300'
+                : 'text-t3 border-transparent hover:text-t2'
               }`}
           >
             {tab.icon} {tab.label}
@@ -675,7 +675,7 @@ export function TasksPage() {
               <span className={s.color}>{s.icon}</span>
               <div>
                 <p className={`text-xl font-bold tabular-nums leading-none ${s.color}`}>{s.value}</p>
-                <p className="text-[11px] text-slate-600 mt-0.5">{s.label}</p>
+                <p className="text-[11px] text-t4 mt-0.5">{s.label}</p>
               </div>
             </div>
           ))}
@@ -714,7 +714,7 @@ export function TasksPage() {
             <div className="mt-2">
               <button
                 onClick={() => setShowDone(v => !v)}
-                className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer mb-3"
+                className="flex items-center gap-2 text-xs text-t4 hover:text-t3 transition-colors cursor-pointer mb-3"
               >
                 {showDone ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 <CheckCircle2 size={12} className="text-green-500" />
@@ -749,8 +749,8 @@ export function TasksPage() {
       <TaskForm key={editing?.id ?? 'new'} isOpen={formOpen} onClose={() => setFormOpen(false)} task={editing} />
 
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir tarefa" size="sm">
-        <p className="text-sm text-slate-400 mb-6">
-          Tem certeza que deseja excluir <span className="text-slate-200 font-medium">"{deleteTarget?.title}"</span>?
+        <p className="text-sm text-t3 mb-6">
+          Tem certeza que deseja excluir <span className="text-t1 font-medium">"{deleteTarget?.title}"</span>?
         </p>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteTarget(undefined)}>Cancelar</Button>

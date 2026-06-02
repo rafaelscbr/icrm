@@ -37,7 +37,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 const STATUS_CONFIG = {
   pending:   { icon: Circle,        color: 'text-brand', label: 'Pendente'  },
   done:      { icon: CheckCircle2,  color: 'text-green-400',  label: 'Concluída' },
-  cancelled: { icon: AlertTriangle, color: 'text-slate-500',  label: 'Cancelada' },
+  cancelled: { icon: AlertTriangle, color: 'text-t3',  label: 'Cancelada' },
 }
 
 function calcCommission(value: number) { return value * 0.05 * 0.10 }
@@ -88,7 +88,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         )}
         {!property.images[0] && (
           <div className="w-full h-28 rounded-xl bg-s2/50 border border-line flex items-center justify-center -mt-1">
-            <ImageOff size={24} className="text-slate-600" />
+            <ImageOff size={24} className="text-t4" />
           </div>
         )}
 
@@ -102,12 +102,12 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
+            <div className="flex items-center gap-1.5 text-xs text-t3 mt-1">
               <MapPin size={11} />
               <span>{TYPE_LABELS[property.type] ?? property.type} · {property.neighborhood}{property.city ? ` · ${property.city}` : ''}</span>
             </div>
             {property.address && (
-              <p className="text-xs text-slate-500 mt-0.5">{property.address}{property.complement ? `, ${property.complement}` : ''}</p>
+              <p className="text-xs text-t3 mt-0.5">{property.address}{property.complement ? `, ${property.complement}` : ''}</p>
             )}
           </div>
           <StatusBadge status={property.status} />
@@ -117,23 +117,23 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         <div className="grid grid-cols-2 gap-3">
           {(property.bedrooms || property.suites || property.areaSqm) && (
             <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Características</p>
+              <p className="text-[10px] font-semibold text-t3 uppercase tracking-wider">Características</p>
               <div className="flex flex-col gap-1">
                 {property.bedrooms && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                    <Bed size={11} className="text-slate-500" />
+                  <div className="flex items-center gap-1.5 text-xs text-t2">
+                    <Bed size={11} className="text-t3" />
                     {property.bedrooms} dormitório{property.bedrooms > 1 ? 's' : ''}
                   </div>
                 )}
                 {property.suites && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                    <Bath size={11} className="text-slate-500" />
+                  <div className="flex items-center gap-1.5 text-xs text-t2">
+                    <Bath size={11} className="text-t3" />
                     {property.suites} suíte{property.suites > 1 ? 's' : ''}
                   </div>
                 )}
                 {property.areaSqm && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                    <Square size={11} className="text-slate-500" />
+                  <div className="flex items-center gap-1.5 text-xs text-t2">
+                    <Square size={11} className="text-t3" />
                     {property.areaSqm} m²
                   </div>
                 )}
@@ -142,14 +142,14 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           )}
 
           <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Financeiro</p>
+            <p className="text-[10px] font-semibold text-t3 uppercase tracking-wider">Financeiro</p>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1.5 text-xs">
                 <DollarSign size={11} className="text-emerald-400" />
                 <span className="font-bold text-emerald-400">{formatCurrencyFull(property.value)}</span>
               </div>
               {property.condoFee && (
-                <p className="text-xs text-slate-400">Cond: {formatCurrencyFull(property.condoFee)}/mês</p>
+                <p className="text-xs text-t3">Cond: {formatCurrencyFull(property.condoFee)}/mês</p>
               )}
               <div className="flex items-center gap-1.5 text-xs text-violet-400">
                 <BadgePercent size={11} />
@@ -164,8 +164,8 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           <div className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
             <User size={13} className="text-brand flex-shrink-0" />
             <div>
-              <p className="text-[10px] text-slate-500">Proprietário</p>
-              <p className="text-xs font-medium text-slate-200">{owner.name}</p>
+              <p className="text-[10px] text-t3">Proprietário</p>
+              <p className="text-xs font-medium text-t1">{owner.name}</p>
             </div>
           </div>
         )}
@@ -173,8 +173,8 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         {/* Notas */}
         {property.notes && (
           <div className="px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-            <p className="text-[10px] text-slate-500 mb-1">Observações</p>
-            <p className="text-xs text-slate-300 leading-relaxed">{property.notes}</p>
+            <p className="text-[10px] text-t3 mb-1">Observações</p>
+            <p className="text-xs text-t2 leading-relaxed">{property.notes}</p>
           </div>
         )}
 
@@ -183,7 +183,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Building2 size={13} className="text-green-400" />
-              <h3 className="text-sm font-semibold text-slate-300">Vendas realizadas</h3>
+              <h3 className="text-sm font-semibold text-t2">Vendas realizadas</h3>
               <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/15">
                 {linkedSales.length}
               </span>
@@ -195,14 +195,14 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
                 return (
                   <div key={sale.id} className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-200">{client?.name ?? '—'}</p>
+                      <p className="text-xs font-medium text-t1">{client?.name ?? '—'}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-bold text-green-400">{formatCurrencyFull(sale.value)}</p>
                       {brokerCommission > 0 && (
                         <p className="text-[10px] text-violet-400">{formatCurrencyFull(brokerCommission)}</p>
                       )}
-                      <p className="text-[10px] text-slate-600">{formatDate(sale.date)}</p>
+                      <p className="text-[10px] text-t4">{formatDate(sale.date)}</p>
                     </div>
                   </div>
                 )
@@ -216,7 +216,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Clock size={13} className="text-brand" />
-              <h3 className="text-sm font-semibold text-slate-300">Tarefas vinculadas</h3>
+              <h3 className="text-sm font-semibold text-t2">Tarefas vinculadas</h3>
             </div>
             <div className="flex gap-2 text-[10px]">
               {pendingTasks.length > 0 && (
@@ -233,7 +233,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           </div>
 
           {linkedTasks.length === 0 ? (
-            <p className="text-xs text-slate-600 text-center py-4">Nenhuma tarefa vinculada ainda</p>
+            <p className="text-xs text-t4 text-center py-4">Nenhuma tarefa vinculada ainda</p>
           ) : (
             <div className="flex flex-col gap-1.5 max-h-56 overflow-y-auto pr-1">
               {linkedTasks.map(task => {
@@ -248,17 +248,17 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
                   >
                     <Icon size={13} className={`${cfg.color} flex-shrink-0 mt-0.5`} />
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium truncate ${task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-200'}`}>
+                      <p className={`text-xs font-medium truncate ${task.status === 'done' ? 'line-through text-t3' : 'text-t1'}`}>
                         {task.title}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {task.category && (
-                          <span className="text-[10px] text-slate-600">
+                          <span className="text-[10px] text-t4">
                             {CATEGORY_LABELS[task.category] ?? task.category}
                           </span>
                         )}
                         {task.dueDate && (
-                          <span className="text-[10px] text-slate-600 flex items-center gap-0.5">
+                          <span className="text-[10px] text-t4 flex items-center gap-0.5">
                             <Clock size={8} /> {formatDate(task.dueDate)}
                           </span>
                         )}

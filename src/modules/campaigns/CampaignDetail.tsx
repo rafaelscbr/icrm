@@ -238,12 +238,12 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-t3 hover:text-t2 transition-colors cursor-pointer"
           >
             <ArrowLeft size={15} /> Campanhas
           </button>
-          <span className="text-slate-700">/</span>
-          <h1 className="text-sm font-semibold text-slate-200 truncate">{campaign.name}</h1>
+          <span className="text-t5">/</span>
+          <h1 className="text-sm font-semibold text-t1 truncate">{campaign.name}</h1>
 
           <span className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
             {statusCfg.label}
@@ -253,27 +253,27 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
             <ParticipantsManager campaignId={campaignId} compact />
             <button
               onClick={() => setAddListOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-2 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-t3 hover:text-t1 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-2 transition-all cursor-pointer"
             >
               <ListPlus size={13} /> Adicionar lista
             </button>
             <button
               onClick={() => setMsgEditOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-green-300 bg-s3/50 hover:bg-green-500/10 border border-line hover:border-green-500/25 rounded-xl px-3 py-2 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-t3 hover:text-green-300 bg-s3/50 hover:bg-green-500/10 border border-line hover:border-green-500/25 rounded-xl px-3 py-2 transition-all cursor-pointer"
               title="Editar mensagens da campanha"
             >
               <MessageSquare size={13} /> Mensagens
             </button>
             <button
               onClick={() => setEditOpen(true)}
-              className="p-2 rounded-xl hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"
               title="Editar campanha"
             >
               <Pencil size={14} />
             </button>
             <button
               onClick={toggleStatus}
-              className="p-2 rounded-xl hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"
               title={campaign.status === 'active' ? 'Pausar' : 'Reativar'}
             >
               {campaign.status === 'active' ? <Pause size={14} /> : <Play size={14} />}
@@ -281,7 +281,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
             {campaign.status !== 'finished' && (
               <button
                 onClick={() => setStatus(campaignId, 'finished')}
-                className="p-2 rounded-xl hover:bg-green-500/10 text-slate-600 hover:text-green-400 transition-colors cursor-pointer"
+                className="p-2 rounded-xl hover:bg-green-500/10 text-t4 hover:text-green-400 transition-colors cursor-pointer"
                 title="Finalizar campanha"
               >
                 <CheckCheck size={14} />
@@ -299,14 +299,14 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer
                 ${tab === value
                   ? 'bg-brand-tint border-brand/40 text-brand-text'
-                  : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                  : 'bg-s3/50 border-line text-t3 hover:text-t2'
                 }`}
             >
               <Icon size={12} />
               {label}
               {value === 'leads' && (
                 <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
-                  ${tab === value ? 'bg-indigo-500/30 text-brand-text' : 'bg-s3/70 text-slate-500'}`}>
+                  ${tab === value ? 'bg-indigo-500/30 text-brand-text' : 'bg-s3/70 text-t3'}`}>
                   {campaignLeads.length}
                 </span>
               )}

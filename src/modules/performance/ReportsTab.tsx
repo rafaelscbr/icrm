@@ -28,7 +28,7 @@ function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: 
   if (!active || !payload?.length) return null
   return (
     <div className="bg-page border border-line rounded-xl px-4 py-3 shadow-xl">
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
+      <p className="text-xs text-t3 mb-1">{label}</p>
       <p className="text-sm font-semibold text-slate-100">{formatCurrency(payload[0].value)}</p>
     </div>
   )
@@ -38,12 +38,12 @@ function ActivityTooltip({ active, payload, label }: { active?: boolean; payload
   if (!active || !payload?.length) return null
   return (
     <div className="bg-page border border-line rounded-xl px-4 py-3 shadow-xl">
-      <p className="text-xs text-slate-500 mb-2">{label}</p>
+      <p className="text-xs text-t3 mb-2">{label}</p>
       {payload.map(p => (
         <div key={p.name} className="flex items-center gap-2 text-xs">
           <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-slate-400">{p.name}:</span>
-          <span className="font-semibold text-slate-200">{p.value}</span>
+          <span className="text-t3">{p.name}:</span>
+          <span className="font-semibold text-t1">{p.value}</span>
         </div>
       ))}
     </div>
@@ -86,7 +86,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
     <Card className="mb-6">
       <div className="flex items-center gap-2 mb-5">
         <Sun size={14} className="text-amber-400" />
-        <h2 className="text-sm font-semibold text-slate-300">Sazonalidade de vendas — histórico acumulado</h2>
+        <h2 className="text-sm font-semibold text-t2">Sazonalidade de vendas — histórico acumulado</h2>
         {hasData && (
           <span className="ml-auto text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-400/20">
             melhor: {bestMonth.monthFull}
@@ -94,7 +94,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
         )}
       </div>
       {!hasData ? (
-        <p className="text-sm text-slate-600 text-center py-8">Registre vendas para ver o padrão de sazonalidade</p>
+        <p className="text-sm text-t4 text-center py-8">Registre vendas para ver o padrão de sazonalidade</p>
       ) : (
         <div className="flex flex-col gap-2">
           {data.map((d, i) => {
@@ -102,7 +102,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
             const isBest = d.month === bestMonth.month && d.total > 0
             return (
               <div key={d.month} className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${isCurrentMonth ? 'bg-indigo-500/8 border border-brand/25' : ''}`}>
-                <span className={`text-xs w-8 flex-shrink-0 font-medium ${isCurrentMonth ? 'text-brand' : 'text-slate-500'}`}>
+                <span className={`text-xs w-8 flex-shrink-0 font-medium ${isCurrentMonth ? 'text-brand' : 'text-t3'}`}>
                   {d.month}
                 </span>
                 <div className="flex-1 h-2.5 bg-s3/50 rounded-full overflow-hidden">
@@ -112,12 +112,12 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
                   />
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-xs tabular-nums text-slate-400 w-5 text-right">{d.count}</span>
-                  <span className={`text-xs tabular-nums font-semibold w-28 text-right ${isBest ? 'text-amber-400' : 'text-slate-300'}`}>
+                  <span className="text-xs tabular-nums text-t3 w-5 text-right">{d.count}</span>
+                  <span className={`text-xs tabular-nums font-semibold w-28 text-right ${isBest ? 'text-amber-400' : 'text-t2'}`}>
                     {d.total > 0 ? formatCurrency(d.total) : '—'}
                   </span>
                   {d.years.size > 1 && (
-                    <span className="text-[10px] text-slate-600 w-20 text-right">
+                    <span className="text-[10px] text-t4 w-20 text-right">
                       ø {formatCurrency(d.avg)}/ano
                     </span>
                   )}
@@ -127,7 +127,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
           })}
         </div>
       )}
-      <p className="text-[10px] text-slate-600 mt-4">Total histórico de todas as vendas agrupado por mês do ano.</p>
+      <p className="text-[10px] text-t4 mt-4">Total histórico de todas as vendas agrupado por mês do ano.</p>
     </Card>
   )
 }
@@ -241,7 +241,7 @@ export function ReportsTab() {
       {/* ── Productivity this month ─────────────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <h2 className="text-xs font-semibold text-t3 uppercase tracking-wider">
             Produtividade — {periodLabel}
           </h2>
           <PeriodSelector />
@@ -279,7 +279,7 @@ export function ReportsTab() {
 
         {/* Activity bar chart */}
         <Card>
-          <h2 className="text-sm font-medium text-slate-300 mb-6">
+          <h2 className="text-sm font-medium text-t2 mb-6">
             Atividade diária — últimos 14 dias
           </h2>
           <ResponsiveContainer width="100%" height={220}>
@@ -300,7 +300,7 @@ export function ReportsTab() {
 
       {/* ── Sales performance ───────────────────────────────────────────── */}
       <section>
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+        <h2 className="text-xs font-semibold text-t3 uppercase tracking-wider mb-4">
           Performance de Vendas
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -335,7 +335,7 @@ export function ReportsTab() {
         </div>
 
         <Card className="mb-6">
-          <h2 className="text-sm font-medium text-slate-300 mb-6">
+          <h2 className="text-sm font-medium text-t2 mb-6">
             Volume de vendas — {periodLabel}
           </h2>
           <ResponsiveContainer width="100%" height={220}>
@@ -360,7 +360,7 @@ export function ReportsTab() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <h2 className="text-sm font-medium text-slate-300 mb-6">
+            <h2 className="text-sm font-medium text-t2 mb-6">
               Quantidade de vendas — {periodLabel}
             </h2>
             <ResponsiveContainer width="100%" height={200}>
@@ -379,10 +379,10 @@ export function ReportsTab() {
           </Card>
 
           <Card>
-            <h2 className="text-sm font-medium text-slate-300 mb-6">Portfólio por status</h2>
+            <h2 className="text-sm font-medium text-t2 mb-6">Portfólio por status</h2>
             {propByStatus.length === 0 ? (
               <div className="flex items-center justify-center h-48">
-                <p className="text-sm text-slate-600">Sem imóveis cadastrados</p>
+                <p className="text-sm text-t4">Sem imóveis cadastrados</p>
               </div>
             ) : (
               <div className="flex items-center gap-8">
@@ -397,17 +397,17 @@ export function ReportsTab() {
                   {propByStatus.map(d => (
                     <div key={d.name} className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.color }} />
-                      <span className="text-xs text-slate-400 flex-1">{d.name}</span>
-                      <span className="text-xs font-semibold text-slate-200">{d.value}</span>
+                      <span className="text-xs text-t3 flex-1">{d.name}</span>
+                      <span className="text-xs font-semibold text-t1">{d.value}</span>
                     </div>
                   ))}
                   <div className="border-t border-line pt-3 mt-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">Planta</span>
+                      <span className="text-xs text-t3">Planta</span>
                       <span className="text-xs font-semibold text-purple-400">{formatCurrency(salesByType[1]?.value ?? 0)}</span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-slate-500">Pronto</span>
+                      <span className="text-xs text-t3">Pronto</span>
                       <span className="text-xs font-semibold text-brand">{formatCurrency(salesByType[0]?.value ?? 0)}</span>
                     </div>
                   </div>

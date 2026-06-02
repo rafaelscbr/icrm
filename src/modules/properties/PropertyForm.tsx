@@ -178,7 +178,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Kind toggle */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tipo de imóvel *</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Tipo de imóvel *</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 { value: 'ready',    label: 'Pronto',     icon: Building2, desc: 'Imóvel já construído' },
@@ -191,10 +191,10 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all cursor-pointer text-left
                     ${kind === opt.value
                       ? 'bg-brand-tint border-brand/40 text-brand-text'
-                      : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
+                      : 'bg-s3/50 border-line text-t3 hover:text-t2 hover:border-line-strong'
                     }`}
                 >
-                  <opt.icon size={16} className={kind === opt.value ? 'text-brand' : 'text-slate-600'} />
+                  <opt.icon size={16} className={kind === opt.value ? 'text-brand' : 'text-t4'} />
                   <div>
                     <p className="text-sm font-medium">{opt.label}</p>
                     <p className="text-[10px] opacity-70">{opt.desc}</p>
@@ -206,7 +206,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Images */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Fotos (opcional)</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Fotos (opcional)</p>
             <div className="flex gap-2 flex-wrap">
               {images.map((img, i) => (
                 <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden">
@@ -223,7 +223,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="w-16 h-16 rounded-xl bg-s3/50 border border-dashed border-line-strong flex items-center justify-center text-slate-500 hover:bg-s3/70 hover:text-slate-300 transition-colors cursor-pointer"
+                className="w-16 h-16 rounded-xl bg-s3/50 border border-dashed border-line-strong flex items-center justify-center text-t3 hover:bg-s3/70 hover:text-t2 transition-colors cursor-pointer"
               >
                 <ImagePlus size={18} />
               </button>
@@ -306,64 +306,64 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
           {/* Dormitórios · Suítes · m² */}
           <div className="grid grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Dormitórios</label>
+              <label className="text-xs font-medium text-t3 uppercase tracking-wider">Dormitórios</label>
               <input
                 type="number" min="0" max="20"
                 inputMode="numeric"
                 value={bedrooms}
                 onChange={e => setBedrooms(e.target.value)}
                 placeholder="0"
-                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Suítes</label>
+              <label className="text-xs font-medium text-t3 uppercase tracking-wider">Suítes</label>
               <input
                 type="number" min="0" max="20"
                 inputMode="numeric"
                 value={suites}
                 onChange={e => setSuites(e.target.value)}
                 placeholder="0"
-                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Área (m²)</label>
+              <label className="text-xs font-medium text-t3 uppercase tracking-wider">Área (m²)</label>
               <div className="relative">
                 <input
                   type="text" inputMode="decimal"
                   value={areaSqm}
                   onChange={e => setAreaSqm(e.target.value.replace(/[^0-9,]/g, ''))}
                   placeholder="85"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-3 pr-9 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-3 pr-9 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 pointer-events-none">m²</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-t3 pointer-events-none">m²</span>
               </div>
             </div>
           </div>
 
           {/* Valor do condomínio */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Valor do Condomínio</label>
+            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Valor do Condomínio</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 select-none pointer-events-none">R$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-t3 select-none pointer-events-none">R$</span>
               <input
                 inputMode="numeric"
                 value={fmtInput(condoFee)}
                 onChange={e => setCondoFee(e.target.value.replace(/\D/g, ''))}
                 placeholder="800"
-                className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
             </div>
           </div>
 
           {/* Value com máscara BRL */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className="text-xs font-medium text-t3 uppercase tracking-wider">
               {kind === 'off_plan' ? 'Ticket Médio' : 'Valor'} <span className="text-red-400">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 select-none pointer-events-none">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-t3 select-none pointer-events-none">
                 R$
               </span>
               <input
@@ -372,7 +372,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 onChange={e => setValue(e.target.value.replace(/\D/g, ''))}
                 placeholder="850.000"
                 className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100
-                  placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
+                  placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
                   ${errors.value ? 'border-red-500/50' : 'border-line'}`}
               />
             </div>
@@ -381,7 +381,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Status */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Status *</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Status *</p>
             <div className="flex gap-2">
               {STATUS_OPTIONS.map(opt => (
                 <button
@@ -394,7 +394,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                       ? opt.value === 'opportunity' ? 'bg-green-500/20 border-green-500/40 text-green-300'
                         : opt.value === 'market_price' ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'
                         : 'bg-red-500/20 border-red-500/40 text-red-300'
-                      : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                      : 'bg-s3/50 border-line text-t3 hover:text-t2'
                     }
                   `}
                 >
@@ -407,7 +407,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
           {/* Owner — apenas para pronto */}
           {kind === 'ready' && (
             <div className="flex flex-col gap-1.5 relative">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <p className="text-xs font-medium text-t3 uppercase tracking-wider">
                 Proprietário <span className="text-red-400">*</span>
               </p>
               <input
@@ -418,7 +418,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 placeholder="Buscar contato..."
                 className={`
                   w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100
-                  placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
+                  placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
                   ${errors.owner ? 'border-red-500/50' : 'border-line'}
                 `}
               />
@@ -430,10 +430,10 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                       key={c.id}
                       type="button"
                       onMouseDown={() => { setOwnerId(c.id); setOwnerSearch(c.name); setShowOwnerDropdown(false) }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
                     >
                       {c.name}
-                      {c.company && <span className="text-slate-600 ml-2 text-xs">{c.company}</span>}
+                      {c.company && <span className="text-t4 ml-2 text-xs">{c.company}</span>}
                     </button>
                   ))}
                   <button
@@ -450,13 +450,13 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Observações */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Observações</label>
+            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Observações</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Informações adicionais, diferenciais do imóvel, condições especiais…"
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
             />
           </div>
 
@@ -464,8 +464,8 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
           <div className="flex flex-col gap-3 bg-s2/50 border border-line rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-200">Aceita Permuta</p>
-                <p className="text-xs text-slate-500 mt-0.5">Permite troca por imóvel ou carro como parte do pagamento</p>
+                <p className="text-sm font-medium text-t1">Aceita Permuta</p>
+                <p className="text-xs text-t3 mt-0.5">Permite troca por imóvel ou carro como parte do pagamento</p>
               </div>
               <button
                 type="button"
@@ -479,7 +479,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
             {acceptsPermuta && (
               <>
                 <div className="flex flex-col gap-1.5">
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tipos aceitos</p>
+                  <p className="text-xs font-medium text-t3 uppercase tracking-wider">Tipos aceitos</p>
                   <div className="flex gap-2">
                     {(['imovel', 'carro'] as const).map(t => (
                       <button
@@ -491,7 +491,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-all ${
                           permutaTypes.includes(t)
                             ? 'bg-brand-tint border-brand/40 text-brand-text'
-                            : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                            : 'bg-s3/50 border-line text-t3 hover:text-t2'
                         }`}
                       >
                         {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
@@ -502,7 +502,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
                 {permutaTypes.includes('imovel') && (
                   <div className="flex flex-col gap-1.5">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Regiões aceitas para imóvel</p>
+                    <p className="text-xs font-medium text-t3 uppercase tracking-wider">Regiões aceitas para imóvel</p>
                     <div className="flex flex-wrap gap-1.5">
                       {['Balneário Camboriú','Camboriú','Itajaí','Navegantes','Itapema','Porto Belo','Florianópolis','Blumenau','São José','Palhoça','Biguaçu'].map(region => (
                         <button
@@ -514,7 +514,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                           className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
                             permutaRegions.includes(region)
                               ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                              : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-strong'
+                              : 'bg-s3/50 border-line text-t3 hover:text-t2 hover:border-line-strong'
                           }`}
                         >
                           {region}

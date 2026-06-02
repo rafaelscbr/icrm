@@ -55,7 +55,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-medium transition-all ${
               item.type === 'imovel'
                 ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
-                : 'bg-s2/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-input'
+                : 'bg-s2/50 border-line text-t3 hover:text-t2 hover:border-line-input'
             }`}
           >
             <Home size={12} /> Imóvel
@@ -65,7 +65,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-medium transition-all ${
               item.type === 'carro'
                 ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
-                : 'bg-s2/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-input'
+                : 'bg-s2/50 border-line text-t3 hover:text-t2 hover:border-line-input'
             }`}
           >
             <Car size={12} /> Carro
@@ -94,7 +94,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
                   className={`text-[11px] px-2 py-0.5 rounded-lg border transition-all ${
                     item.region === r
                       ? 'bg-orange-500/20 border-orange-500/40 text-orange-300 font-medium'
-                      : 'bg-s2/50 border-line text-slate-500 hover:text-slate-300 hover:border-line-input'
+                      : 'bg-s2/50 border-line text-t3 hover:text-t2 hover:border-line-input'
                   }`}
                 >
                   {r}
@@ -112,7 +112,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
           <div>
             <label className={labelClass}>Valor do imóvel</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 pointer-events-none">R$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-t3 pointer-events-none">R$</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -142,7 +142,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
           <div>
             <label className={labelClass}>Valor de entrada</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 pointer-events-none">R$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-t3 pointer-events-none">R$</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -210,8 +210,8 @@ export function LeadPermutaTab({ contact }: LeadPermutaTabProps) {
           <ArrowLeftRight size={20} className="text-orange-400/50" />
         </div>
         <div>
-          <p className="text-sm font-medium text-slate-400">Sem contato vinculado</p>
-          <p className="text-xs text-slate-600 mt-1">O lead precisa de um contato para registrar permuta</p>
+          <p className="text-sm font-medium text-t3">Sem contato vinculado</p>
+          <p className="text-xs text-t4 mt-1">O lead precisa de um contato para registrar permuta</p>
         </div>
       </div>
     )
@@ -227,7 +227,7 @@ export function LeadPermutaTab({ contact }: LeadPermutaTabProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-orange-300">Perfil de Permuta</p>
-          <p className="text-[11px] text-slate-500 truncate">Contato: {contact.name}</p>
+          <p className="text-[11px] text-t3 truncate">Contato: {contact.name}</p>
         </div>
         {hasData && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 flex-shrink-0">
@@ -252,7 +252,7 @@ export function LeadPermutaTab({ contact }: LeadPermutaTabProps) {
       {/* Botão adicionar */}
       <button
         onClick={handleAdd}
-        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-line-input text-xs text-slate-500 hover:text-slate-300 hover:border-white/25 transition-all"
+        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-line-input text-xs text-t3 hover:text-t2 hover:border-white/25 transition-all"
       >
         <Plus size={12} /> Adicionar outro bem para permuta
       </button>
@@ -283,7 +283,7 @@ export function LeadPermutaTab({ contact }: LeadPermutaTabProps) {
         </button>
       </div>
 
-      <p className="text-[10px] text-slate-600 text-center">
+      <p className="text-[10px] text-t4 text-center">
         Salvo diretamente em {contact.name} — disponível em todo o CRM
       </p>
     </div>

@@ -73,14 +73,14 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
               {lead.name[0].toUpperCase()}
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-200">{lead.name}</p>
-              <p className="text-xs text-slate-500 tabular-nums">{formatPhone(lead.phone)}</p>
+              <p className="text-sm font-semibold text-t1">{lead.name}</p>
+              <p className="text-xs text-t3 tabular-nums">{formatPhone(lead.phone)}</p>
             </div>
           </div>
 
           {/* Funnel stage */}
           <div>
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Etapa do Funil</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider mb-3">Etapa do Funil</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {stagesWithoutNew.map(s => {
                 const active = stage === s.value
@@ -92,7 +92,7 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all cursor-pointer
                       ${active
                         ? `${s.bg} ${s.border} ${s.color}`
-                        : 'bg-s2/50 border-line text-slate-500 hover:border-line-strong hover:text-slate-300'
+                        : 'bg-s2/50 border-line text-t3 hover:border-line-strong hover:text-t2'
                       }`}
                   >
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${active ? s.dot : 'bg-slate-700'}`} />
@@ -107,7 +107,7 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
           {/* Situation */}
           <div>
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Situação (opcional)</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider mb-3">Situação (opcional)</p>
             <div className="flex flex-col gap-2">
               {SITUATION_CONFIG.map(s => {
                 const active = situation === s.value
@@ -119,7 +119,7 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
                     className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm transition-all cursor-pointer text-left
                       ${active
                         ? `${s.bg} border-line-strong ${s.color}`
-                        : 'bg-s2/50 border-line text-slate-500 hover:border-line-input hover:text-slate-300'
+                        : 'bg-s2/50 border-line text-t3 hover:border-line-input hover:text-t2'
                       }`}
                   >
                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0
@@ -135,13 +135,13 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
           {/* Notes */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Observações</label>
+            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Observações</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Anotações sobre este lead..."
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
             />
           </div>
 
@@ -151,7 +151,7 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
               <Sparkles size={14} className="text-violet-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-violet-200">Pronto para o funil principal</p>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                <p className="text-[11px] text-t3 mt-0.5 leading-relaxed">
                   Lead agendado — migre agora com histórico e produto vinculado para contar na pipeline de visitas.
                 </p>
                 <button

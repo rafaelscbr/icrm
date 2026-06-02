@@ -188,7 +188,7 @@ export function DeleteLeadFromListModal({
                   <Database size={9} /> Em outras listas ({status.otherLists.length})
                 </p>
                 {status.otherLists.map(l => (
-                  <div key={l.id} className="flex items-center gap-2 px-3 py-2 bg-blue-500/8 border border-blue-500/20 rounded-xl">
+                  <div key={l.id} className="flex items-center gap-2 px-3 py-2 bg-s3/50 border border-blue-500/20 rounded-xl">
                     <Database size={11} className="text-blue-400 flex-shrink-0" />
                     <p className="text-xs text-t2 truncate">{l.name}</p>
                   </div>

@@ -86,7 +86,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
 
   return (
     <div className="bg-page border border-blue-500/30 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-blue-500/8 border-b border-blue-500/20">
+      <div className="flex items-center justify-between px-4 py-3 bg-s3/50 border-b border-blue-500/20">
         <span className="text-xs font-semibold text-blue-300">{isEdit ? 'Editar item' : 'Novo item'}</span>
         <button onClick={onCancel} className="text-t3 hover:text-t2 transition-colors">
           <X size={14} />
@@ -132,7 +132,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
 
         {type === 'origin' && (
           <div>
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-2">Cor</label>
+            <label className="text-[10px] font-semibold text-t3 uppercase tracking-wider block mb-2">Cor</label>
             <div className="flex flex-wrap gap-2">
               {COLORS.map(c => (
                 <button
@@ -223,7 +223,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
           <h3 className="text-sm font-semibold text-t1 truncate">{title}</h3>
           <p className="text-[11px] text-t4 mt-0.5 truncate">{subtitle}</p>
         </div>
-        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 flex-shrink-0">
+        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-s3/70 text-blue-400 border border-blue-500/20 flex-shrink-0">
           {active.length} {active.length === 1 ? 'ativo' : 'ativos'}
         </span>
         <button
@@ -337,7 +337,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
         {/* Inactive items (collapsed) */}
         {inactive.length > 0 && dbAvailable && (
           <div className="pt-1">
-            <p className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider px-1 mb-2">
+            <p className="text-[10px] font-semibold text-t5 uppercase tracking-wider px-1 mb-2">
               Inativos ({inactive.length})
             </p>
             {inactive.map(item => (
@@ -346,7 +346,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
                 className="group flex items-center gap-3 px-4 py-2.5 opacity-40 hover:opacity-70 rounded-xl transition-all"
               >
                 <span className="text-base w-9 text-center">{item.emoji || '·'}</span>
-                <span className="text-sm text-slate-500 flex-1 line-through">{item.label}</span>
+                <span className="text-sm text-t3 flex-1 line-through">{item.label}</span>
                 <button
                   onClick={() => handleToggle(item)}
                   className="opacity-0 group-hover:opacity-100 text-xs px-2.5 py-1 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg transition-all"
@@ -389,7 +389,7 @@ export function LeadSettings() {
       {(syncing || (dbChecked && !dbAvailable)) && (
         <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm ${
           syncing
-            ? 'bg-white/3 border-white/8 text-slate-500'
+            ? 'bg-white/3 border-white/8 text-t3'
             : 'bg-amber-500/8 border-amber-500/20 text-amber-300'
         }`}>
           {syncing
@@ -426,20 +426,20 @@ export function LeadSettings() {
       {showSql && !dbAvailable && (
         <div className="rounded-xl border border-line overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 bg-white/3 border-b border-white/8">
-            <span className="text-xs font-semibold text-slate-400">SQL · Supabase SQL Editor</span>
+            <span className="text-xs font-semibold text-t3">SQL · Supabase SQL Editor</span>
             <button
               onClick={handleCopySql}
               className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all ${
                 copied
                   ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
-                  : 'text-slate-400 hover:text-slate-200 bg-white/3 border-white/8'
+                  : 'text-t3 hover:text-t1 bg-white/3 border-white/8'
               }`}
             >
               {copied ? <Check size={11} /> : <Copy size={11} />}
               {copied ? 'Copiado!' : 'Copiar'}
             </button>
           </div>
-          <pre className="p-4 text-[11px] text-slate-400 font-mono leading-relaxed overflow-x-auto whitespace-pre">
+          <pre className="p-4 text-[11px] text-t3 font-mono leading-relaxed overflow-x-auto whitespace-pre">
             {SETUP_SQL}
           </pre>
         </div>
@@ -464,7 +464,7 @@ export function LeadSettings() {
       </div>
 
       {/* Footer info */}
-      <div className="text-center text-xs text-slate-700 pb-2">
+      <div className="text-center text-xs text-t5 pb-2">
         Essas configurações alimentam os relatórios de conversão por canal e qualidade do funil
       </div>
     </div>

@@ -36,7 +36,7 @@ export function Card({
     <div
       {...props}
       className={`
-        bg-surface border border-line rounded-xl shadow-card overflow-hidden
+        relative bg-surface border border-line rounded-xl shadow-card overflow-hidden
         ${accents[accent]}
         ${paddings[padding]}
         ${hover

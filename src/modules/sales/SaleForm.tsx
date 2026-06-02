@@ -118,7 +118,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Cliente */}
           <div className="flex flex-col gap-1.5 relative">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">
               Cliente <span className="text-red-400">*</span>
             </p>
             <input
@@ -128,7 +128,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               onFocus={() => setShowClientDrop(true)}
               onBlur={() => setTimeout(() => setShowClientDrop(false), 150)}
               placeholder="Buscar contato..."
-              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.client ? 'border-red-500/50' : 'border-line'}`}
+              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.client ? 'border-red-500/50' : 'border-line'}`}
             />
             {errors.client && <p className="text-xs text-red-400">{errors.client}</p>}
             {showClientDrop && (
@@ -136,7 +136,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                 {filteredClients.map(c => (
                   <button key={c.id} type="button"
                     onMouseDown={() => { setClientId(c.id); setClientSearch(c.name); setShowClientDrop(false) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
                   >{c.name}</button>
                 ))}
                 <button type="button"
@@ -149,7 +149,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Empreendimento */}
           <div className="flex flex-col gap-1.5 relative">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">
               Empreendimento / Imóvel <span className="text-red-400">*</span>
             </p>
             <input
@@ -158,7 +158,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               onFocus={() => setShowPropDrop(true)}
               onBlur={() => setTimeout(() => setShowPropDrop(false), 150)}
               placeholder="Buscar imóvel ou digitar nome..."
-              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.property ? 'border-red-500/50' : 'border-line'}`}
+              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.property ? 'border-red-500/50' : 'border-line'}`}
             />
             {errors.property && <p className="text-xs text-red-400">{errors.property}</p>}
             {showPropDrop && filteredProps.length > 0 && (
@@ -166,10 +166,10 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                 {filteredProps.map(p => (
                   <button key={p.id} type="button"
                     onMouseDown={() => { setPropertyId(p.id); setPropertyName(p.name); setShowPropDrop(false) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-s3/50 transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
                   >
                     {p.name}
-                    <span className="text-slate-600 ml-2 text-xs">{p.neighborhood}</span>
+                    <span className="text-t4 ml-2 text-xs">{p.neighborhood}</span>
                   </button>
                 ))}
               </div>
@@ -187,17 +187,17 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Valor da venda */}
           <div className="relative">
-            <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-medium text-t3 uppercase tracking-wider mb-1.5">
               Valor da venda <span className="text-red-400">*</span>
             </label>
             <div className="relative flex items-center">
-              <span className="absolute left-3 text-xs text-slate-500 font-medium select-none">R$</span>
+              <span className="absolute left-3 text-xs text-t3 font-medium select-none">R$</span>
               <input
                 value={fmtInput(value)}
                 onChange={e => setValue(e.target.value)}
                 inputMode="numeric"
                 placeholder="600.000"
-                className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.value ? 'border-red-500/50' : 'border-line'}`}
+                className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.value ? 'border-red-500/50' : 'border-line'}`}
               />
             </div>
             {errors.value && <p className="text-xs text-red-400 mt-1">{errors.value}</p>}
@@ -220,7 +220,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   className={`flex-1 text-xs py-2 rounded-xl border transition-all cursor-pointer ${
                     commMode === mode
                       ? 'bg-violet-500/20 border-violet-500/40 text-violet-300 font-semibold'
-                      : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                      : 'bg-s3/50 border-line text-t3 hover:text-t2'
                   }`}
                 >
                   {label}
@@ -244,7 +244,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                       placeholder="5"
                     />
                   </div>
-                  <span className="text-slate-400 text-sm font-medium">% do valor</span>
+                  <span className="text-t3 text-sm font-medium">% do valor</span>
                 </div>
                 {/* Presets rápidos de % */}
                 <div className="flex gap-1.5">
@@ -256,7 +256,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                       className={`flex-1 text-xs py-1.5 rounded-lg border transition-all cursor-pointer ${
                         commPct === p
                           ? 'bg-violet-500/25 border-violet-500/50 text-violet-300 font-semibold'
-                          : 'bg-s3/30 border-line text-slate-600 hover:text-slate-300 hover:border-slate-500'
+                          : 'bg-s3/30 border-line text-t4 hover:text-t2 hover:border-slate-500'
                       }`}
                     >{p}%</button>
                   ))}
@@ -264,20 +264,20 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               </div>
             ) : (
               <div className="relative flex items-center">
-                <span className="absolute left-3 text-xs text-slate-500 font-medium select-none">R$</span>
+                <span className="absolute left-3 text-xs text-t3 font-medium select-none">R$</span>
                 <input
                   value={fmtInput(commFixed)}
                   onChange={e => setCommFixed(e.target.value)}
                   inputMode="numeric"
                   placeholder="30.000"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                 />
               </div>
             )}
 
             {/* Split — presets rápidos */}
             <div className="flex flex-col gap-2 pt-1 border-t border-violet-500/10">
-              <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Divisão da comissão</p>
+              <p className="text-[10px] font-medium text-t3 uppercase tracking-wider">Divisão da comissão</p>
               <div className="flex gap-1.5">
                 {([['100', 'Autônomo', '100%'], ['50', 'Parceria', '50/50'], ['40', 'Com imob.', '40%']] as const).map(([val, label, sub]) => (
                   <button
@@ -287,7 +287,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                     className={`flex-1 flex flex-col items-center py-2 rounded-xl border transition-all cursor-pointer ${
                       brokerPct === val
                         ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                        : 'bg-s3/30 border-line text-slate-500 hover:text-slate-300 hover:border-slate-500'
+                        : 'bg-s3/30 border-line text-t3 hover:text-t2 hover:border-slate-500'
                     }`}
                   >
                     <span className="text-xs font-semibold">{label}</span>
@@ -303,10 +303,10 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                     step="1"
                     value={brokerPct}
                     onChange={e => setBrokerPct(e.target.value)}
-                    className="w-10 bg-transparent text-xs text-slate-300 focus:outline-none text-center"
+                    className="w-10 bg-transparent text-xs text-t2 focus:outline-none text-center"
                     placeholder="—"
                   />
-                  <span className="text-[10px] text-slate-600">%</span>
+                  <span className="text-[10px] text-t4">%</span>
                 </div>
               </div>
             </div>
@@ -319,7 +319,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   <div className="bg-s2/50 rounded-xl px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <DollarSign size={14} className="text-emerald-400" />
-                      <p className="text-xs text-slate-400">Sua comissão</p>
+                      <p className="text-xs text-t3">Sua comissão</p>
                     </div>
                     <p className="text-base font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
                   </div>
@@ -327,11 +327,11 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   /* Modo split: exibe divisão */
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
-                      <p className="text-[10px] text-slate-500 mb-0.5">Comissão total</p>
+                      <p className="text-[10px] text-t3 mb-0.5">Comissão total</p>
                       <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
                     </div>
                     <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
-                      <p className="text-[10px] text-slate-500 mb-0.5">Sua parte ({brokerPct}%)</p>
+                      <p className="text-[10px] text-t3 mb-0.5">Sua parte ({brokerPct}%)</p>
                       <p className="text-sm font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.brokerComm)}</p>
                     </div>
                   </div>
@@ -342,13 +342,13 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Observações */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Observações</label>
+            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Observações</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               placeholder="Informações adicionais..."
               rows={2}
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
             />
           </div>
 

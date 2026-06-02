@@ -269,26 +269,26 @@ function LeadAlertsWidget({
   if (alertLeads.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-sky-400/30 bg-sky-500/5 overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-sky-400/15">
+    <div className="rounded-xl border border-info-line bg-info-bg overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-info-line/50">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-sky-500/15 rounded-xl flex items-center justify-center">
-            <Snowflake size={15} className="text-sky-400" />
+          <div className="w-8 h-8 bg-info/15 rounded-xl flex items-center justify-center">
+            <Snowflake size={15} className="text-info" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-sky-300 leading-none">Leads sem contato</h2>
-            <p className="text-[11px] text-sky-500/70 mt-0.5">Precisam de atenção agora</p>
+            <h2 className="text-sm font-bold text-t1 leading-none">Leads sem contato</h2>
+            <p className="text-[11px] text-t3 mt-0.5">Precisam de atenção agora</p>
           </div>
-          <span className="ml-1 bg-sky-500/20 text-sky-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-sky-400/25 tabular-nums">
+          <span className="ml-1 bg-info/20 text-info text-xs font-bold px-2.5 py-1 rounded-xl border border-info-line tabular-nums">
             {alertLeads.length}
           </span>
         </div>
-        <button onClick={onNavigate} className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors cursor-pointer">
+        <button onClick={onNavigate} className="text-xs text-info hover:text-t2 flex items-center gap-1 transition-colors cursor-pointer">
           Ver funil <ArrowRight size={12} />
         </button>
       </div>
 
-      <div className="flex flex-col divide-y divide-sky-400/8">
+      <div className="flex flex-col divide-y divide-line">
         {alertLeads.slice(0, 7).map(({ lead, days }) => {
           const stageConf = STAGE_LABELS[lead.funnelStage]
           const daysInt   = Math.floor(days)
@@ -296,12 +296,12 @@ function LeadAlertsWidget({
             ? 'text-red-400 bg-red-500/10 border-red-500/20'
             : daysInt > 4
               ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-              : 'text-sky-400 bg-sky-500/10 border-sky-500/20'
+              : 'text-info bg-info-bg border-info-line'
           return (
             <div
               key={lead.id}
               onClick={() => onOpenLead(lead)}
-              className="flex items-center gap-3 px-5 py-3 hover:bg-sky-500/5 transition-colors cursor-pointer"
+              className="flex items-center gap-3 px-5 py-3 hover:bg-info/5 transition-colors cursor-pointer"
             >
               <div className="w-8 h-8 rounded-lg bg-s3/50 border border-line flex items-center justify-center text-sm font-bold text-t2 flex-shrink-0">
                 {lead.name.charAt(0).toUpperCase()}
@@ -334,7 +334,7 @@ function LeadAlertsWidget({
         })}
         {alertLeads.length > 7 && (
           <div className="px-5 py-2.5 text-center">
-            <button onClick={onNavigate} className="text-xs text-t4 hover:text-sky-400 transition-colors cursor-pointer">
+            <button onClick={onNavigate} className="text-xs text-t4 hover:text-info transition-colors cursor-pointer">
               +{alertLeads.length - 7} leads mais precisam de contato →
             </button>
           </div>

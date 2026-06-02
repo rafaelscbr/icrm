@@ -24,7 +24,7 @@ export function DailyLimitBar({ count }: Props) {
       {/* Barra de progresso */}
       <div className="flex-1 min-w-[160px]">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-slate-500">Disparos hoje</span>
+          <span className="text-t3">Disparos hoje</span>
           <span className={`font-bold tabular-nums ${textColor}`}>
             {dailyCount}/{DAILY_LIMIT}
           </span>

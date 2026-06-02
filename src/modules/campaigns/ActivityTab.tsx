@@ -13,7 +13,7 @@ const ACTION_CONFIG: Record<CampaignActivity['actionType'], {
   icon: React.ReactNode; label: string; color: string; bg: string; border: string
 }> = {
   dispatch:     { icon: <MessageCircle size={13} />, label: 'Disparo',        color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20'  },
-  stage_change: { icon: <ArrowRight    size={13} />, label: 'Mudança de etapa',color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20'   },
+  stage_change: { icon: <ArrowRight    size={13} />, label: 'Mudança de etapa',color: 'text-blue-400',   bg: 'bg-s3/60',   border: 'border-blue-500/20'   },
   transfer:     { icon: <GitMerge      size={13} />, label: 'Migração ao funil',color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
   assignment:   { icon: <UserCheck     size={13} />, label: 'Delegação',      color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
 }
@@ -272,7 +272,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Disparos',     count: counts.dispatch,     color: 'text-green-400',  bg: 'bg-green-500/8'  },
-            { label: 'Mudanças',     count: counts.stage_change, color: 'text-blue-400',   bg: 'bg-blue-500/8'   },
+            { label: 'Mudanças',     count: counts.stage_change, color: 'text-blue-400',   bg: 'bg-s3/50'   },
             { label: 'Migrações',    count: counts.transfer,     color: 'text-violet-400', bg: 'bg-violet-500/8' },
           ].map(s => (
             <div key={s.label} className={`rounded-xl ${s.bg} border border-line px-3 py-2.5 text-center`}>

@@ -39,7 +39,7 @@ function ProgressRing({ pct, color }: { pct: number; color: string }) {
       <div className="absolute inset-0 flex items-center justify-center">
         {pct === 1
           ? <CheckCircle2 size={11} className="text-green-400" />
-          : <ListChecks   size={11} className="text-slate-500"  />
+          : <ListChecks   size={11} className="text-t3"  />
         }
       </div>
     </div>
@@ -68,7 +68,7 @@ export function ChecklistBadge({ checklist, size = 'md' }: ChecklistBadgeProps) 
   const textCls = allDone       ? 'text-green-400'
                 : pct >= 0.66   ? 'text-violet-400'
                 : pct >= 0.33   ? 'text-indigo-400'
-                :                 'text-slate-500'
+                :                 'text-t3'
 
   const bgCls   = allDone       ? 'bg-success-bg  border-success-line'
                 : pct >= 0.66   ? 'bg-purple-500/10 border-purple-500/25'

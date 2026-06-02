@@ -49,8 +49,8 @@ function Counter({ label, icon, value, target, disabled, accent, barColor, onCha
           {icon}
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-slate-200">{label}</p>
-          <p className="text-xs text-slate-600">Meta: {target}/dia</p>
+          <p className="text-sm font-semibold text-t1">{label}</p>
+          <p className="text-xs text-t4">Meta: {target}/dia</p>
         </div>
         {done && <CheckCircle2 size={16} className="text-green-400" />}
       </div>
@@ -61,7 +61,7 @@ function Counter({ label, icon, value, target, disabled, accent, barColor, onCha
           type="button"
           disabled={disabled || value <= 0}
           onClick={() => onChange(Math.max(0, value - 1))}
-          className="w-10 h-10 rounded-xl bg-s3/50 hover:bg-s3/70 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 text-xl font-light transition-all cursor-pointer flex items-center justify-center"
+          className="w-10 h-10 rounded-xl bg-s3/50 hover:bg-s3/70 disabled:opacity-30 disabled:cursor-not-allowed text-t2 text-xl font-light transition-all cursor-pointer flex items-center justify-center"
         >
           −
         </button>
@@ -82,10 +82,10 @@ function Counter({ label, icon, value, target, disabled, accent, barColor, onCha
       {/* Progress bar */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <span className={`text-xs font-medium ${done ? 'text-green-400' : 'text-slate-500'}`}>
+          <span className={`text-xs font-medium ${done ? 'text-green-400' : 'text-t3'}`}>
             {done ? 'Meta atingida!' : `${value} de ${target}`}
           </span>
-          <span className="text-xs text-slate-600 tabular-nums">{p}%</span>
+          <span className="text-xs text-t4 tabular-nums">{p}%</span>
         </div>
         <div className="h-2 bg-s3/50 rounded-full overflow-hidden">
           <div
@@ -140,7 +140,7 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
       <div className="flex flex-col gap-4">
         {/* Date */}
         <div>
-          <label className="text-xs text-slate-500 mb-1.5 block">Data</label>
+          <label className="text-xs text-t3 mb-1.5 block">Data</label>
           <input
             type="date"
             max={new Date(Date.now() - 86400000).toISOString().split('T')[0]}
@@ -157,13 +157,13 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
             { label: 'Contatos com Propr.', value: ownerCalls, set: setOwnerCalls, color: 'text-cyan-400' },
           ].map(({ label, value, set, color }) => (
             <div key={label} className="bg-s3/50 rounded-xl p-3 flex flex-col items-center gap-2">
-              <span className="text-xs text-slate-500">{label}</span>
+              <span className="text-xs text-t3">{label}</span>
               <div className="flex items-center gap-3">
                 <button onClick={() => set(Math.max(0, value - 1))}
-                  className="w-7 h-7 rounded-lg bg-s3/70 hover:bg-s3/90 text-slate-300 text-lg flex items-center justify-center cursor-pointer">−</button>
+                  className="w-7 h-7 rounded-lg bg-s3/70 hover:bg-s3/90 text-t2 text-lg flex items-center justify-center cursor-pointer">−</button>
                 <span className={`text-2xl font-bold tabular-nums ${color}`}>{value}</span>
                 <button onClick={() => set(value + 1)}
-                  className="w-7 h-7 rounded-lg bg-s3/70 hover:bg-s3/90 text-slate-300 text-lg flex items-center justify-center cursor-pointer">+</button>
+                  className="w-7 h-7 rounded-lg bg-s3/70 hover:bg-s3/90 text-t2 text-lg flex items-center justify-center cursor-pointer">+</button>
               </div>
             </div>
           ))}
@@ -172,7 +172,7 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
         {/* Funnel toggle */}
         <div className="flex items-center gap-3 px-3 py-2.5 bg-s3/50 rounded-xl">
           <MessageSquare size={14} className="text-green-400 flex-shrink-0" />
-          <span className="flex-1 text-sm text-slate-300">Followup do funil</span>
+          <span className="flex-1 text-sm text-t2">Followup do funil</span>
           <button
             onClick={() => setFunnel(v => !v)}
             className={`relative w-12 h-6 rounded-full transition-all duration-300 cursor-pointer flex-shrink-0 ${funnelFollowup ? 'bg-green-500' : 'bg-s3/70'}`}
@@ -188,13 +188,13 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
           onChange={e => setNotes(e.target.value)}
           rows={2}
           placeholder="Observações (opcional)"
-          className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+          className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
         />
 
         {/* Closed toggle */}
         <div className="flex items-center gap-3 px-3 py-2 bg-s3/50 rounded-xl">
-          <Lock size={13} className="text-slate-500 flex-shrink-0" />
-          <span className="flex-1 text-xs text-slate-400">Marcar dia como fechado</span>
+          <Lock size={13} className="text-t3 flex-shrink-0" />
+          <span className="flex-1 text-xs text-t3">Marcar dia como fechado</span>
           <button
             onClick={() => setClosed(v => !v)}
             className={`relative w-11 rounded-full transition-all cursor-pointer h-6 ${closed ? 'bg-amber-500' : 'bg-s3/70'}`}
@@ -224,27 +224,27 @@ function HistoryRow({ log, onEdit }: { log: DailyLog; onEdit: (log: DailyLog) =>
   return (
     <div className="group flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-s2/50 transition-colors -mx-4">
       <div className="w-20 flex-shrink-0">
-        <p className="text-sm font-medium text-slate-300 tabular-nums">{formatDateShort(log.date)}</p>
-        {log.closed && <p className="text-[10px] text-slate-600">Fechado</p>}
+        <p className="text-sm font-medium text-t2 tabular-nums">{formatDateShort(log.date)}</p>
+        {log.closed && <p className="text-[10px] text-t4">Fechado</p>}
       </div>
-      <div className={`flex items-baseline gap-0.5 w-16 ${leadsOk ? 'text-green-400' : 'text-slate-400'}`}>
+      <div className={`flex items-baseline gap-0.5 w-16 ${leadsOk ? 'text-green-400' : 'text-t3'}`}>
         <span className="text-sm font-bold tabular-nums">{log.newLeads}</span>
-        <span className="text-xs text-slate-600">/{DAILY_TARGETS.newLeads}</span>
+        <span className="text-xs text-t4">/{DAILY_TARGETS.newLeads}</span>
       </div>
-      <div className={`flex items-baseline gap-0.5 w-16 ${callsOk ? 'text-green-400' : 'text-slate-400'}`}>
+      <div className={`flex items-baseline gap-0.5 w-16 ${callsOk ? 'text-green-400' : 'text-t3'}`}>
         <span className="text-sm font-bold tabular-nums">{log.ownerCalls}</span>
-        <span className="text-xs text-slate-600">/{DAILY_TARGETS.ownerCalls}</span>
+        <span className="text-xs text-t4">/{DAILY_TARGETS.ownerCalls}</span>
       </div>
       <div className="w-16 flex items-center">
         {log.funnelFollowup
           ? <CheckCircle2 size={14} className="text-green-400" />
-          : <span className="text-xs text-slate-600">—</span>
+          : <span className="text-xs text-t4">—</span>
         }
       </div>
       <div className={`text-xs font-semibold ${scoreColor}`}>{score}/3</div>
       <button
         onClick={() => onEdit(log)}
-        className="ml-auto opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-s3/70 text-slate-600 hover:text-slate-300 transition-all cursor-pointer"
+        className="ml-auto opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-all cursor-pointer"
       >
         <Pencil size={12} />
       </button>
@@ -314,8 +314,8 @@ export function DailyProductivityTab() {
             <Calendar size={16} className="text-brand" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-200 capitalize">{formatDateFull(today.date)}</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-semibold text-t1 capitalize">{formatDateFull(today.date)}</p>
+            <p className="text-xs text-t3">
               {locked
                 ? `Dia fechado às ${today.closedAt ? new Date(today.closedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}`
                 : 'Registre suas atividades de hoje'
@@ -326,7 +326,7 @@ export function DailyProductivityTab() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setEditingLog(undefined); setPastModal(true) }}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-2 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 text-xs text-t3 hover:text-t1 bg-s3/50 hover:bg-s3/70 border border-line rounded-xl px-3 py-2 transition-all cursor-pointer"
           >
             <PlusCircle size={13} /> Lançar dia anterior
           </button>
@@ -373,8 +373,8 @@ export function DailyProductivityTab() {
           <MessageSquare size={16} className="text-green-400" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-slate-200">Followup do Funil (WhatsApp)</p>
-          <p className="text-xs text-slate-500">Percorreu todos os leads do funil hoje?</p>
+          <p className="text-sm font-semibold text-t1">Followup do Funil (WhatsApp)</p>
+          <p className="text-xs text-t3">Percorreu todos os leads do funil hoje?</p>
         </div>
         <button
           type="button"
@@ -397,7 +397,7 @@ export function DailyProductivityTab() {
         <button
           type="button"
           onClick={() => setShowNotes(v => !v)}
-          className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer mb-3"
+          className="flex items-center gap-2 text-xs text-t3 hover:text-t2 transition-colors cursor-pointer mb-3"
         >
           <StickyNote size={13} />
           {showNotes ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -410,7 +410,7 @@ export function DailyProductivityTab() {
             onChange={e => updateToday({ notes: e.target.value })}
             rows={3}
             placeholder="Como foi o dia? Algum destaque, oportunidade ou ponto de atenção..."
-            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none disabled:opacity-50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none disabled:opacity-50"
           />
         )}
       </div>
@@ -424,9 +424,9 @@ export function DailyProductivityTab() {
           { label: 'Dias fechados na semana',  value: weekDayClosed,  sub: 'de 5 dias úteis',                    color: 'text-amber-400'  },
         ].map(s => (
           <Card key={s.label} className="!py-4">
-            <p className="text-xs text-slate-600 mb-1 truncate">{s.label}</p>
+            <p className="text-xs text-t4 mb-1 truncate">{s.label}</p>
             <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-slate-700 mt-0.5">{s.sub}</p>
+            <p className="text-xs text-t5 mt-0.5">{s.sub}</p>
           </Card>
         ))}
       </div>
@@ -435,15 +435,15 @@ export function DailyProductivityTab() {
       {history.length > 0 && (
         <Card>
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={14} className="text-slate-500" />
-            <h2 className="text-sm font-semibold text-slate-300">Histórico recente</h2>
+            <TrendingUp size={14} className="text-t3" />
+            <h2 className="text-sm font-semibold text-t2">Histórico recente</h2>
           </div>
           <div className="flex items-center gap-4 px-4 mb-2">
-            <span className="w-20 text-xs text-slate-600 uppercase tracking-wider">Data</span>
-            <span className="w-16 text-xs text-slate-600 uppercase tracking-wider">Leads</span>
-            <span className="w-16 text-xs text-slate-600 uppercase tracking-wider">Cont. Propr.</span>
-            <span className="w-16 text-xs text-slate-600 uppercase tracking-wider">Funil</span>
-            <span className="text-xs text-slate-600 uppercase tracking-wider">Score</span>
+            <span className="w-20 text-xs text-t4 uppercase tracking-wider">Data</span>
+            <span className="w-16 text-xs text-t4 uppercase tracking-wider">Leads</span>
+            <span className="w-16 text-xs text-t4 uppercase tracking-wider">Cont. Propr.</span>
+            <span className="w-16 text-xs text-t4 uppercase tracking-wider">Funil</span>
+            <span className="text-xs text-t4 uppercase tracking-wider">Score</span>
           </div>
           <div className="flex flex-col">
             {history.map(log => <HistoryRow key={log.id} log={log} onEdit={openEdit} />)}

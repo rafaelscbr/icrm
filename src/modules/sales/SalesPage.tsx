@@ -109,7 +109,7 @@ export function SalesPage() {
     >
       {/* Seletor de período */}
       <div className="flex items-center justify-between mb-5">
-        <p className="text-xs text-slate-500">Todos os dados filtrados pelo período</p>
+        <p className="text-xs text-t3">Todos os dados filtrados pelo período</p>
         <PeriodSelector />
       </div>
 
@@ -120,13 +120,13 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-purple-500/15 rounded-lg flex items-center justify-center">
               <TrendingUp size={14} className="text-purple-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">VGV no período</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">VGV no período</p>
           </div>
           <p className="text-base lg:text-2xl font-bold text-purple-300 tabular-nums">
             <span className="lg:hidden">{formatCurrency(valueInPeriod)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(valueInPeriod)}</span>
           </p>
-          <p className="text-xs text-slate-500 mt-1">{salesInPeriod.length} venda{salesInPeriod.length !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-t3 mt-1">{salesInPeriod.length} venda{salesInPeriod.length !== 1 ? 's' : ''}</p>
         </Card>
 
         <Card accent="green">
@@ -134,13 +134,13 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center">
               <TrendingUp size={14} className="text-green-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Ticket médio</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Ticket médio</p>
           </div>
           <p className="text-base lg:text-2xl font-bold text-green-300 tabular-nums">
             <span className="lg:hidden">{formatCurrency(avgTicket)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(avgTicket)}</span>
           </p>
-          <p className="text-xs text-slate-500 mt-1">por venda no período</p>
+          <p className="text-xs text-t3 mt-1">por venda no período</p>
         </Card>
 
         <Card>
@@ -148,13 +148,13 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-violet-500/15 rounded-lg flex items-center justify-center">
               <BadgePercent size={14} className="text-violet-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Comissão gerada</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Comissão gerada</p>
           </div>
           <p className="text-base lg:text-2xl font-bold text-violet-300 tabular-nums">
             <span className="lg:hidden">{formatCurrency(periodComm)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(periodComm)}</span>
           </p>
-          <p className="text-xs text-slate-500 mt-1">negociada no período</p>
+          <p className="text-xs text-t3 mt-1">negociada no período</p>
         </Card>
 
         <Card>
@@ -162,20 +162,20 @@ export function SalesPage() {
             <div className="w-7 h-7 bg-emerald-500/15 rounded-lg flex items-center justify-center">
               <DollarSign size={14} className="text-emerald-400" />
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sua comissão</p>
+            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Sua comissão</p>
           </div>
           <p className="text-base lg:text-2xl font-bold text-emerald-300 tabular-nums">
             <span className="lg:hidden">{formatCurrency(periodBroker)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(periodBroker)}</span>
           </p>
-          <p className="text-xs text-slate-500 mt-1">sua parte no período</p>
+          <p className="text-xs text-t3 mt-1">sua parte no período</p>
         </Card>
       </div>
 
       {/* Gráfico mensal */}
       {sales.length > 0 && (
         <Card className="mb-5 lg:mb-6">
-          <h2 className="text-sm font-semibold text-slate-300 mb-4">Evolução mensal — últimos 12 meses</h2>
+          <h2 className="text-sm font-semibold text-t2 mb-4">Evolução mensal — últimos 12 meses</h2>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -212,12 +212,12 @@ export function SalesPage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar por cliente ou imóvel..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[44px]"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[44px]"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">
@@ -229,7 +229,7 @@ export function SalesPage() {
                 flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
                 ${typeFilter === opt.value
                   ? 'bg-brand-tint border-brand/40 text-brand-text'
-                  : 'bg-s3/50 border-line text-slate-500 hover:text-slate-300'
+                  : 'bg-s3/50 border-line text-t3 hover:text-t2'
                 }
               `}
             >
@@ -276,26 +276,26 @@ export function SalesPage() {
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => { setEditing(s); setFormOpen(true) }}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-s3/70 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-s3/70 text-t3 hover:text-t2 transition-colors cursor-pointer"
                       ><Pencil size={15} /></button>
                       <button
                         onClick={() => setDeleteTarget(s)}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-colors cursor-pointer"
+                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-t3 hover:text-red-400 transition-colors cursor-pointer"
                       ><Trash2 size={15} /></button>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-slate-400 truncate flex-1 mr-2">{s.propertyName}</p>
+                      <p className="text-sm text-t3 truncate flex-1 mr-2">{s.propertyName}</p>
                       <Badge variant={variant}>{label}</Badge>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-line">
-                      <span className="text-xs text-slate-500">{formatDateShort(s.date)}</span>
+                      <span className="text-xs text-t3">{formatDateShort(s.date)}</span>
                       <span className="text-sm font-bold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</span>
                     </div>
                     {hasComm && (
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-600">Comissão</span>
+                        <span className="text-xs text-t4">Comissão</span>
                         <div className="text-right">
                           <p className="text-xs text-violet-400 tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
                           <p className="text-[11px] text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
@@ -308,7 +308,7 @@ export function SalesPage() {
             })}
             {/* Mobile footer */}
             <div className="flex items-center justify-between px-4 py-3 bg-s2/50 rounded-xl border border-line">
-              <p className="text-xs text-slate-500">{filtered.length} venda{filtered.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-t3">{filtered.length} venda{filtered.length !== 1 ? 's' : ''}</p>
               <div className="text-right">
                 <p className="text-sm font-bold text-slate-100 tabular-nums">
                   {formatCurrencyFull(filtered.reduce((acc, s) => acc + s.value, 0))}
@@ -328,7 +328,7 @@ export function SalesPage() {
                 ...(isAdmin ? ['Corretor'] : []),
                 '',
               ].map((h, i) => (
-                <p key={i} className="text-xs font-medium text-slate-500 uppercase tracking-wider">{h}</p>
+                <p key={i} className="text-xs font-medium text-t3 uppercase tracking-wider">{h}</p>
               ))}
             </div>
             {filtered.map((s, i) => {
@@ -349,17 +349,17 @@ export function SalesPage() {
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar name={client?.name ?? '?'} size="sm" />
                     <div className="min-w-0">
-                      <span className="text-sm text-slate-200 truncate block">{client?.name ?? '—'}</span>
+                      <span className="text-sm text-t1 truncate block">{client?.name ?? '—'}</span>
                       {isRetro && (
                         <span className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-wide">retroativo</span>
                       )}
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm text-slate-300 truncate">{s.propertyName}</p>
+                    <p className="text-sm text-t2 truncate">{s.propertyName}</p>
                     <Badge variant={variant}>{label}</Badge>
                   </div>
-                  <p className="text-sm text-slate-400">{formatDateShort(s.date)}</p>
+                  <p className="text-sm text-t3">{formatDateShort(s.date)}</p>
                   <p className="text-sm font-semibold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</p>
                   <div className="min-w-0">
                     {hasComm ? (
@@ -368,27 +368,27 @@ export function SalesPage() {
                         <p className="text-[11px] text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
                       </>
                     ) : (
-                      <span className="text-xs text-slate-700">—</span>
+                      <span className="text-xs text-t5">—</span>
                     )}
                   </div>
                   {isAdmin && (
-                    <span className="text-xs text-slate-400 truncate">{brokerName}</span>
+                    <span className="text-xs text-t3 truncate">{brokerName}</span>
                   )}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => { setEditing(s); setFormOpen(true) }}
-                      className="p-2 rounded-lg hover:bg-s3/70 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                      className="p-2 rounded-lg hover:bg-s3/70 text-t3 hover:text-t2 transition-colors cursor-pointer"
                     ><Pencil size={14} /></button>
                     <button
                       onClick={() => setDeleteTarget(s)}
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-colors cursor-pointer"
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-t3 hover:text-red-400 transition-colors cursor-pointer"
                     ><Trash2 size={14} /></button>
                   </div>
                 </div>
               )
             })}
             <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-3 border-t border-line bg-s2/30">
-              <p className="text-xs text-slate-500 col-span-3">
+              <p className="text-xs text-t3 col-span-3">
                 {filtered.length} venda{filtered.length !== 1 ? 's' : ''}
               </p>
               <p className="text-sm font-bold text-slate-100 tabular-nums">
@@ -416,7 +416,7 @@ export function SalesPage() {
       />
 
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir venda" size="sm">
-        <p className="text-sm text-slate-400 mb-6">
+        <p className="text-sm text-t3 mb-6">
           Tem certeza que deseja excluir esta venda? Esta ação não pode ser desfeita.
         </p>
         <div className="flex gap-3">

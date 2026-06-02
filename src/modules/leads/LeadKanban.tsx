@@ -23,7 +23,7 @@ export const STAGE_CONFIG: Record<LeadFunnelStage, {
   label: string; color: string; bg: string; border: string;
   headerBg: string; headerText: string; dot: string;
 }> = {
-  lead:        { label: 'Leads',        color: 'text-slate-300',  bg: 'bg-slate-500/8',   border: 'border-slate-500/20', headerBg: 'bg-slate-500/15',  headerText: 'text-slate-200',  dot: 'bg-slate-400'   },
+  lead:        { label: 'Leads',        color: 'text-t2',  bg: 'bg-slate-500/8',   border: 'border-slate-500/20', headerBg: 'bg-slate-500/15',  headerText: 'text-t1',  dot: 'bg-slate-400'   },
   followup:    { label: 'Followup',     color: 'text-teal-300',   bg: 'bg-teal-500/8',    border: 'border-teal-500/20',  headerBg: 'bg-teal-500/12',   headerText: 'text-teal-200',   dot: 'bg-teal-400'    },
   atendimento: { label: 'Atendimento',  color: 'text-violet-300', bg: 'bg-violet-500/8',  border: 'border-violet-500/20',headerBg: 'bg-violet-500/15', headerText: 'text-violet-200', dot: 'bg-violet-400'  },
   visita:      { label: 'Visita',       color: 'text-amber-300',  bg: 'bg-amber-500/8',   border: 'border-amber-500/20', headerBg: 'bg-amber-500/15',  headerText: 'text-amber-200',  dot: 'bg-amber-400'   },
@@ -50,7 +50,7 @@ function daysInStage(stageChangedAt?: string, createdAt?: string): number {
 }
 
 function stageDaysColor(days: number): string {
-  if (days <= 3)  return 'text-slate-500 bg-slate-500/10 border-slate-500/20'
+  if (days <= 3)  return 'text-t3 bg-slate-500/10 border-slate-500/20'
   if (days <= 7)  return 'text-amber-400 bg-amber-500/10 border-amber-500/25'
   return 'text-red-400 bg-red-500/10 border-red-500/25'
 }
@@ -153,7 +153,7 @@ function LeadCard({
           className={`w-5 h-5 flex items-center justify-center rounded transition-all ${
             lead.flagged
               ? 'text-orange-400 hover:text-orange-300'
-              : 'text-slate-700 opacity-0 group-hover:opacity-100 hover:text-orange-400'
+              : 'text-t5 opacity-0 group-hover:opacity-100 hover:text-orange-400'
           }`}
           title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
         >
@@ -163,7 +163,7 @@ function LeadCard({
           {...listeners}
           {...attributes}
           onClick={e => e.stopPropagation()}
-          className="w-5 h-5 flex items-center justify-center text-slate-700 hover:text-slate-400 cursor-grab active:cursor-grabbing transition-colors"
+          className="w-5 h-5 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors"
         >
           <GripVertical size={12} />
         </div>
@@ -214,7 +214,7 @@ function LeadCard({
       )}
 
       {(property || lead.propertyName) && (
-        <p className={`text-[11px] mb-2 truncate flex items-center gap-1 ${lead.propertyName && !property ? 'text-amber-400/70' : 'text-slate-500'}`}>
+        <p className={`text-[11px] mb-2 truncate flex items-center gap-1 ${lead.propertyName && !property ? 'text-amber-400/70' : 'text-t3'}`}>
           🏠 <span className="truncate">{property ? property.name : lead.propertyName}</span>
         </p>
       )}
@@ -309,7 +309,7 @@ function KanbanColumn({
         {totalPipeline > 0 && (
           <div className="flex items-center gap-1.5 mt-1.5 pl-4">
             <span className="text-[10px] text-violet-400 font-semibold tabular-nums">{formatCurrency(totalPipeline)}</span>
-            <span className="text-[10px] text-slate-600">·</span>
+            <span className="text-[10px] text-t4">·</span>
             <span className="text-[10px] text-emerald-400 font-semibold tabular-nums">💰 {formatCurrency(totalCommission)}</span>
           </div>
         )}

@@ -23,7 +23,7 @@ const ORIGINS: { value: LeadOrigin; label: string; emoji: string; grad: string; 
 ]
 
 const STAGES: { value: LeadFunnelStage; label: string; emoji: string; color: string; active: string }[] = [
-  { value: 'lead',        label: 'Lead',        emoji: '🎯', color: 'text-slate-400',  active: 'bg-slate-500/25 border-slate-400/50 text-slate-200' },
+  { value: 'lead',        label: 'Lead',        emoji: '🎯', color: 'text-t3',  active: 'bg-slate-500/25 border-slate-400/50 text-t1' },
   { value: 'followup',    label: 'Followup',    emoji: '💬', color: 'text-blue-400',   active: 'bg-blue-500/25 border-blue-400/50 text-blue-200'    },
   { value: 'atendimento', label: 'Atendimento', emoji: '🤙', color: 'text-violet-400', active: 'bg-violet-500/25 border-violet-400/50 text-violet-200'},
   { value: 'visita',      label: 'Visita',      emoji: '🏠', color: 'text-amber-400',  active: 'bg-amber-500/25 border-amber-400/50 text-amber-200'  },
@@ -357,7 +357,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                         <CheckCircle2 size={16} className="text-violet-400" />
                         <button
                           onClick={clearContact}
-                          className="text-xs text-t3 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-blue-500/10 transition-all"
+                          className="text-xs text-t3 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-s3/60 transition-all"
                         >
                           Trocar
                         </button>
