@@ -7,26 +7,34 @@ import { supabase } from '../lib/supabase'
 type NewLead = Omit<CampaignLead, 'id' | 'funnelStage' | 'createdAt' | 'updatedAt'>
 
 // Mapeia uma linha crua do postgres_changes para CampaignLead
+// DEVE conter TODOS os campos do tipo — omitir um campo faz o realtime
+// apagar informação que o corretor acabou de gravar.
 function rowToLead(r: Record<string, unknown>): CampaignLead {
   return {
     id:                   r.id as string,
     campaignId:           r.campaign_id as string,
     name:                 r.name as string,
     phone:                r.phone as string,
-    email:                (r.email as string | null) ?? undefined,
-    extra:                (r.extra as string | null) ?? undefined,
+    email:                (r.email as string | null)         ?? undefined,
+    extra:                (r.extra as string | null)         ?? undefined,
     funnelStage:          r.funnel_stage as FunnelStage,
     situation:            (r.situation as LeadSituation | null) ?? undefined,
-    notes:                (r.notes as string | null) ?? undefined,
-    firstContactAt:       (r.first_contact_at as string | null) ?? undefined,
-    lastMessage:          (r.last_message as string | null) ?? undefined,
+    notes:                (r.notes as string | null)         ?? undefined,
+    firstContactAt:       (r.first_contact_at as string | null)  ?? undefined,
+    lastMessage:          (r.last_message as string | null)  ?? undefined,
     messageIndex:         (r.message_index as number | null) ?? undefined,
     proposalValue:        (r.proposal_value as number | null) ?? undefined,
-    propertyId:           (r.property_id as string | null) ?? undefined,
+    propertyId:           (r.property_id as string | null)   ?? undefined,
     stageUpdatedAt:       (r.stage_updated_at as string | null) ?? undefined,
     transferredAt:        (r.transferred_at as string | null) ?? undefined,
     transferredToLeadId:  (r.transferred_to_lead_id as string | null) ?? undefined,
-    brokerId:             (r.broker_id as string | null) ?? undefined,
+    brokerId:             (r.broker_id as string | null)      ?? undefined,
+    // campos de rastreabilidade — obrigatório para badge "quem disparou"
+    lastSentById:         (r.last_sent_by_id as string | null)   ?? undefined,
+    lastSentByName:       (r.last_sent_by_name as string | null) ?? undefined,
+    lastSentAt:           (r.last_sent_at as string | null)      ?? undefined,
+    assignedToId:         (r.assigned_to_id as string | null)    ?? undefined,
+    assignedToName:       (r.assigned_to_name as string | null)  ?? undefined,
     createdAt:            r.created_at as string,
     updatedAt:            r.updated_at as string,
   }
@@ -82,12 +90,22 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   // Subscription realtime — escuta INSERT, UPDATE e DELETE na tabela campaign_leads.
   // Retorna função de cleanup para usar no useEffect.
   subscribe: () => {
-    // Evita canal duplicado se já existe uma subscription ativa
-    const existing = supabase.getChannels().find(c => c.topic === 'realtime:campaign-leads-realtime')
-    if (existing) return () => {}
+    const CHANNEL = 'campaign-leads-realtime'
+
+    // Remove canal existente se estiver em estado quebrado (não 'joined')
+    // Isso garante reconexão após queda de rede ou navegação
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${CHANNEL}`)
+    if (existing) {
+      if (existing.state === 'joined') {
+        // Canal saudável — apenas retorna cleanup sem criar novo
+        return () => {}
+      }
+      // Canal existente mas morto — remove para recriar
+      supabase.removeChannel(existing)
+    }
 
     const channel = supabase
-      .channel('campaign-leads-realtime')
+      .channel(CHANNEL)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'campaign_leads' },
@@ -117,7 +135,14 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
           set(s => ({ leads: s.leads.filter(l => l.id !== id) }))
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        // Se o canal cair após reconectar, recarrega os dados do banco
+        // para garantir que não perdemos eventos durante a desconexão
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[campaign_leads] realtime desconectado — recarregando dados...')
+          useCampaignLeadsStore.getState().load()
+        }
+      })
 
     return () => { supabase.removeChannel(channel) }
   },

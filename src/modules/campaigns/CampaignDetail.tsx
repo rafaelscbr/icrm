@@ -187,10 +187,12 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
     return () => ro.disconnect()
   }, [])
 
-  useEffect(() => { loadLeads() }, [loadLeads])
+  // Sempre recarrega os leads ao abrir — garante dados frescos mesmo que
+  // eventos realtime tenham sido perdidos durante desconexão
+  useEffect(() => { loadLeads() }, [campaignId])
 
-  // Realtime: sincroniza mudanças feitas por outros usuários (corretores/admin)
-  useEffect(() => useCampaignLeadsStore.getState().subscribe(), [])
+  // Realtime: sincroniza mudanças em tempo real; reconecta se canal estiver morto
+  useEffect(() => useCampaignLeadsStore.getState().subscribe(), [campaignId])
 
   const campaign = campaigns.find(c => c.id === campaignId)
 

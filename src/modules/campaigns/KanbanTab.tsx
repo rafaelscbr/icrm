@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   MessageCircle, FileText, ChevronDown, Eye, Phone,
-  Download, Plus, Snowflake, GitMerge, ArrowRight, GripVertical,
+  Download, Plus, Snowflake, GitMerge, ArrowRight, GripVertical, RefreshCw,
 } from 'lucide-react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
@@ -490,10 +490,11 @@ const DATE_FILTERS: { value: DateFilter; label: string }[] = [
 ]
 
 export function KanbanTab({ leads, campaign }: KanbanTabProps) {
-  const { setStage }                           = useCampaignLeadsStore()
+  const { setStage, load: reloadLeads }         = useCampaignLeadsStore()
   const [parecerLead,     setParecerLead]      = useState<CampaignLead | undefined>()
   const [dateFilter,      setDateFilter]        = useState<DateFilter>('all')
   const [activeLead,      setActiveLead]        = useState<CampaignLead | null>(null)
+  const [syncing,         setSyncing]           = useState(false)
   // Sugestão de migração ao arrastar para 'scheduled'
   const [migrateSuggest,  setMigrateSuggest]    = useState<{ lead: CampaignLead; targetStage: FunnelStage } | null>(null)
   const [showTransfer,    setShowTransfer]       = useState(false)
@@ -557,6 +558,21 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
             )}
           </button>
         ))}
+        {/* Botão de sincronização manual */}
+        <button
+          onClick={async () => {
+            setSyncing(true)
+            await reloadLeads()
+            setSyncing(false)
+          }}
+          disabled={syncing}
+          title="Atualizar kanban com dados mais recentes do banco"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-line text-slate-500 hover:text-brand hover:border-brand/30 hover:bg-brand/5 bg-s2/60 transition-all cursor-pointer disabled:opacity-50"
+        >
+          <RefreshCw size={11} className={syncing ? 'animate-spin' : ''} />
+          {syncing ? 'Atualizando…' : 'Atualizar'}
+        </button>
+
         {/* Info do ticket médio */}
         {campaign.averageTicket && campaign.averageTicket > 0 && (
           <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 bg-s2/60 border border-line rounded-xl px-3 py-1.5">
