@@ -64,23 +64,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
     onClose()
   }
 
-  function handleAddAsContact() {
-    if (!lead) return
-    const contact = contactsStore.add({
-      name:         lead.name,
-      phone:        lead.phone,
-      tags:         [],
-      hasChildren:  false,
-      isMarried:    false,
-      company:      campaign?.name,
-      permutaItems: [],
-    })
-    toast.success('Contato criado! Registre a venda.')
-    navigate(`/vendas?new=1&clientId=${contact.id}&clientName=${encodeURIComponent(lead.name)}`)
-    onClose()
-  }
-
-  const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
+const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Parecer do Lead" size="md">
