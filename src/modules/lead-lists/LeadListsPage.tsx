@@ -199,7 +199,8 @@ export function LeadListsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {visible.map(list => {
-            const profile = list.productProfile
+            const profile   = list.productProfile
+            const listScore = listScores.get(list.id)
             return (
               <Card key={list.id} className="group flex flex-col gap-4 hover:border-brand/25 transition-all duration-200 border border-line">
                 {/* Header */}
