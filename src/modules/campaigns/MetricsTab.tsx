@@ -5,7 +5,6 @@ import {
 import { Card } from '../../components/ui/Card'
 import { Campaign, CampaignLead } from '../../types'
 import { FUNNEL_STAGES, FUNNEL_COLORS, SITUATION_CONFIG } from './config'
-import { formatCurrency } from '../../lib/formatters'
 import { UserCircle2 } from 'lucide-react'
 
 interface MetricsTabProps {
