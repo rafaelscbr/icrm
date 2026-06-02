@@ -201,11 +201,11 @@ export function CampaignPerformanceTab({ leads }: Props) {
         <h2 className="text-sm font-semibold text-slate-300 mb-4">Funil desta campanha</h2>
         <div className="flex flex-col gap-2">
           {[
-            { label: 'Leads importados',    value: total,      color: 'bg-slate-500',  text: 'text-slate-300'  },
-            { label: 'Acionados (1º msg)',  value: contacted,  color: 'bg-blue-500',   text: 'text-blue-300'   },
-            { label: 'Demonstraram int.',   value: interested, color: 'bg-cyan-500',   text: 'text-cyan-300'   },
-            { label: 'Propostas enviadas',  value: proposals,  color: 'bg-amber-500',  text: 'text-amber-300'  },
-            { label: 'Vendas',              value: sales,      color: 'bg-green-500',  text: 'text-green-300'  },
+            { label: 'Leads importados',      value: total,        color: 'bg-slate-500',  text: 'text-slate-300'  },
+            { label: 'Acionados (1º msg)',    value: contacted,    color: 'bg-blue-500',   text: 'text-blue-300'   },
+            { label: 'Demonstraram interesse',value: interested,   color: 'bg-cyan-500',   text: 'text-cyan-300'   },
+            { label: 'Agendaram apresentação',value: scheduled,    color: 'bg-violet-500', text: 'text-violet-300' },
+            { label: 'Transferidos ao funil', value: transferred,  color: 'bg-indigo-500', text: 'text-indigo-300' },
           ].map((row, i, arr) => {
             const prev    = arr[i - 1]?.value ?? row.value
             const convPct = prev > 0 ? Math.round(row.value / prev * 100) : 0
