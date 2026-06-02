@@ -45,7 +45,14 @@ export function LeadListsPage() {
     if (list) return <LeadListDetail list={list} onBack={() => setDetailId('')} />
   }
 
-  const visible = lists.filter(l => l.status === tab)
+  const visible = lists
+    .filter(l => l.status === tab)
+    .sort((a, b) => {
+      if (!sortByScore || tab !== 'active') return 0
+      const sa = listScores.get(a.id)?.score ?? 0
+      const sb = listScores.get(b.id)?.score ?? 0
+      return sb - sa
+    })
 
   const totalLeads   = lists.filter(l => l.status === 'active').reduce((a, l) => a + l.totalCount, 0)
   const totalLists   = lists.filter(l => l.status === 'active').length
