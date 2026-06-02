@@ -394,22 +394,6 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   )}
                   {idx === 2 && (
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-600">projeção</p>
-                      <p className="text-sm font-semibold tabular-nums text-slate-300">
-                        {fmtLeads(projAfter.presentation)} leads
-                      </p>
-                    </div>
-                  )}
-                  {idx === 3 && (
-                    <div className="text-right">
-                      <p className="text-[10px] text-slate-600">projeção</p>
-                      <p className="text-sm font-semibold tabular-nums text-slate-300">
-                        {fmtLeads(projAfter.proposal)} leads
-                      </p>
-                    </div>
-                  )}
-                  {idx === 4 && (
-                    <div className="text-right">
                       <p className="text-[10px] text-slate-600">vendas projetadas</p>
                       <p className="text-sm font-bold tabular-nums text-green-400">
                         {fmtLeads(projAfter.sale)}
