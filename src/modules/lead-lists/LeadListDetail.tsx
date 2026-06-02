@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft, Database, Users, Upload, Search, Phone,
   ChevronLeft, ChevronRight, Pencil, Calendar,
-  MapPin, Banknote, BedDouble,
+  MapPin, Banknote, BedDouble, Trash2,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
 import { Card }          from '../../components/ui/Card'
@@ -11,8 +11,9 @@ import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { LeadList, Contact } from '../../types'
 import { formatPhone, whatsappUrl, formatCurrency } from '../../lib/formatters'
 import { supabase } from '../../lib/supabase'
-import { ImportLeadsModal } from './ImportLeadsModal'
-import { LeadListForm }     from './LeadListForm'
+import { ImportLeadsModal }        from './ImportLeadsModal'
+import { LeadListForm }            from './LeadListForm'
+import { DeleteLeadFromListModal } from './DeleteLeadFromListModal'
 
 const PAGE_SIZE = 50
 
