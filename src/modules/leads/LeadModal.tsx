@@ -4,6 +4,7 @@ import {
   Trash2, RotateCcw, Edit2, AlertTriangle, CheckCircle2,
   ClipboardList, Flame, ArrowLeftRight, Search, Check, Zap,
   ChevronDown, ChevronRight, History, Target, StickyNote, PhoneCall,
+  Database, ListPlus, Loader2,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -11,12 +12,15 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
+import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { formatPhone, formatCurrency, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
+import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
 import { LeadRadarTab } from './LeadRadarTab'
 import { LeadPermutaTab } from './LeadPermutaTab'
+import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import toast from 'react-hot-toast'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -113,8 +117,15 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showHistory,       setShowHistory]       = useState(false)
   const [showRadar,         setShowRadar]         = useState(false)
   const [showPermuta,       setShowPermuta]       = useState(false)
+  const [showBaseCamp,      setShowBaseCamp]      = useState(false)
+  const [showAddToList,     setShowAddToList]     = useState(false)
+  const [selectedListId,    setSelectedListId]    = useState('')
+  const [addingToList,      setAddingToList]      = useState(false)
   const [noteText,          setNoteText]          = useState('')
   const [showNoteInput,     setShowNoteInput]     = useState(false)
+
+  const { lists, load: loadLists } = useLeadListsStore()
+  const activeLists = lists.filter(l => l.status === 'active')
 
   const property   = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact    = lead.contactId  ? getById(lead.contactId) : undefined
@@ -180,6 +191,35 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   function handleRestore() { restore(lead.id); toast.success('Lead restaurado'); onClose() }
   function handleDelete()   { remove(lead.id);  toast.success('Lead excluído');   onClose() }
+
+  async function handleAddToList() {
+    if (!selectedListId || !lead.contactId) return
+    setAddingToList(true)
+    try {
+      await db.leadListMembers.insertMany([{
+        listId:      selectedListId,
+        contactId:   lead.contactId,
+        importBatch: 'manual',
+        rawPhone:    lead.phone,
+      }])
+      // atualiza contagem da lista
+      const list = activeLists.find(l => l.id === selectedListId)
+      if (list) {
+        const { count } = await (await import('../../lib/supabase')).supabase
+          .from('lead_list_members').select('id', { count: 'exact', head: true })
+          .eq('list_id', selectedListId)
+        await db.leadLists.updateCount(selectedListId, count ?? list.totalCount + 1)
+        await loadLists()
+      }
+      toast.success(`Adicionado à lista "${list?.name ?? 'Lista'}"`)
+      setShowAddToList(false)
+      setSelectedListId('')
+    } catch (err) {
+      toast.error('Erro ao adicionar à lista')
+    } finally {
+      setAddingToList(false)
+    }
+  }
 
   const currentIndex = STAGES.indexOf(lead.funnelStage)
 
@@ -502,6 +542,106 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <LeadPermutaTab contact={contact} />
                 </div>
               )}
+
+              {/* ── Listas & Campanhas ─────────────────────────────────────── */}
+              <div className="rounded-xl border border-line bg-s2 overflow-hidden">
+                <button
+                  onClick={() => {
+                    setShowBaseCamp(v => !v)
+                    if (activeLists.length === 0) loadLists()
+                  }}
+                  className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-s3 transition-all"
+                >
+                  <div className="flex items-center gap-2 text-xs font-medium text-t2">
+                    <Database size={12} className="text-brand" />
+                    📋 Listas &amp; Campanhas
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {lead.contactId && (
+                      <button
+                        onClick={e => {
+                          e.stopPropagation()
+                          if (activeLists.length === 0) loadLists()
+                          setShowAddToList(v => !v)
+                        }}
+                        className="flex items-center gap-1 text-[10px] text-brand hover:text-brand-text bg-brand/10 hover:bg-brand/15 border border-brand/25 px-2 py-0.5 rounded-lg transition-all"
+                        title="Adicionar a uma lista"
+                      >
+                        <ListPlus size={10} /> Adicionar à lista
+                      </button>
+                    )}
+                    <ChevronDown size={12} className={`text-t4 transition-transform ${showBaseCamp ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {/* Seletor de lista — "Adicionar à lista" */}
+                {showAddToList && lead.contactId && (
+                  <div className="px-3 py-3 border-t border-line bg-s2/80">
+                    <p className="text-[11px] font-semibold text-t3 mb-2">Selecione a lista destino:</p>
+                    <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-0.5 mb-3">
+                      {activeLists.length === 0 ? (
+                        <p className="text-xs text-t4 py-2 text-center">Nenhuma lista ativa</p>
+                      ) : activeLists.map(l => (
+                        <button
+                          key={l.id}
+                          onClick={() => setSelectedListId(l.id)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-all cursor-pointer border
+                            ${selectedListId === l.id
+                              ? 'bg-brand/15 border-brand/40 text-t1'
+                              : 'bg-s3/40 border-line text-t2 hover:bg-s3/70 hover:border-line-strong'
+                            }`}
+                        >
+                          <Database size={11} className={selectedListId === l.id ? 'text-brand' : 'text-t4'} />
+                          <span className="flex-1 truncate">{l.name}</span>
+                          <span className="text-t4 tabular-nums flex-shrink-0">{l.totalCount.toLocaleString()} leads</span>
+                          {selectedListId === l.id && <Check size={11} className="text-brand flex-shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setShowAddToList(false); setSelectedListId('') }}
+                        className="flex-1 py-1.5 text-xs text-t3 hover:text-t1 bg-s3/50 hover:bg-s3 border border-line rounded-lg transition-all"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleAddToList}
+                        disabled={!selectedListId || addingToList}
+                        className="flex-1 py-1.5 text-xs font-semibold bg-brand hover:bg-brand-dark text-[#0B0F1C] rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                      >
+                        {addingToList
+                          ? <><Loader2 size={11} className="animate-spin" /> Adicionando…</>
+                          : 'Confirmar'
+                        }
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Histórico de listas & campanhas */}
+                {showBaseCamp && (
+                  <div className="px-3 py-3 border-t border-line">
+                    {lead.contactId ? (
+                      <ContactCampaignHistory contactId={lead.contactId} />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 py-4 text-center">
+                        <Database size={20} className="text-t4/50" />
+                        <p className="text-xs text-t3 font-medium">Converta em contato para ver o histórico completo</p>
+                        <p className="text-[11px] text-t4">Listas, campanhas e vendas serão vinculadas ao contato</p>
+                        {!isDiscarded && !isLinked && (
+                          <button
+                            onClick={handleConvert}
+                            className="mt-1 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-300 bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 rounded-lg transition-all"
+                          >
+                            <UserCheck size={11} /> Converter em contato
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Notas salvas */}
