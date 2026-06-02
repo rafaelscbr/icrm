@@ -51,8 +51,9 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
-  const { lists, load: loadLists } = useLeadListsStore()
-  const { addBulk } = useCampaignLeadsStore()
+  const { lists, load: loadLists }   = useLeadListsStore()
+  const { addBulk }                  = useCampaignLeadsStore()
+  const { campaigns }                = useCampaignsStore()
   const [selectedIds,       setSelectedIds]       = useState<Set<string>>(new Set())
   const [saving,            setSaving]            = useState(false)
   const [conflictListIds,   setConflictListIds]   = useState<Set<string>>(new Set())
@@ -107,9 +108,17 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
         if (data) contacts.push(...(data as { name: string; phone: string }[]))
       }
 
+      // Leads herdam o broker_id da campanha — garante que o corretor possa atualizar
+      const campaignBrokerId = campaigns.find(c => c.id === campaignId)?.brokerId
+
       // Lista em conflito → embaralha para que corretores diferentes comecem por leads diferentes
       const ordered = hasConflict ? shuffleArray(contacts) : contacts
-      const result  = addBulk(ordered.map(c => ({ campaignId, name: c.name, phone: c.phone })))
+      const result  = addBulk(ordered.map(c => ({
+        campaignId,
+        name:     c.name,
+        phone:    c.phone,
+        brokerId: campaignBrokerId ?? undefined,
+      })))
 
       if (hasConflict) {
         toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} adicionado${result.added !== 1 ? 's' : ''} em ordem embaralhada para evitar conflitos!`)
