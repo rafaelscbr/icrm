@@ -79,7 +79,6 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
       company:      campaign?.name,
       permutaItems: [],
     })
-    update(lead.id, { funnelStage: 'sale' })
     toast.success('Contato criado! Registre a venda.')
     navigate(`/vendas?new=1&clientId=${contact.id}&clientName=${encodeURIComponent(lead.name)}`)
     onClose()
