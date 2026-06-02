@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Campaign, CampaignStatus } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
+import toast from 'react-hot-toast'
 
 interface CampaignsStore {
   campaigns: Campaign[]
@@ -43,7 +44,12 @@ export const useCampaignsStore = create<CampaignsStore>((set, get) => ({
     )
     set({ campaigns })
     const updated = campaigns.find(c => c.id === id)
-    if (updated) db.campaigns.upsert(updated).catch(err => console.error('[campaigns] update:', err))
+    if (updated) {
+      db.campaigns.updateRow(updated).catch(err => {
+        console.error('[campaigns] update:', err)
+        toast.error('Erro ao salvar. Tente novamente.')
+      })
+    }
   },
 
   remove: (id) => {

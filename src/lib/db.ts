@@ -719,6 +719,13 @@ export const db = {
   campaigns: {
     fetchAll: () => fetchAll<CampaignRow, Campaign>('campaigns', toCampaign),
     upsert:   (c: Campaign) => upsertOne('campaigns', fromCampaign(c)),
+    updateRow: async (c: Campaign) => {
+      const { error } = await supabase
+        .from('campaigns')
+        .update(fromCampaign(c))
+        .eq('id', c.id)
+      if (error) throw error
+    },
     delete:   (id: string)  => deleteOne('campaigns', id),
   },
 
