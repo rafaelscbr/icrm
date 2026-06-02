@@ -11,14 +11,13 @@ import toast from 'react-hot-toast'
 
 // ── Mapeamento de etapas: campanha → funil principal ──────────────────────────
 
-const STAGE_MAP: Record<FunnelStage, LeadFunnelStage> = {
-  new:          'lead',
-  sent:         'followup',
-  attended:     'atendimento',
-  scheduled:    'visita',
-  presentation: 'visita',
-  proposal:     'proposta',
-  sale:         'venda',
+// Mapeamento campanha → funil principal.
+// "scheduled" (Agendou Apresentação) entra diretamente em "visita" no funil principal.
+const STAGE_MAP: Partial<Record<FunnelStage, LeadFunnelStage>> = {
+  new:       'lead',
+  sent:      'followup',
+  attended:  'atendimento',
+  scheduled: 'visita',
 }
 
 const FUNNEL_STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
