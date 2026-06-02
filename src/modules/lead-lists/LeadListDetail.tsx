@@ -316,6 +316,16 @@ export function LeadListDetail({ list, onBack }: Props) {
         onClose={() => { setEditOpen(false) }}
         list={currentList}
       />
+
+      <DeleteLeadFromListModal
+        contactId={deleteLead?.id ?? ''}
+        contactName={deleteLead?.name ?? ''}
+        listId={list.id}
+        listName={currentList.name}
+        isOpen={Boolean(deleteLead)}
+        onClose={() => setDeleteLead(null)}
+        onDone={() => { setDeleteLead(null); loadData() }}
+      />
     </PageLayout>
   )
 }
