@@ -36,7 +36,6 @@ export function CampaignsPage() {
   const [transferBrokerId,  setTransferBrokerId]  = useState<string>('')
 
   useEffect(() => { loadCampaigns(); loadLeads() }, [loadCampaigns, loadLeads])
-  useEffect(() => useCampaignLeadsStore.getState().subscribe(), [])
 
   // Show detail view
   if (selectedId) {

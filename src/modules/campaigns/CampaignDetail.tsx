@@ -190,20 +190,16 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   // Carrega leads frescos ao abrir cada campanha
   useEffect(() => { loadLeads() }, [campaignId])
 
-  // Realtime: postgres_changes — agora funciona para admin após fix SECURITY INVOKER
-  useEffect(() => useCampaignLeadsStore.getState().subscribe(), [campaignId])
-
-  // Polling de segurança: recarrega a cada 20s enquanto a campanha está aberta.
-  // Garante consistência mesmo que eventos realtime sejam perdidos por
-  // qualquer motivo (reconexão, queda de rede, etc.).
+  // Polling: recarrega do banco a cada 15s — garante que admin e corretor
+  // veem sempre o mesmo dado, sem depender de websockets ou realtime channels
   useEffect(() => {
     const interval = setInterval(() => {
       useCampaignLeadsStore.getState().load()
-    }, 20_000)
+    }, 15_000)
     return () => clearInterval(interval)
   }, [campaignId])
 
-  // Recarrega quando a aba volta ao foco (usuário volta de outra aba)
+  // Recarrega imediatamente ao voltar para a aba (usuário saiu e voltou)
   useEffect(() => {
     function onVisible() {
       if (document.visibilityState === 'visible') {
