@@ -253,6 +253,12 @@ export function LeadListDetail({ list, onBack }: Props) {
                         {new Date(m.importedAt).toLocaleDateString('pt-BR')}
                       </span>
                     </td>
+                    <td className="px-4 py-3 hidden md:table-cell text-center">
+                      {scores.get(m.contactId)
+                        ? <ScoreBadge size="sm" {...scores.get(m.contactId)!} />
+                        : <span className="text-[10px] text-t4">—</span>
+                      }
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         {m.contact?.phone && (
