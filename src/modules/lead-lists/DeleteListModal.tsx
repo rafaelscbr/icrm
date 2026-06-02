@@ -21,17 +21,27 @@ interface DeletePreview {
 }
 
 async function fetchDeletePreview(listId: string): Promise<DeletePreview> {
-  // 1. Todos os contatos desta lista
-  const { data: members } = await supabase
-    .from('lead_list_members')
-    .select('contact_id')
-    .eq('list_id', listId)
+  // 1. Todos os contatos desta lista (paginado — listas podem ter 2000+ membros)
+  const PAGE = 1000
+  const allMembers: { contact_id: string }[] = []
+  let from = 0
+  while (true) {
+    const { data: page } = await supabase
+      .from('lead_list_members')
+      .select('contact_id')
+      .eq('list_id', listId)
+      .range(from, from + PAGE - 1)
+    if (!page || page.length === 0) break
+    allMembers.push(...(page as { contact_id: string }[]))
+    if (page.length < PAGE) break
+    from += PAGE
+  }
 
-  if (!members || members.length === 0) {
+  if (allMembers.length === 0) {
     return { totalInList: 0, toDelete: 0, keptInKanban: 0, keptInOtherLists: 0, contactIds: [] }
   }
 
-  const allIds = (members as { contact_id: string }[]).map(m => m.contact_id)
+  const allIds = allMembers.map(m => m.contact_id)
 
   // 2. Contatos protegidos por estarem no kanban principal (lead ativo, sem descarte)
   const { data: kanbanRows } = await supabase
