@@ -295,7 +295,7 @@ function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
               <th className="text-right pb-2 font-semibold">Disparos</th>
               <th className="text-right pb-2 font-semibold">Interessados</th>
               <th className="text-right pb-2 font-semibold">Taxa</th>
-              <th className="text-right pb-2 font-semibold">Vendas</th>
+              <th className="text-right pb-2 font-semibold">Transferidos</th>
             </tr>
           </thead>
           <tbody>
