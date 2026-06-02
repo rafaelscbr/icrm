@@ -1,14 +1,16 @@
 import { ShieldAlert, AlertTriangle } from 'lucide-react'
-import { getDailySends, DAILY_WARN, DAILY_LIMIT } from './dailyCounter'
+import { DAILY_WARN, DAILY_LIMIT } from './dailyCounter'
+import { useDisparosStore } from '../../store/useDisparosStore'
 
 interface Props {
-  /** Passa o count de fora quando o componente está dentro de LeadsTab (já tem o hook rodando).
-   *  Quando undefined, lê direto do localStorage (uso na CampaignsPage). */
+  /** Count explícito quando o componente está dentro de LeadsTab (hook já ativo).
+   *  Sem prop: lê do banco via useDisparosStore. */
   count?: number
 }
 
 export function DailyLimitBar({ count }: Props) {
-  const dailyCount = count ?? getDailySends()
+  const dbCount    = useDisparosStore(s => s.countDay)
+  const dailyCount = count ?? dbCount
   const pct        = Math.min(100, Math.round((dailyCount / DAILY_LIMIT) * 100))
   const barColor   = dailyCount >= DAILY_LIMIT ? 'bg-red-500'
                    : dailyCount >= DAILY_WARN  ? 'bg-amber-500'
@@ -21,7 +23,6 @@ export function DailyLimitBar({ count }: Props) {
     <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-xl card-surface border border-line text-xs">
       <ShieldAlert size={13} className={textColor} />
 
-      {/* Barra de progresso */}
       <div className="flex-1 min-w-[160px]">
         <div className="flex items-center justify-between mb-1">
           <span className="text-t3">Disparos hoje</span>
@@ -37,7 +38,6 @@ export function DailyLimitBar({ count }: Props) {
         </div>
       </div>
 
-      {/* Avisos */}
       {dailyCount >= DAILY_LIMIT ? (
         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-semibold">
           <AlertTriangle size={11} /> Limite atingido
