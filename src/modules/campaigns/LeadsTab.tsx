@@ -489,7 +489,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           <span className="text-line">|</span>
           <span><span className="text-cyan-400 font-bold tabular-nums">{contactedLeads.length}</span> acionados</span>
           <span className="text-line">|</span>
-          <span><span className="text-green-400 font-bold tabular-nums">{leads.filter(l => l.funnelStage === 'sale').length}</span> vendas</span>
+          <span><span className="text-violet-400 font-bold tabular-nums">{leads.filter(l => l.funnelStage === 'scheduled').length}</span> agendados</span>
         </div>
       </div>
 
