@@ -120,13 +120,28 @@ export function LeadListsPage() {
       ctaLabel="Nova Lista"
       onCta={() => setCreateOpen(true)}
       actions={
-        <button
-          onClick={openCleanup}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-amber-400 bg-s2/50 hover:bg-amber-500/8 border border-line hover:border-amber-500/25 rounded-xl transition-all"
-          title="Limpar contatos órfãos de listas excluídas"
-        >
-          <Sparkles size={12} /> Limpar órfãos
-        </button>
+        <div className="flex items-center gap-2">
+          {tab === 'active' && (
+            <button
+              onClick={() => setSortByScore(s => !s)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-xl transition-all ${
+                sortByScore
+                  ? 'bg-violet-500/15 border-violet-500/30 text-violet-400'
+                  : 'bg-s2/50 border-line text-slate-500 hover:text-violet-400 hover:border-violet-500/25 hover:bg-violet-500/8'
+              }`}
+              title="Ordenar por score de qualidade"
+            >
+              ⚡ {sortByScore ? 'Score ativo' : 'Por score'}
+            </button>
+          )}
+          <button
+            onClick={openCleanup}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-amber-400 bg-s2/50 hover:bg-amber-500/8 border border-line hover:border-amber-500/25 rounded-xl transition-all"
+            title="Limpar contatos órfãos de listas excluídas"
+          >
+            <Sparkles size={12} /> Limpar órfãos
+          </button>
+        </div>
       }
     >
       {/* Stats */}
