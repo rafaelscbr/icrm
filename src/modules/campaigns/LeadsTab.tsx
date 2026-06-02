@@ -670,7 +670,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                           )}
                           <button onClick={() => handleInterested(lead)}
                             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                              ['attended','scheduled','presentation','proposal','sale'].includes(lead.funnelStage)
+                              ['attended','scheduled'].includes(lead.funnelStage)
                                 ? 'text-cyan-500/30 cursor-default'
                                 : 'hover:bg-cyan-500/10 text-slate-600 hover:text-cyan-400'
                             }`}
