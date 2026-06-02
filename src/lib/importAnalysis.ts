@@ -71,16 +71,36 @@ export async function analyzeLeads(
   const phones = parsed.map(l => l.phone)
   onProgress?.(5)
 
-  // 1. Encontrar contacts existentes por telefone
-  const existingContacts = await queryInChunks<{ id: string; name: string; phone: string }>(
-    'contacts', 'phone', phones, 'id,name,phone'
-  )
+  // 1. Buscar TODOS os contatos e normalizar phone em JS.
+  //    Necessário porque contatos criados manualmente têm phone formatado
+  //    ("(47) 98829-9675") enquanto os da planilha são normalizados ("47988299675").
+  //    Uma busca .in('phone', phones) jamais casaria os dois formatos.
+  const PAGE = 1000
+  const allContacts: { id: string; name: string; phone: string }[] = []
+  let from = 0
+  while (true) {
+    const { data } = await supabase
+      .from('contacts')
+      .select('id,name,phone')
+      .range(from, from + PAGE - 1)
+    if (!data || data.length === 0) break
+    allContacts.push(...(data as { id: string; name: string; phone: string }[]))
+    if (data.length < PAGE) break
+    from += PAGE
+  }
   onProgress?.(20)
 
-  const phoneToContact = new Map(
-    existingContacts.map(c => [normalizePhone(c.phone) ?? c.phone, c])
-  )
-  const existingContactIds = existingContacts.map(c => c.id)
+  // Mapa: phone normalizado → contact
+  const phoneToContact = new Map<string, { id: string; name: string; phone: string }>()
+  for (const c of allContacts) {
+    const norm = normalizePhone(c.phone)
+    if (norm) phoneToContact.set(norm, c)
+  }
+
+  const existingContacts  = phones
+    .map(p => phoneToContact.get(p))
+    .filter((c): c is { id: string; name: string; phone: string } => Boolean(c))
+  const existingContactIds = [...new Set(existingContacts.map(c => c.id))]
 
   if (existingContactIds.length === 0) {
     onProgress?.(100)
