@@ -33,10 +33,8 @@ export function LeadListsPage() {
   const totalLists   = lists.filter(l => l.status === 'active').length
   const biggestList  = lists.reduce((a, l) => l.totalCount > (a?.totalCount ?? 0) ? l : a, lists[0])
 
-  function handleDelete() {
-    if (!deleteList) return
-    remove(deleteList.id)
-    setDeleteList(undefined)
+  async function handleDelete(listId: string, contactIdsToDelete: string[]) {
+    await remove(listId, contactIdsToDelete)
   }
 
   return (
