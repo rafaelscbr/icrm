@@ -38,7 +38,6 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
     setStageLocal(lead.funnelStage)
     setSituationL(lead.situation)
     setNotes(lead.notes ?? '')
-    setProposalValue(lead.proposalValue ? lead.proposalValue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '')
   }, [lead, isOpen])
 
   function handleSave() {
