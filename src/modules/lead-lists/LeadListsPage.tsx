@@ -239,8 +239,8 @@ export function LeadListsPage() {
                   </div>
                 </div>
 
-                {/* Contagem + descrição */}
-                <div className="grid grid-cols-2 gap-2">
+                {/* Contagem + score */}
+                <div className="grid grid-cols-3 gap-2">
                   <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
                     <Users size={11} className="text-slate-600 mb-1" />
                     <span className="text-sm font-bold tabular-nums text-blue-400">{list.totalCount.toLocaleString()}</span>
@@ -253,6 +253,18 @@ export function LeadListsPage() {
                     </span>
                     <span className="text-[10px] text-slate-600">Ticket mín</span>
                   </div>
+                  {listScore ? (
+                    <div className={`flex flex-col items-center py-2 rounded-xl border ${listScore.bg} ${listScore.border}`}>
+                      <span className="text-base leading-none mb-0.5">{listScore.emoji}</span>
+                      <span className={`text-sm font-bold tabular-nums ${listScore.color}`}>{listScore.score}</span>
+                      <span className={`text-[10px] ${listScore.color} opacity-70`}>{listScore.label}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
+                      <div className="w-3 h-3 border border-slate-600 border-t-transparent rounded-full animate-spin mb-1" />
+                      <span className="text-[10px] text-slate-700">score</span>
+                    </div>
+                  )}
                 </div>
 
                 {list.description && (
