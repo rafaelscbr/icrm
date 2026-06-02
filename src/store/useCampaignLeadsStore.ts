@@ -184,7 +184,7 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
         .eq('phone', normPhone)
         .maybeSingle()
         .then(({ data: contact }) => {
-          if (!contact) return
+          if (!contact) return Promise.resolve()
           return db.dispatches.insert({
             contactId:    contact.id,
             campaignId:   lead.campaignId,
@@ -193,7 +193,7 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
             channel:      'whatsapp',
           })
         })
-        .catch(err => console.error('[dispatch] history:', err))
+        .catch((err: unknown) => console.error('[dispatch] history:', err))
     }
   },
 
