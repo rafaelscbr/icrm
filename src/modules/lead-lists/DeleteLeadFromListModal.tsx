@@ -63,12 +63,12 @@ async function fetchLeadStatus(
       .eq('phone', contactPhone),
   ])
 
-  const otherLists = ((listsRes.data ?? []) as {
+  const otherLists = ((listsRes.data ?? []) as unknown as {
     list_id: string
     lead_lists: { name: string } | null
   }[]).map(r => ({ id: r.list_id, name: r.lead_lists?.name ?? 'Lista removida' }))
 
-  const campaigns = ((campaignRes.data ?? []) as {
+  const campaigns = ((campaignRes.data ?? []) as unknown as {
     campaign_id: string
     funnel_stage: string
     campaigns: { name: string } | null
