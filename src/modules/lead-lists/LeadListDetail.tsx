@@ -36,6 +36,7 @@ export function LeadListDetail({ list, onBack }: Props) {
   const currentList = lists.find(l => l.id === list.id) ?? list
 
   const [members,       setMembers]       = useState<MemberWithContact[]>([])
+  const [scores,        setScores]        = useState<Map<string, LeadScoreResult>>(new Map())
   const [loading,       setLoading]       = useState(true)
   const [search,        setSearch]        = useState('')
   const [page,          setPage]          = useState(1)
