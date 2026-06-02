@@ -41,24 +41,21 @@ export const SITUATION_CONFIG: SituationConfig[] = [
   { value: 'invalid',       label: 'Contato Inexistente',    short: 'Inexistente',    color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
 ]
 
-// Taxas de conversão do funil — CASCATA (etapa → próxima etapa)
-// Chave = etapa de DESTINO; valor = % da etapa anterior que avança para cá
-// Ex: attended=10 → 10% da base fria vai demonstrar interesse
+// Taxas de conversão do funil de campanha — CASCATA.
+// O lead vai até "Agendou Apresentação" na campanha e então é transferido
+// para o funil principal. A taxa "sale" representa a conversão combinada
+// (apresentação + proposta + fechamento) que ocorre no funil principal.
 export const DEFAULT_CONVERSION_RATES: Record<string, number> = {
-  attended:     10,  // % da base fria (new+sent) que demonstra interesse
-  scheduled:    30,  // % dos interessados que agendam apresentação
-  presentation: 50,  // % dos agendados que fazem a apresentação
-  proposal:     50,  // % das apresentações que viram proposta
-  sale:         50,  // % das propostas que fecham negócio
+  attended:  10,  // % da base fria que demonstra interesse
+  scheduled: 30,  // % dos interessados que agendam apresentação
+  sale:      15,  // % dos agendados que fecham negócio (via funil principal)
 }
 
 // Descrição de cada transição (para o UI)
 export const TRANSITION_LABELS: Record<string, string> = {
-  attended:     'demonstram interesse',
-  scheduled:    'agendam apresentação',
-  presentation: 'fazem a apresentação',
-  proposal:     'entram em proposta',
-  sale:         'fecham negócio',
+  attended:  'demonstram interesse',
+  scheduled: 'agendam apresentação',
+  sale:      'fecham negócio (via funil principal)',
 }
 
 export const STATUS_CONFIG = {
