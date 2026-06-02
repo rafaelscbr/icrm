@@ -154,7 +154,7 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
 
 // ─── Conversão por modelo de mensagem ────────────────────────────────────────
 
-const ENGAGED_STAGES = ['attended', 'scheduled', 'presentation', 'proposal', 'sale']
+const ENGAGED_STAGES = ['attended', 'scheduled']
 
 function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campaign: Campaign }) {
   // Todos os templates originais (sem substituição de nome)
