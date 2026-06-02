@@ -196,9 +196,9 @@ export function CampaignsPage() {
                 {/* Stats grid */}
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { icon: <Users size={11} />, label: 'Leads',      value: campaignLeads.length, color: 'text-slate-300' },
-                    { icon: <TrendingUp size={11} />, label: 'Acionados', value: `${contactRate}%`,   color: 'text-blue-400'  },
-                    { icon: <CheckCheck size={11} />, label: 'Vendas',    value: sales,               color: 'text-green-400' },
+                    { icon: <Users size={11} />, label: 'Leads',        value: campaignLeads.length, color: 'text-slate-300'  },
+                    { icon: <TrendingUp size={11} />, label: 'Acionados', value: `${contactRate}%`,   color: 'text-blue-400'   },
+                    { icon: <CheckCheck size={11} />, label: 'Transferidos', value: transferred,       color: 'text-violet-400' },
                   ].map(s => (
                     <div key={s.label} className="flex flex-col items-center py-2 bg-s2/50 rounded-xl border border-line">
                       <span className="text-slate-600 mb-1">{s.icon}</span>
