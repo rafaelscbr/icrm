@@ -21,8 +21,6 @@ interface LeadParecerModalProps {
 
 export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParecerModalProps) {
   const { update } = useCampaignLeadsStore()
-  const contactsStore = useContactsStore()
-  const navigate      = useNavigate()
 
   const [stage,          setStageLocal]   = useState<FunnelStage>('new')
   const [situation,      setSituationL]   = useState<LeadSituation | undefined>()
