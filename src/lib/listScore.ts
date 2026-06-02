@@ -140,3 +140,4 @@ function buildResult(
   const cfg   = LABEL_CONFIG[label]
   return { score, label, ...cfg, clients, transferred, interested, total }
 }
+
