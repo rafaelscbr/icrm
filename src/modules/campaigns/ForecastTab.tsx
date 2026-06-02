@@ -437,7 +437,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         <div className="px-5 py-3 border-t border-line flex items-center gap-2">
           <Sparkles size={11} className="text-indigo-500/60 flex-shrink-0" />
           <p className="text-[11px] text-slate-600">
-            Projeção calculada em cascata. "Acumulado" exibe todos os leads que já passaram ou estão na etapa. Leads avançados contribuem com as taxas restantes.
+            Funil da campanha vai até "Agendou Apresentação". Após o agendamento, o lead é transferido para o funil principal e segue de lá. A taxa de fechamento representa a conversão combinada no funil principal.
             {hasCustomRates && <span className="text-brand/80"> Taxas personalizadas ativas.</span>}
           </p>
         </div>
