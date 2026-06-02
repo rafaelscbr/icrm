@@ -341,11 +341,8 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
   const contacted  = funnelLeads.filter(l => l.firstContactAt).length
   const engaged    = funnelLeads.filter(l => ['attended','scheduled'].includes(l.funnelStage)).length
   const migrated   = funnelLeads.filter(l => l.transferredAt).length
-  const proposals  = funnelLeads.filter(l => l.funnelStage === 'proposal').length
-  const sales      = funnelLeads.filter(l => l.funnelStage === 'sale').length
   const responseRate  = contacted > 0 ? Math.round((engaged   / contacted) * 100) : 0
   const migratedRate  = contacted > 0 ? Math.round((migrated  / contacted) * 100) : 0
-  const proposalValue = funnelLeads.reduce((a, l) => a + (l.proposalValue ?? 0), 0)
 
   const dailyData = useMemo(() => {
     return Array.from({ length: 21 }, (_, i) => {
