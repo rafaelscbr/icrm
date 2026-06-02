@@ -227,7 +227,8 @@ export function LeadListDetail({ list, onBack }: Props) {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-t4">Telefone</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-t4 hidden lg:table-cell">Lote</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-t4 hidden lg:table-cell">Importado em</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-t4 w-16"></th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-t4 hidden md:table-cell">Score</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-t4 w-20"></th>
                 </tr>
               </thead>
               <tbody>
