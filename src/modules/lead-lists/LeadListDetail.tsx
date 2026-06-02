@@ -75,12 +75,19 @@ export function LeadListDetail({ list, onBack }: Props) {
         }
       }
 
-      setMembers(membersList.map(m => ({
+      const builtMembers = membersList.map(m => ({
         contactId:   m.contactId,
         importedAt:  m.importedAt,
         importBatch: m.importBatch,
         contact:     contactMap.get(m.contactId) ?? null,
-      })))
+      }))
+      setMembers(builtMembers)
+
+      // Calcular scores em batch após carregar contatos
+      const batchInput = builtMembers
+        .filter(m => m.contact)
+        .map(m => ({ contactId: m.contactId, phone: m.contact!.phone }))
+      batchLeadScores(batchInput).then(setScores).catch(() => {})
     } finally {
       setLoading(false)
     }
