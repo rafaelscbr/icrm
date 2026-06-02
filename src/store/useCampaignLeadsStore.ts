@@ -14,8 +14,9 @@
 
 import { create } from 'zustand'
 import { Campaign, CampaignLead, FunnelStage, LeadSituation } from '../types'
-import { generateId } from '../lib/formatters'
-import { db } from '../lib/db'
+import { generateId, normalizePhone } from '../lib/formatters'
+import { db }       from '../lib/db'
+import { supabase } from '../lib/supabase'
 
 type NewLead = Omit<CampaignLead, 'id' | 'funnelStage' | 'createdAt' | 'updatedAt'>
 
