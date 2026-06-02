@@ -63,11 +63,31 @@ function _normalizeSinglePhone(raw: string): string | null {
   return d
 }
 
+/**
+ * Codifica o texto para wa.me preservando emojis e acentos intactos.
+ *
+ * encodeURIComponent converte emojis em %F0%9F... que o WhatsApp em alguns
+ * dispositivos exibe como caracteres especiais em vez do emoji original.
+ * A solução é usar [...text] (que respeita pares surrogate / emojis multi-byte)
+ * e só codificar caracteres ASCII que precisam de escape na query string,
+ * deixando qualquer coisa acima de U+007F (acentos, emojis, etc.) intacta.
+ */
+function encodeWhatsAppText(text: string): string {
+  // [...text] itera por code points, não por code units — trata emojis corretamente
+  return [...text].map(char => {
+    const cp = char.codePointAt(0) ?? 0
+    // Deixa qualquer Unicode acima do ASCII básico passar sem codificar
+    if (cp > 127) return char
+    // Codifica apenas os caracteres ASCII que quebram a query string
+    return encodeURIComponent(char)
+  }).join('')
+}
+
 export function whatsappUrl(phone: string, message?: string): string {
   const digits = phone.replace(/\D/g, '')
   const withCountry = digits.startsWith('55') ? digits : `55${digits}`
   const base = `https://wa.me/${withCountry}`
-  return message ? `${base}?text=${encodeURIComponent(message)}` : base
+  return message ? `${base}?text=${encodeWhatsAppText(message)}` : base
 }
 
 export function generateId(): string {
