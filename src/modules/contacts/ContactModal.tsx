@@ -19,6 +19,8 @@ import { calcSaleCommissions } from '../../types'
 import { LeadModal } from '../leads/LeadModal'
 import { PropertyModal } from '../properties/PropertyModal'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
+import { ScoreBadge } from '../../components/ui/ScoreBadge'
+import { fetchLeadScore, LeadScoreResult } from '../../lib/leadScore'
 
 const TAG_LABELS: Record<ContactTag, string> = {
   owner:    'Proprietário',
