@@ -68,18 +68,27 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     try {
       const raw = await db.campaignLeads.fetchAll()
 
-      // Deduplica por (campaignId + telefone limpo): mantém o registro mais
-      // recente (fetchAll retorna created_at DESC) e descarta os extras que
-      // entraram pelo import em massa com o mesmo número.
+      // Deduplica por (campaignId + telefone limpo)
       const seen = new Set<string>()
-      const leads = raw.filter(l => {
+      const fetched = raw.filter(l => {
         const key = `${l.campaignId}:${l.phone.replace(/\D/g, '')}`
         if (seen.has(key)) return false
         seen.add(key)
         return true
       })
 
-      set({ leads })
+      // MERGE em vez de replace: preserva atualizações do realtime que chegaram
+      // durante o fetch (evita race condition load vs realtime)
+      set(s => {
+        const storeMap = new Map(s.leads.map(l => [l.id, l]))
+        const merged = fetched.map(fetchedLead => {
+          const inStore = storeMap.get(fetchedLead.id)
+          // Mantém versão do store se for mais recente (veio via realtime)
+          if (inStore && inStore.updatedAt > fetchedLead.updatedAt) return inStore
+          return fetchedLead
+        })
+        return { leads: merged }
+      })
     } catch (err) {
       console.error('[campaignLeads] load:', err)
     } finally {
@@ -122,9 +131,14 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
         { event: 'UPDATE', schema: 'public', table: 'campaign_leads' },
         (payload) => {
           const incoming = rowToLead(payload.new as Record<string, unknown>)
-          set(s => ({
-            leads: s.leads.map(l => l.id === incoming.id ? incoming : l),
-          }))
+          set(s => {
+            const exists = s.leads.some(l => l.id === incoming.id)
+            if (!exists) {
+              // Lead não está no store (ainda carregando) — adiciona imediatamente
+              return { leads: [incoming, ...s.leads] }
+            }
+            return { leads: s.leads.map(l => l.id === incoming.id ? incoming : l) }
+          })
         }
       )
       .on(

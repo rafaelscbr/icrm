@@ -187,12 +187,32 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
     return () => ro.disconnect()
   }, [])
 
-  // Sempre recarrega os leads ao abrir — garante dados frescos mesmo que
-  // eventos realtime tenham sido perdidos durante desconexão
+  // Carrega leads frescos ao abrir cada campanha
   useEffect(() => { loadLeads() }, [campaignId])
 
-  // Realtime: sincroniza mudanças em tempo real; reconecta se canal estiver morto
+  // Realtime: postgres_changes — agora funciona para admin após fix SECURITY INVOKER
   useEffect(() => useCampaignLeadsStore.getState().subscribe(), [campaignId])
+
+  // Polling de segurança: recarrega a cada 20s enquanto a campanha está aberta.
+  // Garante consistência mesmo que eventos realtime sejam perdidos por
+  // qualquer motivo (reconexão, queda de rede, etc.).
+  useEffect(() => {
+    const interval = setInterval(() => {
+      useCampaignLeadsStore.getState().load()
+    }, 20_000)
+    return () => clearInterval(interval)
+  }, [campaignId])
+
+  // Recarrega quando a aba volta ao foco (usuário volta de outra aba)
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        useCampaignLeadsStore.getState().load()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   const campaign = campaigns.find(c => c.id === campaignId)
 
