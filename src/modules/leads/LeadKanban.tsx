@@ -24,7 +24,7 @@ export const STAGE_CONFIG: Record<LeadFunnelStage, {
   headerBg: string; headerText: string; dot: string;
 }> = {
   lead:        { label: 'Leads',        color: 'text-slate-300',  bg: 'bg-slate-500/8',   border: 'border-slate-500/20', headerBg: 'bg-slate-500/15',  headerText: 'text-slate-200',  dot: 'bg-slate-400'   },
-  followup:    { label: 'Followup',     color: 'text-blue-300',   bg: 'bg-blue-500/8',    border: 'border-blue-500/20',  headerBg: 'bg-blue-500/15',   headerText: 'text-blue-200',   dot: 'bg-blue-400'    },
+  followup:    { label: 'Followup',     color: 'text-teal-300',   bg: 'bg-teal-500/8',    border: 'border-teal-500/20',  headerBg: 'bg-teal-500/12',   headerText: 'text-teal-200',   dot: 'bg-teal-400'    },
   atendimento: { label: 'Atendimento',  color: 'text-violet-300', bg: 'bg-violet-500/8',  border: 'border-violet-500/20',headerBg: 'bg-violet-500/15', headerText: 'text-violet-200', dot: 'bg-violet-400'  },
   visita:      { label: 'Visita',       color: 'text-amber-300',  bg: 'bg-amber-500/8',   border: 'border-amber-500/20', headerBg: 'bg-amber-500/15',  headerText: 'text-amber-200',  dot: 'bg-amber-400'   },
   proposta:    { label: 'Proposta',     color: 'text-orange-300', bg: 'bg-orange-500/8',  border: 'border-orange-500/20',headerBg: 'bg-orange-500/15', headerText: 'text-orange-200', dot: 'bg-orange-400'  },

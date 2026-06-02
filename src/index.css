@@ -19,14 +19,14 @@
   --brand-shadow:  rgba(228, 178, 60, 0.30);
   --brand-btn-text:#0F1730;
 
-  /* Surfaces — Marinho escuro */
-  --page-bg:   #0F1730;
-  --surface:   #18224A;
-  --surface-2: #1E2A57;
-  --surface-3: #243260;
+  /* Surfaces — Carvão premium (menos saturação de azul) */
+  --page-bg:   #0B0F1C;
+  --surface:   #131829;
+  --surface-2: #191F30;
+  --surface-3: #1F2840;
 
   /* Navigation — sempre Marinho */
-  --nav-bg:          #0A1128;
+  --nav-bg:          #090D1A;
   --nav-text:        rgba(246, 243, 236, 0.78);
   --nav-muted:       rgba(246, 243, 236, 0.38);
   --nav-active-text: #F6F3EC;
@@ -38,13 +38,13 @@
   --t1: #F6F3EC;
   --t2: #CFC9BC;
   --t3: #8A90A6;
-  --t4: #545E78;
-  --t5: #3A4260;
+  --t4: #6B748A;   /* era #545E78 — clareado para contraste WCAG AA */
+  --t5: #525A70;   /* era #3A4260 — clareado para legibilidade */
 
   /* Lines / borders */
-  --line:        rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.15);
-  --line-input:  rgba(255, 255, 255, 0.12);
+  --line:        rgba(255, 255, 255, 0.12);   /* era 0.08 — bordas mais visíveis */
+  --line-strong: rgba(255, 255, 255, 0.20);   /* era 0.15 */
+  --line-input:  rgba(255, 255, 255, 0.16);   /* era 0.12 */
 
   /* Status */
   --success:      #4ADE80;
@@ -68,10 +68,10 @@
 
 /* ── MODO ESCURO MÁXIMO (Carvão) ── quando html.dark for usado explicitamente */
 html.dark {
-  --page-bg:   #070B1A;
-  --surface:   #0F1730;
-  --surface-2: #18224A;
-  --surface-3: #1E2A57;
+  --page-bg:   #070A14;
+  --surface:   #0B0F1C;
+  --surface-2: #131829;
+  --surface-3: #191F30;
 }
 
 html.light {

@@ -273,7 +273,7 @@ function LeadAlertsWidget({
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-sky-400/15">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-sky-500/15 rounded-xl flex items-center justify-center">
-            <Snowflake size={15} className="text-sky-400 animate-pulse" />
+            <Snowflake size={15} className="text-sky-400" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-sky-300 leading-none">Leads sem contato</h2>
@@ -348,7 +348,7 @@ function OverdueCard({
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-red-500/20">
         <div className="flex items-center gap-2.5">
           <div className="relative w-8 h-8 bg-red-500/20 rounded-xl flex items-center justify-center">
-            <Siren size={15} className="text-red-400 animate-pulse" />
+            <Siren size={15} className="text-red-400" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-red-300 leading-none">Tarefas em atraso</h2>
@@ -398,8 +398,8 @@ function UpcomingCard({
     <div className="relative rounded-xl border border-line bg-surface overflow-hidden mb-6 animate-slide-up">
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-500/15 rounded-lg flex items-center justify-center">
-            <CalendarCheck size={15} className="text-blue-400" />
+          <div className="w-8 h-8 bg-brand/15 rounded-lg flex items-center justify-center">
+            <CalendarCheck size={15} className="text-brand" />
           </div>
           <div>
             <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Próximas Tarefas</p>
@@ -408,7 +408,7 @@ function UpcomingCard({
             </h2>
           </div>
         </div>
-        <button onClick={onNavigate} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors cursor-pointer">
+        <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer">
           Ver todas <ArrowRight size={12} />
         </button>
       </div>
@@ -485,33 +485,33 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
   }, {})
 
   return (
-    <div className="rounded-xl border border-blue-400/30 bg-blue-500/5 ring-1 ring-blue-400/15 overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-blue-400/15">
+    <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 overflow-hidden mb-6 animate-slide-up">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-amber-500/15">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-blue-500/15 rounded-xl flex items-center justify-center">
-            <Snowflake size={15} className="text-blue-400" />
+          <div className="w-8 h-8 bg-amber-500/15 rounded-xl flex items-center justify-center">
+            <Snowflake size={15} className="text-amber-400" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-blue-300 leading-none">Leads congelados</h2>
-            <p className="text-[11px] text-blue-500/70 mt-0.5">Sem movimento há +2 dias nas campanhas</p>
+            <h2 className="text-sm font-bold text-t1 leading-none">Leads congelados</h2>
+            <p className="text-[11px] text-t3 mt-0.5">Sem movimento há +2 dias nas campanhas</p>
           </div>
-          <span className="ml-1 bg-blue-500/20 text-blue-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-blue-400/25 tabular-nums">{frozen.length}</span>
+          <span className="ml-1 bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-amber-500/25 tabular-nums">{frozen.length}</span>
         </div>
       </div>
-      <div className="flex flex-col divide-y divide-blue-400/8">
+      <div className="flex flex-col divide-y divide-amber-500/10">
         {Object.entries(byCampaign).slice(0, 3).map(([cid, cLeads]) => {
           const campaign = campaigns.find(c => c.id === cid)
           return (
-            <div key={cid} className="px-5 py-3 hover:bg-blue-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
+            <div key={cid} className="px-5 py-3 hover:bg-amber-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-t2">{campaign?.name ?? 'Campanha'}</p>
-                <span className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-400/20">{cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}</span>
+                <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">{cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}</span>
               </div>
               <div className="flex flex-col gap-1">
                 {cLeads.slice(0, 3).map(l => (
                   <div key={l.id} className="flex items-center gap-2">
                     <span className="text-[10px] text-t3 w-24 truncate">{l.name}</span>
-                    <span className="text-[10px] text-blue-400/70 bg-blue-500/8 px-1.5 py-0.5 rounded border border-blue-400/15">{FROZEN_LABELS[l.funnelStage] ?? l.funnelStage}</span>
+                    <span className="text-[10px] text-amber-400/70 bg-amber-500/8 px-1.5 py-0.5 rounded border border-amber-500/15">{FROZEN_LABELS[l.funnelStage] ?? l.funnelStage}</span>
                     <span className="text-[10px] text-t4 ml-auto">{l.days}d sem mov.</span>
                   </div>
                 ))}
@@ -717,43 +717,15 @@ export function DashboardPage() {
       {/* Period selector */}
       <div className="flex items-center justify-between mb-6 px-1">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-4 rounded-full bg-blue-500" />
+          <div className="w-1.5 h-4 rounded-full bg-brand" />
           <p className="text-xs text-t3">Período: <span className="text-t1 font-semibold">{periodLabel}</span></p>
         </div>
         <PeriodSelector />
       </div>
 
-      {/* 0. Corretores online — visível só para admin */}
-      {isAdmin && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-t3">Corretores Online</h2>
-          </div>
-          <OnlineBrokersPanel />
-        </div>
-      )}
-
-      {/* 1. Pipeline de Campanhas */}
-      <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
-
-      {/* 2. Alertas de leads sem contato */}
-      <LeadAlertsWidget
-        onOpenLead={setSelectedLead}
-        onNavigate={() => navigate('/leads')}
-      />
-
-      {/* 3. Tarefas em atraso */}
-      <OverdueCard
-        tasks={overdueTasks}
-        contacts={contacts}
-        properties={properties}
-        onNavigate={() => navigate('/tarefas')}
-      />
-
-      {/* 4. KPI strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        <div className="relative bg-page border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
+      {/* 1. KPI strip — topo para visão rápida */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="relative bg-surface border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
           <div className="p-5">
             <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
@@ -778,15 +750,43 @@ export function DashboardPage() {
         <StatCard label={`Vendas — ${periodLabel}`} value={formatCurrency(valueInPeriod)} sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`} icon={<TrendingUp size={16} />} accent="purple" />
       </div>
 
-      {/* 5. Comissões do período */}
+      {/* 2. Comissões do período */}
       {salesInPeriod.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <StatCard label={`Comissão gerada — ${periodLabel}`} value={formatCurrencyFull(periodComm)} sub="soma das comissões negociadas" icon={<DollarSign size={18} />} accent="purple" />
           <StatCard label={`Sua comissão — ${periodLabel}`} value={formatCurrencyFull(periodBroker)} sub="sua parte no período" icon={<TrendingUp size={18} />} accent="green" />
         </div>
       )}
 
-      {/* 6. Aniversários + Últimas vendas */}
+      {/* 3. Tarefas em atraso */}
+      <OverdueCard
+        tasks={overdueTasks}
+        contacts={contacts}
+        properties={properties}
+        onNavigate={() => navigate('/tarefas')}
+      />
+
+      {/* 4. Alertas de leads sem contato */}
+      <LeadAlertsWidget
+        onOpenLead={setSelectedLead}
+        onNavigate={() => navigate('/leads')}
+      />
+
+      {/* 5. Corretores online — visível só para admin */}
+      {isAdmin && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-t3">Corretores Online</h2>
+          </div>
+          <OnlineBrokersPanel />
+        </div>
+      )}
+
+      {/* 6. Pipeline de Campanhas */}
+      <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
+
+      {/* 7. Aniversários + Últimas vendas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card accent="yellow" className="animate-slide-up">
           <div className="flex items-center gap-2 mb-4">
@@ -861,13 +861,13 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* 7. Próximas tarefas */}
+      {/* 8. Próximas tarefas */}
       <UpcomingCard tasks={upcomingTasks} contacts={contacts} properties={properties} onNavigate={() => navigate('/tarefas')} />
 
-      {/* 8. Leads congelados em campanhas */}
+      {/* 9. Leads congelados em campanhas */}
       <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
-      {/* 9. Potencial de recompra */}
+      {/* 10. Potencial de recompra */}
       <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
 
       {/* Modais */}

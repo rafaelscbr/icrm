@@ -151,7 +151,7 @@ export function Sidebar() {
           <div key={section.label}>
             {/* Section label */}
             <p
-              className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest select-none"
+              className="px-3 mb-1.5 text-[11px] font-bold uppercase tracking-widest select-none"
               style={{ color: 'var(--nav-muted)' }}
             >
               {section.label}
@@ -205,7 +205,7 @@ export function Sidebar() {
         {isAdmin && (
           <div>
             <p
-              className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest select-none"
+              className="px-3 mb-1.5 text-[11px] font-bold uppercase tracking-widest select-none"
               style={{ color: 'var(--nav-muted)' }}
             >
               Administração
@@ -294,7 +294,7 @@ export function Sidebar() {
         {/* ── Ferramentas ─────────────────────────────────────────── */}
         <div>
           <p
-            className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest select-none"
+            className="px-3 mb-1.5 text-[11px] font-bold uppercase tracking-widest select-none"
             style={{ color: 'var(--nav-muted)' }}
           >
             Ferramentas

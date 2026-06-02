@@ -3,6 +3,7 @@ import {
   Plus, LayoutGrid, List, Search, BarChart3,
   MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2, TrendingUp,
 } from 'lucide-react'
+import { Button } from '../../components/ui/Button'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -57,7 +58,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       `}
     >
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
-        ${isDiscarded ? 'bg-slate-500/20 text-slate-500' : 'bg-blue-600 text-white'}`}>
+        ${isDiscarded ? 'bg-slate-500/20 text-slate-500' : 'bg-brand/20 text-brand'}`}>
         {displayName.charAt(0).toUpperCase()}
       </div>
 
@@ -177,13 +178,10 @@ export function LeadsPage() {
             <p className="text-xs text-t3 mt-1">Funil de prospecção · <span className="text-t1 font-semibold">{active.length} ativos</span></p>
           </div>
 
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all shadow-lg shadow-blue-600/30 active:scale-95 flex-shrink-0"
-          >
+          <Button onClick={() => setShowForm(true)} size="md" className="flex-shrink-0">
             <Plus size={15} />
             Novo Lead
-          </button>
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -194,7 +192,7 @@ export function LeadsPage() {
               onClick={() => setTab(value)}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 -mb-px transition-all cursor-pointer
                 ${tab === value
-                  ? 'border-blue-500 text-t1'
+                  ? 'border-brand text-t1'
                   : 'border-transparent text-t3 hover:text-t2 hover:border-line-strong'
                 }`}
             >
@@ -202,7 +200,7 @@ export function LeadsPage() {
               {label}
               {badge !== undefined && (
                 <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
-                  ${tab === value ? 'bg-blue-500/20 text-blue-300' : 'bg-s3/50 text-t3'}`}>
+                  ${tab === value ? 'bg-brand/15 text-brand' : 'bg-s3/50 text-t3'}`}>
                   {badge}
                 </span>
               )}
@@ -244,7 +242,7 @@ export function LeadsPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar lead..."
-                className="w-full bg-s3/50 border border-line-input rounded-lg pl-8 pr-4 py-2 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-blue-500/40 transition-all"
+                className="w-full bg-s3/50 border border-line-input rounded-lg pl-8 pr-4 py-2 text-sm text-t1 placeholder:text-t3 focus:outline-none focus:border-brand/40 focus:ring-1 focus:ring-brand/20 transition-all"
               />
             </div>
 
@@ -253,7 +251,7 @@ export function LeadsPage() {
               <button
                 onClick={() => setFilterStage(null)}
                 className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all
-                  ${!filterStage ? 'bg-blue-600 border-blue-600 text-white' : 'bg-s2 border-line text-t3 hover:text-t2'}`}
+                  ${!filterStage ? 'bg-brand border-brand/80 text-[#0B0F1C] font-semibold' : 'bg-s2 border-line text-t3 hover:text-t2'}`}
               >
                 Todas
               </button>
@@ -289,14 +287,14 @@ export function LeadsPage() {
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center gap-3">
-                  <RefreshCw size={20} className="text-blue-400 animate-spin" />
-                  <p className="text-sm text-slate-500">Carregando leads...</p>
+                  <RefreshCw size={20} className="text-brand animate-spin" />
+                  <p className="text-sm text-t3">Carregando leads...</p>
                 </div>
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                  <Users size={28} className="text-blue-400/60" />
+                <div className="w-16 h-16 rounded-2xl bg-s3/60 flex items-center justify-center">
+                  <Users size={28} className="text-t3" />
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-medium text-t2">
@@ -307,12 +305,9 @@ export function LeadsPage() {
                   </p>
                 </div>
                 {!search && !filterStage && !showDiscarded && (
-                  <button
-                    onClick={() => setShowForm(true)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all shadow-lg shadow-blue-600/30"
-                  >
+                  <Button onClick={() => setShowForm(true)} size="md">
                     <Plus size={14} /> Criar primeiro lead
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : isKanbanTab ? (
