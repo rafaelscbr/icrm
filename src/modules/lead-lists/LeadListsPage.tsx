@@ -48,8 +48,8 @@ export function LeadListsPage() {
     .filter(l => l.status === tab)
     .sort((a, b) => {
       if (!sortByScore || tab !== 'active') return 0
-      const sa = listScores.get(a.id)?.score ?? 0
-      const sb = listScores.get(b.id)?.score ?? 0
+      const sa = listScores.get(a.id)?.score ?? -1
+      const sb = listScores.get(b.id)?.score ?? -1
       return sb - sa
     })
 
