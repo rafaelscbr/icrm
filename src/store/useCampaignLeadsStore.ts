@@ -159,7 +159,7 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     }
     if (Object.keys(patch).length) get().update(id, patch)
 
-    // Registra no log de atividade
+    // Registra no log de atividade da campanha
     if (message && sentBy) {
       db.campaignActivity.insert({
         id:          `${Date.now()}-act-${Math.random().toString(36).slice(2,7)}`,
@@ -171,6 +171,29 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
         actionType:  'dispatch',
         metadata:    { messageIndex, message },
       }).catch(err => console.error('[activity] dispatch:', err))
+    }
+
+    // Grava no histórico do contato (lead_campaign_dispatches).
+    // Busca o contact pelo phone normalizado para funcionar com qualquer
+    // formato armazenado ("(47) 9xxxx" ou "479xxxx").
+    if (sentBy) {
+      const normPhone = normalizePhone(lead.phone) ?? lead.phone
+      supabase
+        .from('contacts')
+        .select('id')
+        .eq('phone', normPhone)
+        .maybeSingle()
+        .then(({ data: contact }) => {
+          if (!contact) return
+          return db.dispatches.insert({
+            contactId:    contact.id,
+            campaignId:   lead.campaignId,
+            brokerId:     sentBy.id,
+            messageIndex: messageIndex,
+            channel:      'whatsapp',
+          })
+        })
+        .catch(err => console.error('[dispatch] history:', err))
     }
   },
 
