@@ -377,6 +377,27 @@ export interface LeadCampaignDispatch {
   warmupScore:  number
 }
 
+// ─── Eventos de Contato (histórico persistente) ───────────────────────────────
+
+export type ContactEventType =
+  | 'added_to_list'
+  | 'added_to_campaign'
+  | 'dispatch_sent'
+  | 'entered_funnel'
+  | 'funnel_stage_change'
+  | 'sale'
+  | 'import_skipped'
+
+export interface ContactEvent {
+  id:         string
+  contactId:  string
+  eventType:  ContactEventType
+  title:      string
+  metadata?:  Record<string, unknown>
+  brokerId?:  string
+  createdAt:  string
+}
+
 // ─── Notificações ─────────────────────────────────────────────────────────────
 
 export type NotificationType = 'task_assigned'
