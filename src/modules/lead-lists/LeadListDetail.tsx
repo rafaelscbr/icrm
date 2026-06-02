@@ -14,6 +14,8 @@ import { supabase } from '../../lib/supabase'
 import { ImportLeadsModal }        from './ImportLeadsModal'
 import { LeadListForm }            from './LeadListForm'
 import { DeleteLeadFromListModal } from './DeleteLeadFromListModal'
+import { batchLeadScores, LeadScoreResult } from '../../lib/leadScore'
+import { ScoreBadge } from '../../components/ui/ScoreBadge'
 
 const PAGE_SIZE = 50
 
