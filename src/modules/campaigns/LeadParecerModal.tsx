@@ -128,49 +128,16 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
             </div>
           </div>
 
-          {/* Proposal value (only for proposal stage) */}
-          {stage === 'proposal' && (
-            <div className="flex flex-col gap-1.5 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign size={14} className="text-amber-400" />
-                <p className="text-sm font-medium text-amber-300">Valor da Proposta</p>
-              </div>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">R$</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={proposalValue}
-                  onChange={e => setProposalValue(e.target.value.replace(/[^\d.,]/g, ''))}
-                  onBlur={() => {
-                    const n = parseFloat(proposalValue.replace(/\./g, '').replace(',', '.')) || 0
-                    setProposalValue(n > 0 ? n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '')
-                  }}
-                  placeholder="Ex: 450.000"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Venda stage — add as contact */}
-          {stage === 'sale' && (
-            <div className="flex flex-col gap-3 p-4 bg-green-500/5 border border-green-500/20 rounded-xl">
+          {/* Agendou Apresentação — lembrete de transferir ao funil principal */}
+          {stage === 'scheduled' && (
+            <div className="flex flex-col gap-2 p-3 bg-violet-500/8 border border-violet-500/20 rounded-xl">
               <div className="flex items-center gap-2">
-                <Zap size={14} className="text-green-400" />
-                <p className="text-sm font-medium text-green-300">Registrar Venda</p>
+                <GitMerge size={13} className="text-violet-400" />
+                <p className="text-xs font-semibold text-violet-300">Próximo passo: transferir ao funil principal</p>
               </div>
-              <p className="text-xs text-slate-500">
-                Para vincular ao módulo de vendas, adicione este lead como contato e crie a venda.
+              <p className="text-[11px] text-slate-500">
+                Após salvar, use o botão "Transferir" na linha do lead para levá-lo ao funil principal.
               </p>
-              <Button
-                type="button"
-                onClick={handleAddAsContact}
-                className="flex items-center gap-2 justify-center bg-green-600 hover:bg-green-500 text-sm"
-              >
-                Adicionar como Contato + Registrar Venda
-                <ArrowRight size={13} />
-              </Button>
             </div>
           )}
 
