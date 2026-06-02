@@ -1,24 +1,32 @@
 import { useEffect, useState } from 'react'
 import {
   Database, Users, Archive, Pencil, Trash2, FolderOpen,
-  TrendingUp, Calendar, ChevronRight, BarChart3,
+  TrendingUp, Calendar, ChevronRight, BarChart3, Sparkles, AlertTriangle,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
 import { Card }          from '../../components/ui/Card'
+import { Modal }         from '../../components/ui/Modal'
+import { Button }        from '../../components/ui/Button'
 import { EmptyState }    from '../../components/ui/EmptyState'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { LeadList }      from '../../types'
 import { LeadListForm }  from './LeadListForm'
 import { LeadListDetail } from './LeadListDetail'
 import { DeleteListModal } from './DeleteListModal'
+import { supabase }      from '../../lib/supabase'
+import toast             from 'react-hot-toast'
 
 export function LeadListsPage() {
   const { lists, loading, load, remove, archive } = useLeadListsStore()
-  const [tab,         setTab]         = useState<'active' | 'archived'>('active')
-  const [createOpen,  setCreateOpen]  = useState(false)
-  const [editList,    setEditList]    = useState<LeadList | undefined>()
-  const [deleteList,  setDeleteList]  = useState<LeadList | undefined>()
-  const [detailId,    setDetailId]    = useState<string>('')
+  const [tab,           setTab]           = useState<'active' | 'archived'>('active')
+  const [createOpen,    setCreateOpen]    = useState(false)
+  const [editList,      setEditList]      = useState<LeadList | undefined>()
+  const [deleteList,    setDeleteList]    = useState<LeadList | undefined>()
+  const [detailId,      setDetailId]      = useState<string>('')
+  const [cleanupOpen,   setCleanupOpen]   = useState(false)
+  const [cleanupCount,  setCleanupCount]  = useState<number | null>(null)
+  const [cleanupLoading,setCleanupLoading]= useState(false)
+  const [cleaning,      setCleaning]      = useState(false)
 
   useEffect(() => { load() }, [load])
 
@@ -35,6 +43,57 @@ export function LeadListsPage() {
 
   async function handleDelete(listId: string, contactIdsToDelete: string[]) {
     await remove(listId, contactIdsToDelete)
+  }
+
+  async function openCleanup() {
+    setCleanupOpen(true)
+    setCleanupCount(null)
+    setCleanupLoading(true)
+    try {
+      // Conta órfãos: is_base_lead=true, sem lista ativa, sem funil ativo
+      const { count } = await supabase
+        .from('contacts')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_base_lead', true)
+        .filter('id', 'not.in', `(select contact_id from lead_list_members)`)
+        .filter('id', 'not.in', `(select contact_id from leads where discard_reason is null and contact_id is not null)`)
+      setCleanupCount(count ?? 0)
+    } catch {
+      setCleanupCount(0)
+    } finally {
+      setCleanupLoading(false)
+    }
+  }
+
+  async function runCleanup() {
+    setCleaning(true)
+    try {
+      // Busca os IDs para deletar em lotes e apaga
+      const CHUNK = 500
+      let deleted = 0
+      while (true) {
+        const { data } = await supabase
+          .from('contacts')
+          .select('id')
+          .eq('is_base_lead', true)
+          .filter('id', 'not.in', `(select contact_id from lead_list_members)`)
+          .filter('id', 'not.in', `(select contact_id from leads where discard_reason is null and contact_id is not null)`)
+          .limit(CHUNK)
+        if (!data || data.length === 0) break
+        const ids = (data as { id: string }[]).map(r => r.id)
+        await supabase.from('contacts').delete().in('id', ids)
+        deleted += ids.length
+        if (ids.length < CHUNK) break
+      }
+      toast.success(`${deleted.toLocaleString('pt-BR')} contatos órfãos removidos`)
+      setCleanupOpen(false)
+      setCleanupCount(null)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error(`Erro na limpeza: ${msg}`)
+    } finally {
+      setCleaning(false)
+    }
   }
 
   return (
