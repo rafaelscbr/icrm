@@ -29,8 +29,16 @@ export function LeadListsPage() {
   const [cleanupCount,  setCleanupCount]  = useState<number | null>(null)
   const [cleanupLoading,setCleanupLoading]= useState(false)
   const [cleaning,      setCleaning]      = useState(false)
+  const [listScores,    setListScores]    = useState<Map<string, ListScoreResult>>(new Map())
+  const [sortByScore,   setSortByScore]   = useState(false)
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (lists.length === 0) return
+    const ids = lists.filter(l => l.status === 'active').map(l => l.id)
+    batchListScores(ids).then(setListScores).catch(() => {})
+  }, [lists])
 
   if (detailId) {
     const list = lists.find(l => l.id === detailId)
