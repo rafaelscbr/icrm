@@ -265,6 +265,55 @@ export function LeadListsPage() {
         onClose={() => setDeleteList(undefined)}
         onConfirm={handleDelete}
       />
+
+      {/* Modal limpeza de órfãos */}
+      <Modal isOpen={cleanupOpen} onClose={() => setCleanupOpen(false)} title="Limpar contatos órfãos" size="sm">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start gap-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
+            <AlertTriangle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-t3">
+              Remove contatos que foram importados em listas que <span className="font-semibold text-t1">já não existem mais</span> no sistema e não estão no funil principal.
+            </p>
+          </div>
+
+          {cleanupLoading ? (
+            <div className="flex items-center justify-center gap-2 py-3">
+              <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-t4">Contando órfãos…</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between px-3 py-3 bg-s2/50 border border-line rounded-xl">
+              <span className="text-xs text-t3">Contatos que serão excluídos</span>
+              <span className={`text-sm font-bold tabular-nums ${(cleanupCount ?? 0) > 0 ? 'text-red-400' : 'text-t4'}`}>
+                {(cleanupCount ?? 0).toLocaleString('pt-BR')}
+              </span>
+            </div>
+          )}
+
+          {cleanupCount === 0 && !cleanupLoading && (
+            <p className="text-xs text-green-400 text-center">Nenhum contato órfão encontrado. Base limpa!</p>
+          )}
+
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setCleanupOpen(false)} disabled={cleaning}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              onClick={runCleanup}
+              disabled={cleanupLoading || cleaning || (cleanupCount ?? 0) === 0}
+            >
+              {cleaning ? (
+                <span className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  Limpando…
+                </span>
+              ) : `Excluir ${(cleanupCount ?? 0).toLocaleString('pt-BR')} contatos`}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </PageLayout>
   )
 }
