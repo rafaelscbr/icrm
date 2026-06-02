@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft, Pencil, LayoutGrid, List, BarChart3, Pause, Play, CheckCheck,
-  TrendingUp, ListPlus, Check, Loader2, MessageSquare,
+  TrendingUp, ListPlus, Check, Loader2, MessageSquare, AlertTriangle, Shuffle,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
@@ -40,18 +40,38 @@ interface AddListsModalProps {
   campaignId: string
 }
 
+// Fisher-Yates shuffle — ordem aleatória única por campanha para evitar conflitos
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
   const { lists, load: loadLists } = useLeadListsStore()
   const { addBulk } = useCampaignLeadsStore()
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [saving,      setSaving]      = useState(false)
+  const [selectedIds,       setSelectedIds]       = useState<Set<string>>(new Set())
+  const [saving,            setSaving]            = useState(false)
+  const [conflictListIds,   setConflictListIds]   = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!isOpen) return
     setSelectedIds(new Set())
     setSaving(false)
     loadLists()
-  }, [isOpen])
+    // Detecta quais listas já estão em outras campanhas
+    db.campaignLists.fetchAll()
+      .then(all => {
+        const usedElsewhere = new Set(
+          all.filter(cl => cl.campaignId !== campaignId).map(cl => cl.listId)
+        )
+        setConflictListIds(usedElsewhere)
+      })
+      .catch(() => {})
+  }, [isOpen, campaignId])
 
   function toggle(id: string) {
     setSelectedIds(prev => {
@@ -67,6 +87,7 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
     try {
       const listIds = [...selectedIds]
       const now = new Date().toISOString()
+      const hasConflict = listIds.some(id => conflictListIds.has(id))
 
       for (const listId of listIds) {
         await db.campaignLists.upsert({ id: generateId(), campaignId, listId, addedAt: now })
@@ -85,8 +106,16 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
         const { data } = await supabase.from('contacts').select('name, phone').in('id', chunk)
         if (data) contacts.push(...(data as { name: string; phone: string }[]))
       }
-      const result = addBulk(contacts.map(c => ({ campaignId, name: c.name, phone: c.phone })))
-      toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} adicionado${result.added !== 1 ? 's' : ''} à campanha!`)
+
+      // Lista em conflito → embaralha para que corretores diferentes comecem por leads diferentes
+      const ordered = hasConflict ? shuffleArray(contacts) : contacts
+      const result  = addBulk(ordered.map(c => ({ campaignId, name: c.name, phone: c.phone })))
+
+      if (hasConflict) {
+        toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} adicionado${result.added !== 1 ? 's' : ''} em ordem embaralhada para evitar conflitos!`)
+      } else {
+        toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} adicionado${result.added !== 1 ? 's' : ''} à campanha!`)
+      }
       onClose()
     } catch {
       toast.error('Erro ao adicionar listas')
@@ -95,8 +124,9 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
     }
   }
 
-  const activeLists = lists.filter(l => l.status !== 'archived')
-  const totalLeads  = activeLists.filter(l => selectedIds.has(l.id)).reduce((a, l) => a + l.totalCount, 0)
+  const activeLists   = lists.filter(l => l.status !== 'archived')
+  const totalLeads    = activeLists.filter(l => selectedIds.has(l.id)).reduce((a, l) => a + l.totalCount, 0)
+  const selectedConflicts = [...selectedIds].filter(id => conflictListIds.has(id)).length
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Adicionar lista de leads" size="md">
@@ -110,7 +140,8 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
         ) : (
           <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
             {activeLists.map(list => {
-              const selected = selectedIds.has(list.id)
+              const selected   = selectedIds.has(list.id)
+              const inConflict = conflictListIds.has(list.id)
               return (
                 <button
                   key={list.id}
@@ -119,19 +150,34 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
                   className={`
                     flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all duration-150 cursor-pointer
                     ${selected
-                      ? 'bg-indigo-500/10 border-indigo-500/50'
+                      ? inConflict
+                        ? 'bg-amber-500/8 border-amber-500/50'
+                        : 'bg-indigo-500/10 border-indigo-500/50'
                       : 'bg-s3/30 border-line hover:border-line/80 hover:bg-s3/50'
                     }
                   `}
                 >
-                  <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-all ${selected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-s3/50'}`}>
+                  <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-all
+                    ${selected
+                      ? inConflict ? 'bg-amber-500 border-amber-500' : 'bg-indigo-500 border-indigo-500'
+                      : 'border-slate-600 bg-s3/50'}`}>
                     {selected && <Check size={11} strokeWidth={3} className="text-white" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${selected ? 'text-t1' : 'text-t2'}`}>{list.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className={`text-sm font-medium truncate ${selected ? 'text-t1' : 'text-t2'}`}>{list.name}</p>
+                      {inConflict && (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 flex-shrink-0">
+                          <AlertTriangle size={9} /> Em outra campanha
+                        </span>
+                      )}
+                    </div>
                     {list.description && <p className="text-[11px] text-t5 truncate">{list.description}</p>}
                   </div>
-                  <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg ${selected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-s3/70 text-t4'}`}>
+                  <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg flex-shrink-0
+                    ${selected
+                      ? inConflict ? 'bg-amber-500/20 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'
+                      : 'bg-s3/70 text-t4'}`}>
                     {list.totalCount.toLocaleString()} leads
                   </span>
                 </button>
@@ -140,7 +186,19 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
           </div>
         )}
 
-        {selectedIds.size > 0 && (
+        {/* Aviso de conflito */}
+        {selectedConflicts > 0 && (
+          <div className="flex items-start gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl px-3 py-2.5">
+            <Shuffle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-400 leading-relaxed">
+              <span className="font-bold">{selectedConflicts} lista{selectedConflicts > 1 ? 's' : ''}</span> já
+              {selectedConflicts > 1 ? ' estão' : ' está'} em outras campanhas. Os leads serão importados em{' '}
+              <span className="font-bold">ordem embaralhada</span> para evitar que corretores disparem para os mesmos contatos simultaneamente.
+            </p>
+          </div>
+        )}
+
+        {selectedIds.size > 0 && selectedConflicts === 0 && (
           <div className="flex items-center gap-2 bg-green-500/8 border border-green-500/20 rounded-xl px-3 py-2.5">
             <Check size={13} className="text-green-400 flex-shrink-0" />
             <p className="text-xs text-green-400">

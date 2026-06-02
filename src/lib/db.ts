@@ -878,6 +878,7 @@ export const db = {
   },
 
   campaignLists: {
+    fetchAll: () => fetchAll<CampaignListRow, CampaignList>('campaign_lists', toCampaignList),
     fetchForCampaign: async (campaignId: string): Promise<CampaignList[]> => {
       const { data, error } = await supabase
         .from('campaign_lists').select('*').eq('campaign_id', campaignId)

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown,
-  ThumbsUp, Loader2, Clock, Moon, AlertCircle,
+  ThumbsUp, Loader2, Clock, Moon, AlertCircle, ShoppingBag,
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
@@ -16,7 +16,16 @@ import { formatPhone, whatsappUrl } from '../../lib/formatters'
 import { DAILY_WARN, DAILY_LIMIT, useDailyCounter } from './dailyCounter'
 import { useDisparosStore } from '../../store/useDisparosStore'
 import { DailyLimitBar } from './DailyLimitBar'
+import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
+
+// ─── Tipos internos ───────────────────────────────────────────────────────────
+
+interface PreDispatchWarning {
+  lead:      CampaignLead
+  items:     { icon: string; text: string }[]
+  onConfirm: () => void
+}
 
 // ─── Cooldown ─────────────────────────────────────────────────────────────────
 
@@ -267,17 +276,22 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const { profile } = useAuthStore()
   const sentBy = profile ? { id: profile.id, name: profile.name } : undefined
 
-  const [search,          setSearch]          = useState('')
-  const [visibleQueue,    setVisibleQueue]    = useState(PAGE_SIZE)
-  const [visibleContacted,setVisibleContacted]= useState(PAGE_SIZE)
-  const [parecerLead,     setParecerLead]     = useState<CampaignLead | undefined>()
-  const [editLead,        setEditLead]        = useState<CampaignLead | undefined>()
-  const [deleteLead,      setDeleteLead]      = useState<CampaignLead | undefined>()
-  const [showContacted,   setShowContacted]   = useState(true)
-  const [showDisqualified,setShowDisqualified]= useState(false)
-  const [pickerLead,      setPickerLead]      = useState<CampaignLead | undefined>()
-  const [forceOffHours,   setForceOffHours]   = useState(false)
-  const [excludedIds,     setExcludedIds]     = useState<Set<string>>(new Set())
+  const [search,            setSearch]            = useState('')
+  const [visibleQueue,      setVisibleQueue]      = useState(PAGE_SIZE)
+  const [visibleContacted,  setVisibleContacted]  = useState(PAGE_SIZE)
+  const [parecerLead,       setParecerLead]       = useState<CampaignLead | undefined>()
+  const [editLead,          setEditLead]          = useState<CampaignLead | undefined>()
+  const [deleteLead,        setDeleteLead]        = useState<CampaignLead | undefined>()
+  const [showContacted,     setShowContacted]     = useState(true)
+  const [showDisqualified,  setShowDisqualified]  = useState(false)
+  const [pickerLead,        setPickerLead]        = useState<CampaignLead | undefined>()
+  const [forceOffHours,     setForceOffHours]     = useState(false)
+  const [excludedIds,       setExcludedIds]       = useState<Set<string>>(new Set())
+  const [checkingId,        setCheckingId]        = useState<string | undefined>()
+  const [preDispatchWarn,   setPreDispatchWarn]   = useState<PreDispatchWarning | undefined>()
+
+  // Histórico inline de disparos em outras campanhas (exibição abaixo do nome)
+  const [dispatchHistory, setDispatchHistory] = useState<Record<string, { campaignId: string; dispatchedAt: string }[]>>({})
 
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sentinelQRef     = useRef<HTMLDivElement>(null)
@@ -287,32 +301,53 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
   const { increment: persistDisparo }                    = useDisparosStore()
 
-  // Histórico de disparos anteriores por lead (outras campanhas)
-  const [dispatchHistory, setDispatchHistory] = useState<Record<string, { campaignId: string; dispatchedAt: string }[]>>({})
-
-  async function loadDispatchHistory(lead: CampaignLead) {
-    if (!lead.phone) return
+  // Verificação completa antes do disparo: campanhas anteriores + compra realizada
+  async function checkPreDispatch(lead: CampaignLead): Promise<{ icon: string; text: string }[]> {
+    const warnings: { icon: string; text: string }[] = []
     try {
-      const { data: contact } = await (await import('../../lib/supabase')).supabase
-        .from('contacts').select('id').eq('phone', lead.phone.replace(/\D/g, '')).maybeSingle()
-      if (!contact) return
-      const { data } = await (await import('../../lib/supabase')).supabase
+      const normPhone = lead.phone.replace(/\D/g, '')
+      const { data: contact } = await supabase
+        .from('contacts').select('id').eq('phone', normPhone).maybeSingle()
+      if (!contact) return []
+
+      // Verifica se o contato já comprou um imóvel
+      const { data: sales } = await supabase
+        .from('sales')
+        .select('date, property_name')
+        .eq('client_id', contact.id)
+        .order('date', { ascending: false })
+        .limit(1)
+      if (sales && sales.length > 0) {
+        const s = sales[0] as { date: string; property_name: string }
+        warnings.push({
+          icon: '🏠',
+          text: `Este contato já comprou um imóvel (${s.property_name} em ${new Date(s.date).toLocaleDateString('pt-BR')}).`,
+        })
+      }
+
+      // Verifica disparos em outras campanhas
+      const { data: dispatches } = await supabase
         .from('lead_campaign_dispatches')
         .select('campaign_id, dispatched_at')
         .eq('contact_id', contact.id)
-        .neq('campaign_id', campaign.id)   // exclui a campanha atual
+        .neq('campaign_id', campaign.id)
         .order('dispatched_at', { ascending: false })
         .limit(5)
-      if (data && data.length > 0) {
+      if (dispatches && dispatches.length > 0) {
+        const rows = dispatches as { campaign_id: string; dispatched_at: string }[]
+        const last = new Date(rows[0].dispatched_at).toLocaleDateString('pt-BR')
+        warnings.push({
+          icon: '📨',
+          text: `Contatado em ${rows.length} outra${rows.length > 1 ? 's' : ''} campanha${rows.length > 1 ? 's' : ''} — último disparo em ${last}.`,
+        })
+        // Atualiza histórico inline também
         setDispatchHistory(prev => ({
           ...prev,
-          [lead.id]: (data as { campaign_id: string; dispatched_at: string }[]).map(d => ({
-            campaignId:   d.campaign_id,
-            dispatchedAt: d.dispatched_at,
-          })),
+          [lead.id]: rows.map(d => ({ campaignId: d.campaign_id, dispatchedAt: d.dispatched_at })),
         }))
       }
-    } catch { /* silencioso */ }
+    } catch { /* silencioso — prossegue sem bloquear */ }
+    return warnings
   }
 
   // ── Filtragem e agrupamento ───────────────────────────────────────────────
@@ -374,15 +409,10 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
   function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
     window.open(whatsappUrl(lead.phone, msg), '_blank')
-    clearReady()          // esconde o banner "pronto" ao iniciar novo disparo
-    const secs  = start() // pede permissão de notificação + inicia cooldown
+    clearReady()
+    const secs  = start()
     const total = dailyIncrement()
-    persistDisparo({      // persiste no Supabase com contexto completo
-      brokerId:   profile?.id,
-      campaignId: campaign.id,
-      leadId:     lead.id,
-      leadName:   lead.name,
-    })
+    persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'
     markContacted(lead.id, msg, templateIndex, sentBy)
@@ -395,7 +425,13 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     }
   }
 
-  function handleWhatsApp(lead: CampaignLead) {
+  function proceedWithDispatch(lead: CampaignLead) {
+    const templates = getTemplates(lead)
+    if (templates.length > 1) setPickerLead(lead)
+    else sendWhatsApp(lead, templates[0], 0)
+  }
+
+  async function handleWhatsApp(lead: CampaignLead) {
     const secs = remaining()
     if (secs > 0) { toast.error(`Aguarde ${secs}s antes do próximo envio.`); return }
     if (!isBusinessHours() && !forceOffHours) {
@@ -415,13 +451,22 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       toast.error(`Limite de ${DAILY_LIMIT} disparos diários atingido. Retome amanhã.`, { duration: 6000 })
       return
     }
-    // Carrega histórico de campanhas anteriores (fire-and-forget)
-    if (!dispatchHistory[lead.id]) {
-      loadDispatchHistory(lead)
+
+    // Verificação pré-disparo: compra realizada + campanhas anteriores
+    setCheckingId(lead.id)
+    const warnings = await checkPreDispatch(lead)
+    setCheckingId(undefined)
+
+    if (warnings.length > 0) {
+      setPreDispatchWarn({
+        lead,
+        items: warnings,
+        onConfirm: () => { setPreDispatchWarn(undefined); proceedWithDispatch(lead) },
+      })
+      return
     }
-    const templates = getTemplates(lead)
-    if (templates.length > 1) setPickerLead(lead)
-    else sendWhatsApp(lead, templates[0], 0)
+
+    proceedWithDispatch(lead)
   }
 
   function handleInterested(lead: CampaignLead) {
@@ -614,6 +659,10 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         ) : onCd ? (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-line text-t3 text-xs tabular-nums">
                             <Clock size={11} /> {secs}s
+                          </div>
+                        ) : checkingId === lead.id ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-line text-t3 text-xs">
+                            <Loader2 size={11} className="animate-spin" /> verificando…
                           </div>
                         ) : (
                           <button
@@ -833,6 +882,50 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteLead(undefined)}>Cancelar</Button>
           <Button variant="danger"    className="flex-1" onClick={handleDelete}>Remover</Button>
         </div>
+      </Modal>
+
+      {/* ── Modal de aviso pré-disparo ────────────────────────────────── */}
+      <Modal
+        isOpen={Boolean(preDispatchWarn)}
+        onClose={() => setPreDispatchWarn(undefined)}
+        title="Atenção antes de disparar"
+        size="sm"
+      >
+        {preDispatchWarn && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 pb-1">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                <ShoppingBag size={17} className="text-amber-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-t1">{preDispatchWarn.lead.name}</p>
+                <p className="text-xs text-t4">{formatPhone(preDispatchWarn.lead.phone)}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {preDispatchWarn.items.map((w, i) => (
+                <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20">
+                  <span className="text-base leading-none mt-0.5">{w.icon}</span>
+                  <p className="text-xs text-amber-300 leading-relaxed">{w.text}</p>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-t4 leading-relaxed">
+              Deseja disparar mesmo assim? O contato receberá a mensagem normalmente.
+            </p>
+
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => setPreDispatchWarn(undefined)}>
+                Cancelar
+              </Button>
+              <Button className="flex-1 gap-2" onClick={preDispatchWarn.onConfirm}>
+                <MessageCircle size={13} /> Disparar mesmo assim
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )
