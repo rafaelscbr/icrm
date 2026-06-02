@@ -95,23 +95,23 @@ export function DeleteLeadFromListModal({
   const [status,   setStatus]   = useState<LeadStatus | null>(null)
   const [loading,  setLoading]  = useState(false)
   const [running,  setRunning]  = useState(false)
-  const [phone,    setPhone]    = useState('')
 
   useEffect(() => {
     if (!isOpen || !contactId) return
     setStatus(null)
     setLoading(true)
-
-    // 1. Buscar phone do contato
-    supabase.from('contacts').select('phone').eq('id', contactId).single()
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase.from('contacts').select('phone').eq('id', contactId).single()
         const p = data?.phone ?? ''
-        setPhone(p)
-        return fetchLeadStatus(contactId, p, listId)
-      })
-      .then(setStatus)
-      .catch(() => setStatus({ inFunnel: false, otherLists: [], campaigns: [] }))
-      .finally(() => setLoading(false))
+        const s = await fetchLeadStatus(contactId, p, listId)
+        setStatus(s)
+      } catch {
+        setStatus({ inFunnel: false, otherLists: [], campaigns: [] })
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [isOpen, contactId, listId])
 
   async function execute(action: Action) {
