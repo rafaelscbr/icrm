@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { db } from '../lib/db'
+import { db }       from '../lib/db'
+import { supabase } from '../lib/supabase'
 import { LeadList, LeadListMember } from '../types'
 
 interface LeadListsState {
@@ -7,7 +8,7 @@ interface LeadListsState {
   loading: boolean
   load:    () => Promise<void>
   save:    (list: LeadList) => Promise<void>
-  remove:  (id: string)    => Promise<void>
+  remove:  (id: string, contactIdsToDelete?: string[]) => Promise<void>
   archive: (id: string)    => Promise<void>
   updateCount: (id: string, count: number) => Promise<void>
   membersCache: Record<string, LeadListMember[]>
