@@ -440,16 +440,9 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
                   {total > 0 && <p className="text-[10px] text-slate-500">{migratedRate}% do total</p>}
                 </div>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-line">
-                <span className="text-xs text-slate-400">Propostas (na campanha)</span>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-amber-400 tabular-nums">{proposals}</p>
-                  {proposalValue > 0 && <p className="text-[10px] text-slate-500">{formatCurrency(proposalValue)}</p>}
-                </div>
-              </div>
               <div className="flex items-center justify-between py-2">
-                <span className="text-xs text-slate-400">Vendas (na campanha)</span>
-                <p className="text-sm font-bold text-green-400 tabular-nums">{sales}</p>
+                <span className="text-xs text-slate-400">Agendamentos (máx etapa campanha)</span>
+                <p className="text-sm font-bold text-violet-400 tabular-nums">{funnelLeads.filter(l => l.funnelStage === 'scheduled').length}</p>
               </div>
             </div>
           </Card>
