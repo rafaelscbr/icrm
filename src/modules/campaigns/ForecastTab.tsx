@@ -38,17 +38,17 @@ function fmtLeads(v: number): string {
   return v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })
 }
 
-type Rates = { attended: number; scheduled: number; presentation: number; proposal: number; sale: number }
+// Funil da campanha: até "Agendou Apresentação". Depois o lead migra para
+// o funil principal. A taxa "sale" representa o fechamento combinado.
+type Rates = { attended: number; scheduled: number; sale: number }
 
 function buildRates(campaign: Campaign): Rates {
   const d = DEFAULT_CONVERSION_RATES
   const c = campaign.conversionRates ?? {}
   return {
-    attended:     c.attended     ?? d.attended,
-    scheduled:    c.scheduled    ?? d.scheduled,
-    presentation: c.presentation ?? d.presentation,
-    proposal:     c.proposal     ?? d.proposal,
-    sale:         c.sale         ?? d.sale,
+    attended:  c.attended  ?? d.attended,
+    scheduled: c.scheduled ?? d.scheduled,
+    sale:      c.sale      ?? d.sale,
   }
 }
 
