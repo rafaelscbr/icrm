@@ -31,7 +31,7 @@ const FILTER_OPTIONS: { value: SaleType | null; label: string }[] = [
 
 export function SalesPage() {
   const { sales: allSales, load, remove } = useSalesStore()
-  const { isAdmin, viewAsBrokerId } = useAuthStore()
+  const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const sales = isAdmin && viewAsBrokerId ? allSales.filter(s => s.brokerId === viewAsBrokerId) : allSales
   const { contacts, load: loadContacts } = useContactsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
@@ -322,13 +322,18 @@ export function SalesPage() {
 
           {/* ── Desktop table ──────────────────────────────────────────── */}
           <Card className="!p-0 overflow-hidden hidden lg:block">
-            <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 border-b border-line">
-              {['Cliente', 'Empreendimento', 'Data', 'Valor', 'Comissão', ''].map((h, i) => (
+            <div className={`grid ${isAdmin ? 'grid-cols-[2fr_2fr_1fr_1fr_1fr_1fr_auto]' : 'grid-cols-[2fr_2fr_1fr_1fr_1fr_auto]'} gap-4 px-6 py-3 border-b border-line`}>
+              {[
+                'Cliente', 'Empreendimento', 'Data', 'Valor', 'Comissão',
+                ...(isAdmin ? ['Corretor'] : []),
+                '',
+              ].map((h, i) => (
                 <p key={i} className="text-xs font-medium text-slate-500 uppercase tracking-wider">{h}</p>
               ))}
             </div>
             {filtered.map((s, i) => {
-              const client = contacts.find(c => c.id === s.clientId)
+              const client     = contacts.find(c => c.id === s.clientId)
+              const brokerName = isAdmin ? (allProfiles.find(p => p.id === s.brokerId)?.name ?? '—') : null
               const { label, variant } = TYPE_CONFIG[s.type]
               const { totalCommission: tc, brokerCommission: bc } = calcSaleCommissions(s)
               const hasComm = tc > 0
@@ -339,7 +344,7 @@ export function SalesPage() {
               return (
                 <div
                   key={s.id}
-                  className={`grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-4 hover:bg-s3/50 row-accent transition-colors ${i < filtered.length - 1 ? 'border-b border-line' : ''}`}
+                  className={`grid ${isAdmin ? 'grid-cols-[2fr_2fr_1fr_1fr_1fr_1fr_auto]' : 'grid-cols-[2fr_2fr_1fr_1fr_1fr_auto]'} gap-4 items-center px-6 py-4 hover:bg-s3/50 row-accent transition-colors ${i < filtered.length - 1 ? 'border-b border-line' : ''}`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar name={client?.name ?? '?'} size="sm" />
@@ -366,6 +371,9 @@ export function SalesPage() {
                       <span className="text-xs text-slate-700">—</span>
                     )}
                   </div>
+                  {isAdmin && (
+                    <span className="text-xs text-slate-400 truncate">{brokerName}</span>
+                  )}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => { setEditing(s); setFormOpen(true) }}

@@ -71,6 +71,7 @@ export interface Property {
   acceptsPermuta?: boolean
   permutaTypes?: Array<'imovel' | 'carro'>
   permutaRegions?: string[]
+  createdById?: string   // quem cadastrou — controla quem pode editar
   createdAt: string
   updatedAt: string
 }
@@ -98,7 +99,7 @@ export interface Task {
   contactId?: string
   propertyId?: string
   googleEventId?: string
-  checklist?: ChecklistItem[]   // stored in localStorage, not in Supabase
+  checklist?: ChecklistItem[]   // stored in tasks.checklist (JSONB)
   brokerId?: string
   assignedToId?: string   // delegação: pessoa para quem a tarefa foi atribuída
   createdAt: string
@@ -176,6 +177,8 @@ export interface CampaignLead {
   // Delegação
   assignedToId?:   string
   assignedToName?: string
+  // Contador de disparos (incrementado a cada disparo nesta campanha)
+  dispatchCount?: number
   createdAt: string
   updatedAt: string
 }
@@ -256,6 +259,7 @@ export interface LeadInteraction {
   outcome?:     LeadInteractionOutcome
   interactedAt: string
   createdAt:    string
+  brokerId?:    string   // quem realizou a interação
 }
 
 export interface Lead {

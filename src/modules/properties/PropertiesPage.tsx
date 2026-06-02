@@ -155,7 +155,9 @@ export function PropertiesPage() {
   const { properties, load, remove, search, filterByStatus } = usePropertiesStore()
   const { load: loadContacts, getById } = useContactsStore()
   const { tasks } = useTasksStore()
-  const { isAdmin } = useAuthStore()
+  const { isAdmin, profile } = useAuthStore()
+  const canEdit   = (p: Property) => isAdmin || p.createdById === profile?.id
+  const canDelete = () => isAdmin
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [activeStatus, setActiveStatus] = useState<PropertyStatus | null>(null)
@@ -347,21 +349,25 @@ export function PropertiesPage() {
                         </button>
                       )
                     })()}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex-1 justify-center"
-                      onClick={() => { setEditing(p); setFormOpen(true) }}
-                    >
-                      <Pencil size={13} /> Editar
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => setDeleteTarget(p)}
-                    >
-                      <Trash2 size={13} />
-                    </Button>
+                    {canEdit(p) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1 justify-center"
+                        onClick={() => { setEditing(p); setFormOpen(true) }}
+                      >
+                        <Pencil size={13} /> Editar
+                      </Button>
+                    )}
+                    {canDelete() && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => setDeleteTarget(p)}
+                      >
+                        <Trash2 size={13} />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </Card>

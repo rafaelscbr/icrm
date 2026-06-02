@@ -196,6 +196,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
           dueDate: localDateStr(),
           contactId: lead.contactId,
           propertyId: lead.propertyId,
+          brokerId: lead.brokerId ?? getCurrentUserId() ?? undefined,
         })
         visitaTaskId = task.id
       } else {

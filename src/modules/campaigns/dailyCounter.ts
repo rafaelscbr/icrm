@@ -9,8 +9,9 @@
 import { useState } from 'react'
 import { localDateStr } from '../../lib/formatters'
 
-export const DAILY_WARN  = 25
-export const DAILY_LIMIT = 30
+// Limite por corretor por dia — proteção anti-ban individual
+export const DAILY_WARN  = 40   // aviso amarelo
+export const DAILY_LIMIT = 50   // bloqueio (50/dia por corretor)
 
 const SESSION_KEY = 'wapp_session_sends'   // cache de sessão — só proteção anti-ban
 

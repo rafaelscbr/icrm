@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown,
-  ThumbsUp, Loader2, Clock, Moon,
+  ThumbsUp, Loader2, Clock, Moon, AlertCircle,
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
@@ -287,6 +287,34 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
   const { increment: persistDisparo }                    = useDisparosStore()
 
+  // Histórico de disparos anteriores por lead (outras campanhas)
+  const [dispatchHistory, setDispatchHistory] = useState<Record<string, { campaignId: string; dispatchedAt: string }[]>>({})
+
+  async function loadDispatchHistory(lead: CampaignLead) {
+    if (!lead.phone) return
+    try {
+      const { data: contact } = await (await import('../../lib/supabase')).supabase
+        .from('contacts').select('id').eq('phone', lead.phone.replace(/\D/g, '')).maybeSingle()
+      if (!contact) return
+      const { data } = await (await import('../../lib/supabase')).supabase
+        .from('lead_campaign_dispatches')
+        .select('campaign_id, dispatched_at')
+        .eq('contact_id', contact.id)
+        .neq('campaign_id', campaign.id)   // exclui a campanha atual
+        .order('dispatched_at', { ascending: false })
+        .limit(5)
+      if (data && data.length > 0) {
+        setDispatchHistory(prev => ({
+          ...prev,
+          [lead.id]: (data as { campaign_id: string; dispatched_at: string }[]).map(d => ({
+            campaignId:   d.campaign_id,
+            dispatchedAt: d.dispatched_at,
+          })),
+        }))
+      }
+    } catch { /* silencioso */ }
+  }
+
   // ── Filtragem e agrupamento ───────────────────────────────────────────────
 
   const q = search.trim().toLowerCase()
@@ -386,6 +414,10 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     if (dailyCount >= DAILY_LIMIT) {
       toast.error(`Limite de ${DAILY_LIMIT} disparos diários atingido. Retome amanhã.`, { duration: 6000 })
       return
+    }
+    // Carrega histórico de campanhas anteriores (fire-and-forget)
+    if (!dispatchHistory[lead.id]) {
+      loadDispatchHistory(lead)
     }
     const templates = getTemplates(lead)
     if (templates.length > 1) setPickerLead(lead)
@@ -556,6 +588,15 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                           <p className={`text-sm font-medium truncate ${isNext ? 'text-t1' : 'text-t3'}`}>
                             {lead.name}
                           </p>
+                          {/* Aviso informativo: lead já recebeu disparo em outra campanha */}
+                          {dispatchHistory[lead.id]?.length > 0 && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <AlertCircle size={9} className="text-amber-400 flex-shrink-0" />
+                              <span className="text-[10px] text-amber-400/80 truncate">
+                                Disparado em {dispatchHistory[lead.id].length} campanha{dispatchHistory[lead.id].length > 1 ? 's' : ''} anterior{dispatchHistory[lead.id].length > 1 ? 'es' : ''} · último: {new Date(dispatchHistory[lead.id][0].dispatchedAt).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          )}
                           {lead.extra && (
                             <p className="text-[10px] text-slate-600 truncate">{lead.extra}</p>
                           )}

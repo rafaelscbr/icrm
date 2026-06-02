@@ -10,9 +10,10 @@ import { useDisparosStore } from '../../store/useDisparosStore'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const DAILY_TARGET   = DAILY_LIMIT          // 30
-const WEEKLY_TARGET  = 150                  // 30 × 5 dias úteis
-const MONTHLY_TARGET = 600                  // 30 × 5 × 4 semanas
+// Metas por corretor — 50 disparos/dia (proteção anti-ban individual)
+const DAILY_TARGET   = DAILY_LIMIT          // 50
+const WEEKLY_TARGET  = 250                  // 50 × 5 dias úteis
+const MONTHLY_TARGET = 1000                 // 50 × 20 dias úteis
 
 const axisStyle = { fill: '#475569', fontSize: 11 }
 

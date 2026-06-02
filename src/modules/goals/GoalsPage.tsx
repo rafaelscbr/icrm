@@ -18,17 +18,17 @@ import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
-import { getDailySends } from '../campaigns/dailyCounter'
 import { Goal, GoalCategory, Task } from '../../types'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
 
+// Metas de disparo: 50/dia por corretor (proteção anti-ban individual)
 const TARGETS = {
-  hoje:   { interacoes: 10, disparos: 30 },
-  semana: { visitas: 2, propostas: 1, disparos: 150 },
-  mes:    { visitas: 8, propostas: 4, vendas: 2, disparos: 600 },
+  hoje:   { interacoes: 10, disparos: 50 },
+  semana: { visitas: 2, propostas: 1, disparos: 250 },  // 50 × 5 dias úteis
+  mes:    { visitas: 8, propostas: 4, vendas: 2, disparos: 1000 }, // 50 × 20 dias úteis
 }
 
 type PeriodTab = 'hoje' | 'semana' | 'mes'
@@ -164,8 +164,8 @@ interface PeriodData {
 function usePeriodData(tasks: Task[]): PeriodData {
   const { getAllInteractions, loadAll, allLoaded } = useLeadInteractionsStore()
   const { sales }        = useSalesStore()
-  const { countDay: disparosDb, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
-  const disparosHoje = Math.max(disparosDb, getDailySends())
+  // Fonte única: disparo_logs no Supabase (por corretor via RLS)
+  const { countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
 
   useEffect(() => { loadDisparos() }, [loadDisparos])
   useEffect(() => { if (!allLoaded) loadAll() }, [allLoaded, loadAll])

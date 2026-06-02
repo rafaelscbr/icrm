@@ -418,7 +418,7 @@ export function Sidebar() {
               {profile?.name ?? 'Usuário'}
             </p>
             <p className="text-[10px] mt-0.5" style={{ color: 'var(--nav-muted)' }}>
-              {isAdmin ? 'Administrador' : 'Corretor'}
+              {isAdmin ? 'Admin · Corretor' : 'Corretor'}
             </p>
           </div>
           <button

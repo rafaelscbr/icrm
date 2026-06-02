@@ -104,6 +104,7 @@ interface PropertyRow {
   value: number; status: string; owner_id: string | null
   development_name: string | null; images: string[]
   accepts_permuta: boolean; permuta_types: string[]; permuta_regions: string[]
+  created_by_id: string | null
   created_at: string; updated_at: string
 }
 
@@ -124,6 +125,7 @@ interface TaskRow {
   property_id: string | null; google_event_id: string | null
   broker_id: string | null
   assigned_to_id: string | null   // delegação
+  checklist: import('../types').ChecklistItem[] | null
   created_at: string; updated_at: string
 }
 
@@ -163,6 +165,7 @@ interface CampaignLeadRow {
   broker_id: string | null
   last_sent_by_id: string | null; last_sent_by_name: string | null; last_sent_at: string | null
   assigned_to_id: string | null; assigned_to_name: string | null
+  dispatch_count: number
   created_at: string; updated_at: string
 }
 
@@ -248,6 +251,7 @@ function toProperty(r: PropertyRow): Property {
     acceptsPermuta: r.accepts_permuta ?? false,
     permutaTypes: (r.permuta_types ?? []) as Array<'imovel' | 'carro'>,
     permutaRegions: r.permuta_regions ?? [],
+    createdById: r.created_by_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -266,6 +270,7 @@ function fromProperty(p: Property): PropertyRow {
     accepts_permuta: p.acceptsPermuta ?? false,
     permuta_types: p.permutaTypes ?? [],
     permuta_regions: p.permutaRegions ?? [],
+    created_by_id: p.createdById ?? getCurrentUserId(),
     created_at: p.createdAt, updated_at: p.updatedAt,
   }
 }
@@ -291,7 +296,8 @@ function fromSale(s: Sale): SaleRow {
     commission_pct:   s.commissionPct   ?? null,
     commission_fixed: s.commissionFixed ?? null,
     broker_pct:       s.brokerPct       ?? null,
-    broker_id:        getCurrentUserId(),
+    // Respeita broker_id explícito (admin registrando venda de outro corretor)
+    broker_id:        s.brokerId ?? getCurrentUserId(),
     created_at: s.createdAt,
   }
 }
@@ -308,6 +314,7 @@ function toTask(r: TaskRow): Task {
     propertyId: r.property_id ?? undefined, googleEventId: r.google_event_id ?? undefined,
     brokerId: r.broker_id ?? undefined,
     assignedToId: r.assigned_to_id ?? undefined,
+    checklist: (r.checklist && r.checklist.length > 0) ? r.checklist : undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -319,9 +326,9 @@ function fromTask(t: Task): TaskRow {
     status: t.status, priority: t.priority, category: t.category ?? null,
     completed_at: t.completedAt ?? null, contact_id: t.contactId ?? null,
     property_id: t.propertyId ?? null, google_event_id: t.googleEventId ?? null,
-    // brokerId explícito (ao editar) ou usuário atual — o trigger do banco garante auth.uid() se vier null
     broker_id: t.brokerId ?? getCurrentUserId(),
     assigned_to_id: t.assignedToId ?? null,
+    checklist: t.checklist && t.checklist.length > 0 ? t.checklist : null,
     created_at: t.createdAt, updated_at: t.updatedAt,
   }
 }
@@ -407,6 +414,7 @@ function toCampaignLead(r: CampaignLeadRow): CampaignLead {
     lastSentAt:     r.last_sent_at     ?? undefined,
     assignedToId:   r.assigned_to_id   ?? undefined,
     assignedToName: r.assigned_to_name ?? undefined,
+    dispatchCount:  r.dispatch_count   ?? 0,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
@@ -429,6 +437,7 @@ function fromCampaignLead(l: CampaignLead): CampaignLeadRow {
     last_sent_at:      l.lastSentAt     ?? null,
     assigned_to_id:    l.assignedToId   ?? null,
     assigned_to_name:  l.assignedToName ?? null,
+    dispatch_count:    l.dispatchCount  ?? 0,
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }
@@ -561,6 +570,7 @@ function toLeadInteraction(r: LeadInteractionRow): LeadInteraction {
     outcome:      r.outcome ? (r.outcome as LeadInteractionOutcome) : undefined,
     interactedAt: r.interacted_at,
     createdAt:    r.created_at,
+    brokerId:     r.broker_id ?? undefined,
   }
 }
 

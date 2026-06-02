@@ -248,8 +248,8 @@ function dueDateLabel(dueDate?: string): { text: string; color: string } {
 // ─── Alertas de leads ─────────────────────────────────────────────────────────
 
 function LeadAlertsWidget({
-  onOpenLead, onNavigate,
-}: { onOpenLead: (lead: Lead) => void; onNavigate: () => void }) {
+  onOpenLead, onNavigate, brokerNames = {},
+}: { onOpenLead: (lead: Lead) => void; onNavigate: () => void; brokerNames?: Record<string, string> }) {
   const { leads } = useLeadsStore()
   const { byLead } = useLeadInteractionsStore()
 
@@ -308,7 +308,14 @@ function LeadAlertsWidget({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-t1 truncate">{lead.name}</p>
-                <span className={`text-[10px] ${stageConf?.color ?? 'text-t3'}`}>{stageConf?.label ?? lead.funnelStage}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] ${stageConf?.color ?? 'text-t3'}`}>{stageConf?.label ?? lead.funnelStage}</span>
+                  {lead.brokerId && brokerNames[lead.brokerId] && (
+                    <span className="text-[9px] text-violet-400/70 bg-violet-500/8 px-1.5 py-px rounded-full border border-violet-500/15">
+                      {brokerNames[lead.brokerId]}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border tabular-nums ${daysBadge}`}>{daysInt}d</span>
@@ -375,6 +382,11 @@ function OverdueCard({
                 <div className="flex items-center gap-2 mt-0.5">
                   {contact  && <span className="text-xs text-t3 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
                   {property && <span className="text-xs text-t3 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
+                  {t.brokerId && (
+                    <span className="text-[10px] text-violet-400/70 bg-violet-500/10 px-1.5 py-0.5 rounded-full border border-violet-500/20">
+                      {(contacts as unknown as {id: string; name: string}[]).find(c => c.id === t.brokerId)?.name ?? 'Corretor'}
+                    </span>
+                  )}
                 </div>
               </div>
               <span className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-lg border border-red-500/20">
@@ -667,8 +679,13 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const [taskFormOpen,  setTaskFormOpen]  = useState(false)
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
-  const { isAdmin, profile } = useAuthStore()
+  const { isAdmin, profile, allProfiles, viewAsBrokerId } = useAuthStore()
   const firstName = profile?.name?.split(' ')[0] ?? 'Corretor'
+  // Mapa brokerId → nome para exibição nos alertas
+  const brokerNames = useMemo(() =>
+    Object.fromEntries(allProfiles.map(p => [p.id, p.name])),
+    [allProfiles]
+  )
 
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
   const { properties, load: loadProperties }                    = usePropertiesStore()
@@ -676,7 +693,7 @@ export function DashboardPage() {
   const { tasks, load: loadTasks, getUpcoming, getOverdue }     = useTasksStore()
   const { load: loadCampaigns }    = useCampaignsStore()
   const { load: loadCampLeads }    = useCampaignLeadsStore()
-  const { load: loadMyLeads }      = useLeadsStore()
+  const { leads, load: loadMyLeads } = useLeadsStore()
   const { loadAll: loadInteractions } = useLeadInteractionsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
@@ -770,9 +787,40 @@ export function DashboardPage() {
       <LeadAlertsWidget
         onOpenLead={setSelectedLead}
         onNavigate={() => navigate('/leads')}
+        brokerNames={brokerNames}
       />
 
-      {/* 5. Corretores online — visível só para admin */}
+      {/* 5a. Meu desempenho — admin como corretor (sem viewAs) */}
+      {isAdmin && !viewAsBrokerId && (() => {
+        const myLeads  = leads.filter(l => l.brokerId === profile?.id && !l.discardReason)
+        const myTasks  = tasks.filter(t => t.brokerId === profile?.id && t.status !== 'done')
+        const mySales  = salesInPeriod.filter(s => s.brokerId === profile?.id)
+        if (myLeads.length === 0 && mySales.length === 0) return null
+        return (
+          <div className="mb-6 p-4 rounded-xl border border-brand/20 bg-brand/5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-[10px] font-bold text-[#0B0F1C]">
+                {(profile?.name ?? 'R').charAt(0).toUpperCase()}
+              </div>
+              <p className="text-xs font-bold text-brand uppercase tracking-wider">Meu desempenho — {firstName}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Leads ativos',    value: myLeads.length,           color: 'text-brand'      },
+                { label: `Vendas no período`, value: mySales.length,         color: 'text-green-400'  },
+                { label: 'Tarefas abertas', value: myTasks.length,           color: 'text-violet-400' },
+              ].map(k => (
+                <div key={k.label} className="bg-s2/40 rounded-xl p-3 text-center">
+                  <p className={`text-2xl font-black tabular-nums ${k.color}`}>{k.value}</p>
+                  <p className="text-[10px] text-t4 mt-0.5">{k.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* 5b. Corretores online — visível só para admin */}
       {isAdmin && (
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">

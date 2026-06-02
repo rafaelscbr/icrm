@@ -9,6 +9,7 @@ import { Modal }         from '../../components/ui/Modal'
 import { Button }        from '../../components/ui/Button'
 import { EmptyState }    from '../../components/ui/EmptyState'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { LeadList }      from '../../types'
 import { LeadListForm }  from './LeadListForm'
 import { LeadListDetail } from './LeadListDetail'
@@ -19,6 +20,7 @@ import toast             from 'react-hot-toast'
 
 export function LeadListsPage() {
   const { lists, loading, load, remove, archive } = useLeadListsStore()
+  const { isAdmin, allProfiles } = useAuthStore()
   const [tab,           setTab]           = useState<'active' | 'archived'>('active')
   const [createOpen,    setCreateOpen]    = useState(false)
   const [editList,      setEditList]      = useState<LeadList | undefined>()
@@ -217,6 +219,11 @@ export function LeadListsPage() {
                         </p>
                       ) : (
                         <p className="text-[10px] text-slate-600 mt-0.5">Sem perfil definido</p>
+                      )}
+                      {isAdmin && list.brokerId && (
+                        <p className="text-[9px] text-violet-400/70 mt-0.5">
+                          {allProfiles.find(p => p.id === list.brokerId)?.name ?? 'Corretor'}
+                        </p>
                       )}
                     </div>
                   </div>

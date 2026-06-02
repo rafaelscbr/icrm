@@ -157,7 +157,9 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
       patch.lastSentByName = sentBy.name
       patch.lastSentAt     = now
     }
-    if (Object.keys(patch).length) get().update(id, patch)
+    // Incrementa dispatch_count
+    patch.dispatchCount = (lead.dispatchCount ?? 0) + 1
+    get().update(id, patch)
 
     // Registra no log de atividade da campanha
     if (message && sentBy) {
