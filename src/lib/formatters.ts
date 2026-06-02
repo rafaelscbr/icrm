@@ -63,13 +63,30 @@ function _normalizeSinglePhone(raw: string): string | null {
   return d
 }
 
+/**
+ * Codifica mensagem para a query string do wa.me.
+ * Emojis e acentos passam como Unicode bruto — o WhatsApp lê corretamente.
+ * encodeURIComponent faz o WhatsApp exibir %F0%9F... como texto literal.
+ * Apenas os chars que quebrariam a URL são escapados.
+ */
+function encodeWhatsAppText(text: string): string {
+  return text
+    .replace(/%/g,  '%25')   // % deve vir primeiro para não duplo-codificar
+    .replace(/\+/g, '%2B')
+    .replace(/&/g,  '%26')
+    .replace(/=/g,  '%3D')
+    .replace(/\?/g, '%3F')
+    .replace(/#/g,  '%23')
+    .replace(/ /g,  '%20')
+    .replace(/\n/g, '%0A')
+    .replace(/\r/g, '')
+}
+
 export function whatsappUrl(phone: string, message?: string): string {
   const digits = phone.replace(/\D/g, '')
   const withCountry = digits.startsWith('55') ? digits : `55${digits}`
   const base = `https://wa.me/${withCountry}`
-  // encodeURIComponent garante codificação correta de emojis e caracteres especiais.
-  // O WhatsApp decodifica o %F0%9F... de volta para emoji antes de exibir.
-  return message ? `${base}?text=${encodeURIComponent(message)}` : base
+  return message ? `${base}?text=${encodeWhatsAppText(message)}` : base
 }
 
 export function generateId(): string {
