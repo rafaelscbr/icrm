@@ -275,8 +275,8 @@ function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
       const key = l.lastSentById ?? l.lastSentByName
       const row = map.get(key) ?? { name: l.lastSentByName, dispatches: 0, interested: 0, sales: 0 }
       row.dispatches++
-      if (['attended','scheduled','presentation','proposal','sale'].includes(l.funnelStage)) row.interested++
-      if (l.funnelStage === 'sale') row.sales++
+      if (['attended','scheduled'].includes(l.funnelStage)) row.interested++
+      if (l.transferredAt) row.sales++
       map.set(key, row)
     }
     return [...map.values()].sort((a, b) => b.dispatches - a.dispatches)
