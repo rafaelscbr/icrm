@@ -30,7 +30,6 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
   const [stage,          setStageLocal]   = useState<FunnelStage>('new')
   const [situation,      setSituationL]   = useState<LeadSituation | undefined>()
   const [notes,          setNotes]        = useState('')
-  const [proposalValue,  setProposalValue]= useState('')
   const [showTransfer,   setShowTransfer]   = useState(false)
   const [visitaLead,     setVisitaLead]     = useState<Lead | undefined>()
 
