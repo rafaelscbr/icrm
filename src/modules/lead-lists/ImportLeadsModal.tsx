@@ -13,7 +13,6 @@ import { normalizePhone, generateId, formatPhone } from '../../lib/formatters'
 import { supabase }  from '../../lib/supabase'
 import { db }        from '../../lib/db'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
-import { getCurrentUserId }  from '../../lib/auth'
 import toast from 'react-hot-toast'
 
 interface Props {
