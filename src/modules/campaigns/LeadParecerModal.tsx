@@ -56,22 +56,11 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
       notes: notes.trim() || undefined,
     }
 
-    if (stage === 'proposal' && proposalValue) {
-      patch.proposalValue = parseFloat(proposalValue.replace(/\./g, '').replace(',', '.')) || undefined
-    }
-
     update(lead.id, patch)
 
-    // Auto-create task when reaches "presentation" for the first time
-    if (stage === 'presentation' && prevStage !== 'presentation') {
-      tasksStore.add({
-        title:       `Follow-up: ${lead.name}`,
-        description: campaign ? `Campanha: ${campaign.name}` : undefined,
-        priority:    'medium',
-        status:      'pending',
-        category:    'visita',
-      })
-      toast.success('Etapa atualizada · Tarefa de follow-up criada!')
+    // Ao atingir "Agendou Apresentação" pela primeira vez, sugerir transferência
+    if (stage === 'scheduled' && prevStage !== 'scheduled') {
+      toast.success('Agendamento registrado! Transfira este lead para o funil principal.')
     } else {
       toast.success('Parecer atualizado')
     }
