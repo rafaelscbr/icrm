@@ -952,12 +952,14 @@ export const db = {
   },
 
   campaignActivity: {
-    fetchForCampaign: async (campaignId: string, limit = 100): Promise<CampaignActivity[]> => {
-      const { data, error } = await supabase
+    fetchForCampaign: async (campaignId: string, limit = 500, since?: string): Promise<CampaignActivity[]> => {
+      let q = supabase
         .from('campaign_activity_log').select('*')
         .eq('campaign_id', campaignId)
         .order('created_at', { ascending: false })
         .limit(limit)
+      if (since) q = q.gte('created_at', since)
+      const { data, error } = await q
       if (error) throw error
       return (data as CampaignActivityRow[]).map(toCampaignActivity)
     },
