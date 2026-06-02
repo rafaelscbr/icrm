@@ -102,6 +102,15 @@ export function LeadListsPage() {
       subtitle="Gerencie suas listas de leads frios e conecte-as a campanhas"
       ctaLabel="Nova Lista"
       onCta={() => setCreateOpen(true)}
+      headerExtra={
+        <button
+          onClick={openCleanup}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-amber-400 bg-s2/50 hover:bg-amber-500/8 border border-line hover:border-amber-500/25 rounded-xl transition-all"
+          title="Limpar contatos órfãos de listas excluídas"
+        >
+          <Sparkles size={12} /> Limpar órfãos
+        </button>
+      }
     >
       {/* Stats */}
       {lists.length > 0 && (
