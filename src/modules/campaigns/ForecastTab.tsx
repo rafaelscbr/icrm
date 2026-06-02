@@ -121,54 +121,39 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
   const hasTicket = ticket > 0
 
   // Leads ativos por etapa (sem situação negativa)
-  const FUNNEL_ORDER: FunnelStage[] = ['attended', 'scheduled', 'presentation', 'proposal', 'sale']
   const activeAt = (stage: FunnelStage) => leads.filter(l => l.funnelStage === stage && !l.situation).length
-  const activeAtOrAbove = (stage: FunnelStage) => {
-    const idx = FUNNEL_ORDER.indexOf(stage)
-    return FUNNEL_ORDER.slice(idx).reduce((sum, s) => sum + activeAt(s), 0)
-  }
 
   const count = {
-    cold:         activeAt('new') + activeAt('sent'),
-    attended:     activeAtOrAbove('attended'),
-    scheduled:    activeAtOrAbove('scheduled'),
-    presentation: activeAtOrAbove('presentation'),
-    proposal:     activeAtOrAbove('proposal'),
-    sale:         activeAt('sale'),
+    cold:      activeAt('new') + activeAt('sent'),
+    attended:  activeAt('attended'),
+    scheduled: activeAt('scheduled'),
+    transferred: leads.filter(l => l.transferredAt).length,
   }
 
-  const totalActive = Object.values(count).reduce((a, b) => a + b, 0)
+  const totalActive = count.cold + count.attended + count.scheduled
 
   // ── Projeção em cascata ────────────────────────────────────────────────────
-  // Cada lead na etapa X projeta (produto das taxas restantes) vendas.
-  // Leads já na etapa Y "pulam" as taxas anteriores a Y.
   const r = {
-    att:  rates.attended     / 100,
-    sch:  rates.scheduled    / 100,
-    pre:  rates.presentation / 100,
-    pro:  rates.proposal     / 100,
-    sal:  rates.sale         / 100,
+    att: rates.attended  / 100,
+    sch: rates.scheduled / 100,
+    sal: rates.sale      / 100,
   }
 
   const proj = {
-    fromCold:         count.cold         * r.att * r.sch * r.pre * r.pro * r.sal,
-    fromAttended:     count.attended     *          r.sch * r.pre * r.pro * r.sal,
-    fromScheduled:    count.scheduled    *                  r.pre * r.pro * r.sal,
-    fromPresentation: count.presentation *                           r.pro * r.sal,
-    fromProposal:     count.proposal     *                                   r.sal,
-    alreadySold:      count.sale,
+    fromCold:      count.cold      * r.att * r.sch * r.sal,
+    fromAttended:  count.attended  *          r.sch * r.sal,
+    fromScheduled: count.scheduled *                  r.sal,
+    transferred:   count.transferred * r.sal,
   }
 
   const totalSales = Object.values(proj).reduce((a, b) => a + b, 0)
   const totalVGV   = totalSales * ticket
 
-  // Projeção acumulada após cada transição (para exibir no funil)
+  // Projeção acumulada após cada transição
   const projAfter = {
-    attended:     count.cold * r.att,
-    scheduled:    count.cold * r.att * r.sch,
-    presentation: count.cold * r.att * r.sch * r.pre,
-    proposal:     count.cold * r.att * r.sch * r.pre * r.pro,
-    sale:         count.cold * r.att * r.sch * r.pre * r.pro * r.sal,
+    attended:  count.cold * r.att,
+    scheduled: count.cold * r.att * r.sch,
+    sale:      count.cold * r.att * r.sch * r.sal,
   }
 
   function handleRate(key: keyof Rates, val: number) {
