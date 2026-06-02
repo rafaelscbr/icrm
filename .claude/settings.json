@@ -1,24 +1,11 @@
 {
   "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path // \"changes\"' | { read -r f; cd /Users/rafasouza/Documents/icrm && git add -A && git diff --cached --quiet || (git commit -m \"auto: $(basename \"$f\") [skip ci]\" && git push origin main); } 2>/dev/null || true",
-            "async": true,
-            "statusMessage": "Salvando e enviando para main..."
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/rafasouza/Documents/icrm && npm run dev -- --port 5175 > /tmp/icrm-dev.log 2>&1 &",
+            "command": "npm run dev -- --port 5175 > /tmp/icrm-dev.log 2>&1 &",
             "async": true,
             "statusMessage": "Iniciando servidor iCRM..."
           }
