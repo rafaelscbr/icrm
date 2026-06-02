@@ -349,7 +349,12 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     clearReady()          // esconde o banner "pronto" ao iniciar novo disparo
     const secs  = start() // pede permissão de notificação + inicia cooldown
     const total = dailyIncrement()
-    persistDisparo()      // persiste no Supabase (fonte de verdade para metas)
+    persistDisparo({      // persiste no Supabase com contexto completo
+      brokerId:   profile?.id,
+      campaignId: campaign.id,
+      leadId:     lead.id,
+      leadName:   lead.name,
+    })
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'
     markContacted(lead.id, msg, templateIndex, sentBy)

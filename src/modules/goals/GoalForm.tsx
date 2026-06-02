@@ -15,10 +15,9 @@ interface GoalFormProps {
 }
 
 const CATEGORY_OPTIONS: { value: GoalCategory; label: string }[] = [
-  { value: 'visita',       label: 'Visita'       },
-  { value: 'agenciamento', label: 'Agenciamento' },
-  { value: 'proposta',     label: 'Proposta'     },
-  { value: 'venda',        label: 'Venda'        },
+  { value: 'visita',   label: 'Visita'   },
+  { value: 'proposta', label: 'Proposta' },
+  { value: 'venda',    label: 'Venda'    },
 ]
 
 const PERIOD_OPTIONS: { value: GoalPeriod; label: string }[] = [

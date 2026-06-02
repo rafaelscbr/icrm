@@ -36,7 +36,7 @@ const navSections = [
   {
     label: 'Análise',
     items: [
-      { key: 'performance', to: '/performance', icon: BarChart3, label: 'Performance', end: false },
+      { key: 'performance', to: '/performance', icon: BarChart3, label: 'Análise', end: false },
     ],
   },
 ]

@@ -55,7 +55,8 @@
       "Bash(git commit *)",
       "Bash(xargs cat -n)",
       "Bash(cat /Users/rafasouza/Documents/icrm/.claude/settings.json 2>/dev/null || cat /Users/rafasouza/.claude/settings.json 2>/dev/null)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__list_tables"
     ]
   }
 }
