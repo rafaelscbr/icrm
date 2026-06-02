@@ -220,24 +220,17 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
     }
 
     try {
-      const CHUNK      = 500
-      const total      = toImport.length
-      const allPhones  = toImport.map(l => l.phone)
-      const existingMap = new Map<string, string>() // phone → contact_id
+      const CHUNK = 500
+      const total = toImport.length
 
-      // 1. Phones já existem em contacts?
-      for (let i = 0; i < allPhones.length; i += CHUNK) {
-        const chunk = allPhones.slice(i, i + CHUNK)
-        const { data } = await supabase.from('contacts').select('id, phone').in('phone', chunk)
-        if (data) {
-          (data as { id: string; phone: string }[]).forEach(c => {
-            const norm = normalizePhone(c.phone)
-            if (norm) existingMap.set(norm, c.id)
-          })
-        }
+      // 1. Reutiliza os contact IDs já encontrados pela análise (evita re-busca
+      //    e resolve o mismatch de formato: "(47) 9xxxx" vs "479xxxx")
+      const existingMap = new Map<string, string>() // phone normalizado → contact_id
+      for (const lead of toImport as AnalyzedLead[]) {
+        if (lead.existingContactId) existingMap.set(lead.phone, lead.existingContactId)
       }
 
-      // 2. Criar novos contatos
+      // 2. Criar novos contatos (apenas os que a análise não encontrou)
       const now           = new Date().toISOString()
       const currentUserId = (await supabase.auth.getUser()).data.user?.id ?? null
       const listProfile   = lists.find(ll => ll.id === listId)?.productProfile ?? null
