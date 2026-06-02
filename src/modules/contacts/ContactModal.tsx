@@ -91,6 +91,13 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
   const { update: updateContact } = useContactsStore()
   const [selectedLead, setSelectedLead] = useState<string | null>(null)
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
+  const [score, setScore] = useState<LeadScoreResult | null>(null)
+
+  useEffect(() => {
+    if (!contact || !isOpen) return
+    setScore(null)
+    fetchLeadScore(contact.id, contact.phone).then(setScore).catch(() => {})
+  }, [contact?.id, isOpen])
 
   // Permuta edit state
   const [editingPermuta, setEditingPermuta] = useState(false)
