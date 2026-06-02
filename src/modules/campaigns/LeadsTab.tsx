@@ -301,53 +301,61 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
   const { increment: persistDisparo }                    = useDisparosStore()
 
-  // Verificação completa antes do disparo: campanhas anteriores + compra realizada
+  // Verificação completa antes do disparo: campanhas anteriores + compra realizada.
+  // Limitada a 3 s — se a rede travar, retorna vazio e prossegue sem bloquear.
   async function checkPreDispatch(lead: CampaignLead): Promise<{ icon: string; text: string }[]> {
-    const warnings: { icon: string; text: string }[] = []
-    try {
-      const normPhone = lead.phone.replace(/\D/g, '')
-      const { data: contact } = await supabase
-        .from('contacts').select('id').eq('phone', normPhone).maybeSingle()
-      if (!contact) return []
+    const doCheck = async (): Promise<{ icon: string; text: string }[]> => {
+      const warnings: { icon: string; text: string }[] = []
+      try {
+        const normPhone = lead.phone.replace(/\D/g, '')
+        const { data: contact } = await supabase
+          .from('contacts').select('id').eq('phone', normPhone).maybeSingle()
+        if (!contact) return []
 
-      // Verifica se o contato já comprou um imóvel
-      const { data: sales } = await supabase
-        .from('sales')
-        .select('date, property_name')
-        .eq('client_id', contact.id)
-        .order('date', { ascending: false })
-        .limit(1)
-      if (sales && sales.length > 0) {
-        const s = sales[0] as { date: string; property_name: string }
-        warnings.push({
-          icon: '🏠',
-          text: `Este contato já comprou um imóvel (${s.property_name} em ${new Date(s.date).toLocaleDateString('pt-BR')}).`,
-        })
-      }
+        // Verifica se o contato já comprou um imóvel
+        const { data: sales } = await supabase
+          .from('sales')
+          .select('date, property_name')
+          .eq('client_id', contact.id)
+          .order('date', { ascending: false })
+          .limit(1)
+        if (sales && sales.length > 0) {
+          const s = sales[0] as { date: string; property_name: string }
+          warnings.push({
+            icon: '🏠',
+            text: `Este contato já comprou um imóvel (${s.property_name} em ${new Date(s.date).toLocaleDateString('pt-BR')}).`,
+          })
+        }
 
-      // Verifica disparos em outras campanhas
-      const { data: dispatches } = await supabase
-        .from('lead_campaign_dispatches')
-        .select('campaign_id, dispatched_at')
-        .eq('contact_id', contact.id)
-        .neq('campaign_id', campaign.id)
-        .order('dispatched_at', { ascending: false })
-        .limit(5)
-      if (dispatches && dispatches.length > 0) {
-        const rows = dispatches as { campaign_id: string; dispatched_at: string }[]
-        const last = new Date(rows[0].dispatched_at).toLocaleDateString('pt-BR')
-        warnings.push({
-          icon: '📨',
-          text: `Contatado em ${rows.length} outra${rows.length > 1 ? 's' : ''} campanha${rows.length > 1 ? 's' : ''} — último disparo em ${last}.`,
-        })
-        // Atualiza histórico inline também
-        setDispatchHistory(prev => ({
-          ...prev,
-          [lead.id]: rows.map(d => ({ campaignId: d.campaign_id, dispatchedAt: d.dispatched_at })),
-        }))
-      }
-    } catch { /* silencioso — prossegue sem bloquear */ }
-    return warnings
+        // Verifica disparos em outras campanhas
+        const { data: dispatches } = await supabase
+          .from('lead_campaign_dispatches')
+          .select('campaign_id, dispatched_at')
+          .eq('contact_id', contact.id)
+          .neq('campaign_id', campaign.id)
+          .order('dispatched_at', { ascending: false })
+          .limit(5)
+        if (dispatches && dispatches.length > 0) {
+          const rows = dispatches as { campaign_id: string; dispatched_at: string }[]
+          const last = new Date(rows[0].dispatched_at).toLocaleDateString('pt-BR')
+          warnings.push({
+            icon: '📨',
+            text: `Contatado em ${rows.length} outra${rows.length > 1 ? 's' : ''} campanha${rows.length > 1 ? 's' : ''} — último disparo em ${last}.`,
+          })
+          setDispatchHistory(prev => ({
+            ...prev,
+            [lead.id]: rows.map(d => ({ campaignId: d.campaign_id, dispatchedAt: d.dispatched_at })),
+          }))
+        }
+      } catch { /* silencioso — prossegue sem bloquear */ }
+      return warnings
+    }
+
+    // Race com timeout de 3 s — garante que a UI nunca fica travada
+    const timeout = new Promise<{ icon: string; text: string }[]>(resolve =>
+      setTimeout(() => resolve([]), 3000)
+    )
+    return Promise.race([doCheck(), timeout])
   }
 
   // ── Filtragem e agrupamento ───────────────────────────────────────────────
@@ -452,21 +460,23 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       return
     }
 
-    // Verificação pré-disparo: compra realizada + campanhas anteriores
+    // Verificação pré-disparo: compra realizada + campanhas anteriores.
+    // try/finally garante que checkingId é sempre limpo mesmo em exceções.
     setCheckingId(lead.id)
-    const warnings = await checkPreDispatch(lead)
-    setCheckingId(undefined)
-
-    if (warnings.length > 0) {
-      setPreDispatchWarn({
-        lead,
-        items: warnings,
-        onConfirm: () => { setPreDispatchWarn(undefined); proceedWithDispatch(lead) },
-      })
-      return
+    try {
+      const warnings = await checkPreDispatch(lead)
+      if (warnings.length > 0) {
+        setPreDispatchWarn({
+          lead,
+          items: warnings,
+          onConfirm: () => { setPreDispatchWarn(undefined); proceedWithDispatch(lead) },
+        })
+        return
+      }
+      proceedWithDispatch(lead)
+    } finally {
+      setCheckingId(undefined)
     }
-
-    proceedWithDispatch(lead)
   }
 
   function handleInterested(lead: CampaignLead) {
