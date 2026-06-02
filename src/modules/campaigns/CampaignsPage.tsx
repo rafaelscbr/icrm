@@ -138,8 +138,8 @@ export function CampaignsPage() {
           {campaigns.map(c => {
             const campaignLeads = leads.filter(l => l.campaignId === c.id)
             const contacted     = campaignLeads.filter(l => l.firstContactAt).length
-            const inFunnel      = campaignLeads.filter(l => ['attended','presentation','proposal','sale'].includes(l.funnelStage)).length
-            const sales         = campaignLeads.filter(l => l.funnelStage === 'sale').length
+            const inFunnel      = campaignLeads.filter(l => ['attended','scheduled'].includes(l.funnelStage)).length
+            const transferred   = campaignLeads.filter(l => l.transferredAt).length
             const contactRate   = campaignLeads.length > 0 ? Math.round(contacted / campaignLeads.length * 100) : 0
             const statusCfg     = STATUS_CONFIG[c.status]
 
