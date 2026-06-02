@@ -44,8 +44,9 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
 
   // ── Carrega todos os leads do banco ──────────────────────────────────────────
   // Chamado ao abrir uma campanha e pelo polling periódico.
-  // Todos os usuários enxergam o mesmo dado — admin via RLS is_admin(),
-  // corretor via broker_id = auth.uid().
+  // Usa merge inteligente para não sobrescrever atualizações otimistas pendentes:
+  // se o estado local tem updatedAt mais recente que o banco, o upsert ainda não
+  // chegou ao servidor — mantém a versão local para evitar re-exibir na fila.
   load: async () => {
     set({ loading: true })
     try {
@@ -53,14 +54,30 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
 
       // Deduplica por (campaignId + telefone) — descarta duplicatas de import
       const seen = new Set<string>()
-      const leads = raw.filter(l => {
+      const fresh = raw.filter(l => {
         const key = `${l.campaignId}:${l.phone.replace(/\D/g, '')}`
         if (seen.has(key)) return false
         seen.add(key)
         return true
       })
 
-      set({ leads })
+      // Merge: preserva escritas otimistas pendentes.
+      // Para cada lead do banco, se o estado local tem updatedAt posterior, mantém local.
+      const currentLeads = get().leads
+      const currentMap   = new Map(currentLeads.map(l => [l.id, l]))
+      const freshIds     = new Set(fresh.map(l => l.id))
+
+      const merged = fresh.map(dbLead => {
+        const local = currentMap.get(dbLead.id)
+        // updatedAt local > banco → escrita ainda pendente, preserva otimista
+        return local && local.updatedAt > dbLead.updatedAt ? local : dbLead
+      })
+
+      // Inclui leads locais que ainda não chegaram ao banco (addBulk recente)
+      const pendingLocal = currentLeads.filter(l => !freshIds.has(l.id))
+      merged.push(...pendingLocal)
+
+      set({ leads: merged })
     } catch (err) {
       console.error('[campaignLeads] load:', err)
     } finally {

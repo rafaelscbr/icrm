@@ -257,15 +257,22 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
     return () => clearInterval(interval)
   }, [campaignId])
 
-  // Recarrega imediatamente ao voltar para a aba (usuário saiu e voltou)
+  // Recarrega ao voltar para a aba — delay de 2 s para garantir que o upsert
+  // do último disparo já chegou ao banco antes de sincronizar (evita race condition)
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null
     function onVisible() {
       if (document.visibilityState === 'visible') {
-        useCampaignLeadsStore.getState().load()
+        timer = setTimeout(() => useCampaignLeadsStore.getState().load(), 2000)
+      } else {
+        if (timer) { clearTimeout(timer); timer = null }
       }
     }
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      if (timer) clearTimeout(timer)
+    }
   }, [])
 
   const campaign = campaigns.find(c => c.id === campaignId)
