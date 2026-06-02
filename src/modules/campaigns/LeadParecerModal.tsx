@@ -19,7 +19,7 @@ interface LeadParecerModalProps {
 }
 
 export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParecerModalProps) {
-  const { update } = useCampaignLeadsStore()
+  const { update, setStage } = useCampaignLeadsStore()
 
   const [stage,          setStageLocal]   = useState<FunnelStage>('new')
   const [situation,      setSituationL]   = useState<LeadSituation | undefined>()
@@ -37,20 +37,23 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
   function handleSave() {
     if (!lead) return
 
-    const prevStage = lead.funnelStage
-
-    // Contato inexistente não pode ficar em etapa do funil
+    const prevStage     = lead.funnelStage
     const effectiveStage: FunnelStage = situation === 'invalid' ? 'new' : stage
+    const stageChanged  = effectiveStage !== prevStage
 
-    const patch: Partial<CampaignLead> = {
-      funnelStage: effectiveStage,
+    // Campos não-estágio: situation e notes via update direto
+    const extraFields: Partial<CampaignLead> = {
       situation,
       notes: notes.trim() || undefined,
     }
 
-    update(lead.id, patch)
+    if (stageChanged) {
+      // Usa setStage para atualizar stageUpdatedAt e logar atividade
+      setStage(lead.id, effectiveStage, extraFields)
+    } else {
+      update(lead.id, extraFields)
+    }
 
-    // Ao atingir "Agendou Apresentação" pela primeira vez, sugerir transferência
     if (stage === 'scheduled' && prevStage !== 'scheduled') {
       toast.success('Agendamento registrado! Transfira este lead para o funil principal.')
     } else {
