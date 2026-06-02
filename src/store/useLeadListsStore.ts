@@ -31,7 +31,14 @@ export const useLeadListsStore = create<LeadListsState>((set, get) => ({
     await get().load()
   },
 
-  remove: async (id) => {
+  remove: async (id, contactIdsToDelete = []) => {
+    // Deletar contatos em chunks antes de excluir a lista
+    const CHUNK = 500
+    for (let i = 0; i < contactIdsToDelete.length; i += CHUNK) {
+      const chunk = contactIdsToDelete.slice(i, i + CHUNK)
+      await supabase.from('contacts').delete().in('id', chunk)
+    }
+    // Excluir a lista (CASCADE remove lead_list_members automaticamente)
     await db.leadLists.delete(id)
     set(s => ({ lists: s.lists.filter(l => l.id !== id) }))
   },
