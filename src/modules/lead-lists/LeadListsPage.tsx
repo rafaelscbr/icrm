@@ -191,18 +191,12 @@ export function LeadListsPage() {
       <LeadListForm isOpen={createOpen}           onClose={() => setCreateOpen(false)}   />
       <LeadListForm isOpen={Boolean(editList)}     onClose={() => setEditList(undefined)} list={editList} />
 
-      <Modal isOpen={Boolean(deleteList)} onClose={() => setDeleteList(undefined)} title="Excluir lista" size="sm">
-        <p className="text-sm text-slate-400 mb-2">
-          Excluir <span className="text-slate-200 font-medium">"{deleteList?.name}"</span>?
-        </p>
-        <p className="text-xs text-red-400/80 bg-red-500/8 border border-red-500/15 rounded-xl px-3 py-2 mb-6">
-          Todos os vínculos de contatos com esta lista serão removidos. Os contatos permanecem no sistema.
-        </p>
-        <div className="flex gap-3">
-          <Button variant="secondary" className="flex-1" onClick={() => setDeleteList(undefined)}>Cancelar</Button>
-          <Button variant="danger"    className="flex-1" onClick={handleDelete}>Excluir lista</Button>
-        </div>
-      </Modal>
+      <DeleteListModal
+        list={deleteList}
+        isOpen={Boolean(deleteList)}
+        onClose={() => setDeleteList(undefined)}
+        onConfirm={handleDelete}
+      />
     </PageLayout>
   )
 }
