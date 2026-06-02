@@ -184,7 +184,9 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
       setStep('done')
       onSuccess(s.linkedToList)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
+      const msg = err instanceof Error
+        ? err.message
+        : (err as { message?: string })?.message ?? String(err)
       s.errors.push(msg)
       setStats(s)
       setStep('done')

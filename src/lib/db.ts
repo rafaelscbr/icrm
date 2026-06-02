@@ -853,11 +853,17 @@ export const db = {
       if (error) throw error
     },
     checkExisting: async (contactIds: string[], listId: string): Promise<string[]> => {
-      const { data, error } = await supabase
-        .from('lead_list_members').select('contact_id').eq('list_id', listId)
-        .in('contact_id', contactIds)
-      if (error) throw error
-      return (data as { contact_id: string }[]).map(r => r.contact_id)
+      const CHUNK = 500
+      const result: string[] = []
+      for (let i = 0; i < contactIds.length; i += CHUNK) {
+        const chunk = contactIds.slice(i, i + CHUNK)
+        const { data, error } = await supabase
+          .from('lead_list_members').select('contact_id').eq('list_id', listId)
+          .in('contact_id', chunk)
+        if (error) throw error
+        result.push(...(data as { contact_id: string }[]).map(r => r.contact_id))
+      }
+      return result
     },
   },
 
