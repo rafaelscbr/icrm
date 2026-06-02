@@ -33,12 +33,13 @@ export function LeadListDetail({ list, onBack }: Props) {
   const { loadMembers, lists } = useLeadListsStore()
   const currentList = lists.find(l => l.id === list.id) ?? list
 
-  const [members,     setMembers]     = useState<MemberWithContact[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [search,      setSearch]      = useState('')
-  const [page,        setPage]        = useState(1)
-  const [importOpen,  setImportOpen]  = useState(false)
-  const [editOpen,    setEditOpen]    = useState(false)
+  const [members,       setMembers]       = useState<MemberWithContact[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [search,        setSearch]        = useState('')
+  const [page,          setPage]          = useState(1)
+  const [importOpen,    setImportOpen]    = useState(false)
+  const [editOpen,      setEditOpen]      = useState(false)
+  const [deleteLead,    setDeleteLead]    = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     loadData()
