@@ -320,7 +320,7 @@ function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
                                    'bg-slate-500/15 text-slate-500'
                     }`}>{taxa}%</span>
                   </td>
-                  <td className="py-2.5 text-right tabular-nums text-green-400 font-semibold">{row.sales}</td>
+                  <td className="py-2.5 text-right tabular-nums text-violet-400 font-semibold">{row.sales}</td>
                 </tr>
               )
             })}
