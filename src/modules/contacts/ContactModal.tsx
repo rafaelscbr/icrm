@@ -201,14 +201,17 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               ))}
             </div>
           </div>
-          <a
-            href={whatsappUrl(contact.phone)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-xs font-medium border border-green-500/25 transition-all"
-          >
-            <MessageCircle size={13} /> WhatsApp
-          </a>
+          <div className="flex flex-col items-end gap-2">
+            {score && <ScoreBadge size="md" {...score} />}
+            <a
+              href={whatsappUrl(contact.phone)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-xs font-medium border border-green-500/25 transition-all"
+            >
+              <MessageCircle size={13} /> WhatsApp
+            </a>
+          </div>
         </div>
 
         {/* Info pessoal */}
