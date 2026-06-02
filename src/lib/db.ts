@@ -652,7 +652,7 @@ async function deleteOne(table: string, id: string): Promise<void> {
 
 export const db = {
   contacts: {
-    fetchAll: () => fetchAll<ContactRow, Contact>('contacts', toContact),
+    fetchAll: () => fetchAllPaginated<ContactRow, Contact>('contacts', toContact),
     upsert:   (c: Contact)  => upsertOne('contacts', fromContact(c)),
     delete:   (id: string)  => deleteOne('contacts', id),
   },
