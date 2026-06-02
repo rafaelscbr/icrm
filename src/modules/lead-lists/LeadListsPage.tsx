@@ -5,13 +5,12 @@ import {
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
 import { Card }          from '../../components/ui/Card'
-import { Button }        from '../../components/ui/Button'
-import { Modal }         from '../../components/ui/Modal'
 import { EmptyState }    from '../../components/ui/EmptyState'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { LeadList }      from '../../types'
 import { LeadListForm }  from './LeadListForm'
 import { LeadListDetail } from './LeadListDetail'
+import { DeleteListModal } from './DeleteListModal'
 
 export function LeadListsPage() {
   const { lists, loading, load, remove, archive } = useLeadListsStore()
