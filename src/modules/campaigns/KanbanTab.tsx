@@ -336,14 +336,17 @@ function LeadCard({
                     update(lead.id, { messageIndex: newStep <= 0 ? undefined : newStep - 1 })
                     toast.success(newStep > 0 ? `${newStep}ª mensagem marcada` : 'Progresso removido')
                   }}
-                  title={`Marcar ${step}ª mensagem`}
+                  title={`Marcar ${step}ª mensagem como enviada`}
                   className={`flex-1 h-2.5 rounded-full transition-all cursor-pointer hover:opacity-90 active:scale-95
                     ${step <= dispatchStep ? 'bg-blue-400 hover:bg-blue-300' : 'bg-s3 hover:bg-blue-400/40'}`}
                 />
               ))}
             </div>
+            {/* Mostra quantas JÁ foram enviadas */}
             <p className="text-[10px] text-blue-400/70">
-              {dispatchStep === 0 ? 'Clique para marcar envios' : `${dispatchStep}ª de 5 mensagens`}
+              {dispatchStep === 0
+                ? 'Nenhuma mensagem de acompanhamento enviada'
+                : `${dispatchStep} de 5 mensagens enviadas`}
             </p>
           </div>
         )}
@@ -357,8 +360,8 @@ function LeadCard({
           >
             <MessageCircle size={11} />
             Registrar
-            {lead.funnelStage === 'attended' && dispatchStep > 0 && (
-              <span className="opacity-60">· {dispatchStep}ª</span>
+            {lead.funnelStage === 'attended' && (
+              <span className="opacity-60">· {dispatchStep + 1}ª</span>
             )}
           </button>
           <button
