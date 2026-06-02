@@ -177,23 +177,25 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     // Busca o contact pelo phone normalizado para funcionar com qualquer
     // formato armazenado ("(47) 9xxxx" ou "479xxxx").
     if (sentBy) {
-      const normPhone = normalizePhone(lead.phone) ?? lead.phone
-      supabase
-        .from('contacts')
-        .select('id')
-        .eq('phone', normPhone)
-        .maybeSingle()
-        .then(({ data: contact }) => {
-          if (!contact) return Promise.resolve()
-          return db.dispatches.insert({
+      const capturedLead   = lead
+      const capturedSentBy = sentBy
+      ;(async () => {
+        try {
+          const normPhone = normalizePhone(capturedLead.phone) ?? capturedLead.phone
+          const { data: contact } = await supabase
+            .from('contacts').select('id').eq('phone', normPhone).maybeSingle()
+          if (!contact) return
+          await db.dispatches.insert({
             contactId:    contact.id,
-            campaignId:   lead.campaignId,
-            brokerId:     sentBy.id,
+            campaignId:   capturedLead.campaignId,
+            brokerId:     capturedSentBy.id,
             messageIndex: messageIndex,
             channel:      'whatsapp',
           })
-        })
-        .catch((err: unknown) => console.error('[dispatch] history:', err))
+        } catch (err) {
+          console.error('[dispatch] history:', err)
+        }
+      })()
     }
   },
 
