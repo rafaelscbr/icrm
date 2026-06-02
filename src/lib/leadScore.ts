@@ -1,3 +1,4 @@
+// Lead Score — calcula temperatura do lead baseado em histórico de interações
 import { supabase } from './supabase'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
