@@ -17,6 +17,7 @@ import { Campaign, CampaignLead, FunnelStage, LeadSituation } from '../types'
 import { generateId, normalizePhone } from '../lib/formatters'
 import { db }       from '../lib/db'
 import { supabase } from '../lib/supabase'
+import toast        from 'react-hot-toast'
 
 type NewLead = Omit<CampaignLead, 'id' | 'funnelStage' | 'createdAt' | 'updatedAt'>
 
@@ -118,13 +119,21 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   },
 
   // ── Atualiza lead (otimista → banco) ────────────────────────────────────
+  // Usa updateRow (.update()) em vez de upsert (.upsert()) para evitar o
+  // problema de RLS onde o corretor não consegue fazer INSERT ON CONFLICT
+  // em linhas cujo broker_id pertence ao admin.
   update: (id, data) => {
     const leads = get().leads.map(l =>
       l.id === id ? { ...l, ...data, updatedAt: new Date().toISOString() } : l
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
-    if (updated) db.campaignLeads.upsert(updated).catch(err => console.error('[campaignLeads] update:', err))
+    if (updated) {
+      db.campaignLeads.updateRow(updated).catch(err => {
+        console.error('[campaignLeads] update:', err)
+        toast.error('Erro ao salvar alteração. Tente novamente.')
+      })
+    }
   },
 
   remove: (id) => {

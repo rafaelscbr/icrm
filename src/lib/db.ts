@@ -924,7 +924,19 @@ export const db = {
 
   campaignLeads: {
     fetchAll: () => fetchAllPaginated<CampaignLeadRow, CampaignLead>('campaign_leads', toCampaignLead),
+    // upsert: usado apenas para INSERÇÃO de novas linhas (addBulk/add)
     upsert:   (l: CampaignLead)   => upsertOne('campaign_leads', fromCampaignLead(l)),
+    // updateRow: usado para ATUALIZAR linhas existentes — usa .update() que tem
+    // comportamento RLS mais confiável que upsert (INSERT ON CONFLICT DO UPDATE)
+    // quando o broker_id da linha é diferente do auth.uid() do corretor.
+    updateRow: async (l: CampaignLead) => {
+      const row = fromCampaignLead(l)
+      const { error } = await supabase
+        .from('campaign_leads')
+        .update(row)
+        .eq('id', l.id)
+      if (error) throw error
+    },
     upsertMany: async (leads: CampaignLead[]) => {
       const { error } = await supabase
         .from('campaign_leads')

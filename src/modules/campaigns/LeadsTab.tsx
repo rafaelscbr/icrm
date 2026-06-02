@@ -272,7 +272,7 @@ const PAGE_SIZE = 60
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
-  const { remove, markContacted, update } = useCampaignLeadsStore()
+  const { remove, markContacted, setStage } = useCampaignLeadsStore()
   const { profile } = useAuthStore()
   const sentBy = profile ? { id: profile.id, name: profile.name } : undefined
 
@@ -483,7 +483,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     if (['attended','scheduled'].includes(lead.funnelStage)) {
       toast('Lead já está em etapa avançada', { icon: 'ℹ️' }); return
     }
-    update(lead.id, { funnelStage: 'attended' })
+    setStage(lead.id, 'attended', undefined, sentBy)
     toast.success(`${lead.name} marcado como interessado!`)
   }
 
