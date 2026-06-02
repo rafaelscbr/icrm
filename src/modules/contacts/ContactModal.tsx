@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   Phone, Building2, Cake, Heart, Baby, Tag, CheckCircle2,
   Clock, Circle, AlertTriangle, TrendingUp, MessageCircle,
