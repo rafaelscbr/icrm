@@ -416,6 +416,10 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   }
 
   function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
+    // Copia para clipboard antes de abrir — garante que emojis chegam íntegros
+    // caso a URL sofra qualquer re-codificação pelo browser/OS
+    navigator.clipboard?.writeText(msg).catch(() => {})
+
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     clearReady()
     const secs  = start()
@@ -427,9 +431,9 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     if (total >= DAILY_WARN && total < DAILY_LIMIT) {
       toast(`⚠️ ${total} disparos hoje — limite ${DAILY_WARN} recomendado. Cuidado com o ban!`, { duration: 5000, icon: '⚠️' })
     } else if (wasNew) {
-      toast.success(`1ª mensagem enviada! Próximo disparo em ${secs}s.`)
+      toast.success(`1ª mensagem enviada! Próximo disparo em ${secs}s. · Mensagem copiada como backup`)
     } else {
-      toast.success(`Mensagem enviada. Próximo disparo em ${secs}s.`)
+      toast.success(`Mensagem enviada. Próximo disparo em ${secs}s. · Mensagem copiada como backup`)
     }
   }
 

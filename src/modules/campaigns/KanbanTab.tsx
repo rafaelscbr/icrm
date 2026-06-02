@@ -194,21 +194,22 @@ function LeadCard({
 
   function handleSendAndRegister(e: React.MouseEvent) {
     e.stopPropagation()
-    // No estágio "attended", seleciona o próximo template e avança a barrinha
     if (lead.funnelStage === 'attended') {
       const templateIndex = Math.min(dispatchStep, templates.length - 1)
       const msg = templates[templateIndex].replace(/\{nome\}/gi, lead.name)
+      navigator.clipboard?.writeText(msg).catch(() => {})
       window.open(whatsappUrl(lead.phone, msg), '_blank')
       markContacted(lead.id, msg, templateIndex, sentBy)
-      toast.success(`${dispatchStep + 1}ª mensagem registrada!`)
+      toast.success(`${dispatchStep + 1}ª mensagem registrada! · Copiada como backup`)
       return
     }
     const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
+    navigator.clipboard?.writeText(msg).catch(() => {})
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     const wasNew = lead.funnelStage === 'new'
     markContacted(lead.id, msg, 0, sentBy)
-    if (wasNew) toast.success('1ª mensagem registrada!')
-    else toast.success('Mensagem registrada!')
+    if (wasNew) toast.success('1ª mensagem registrada! · Copiada como backup')
+    else toast.success('Mensagem registrada! · Copiada como backup')
   }
 
   function handleOpenOnly(e: React.MouseEvent) {
