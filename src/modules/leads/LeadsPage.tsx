@@ -11,6 +11,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
+import { Avatar } from '../../components/ui/Avatar'
 import { LeadForm } from './LeadForm'
 import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
@@ -53,14 +54,11 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
+      className={`flex items-center gap-4 px-6 py-4 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
         ${isDiscarded ? 'opacity-50' : ''}
       `}
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
-        ${isDiscarded ? 'bg-slate-500/20 text-t3' : 'bg-brand/20 text-brand'}`}>
-        {displayName.charAt(0).toUpperCase()}
-      </div>
+      <Avatar name={displayName} size="sm" />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -315,7 +313,7 @@ export function LeadsPage() {
               </div>
             ) : (
               <div className="mx-4 my-4 rounded-2xl border border-line overflow-hidden">
-                <div className="grid grid-cols-[32px_1fr_auto_auto_auto_auto] gap-3 px-4 py-2.5 border-b border-line bg-s3/30">
+                <div className="grid grid-cols-[40px_1fr_auto_auto_auto_auto] gap-4 px-6 py-3 border-b border-line bg-s3/30">
                   <div />
                   <span className="text-xs font-semibold text-t3">Nome</span>
                   <span className="text-xs font-semibold text-t3 hidden md:block">Produto</span>
