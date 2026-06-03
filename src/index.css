@@ -253,6 +253,10 @@ html.light {
    LIGHT MODE — overrides para classes Tailwind herdadas
    ══════════════════════════════════════════════════════════════════════════════ */
 
+/* Headers de conteúdo usam page-bg no light mode (nav-bg fica só para sidebar/bottom-nav) */
+html.light .nav-bg-blur { background-color: var(--page-bg); }
+html.light .nav-bg       { background-color: var(--page-bg); }
+
 html.light .text-white\/60 { color: rgba(15,23,48,0.60) !important; }
 html.light .text-white\/70 { color: rgba(15,23,48,0.70) !important; }
 html.light .text-white\/80 { color: rgba(15,23,48,0.80) !important; }

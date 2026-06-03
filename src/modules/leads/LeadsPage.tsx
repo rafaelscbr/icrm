@@ -53,7 +53,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 hover:bg-s2 transition-all cursor-pointer border-b border-line last:border-0 group
+      className={`flex items-center gap-3 px-4 py-3 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
         ${isDiscarded ? 'opacity-50' : ''}
       `}
     >
@@ -241,7 +241,7 @@ export function LeadsPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar lead..."
-                className="w-full bg-s3/50 border border-line-input rounded-lg pl-8 pr-4 py-2 text-sm text-t1 placeholder:text-t3 focus:outline-none focus:border-brand/40 focus:ring-1 focus:ring-brand/20 transition-all"
+                className="w-full bg-s3/50 border border-line rounded-xl pl-8 pr-4 py-2.5 text-sm text-t1 placeholder:text-t3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
               />
             </div>
 
@@ -249,8 +249,8 @@ export function LeadsPage() {
             <div className="flex items-center gap-1 flex-wrap">
               <button
                 onClick={() => setFilterStage(null)}
-                className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all
-                  ${!filterStage ? 'bg-brand border-brand/80 text-[#0B0F1C] font-semibold' : 'bg-s2 border-line text-t3 hover:text-t2'}`}
+                className={`text-xs px-2.5 py-1.5 rounded-xl border transition-all
+                  ${!filterStage ? 'bg-brand-tint border-brand/40 text-brand-text font-semibold' : 'bg-s3/50 border-line text-t3 hover:text-t2'}`}
               >
                 Todas
               </button>
@@ -260,8 +260,8 @@ export function LeadsPage() {
                   <button
                     key={s}
                     onClick={() => setFilterStage(filterStage === s ? null : s)}
-                    className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all
-                      ${filterStage === s ? `${conf.bg} ${conf.border} ${conf.color}` : 'bg-s2 border-line text-t3 hover:text-t2'}`}
+                    className={`text-xs px-2.5 py-1.5 rounded-xl border transition-all
+                      ${filterStage === s ? `${conf.bg} ${conf.border} ${conf.color}` : 'bg-s3/50 border-line text-t3 hover:text-t2'}`}
                   >
                     {conf.label}
                   </button>
@@ -272,8 +272,8 @@ export function LeadsPage() {
             {/* Descartados */}
             <button
               onClick={() => setShowDiscarded(v => !v)}
-              className={`ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all
-                ${showDiscarded ? 'bg-red-500/15 border-red-500/25 text-red-300' : 'bg-s2 border-line text-t3 hover:text-t2'}`}
+              className={`ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border transition-all
+                ${showDiscarded ? 'bg-red-500/15 border-red-500/25 text-red-300' : 'bg-s3/50 border-line text-t3 hover:text-t2'}`}
             >
               <Trash2 size={11} />
               <span className="hidden sm:inline">{showDiscarded ? 'Descartados' : 'Ver descartados'}</span>
@@ -314,8 +314,8 @@ export function LeadsPage() {
                 <LeadKanban leads={filtered} />
               </div>
             ) : (
-              <div className="bg-page mx-4 my-4 rounded-2xl border border-line overflow-hidden">
-                <div className="grid grid-cols-[32px_1fr_auto_auto_auto_auto] gap-3 px-4 py-2.5 border-b border-line bg-s2/50">
+              <div className="mx-4 my-4 rounded-2xl border border-line overflow-hidden">
+                <div className="grid grid-cols-[32px_1fr_auto_auto_auto_auto] gap-3 px-4 py-2.5 border-b border-line bg-s3/30">
                   <div />
                   <span className="text-xs font-semibold text-t3">Nome</span>
                   <span className="text-xs font-semibold text-t3 hidden md:block">Produto</span>

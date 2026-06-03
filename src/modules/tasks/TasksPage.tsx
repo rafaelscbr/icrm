@@ -171,7 +171,7 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
   const delegatedByName = t.brokerId && t.brokerId !== currentUserId ? (allProfiles.find(p => p.id === t.brokerId)?.name ?? '') : ''
 
   return (
-    <div className={`flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s2/50 group relative
+    <div className={`flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s3/50 group relative
       ${!isLast ? 'border-b border-line' : ''}
       ${isDone ? 'opacity-55' : ''}
       ${isToday && !isDone ? 'bg-indigo-500/3' : ''}

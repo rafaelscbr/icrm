@@ -168,7 +168,7 @@ export function ActivityLogsPage() {
               const cfg = ACTION_LABELS[log.action]
               const isPageVisit = log.action === 'page_visit'
               return (
-                <div key={log.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-s2/50 transition-colors ${isPageVisit ? 'opacity-60' : ''}`}>
+                <div key={log.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-s3/50 transition-colors row-accent ${isPageVisit ? 'opacity-60' : ''}`}>
                   <Avatar name={brokerName(log.broker_id)} size="xs" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
