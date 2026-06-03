@@ -232,7 +232,7 @@ export function LeadListDetail({ list, onBack }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {paged.map((m, i) => (
+                {paged.map((m) => (
                   <tr
                     key={m.contactId}
                     className="border-t border-line/50 hover:bg-s3/50 transition-colors row-accent"
