@@ -64,19 +64,41 @@ function _normalizeSinglePhone(raw: string): string | null {
 }
 
 /**
- * Codifica mensagem para a query string do wa.me usando encodeURIComponent.
+ * Codifica o texto para wa.me preservando emojis e acentos como Unicode bruto.
  *
- * encodeURIComponent é a forma correta e portável: converte emojis, acentos
- * e qualquer caractere não-ASCII para %XX. O WhatsApp Web e o app nativo
- * decodificam %XX de volta ao caractere original antes de exibir.
+ * encodeURIComponent converte emojis em %F0%9F%92%B0 (percent-encoded). Em
+ * várias plataformas (WhatsApp iOS, WhatsApp Desktop, alguns Android), a camada
+ * OS → WhatsApp decodifica esses bytes antes de entregar ao app, quebrando a
+ * sequência UTF-8 e causando o caractere de substituição U+FFFD (🔲).
  *
- * A abordagem anterior (passar Unicode bruto) falhava em alguns browsers/SOs
- * que fazem dupla codificação da URL ao abrir, resultando em %25F0%259F... literal.
+ * A abordagem correta é deixar emojis e acentos como Unicode bruto na URL:
+ * o WHATWG URL parser de todos os browsers modernos codifica internamente para
+ * UTF-8 com contexto correto ao abrir via window.open() — sem quebra de bytes.
+ *
+ * Usa [...text] para iterar por code points (não code units), garantindo que
+ * emojis representados como surrogate pairs (ex: 💰 = U+1F4B0) sejam tratados
+ * como um único caractere e não divididos ao meio.
  */
 function encodeWhatsAppText(text: string): string {
-  // Normaliza quebras de linha para \n (remove \r)
   const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-  return encodeURIComponent(normalized)
+  // Itera por code points — respeita surrogate pairs (emojis multi-byte)
+  return [...normalized].map(char => {
+    const cp = char.codePointAt(0) ?? 0
+    // Não-ASCII (emojis, acentos, ç, ã…): passa bruto — o browser codifica como UTF-8
+    if (cp > 127) return char
+    // ASCII: codifica apenas o que quebraria a estrutura da query string
+    switch (char) {
+      case ' ':  return '%20'
+      case '\n': return '%0A'
+      case '%':  return '%25'
+      case '+':  return '%2B'
+      case '&':  return '%26'
+      case '=':  return '%3D'
+      case '?':  return '%3F'
+      case '#':  return '%23'
+      default:   return char
+    }
+  }).join('')
 }
 
 export function whatsappUrl(phone: string, message?: string): string {
