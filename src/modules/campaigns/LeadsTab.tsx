@@ -4,7 +4,7 @@ import {
   ThumbsUp, Loader2, Clock, Moon, AlertCircle, ShoppingBag, Circle,
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import { Card } from '../../components/ui/Card'
+import { ListContainer } from '../../components/ui/ListContainer'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LeadParecerModal } from './LeadParecerModal'
@@ -749,7 +749,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               </div>
             </div>
           ) : (
-            <Card className="!p-0 overflow-hidden">
+            <ListContainer>
               {/* Header da tabela */}
               <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
                 <span>Nome</span>
@@ -847,7 +847,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                   <span className="text-xs text-t4">Carregando mais…</span>
                 </div>
               )}
-            </Card>
+            </ListContainer>
           )}
         </div>
 
@@ -872,7 +872,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             </button>
 
             {showContacted && (
-              <Card className="!p-0 overflow-hidden">
+              <ListContainer>
                 <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
                   <span>Etapa</span>
                   <span>Nome</span>
@@ -957,7 +957,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                     <span className="text-xs text-t4">Carregando mais…</span>
                   </div>
                 )}
-              </Card>
+              </ListContainer>
             )}
           </div>
         )}
@@ -983,7 +983,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             </button>
 
             {showDisqualified && (
-              <Card className="!p-0 overflow-hidden opacity-60">
+              <ListContainer className="opacity-60">
                 <div className="divide-y divide-line">
                   {disqualLeads.map(lead => {
                     const situCfg = SITUATION_CONFIG.find(s => s.value === lead.situation)
@@ -1009,7 +1009,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                     )
                   })}
                 </div>
-              </Card>
+              </ListContainer>
             )}
           </div>
         )}

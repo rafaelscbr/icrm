@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Sparkles, RotateCcw, Save, AlertCircle, Pencil, Check, X, Minus, Plus, ArrowDown, Trophy } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
+import { ListContainer } from '../../components/ui/ListContainer'
 import { Campaign, CampaignLead, FunnelStage } from '../../types'
 import { DEFAULT_CONVERSION_RATES, TRANSITION_LABELS } from './config'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
@@ -300,7 +301,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
       )}
 
       {/* ── Funil cascata ──────────────────────────────────────────────────── */}
-      <Card className="!p-0 overflow-hidden">
+      <ListContainer>
 
         <div className="px-5 py-4 border-b border-line flex items-center justify-between">
           <div>
@@ -441,7 +442,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
             {hasCustomRates && <span className="text-brand/80"> Taxas personalizadas ativas.</span>}
           </p>
         </div>
-      </Card>
+      </ListContainer>
 
     </div>
   )

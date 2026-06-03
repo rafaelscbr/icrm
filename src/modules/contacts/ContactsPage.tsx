@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
+import { ListContainer } from '../../components/ui/ListContainer'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
@@ -146,7 +147,7 @@ export function ContactsPage() {
           onCta={() => { setEditing(undefined); setFormOpen(true) }}
         />
       ) : (
-        <Card className="!p-0 overflow-hidden">
+        <ListContainer>
           {paginated.map((c, i) => (
             <div
               key={c.id}
@@ -223,7 +224,7 @@ export function ContactsPage() {
               </div>
             </div>
           ))}
-        </Card>
+        </ListContainer>
       )}
 
       {/* Pagination */}

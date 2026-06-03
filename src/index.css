@@ -249,6 +249,21 @@ html.light {
   border: 1px solid var(--line);
 }
 
+/*
+ * list-surface — container de listas e tabelas.
+ * Dark: surface-2 (#191F30) vs page-bg (#0B0F1C) = contraste real.
+ * Light: surface (#FFFFFF) vs page-bg (#F6F3EC) = flutua sobre o creme.
+ * Usado via <ListContainer> — alterar aqui reflete em todo o sistema.
+ */
+.list-surface {
+  background-color: var(--surface-2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), var(--shadow-card);
+}
+html.light .list-surface {
+  background-color: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    LIGHT MODE — overrides para classes Tailwind herdadas
    ══════════════════════════════════════════════════════════════════════════════ */

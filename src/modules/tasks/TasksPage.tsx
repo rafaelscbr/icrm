@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
+import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Modal } from '../../components/ui/Modal'
@@ -331,7 +332,7 @@ function Section({
       </button>
 
       {open && (
-        <Card className="!p-0 overflow-hidden">
+        <ListContainer>
           {tasks.map((t, i) => (
             <TaskRow
               key={t.id}
@@ -348,7 +349,7 @@ function Section({
               onCalendar={() => onCalendar(t)}
             />
           ))}
-        </Card>
+        </ListContainer>
       )}
     </div>
   )
@@ -721,7 +722,7 @@ export function TasksPage() {
                 <span>{doneList.length} tarefa{doneList.length !== 1 ? 's' : ''} concluída{doneList.length !== 1 ? 's' : ''}</span>
               </button>
               {showDone && (
-                <Card className="!p-0 overflow-hidden opacity-70">
+                <ListContainer className="opacity-70">
                   {doneList.map((t, i) => (
                     <TaskRow
                       key={t.id}
@@ -737,7 +738,7 @@ export function TasksPage() {
                       onCalendar={() => openCalendar(t)}
                     />
                   ))}
-                </Card>
+                </ListContainer>
               )}
             </div>
           )}

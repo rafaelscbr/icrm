@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Search, RefreshCw } from 'lucide-react'
 import { PageLayout } from '../components/layout/PageLayout'
 import { Card } from '../components/ui/Card'
+import { ListContainer } from '../components/ui/ListContainer'
 import { Avatar } from '../components/ui/Avatar'
 import { useAuthStore } from '../store/useAuthStore'
 import { supabase } from '../lib/supabase'
@@ -162,7 +163,7 @@ export function ActivityLogsPage() {
           <p className="text-sm text-t3 text-center py-8">Nenhum log encontrado para os filtros selecionados.</p>
         </Card>
       ) : (
-        <Card className="!p-0 overflow-hidden">
+        <ListContainer>
           <div className="divide-y divide-line">
             {filtered.map(log => {
               const cfg = ACTION_LABELS[log.action]
@@ -195,7 +196,7 @@ export function ActivityLogsPage() {
               )
             })}
           </div>
-        </Card>
+        </ListContainer>
       )}
     </PageLayout>
   )

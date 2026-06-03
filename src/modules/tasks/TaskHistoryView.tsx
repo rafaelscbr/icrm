@@ -9,6 +9,7 @@ import {
   Tooltip, ResponsiveContainer, Cell
 } from 'recharts'
 import { Card } from '../../components/ui/Card'
+import { ListContainer } from '../../components/ui/ListContainer'
 import { Task, TaskCategory } from '../../types'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
@@ -330,11 +331,11 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                     {doneInCat}/{catTasks.length}
                   </span>
                 </div>
-                <Card className="!p-0 overflow-hidden">
+                <ListContainer>
                   {catTasks.map((t, i) => (
                     <TaskDayRow key={t.id} task={t} isLast={i === catTasks.length - 1} />
                   ))}
-                </Card>
+                </ListContainer>
               </div>
             )
           })}
@@ -349,11 +350,11 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                   <span className="text-xs font-semibold uppercase tracking-wider text-t3">Sem categoria</span>
                   <span className="text-xs text-t4">{uncategorized.length}</span>
                 </div>
-                <Card className="!p-0 overflow-hidden">
+                <ListContainer>
                   {uncategorized.map((t, i) => (
                     <TaskDayRow key={t.id} task={t} isLast={i === uncategorized.length - 1} />
                   ))}
-                </Card>
+                </ListContainer>
               </div>
             )
           })()}

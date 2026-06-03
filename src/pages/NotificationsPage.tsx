@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, ClipboardList, CheckCheck, Filter } from 'lucide-react'
 import { PageLayout } from '../components/layout/PageLayout'
 import { Card } from '../components/ui/Card'
+import { ListContainer } from '../components/ui/ListContainer'
 import { Button } from '../components/ui/Button'
 import { useNotificationsStore } from '../store/useNotificationsStore'
 import { useAuthStore } from '../store/useAuthStore'
@@ -193,13 +194,13 @@ export function NotificationsPage() {
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
                 {group.label}
               </p>
-              <Card className="!p-0 overflow-hidden">
+              <ListContainer>
                 {group.items.map((n, i) => (
                   <div key={n.id} className={i < group.items.length - 1 ? 'border-b border-line' : ''}>
                     <NotificationItem n={n} onRead={markRead} />
                   </div>
                 ))}
-              </Card>
+              </ListContainer>
             </div>
           ))}
         </div>

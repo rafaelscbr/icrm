@@ -3,6 +3,7 @@ import { TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign } from 'lu
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
+import { ListContainer } from '../../components/ui/ListContainer'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
@@ -321,7 +322,7 @@ export function SalesPage() {
           </div>
 
           {/* ── Desktop table ──────────────────────────────────────────── */}
-          <Card className="!p-0 overflow-hidden hidden lg:block">
+          <ListContainer className="hidden lg:block">
             <div className={`grid ${isAdmin ? 'grid-cols-[2fr_2fr_1fr_1fr_1fr_1fr_auto]' : 'grid-cols-[2fr_2fr_1fr_1fr_1fr_auto]'} gap-4 px-6 py-3 border-b border-line`}>
               {[
                 'Cliente', 'Empreendimento', 'Data', 'Valor', 'Comissão',
@@ -404,7 +405,7 @@ export function SalesPage() {
               </div>
               <div />
             </div>
-          </Card>
+          </ListContainer>
         </>
       )}
 

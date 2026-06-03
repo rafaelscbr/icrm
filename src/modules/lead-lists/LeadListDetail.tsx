@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
 import { Card }          from '../../components/ui/Card'
+import { ListContainer } from '../../components/ui/ListContainer'
 import { Button }        from '../../components/ui/Button'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { LeadList, Contact } from '../../types'
@@ -219,7 +220,7 @@ export function LeadListDetail({ list, onBack }: Props) {
             <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="border border-line rounded-xl overflow-hidden">
+          <ListContainer>
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-s3/40 border-b border-line">
@@ -316,7 +317,7 @@ export function LeadListDetail({ list, onBack }: Props) {
                 </div>
               </div>
             )}
-          </div>
+          </ListContainer>
         )}
       </div>
 
