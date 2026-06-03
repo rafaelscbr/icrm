@@ -2,12 +2,13 @@ import { create } from 'zustand'
 import { Task, TaskStatus } from '../types'
 import { generateId, localDateStr } from '../lib/formatters'
 import { db } from '../lib/db'
-import { loadChecklists, removeChecklist } from '../lib/taskChecklists'
+import { supabase } from '../lib/supabase'
 
 interface TasksStore {
   tasks: Task[]
   loading: boolean
   load: () => Promise<void>
+  subscribe: () => () => void
   add: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Task
   update: (id: string, data: Partial<Task>) => void
   remove: (id: string) => void
@@ -25,15 +26,7 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
     set({ loading: true })
     try {
       const tasks = await db.tasks.fetchAll()
-      // Checklist vem do banco (coluna JSONB). localStorage mantido como fallback de migração.
-      const clMap = loadChecklists()
-      set({
-        tasks: tasks.map(t => ({
-          ...t,
-          // Banco tem prioridade; localStorage só como fallback para dados antigos
-          checklist: t.checklist?.length ? t.checklist : (clMap[t.id] ?? undefined),
-        })),
-      })
+      set({ tasks })
     } catch (err) {
       console.error('[tasks] load:', err)
     } finally {
@@ -41,11 +34,71 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
     }
   },
 
+  subscribe: () => {
+    const channelName = 'tasks-realtime'
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
+    if (existing) return () => {}
+
+    const channel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        const task: Task = {
+          id: r.id as string,
+          title: r.title as string,
+          description: (r.description as string | null) ?? undefined,
+          dueDate: r.due_date ? (r.due_date as string).split('T')[0] : undefined,
+          dueTime: (r.due_time as string | null) ?? undefined,
+          status: r.status as Task['status'],
+          priority: r.priority as Task['priority'],
+          category: (r.category as Task['category']) ?? undefined,
+          completedAt: (r.completed_at as string | null) ?? undefined,
+          contactId: (r.contact_id as string | null) ?? undefined,
+          propertyId: (r.property_id as string | null) ?? undefined,
+          googleEventId: (r.google_event_id as string | null) ?? undefined,
+          brokerId: (r.broker_id as string | null) ?? undefined,
+          assignedToId: (r.assigned_to_id as string | null) ?? undefined,
+          checklist: (r.checklist as Task['checklist']) ?? undefined,
+          createdAt: r.created_at as string,
+          updatedAt: r.updated_at as string,
+        }
+        set(s => s.tasks.some(t => t.id === task.id) ? s : { tasks: [task, ...s.tasks] })
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        set(s => ({
+          tasks: s.tasks.map(t => t.id !== r.id ? t : {
+            ...t,
+            title: r.title as string,
+            description: (r.description as string | null) ?? undefined,
+            dueDate: r.due_date ? (r.due_date as string).split('T')[0] : undefined,
+            dueTime: (r.due_time as string | null) ?? undefined,
+            status: r.status as Task['status'],
+            priority: r.priority as Task['priority'],
+            category: (r.category as Task['category']) ?? undefined,
+            completedAt: (r.completed_at as string | null) ?? undefined,
+            contactId: (r.contact_id as string | null) ?? undefined,
+            propertyId: (r.property_id as string | null) ?? undefined,
+            brokerId: (r.broker_id as string | null) ?? undefined,
+            assignedToId: (r.assigned_to_id as string | null) ?? undefined,
+            checklist: (r.checklist as Task['checklist']) ?? undefined,
+            updatedAt: r.updated_at as string,
+          }),
+        }))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks' }, (payload) => {
+        const id = (payload.old as { id: string }).id
+        set(s => ({ tasks: s.tasks.filter(t => t.id !== id) }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  },
+
   add: (data) => {
     const now = new Date().toISOString()
     const task: Task = { ...data, id: generateId(), createdAt: now, updatedAt: now }
     set(s => ({ tasks: [task, ...s.tasks] }))
-    // Checklist vai direto no banco via coluna JSONB
     db.tasks.upsert(task).catch(err => console.error('[tasks] add:', err))
     return task
   },
@@ -58,16 +111,11 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
     set({ tasks })
     const updated = tasks.find(t => t.id === id)
     if (!updated) return
-    // Checklist salvo no banco; limpar localStorage se existir (migração)
-    if (updated.checklist !== undefined) {
-      removeChecklist(id)
-    }
     db.tasks.upsert(updated).catch(err => console.error('[tasks] update:', err))
   },
 
   remove: (id) => {
     set(s => ({ tasks: s.tasks.filter(t => t.id !== id) }))
-    removeChecklist(id)
     db.tasks.delete(id).catch(err => console.error('[tasks] remove:', err))
   },
 

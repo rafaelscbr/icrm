@@ -130,7 +130,6 @@ export function LeadsPage() {
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
 
   useEffect(() => { load(); loadProps(); loadContacts(); loadConfig() }, [])
-  useEffect(() => useLeadsStore.getState().subscribe(), [])
 
   const active    = leads.filter(l => !l.discardReason)
   const discarded = leads.filter(l => !!l.discardReason)

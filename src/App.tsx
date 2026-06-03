@@ -27,6 +27,12 @@ import { NotificationsPage } from './pages/NotificationsPage'
 import { VirtualOfficePage } from './modules/office/VirtualOfficePage'
 import { LeadListsPage } from './modules/lead-lists/LeadListsPage'
 import { useNotificationsStore } from './store/useNotificationsStore'
+import { useTasksStore } from './store/useTasksStore'
+import { useSalesStore } from './store/useSalesStore'
+import { useGoalsStore } from './store/useGoalsStore'
+import { useDailyLogsStore } from './store/useDailyLogsStore'
+import { useLeadInteractionsStore } from './store/useLeadInteractionsStore'
+import { useLeadsStore } from './store/useLeadsStore'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -69,6 +75,12 @@ function AppRoutes() {
   const [searchOpen, setSearchOpen] = useState(false)
   const { user, isAdmin } = useAuthStore()
   const { load: loadNotifications, subscribe: subscribeNotifications } = useNotificationsStore()
+  const { subscribe: subscribeTasks }        = useTasksStore()
+  const { subscribe: subscribeSales }        = useSalesStore()
+  const { subscribe: subscribeGoals }        = useGoalsStore()
+  const { subscribe: subscribeDailyLogs }    = useDailyLogsStore()
+  const { subscribe: subscribeInteractions } = useLeadInteractionsStore()
+  const { subscribe: subscribeLeads }        = useLeadsStore()
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -81,12 +93,31 @@ function AppRoutes() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Carrega e assina notificações realtime quando usuário está disponível
+  // Inicia todas as subscriptions realtime ao autenticar
   useEffect(() => {
     if (!user) return
+
+    // Notificações (filtradas por user_id)
     loadNotifications(user.id)
-    const unsubscribe = subscribeNotifications(user.id)
-    return unsubscribe
+    const unsubNotifications  = subscribeNotifications(user.id)
+
+    // Entidades operacionais — RLS garante que cada usuário vê apenas o que tem permissão
+    const unsubLeads        = subscribeLeads()
+    const unsubTasks        = subscribeTasks()
+    const unsubSales        = subscribeSales()
+    const unsubGoals        = subscribeGoals()
+    const unsubDailyLogs    = subscribeDailyLogs()
+    const unsubInteractions = subscribeInteractions()
+
+    return () => {
+      unsubNotifications()
+      unsubLeads()
+      unsubTasks()
+      unsubSales()
+      unsubGoals()
+      unsubDailyLogs()
+      unsubInteractions()
+    }
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) return <Navigate to="/login" replace />

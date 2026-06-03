@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Goal, GoalCategory } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
+import { supabase } from '../lib/supabase'
 
 const DEFAULT_GOALS: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>[] = [
   { name: 'Visitas semanais',        category: 'visita',       target: 2, period: 'weekly',  active: true },
@@ -20,6 +21,7 @@ interface GoalsStore {
   goals: Goal[]
   loading: boolean
   load: () => Promise<void>
+  subscribe: () => () => void
   loadForBroker: (brokerId: string) => Promise<void>
   add: (data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>, brokerId?: string) => Goal
   update: (id: string, data: Partial<Goal>) => void
@@ -53,6 +55,49 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
     } finally {
       set({ loading: false })
     }
+  },
+
+  subscribe: () => {
+    const channelName = 'goals-realtime'
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
+    if (existing) return () => {}
+
+    const channel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'goals' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        const goal: Goal = {
+          id: r.id as string, name: r.name as string,
+          category: r.category as Goal['category'],
+          target: r.target as number,
+          period: r.period as Goal['period'],
+          active: r.active as boolean,
+          createdAt: r.created_at as string,
+          updatedAt: r.updated_at as string,
+        }
+        set(s => s.goals.some(g => g.id === goal.id) ? s : { goals: [...s.goals, goal] })
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'goals' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        set(s => ({
+          goals: s.goals.map(g => g.id !== r.id ? g : {
+            ...g,
+            name: r.name as string,
+            category: r.category as Goal['category'],
+            target: r.target as number,
+            period: r.period as Goal['period'],
+            active: r.active as boolean,
+            updatedAt: r.updated_at as string,
+          }),
+        }))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'goals' }, (payload) => {
+        const id = (payload.old as { id: string }).id
+        set(s => ({ goals: s.goals.filter(g => g.id !== id) }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   },
 
   loadForBroker: async (brokerId) => {

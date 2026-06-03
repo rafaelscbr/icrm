@@ -251,43 +251,59 @@ export function Sidebar() {
               )}
             </NavLink>
 
-            {/* Seletor de corretor */}
-            {allProfiles.filter(p => p.role === 'broker').length > 0 && (
-              <div className="mt-2 px-3">
-                <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5 select-none" style={{ color: 'var(--nav-muted)' }}>
-                  Ver como
-                </p>
-                <div className="flex flex-col gap-0.5">
+            {/* Seletor de visão — Global / Meu Desempenho / Corretor X */}
+            <div className="mt-2 px-3">
+              <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5 select-none" style={{ color: 'var(--nav-muted)' }}>
+                Visão
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {/* Visão Global */}
+                <button
+                  onClick={() => setViewAsBroker(null)}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer w-full text-left"
+                  style={{
+                    background: viewAsBrokerId === null ? 'var(--nav-active-bg)' : 'transparent',
+                    color: viewAsBrokerId === null ? 'var(--brand-text)' : 'var(--nav-muted)',
+                  }}
+                >
+                  <div className="w-4 h-4 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-bold flex-shrink-0" style={{ color: 'var(--nav-muted)' }}>G</div>
+                  Visão Global
+                </button>
+                {/* Meu Desempenho (admin como corretor) */}
+                {profile && (
                   <button
-                    onClick={() => setViewAsBroker(null)}
+                    onClick={() => setViewAsBroker(profile.id)}
                     className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer w-full text-left"
                     style={{
-                      background: viewAsBrokerId === null ? 'var(--nav-active-bg)' : 'transparent',
-                      color: viewAsBrokerId === null ? 'var(--brand-text)' : 'var(--nav-muted)',
+                      background: viewAsBrokerId === profile.id ? 'var(--nav-active-bg)' : 'transparent',
+                      color: viewAsBrokerId === profile.id ? 'var(--brand-text)' : 'var(--nav-muted)',
                     }}
                   >
-                    <div className="w-4 h-4 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-bold flex-shrink-0" style={{ color: 'var(--nav-muted)' }}>T</div>
-                    Todos
+                    <div className="w-4 h-4 rounded-full bg-emerald-500/30 flex items-center justify-center text-[8px] font-bold text-emerald-400 flex-shrink-0">
+                      {profile.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="truncate">Meu Desempenho</span>
                   </button>
-                  {allProfiles.filter(p => p.role === 'broker').map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => setViewAsBroker(p.id)}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer w-full text-left"
-                      style={{
-                        background: viewAsBrokerId === p.id ? 'var(--nav-active-bg)' : 'transparent',
-                        color: viewAsBrokerId === p.id ? 'var(--brand-text)' : 'var(--nav-muted)',
-                      }}
-                    >
-                      <div className="w-4 h-4 rounded-full bg-brand/30 flex items-center justify-center text-[8px] font-bold text-brand flex-shrink-0">
-                        {p.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="truncate">{p.name}</span>
-                    </button>
-                  ))}
-                </div>
+                )}
+                {/* Corretores */}
+                {allProfiles.filter(p => p.role === 'broker' && p.id !== profile?.id).map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => setViewAsBroker(p.id)}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer w-full text-left"
+                    style={{
+                      background: viewAsBrokerId === p.id ? 'var(--nav-active-bg)' : 'transparent',
+                      color: viewAsBrokerId === p.id ? 'var(--brand-text)' : 'var(--nav-muted)',
+                    }}
+                  >
+                    <div className="w-4 h-4 rounded-full bg-brand/30 flex items-center justify-center text-[8px] font-bold text-brand flex-shrink-0">
+                      {p.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="truncate">{p.name}</span>
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         )}
 

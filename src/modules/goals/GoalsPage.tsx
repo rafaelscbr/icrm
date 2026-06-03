@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import {
   Target, Pencil, Trash2, CheckCircle2, TrendingUp,
   Calendar, CalendarDays, Footprints, Handshake, FileText,
-  BadgeDollarSign, History, Users, Megaphone, Zap, MessageCircle,
+  BadgeDollarSign, History, Megaphone, Zap, MessageCircle,
   ChevronRight, Plus, Award,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
-import { useAuthStore, Profile } from '../../store/useAuthStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
@@ -450,29 +450,31 @@ export function GoalsPage() {
   const { goals, load, loadForBroker, remove, update } = useGoalsStore()
   const { tasks: allTasks, load: loadTasks }  = useTasksStore()
   const { sales: allSales, load: loadSales }  = useSalesStore()
-  const { checkAndSave, snapshots }           = useWeekSnapshotStore()
-  const { isAdmin, fetchAllProfiles }         = useAuthStore()
+  const { checkAndSave, snapshots, load: loadSnapshots } = useWeekSnapshotStore()
+  const { isAdmin, viewAsBrokerId, profile }  = useAuthStore()
 
   const [tab,          setTab]          = useState<PeriodTab>('semana')
   const [formOpen,     setFormOpen]     = useState(false)
   const [editing,      setEditing]      = useState<Goal | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Goal | undefined>()
-  const [brokers,      setBrokers]      = useState<Profile[]>([])
-  const [viewBrokerId, setViewBrokerId] = useState<string | null>(null)
 
-  useEffect(() => { load(); loadTasks(); loadSales() }, [load, loadTasks, loadSales])
+  // Usa viewAsBrokerId do store global — elimina estado local desconectado
+  const effectiveBrokerId = isAdmin ? viewAsBrokerId : (profile?.id ?? null)
+
   useEffect(() => {
-    if (isAdmin) fetchAllProfiles().then(p => setBrokers(p.filter(x => x.role === 'broker'))).catch(() => {})
-  }, [isAdmin, fetchAllProfiles])
+    loadTasks()
+    loadSales()
+    if (effectiveBrokerId) {
+      loadForBroker(effectiveBrokerId)
+      loadSnapshots(effectiveBrokerId)
+    } else {
+      load()
+      if (profile?.id) loadSnapshots(profile.id)
+    }
+  }, [effectiveBrokerId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleSelectBroker(id: string | null) {
-    setViewBrokerId(id)
-    if (id) await loadForBroker(id)
-    else    await load()
-  }
-
-  const tasks = isAdmin && viewBrokerId ? allTasks.filter(t => t.brokerId === viewBrokerId) : allTasks
-  const sales = isAdmin && viewBrokerId ? allSales.filter(s => s.brokerId === viewBrokerId) : allSales
+  const tasks = effectiveBrokerId ? allTasks.filter(t => t.brokerId === effectiveBrokerId) : allTasks
+  const sales = effectiveBrokerId ? allSales.filter(s => s.brokerId === effectiveBrokerId) : allSales
 
   useEffect(() => {
     if (goals.length > 0) checkAndSave(tasks, sales, goals)
@@ -496,25 +498,6 @@ export function GoalsPage() {
       ctaLabel="Nova Meta"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
-
-      {/* Admin: seletor de corretor */}
-      {isAdmin && brokers.length > 0 && (
-        <div className="flex items-center gap-3 mb-5 px-4 py-3 rounded-2xl border border-line bg-s2/30">
-          <Users size={13} className="text-t4 flex-shrink-0" />
-          <p className="text-xs text-t3 flex-shrink-0">Vendo metas de:</p>
-          <div className="flex gap-1.5 flex-wrap">
-            <button
-              onClick={() => handleSelectBroker(null)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${!viewBrokerId ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'bg-s3/50 border-line text-t3 hover:text-t1'}`}
-            >Minhas metas</button>
-            {brokers.map(b => (
-              <button key={b.id} onClick={() => handleSelectBroker(b.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${viewBrokerId === b.id ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'bg-s3/50 border-line text-t3 hover:text-t1'}`}
-              >{b.name}</button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ── Seletor de período ─────────────────────────────────────────── */}
       <div className="flex gap-1 mb-5 p-1 rounded-2xl border border-line bg-s2/40" style={{ backdropFilter: 'blur(8px)' }}>
@@ -630,7 +613,7 @@ export function GoalsPage() {
         </div>
       )}
 
-      <GoalForm isOpen={formOpen} onClose={() => setFormOpen(false)} goal={editing} forBrokerId={viewBrokerId ?? undefined} />
+      <GoalForm isOpen={formOpen} onClose={() => setFormOpen(false)} goal={editing} forBrokerId={effectiveBrokerId ?? undefined} />
 
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir meta" size="sm">
         <p className="text-sm text-t3 mb-6">

@@ -1,7 +1,8 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import { WeekSnapshot, WeekSnapshotEntry, Goal, Task, Sale } from '../types'
 import { calcProgressForRange } from './useGoalsStore'
+import { db } from '../lib/db'
+import { getCurrentUserId } from '../lib/auth'
 
 function localFmt(d: Date): string {
   const y = d.getFullYear()
@@ -36,72 +37,100 @@ function computeScore(entries: WeekSnapshotEntry[]): number {
 
 interface WeekSnapshotStore {
   snapshots: WeekSnapshot[]
-  checkAndSave: (tasks: Task[], sales: Sale[], goals: Goal[]) => void
+  loading:   boolean
+  // Carrega histórico do banco para o usuário atual
+  load:         (brokerId?: string) => Promise<void>
+  // Verifica semanas passadas e salva no banco se ainda não estiverem registradas
+  checkAndSave: (tasks: Task[], sales: Sale[], goals: Goal[]) => Promise<void>
 }
 
-export const useWeekSnapshotStore = create<WeekSnapshotStore>()(
-  persist(
-    (set, get) => ({
-      snapshots: [],
+export const useWeekSnapshotStore = create<WeekSnapshotStore>((set, get) => ({
+  snapshots: [],
+  loading:   false,
 
-      checkAndSave: (tasks, sales, goals) => {
-        const weeklyGoals = goals.filter(g => g.active && g.period === 'weekly')
-        if (weeklyGoals.length === 0) return
+  load: async (brokerId?: string) => {
+    const id = brokerId ?? getCurrentUserId()
+    if (!id) return
+    set({ loading: true })
+    try {
+      const snapshots = await db.weekSnapshots.fetchForBroker(id)
+      set({ snapshots })
+    } catch (err) {
+      console.error('[weekSnapshots] load:', err)
+    } finally {
+      set({ loading: false })
+    }
+  },
 
-        // Find earliest date in the dataset so we don't snapshot empty pre-app weeks
-        const allDates = [
-          ...tasks.map(t => (t.dueDate || t.createdAt).split('T')[0]),
-          ...sales.map(s => s.date),
-        ].filter(Boolean).sort()
-        const firstDate = allDates[0]
-        if (!firstDate) return
+  checkAndSave: async (tasks, sales, goals) => {
+    const brokerId = getCurrentUserId()
+    if (!brokerId) return
 
-        const existing = new Set(get().snapshots.map(s => s.id))
-        const now = new Date()
-        const thisMonday = getMondayOf(now)
-        const newSnapshots: WeekSnapshot[] = []
+    const weeklyGoals = goals.filter(g => g.active && g.period === 'weekly')
+    if (weeklyGoals.length === 0) return
 
-        // Check up to 52 past weeks (never the current week)
-        for (let i = 1; i <= 52; i++) {
-          const monday = new Date(thisMonday)
-          monday.setDate(thisMonday.getDate() - i * 7)
-          const weekStart = localFmt(monday)
+    // Find earliest date in the dataset so we don't snapshot empty pre-app weeks
+    const allDates = [
+      ...tasks.map(t => (t.dueDate || t.createdAt).split('T')[0]),
+      ...sales.map(s => s.date),
+    ].filter(Boolean).sort()
+    const firstDate = allDates[0]
+    if (!firstDate) return
 
-          // Skip weeks before the first recorded activity
-          if (weekStart < firstDate.substring(0, 10)) break
+    const existing = new Set(get().snapshots.map(s => s.id))
+    const now = new Date()
+    const thisMonday = getMondayOf(now)
+    const newSnapshots: WeekSnapshot[] = []
 
-          if (existing.has(weekStart)) continue
+    // Check up to 52 past weeks (never the current week)
+    for (let i = 1; i <= 52; i++) {
+      const monday = new Date(thisMonday)
+      monday.setDate(thisMonday.getDate() - i * 7)
+      const weekStart = localFmt(monday)
 
-          const sunday = getSundayOf(monday)
-          const weekEnd = localFmt(sunday)
+      // Skip weeks before the first recorded activity
+      if (weekStart < firstDate.substring(0, 10)) break
 
-          const entries: WeekSnapshotEntry[] = weeklyGoals.map(goal => ({
-            goalId:   goal.id,
-            goalName: goal.name,
-            category: goal.category,
-            target:   goal.target,
-            achieved: calcProgressForRange(goal, tasks, sales, weekStart, weekEnd),
-          }))
+      // ID is weekStart + brokerId for uniqueness across brokers
+      const snapId = weekStart
+      if (existing.has(snapId)) continue
 
-          newSnapshots.push({
-            id:       weekStart,
-            weekStart,
-            weekEnd,
-            entries,
-            score:    computeScore(entries),
-            savedAt:  now.toISOString(),
-          })
-        }
+      const sunday = getSundayOf(monday)
+      const weekEnd = localFmt(sunday)
 
-        if (newSnapshots.length > 0) {
-          set(s => ({
-            snapshots: [...s.snapshots, ...newSnapshots].sort(
-              (a, b) => b.weekStart.localeCompare(a.weekStart)
-            ),
-          }))
-        }
-      },
-    }),
-    { name: 'week-snapshots-v1' }
-  )
-)
+      const entries: WeekSnapshotEntry[] = weeklyGoals.map(goal => ({
+        goalId:   goal.id,
+        goalName: goal.name,
+        category: goal.category,
+        target:   goal.target,
+        achieved: calcProgressForRange(goal, tasks, sales, weekStart, weekEnd),
+      }))
+
+      newSnapshots.push({
+        id:       snapId,
+        weekStart,
+        weekEnd,
+        entries,
+        score:    computeScore(entries),
+        savedAt:  now.toISOString(),
+      })
+    }
+
+    if (newSnapshots.length === 0) return
+
+    // Persiste no banco e atualiza o store
+    await Promise.all(
+      newSnapshots.map(snap =>
+        db.weekSnapshots.upsert(snap, brokerId).catch(err =>
+          console.error('[weekSnapshots] checkAndSave upsert:', err)
+        )
+      )
+    )
+
+    set(s => ({
+      snapshots: [...s.snapshots, ...newSnapshots].sort(
+        (a, b) => b.weekStart.localeCompare(a.weekStart)
+      ),
+    }))
+  },
+}))

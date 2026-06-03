@@ -3,6 +3,7 @@ import { Sale } from '../types'
 import { generateId } from '../lib/formatters'
 import { matchesPeriod, rangeFromPreset } from './usePeriodStore'
 import { db } from '../lib/db'
+import { supabase } from '../lib/supabase'
 
 const sortByDate = (sales: Sale[]) =>
   [...sales].sort((a, b) => b.date.localeCompare(a.date))
@@ -11,6 +12,7 @@ interface SalesStore {
   sales:   Sale[]
   loading: boolean
   load:    () => Promise<void>
+  subscribe: () => () => void
   add:     (data: Omit<Sale, 'id' | 'createdAt'>) => Sale
   update:  (id: string, data: Partial<Sale>) => void
   remove:  (id: string) => void
@@ -35,6 +37,60 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
     } finally {
       set({ loading: false })
     }
+  },
+
+  subscribe: () => {
+    const channelName = 'sales-realtime'
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
+    if (existing) return () => {}
+
+    const channel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        const sale: Sale = {
+          id: r.id as string,
+          clientId: r.client_id as string,
+          propertyId: (r.property_id as string | null) ?? undefined,
+          propertyName: r.property_name as string,
+          date: r.date as string,
+          value: r.value as number,
+          type: r.type as Sale['type'],
+          notes: (r.notes as string | null) ?? undefined,
+          commissionPct:   (r.commission_pct   as number | null) ?? undefined,
+          commissionFixed: (r.commission_fixed as number | null) ?? undefined,
+          brokerPct:       (r.broker_pct       as number | null) ?? undefined,
+          brokerId:        (r.broker_id        as string | null) ?? undefined,
+          createdAt: r.created_at as string,
+        }
+        set(s => s.sales.some(x => x.id === sale.id) ? s : { sales: sortByDate([sale, ...s.sales]) })
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sales' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        set(s => ({
+          sales: sortByDate(s.sales.map(x => x.id !== r.id ? x : {
+            ...x,
+            clientId: r.client_id as string,
+            propertyId: (r.property_id as string | null) ?? undefined,
+            propertyName: r.property_name as string,
+            date: r.date as string,
+            value: r.value as number,
+            type: r.type as Sale['type'],
+            notes: (r.notes as string | null) ?? undefined,
+            commissionPct:   (r.commission_pct   as number | null) ?? undefined,
+            commissionFixed: (r.commission_fixed as number | null) ?? undefined,
+            brokerPct:       (r.broker_pct       as number | null) ?? undefined,
+            brokerId:        (r.broker_id        as string | null) ?? undefined,
+          })),
+        }))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'sales' }, (payload) => {
+        const id = (payload.old as { id: string }).id
+        set(s => ({ sales: s.sales.filter(x => x.id !== id) }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   },
 
   add: (data) => {

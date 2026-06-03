@@ -3,11 +3,13 @@ import toast from 'react-hot-toast'
 import { DailyLog } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
+import { supabase } from '../lib/supabase'
 
 interface DailyLogsStore {
   logs: DailyLog[]
   loading: boolean
   load: () => Promise<void>
+  subscribe: () => () => void
   getTodayLog: () => DailyLog
   updateToday: (data: Partial<Pick<DailyLog, 'newLeads' | 'ownerCalls' | 'funnelFollowup' | 'notes'>>) => void
   closeDay: () => void
@@ -84,6 +86,56 @@ export const useDailyLogsStore = create<DailyLogsStore>((set, get) => ({
     } finally {
       set({ loading: false })
     }
+  },
+
+  subscribe: () => {
+    const channelName = 'daily-logs-realtime'
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
+    if (existing) return () => {}
+
+    const channel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'daily_logs' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        const log: DailyLog = {
+          id: r.id as string,
+          date: (r.date as string).split('T')[0],
+          newLeads: r.new_leads as number,
+          ownerCalls: r.owner_calls as number,
+          funnelFollowup: r.funnel_followup as boolean,
+          notes: (r.notes as string | null) ?? undefined,
+          closed: r.closed as boolean,
+          closedAt: (r.closed_at as string | null) ?? undefined,
+          createdAt: r.created_at as string,
+          updatedAt: r.updated_at as string,
+        }
+        set(s => s.logs.some(l => l.id === log.id) ? s : {
+          logs: [log, ...s.logs].sort((a, b) => b.date.localeCompare(a.date)),
+        })
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'daily_logs' }, (payload) => {
+        const r = payload.new as Record<string, unknown>
+        set(s => ({
+          logs: s.logs.map(l => l.id !== r.id ? l : {
+            ...l,
+            date: (r.date as string).split('T')[0],
+            newLeads: r.new_leads as number,
+            ownerCalls: r.owner_calls as number,
+            funnelFollowup: r.funnel_followup as boolean,
+            notes: (r.notes as string | null) ?? undefined,
+            closed: r.closed as boolean,
+            closedAt: (r.closed_at as string | null) ?? undefined,
+            updatedAt: r.updated_at as string,
+          }),
+        }))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'daily_logs' }, (payload) => {
+        const id = (payload.old as { id: string }).id
+        set(s => ({ logs: s.logs.filter(l => l.id !== id) }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   },
 
   getTodayLog: () => {

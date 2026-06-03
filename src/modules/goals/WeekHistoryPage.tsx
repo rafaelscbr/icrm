@@ -11,6 +11,7 @@ import { useWeekSnapshotStore } from '../../store/useWeekSnapshotStore'
 import { useGoalsStore } from '../../store/useGoalsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { WeekSnapshot, GoalCategory } from '../../types'
 
 const MONTHS_PT_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
@@ -98,14 +99,18 @@ function WeekCard({ snapshot }: { snapshot: WeekSnapshot }) {
 }
 
 export function WeekHistoryPage() {
-  const { snapshots, checkAndSave } = useWeekSnapshotStore()
+  const { snapshots, checkAndSave, load: loadSnapshots } = useWeekSnapshotStore()
   const { goals, load: loadGoals }   = useGoalsStore()
   const { tasks, load: loadTasks }   = useTasksStore()
   const { sales, load: loadSales }   = useSalesStore()
+  const { profile, isAdmin, viewAsBrokerId } = useAuthStore()
+
+  const effectiveBrokerId = isAdmin && viewAsBrokerId ? viewAsBrokerId : profile?.id
 
   useEffect(() => {
     Promise.all([loadGoals(), loadTasks(), loadSales()])
-  }, [loadGoals, loadTasks, loadSales])
+    if (effectiveBrokerId) loadSnapshots(effectiveBrokerId)
+  }, [effectiveBrokerId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (goals.length > 0) checkAndSave(tasks, sales, goals)

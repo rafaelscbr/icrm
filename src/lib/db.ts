@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast'
 import { supabase } from './supabase'
-import { getCurrentUserId } from './auth'
+import { getCurrentUserId, requireBrokerId } from './auth'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
@@ -345,7 +345,7 @@ function fromGoal(g: Goal): GoalRow {
   return {
     id: g.id, name: g.name, category: g.category, target: g.target,
     period: g.period, active: g.active,
-    broker_id: getCurrentUserId(),
+    broker_id: requireBrokerId(),
     created_at: g.createdAt, updated_at: g.updatedAt,
   }
 }
@@ -367,7 +367,7 @@ function fromDailyLog(l: DailyLog): DailyLogRow {
     id: l.id, date: l.date, new_leads: l.newLeads, owner_calls: l.ownerCalls,
     funnel_followup: l.funnelFollowup, notes: l.notes ?? null,
     closed: l.closed, closed_at: l.closedAt ?? null,
-    broker_id: getCurrentUserId(),
+    broker_id: requireBrokerId(),
     created_at: l.createdAt, updated_at: l.updatedAt,
   }
 }
@@ -582,7 +582,7 @@ function fromLeadInteraction(i: LeadInteraction): LeadInteractionRow {
     description:   i.description ?? null,
     outcome:       i.outcome ?? null,
     interacted_at: i.interactedAt,
-    broker_id:     getCurrentUserId(),
+    broker_id:     requireBrokerId(),
     created_at:    i.createdAt,
   }
 }
@@ -984,6 +984,46 @@ export const db = {
     delete: async (id: string): Promise<void> => {
       const { error } = await supabase.from('campaign_participants').delete().eq('id', id)
       if (error) throw error
+    },
+  },
+
+  weekSnapshots: {
+    fetchForBroker: async (brokerId: string): Promise<import('../types').WeekSnapshot[]> => {
+      const { data, error } = await supabase
+        .from('week_snapshots')
+        .select('*')
+        .eq('broker_id', brokerId)
+        .order('week_start', { ascending: false })
+      if (error) throw error
+      return (data as Array<{
+        id: string; week_start: string; week_end: string
+        entries: import('../types').WeekSnapshotEntry[]; score: number; saved_at: string
+      }>).map(r => ({
+        id: r.id, weekStart: r.week_start, weekEnd: r.week_end,
+        entries: r.entries, score: r.score, savedAt: r.saved_at,
+      }))
+    },
+    upsert: async (snap: import('../types').WeekSnapshot, brokerId: string): Promise<void> => {
+      const { error } = await supabase.from('week_snapshots').upsert({
+        id: snap.id, week_start: snap.weekStart, week_end: snap.weekEnd,
+        entries: snap.entries, score: snap.score, saved_at: snap.savedAt,
+        broker_id: brokerId,
+      }, { onConflict: 'week_start,broker_id' })
+      if (error) throw error
+    },
+    fetchForAdmin: async (): Promise<Array<import('../types').WeekSnapshot & { brokerId: string }>> => {
+      const { data, error } = await supabase
+        .from('week_snapshots')
+        .select('*')
+        .order('week_start', { ascending: false })
+      if (error) throw error
+      return (data as Array<{
+        id: string; week_start: string; week_end: string
+        entries: import('../types').WeekSnapshotEntry[]; score: number; saved_at: string; broker_id: string
+      }>).map(r => ({
+        id: r.id, weekStart: r.week_start, weekEnd: r.week_end,
+        entries: r.entries, score: r.score, savedAt: r.saved_at, brokerId: r.broker_id,
+      }))
     },
   },
 
