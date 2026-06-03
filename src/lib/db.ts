@@ -90,7 +90,7 @@ interface ContactRow {
   permuta_property_value: number | null
   permuta_car_model: string | null
   permuta_car_value: number | null
-  is_base_lead: boolean | null
+  is_base_lead: boolean
   base_lead_profile: BaseLeadProfile | null
   broker_id: string | null
   created_at: string; updated_at: string
@@ -228,7 +228,7 @@ function fromContact(c: Contact): ContactRow {
     permuta_property_value: null,
     permuta_car_model: null,
     permuta_car_value: null,
-    is_base_lead:      c.isBaseLead ?? null,
+    is_base_lead:      c.isBaseLead ?? false,
     base_lead_profile: c.baseLeadProfile ?? null,
     broker_id: c.brokerId ?? getCurrentUserId(),
     created_at: c.createdAt, updated_at: c.updatedAt,
