@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown,
-  ThumbsUp, Loader2, Clock, Moon, AlertCircle, ShoppingBag,
+  ThumbsUp, Loader2, Clock, Moon, AlertCircle, ShoppingBag, Circle,
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
@@ -20,6 +20,39 @@ import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
+
+/** Registro de disparo cross-campanha (da tabela disparo_logs). */
+interface CrossDispatch {
+  firedAt:      string
+  campaignId:   string
+  campaignName: string
+  brokerId:     string | null
+  brokerName?:  string
+}
+
+/** Verde = nunca abordado / >7d | Amarelo = 2-7d | Vermelho = <48h */
+type DispatchColor = 'green' | 'yellow' | 'red'
+
+/**
+ * Fisher-Yates com semente determinística (FNV-1a + xorshift32).
+ * Mesmo brokerId + campaignId → mesma ordem; brokers diferentes → ordens diferentes.
+ */
+function seededShuffle<T>(arr: T[], seed: string): T[] {
+  let h = 2166136261
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(h ^ seed.charCodeAt(i), 16777619) >>> 0
+  }
+  const rand = () => {
+    h ^= h << 13; h ^= h >>> 17; h ^= h << 5
+    return (h >>> 0) / 0xffffffff
+  }
+  const result = [...arr]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
 
 interface PreDispatchWarning {
   lead:      CampaignLead
@@ -290,8 +323,12 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const [checkingId,        setCheckingId]        = useState<string | undefined>()
   const [preDispatchWarn,   setPreDispatchWarn]   = useState<PreDispatchWarning | undefined>()
 
+  // Histórico cross-campanha: normPhone → lista de disparos em outras campanhas
+  // Carregado em batch ao montar a aba — fonte: disparo_logs (real, não lead_campaign_dispatches)
+  const [crossCampaignMap, setCrossCampaignMap] = useState<Record<string, CrossDispatch[]>>({})
+
   // Histórico inline de disparos em outras campanhas (exibição abaixo do nome)
-  const [dispatchHistory, setDispatchHistory] = useState<Record<string, { campaignId: string; dispatchedAt: string }[]>>({})
+  const [dispatchHistory, setDispatchHistory] = useState<Record<string, { campaignId: string; dispatchedAt: string; campaignName: string }[]>>({})
 
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sentinelQRef     = useRef<HTMLDivElement>(null)
@@ -301,57 +338,137 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
   const { increment: persistDisparo }                    = useDisparosStore()
 
-  // Verificação completa antes do disparo: campanhas anteriores + compra realizada.
-  // Limitada a 3 s — se a rede travar, retorna vazio e prossegue sem bloquear.
+  // ─── Carregamento de histórico cross-campanha ─────────────────────────────
+  // Fonte: disparo_logs (tem dados reais) em vez de lead_campaign_dispatches (vazia).
+  // 3 queries pequenas ao montar — bounded pelo tamanho de disparo_logs, não de leads.
+  useEffect(() => {
+    let cancelled = false
+    async function loadCrossCampaign() {
+      try {
+        // Step 1: disparos em OUTRAS campanhas
+        const { data: otherDisparos } = await supabase
+          .from('disparo_logs')
+          .select('lead_id, fired_at, campaign_id, broker_id')
+          .neq('campaign_id', campaign.id)
+          .order('fired_at', { ascending: false })
+        if (cancelled || !otherDisparos || otherDisparos.length === 0) return
+
+        // Step 2: phones dos leads disparados em outras campanhas
+        const leadIds = [...new Set(otherDisparos.map((d: Record<string,unknown>) => d.lead_id as string).filter(Boolean))]
+        const { data: otherLeads } = await supabase
+          .from('campaign_leads').select('id, phone').in('id', leadIds)
+
+        // Step 3: nomes das campanhas
+        const campIds = [...new Set(otherDisparos.map((d: Record<string,unknown>) => d.campaign_id as string).filter(Boolean))]
+        const { data: campNames } = await supabase
+          .from('campaigns').select('id, name').in('id', campIds)
+
+        if (cancelled) return
+
+        const phoneMap: Record<string, string> = {}
+        for (const l of (otherLeads ?? []) as { id: string; phone: string }[]) {
+          phoneMap[l.id] = l.phone.replace(/\D/g, '')
+        }
+        const nameMap: Record<string, string> = {}
+        for (const c of (campNames ?? []) as { id: string; name: string }[]) {
+          nameMap[c.id] = c.name
+        }
+
+        const map: Record<string, CrossDispatch[]> = {}
+        for (const d of otherDisparos as { lead_id: string; fired_at: string; campaign_id: string; broker_id: string | null }[]) {
+          const phone = phoneMap[d.lead_id]
+          if (!phone) continue
+          const entry: CrossDispatch = {
+            firedAt: d.fired_at, campaignId: d.campaign_id,
+            campaignName: nameMap[d.campaign_id] ?? '—', brokerId: d.broker_id,
+          }
+          map[phone] = map[phone] ? [entry, ...map[phone]] : [entry]
+        }
+        // Ordena cada telefone por recência
+        for (const phone of Object.keys(map)) {
+          map[phone].sort((a, b) => b.firedAt.localeCompare(a.firedAt))
+        }
+
+        setCrossCampaignMap(map)
+      } catch (err) {
+        console.error('[crossCampaign] load:', err)
+      }
+    }
+    loadCrossCampaign()
+    return () => { cancelled = true }
+  }, [campaign.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Cor do cooldown comercial por lead ───────────────────────────────────
+  function getDispatchColor(lead: CampaignLead): DispatchColor | null {
+    const phone = lead.phone.replace(/\D/g, '')
+    const history = crossCampaignMap[phone]
+    if (!history || history.length === 0) return null
+    const diffMs = Date.now() - new Date(history[0].firedAt).getTime()
+    if (diffMs < 48 * 3600_000) return 'red'
+    if (diffMs < 7 * 86400_000) return 'yellow'
+    return 'green'
+  }
+
+  // ─── Verificação pré-disparo ───────────────────────────────────────────────
+  // Usa crossCampaignMap (já carregado) para histórico cross-campanha.
+  // Faz 1 query adicional apenas para verificar compra de imóvel.
   async function checkPreDispatch(lead: CampaignLead): Promise<{ icon: string; text: string }[]> {
     const doCheck = async (): Promise<{ icon: string; text: string }[]> => {
       const warnings: { icon: string; text: string }[] = []
       try {
         const normPhone = lead.phone.replace(/\D/g, '')
-        const { data: contact } = await supabase
-          .from('contacts').select('id').eq('phone', normPhone).maybeSingle()
-        if (!contact) return []
 
-        // Verifica se o contato já comprou um imóvel
-        const { data: sales } = await supabase
-          .from('sales')
-          .select('date, property_name')
-          .eq('client_id', contact.id)
-          .order('date', { ascending: false })
-          .limit(1)
-        if (sales && sales.length > 0) {
-          const s = sales[0] as { date: string; property_name: string }
-          warnings.push({
-            icon: '🏠',
-            text: `Este contato já comprou um imóvel (${s.property_name} em ${new Date(s.date).toLocaleDateString('pt-BR')}).`,
-          })
+        // Verifica compra de imóvel (lookup por telefone, tolerante a formatos)
+        const { data: contacts } = await supabase
+          .from('contacts').select('id, phone').ilike('phone', `%${normPhone.slice(-8)}%`).limit(3)
+        const contact = (contacts ?? []).find((c: { id: string; phone: string }) =>
+          c.phone.replace(/\D/g, '') === normPhone
+        )
+        if (contact) {
+          const { data: sales } = await supabase
+            .from('sales').select('date, property_name')
+            .eq('client_id', contact.id).order('date', { ascending: false }).limit(1)
+          if (sales && sales.length > 0) {
+            const s = sales[0] as { date: string; property_name: string }
+            warnings.push({
+              icon: '🏠',
+              text: `Este contato já comprou um imóvel (${s.property_name} em ${new Date(s.date).toLocaleDateString('pt-BR')}).`,
+            })
+          }
         }
 
-        // Verifica disparos em outras campanhas
-        const { data: dispatches } = await supabase
-          .from('lead_campaign_dispatches')
-          .select('campaign_id, dispatched_at')
-          .eq('contact_id', contact.id)
-          .neq('campaign_id', campaign.id)
-          .order('dispatched_at', { ascending: false })
-          .limit(5)
-        if (dispatches && dispatches.length > 0) {
-          const rows = dispatches as { campaign_id: string; dispatched_at: string }[]
-          const last = new Date(rows[0].dispatched_at).toLocaleDateString('pt-BR')
+        // Histórico cross-campanha — usa dados pré-carregados (sem nova query)
+        const history = crossCampaignMap[normPhone]
+        if (history && history.length > 0) {
+          const last = history[0]
+          const diffMs  = Date.now() - new Date(last.firedAt).getTime()
+          const diffH   = Math.floor(diffMs / 3600_000)
+          const diffD   = Math.floor(diffMs / 86400_000)
+          const tempoStr = diffH < 1 ? 'há menos de 1 hora'
+            : diffH < 24 ? `há ${diffH}h`
+            : diffD === 1 ? 'há 1 dia'
+            : `há ${diffD} dias`
+
+          const icon = diffMs < 48 * 3600_000 ? '🔴' : diffMs < 7 * 86400_000 ? '🟡' : '📨'
+          const totalTexto = history.length === 1
+            ? `1 campanha anterior`
+            : `${history.length} campanhas anteriores`
+
           warnings.push({
-            icon: '📨',
-            text: `Contatado em ${rows.length} outra${rows.length > 1 ? 's' : ''} campanha${rows.length > 1 ? 's' : ''} — último disparo em ${last}.`,
+            icon,
+            text: `Abordado em ${totalTexto}.\nÚltimo: ${last.campaignName} · ${new Date(last.firedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} às ${new Date(last.firedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} (${tempoStr}).`,
           })
+
+          // Popula badge inline com dados completos
           setDispatchHistory(prev => ({
             ...prev,
-            [lead.id]: rows.map(d => ({ campaignId: d.campaign_id, dispatchedAt: d.dispatched_at })),
+            [lead.id]: history.map(h => ({ campaignId: h.campaignId, dispatchedAt: h.firedAt, campaignName: h.campaignName })),
           }))
         }
       } catch { /* silencioso — prossegue sem bloquear */ }
       return warnings
     }
 
-    // Race com timeout de 3 s — garante que a UI nunca fica travada
     const timeout = new Promise<{ icon: string; text: string }[]>(resolve =>
       setTimeout(() => resolve([]), 3000)
     )
@@ -366,10 +483,15 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
   const allFiltered = leads.filter(l => !excludedIds.has(l.id) && matchSearch(l))
 
-  // 1. Fila: nunca contatados, sem situação especial — mais antigos primeiro
-  const queueLeads = allFiltered
-    .filter(l => l.funnelStage === 'new' && !l.situation)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  // 1. Fila: nunca contatados, sem situação especial
+  // Ordem embaralhada por semente (brokerId + campaignId) para que cada corretor
+  // veja uma sequência diferente — evita múltiplos corretores abordando os mesmos
+  // leads simultaneamente. A ordem é estável dentro da sessão do mesmo corretor.
+  const queueLeads = useMemo(() => {
+    const base = allFiltered.filter(l => l.funnelStage === 'new' && !l.situation)
+    const seed  = `${profile?.id ?? 'anon'}-${campaign.id}`
+    return seededShuffle(base, seed)
+  }, [allFiltered, profile?.id, campaign.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 2. Já acionados: tiveram contato ou avançaram no funil
   const contactedLeads = allFiltered
@@ -631,28 +753,43 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
               <div className="divide-y divide-line">
                 {queueLeads.slice(0, visibleQueue).map((lead, idx) => {
-                  const isNext = idx === 0 && !onCd && !atLim
+                  const isNext       = idx === 0 && !onCd && !atLim
+                  const dispColor    = getDispatchColor(lead)
+                  const inlineHist   = dispatchHistory[lead.id] ?? crossCampaignMap[lead.phone.replace(/\D/g, '')] ?? []
                   return (
                     <div key={lead.id}
                       className={`grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-3 items-center transition-colors
                         ${isNext ? 'bg-green-500/5' : 'hover:bg-s2/50'}`}>
 
                       <div className="flex items-center gap-3 min-w-0">
-                        {/* Avatar */}
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
-                          ${isNext ? 'bg-green-500/20 text-green-300' : 'bg-white/6 text-t3'}`}>
-                          {lead.name.charAt(0).toUpperCase()}
+                        {/* Avatar com indicador de cooldown comercial */}
+                        <div className="relative flex-shrink-0">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold
+                            ${isNext ? 'bg-green-500/20 text-green-300' : 'bg-white/6 text-t3'}`}>
+                            {lead.name.charAt(0).toUpperCase()}
+                          </div>
+                          {/* Ponto de cooldown: vermelho <48h | amarelo <7d | verde >7d */}
+                          {dispColor && (
+                            <Circle
+                              size={7}
+                              className={`absolute -top-0.5 -right-0.5 rounded-full
+                                ${dispColor === 'red'    ? 'fill-red-400 text-red-400'
+                                : dispColor === 'yellow' ? 'fill-amber-400 text-amber-400'
+                                :                         'fill-green-400 text-green-400'}`}
+                            />
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className={`text-sm font-medium truncate ${isNext ? 'text-t1' : 'text-t3'}`}>
                             {lead.name}
                           </p>
-                          {/* Aviso informativo: lead já recebeu disparo em outra campanha */}
-                          {dispatchHistory[lead.id]?.length > 0 && (
+                          {/* Badge inline: abordado em outra campanha — usa dados pré-carregados */}
+                          {inlineHist.length > 0 && (
                             <div className="flex items-center gap-1 mt-0.5">
-                              <AlertCircle size={9} className="text-amber-400 flex-shrink-0" />
-                              <span className="text-[10px] text-amber-400/80 truncate">
-                                Disparado em {dispatchHistory[lead.id].length} campanha{dispatchHistory[lead.id].length > 1 ? 's' : ''} anterior{dispatchHistory[lead.id].length > 1 ? 'es' : ''} · último: {new Date(dispatchHistory[lead.id][0].dispatchedAt).toLocaleDateString('pt-BR')}
+                              <AlertCircle size={9}
+                                className={`flex-shrink-0 ${dispColor === 'red' ? 'text-red-400' : 'text-amber-400'}`} />
+                              <span className={`text-[10px] truncate ${dispColor === 'red' ? 'text-red-400/80' : 'text-amber-400/80'}`}>
+                                {inlineHist.length} campanha{inlineHist.length > 1 ? 's' : ''} anterior{inlineHist.length > 1 ? 'es' : ''} · último: {new Date('dispatchedAt' in inlineHist[0] ? (inlineHist[0] as {dispatchedAt: string}).dispatchedAt : (inlineHist[0] as CrossDispatch).firedAt).toLocaleDateString('pt-BR')}
                               </span>
                             </div>
                           )}
@@ -920,11 +1057,37 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             <div className="flex flex-col gap-2">
               {preDispatchWarn.items.map((w, i) => (
                 <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20">
-                  <span className="text-base leading-none mt-0.5">{w.icon}</span>
-                  <p className="text-xs text-amber-300 leading-relaxed">{w.text}</p>
+                  <span className="text-base leading-none mt-0.5 flex-shrink-0">{w.icon}</span>
+                  <p className="text-xs text-amber-300 leading-relaxed whitespace-pre-line">{w.text}</p>
                 </div>
               ))}
             </div>
+
+            {/* Histórico completo cross-campanha */}
+            {(() => {
+              const phone = preDispatchWarn.lead.phone.replace(/\D/g, '')
+              const hist  = crossCampaignMap[phone]
+              if (!hist || hist.length === 0) return null
+              return (
+                <div className="flex flex-col gap-1.5 bg-s3/40 rounded-xl px-3 py-2.5 border border-line">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-t4 mb-0.5">
+                    Total de abordagens: {hist.length}
+                  </p>
+                  {hist.slice(0, 5).map((h, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[11px] text-t3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-t5 flex-shrink-0" />
+                      <span className="truncate">{h.campaignName}</span>
+                      <span className="text-t5 flex-shrink-0 tabular-nums">
+                        {new Date(h.firedAt).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                  ))}
+                  {hist.length > 5 && (
+                    <p className="text-[10px] text-t5">+{hist.length - 5} mais…</p>
+                  )}
+                </div>
+              )
+            })()}
 
             <p className="text-xs text-t4 leading-relaxed">
               Deseja disparar mesmo assim? O contato receberá a mensagem normalmente.

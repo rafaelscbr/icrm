@@ -14,10 +14,9 @@
 
 import { create } from 'zustand'
 import { Campaign, CampaignLead, FunnelStage, LeadSituation } from '../types'
-import { generateId, normalizePhone } from '../lib/formatters'
-import { db }       from '../lib/db'
-import { supabase } from '../lib/supabase'
-import toast        from 'react-hot-toast'
+import { generateId } from '../lib/formatters'
+import { db }   from '../lib/db'
+import toast    from 'react-hot-toast'
 
 type NewLead = Omit<CampaignLead, 'id' | 'funnelStage' | 'createdAt' | 'updatedAt'>
 
@@ -201,30 +200,10 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
       }).catch(err => console.error('[activity] dispatch:', err))
     }
 
-    // Grava no histórico do contato (lead_campaign_dispatches).
-    // Busca o contact pelo phone normalizado para funcionar com qualquer
-    // formato armazenado ("(47) 9xxxx" ou "479xxxx").
-    if (sentBy) {
-      const capturedLead   = lead
-      const capturedSentBy = sentBy
-      ;(async () => {
-        try {
-          const normPhone = normalizePhone(capturedLead.phone) ?? capturedLead.phone
-          const { data: contact } = await supabase
-            .from('contacts').select('id').eq('phone', normPhone).maybeSingle()
-          if (!contact) return
-          await db.dispatches.insert({
-            contactId:    contact.id,
-            campaignId:   capturedLead.campaignId,
-            brokerId:     capturedSentBy.id,
-            messageIndex: messageIndex,
-            channel:      'whatsapp',
-          })
-        } catch (err) {
-          console.error('[dispatch] history:', err)
-        }
-      })()
-    }
+    // Nota: o histórico cross-campanha é rastreado via disparo_logs (useDisparosStore.increment)
+    // que é chamado em LeadsTab.tsx após cada disparo. A tabela lead_campaign_dispatches foi
+    // descontinuada porque o lookup por telefone falhava silenciosamente para contatos com
+    // formatos de telefone inconsistentes.
   },
 
   markAsTransferred: (id, leadId) => {

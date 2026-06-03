@@ -57,22 +57,31 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
   const [selectedIds,       setSelectedIds]       = useState<Set<string>>(new Set())
   const [saving,            setSaving]            = useState(false)
   const [conflictListIds,   setConflictListIds]   = useState<Set<string>>(new Set())
+  // listId → nomes das campanhas que já a utilizam
+  const [conflictCampaignNames, setConflictCampaignNames] = useState<Map<string, string[]>>(new Map())
 
   useEffect(() => {
     if (!isOpen) return
     setSelectedIds(new Set())
     setSaving(false)
     loadLists()
-    // Detecta quais listas já estão em outras campanhas
+    // Detecta quais listas já estão em outras campanhas + quais são elas
     db.campaignLists.fetchAll()
       .then(all => {
-        const usedElsewhere = new Set(
-          all.filter(cl => cl.campaignId !== campaignId).map(cl => cl.listId)
-        )
-        setConflictListIds(usedElsewhere)
+        const others = all.filter(cl => cl.campaignId !== campaignId)
+        setConflictListIds(new Set(others.map(cl => cl.listId)))
+
+        // Mapeia listId → nomes das campanhas
+        const nameMap = new Map<string, string[]>()
+        for (const cl of others) {
+          const campName = campaigns.find(c => c.id === cl.campaignId)?.name ?? cl.campaignId
+          const prev = nameMap.get(cl.listId) ?? []
+          if (!prev.includes(campName)) nameMap.set(cl.listId, [...prev, campName])
+        }
+        setConflictCampaignNames(nameMap)
       })
       .catch(() => {})
-  }, [isOpen, campaignId])
+  }, [isOpen, campaignId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggle(id: string) {
     setSelectedIds(prev => {
@@ -88,7 +97,6 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
     try {
       const listIds = [...selectedIds]
       const now = new Date().toISOString()
-      const hasConflict = listIds.some(id => conflictListIds.has(id))
 
       for (const listId of listIds) {
         await db.campaignLists.upsert({ id: generateId(), campaignId, listId, addedAt: now })
@@ -111,8 +119,9 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
       // Leads herdam o broker_id da campanha — garante que o corretor possa atualizar
       const campaignBrokerId = campaigns.find(c => c.id === campaignId)?.brokerId
 
-      // Lista em conflito → embaralha para que corretores diferentes comecem por leads diferentes
-      const ordered = hasConflict ? shuffleArray(contacts) : contacts
+      // Embaralha SEMPRE — evita que mesmos leads apareçam no topo em todas as campanhas
+      // (listas reutilizadas ou não, a ordem nunca deve ser a mesma da lista original)
+      const ordered = shuffleArray(contacts)
       const result  = addBulk(ordered.map(c => ({
         campaignId,
         name:     c.name,
@@ -120,11 +129,7 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
         brokerId: campaignBrokerId ?? undefined,
       })))
 
-      if (hasConflict) {
-        toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} adicionado${result.added !== 1 ? 's' : ''} em ordem embaralhada para evitar conflitos!`)
-      } else {
-        toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} adicionado${result.added !== 1 ? 's' : ''} à campanha!`)
-      }
+      toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} importado${result.added !== 1 ? 's' : ''} em ordem embaralhada!`)
       onClose()
     } catch {
       toast.error('Erro ao adicionar listas')
@@ -195,14 +200,28 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
           </div>
         )}
 
-        {/* Aviso de conflito */}
+        {/* Aviso de conflito — com nomes das campanhas */}
         {selectedConflicts > 0 && (
-          <div className="flex items-start gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl px-3 py-2.5">
-            <Shuffle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-400 leading-relaxed">
-              <span className="font-bold">{selectedConflicts} lista{selectedConflicts > 1 ? 's' : ''}</span> já
-              {selectedConflicts > 1 ? ' estão' : ' está'} em outras campanhas. Os leads serão importados em{' '}
-              <span className="font-bold">ordem embaralhada</span> para evitar que corretores disparem para os mesmos contatos simultaneamente.
+          <div className="flex flex-col gap-2 bg-amber-500/8 border border-amber-500/20 rounded-xl px-3 py-2.5">
+            <div className="flex items-start gap-2.5">
+              <Shuffle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-400 leading-relaxed">
+                <span className="font-bold">{selectedConflicts} lista{selectedConflicts > 1 ? 's' : ''}</span> já
+                {selectedConflicts > 1 ? ' estão' : ' está'} em uso em outras campanhas:
+              </p>
+            </div>
+            {[...selectedIds].filter(id => conflictListIds.has(id)).map(listId => {
+              const campNames = conflictCampaignNames.get(listId) ?? []
+              const listName  = activeLists.find(l => l.id === listId)?.name ?? '—'
+              return campNames.length > 0 ? (
+                <div key={listId} className="ml-5 text-[11px] text-amber-300/80">
+                  <span className="font-medium">{listName}</span>
+                  {' → '}{campNames.join(', ')}
+                </div>
+              ) : null
+            })}
+            <p className="text-xs text-amber-400/70 ml-5">
+              Os leads serão importados em <span className="font-bold">ordem embaralhada</span> para evitar abordagens duplicadas.
             </p>
           </div>
         )}
