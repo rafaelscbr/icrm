@@ -312,7 +312,7 @@ export function LeadsPage() {
                 <LeadKanban leads={filtered} />
               </div>
             ) : (
-              <div className="mx-4 my-4 rounded-2xl border border-line overflow-hidden">
+              <div className="mx-4 my-4 rounded-2xl border border-line overflow-hidden bg-surface shadow-card">
                 <div className="grid grid-cols-[40px_1fr_auto_auto_auto_auto] gap-4 px-6 py-3 border-b border-line bg-s3/30">
                   <div />
                   <span className="text-xs font-semibold text-t3">Nome</span>

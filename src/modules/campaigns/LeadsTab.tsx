@@ -4,6 +4,7 @@ import {
   ThumbsUp, Loader2, Clock, Moon, AlertCircle, ShoppingBag, Circle,
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
+import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LeadParecerModal } from './LeadParecerModal'
@@ -748,9 +749,9 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-line overflow-hidden bg-page">
+            <Card className="!p-0 overflow-hidden">
               {/* Header da tabela */}
-              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold">
+              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
                 <span>Nome</span>
                 <span>Telefone</span>
                 <span className="w-28 text-center">Ação</span>
@@ -846,7 +847,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                   <span className="text-xs text-t4">Carregando mais…</span>
                 </div>
               )}
-            </div>
+            </Card>
           )}
         </div>
 
@@ -871,8 +872,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             </button>
 
             {showContacted && (
-              <div className="rounded-xl border border-line overflow-hidden bg-page">
-                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold">
+              <Card className="!p-0 overflow-hidden">
+                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
                   <span>Etapa</span>
                   <span>Nome</span>
                   <span>Telefone</span>
@@ -956,7 +957,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                     <span className="text-xs text-t4">Carregando mais…</span>
                   </div>
                 )}
-              </div>
+              </Card>
             )}
           </div>
         )}
@@ -982,7 +983,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             </button>
 
             {showDisqualified && (
-              <div className="rounded-xl border border-line overflow-hidden opacity-60">
+              <Card className="!p-0 overflow-hidden opacity-60">
                 <div className="divide-y divide-line">
                   {disqualLeads.map(lead => {
                     const situCfg = SITUATION_CONFIG.find(s => s.value === lead.situation)
@@ -1008,7 +1009,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                     )
                   })}
                 </div>
-              </div>
+              </Card>
             )}
           </div>
         )}
