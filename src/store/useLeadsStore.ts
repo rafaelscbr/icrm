@@ -7,6 +7,7 @@ import { getCurrentUserId } from '../lib/auth'
 import { useTasksStore } from './useTasksStore'
 import { useContactsStore } from './useContactsStore'
 import { useLeadInteractionsStore } from './useLeadInteractionsStore'
+import toast from 'react-hot-toast'
 
 interface LeadsStore {
   leads: Lead[]
@@ -125,8 +126,13 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
   add: (data) => {
     const now = new Date().toISOString()
     const { createdAt: customCreatedAt, ...rest } = data
-    // Garante que brokerId está populado antes do upsert — evita broker_id: null no banco
     const brokerId = rest.brokerId ?? getCurrentUserId() ?? undefined
+
+    if (!brokerId) {
+      toast.error('Sessão expirada. Faça login novamente antes de criar leads.')
+      throw new Error('[leads] add: brokerId ausente — usuário não autenticado')
+    }
+
     const lead: Lead = { ...rest, brokerId, id: generateId(), createdAt: customCreatedAt ?? now, updatedAt: now, stageChangedAt: customCreatedAt ?? now }
 
     // Auto-link or create contact
@@ -145,13 +151,19 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         hasChildren: false,
         isMarried: false,
         permutaItems: [],
+        brokerId,
       })
       lead.contactId = newContact.id
       lead.convertedAt = now
     }
 
     set(s => ({ leads: [lead, ...s.leads] }))
-    db.leads.upsert(lead).catch(err => console.error('[leads] add:', err))
+    db.leads.upsert(lead).catch(err => {
+      console.error('[leads] add:', err)
+      toast.error('Erro ao salvar lead no banco. Tente novamente.')
+      // Reverte o otimista em caso de falha
+      set(s => ({ leads: s.leads.filter(l => l.id !== lead.id) }))
+    })
     return lead
   },
 
@@ -162,12 +174,18 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] update:', err))
+    if (updated) db.leads.upsert(updated).catch(err => {
+      console.error('[leads] update:', err)
+      toast.error('Erro ao salvar alteração do lead.')
+    })
   },
 
   remove: (id) => {
     set(s => ({ leads: s.leads.filter(l => l.id !== id) }))
-    db.leads.delete(id).catch(err => console.error('[leads] remove:', err))
+    db.leads.delete(id).catch(err => {
+      console.error('[leads] remove:', err)
+      toast.error('Erro ao excluir lead.')
+    })
   },
 
   getById: (id) => get().leads.find(l => l.id === id),
@@ -211,7 +229,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] setStage:', err))
+    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] setStage:', err); toast.error('Erro ao atualizar etapa do lead.') })
 
     // Registra mudança de etapa no histórico de interações
     useLeadInteractionsStore.getState().add({
@@ -245,7 +263,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] advanceFollowup:', err))
+    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] advanceFollowup:', err); toast.error('Erro ao salvar followup.') })
   },
 
   discard: (id, reason) => {
@@ -256,7 +274,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] discard:', err))
+    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] discard:', err); toast.error('Erro ao descartar lead.') })
 
     // Registra descarte no histórico — preserva etapa de origem para análise de funil
     if (lead) {
@@ -276,7 +294,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     )
     set({ leads })
     const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] restore:', err))
+    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] restore:', err); toast.error('Erro ao restaurar lead.') })
   },
 
   convertToContact: async (id, contactId) => {
@@ -288,8 +306,8 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     const updated = leads.find(l => l.id === id)
     // Garante que o contato existe no banco antes de salvar o lead (evita FK violation)
     const contact = useContactsStore.getState().getById(contactId)
-    if (contact) await db.contacts.upsert(contact).catch(err => console.error('[leads] convertToContact - contact upsert:', err))
-    if (updated) db.leads.upsert(updated).catch(err => console.error('[leads] convertToContact:', err))
+    if (contact) await db.contacts.upsert(contact).catch(err => { console.error('[leads] convertToContact - contact upsert:', err); toast.error('Erro ao vincular contato ao lead.') })
+    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] convertToContact:', err); toast.error('Erro ao converter lead em contato.') })
   },
 
   toggleFlag: (id) => {

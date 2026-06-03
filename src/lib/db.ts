@@ -936,13 +936,18 @@ export const db = {
     // updateRow: usado para ATUALIZAR linhas existentes — usa .update() que tem
     // comportamento RLS mais confiável que upsert (INSERT ON CONFLICT DO UPDATE)
     // quando o broker_id da linha é diferente do auth.uid() do corretor.
+    // Usa .select('id') para detectar 0 linhas afetadas (falha silenciosa de RLS).
     updateRow: async (l: CampaignLead) => {
       const row = fromCampaignLead(l)
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('campaign_leads')
         .update(row)
         .eq('id', l.id)
+        .select('id')
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error(`Sem permissão para atualizar lead ${l.id} — verifique autenticação`)
+      }
     },
     upsertMany: async (leads: CampaignLead[]) => {
       const { error } = await supabase

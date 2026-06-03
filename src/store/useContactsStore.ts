@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { Contact, ContactTag } from '../types'
 import { generateId, isBirthdayThisMonth } from '../lib/formatters'
 import { db } from '../lib/db'
+import { getCurrentUserId } from '../lib/auth'
+import toast from 'react-hot-toast'
 
 interface ContactsStore {
   contacts: Contact[]
@@ -34,9 +36,19 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
 
   add: (data) => {
     const now = new Date().toISOString()
-    const contact: Contact = { ...data, id: generateId(), createdAt: now, updatedAt: now }
+    // Garante brokerId — sem ele a RLS bloqueia o INSERT silenciosamente
+    const brokerId = data.brokerId ?? getCurrentUserId() ?? undefined
+    if (!brokerId) {
+      toast.error('Sessão expirada. Faça login novamente antes de criar contatos.')
+      throw new Error('[contacts] add: brokerId ausente')
+    }
+    const contact: Contact = { ...data, brokerId, id: generateId(), createdAt: now, updatedAt: now }
     set(s => ({ contacts: [contact, ...s.contacts] }))
-    db.contacts.upsert(contact).catch(err => console.error('[contacts] add:', err))
+    db.contacts.upsert(contact).catch(err => {
+      console.error('[contacts] add:', err)
+      toast.error('Erro ao salvar contato no banco. Tente novamente.')
+      set(s => ({ contacts: s.contacts.filter(c => c.id !== contact.id) }))
+    })
     return contact
   },
 
@@ -47,12 +59,18 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
     )
     set({ contacts })
     const updated = contacts.find(c => c.id === id)
-    if (updated) db.contacts.upsert(updated).catch(err => console.error('[contacts] update:', err))
+    if (updated) db.contacts.upsert(updated).catch(err => {
+      console.error('[contacts] update:', err)
+      toast.error('Erro ao salvar alteração do contato.')
+    })
   },
 
   remove: (id) => {
     set(s => ({ contacts: s.contacts.filter(c => c.id !== id) }))
-    db.contacts.delete(id).catch(err => console.error('[contacts] remove:', err))
+    db.contacts.delete(id).catch(err => {
+      console.error('[contacts] remove:', err)
+      toast.error('Erro ao excluir contato.')
+    })
   },
 
   getById: (id) => get().contacts.find(c => c.id === id),
