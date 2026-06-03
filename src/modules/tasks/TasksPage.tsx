@@ -7,7 +7,6 @@ import {
   BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
-import { Card } from '../../components/ui/Card'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
