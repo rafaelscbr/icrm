@@ -12,14 +12,14 @@ const sizes = {
 }
 
 const palettes = [
-  'bg-blue-500/20 text-blue-300',
-  'bg-violet-500/20 text-violet-300',
-  'bg-emerald-500/20 text-emerald-300',
-  'bg-amber-500/20 text-amber-300',
-  'bg-rose-500/20 text-rose-300',
-  'bg-cyan-500/20 text-cyan-300',
-  'bg-indigo-500/20 text-indigo-300',
-  'bg-orange-500/20 text-orange-300',
+  'bg-blue-500/25 text-blue-600',
+  'bg-violet-500/25 text-violet-600',
+  'bg-emerald-500/25 text-emerald-700',
+  'bg-amber-500/25 text-amber-700',
+  'bg-rose-500/25 text-rose-600',
+  'bg-cyan-500/25 text-cyan-700',
+  'bg-indigo-500/25 text-indigo-600',
+  'bg-orange-500/25 text-orange-600',
 ]
 
 function pickColor(name: string) {
