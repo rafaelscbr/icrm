@@ -51,6 +51,8 @@ export interface DisparosState {
   history:     { date: string; label: string; count: number }[]
   loading:     boolean
   load:        () => Promise<void>
+  /** Assina disparo_logs via Realtime — retorna função de cancelamento */
+  subscribe:   () => () => void
   /** Grava disparo com contexto completo */
   increment: (ctx?: {
     brokerId?:    string
@@ -58,7 +60,7 @@ export interface DisparosState {
     campaignId?:  string
     leadId?:      string
     leadName?:    string
-  }) => Promise<number>
+  }) => Promise<void>
   /**
    * Devolve 1 crédito ao limite diário quando um lead é marcado como
    * telefone inválido pela PRIMEIRA vez. Remove o disparo_log mais recente
@@ -113,14 +115,26 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
     }
   },
 
-  increment: async (ctx = {}) => {
-    set(s => ({
-      countDay:   s.countDay   + 1,
-      countWeek:  s.countWeek  + 1,
-      countMonth: s.countMonth + 1,
-      history: s.history.map((h, i) => i === s.history.length - 1 ? { ...h, count: h.count + 1 } : h),
-    }))
+  subscribe: () => {
+    const channelName = 'disparo-logs-counter'
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
+    if (existing) return () => {}
 
+    const channel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'disparo_logs' }, () => {
+        // Recarrega do banco — garante que o contador reflete exatamente o que está persistido,
+        // sem acumular duplo-incremento com atualizações otimistas.
+        get().load()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  },
+
+  increment: async (ctx = {}) => {
+    // Sem atualização otimista — o Realtime dispara load() ao confirmar o INSERT no banco,
+    // garantindo que o contador sempre reflita o valor real persistido.
     const { error } = await supabase.from('disparo_logs').insert({
       fired_at:     new Date().toISOString(),
       broker_id:    ctx.brokerId    ?? null,
@@ -132,14 +146,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
 
     if (error) {
       console.error('[DisparosStore] Erro ao gravar disparo:', error)
-      set(s => ({
-        countDay:   Math.max(0, s.countDay   - 1),
-        countWeek:  Math.max(0, s.countWeek  - 1),
-        countMonth: Math.max(0, s.countMonth - 1),
-      }))
     }
-
-    return get().countDay
   },
 
   refund: async (leadId: string) => {

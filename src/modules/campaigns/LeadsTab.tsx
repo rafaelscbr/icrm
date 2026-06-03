@@ -337,7 +337,16 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
   const { remaining, start, isReady, clearReady }        = useGlobalCooldown()
   const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
-  const { increment: persistDisparo }                    = useDisparosStore()
+  const { increment: persistDisparo, load: loadDisparos, subscribe: subscribeDisparos } = useDisparosStore()
+
+  // ─── Contador de disparos: load do banco + subscribe Realtime ────────────
+  // Garante que o contador reflete exatamente o que está no banco ao montar o
+  // componente, e permanece sincronizado em tempo real durante a sessão de disparo.
+  useEffect(() => {
+    loadDisparos()
+    const unsub = subscribeDisparos()
+    return unsub
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Carregamento de histórico cross-campanha ─────────────────────────────
   // Fonte: disparo_logs (tem dados reais) em vez de lead_campaign_dispatches (vazia).

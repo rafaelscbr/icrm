@@ -15,6 +15,7 @@ import { CampaignPerformanceTab } from './CampaignPerformanceTab'
 import { DailyLimitBar } from './DailyLimitBar'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useDisparosStore } from '../../store/useDisparosStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { Campaign } from '../../types'
 import { STATUS_CONFIG } from './config'
@@ -26,6 +27,7 @@ export function CampaignsPage() {
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const campaigns = isAdmin && viewAsBrokerId ? allCampaigns.filter(c => c.brokerId === viewAsBrokerId) : allCampaigns
   const { leads, load: loadLeads, removeForCampaign, transferLeadsToBroker } = useCampaignLeadsStore()
+  const { load: loadDisparos } = useDisparosStore()
   const brokers = allProfiles.filter(p => p.role === 'broker')
 
   const [selectedId,        setSelectedId]        = useState<string>('')
@@ -36,7 +38,7 @@ export function CampaignsPage() {
   const [transferCampaign,  setTransferCampaign]  = useState<Campaign | undefined>()
   const [transferBrokerId,  setTransferBrokerId]  = useState<string>('')
 
-  useEffect(() => { loadCampaigns(); loadLeads() }, [loadCampaigns, loadLeads])
+  useEffect(() => { loadCampaigns(); loadLeads(); loadDisparos() }, [loadCampaigns, loadLeads, loadDisparos])
 
   // Show detail view
   if (selectedId) {

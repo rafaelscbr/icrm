@@ -2,12 +2,12 @@
  * dailyCounter.ts
  *
  * Controla o limite anti-ban (50/dia) e o cooldown entre envios.
- * Fonte de verdade: banco de dados (disparo_logs via useDisparosStore).
- * O estado local React é apenas para resposta imediata de UI — sincroniza com
- * o banco a cada montagem do componente e a cada disparo confirmado.
+ * Fonte de verdade exclusiva: banco de dados via useDisparosStore.
+ * Sem estado local intermediário — o contador lê diretamente do store,
+ * que é populado por load() na montagem e mantido atualizado pelo subscribe()
+ * Realtime de disparo_logs.
  */
 
-import { useState, useEffect } from 'react'
 import { useDisparosStore } from '../../store/useDisparosStore'
 
 export const DAILY_WARN  = 40   // aviso amarelo
@@ -16,22 +16,12 @@ export const DAILY_LIMIT = 50   // bloqueio
 // ─── Hook principal ───────────────────────────────────────────────────────────
 
 export function useDailyCounter() {
-  // Estado local para resposta de UI imediata — sempre sincronizado com o banco
-  const [count, setCount] = useState(0)
+  // Lê diretamente do store — populado por load() + atualizado pelo Realtime subscribe()
+  const count = useDisparosStore(s => s.countDay)
 
-  // Fonte de verdade: banco de dados via useDisparosStore
-  const dbCountDay = useDisparosStore(s => s.countDay)
-
-  // Mantém estado local sempre sincronizado com o banco
-  useEffect(() => {
-    setCount(dbCountDay)
-  }, [dbCountDay])
-
-  const increment = (): number => {
-    const next = count + 1
-    setCount(next)
-    return next
-  }
+  // Retorna o próximo valor previsto (count+1) para os checks de toast de aviso.
+  // Não modifica nenhum estado — a atualização real chega via Realtime após o INSERT.
+  const increment = (): number => count + 1
 
   return { count, increment }
 }
