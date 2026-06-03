@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
-  Megaphone, Users, TrendingUp, Calendar, Pencil, Trash2, ArrowRight,
-  Play, Pause, CheckCheck, BarChart3, Zap, ArrowLeftRight, UserCircle2
+  Megaphone, Users, Calendar, Pencil, Trash2, ArrowRight,
+  Play, Pause, BarChart3, Zap, ArrowLeftRight, UserCircle2,
+  Clock, MessageCircle, Flame, CalendarCheck, ArrowUpRight,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -137,11 +138,20 @@ export function CampaignsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {campaigns.map(c => {
             const campaignLeads = leads.filter(l => l.campaignId === c.id)
-            const contacted     = campaignLeads.filter(l => l.firstContactAt).length
-            const inFunnel      = campaignLeads.filter(l => ['attended','scheduled'].includes(l.funnelStage)).length
-            const transferred   = campaignLeads.filter(l => l.transferredAt).length
-            const contactRate   = campaignLeads.length > 0 ? Math.round(contacted / campaignLeads.length * 100) : 0
-            const statusCfg     = STATUS_CONFIG[c.status]
+            const total         = campaignLeads.length
+
+            // Mini funil — contagens por etapa
+            const nPending     = campaignLeads.filter(l => l.funnelStage === 'new').length
+            const nApproached  = campaignLeads.filter(l => l.funnelStage === 'sent').length
+            const nInterested  = campaignLeads.filter(l => l.funnelStage === 'attended').length
+            const nScheduled   = campaignLeads.filter(l => l.funnelStage === 'scheduled').length
+            const nTransferred = campaignLeads.filter(l => l.transferredAt).length
+
+            // Taxas
+            const reachRate    = total > 0 ? Math.round((total - nPending) / total * 100) : 0
+            const interestRate = (total - nPending) > 0 ? Math.round(nInterested / (total - nPending) * 100) : 0
+
+            const statusCfg = STATUS_CONFIG[c.status]
 
             const brokerName = c.brokerId
               ? (allProfiles.find(p => p.id === c.brokerId)?.name ?? 'Corretor')
@@ -193,33 +203,31 @@ export function CampaignsPage() {
                   </div>
                 </div>
 
-                {/* Stats grid */}
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { icon: <Users size={11} />, label: 'Leads',        value: campaignLeads.length, color: 'text-t2'  },
-                    { icon: <TrendingUp size={11} />, label: 'Acionados', value: `${contactRate}%`,   color: 'text-blue-400'   },
-                    { icon: <CheckCheck size={11} />, label: 'Transferidos', value: transferred,       color: 'text-violet-400' },
-                  ].map(s => (
-                    <div key={s.label} className="flex flex-col items-center py-2 bg-s2/50 rounded-xl border border-line">
-                      <span className="text-t4 mb-1">{s.icon}</span>
-                      <span className={`text-sm font-bold tabular-nums ${s.color}`}>{s.value}</span>
-                      <span className="text-[10px] text-t4">{s.label}</span>
+                {/* Mini funil */}
+                {total > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-1">
+                      {([
+                        { label: 'Pendentes',  value: nPending,    color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20',  icon: <Clock         size={10} /> },
+                        { label: 'Abordados',  value: nApproached, color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   icon: <MessageCircle size={10} /> },
+                        { label: 'Interesse',  value: nInterested, color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20',   icon: <Flame         size={10} /> },
+                        { label: 'Agendados',  value: nScheduled,  color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20', icon: <CalendarCheck size={10} /> },
+                        { label: 'Transf.',    value: nTransferred,color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20',  icon: <ArrowUpRight  size={10} /> },
+                      ] as const).map(chip => (
+                        <div
+                          key={chip.label}
+                          className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border flex-1 ${chip.bg} ${chip.border}`}
+                        >
+                          <span className={chip.color}>{chip.icon}</span>
+                          <span className={`text-xs font-bold tabular-nums leading-tight ${chip.color}`}>{chip.value}</span>
+                          <span className="text-[9px] text-t4 text-center leading-tight">{chip.label}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-
-                {/* Progress bar */}
-                {campaignLeads.length > 0 && (
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-t4">Avanço no funil</span>
-                      <span className="text-t3 tabular-nums">{inFunnel}/{campaignLeads.length}</span>
-                    </div>
-                    <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
-                        style={{ width: `${campaignLeads.length > 0 ? Math.round(inFunnel/campaignLeads.length*100) : 0}%` }}
-                      />
+                    <div className="flex items-center gap-2 text-[11px] text-t3">
+                      <span>Acionamento <span className="text-t2 font-semibold tabular-nums">{reachRate}%</span></span>
+                      <span className="text-t5">·</span>
+                      <span>Interesse <span className="text-t2 font-semibold tabular-nums">{interestRate}%</span></span>
                     </div>
                   </div>
                 )}
