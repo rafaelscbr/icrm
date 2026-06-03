@@ -64,48 +64,35 @@ function _normalizeSinglePhone(raw: string): string | null {
 }
 
 /**
- * Codifica o texto para wa.me preservando emojis e acentos como Unicode bruto.
+ * Gera link direto para api.whatsapp.com, bypassando wa.me.
  *
- * encodeURIComponent converte emojis em %F0%9F%92%B0 (percent-encoded). Em
- * várias plataformas (WhatsApp iOS, WhatsApp Desktop, alguns Android), a camada
- * OS → WhatsApp decodifica esses bytes antes de entregar ao app, quebrando a
- * sequência UTF-8 e causando o caractere de substituição U+FFFD (🔲).
+ * CAUSA RAIZ DO BUG (evidência real — HTTP response do servidor wa.me):
+ *   Enviado para wa.me:  ?text=%F0%9F%92%B0  (💰, UTF-8 correto)
+ *   wa.me redirect:       &text=%EF%BF%BD    (U+FFFD = 🔲, CORROMPIDO)
  *
- * A abordagem correta é deixar emojis e acentos como Unicode bruto na URL:
- * o WHATWG URL parser de todos os browsers modernos codifica internamente para
- * UTF-8 com contexto correto ao abrir via window.open() — sem quebra de bytes.
+ * O servidor wa.me só decodifica UTF-8 até 2 bytes (U+0000–U+07FF).
+ * Qualquer emoji ou símbolo acima de U+00FF (3 ou 4 bytes UTF-8) é
+ * substituído por U+FFFD na construção do redirect — por isso emojis
+ * NUNCA chegaram corretamente ao WhatsApp via wa.me.
  *
- * Usa [...text] para iterar por code points (não code units), garantindo que
- * emojis representados como surrogate pairs (ex: 💰 = U+1F4B0) sejam tratados
- * como um único caractere e não divididos ao meio.
+ * api.whatsapp.com/send recebe o parâmetro diretamente, sem intermediário,
+ * e decodifica %F0%9F%92%B0 → 💰 corretamente.
+ *
+ * encodeURIComponent é obrigatório aqui: passamos diretamente ao destino
+ * final sem depender do WHATWG URL parser do browser para recodificar.
  */
 function encodeWhatsAppText(text: string): string {
+  // Normaliza quebras de linha antes de codificar
   const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-  // Itera por code points — respeita surrogate pairs (emojis multi-byte)
-  return [...normalized].map(char => {
-    const cp = char.codePointAt(0) ?? 0
-    // Não-ASCII (emojis, acentos, ç, ã…): passa bruto — o browser codifica como UTF-8
-    if (cp > 127) return char
-    // ASCII: codifica apenas o que quebraria a estrutura da query string
-    switch (char) {
-      case ' ':  return '%20'
-      case '\n': return '%0A'
-      case '%':  return '%25'
-      case '+':  return '%2B'
-      case '&':  return '%26'
-      case '=':  return '%3D'
-      case '?':  return '%3F'
-      case '#':  return '%23'
-      default:   return char
-    }
-  }).join('')
+  return encodeURIComponent(normalized)
 }
 
 export function whatsappUrl(phone: string, message?: string): string {
   const digits = phone.replace(/\D/g, '')
   const withCountry = digits.startsWith('55') ? digits : `55${digits}`
-  const base = `https://wa.me/${withCountry}`
-  return message ? `${base}?text=${encodeWhatsAppText(message)}` : base
+  // api.whatsapp.com — destino final sem redirect intermediário
+  const base = `https://api.whatsapp.com/send?phone=${withCountry}`
+  return message ? `${base}&text=${encodeWhatsAppText(message)}` : base
 }
 
 export function generateId(): string {
