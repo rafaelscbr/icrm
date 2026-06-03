@@ -7,6 +7,7 @@
 
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
+import { getCurrentUserId } from '../lib/auth'
 
 // ─── Helpers de data ──────────────────────────────────────────────────────────
 
