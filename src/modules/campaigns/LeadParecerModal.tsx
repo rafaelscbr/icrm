@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { CheckCircle2, GitMerge, Sparkles, ArrowRight } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
-import { CampaignLead, FunnelStage, Lead, LeadSituation } from '../../types'
+import { CampaignLead, FunnelStage, Lead, LeadSituation, INVALID_PHONE_SITUATIONS } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useDisparosStore } from '../../store/useDisparosStore'
 import { Campaign } from '../../types'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone } from '../../lib/formatters'
@@ -20,6 +21,7 @@ interface LeadParecerModalProps {
 
 export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParecerModalProps) {
   const { update, setStage } = useCampaignLeadsStore()
+  const { refund }           = useDisparosStore()
 
   const [stage,          setStageLocal]   = useState<FunnelStage>('new')
   const [situation,      setSituationL]   = useState<LeadSituation | undefined>()
@@ -34,27 +36,36 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
     setNotes(lead.notes ?? '')
   }, [lead, isOpen])
 
-  function handleSave() {
+  async function handleSave() {
     if (!lead) return
 
+    const prevSituation = lead.situation
     const prevStage     = lead.funnelStage
-    const effectiveStage: FunnelStage = situation === 'invalid' ? 'new' : stage
+
+    // Telefone inválido → mantém na fila (stage 'new') para não sumir dos relatórios
+    const isInvalidPhone = situation ? INVALID_PHONE_SITUATIONS.has(situation) : false
+    const effectiveStage: FunnelStage = isInvalidPhone ? 'new' : stage
     const stageChanged  = effectiveStage !== prevStage
 
-    // Campos não-estágio: situation e notes via update direto
     const extraFields: Partial<CampaignLead> = {
       situation,
       notes: notes.trim() || undefined,
     }
 
     if (stageChanged) {
-      // Usa setStage para atualizar stageUpdatedAt e logar atividade
       setStage(lead.id, effectiveStage, extraFields)
     } else {
       update(lead.id, extraFields)
     }
 
-    if (stage === 'scheduled' && prevStage !== 'scheduled') {
+    // Devolve 1 crédito ao limite diário se:
+    // 1. A nova situação é de telefone inválido
+    // 2. A situação ANTERIOR não era inválida (primeira vez que marca)
+    const prevWasInvalid = prevSituation ? INVALID_PHONE_SITUATIONS.has(prevSituation) : false
+    if (isInvalidPhone && !prevWasInvalid) {
+      await refund(lead.id)
+      toast.success('Parecer atualizado · 1 crédito devolvido ao limite do dia', { icon: '↩️' })
+    } else if (stage === 'scheduled' && prevStage !== 'scheduled') {
       toast.success('Agendamento registrado! Transfira este lead para o funil principal.')
     } else {
       toast.success('Parecer atualizado')

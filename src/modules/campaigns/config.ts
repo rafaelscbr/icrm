@@ -38,7 +38,10 @@ export interface SituationConfig {
 export const SITUATION_CONFIG: SituationConfig[] = [
   { value: 'no_interest',   label: 'Sem Interesse',          short: 'Sem interesse',  color: 'text-orange-400', bg: 'bg-orange-500/10' },
   { value: 'stop_messages', label: 'Pediu para não receber', short: 'Não perturbe',   color: 'text-red-400',    bg: 'bg-red-500/10'    },
-  { value: 'invalid',       label: 'Contato Inexistente',    short: 'Inexistente',    color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
+  // Telefones inválidos — devolvem 1 crédito de disparo na primeira marcação
+  { value: 'invalid_number', label: 'Número inexistente',    short: 'Nº inexistente', color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
+  { value: 'no_whatsapp',    label: 'Sem WhatsApp',          short: 'Sem WhatsApp',   color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
+  { value: 'invalid_phone',  label: 'Telefone inválido',     short: 'Tel. inválido',  color: 'text-slate-400',  bg: 'bg-slate-500/10'  },
 ]
 
 // Taxas de conversão do funil de campanha — CASCATA.

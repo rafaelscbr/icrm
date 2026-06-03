@@ -135,7 +135,18 @@ export function calcSaleCommissions(s: Sale) {
 // ─── Campanhas de Prospecção Ativa ───────────────────────────────────────────
 
 export type FunnelStage    = 'new' | 'sent' | 'attended' | 'scheduled' | 'presentation' | 'proposal' | 'sale'
-export type LeadSituation  = 'no_interest' | 'stop_messages' | 'invalid'
+export type LeadSituation  =
+  | 'no_interest'
+  | 'stop_messages'
+  | 'invalid'        // Contato Inexistente (genérico)
+  | 'invalid_number' // Número inexistente
+  | 'no_whatsapp'    // Sem WhatsApp
+  | 'invalid_phone'  // Telefone inválido
+
+/** Situações que indicam telefone inutilizável e devolvem 1 crédito de disparo */
+export const INVALID_PHONE_SITUATIONS = new Set<LeadSituation>([
+  'invalid', 'invalid_number', 'no_whatsapp', 'invalid_phone',
+])
 export type CampaignStatus = 'active' | 'paused' | 'finished'
 
 export interface Campaign {
