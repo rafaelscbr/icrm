@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CheckCircle2, GitMerge, Sparkles, ArrowRight } from 'lucide-react'
+import { CheckCircle2, GitMerge, Sparkles, ArrowRight, Loader2 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { CampaignLead, FunnelStage, Lead, LeadSituation, INVALID_PHONE_SITUATIONS } from '../../types'
@@ -26,6 +26,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
   const [stage,          setStageLocal]   = useState<FunnelStage>('new')
   const [situation,      setSituationL]   = useState<LeadSituation | undefined>()
   const [notes,          setNotes]        = useState('')
+  const [isSaving,       setIsSaving]     = useState(false)
   const [showTransfer,   setShowTransfer]   = useState(false)
   const [visitaLead,     setVisitaLead]     = useState<Lead | undefined>()
 
@@ -42,7 +43,6 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
     const prevSituation = lead.situation
     const prevStage     = lead.funnelStage
 
-    // Telefone inválido → mantém na fila (stage 'new') para não sumir dos relatórios
     const isInvalidPhone = situation ? INVALID_PHONE_SITUATIONS.has(situation) : false
     const effectiveStage: FunnelStage = isInvalidPhone ? 'new' : stage
     const stageChanged  = effectiveStage !== prevStage
@@ -52,15 +52,23 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
       notes: notes.trim() || undefined,
     }
 
-    if (stageChanged) {
-      setStage(lead.id, effectiveStage, extraFields)
-    } else {
-      update(lead.id, extraFields)
+    setIsSaving(true)
+    try {
+      // Aguarda confirmação do banco — se falhar, update() já fez rollback e exibiu toast.
+      // O modal permanece aberto para o usuário tentar novamente.
+      if (stageChanged) {
+        await setStage(lead.id, effectiveStage, extraFields)
+      } else {
+        await update(lead.id, extraFields)
+      }
+    } catch {
+      // Erro já tratado em update() — rollback feito, toast exibido.
+      // Mantém o modal aberto para nova tentativa.
+      setIsSaving(false)
+      return
     }
 
-    // Devolve 1 crédito ao limite diário se:
-    // 1. A nova situação é de telefone inválido
-    // 2. A situação ANTERIOR não era inválida (primeira vez que marca)
+    // Chega aqui somente se o banco confirmou a persistência
     const prevWasInvalid = prevSituation ? INVALID_PHONE_SITUATIONS.has(prevSituation) : false
     if (isInvalidPhone && !prevWasInvalid) {
       await refund(lead.id)
@@ -71,6 +79,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
       toast.success('Parecer atualizado')
     }
 
+    setIsSaving(false)
     onClose()
   }
 
@@ -203,8 +212,10 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
           </div>
 
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
-            <Button className="flex-1" onClick={handleSave}>Salvar parecer</Button>
+            <Button variant="secondary" className="flex-1" onClick={onClose} disabled={isSaving}>Cancelar</Button>
+            <Button className="flex-1 flex items-center justify-center gap-2" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <><Loader2 size={13} className="animate-spin" /> Salvando…</> : 'Salvar parecer'}
+            </Button>
           </div>
         </div>
       )}

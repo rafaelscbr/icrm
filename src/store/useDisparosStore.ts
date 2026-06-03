@@ -82,6 +82,11 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
   loading:    false,
 
   load: async () => {
+    // Filtra sempre pelo broker atual — o contador é individual, nunca agregado.
+    // Admin vê seus próprios disparos (não de todos os corretores).
+    const brokerId = getCurrentUserId()
+    if (!brokerId) return
+
     set({ loading: true })
     try {
       const startOfDay   = `${todayIso()}T00:00:00`
@@ -89,10 +94,10 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
       const startOfMonth = daysAgoIso(30)
 
       const [dayRes, weekRes, monthRes, histRes] = await Promise.all([
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).gte('fired_at', startOfDay),
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).gte('fired_at', startOfWeek),
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).gte('fired_at', startOfMonth),
-        supabase.from('disparo_logs').select('fired_at').gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfDay),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfWeek),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfMonth),
+        supabase.from('disparo_logs').select('fired_at').eq('broker_id', brokerId).gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
       ])
 
       const byDay: Record<string, number> = {}
@@ -116,17 +121,26 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
   },
 
   subscribe: () => {
+    const brokerId = getCurrentUserId()
     const channelName = 'disparo-logs-counter'
     const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
     if (existing) return () => {}
 
+    // Filtra o canal pelo broker atual para receber apenas SEUS disparos.
+    // Sem filtro, o canal dispararia load() para todos ao receber inserções de qualquer usuário,
+    // fazendo o contador de cada corretor refletir os disparos de todos.
     const channel = supabase
       .channel(channelName)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'disparo_logs' }, () => {
-        // Recarrega do banco — garante que o contador reflete exatamente o que está persistido,
-        // sem acumular duplo-incremento com atualizações otimistas.
-        get().load()
-      })
+      .on(
+        'postgres_changes',
+        {
+          event:  'INSERT',
+          schema: 'public',
+          table:  'disparo_logs',
+          ...(brokerId ? { filter: `broker_id=eq.${brokerId}` } : {}),
+        },
+        () => { get().load() }
+      )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }

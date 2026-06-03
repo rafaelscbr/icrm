@@ -26,11 +26,14 @@ interface CampaignLeadsStore {
   load: () => Promise<void>
   addBulk: (data: NewLead[]) => { added: number; skipped: number }
   add: (data: NewLead) => CampaignLead
-  update: (id: string, data: Partial<CampaignLead>) => void
+  /** Persiste alteração no banco. Aplica rollback e exibe toast se falhar. */
+  update: (id: string, data: Partial<CampaignLead>) => Promise<void>
   remove: (id: string) => void
   removeForCampaign: (campaignId: string) => void
-  setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>, actorBy?: { id: string; name: string }) => void
-  setSituation: (id: string, situation: LeadSituation | undefined) => void
+  /** Muda etapa do funil com persistência confirmada. Lança erro se falhar. */
+  setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>, actorBy?: { id: string; name: string }) => Promise<void>
+  /** Atualiza situação com persistência confirmada. Lança erro se falhar. */
+  setSituation: (id: string, situation: LeadSituation | undefined) => Promise<void>
   markContacted: (id: string, message?: string, messageIndex?: number, sentBy?: { id: string; name: string }) => void
   markAsTransferred: (id: string, leadId: string) => void
   backfillMessageIndex: (campaign: Campaign) => Promise<number>
@@ -69,8 +72,11 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
 
       const merged = fresh.map(dbLead => {
         const local = currentMap.get(dbLead.id)
-        // updatedAt local > banco → escrita ainda pendente, preserva otimista
-        return local && local.updatedAt > dbLead.updatedAt ? local : dbLead
+        // Compara como Date (não string) porque o banco retorna "+00:00" e o JS
+        // usa "Z" — formatos diferentes para o mesmo momento que a comparação
+        // de string sempre resolvia errado, nunca atualizando com dados do banco.
+        const localIsNewer = local && new Date(local.updatedAt).getTime() > new Date(dbLead.updatedAt).getTime()
+        return localIsNewer ? local : dbLead
       })
 
       // Inclui leads locais que ainda não chegaram ao banco (addBulk recente)
@@ -117,21 +123,29 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     return lead
   },
 
-  // ── Atualiza lead (otimista → banco) ────────────────────────────────────
-  // Usa updateRow (.update()) em vez de upsert (.upsert()) para evitar o
-  // problema de RLS onde o corretor não consegue fazer INSERT ON CONFLICT
-  // em linhas cujo broker_id pertence ao admin.
-  update: (id, data) => {
-    const leads = get().leads.map(l =>
-      l.id === id ? { ...l, ...data, updatedAt: new Date().toISOString() } : l
-    )
-    set({ leads })
-    const updated = leads.find(l => l.id === id)
-    if (updated) {
-      db.campaignLeads.updateRow(updated).catch(err => {
-        console.error('[campaignLeads] update:', err)
-        toast.error('Erro ao salvar alteração. Tente novamente.')
-      })
+  // ── Atualiza lead — otimista com rollback explícito ─────────────────────
+  // 1. Grava snapshot do estado anterior
+  // 2. Aplica update otimista na store
+  // 3. Persiste no banco com await — se falhar:
+  //    - reverte para snapshot (rollback explícito)
+  //    - exibe toast de erro
+  //    - relança o erro para que chamadores possam tratar (ex: modal permanece aberto)
+  update: async (id, data) => {
+    const snapshot = get().leads.find(l => l.id === id)
+    if (!snapshot) return
+
+    const now = new Date().toISOString()
+    const updated = { ...snapshot, ...data, updatedAt: now }
+    set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
+
+    try {
+      await db.campaignLeads.updateRow(updated)
+    } catch (err) {
+      console.error('[campaignLeads] update falhou — revertendo:', err)
+      // Rollback explícito: restaura estado anterior na store
+      set(s => ({ leads: s.leads.map(l => l.id === id ? snapshot : l) }))
+      toast.error('Não foi possível salvar. Alteração revertida — tente novamente.')
+      throw err
     }
   },
 
@@ -146,9 +160,13 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   },
 
   // ── Muda etapa do funil ────────────────────────────────────────────────
-  setStage: (id, stage, extra, actorBy) => {
+  // Async: aguarda confirmação do banco antes de considerar a mudança concluída.
+  // Se o update falhar, o rollback é aplicado pelo update() e o erro é relançado.
+  setStage: async (id, stage, extra, actorBy) => {
     const lead = get().leads.find(l => l.id === id)
-    get().update(id, { funnelStage: stage, stageUpdatedAt: new Date().toISOString(), ...extra })
+    // Aguarda confirmação do banco — lança se falhar (rollback já feito por update())
+    await get().update(id, { funnelStage: stage, stageUpdatedAt: new Date().toISOString(), ...extra })
+    // Log de atividade apenas após confirmação de persistência
     if (lead && actorBy) {
       db.campaignActivity.insert({
         id:         `${Date.now()}-act-${Math.random().toString(36).slice(2,7)}`,
@@ -163,8 +181,8 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     }
   },
 
-  setSituation: (id, situation) => {
-    get().update(id, { situation })
+  setSituation: async (id, situation) => {
+    await get().update(id, { situation })
   },
 
   // ── Registra disparo de mensagem ─────────────────────────────────────────
