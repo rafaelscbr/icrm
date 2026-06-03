@@ -681,10 +681,10 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               </div>
             )}
             {!atLim && onCd && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-line text-t2 text-xs">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-s2 border border-line text-t2 text-xs">
                 <Clock size={12} className="text-t3" />
                 <span>Próximo disparo em</span>
-                <span className="font-black tabular-nums text-white text-sm">{secs}s</span>
+                <span className="font-black tabular-nums text-t1 text-sm">{secs}s</span>
               </div>
             )}
             {!isBusinessHours() && !atLim && (
@@ -735,7 +735,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             <span className="text-xs bg-green-500/15 text-green-400 border border-green-500/25 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
               {queueLeads.length}
             </span>
-            <div className="flex-1 h-px bg-white/6" />
+            <div className="flex-1 h-px bg-s2/60" />
             <span className="text-[10px] text-t4 uppercase tracking-wider">não acionados · mais antigos primeiro</span>
           </div>
 
@@ -764,13 +764,13 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                   return (
                     <div key={lead.id}
                       className={`grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-3 items-center transition-colors
-                        ${isNext ? 'bg-green-500/5' : 'hover:bg-s2/50'}`}>
+                        ${isNext ? 'bg-green-500/5' : 'hover:bg-s3/50 row-accent'}`}>
 
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Avatar com indicador de cooldown comercial */}
                         <div className="relative flex-shrink-0">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold
-                            ${isNext ? 'bg-green-500/20 text-green-300' : 'bg-white/6 text-t3'}`}>
+                            ${isNext ? 'bg-green-500/20 text-green-300' : 'bg-s3/60 text-t2'}`}>
                             {lead.name.charAt(0).toUpperCase()}
                           </div>
                           {/* Ponto de cooldown: vermelho <48h | amarelo <7d | verde >7d */}
@@ -866,7 +866,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               <span className="text-xs bg-s3/70 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
                 {contactedLeads.length}
               </span>
-              <div className="flex-1 h-px bg-white/6" />
+              <div className="flex-1 h-px bg-s2/60" />
               <ChevronDown size={13} className={`text-t4 transition-transform ${showContacted ? 'rotate-180' : ''}`} />
             </button>
 
@@ -885,7 +885,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                     const situCfg  = lead.situation ? SITUATION_CONFIG.find(s => s.value === lead.situation) : null
                     return (
                       <div key={lead.id}
-                        className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 items-center hover:bg-s2/50 transition-colors group">
+                        className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 items-center hover:bg-s3/50 transition-colors group row-accent">
 
                         <div className="flex items-center gap-2">
                           <StageBadge stage={lead.funnelStage} />
@@ -983,12 +983,12 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
             {showDisqualified && (
               <div className="rounded-xl border border-line overflow-hidden opacity-60">
-                <div className="divide-y divide-white/4">
+                <div className="divide-y divide-line">
                   {disqualLeads.map(lead => {
                     const situCfg = SITUATION_CONFIG.find(s => s.value === lead.situation)
                     return (
                       <div key={lead.id}
-                        className="flex items-center gap-4 px-5 py-2.5 hover:bg-s2/30 transition-colors group">
+                        className="flex items-center gap-4 px-5 py-2.5 hover:bg-s3/50 transition-colors group row-accent">
                         <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium ${situCfg?.bg ?? 'bg-s3/50'} ${situCfg?.color ?? 'text-t3'}`}>
                           {situCfg?.short ?? '—'}
                         </span>
