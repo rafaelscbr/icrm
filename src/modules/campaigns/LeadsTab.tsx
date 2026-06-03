@@ -481,7 +481,12 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const matchSearch = (l: CampaignLead) =>
     !q || l.name.toLowerCase().includes(q) || l.phone.includes(q)
 
-  const allFiltered = leads.filter(l => !excludedIds.has(l.id) && matchSearch(l))
+  // Filtra por campaign.id para excluir leads órfãos (campaign_id = null) e leads
+  // de outras campanhas que possam estar no store. Sem esse filtro, leads sem campanha
+  // aparecem sempre na fila e nunca saem (RLS bloqueia o updateRow silenciosamente).
+  const allFiltered = leads.filter(l =>
+    l.campaignId === campaign.id && !excludedIds.has(l.id) && matchSearch(l)
+  )
 
   // 1. Fila: nunca contatados, sem situação especial
   // Ordem embaralhada por semente (brokerId + campaignId) para que cada corretor
