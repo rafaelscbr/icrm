@@ -115,6 +115,23 @@ function useGlobalCooldown() {
   const expiresAtRef  = useRef(0)
   const wasActiveRef  = useRef(false)
 
+  // Fonte de verdade: cooldown_until persistido no banco via useDisparosStore.
+  // Sobrevive a navegação, F5, logout/login e troca de dispositivo.
+  const cooldownUntil = useDisparosStore(s => s.cooldownUntil)
+
+  // Reconstrói o countdown a partir do banco sempre que o valor mudar
+  // (na montagem do componente ou após um novo disparo ser registrado)
+  useEffect(() => {
+    if (!cooldownUntil) return
+    const expiresAt = new Date(cooldownUntil).getTime()
+    if (expiresAt > Date.now()) {
+      expiresAtRef.current = expiresAt
+      wasActiveRef.current = true
+      setIsReady(false)
+      setTick(t => t + 1)
+    }
+  }, [cooldownUntil])
+
   // Intervalo de 1s — lê refs atualizados sem closure stale
   useEffect(() => {
     const id = setInterval(() => {
@@ -136,12 +153,11 @@ function useGlobalCooldown() {
 
   const remaining = () => Math.max(0, Math.ceil((expiresAtRef.current - Date.now()) / 1000))
 
-  const start = () => {
-    // Pede permissão aqui — ainda dentro do gesto do clique do usuário
+  // Recebe a duração já calculada (a mesma gravada no banco) — evita re-sortear
+  const startWithMs = (ms: number) => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()  // fire-and-forget intencional
     }
-    const ms = randomCooldownMs()
     expiresAtRef.current = Date.now() + ms
     wasActiveRef.current = true
     setIsReady(false)
@@ -151,7 +167,7 @@ function useGlobalCooldown() {
 
   const clearReady = () => setIsReady(false)
 
-  return { remaining, start, isReady, clearReady }
+  return { remaining, startWithMs, isReady, clearReady }
 }
 
 function isBusinessHours(): boolean {
@@ -335,7 +351,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   const sentinelQRef     = useRef<HTMLDivElement>(null)
   const sentinelCRef     = useRef<HTMLDivElement>(null)
 
-  const { remaining, start, isReady, clearReady }        = useGlobalCooldown()
+  const { remaining, startWithMs, isReady, clearReady }  = useGlobalCooldown()
   const { count: dailyCount, increment: dailyIncrement } = useDailyCounter()
   const { increment: persistDisparo, load: loadDisparos, subscribe: subscribeDisparos } = useDisparosStore()
 
@@ -557,17 +573,18 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   }
 
   async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
-    // Persiste TUDO no banco antes de abrir o WhatsApp.
-    // No mobile, window.open leva o browser para background e requests em voo
-    // são suspensos/cancelados pelo OS. No desktop, um erro de rede faria rollback
-    // e o lead voltaria para "Aguardando". Aguardar aqui garante que disparo_logs
-    // e campaign_leads (funnel_stage='sent') chegam ao banco em qualquer cenário.
+    // Calcula o cooldown ANTES do disparo para persistir no banco junto com fired_at.
+    // Isso permite reconstruir o countdown a partir do banco após navegação, F5 ou
+    // troca de dispositivo — sem depender de estado em memória.
+    const cooldownMs    = randomCooldownMs()
+    const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString()
+
     navigator.clipboard?.writeText(msg).catch(() => {})
-    await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
+    await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
     await markContacted(lead.id, msg, templateIndex, sentBy)
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     clearReady()
-    const secs  = start()
+    const secs  = startWithMs(cooldownMs)
     const total = dailyIncrement()
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'

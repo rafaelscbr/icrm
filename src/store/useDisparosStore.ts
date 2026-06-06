@@ -54,21 +54,25 @@ export interface BrokerDisparoSummary {
 }
 
 export interface DisparosState {
-  countDay:    number
-  countWeek:   number
-  countMonth:  number
-  history:     { date: string; label: string; count: number }[]
-  loading:     boolean
-  load:        () => Promise<void>
+  countDay:      number
+  countWeek:     number
+  countMonth:    number
+  history:       { date: string; label: string; count: number }[]
+  /** Timestamp UTC até quando o cooldown anti-ban do broker está ativo.
+   *  Persistido no banco — sobrevive a navegação, F5 e troca de dispositivo. */
+  cooldownUntil: string | null
+  loading:       boolean
+  load:          () => Promise<void>
   /** Assina disparo_logs via Realtime — retorna função de cancelamento */
   subscribe:   () => () => void
   /** Grava disparo com contexto completo */
   increment: (ctx?: {
-    brokerId?:    string
-    leadListId?:  string
-    campaignId?:  string
-    leadId?:      string
-    leadName?:    string
+    brokerId?:      string
+    leadListId?:    string
+    campaignId?:    string
+    leadId?:        string
+    leadName?:      string
+    cooldownUntil?: string
   }) => Promise<void>
   /**
    * Devolve 1 crédito ao limite diário quando um lead é marcado como
@@ -84,11 +88,12 @@ export interface DisparosState {
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useDisparosStore = create<DisparosState>()((set, get) => ({
-  countDay:   0,
-  countWeek:  0,
-  countMonth: 0,
-  history:    [],
-  loading:    false,
+  countDay:      0,
+  countWeek:     0,
+  countMonth:    0,
+  history:       [],
+  cooldownUntil: null,
+  loading:       false,
 
   load: async () => {
     // Filtra sempre pelo broker atual — o contador é individual, nunca agregado.
@@ -102,11 +107,13 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
       const startOfWeek  = daysAgoIso(7)
       const startOfMonth = daysAgoIso(30)
 
-      const [dayRes, weekRes, monthRes, histRes] = await Promise.all([
+      const [dayRes, weekRes, monthRes, histRes, cooldownRes] = await Promise.all([
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfDay),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfWeek),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfMonth),
         supabase.from('disparo_logs').select('fired_at').eq('broker_id', brokerId).gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
+        // Busca o cooldown_until mais recente para reconstruir o countdown após navegação/F5
+        supabase.from('disparo_logs').select('cooldown_until').eq('broker_id', brokerId).not('cooldown_until', 'is', null).order('fired_at', { ascending: false }).limit(1),
       ])
 
       const byDay: Record<string, number> = {}
@@ -122,7 +129,10 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
         return { date, label: `${dt.getDate()}/${dt.getMonth() + 1}`, count: byDay[date] ?? 0 }
       })
 
-      set({ countDay: dayRes.count ?? 0, countWeek: weekRes.count ?? 0, countMonth: monthRes.count ?? 0, history, loading: false })
+      const cooldownRow = (cooldownRes.data ?? [])[0] as { cooldown_until: string } | undefined
+      const cooldownUntil = cooldownRow?.cooldown_until ?? null
+
+      set({ countDay: dayRes.count ?? 0, countWeek: weekRes.count ?? 0, countMonth: monthRes.count ?? 0, history, cooldownUntil, loading: false })
     } catch (err) {
       console.error('[DisparosStore] Erro ao carregar:', err)
       set({ loading: false })
@@ -159,16 +169,24 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
     // Sem atualização otimista — o Realtime dispara load() ao confirmar o INSERT no banco,
     // garantindo que o contador sempre reflita o valor real persistido.
     const { error } = await supabase.from('disparo_logs').insert({
-      fired_at:     new Date().toISOString(),
-      broker_id:    ctx.brokerId    ?? null,
-      lead_list_id: ctx.leadListId  ?? null,
-      campaign_id:  ctx.campaignId  ?? null,
-      lead_id:      ctx.leadId      ?? null,
-      lead_name:    ctx.leadName    ?? null,
+      fired_at:      new Date().toISOString(),
+      broker_id:     ctx.brokerId      ?? null,
+      lead_list_id:  ctx.leadListId    ?? null,
+      campaign_id:   ctx.campaignId    ?? null,
+      lead_id:       ctx.leadId        ?? null,
+      lead_name:     ctx.leadName      ?? null,
+      cooldown_until: ctx.cooldownUntil ?? null,
     })
 
     if (error) {
       console.error('[DisparosStore] Erro ao gravar disparo:', error)
+      return
+    }
+
+    // Atualiza cooldownUntil no store imediatamente para que useGlobalCooldown
+    // reconstrua o countdown sem precisar aguardar o próximo load()
+    if (ctx.cooldownUntil) {
+      set({ cooldownUntil: ctx.cooldownUntil })
     }
   },
 
