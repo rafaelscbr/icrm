@@ -578,6 +578,17 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   // será bloqueada. Ela é redirecionada ao WhatsApp após confirmação do banco,
   // ou fechada silenciosamente em caso de falha.
   async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number, whatsappTab?: Window | null) {
+    // Verificação ANTES de qualquer operação no banco.
+    // Se a aba WhatsApp não pôde ser aberta (popup bloqueado), o banco não deve ser
+    // atualizado — disparo não aconteceu de fato.
+    if (!whatsappTab) {
+      toast.error(
+        'Não foi possível abrir o WhatsApp. Habilite popups para este site e tente novamente.',
+        { duration: 8000 }
+      )
+      return
+    }
+
     const cooldownMs    = randomCooldownMs()
     const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString()
 
@@ -587,7 +598,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
       await markContacted(lead.id, msg, templateIndex, sentBy)
     } catch {
-      whatsappTab?.close()
+      whatsappTab.close()
       toast.error(
         'Disparo não realizado — não foi possível registrar no sistema. Verifique sua conexão e tente novamente.',
         { duration: 7000 }
@@ -595,12 +606,15 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       return
     }
 
-    // Banco confirmou — redireciona a aba já aberta para o WhatsApp (sem popup blocker)
-    if (whatsappTab && !whatsappTab.closed) {
+    // Banco confirmou — redireciona a aba já aberta para o WhatsApp
+    if (!whatsappTab.closed) {
       whatsappTab.location.href = whatsappUrl(lead.phone, msg)
     } else {
-      // Fallback: aba foi fechada (ex: picker de template) — abre diretamente
-      window.open(whatsappUrl(lead.phone, msg), '_blank')
+      // Usuário fechou a aba manualmente durante o processamento. Banco foi atualizado
+      // (intenção era disparar) e mensagem está na área de transferência como backup.
+      toast('Disparo registrado. A aba do WhatsApp foi fechada — cole a mensagem e envie manualmente.', {
+        icon: '⚠️', duration: 10_000,
+      })
     }
 
     clearReady()

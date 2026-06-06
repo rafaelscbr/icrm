@@ -180,7 +180,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
 
     if (error) {
       console.error('[DisparosStore] Erro ao gravar disparo:', error)
-      return
+      throw error
     }
 
     // Atualiza cooldownUntil no store imediatamente para que useGlobalCooldown

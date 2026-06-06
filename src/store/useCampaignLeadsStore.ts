@@ -189,7 +189,7 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   // antes de abrir o WhatsApp — evita que o OS cancele o request em background.
   markContacted: async (id, message, messageIndex, sentBy) => {
     const lead = get().leads.find(l => l.id === id)
-    if (!lead) return
+    if (!lead) throw new Error(`[markContacted] Lead ${id} não encontrado no store`)
     const now = new Date().toISOString()
     const patch: Partial<CampaignLead> = {}
     if (!lead.firstContactAt) patch.firstContactAt = now
