@@ -58,17 +58,23 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
     setIsSaving(true)
     try {
       // Banco deve confirmar antes de qualquer atualização na interface.
-      // Se falhar: update() exibe erro, interface permanece inalterada, modal fica aberto.
+      // Timeout de 12s: em redes lentas (mobile) o fetch pode ficar pendurado
+      // indefinidamente — o timeout garante que o modal nunca trava em "Salvando…".
       const actorBy = profile ? { id: profile.id, name: profile.name } : undefined
-      if (stageChanged) {
-        await setStage(lead.id, effectiveStage, extraFields, actorBy)
-      } else {
-        await update(lead.id, extraFields)
-      }
+      const saveOp = stageChanged
+        ? setStage(lead.id, effectiveStage, extraFields, actorBy)
+        : update(lead.id, extraFields)
+
+      await Promise.race([
+        saveOp,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 12_000)
+        ),
+      ])
     } catch {
-      // Erro já tratado em update() — toast exibido, interface não mudou.
-      // Modal permanece aberto para nova tentativa.
+      // Erro (DB falhou ou timeout) — modal permanece aberto para nova tentativa.
       setIsSaving(false)
+      toast.error('Não foi possível salvar o parecer. Verifique sua conexão e tente novamente.')
       return
     }
 
