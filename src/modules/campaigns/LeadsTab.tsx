@@ -580,14 +580,11 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString()
 
     navigator.clipboard?.writeText(msg).catch(() => {})
-    // Persiste no banco antes de abrir — em caso de falha, abre o WhatsApp mesmo assim.
-    // O window.open nunca pode ser bloqueado por erro de persistência.
-    try {
-      await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
-      await markContacted(lead.id, msg, templateIndex, sentBy)
-    } catch {
-      // Falha silenciosa de DB não bloqueia o disparo
-    }
+    // Persiste no banco antes de abrir o WhatsApp.
+    // Se qualquer etapa falhar, o erro é propagado e o WhatsApp não abre —
+    // banco é a fonte de verdade, interface só avança após confirmação.
+    await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
+    await markContacted(lead.id, msg, templateIndex, sentBy)
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     clearReady()
     const secs  = startWithMs(cooldownMs)
