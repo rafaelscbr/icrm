@@ -333,8 +333,12 @@ function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export function MetricsTab({ leads, campaign }: MetricsTabProps) {
-  // Leads com contato inexistente são excluídos do funil
-  const funnelLeads = leads.filter(l => l.situation !== 'invalid')
+  // Leads com contato inválido são excluídos do funil ativo
+  const invalidContacts = leads.filter(l => l.situation === 'invalid_contact').length
+  const funnelLeads     = leads.filter(l => l.situation !== 'invalid_contact')
+  const qualityPct      = leads.length > 0
+    ? Math.round(((leads.length - invalidContacts) / leads.length) * 100)
+    : 100
 
   const total      = funnelLeads.length
   const contacted  = funnelLeads.filter(l => l.firstContactAt).length
@@ -366,10 +370,10 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
       {/* KPIs topo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total na campanha',   value: total.toLocaleString('pt-BR'),                                                                    color: 'text-t1'  },
-          { label: 'Leads acionados',    value: `${contacted.toLocaleString('pt-BR')} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400'   },
-          { label: 'Taxa de engajamento',value: `${responseRate}%`,                                                                               color: 'text-cyan-400'   },
-          { label: 'Migrados p/ funil',  value: `${migrated} (${migratedRate}%)`,                                                                 color: 'text-violet-400' },
+          { label: 'Total na campanha',   value: leads.length.toLocaleString('pt-BR'),                                                              color: 'text-t1'         },
+          { label: 'Leads acionados',     value: `${contacted.toLocaleString('pt-BR')} (${contacted > 0 ? Math.round(contacted/total*100) : 0}%)`, color: 'text-blue-400'   },
+          { label: 'Taxa de engajamento', value: `${responseRate}%`,                                                                               color: 'text-cyan-400'   },
+          { label: 'Migrados p/ funil',   value: `${migrated} (${migratedRate}%)`,                                                                 color: 'text-violet-400' },
         ].map(kpi => (
           <Card key={kpi.label} className="!py-4">
             <p className="text-xs text-t4 mb-1">{kpi.label}</p>
@@ -377,6 +381,30 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
           </Card>
         ))}
       </div>
+
+      {/* Qualidade da lista */}
+      {invalidContacts > 0 && (
+        <Card className="flex items-center gap-4 !py-3">
+          <div className="flex-1">
+            <p className="text-xs text-t4 mb-0.5">Qualidade da lista</p>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-2 bg-s3/50 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${qualityPct >= 95 ? 'bg-green-500' : qualityPct >= 85 ? 'bg-amber-500' : 'bg-red-500'}`}
+                  style={{ width: `${qualityPct}%` }}
+                />
+              </div>
+              <span className={`text-sm font-bold tabular-nums ${qualityPct >= 95 ? 'text-green-400' : qualityPct >= 85 ? 'text-amber-400' : 'text-red-400'}`}>
+                {qualityPct}%
+              </span>
+            </div>
+          </div>
+          <div className="text-right flex-shrink-0">
+            <p className="text-[11px] text-slate-400 font-semibold">{invalidContacts} contato{invalidContacts !== 1 ? 's' : ''} inválido{invalidContacts !== 1 ? 's' : ''}</p>
+            <p className="text-[10px] text-t5">de {leads.length.toLocaleString('pt-BR')} leads</p>
+          </div>
+        </Card>
+      )}
 
       {/* Layout 2 colunas: funil (esq) + métricas laterais (dir) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

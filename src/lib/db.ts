@@ -92,6 +92,7 @@ interface ContactRow {
   permuta_car_value: number | null
   is_base_lead: boolean
   base_lead_profile: BaseLeadProfile | null
+  invalid_contact: boolean
   broker_id: string | null
   created_at: string; updated_at: string
 }
@@ -210,6 +211,7 @@ function toContact(r: ContactRow): Contact {
     permutaItems,
     isBaseLead:      r.is_base_lead ?? undefined,
     baseLeadProfile: r.base_lead_profile ?? undefined,
+    invalidContact:  r.invalid_contact ?? false,
     brokerId: r.broker_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
@@ -230,6 +232,7 @@ function fromContact(c: Contact): ContactRow {
     permuta_car_value: null,
     is_base_lead:      c.isBaseLead ?? false,
     base_lead_profile: c.baseLeadProfile ?? null,
+    invalid_contact:   c.invalidContact ?? false,
     broker_id: c.brokerId ?? getCurrentUserId(),
     created_at: c.createdAt, updated_at: c.updatedAt,
   }

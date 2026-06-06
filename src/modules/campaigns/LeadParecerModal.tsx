@@ -10,6 +10,7 @@ import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone } from '../../lib/formatters'
 import { TransferToFunnelModal } from './TransferToFunnelModal'
 import { VisitaTaskModal } from './VisitaTaskModal'
+import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
 interface LeadParecerModalProps {
@@ -68,19 +69,38 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
       return
     }
 
-    // Chega aqui somente se o banco confirmou a persistência
+    // A partir daqui o banco confirmou — operações secundárias com timeout de segurança
+    // para nunca travar o modal mesmo em caso de falha de rede.
     const prevWasInvalid = prevSituation ? INVALID_PHONE_SITUATIONS.has(prevSituation) : false
-    if (isInvalidPhone && !prevWasInvalid) {
-      await refund(lead.id)
-      toast.success('Parecer atualizado · 1 crédito devolvido ao limite do dia', { icon: '↩️' })
-    } else if (stage === 'scheduled' && prevStage !== 'scheduled') {
-      toast.success('Agendamento registrado! Transfira este lead para o funil principal.')
-    } else {
+    try {
+      if (isInvalidPhone && !prevWasInvalid) {
+        // Devolve crédito + marca contato como inválido no cadastro (timeout 8s)
+        await Promise.race([
+          (async () => {
+            await refund(lead.id)
+            // Propaga o marcador invalid_contact para o cadastro de contatos (por telefone)
+            await supabase
+              .from('contacts')
+              .update({ invalid_contact: true })
+              .eq('phone', lead.phone)
+          })(),
+          new Promise<void>((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 8000)
+          ),
+        ])
+        toast.success('Parecer atualizado · 1 crédito devolvido ao limite do dia', { icon: '↩️' })
+      } else if (stage === 'scheduled' && prevStage !== 'scheduled') {
+        toast.success('Agendamento registrado! Transfira este lead para o funil principal.')
+      } else {
+        toast.success('Parecer atualizado')
+      }
+    } catch {
+      // Operações secundárias falharam (rede lenta) — parecer já foi salvo com sucesso
       toast.success('Parecer atualizado')
+    } finally {
+      setIsSaving(false)
+      onClose()
     }
-
-    setIsSaving(false)
-    onClose()
   }
 
 const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')

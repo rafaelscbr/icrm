@@ -38,6 +38,8 @@ export interface Contact {
   // Base de leads frios
   isBaseLead?:       boolean
   baseLeadProfile?:  BaseLeadProfile
+  /** Marcado como contato inválido em alguma campanha — exibir alerta no cadastro */
+  invalidContact?:   boolean
   brokerId?: string
   createdAt: string
   updatedAt: string
@@ -138,14 +140,11 @@ export type FunnelStage    = 'new' | 'sent' | 'attended' | 'scheduled' | 'presen
 export type LeadSituation  =
   | 'no_interest'
   | 'stop_messages'
-  | 'invalid'        // Contato Inexistente (genérico)
-  | 'invalid_number' // Número inexistente
-  | 'no_whatsapp'    // Sem WhatsApp
-  | 'invalid_phone'  // Telefone inválido
+  | 'invalid_contact' // Contato inválido (unifica: número inexistente, sem WhatsApp, telefone inválido)
 
 /** Situações que indicam telefone inutilizável e devolvem 1 crédito de disparo */
 export const INVALID_PHONE_SITUATIONS = new Set<LeadSituation>([
-  'invalid', 'invalid_number', 'no_whatsapp', 'invalid_phone',
+  'invalid_contact',
 ])
 export type CampaignStatus = 'active' | 'paused' | 'finished'
 
