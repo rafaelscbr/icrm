@@ -34,7 +34,8 @@ interface CampaignLeadsStore {
   setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>, actorBy?: { id: string; name: string }) => Promise<void>
   /** Atualiza situação com persistência confirmada. Lança erro se falhar. */
   setSituation: (id: string, situation: LeadSituation | undefined) => Promise<void>
-  markContacted: (id: string, message?: string, messageIndex?: number, sentBy?: { id: string; name: string }) => void
+  /** Persiste disparo no banco (funnel_stage + contadores) antes de retornar. */
+  markContacted: (id: string, message?: string, messageIndex?: number, sentBy?: { id: string; name: string }) => Promise<void>
   markAsTransferred: (id: string, leadId: string) => void
   backfillMessageIndex: (campaign: Campaign) => Promise<number>
   transferLeadsToBroker: (campaignId: string, brokerId: string | null) => Promise<void>
@@ -186,7 +187,9 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   },
 
   // ── Registra disparo de mensagem ─────────────────────────────────────────
-  markContacted: (id, message, messageIndex, sentBy) => {
+  // Retorna Promise para que o chamador possa aguardar a confirmação do banco
+  // antes de abrir o WhatsApp — evita que o OS cancele o request em background.
+  markContacted: async (id, message, messageIndex, sentBy) => {
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
     const now = new Date().toISOString()
@@ -202,7 +205,7 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     }
     // Incrementa dispatch_count
     patch.dispatchCount = (lead.dispatchCount ?? 0) + 1
-    get().update(id, patch)
+    await get().update(id, patch)
 
     // Registra no log de atividade da campanha
     if (message && sentBy) {

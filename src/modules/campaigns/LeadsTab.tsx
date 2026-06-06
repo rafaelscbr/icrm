@@ -557,17 +557,20 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   }
 
   async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
-    // Persiste no banco ANTES de abrir o WhatsApp — no mobile, window.open leva o
-    // browser para background e requests em voo são suspensos/cancelados pelo OS.
+    // Persiste TUDO no banco antes de abrir o WhatsApp.
+    // No mobile, window.open leva o browser para background e requests em voo
+    // são suspensos/cancelados pelo OS. No desktop, um erro de rede faria rollback
+    // e o lead voltaria para "Aguardando". Aguardar aqui garante que disparo_logs
+    // e campaign_leads (funnel_stage='sent') chegam ao banco em qualquer cenário.
     navigator.clipboard?.writeText(msg).catch(() => {})
     await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
+    await markContacted(lead.id, msg, templateIndex, sentBy)
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     clearReady()
     const secs  = start()
     const total = dailyIncrement()
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'
-    markContacted(lead.id, msg, templateIndex, sentBy)
     if (total >= DAILY_WARN && total < DAILY_LIMIT) {
       toast(`⚠️ ${total} disparos hoje — limite ${DAILY_WARN} recomendado. Cuidado com o ban!`, { duration: 5000, icon: '⚠️' })
     } else if (wasNew) {
