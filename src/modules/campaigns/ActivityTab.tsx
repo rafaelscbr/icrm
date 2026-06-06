@@ -6,6 +6,7 @@ import {
 import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { CampaignActivity } from '../../types'
+import { localDateStr } from '../../lib/formatters'
 
 // ─── Configuração visual por tipo de ação ────────────────────────────────────
 
@@ -105,8 +106,9 @@ function groupByDay(activities: CampaignActivity[]): { date: string; label: stri
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([date, items]) => {
       const d = new Date(date + 'T12:00:00')
-      const today = new Date().toISOString().slice(0, 10)
-      const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+      const today = localDateStr()
+      const prevDay = new Date(); prevDay.setDate(prevDay.getDate() - 1)
+      const yesterday = localDateStr(prevDay)
       const label = date === today
         ? 'Hoje'
         : date === yesterday

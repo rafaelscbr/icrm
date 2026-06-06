@@ -23,6 +23,14 @@ function daysAgoIso(n: number): string {
   return d.toISOString()
 }
 
+// Converte timestamp UTC do banco para YYYY-MM-DD no fuso local do dispositivo.
+// Necessário porque fired_at é gravado em UTC e slice(0,10) retornaria a data UTC,
+// que vira para o dia seguinte às 21h no Brasil (UTC-3).
+function firedAtLocalDate(iso: string): string {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 export interface DisparoLog {
@@ -90,7 +98,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
 
     set({ loading: true })
     try {
-      const startOfDay   = `${todayIso()}T00:00:00`
+      const startOfDay   = daysAgoIso(0)   // meia-noite local convertida para UTC
       const startOfWeek  = daysAgoIso(7)
       const startOfMonth = daysAgoIso(30)
 
@@ -103,7 +111,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
 
       const byDay: Record<string, number> = {}
       for (const row of (histRes.data ?? [])) {
-        const d = (row.fired_at as string).slice(0, 10)
+        const d = firedAtLocalDate(row.fired_at as string)
         byDay[d] = (byDay[d] ?? 0) + 1
       }
 
@@ -177,9 +185,8 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
 
     const row = rows[0] as { id: string; fired_at: string }
 
-    // Só devolve crédito se o disparo foi hoje
-    const today = todayIso()
-    const dispatchedToday = (row.fired_at as string).startsWith(today)
+    // Só devolve crédito se o disparo foi hoje (compara data local, não UTC)
+    const dispatchedToday = firedAtLocalDate(row.fired_at as string) === todayIso()
 
     const { error } = await supabase
       .from('disparo_logs')
@@ -205,7 +212,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
   },
 
   loadBrokerSummaries: async () => {
-    const startOfDay   = `${todayIso()}T00:00:00`
+    const startOfDay   = daysAgoIso(0)   // meia-noite local convertida para UTC
     const startOfWeek  = daysAgoIso(7)
     const startOfMonth = daysAgoIso(30)
 
@@ -225,7 +232,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
       byBroker[bid].thisMonth++
       if (row.fired_at >= startOfWeek) byBroker[bid].thisWeek++
       if (row.fired_at >= startOfDay)  byBroker[bid].today++
-      const day = (row.fired_at as string).slice(0, 10)
+      const day = firedAtLocalDate(row.fired_at as string)
       byBroker[bid].byDay[day] = (byBroker[bid].byDay[day] ?? 0) + 1
     }
 

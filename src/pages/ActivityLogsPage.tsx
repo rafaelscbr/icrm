@@ -7,6 +7,7 @@ import { Avatar } from '../components/ui/Avatar'
 import { useAuthStore } from '../store/useAuthStore'
 import { supabase } from '../lib/supabase'
 import { pageLabel } from '../store/usePresenceStore'
+import { localDateStr } from '../lib/formatters'
 
 interface ActivityLog {
   id:         string
@@ -43,9 +44,9 @@ export function ActivityLogsPage() {
   const [actionFilter, setActionFilter] = useState<string>('all')
   const [search,     setSearch]     = useState('')
   const [dateFrom,   setDateFrom]   = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0]
+    const d = new Date(); d.setDate(d.getDate() - 7); return localDateStr(d)
   })
-  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0])
+  const [dateTo, setDateTo] = useState(() => localDateStr())
 
   const brokers = useMemo(() => allProfiles.filter(p => p.role === 'broker'), [allProfiles])
 

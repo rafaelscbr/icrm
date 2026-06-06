@@ -18,7 +18,7 @@ import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
-import { formatPhone, whatsappUrl, formatCurrency } from '../../lib/formatters'
+import { formatPhone, whatsappUrl, formatCurrency, localDateStr } from '../../lib/formatters'
 import toast from 'react-hot-toast'
 
 interface KanbanTabProps {
@@ -56,8 +56,8 @@ function isCold(lead: CampaignLead): boolean {
 
 function applyDateFilter(leads: CampaignLead[], filter: DateFilter): CampaignLead[] {
   if (filter === 'all') return leads
-  const today = new Date().toISOString().split('T')[0]
-  if (filter === 'today') return leads.filter(l => l.firstContactAt?.startsWith(today))
+  const today = localDateStr()
+  if (filter === 'today') return leads.filter(l => l.firstContactAt != null && localDateStr(new Date(l.firstContactAt)) === today)
   if (filter === 'week') {
     const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString()
     return leads.filter(l => l.firstContactAt && l.firstContactAt >= weekAgo)

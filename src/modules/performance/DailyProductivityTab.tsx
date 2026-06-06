@@ -106,7 +106,7 @@ interface PastLogModalProps {
 
 function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
   const { upsertLog } = useDailyLogsStore()
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateStr()
 
   const [date,         setDate]         = useState('')
   const [newLeads,     setNewLeads]     = useState(0)
