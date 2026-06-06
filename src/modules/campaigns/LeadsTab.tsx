@@ -581,10 +581,17 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
     navigator.clipboard?.writeText(msg).catch(() => {})
     // Persiste no banco antes de abrir o WhatsApp.
-    // Se qualquer etapa falhar, o erro é propagado e o WhatsApp não abre —
-    // banco é a fonte de verdade, interface só avança após confirmação.
-    await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
-    await markContacted(lead.id, msg, templateIndex, sentBy)
+    // Se qualquer etapa falhar, exibe aviso claro e interrompe — WhatsApp não abre.
+    try {
+      await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
+      await markContacted(lead.id, msg, templateIndex, sentBy)
+    } catch {
+      toast.error(
+        'Disparo não realizado — não foi possível registrar no sistema. Verifique sua conexão e tente novamente.',
+        { duration: 7000 }
+      )
+      return
+    }
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     clearReady()
     const secs  = startWithMs(cooldownMs)
