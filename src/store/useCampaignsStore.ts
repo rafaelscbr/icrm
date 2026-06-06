@@ -8,8 +8,8 @@ interface CampaignsStore {
   campaigns: Campaign[]
   loading: boolean
   load: () => Promise<void>
-  add: (data: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>) => Campaign
-  update: (id: string, data: Partial<Campaign>) => void
+  add: (data: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Campaign>
+  update: (id: string, data: Partial<Campaign>) => Promise<void>
   remove: (id: string) => void
   setStatus: (id: string, status: CampaignStatus) => void
 }
@@ -30,25 +30,25 @@ export const useCampaignsStore = create<CampaignsStore>((set, get) => ({
     }
   },
 
-  add: (data) => {
+  add: async (data) => {
     const now = new Date().toISOString()
     const campaign: Campaign = { ...data, id: generateId(), createdAt: now, updatedAt: now }
+    await db.campaigns.upsert(campaign)
     set(s => ({ campaigns: [campaign, ...s.campaigns] }))
-    db.campaigns.upsert(campaign).catch(err => console.error('[campaigns] add:', err))
     return campaign
   },
 
-  update: (id, data) => {
-    const campaigns = get().campaigns.map(c =>
-      c.id === id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c
-    )
-    set({ campaigns })
-    const updated = campaigns.find(c => c.id === id)
-    if (updated) {
-      db.campaigns.updateRow(updated).catch(err => {
-        console.error('[campaigns] update:', err)
-        toast.error('Erro ao salvar. Tente novamente.')
-      })
+  update: async (id, data) => {
+    const snapshot = get().campaigns.find(c => c.id === id)
+    if (!snapshot) return
+    const updated = { ...snapshot, ...data, updatedAt: new Date().toISOString() }
+    try {
+      await db.campaigns.updateRow(updated)
+      set(s => ({ campaigns: s.campaigns.map(c => c.id === id ? updated : c) }))
+    } catch (err) {
+      console.error('[campaigns] update:', err)
+      toast.error('Erro ao salvar campanha. Verifique sua conexão e tente novamente.')
+      throw err
     }
   },
 

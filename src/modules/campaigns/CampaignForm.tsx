@@ -41,7 +41,7 @@ async function importContactsFromLists(
     const { data } = await supabase.from('contacts').select('name, phone').in('id', chunk)
     if (data) contacts.push(...(data as { name: string; phone: string }[]))
   }
-  return addBulk(contacts.map(c => ({ campaignId, name: c.name, phone: c.phone })))
+  return await addBulk(contacts.map(c => ({ campaignId, name: c.name, phone: c.phone })))
 }
 
 // ─── Step indicator ────────────────────────────────────────────────────────────
@@ -153,7 +153,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
       const now = new Date().toISOString()
 
       if (isEditing && campaign) {
-        update(campaign.id, {
+        await update(campaign.id, {
           name: name.trim(), message: message.trim(),
           messages: cleanMessages.length ? cleanMessages : undefined,
           averageTicket: ticket > 0 ? ticket : undefined,
@@ -164,7 +164,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
         return
       }
 
-      const newCampaign = add({
+      const newCampaign = await add({
         name: name.trim(), message: message.trim(),
         messages: cleanMessages.length ? cleanMessages : undefined,
         status: 'active',

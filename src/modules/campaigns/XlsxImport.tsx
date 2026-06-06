@@ -47,12 +47,19 @@ export function XlsxImport({ campaignId, onDone }: XlsxImportProps) {
     if (file) handleFile(file)
   }
 
-  function handleImport() {
+  async function handleImport() {
     if (!preview.length) return
-    const result = addBulk(preview.map(l => ({ ...l, campaignId })))
-    setImported(true)
-    toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} importado${result.added !== 1 ? 's' : ''}!${result.skipped ? ` (${result.skipped} duplicado${result.skipped !== 1 ? 's' : ''} ignorado${result.skipped !== 1 ? 's' : ''})` : ''}`)
-    onDone()
+    setLoading(true)
+    try {
+      const result = await addBulk(preview.map(l => ({ ...l, campaignId })))
+      setImported(true)
+      toast.success(`${result.added} lead${result.added !== 1 ? 's' : ''} importado${result.added !== 1 ? 's' : ''}!${result.skipped ? ` (${result.skipped} duplicado${result.skipped !== 1 ? 's' : ''} ignorado${result.skipped !== 1 ? 's' : ''})` : ''}`)
+      onDone()
+    } catch {
+      toast.error('Erro ao importar leads. Verifique sua conexão e tente novamente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function reset() {

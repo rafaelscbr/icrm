@@ -122,7 +122,7 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
       // Embaralha SEMPRE — evita que mesmos leads apareçam no topo em todas as campanhas
       // (listas reutilizadas ou não, a ordem nunca deve ser a mesma da lista original)
       const ordered = shuffleArray(contacts)
-      const result  = addBulk(ordered.map(c => ({
+      const result  = await addBulk(ordered.map(c => ({
         campaignId,
         name:     c.name,
         phone:    c.phone,

@@ -15,15 +15,15 @@ interface LeadsStore {
   load: () => Promise<void>
   subscribe: () => () => void
   add: (data: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'> & { createdAt?: string }) => Lead
-  update: (id: string, data: Partial<Lead>) => void
+  update: (id: string, data: Partial<Lead>) => Promise<void>
   remove: (id: string) => void
   getById: (id: string) => Lead | undefined
-  setStage: (id: string, stage: LeadFunnelStage) => void
-  advanceFollowup: (id: string) => void
-  discard: (id: string, reason: LeadDiscardReason) => void
-  restore: (id: string) => void
+  setStage: (id: string, stage: LeadFunnelStage) => Promise<void>
+  advanceFollowup: (id: string) => Promise<void>
+  discard: (id: string, reason: LeadDiscardReason) => Promise<void>
+  restore: (id: string) => Promise<void>
   convertToContact: (id: string, contactId: string) => Promise<void>
-  toggleFlag: (id: string) => void
+  toggleFlag: (id: string) => Promise<void>
   reorder: (id: string, kanbanOrder: number) => void
   search: (query: string) => Lead[]
   filterByStage: (stage: LeadFunnelStage | null) => Lead[]
@@ -167,17 +167,19 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     return lead
   },
 
-  update: (id, data) => {
+  update: async (id, data) => {
+    const snapshot = get().leads.find(l => l.id === id)
+    if (!snapshot) return
     const now = new Date().toISOString()
-    const leads = get().leads.map(l =>
-      l.id === id ? { ...l, ...data, updatedAt: now, kanbanOrder: Date.now() } : l
-    )
-    set({ leads })
-    const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => {
+    const updated = { ...snapshot, ...data, updatedAt: now, kanbanOrder: Date.now() }
+    try {
+      await db.leads.upsert(updated)
+      set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
+    } catch (err) {
       console.error('[leads] update:', err)
-      toast.error('Erro ao salvar alteração do lead.')
-    })
+      toast.error('Erro ao salvar alteração do lead. Verifique sua conexão e tente novamente.')
+      throw err
+    }
   },
 
   remove: (id) => {
@@ -190,7 +192,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
   getById: (id) => get().leads.find(l => l.id === id),
 
-  setStage: (id, stage) => {
+  setStage: async (id, stage) => {
     const now = new Date().toISOString()
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
@@ -200,7 +202,6 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     // Auto-create visita task when moving into 'visita' stage
     if (stage === 'visita' && !lead.visitaTaskId) {
       const { add: addTask, tasks } = useTasksStore.getState()
-      // Avoid duplication: check if a visita task already exists for this contact
       const existing = lead.contactId
         ? tasks.find(t => t.contactId === lead.contactId && t.category === 'visita' && t.status === 'pending')
         : undefined
@@ -222,16 +223,26 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       }
     }
 
-    const leads = get().leads.map(l =>
-      l.id === id
-        ? { ...l, funnelStage: stage, followupStep: stage === 'followup' ? (l.followupStep || 1) : l.followupStep, visitaTaskId, updatedAt: now, kanbanOrder: Date.now(), stageChangedAt: now }
-        : l
-    )
-    set({ leads })
-    const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] setStage:', err); toast.error('Erro ao atualizar etapa do lead.') })
+    const updated = {
+      ...lead,
+      funnelStage: stage,
+      followupStep: stage === 'followup' ? (lead.followupStep || 1) : lead.followupStep,
+      visitaTaskId,
+      updatedAt: now,
+      kanbanOrder: Date.now(),
+      stageChangedAt: now,
+    }
 
-    // Registra mudança de etapa no histórico de interações
+    try {
+      await db.leads.upsert(updated)
+      set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
+    } catch (err) {
+      console.error('[leads] setStage:', err)
+      toast.error('Erro ao atualizar etapa do lead. Verifique sua conexão e tente novamente.')
+      throw err
+    }
+
+    // Registra mudança de etapa no histórico de interações (fire-and-forget — secundário)
     useLeadInteractionsStore.getState().add({
       leadId: id,
       type: 'stage_change',
@@ -240,7 +251,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     })
   },
 
-  advanceFollowup: (id) => {
+  advanceFollowup: async (id) => {
     const now = new Date().toISOString()
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
@@ -255,46 +266,54 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       if (lead.followupStep < 5) {
         nextStep = lead.followupStep + 1
       }
-      // if already at 5, stays at 5 — user manually advances to atendimento
     }
 
-    const leads = get().leads.map(l =>
-      l.id === id ? { ...l, funnelStage: nextStage, followupStep: nextStep, updatedAt: now, kanbanOrder: Date.now() } : l
-    )
-    set({ leads })
-    const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] advanceFollowup:', err); toast.error('Erro ao salvar followup.') })
+    const updated = { ...lead, funnelStage: nextStage, followupStep: nextStep, updatedAt: now, kanbanOrder: Date.now() }
+    try {
+      await db.leads.upsert(updated)
+      set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
+    } catch (err) {
+      console.error('[leads] advanceFollowup:', err)
+      toast.error('Erro ao salvar followup. Verifique sua conexão e tente novamente.')
+      throw err
+    }
   },
 
-  discard: (id, reason) => {
+  discard: async (id, reason) => {
     const now = new Date().toISOString()
     const lead = get().leads.find(l => l.id === id)
-    const leads = get().leads.map(l =>
-      l.id === id ? { ...l, discardReason: reason, discardedAt: now, updatedAt: now } : l
-    )
-    set({ leads })
-    const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] discard:', err); toast.error('Erro ao descartar lead.') })
-
-    // Registra descarte no histórico — preserva etapa de origem para análise de funil
-    if (lead) {
-      useLeadInteractionsStore.getState().add({
-        leadId: id,
-        type: 'discard',
-        description: `Descartado em ${STAGE_LABEL[lead.funnelStage] ?? lead.funnelStage} — ${reason}`,
-        interactedAt: now,
-      })
+    if (!lead) return
+    const updated = { ...lead, discardReason: reason, discardedAt: now, updatedAt: now }
+    try {
+      await db.leads.upsert(updated)
+      set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
+    } catch (err) {
+      console.error('[leads] discard:', err)
+      toast.error('Erro ao descartar lead. Verifique sua conexão e tente novamente.')
+      throw err
     }
+    // Registra descarte no histórico (fire-and-forget — secundário)
+    useLeadInteractionsStore.getState().add({
+      leadId: id,
+      type: 'discard',
+      description: `Descartado em ${STAGE_LABEL[lead.funnelStage] ?? lead.funnelStage} — ${reason}`,
+      interactedAt: now,
+    })
   },
 
-  restore: (id) => {
+  restore: async (id) => {
     const now = new Date().toISOString()
-    const leads = get().leads.map(l =>
-      l.id === id ? { ...l, discardReason: undefined, discardedAt: undefined, updatedAt: now } : l
-    )
-    set({ leads })
-    const updated = leads.find(l => l.id === id)
-    if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] restore:', err); toast.error('Erro ao restaurar lead.') })
+    const lead = get().leads.find(l => l.id === id)
+    if (!lead) return
+    const updated = { ...lead, discardReason: undefined, discardedAt: undefined, updatedAt: now }
+    try {
+      await db.leads.upsert(updated)
+      set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
+    } catch (err) {
+      console.error('[leads] restore:', err)
+      toast.error('Erro ao restaurar lead. Verifique sua conexão e tente novamente.')
+      throw err
+    }
   },
 
   convertToContact: async (id, contactId) => {
@@ -310,10 +329,10 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     if (updated) db.leads.upsert(updated).catch(err => { console.error('[leads] convertToContact:', err); toast.error('Erro ao converter lead em contato.') })
   },
 
-  toggleFlag: (id) => {
+  toggleFlag: async (id) => {
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
-    get().update(id, { flagged: !lead.flagged })
+    await get().update(id, { flagged: !lead.flagged })
   },
 
   reorder: (id, kanbanOrder) => {

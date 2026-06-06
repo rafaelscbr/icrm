@@ -24,8 +24,8 @@ interface CampaignLeadsStore {
   leads: CampaignLead[]
   loading: boolean
   load: () => Promise<void>
-  addBulk: (data: NewLead[]) => { added: number; skipped: number }
-  add: (data: NewLead) => CampaignLead
+  addBulk: (data: NewLead[]) => Promise<{ added: number; skipped: number }>
+  add: (data: NewLead) => Promise<CampaignLead>
   /** Persiste alteração no banco. Aplica rollback e exibe toast se falhar. */
   update: (id: string, data: Partial<CampaignLead>) => Promise<void>
   remove: (id: string) => void
@@ -92,8 +92,8 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     }
   },
 
-  // ── Importação em massa (XLSX) ────────────────────────────────────────────
-  addBulk: (data) => {
+  // ── Importação em massa (XLSX) — DB-first ───────────────────────────────
+  addBulk: async (data) => {
     const now = new Date().toISOString()
     const existing = get().leads
     const created: CampaignLead[] = []
@@ -108,19 +108,19 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
       created.push({ ...d, id: generateId(), funnelStage: 'new', createdAt: now, updatedAt: now })
     }
 
-    set(s => ({ leads: [...s.leads, ...created] }))
     if (created.length > 0) {
-      db.campaignLeads.upsertMany(created).catch(err => console.error('[campaignLeads] addBulk:', err))
+      await db.campaignLeads.upsertMany(created)
+      set(s => ({ leads: [...s.leads, ...created] }))
     }
     return { added: created.length, skipped }
   },
 
-  // ── Adiciona lead individual ──────────────────────────────────────────────
-  add: (data) => {
+  // ── Adiciona lead individual — DB-first ───────────────────────────────────
+  add: async (data) => {
     const now = new Date().toISOString()
     const lead: CampaignLead = { ...data, id: generateId(), funnelStage: 'new', createdAt: now, updatedAt: now }
+    await db.campaignLeads.upsert(lead)
     set(s => ({ leads: [...s.leads, lead] }))
-    db.campaignLeads.upsert(lead).catch(err => console.error('[campaignLeads] add:', err))
     return lead
   },
 
