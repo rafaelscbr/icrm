@@ -342,10 +342,14 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   // ─── Contador de disparos: load do banco + subscribe Realtime ────────────
   // Garante que o contador reflete exatamente o que está no banco ao montar o
   // componente, e permanece sincronizado em tempo real durante a sessão de disparo.
+  // No mobile, quando o corretor volta do WhatsApp, o canal Realtime pode ter
+  // desconectado — visibilitychange dispara um load() para resgatar o estado real.
   useEffect(() => {
     loadDisparos()
     const unsub = subscribeDisparos()
-    return unsub
+    function onVisible() { if (document.visibilityState === 'visible') loadDisparos() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { unsub(); document.removeEventListener('visibilitychange', onVisible) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Carregamento de histórico cross-campanha ─────────────────────────────
@@ -552,16 +556,15 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     return all.map(m => m.replace(/\{nome\}/gi, firstName))
   }
 
-  function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
-    // Copia para clipboard antes de abrir — garante que emojis chegam íntegros
-    // caso a URL sofra qualquer re-codificação pelo browser/OS
+  async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
+    // Persiste no banco ANTES de abrir o WhatsApp — no mobile, window.open leva o
+    // browser para background e requests em voo são suspensos/cancelados pelo OS.
     navigator.clipboard?.writeText(msg).catch(() => {})
-
+    await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
     window.open(whatsappUrl(lead.phone, msg), '_blank')
     clearReady()
     const secs  = start()
     const total = dailyIncrement()
-    persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'
     markContacted(lead.id, msg, templateIndex, sentBy)
@@ -574,10 +577,10 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     }
   }
 
-  function proceedWithDispatch(lead: CampaignLead) {
+  async function proceedWithDispatch(lead: CampaignLead) {
     const templates = getTemplates(lead)
     if (templates.length > 1) setPickerLead(lead)
-    else sendWhatsApp(lead, templates[0], 0)
+    else await sendWhatsApp(lead, templates[0], 0)
   }
 
   async function handleWhatsApp(lead: CampaignLead) {
@@ -614,7 +617,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         })
         return
       }
-      proceedWithDispatch(lead)
+      await proceedWithDispatch(lead)
     } finally {
       setCheckingId(undefined)
     }
