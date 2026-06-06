@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button'
 import { CampaignLead, FunnelStage, Lead, LeadSituation, INVALID_PHONE_SITUATIONS } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { Campaign } from '../../types'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone } from '../../lib/formatters'
@@ -23,6 +24,7 @@ interface LeadParecerModalProps {
 export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParecerModalProps) {
   const { update, setStage } = useCampaignLeadsStore()
   const { refund }           = useDisparosStore()
+  const { profile }          = useAuthStore()
 
   const [stage,          setStageLocal]   = useState<FunnelStage>('new')
   const [situation,      setSituationL]   = useState<LeadSituation | undefined>()
@@ -55,30 +57,28 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
 
     setIsSaving(true)
     try {
-      // Aguarda confirmação do banco — se falhar, update() já fez rollback e exibiu toast.
-      // O modal permanece aberto para o usuário tentar novamente.
+      // Banco deve confirmar antes de qualquer atualização na interface.
+      // Se falhar: update() exibe erro, interface permanece inalterada, modal fica aberto.
+      const actorBy = profile ? { id: profile.id, name: profile.name } : undefined
       if (stageChanged) {
-        await setStage(lead.id, effectiveStage, extraFields)
+        await setStage(lead.id, effectiveStage, extraFields, actorBy)
       } else {
         await update(lead.id, extraFields)
       }
     } catch {
-      // Erro já tratado em update() — rollback feito, toast exibido.
-      // Mantém o modal aberto para nova tentativa.
+      // Erro já tratado em update() — toast exibido, interface não mudou.
+      // Modal permanece aberto para nova tentativa.
       setIsSaving(false)
       return
     }
 
-    // A partir daqui o banco confirmou — operações secundárias com timeout de segurança
-    // para nunca travar o modal mesmo em caso de falha de rede.
+    // Banco confirmou — operações secundárias com timeout de segurança.
     const prevWasInvalid = prevSituation ? INVALID_PHONE_SITUATIONS.has(prevSituation) : false
     try {
       if (isInvalidPhone && !prevWasInvalid) {
-        // Devolve crédito + marca contato como inválido no cadastro (timeout 8s)
         await Promise.race([
           (async () => {
             await refund(lead.id)
-            // Propaga o marcador invalid_contact para o cadastro de contatos (por telefone)
             await supabase
               .from('contacts')
               .update({ invalid_contact: true })
@@ -88,15 +88,17 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
             setTimeout(() => reject(new Error('timeout')), 8000)
           ),
         ])
-        toast.success('Parecer atualizado · 1 crédito devolvido ao limite do dia', { icon: '↩️' })
+        toast.success('Parecer salvo · 1 crédito devolvido ao limite do dia', { icon: '↩️' })
       } else if (stage === 'scheduled' && prevStage !== 'scheduled') {
         toast.success('Agendamento registrado! Transfira este lead para o funil principal.')
       } else {
-        toast.success('Parecer atualizado')
+        toast.success('Parecer salvo com sucesso')
       }
     } catch {
-      // Operações secundárias falharam (rede lenta) — parecer já foi salvo com sucesso
-      toast.success('Parecer atualizado')
+      // Parecer salvo — mas operação secundária (devolução de crédito) falhou
+      toast('Parecer salvo. Crédito não devolvido — verifique sua conexão e tente novamente.', {
+        icon: '⚠️', duration: 8000,
+      })
     } finally {
       setIsSaving(false)
       onClose()

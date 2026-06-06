@@ -124,30 +124,28 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     return lead
   },
 
-  // ── Atualiza lead — otimista com rollback explícito ─────────────────────
-  // 1. Grava snapshot do estado anterior
-  // 2. Aplica update otimista na store
-  // 3. Persiste no banco com await — se falhar:
-  //    - reverte para snapshot (rollback explícito)
-  //    - exibe toast de erro
-  //    - relança o erro para que chamadores possam tratar (ex: modal permanece aberto)
+  // ── Atualiza lead — DB-first (banco confirma antes de atualizar a interface) ──
+  // 1. Persiste no banco com await
+  // 2. Se o banco confirmar → atualiza Zustand/interface
+  // 3. Se o banco falhar → exibe erro claro, interface permanece inalterada
+  // Nunca atualizar a interface antes da confirmação do banco.
   update: async (id, data) => {
     const snapshot = get().leads.find(l => l.id === id)
     if (!snapshot) return
 
     const now = new Date().toISOString()
     const updated = { ...snapshot, ...data, updatedAt: now }
-    set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
 
     try {
       await db.campaignLeads.updateRow(updated)
     } catch (err) {
-      console.error('[campaignLeads] update falhou — revertendo:', err)
-      // Rollback explícito: restaura estado anterior na store
-      set(s => ({ leads: s.leads.map(l => l.id === id ? snapshot : l) }))
-      toast.error('Não foi possível salvar. Alteração revertida — tente novamente.')
+      console.error('[campaignLeads] update falhou:', err)
+      toast.error('Não foi possível salvar. Verifique sua conexão e tente novamente.')
       throw err
     }
+
+    // Interface atualizada somente após confirmação do banco
+    set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
   },
 
   remove: (id) => {
