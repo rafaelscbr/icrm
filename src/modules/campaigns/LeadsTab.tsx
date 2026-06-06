@@ -572,27 +572,37 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     return all.map(m => m.replace(/\{nome\}/gi, firstName))
   }
 
-  async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
-    // Calcula o cooldown ANTES do disparo para persistir no banco junto com fired_at.
-    // Isso permite reconstruir o countdown a partir do banco após navegação, F5 ou
-    // troca de dispositivo — sem depender de estado em memória.
+  // whatsappTab é uma aba em branco aberta SINCRONAMENTE dentro do gesto do usuário,
+  // antes de qualquer await. Browsers móveis (iOS Safari) bloqueiam window.open()
+  // chamado após operações async — abrir a aba dentro do gesto garante que nunca
+  // será bloqueada. Ela é redirecionada ao WhatsApp após confirmação do banco,
+  // ou fechada silenciosamente em caso de falha.
+  async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number, whatsappTab?: Window | null) {
     const cooldownMs    = randomCooldownMs()
     const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString()
 
     navigator.clipboard?.writeText(msg).catch(() => {})
-    // Persiste no banco antes de abrir o WhatsApp.
-    // Se qualquer etapa falhar, exibe aviso claro e interrompe — WhatsApp não abre.
+
     try {
       await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
       await markContacted(lead.id, msg, templateIndex, sentBy)
     } catch {
+      whatsappTab?.close()
       toast.error(
         'Disparo não realizado — não foi possível registrar no sistema. Verifique sua conexão e tente novamente.',
         { duration: 7000 }
       )
       return
     }
-    window.open(whatsappUrl(lead.phone, msg), '_blank')
+
+    // Banco confirmou — redireciona a aba já aberta para o WhatsApp (sem popup blocker)
+    if (whatsappTab && !whatsappTab.closed) {
+      whatsappTab.location.href = whatsappUrl(lead.phone, msg)
+    } else {
+      // Fallback: aba foi fechada (ex: picker de template) — abre diretamente
+      window.open(whatsappUrl(lead.phone, msg), '_blank')
+    }
+
     clearReady()
     const secs  = startWithMs(cooldownMs)
     const total = dailyIncrement()
@@ -607,10 +617,14 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     }
   }
 
-  async function proceedWithDispatch(lead: CampaignLead) {
+  async function proceedWithDispatch(lead: CampaignLead, whatsappTab?: Window | null) {
     const templates = getTemplates(lead)
-    if (templates.length > 1) setPickerLead(lead)
-    else await sendWhatsApp(lead, templates[0], 0)
+    if (templates.length > 1) {
+      whatsappTab?.close()  // fecha aba — usuário vai escolher o template (novo gesto)
+      setPickerLead(lead)
+    } else {
+      await sendWhatsApp(lead, templates[0], 0, whatsappTab)
+    }
   }
 
   async function handleWhatsApp(lead: CampaignLead) {
@@ -634,20 +648,28 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       return
     }
 
-    // Verificação pré-disparo: compra realizada + campanhas anteriores.
-    // try/finally garante que checkingId é sempre limpo mesmo em exceções.
+    // Abre aba em branco AGORA — sincronamente dentro do gesto do usuário,
+    // antes de qualquer await. Isso garante que nunca será bloqueada pelo browser.
+    const whatsappTab = window.open('', '_blank')
+
     setCheckingId(lead.id)
     try {
       const warnings = await checkPreDispatch(lead)
       if (warnings.length > 0) {
+        whatsappTab?.close()  // fecha aba — usuário precisa confirmar antes de disparar
         setPreDispatchWarn({
           lead,
           items: warnings,
-          onConfirm: () => { setPreDispatchWarn(undefined); proceedWithDispatch(lead) },
+          onConfirm: () => {
+            setPreDispatchWarn(undefined)
+            // Novo gesto (clique em "Disparar mesmo assim") — abre nova aba agora
+            const tab = window.open('', '_blank')
+            proceedWithDispatch(lead, tab)
+          },
         })
         return
       }
-      await proceedWithDispatch(lead)
+      await proceedWithDispatch(lead, whatsappTab)
     } finally {
       setCheckingId(undefined)
     }
@@ -1071,7 +1093,12 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         isOpen={Boolean(pickerLead)} onClose={() => setPickerLead(undefined)}
         templates={pickerLead ? getTemplates(pickerLead) : []}
         leadName={pickerLead?.name}
-        onPick={(msg, idx) => pickerLead && sendWhatsApp(pickerLead, msg, idx)}
+        onPick={(msg, idx) => {
+          if (!pickerLead) return
+          // Gesto do clique no template — abre aba em branco agora, dentro do gesto
+          const tab = window.open('', '_blank')
+          sendWhatsApp(pickerLead, msg, idx, tab)
+        }}
       />
       <Modal isOpen={Boolean(deleteLead)} onClose={() => setDeleteLead(undefined)} title="Remover lead" size="sm">
         <p className="text-sm text-t3 mb-6">
