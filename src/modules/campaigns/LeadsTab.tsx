@@ -631,16 +631,6 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     }
   }
 
-  async function proceedWithDispatch(lead: CampaignLead, whatsappTab?: Window | null) {
-    const templates = getTemplates(lead)
-    if (templates.length > 1) {
-      whatsappTab?.close()  // fecha aba — usuário vai escolher o template (novo gesto)
-      setPickerLead(lead)
-    } else {
-      await sendWhatsApp(lead, templates[0], 0, whatsappTab)
-    }
-  }
-
   async function handleWhatsApp(lead: CampaignLead) {
     const secs = remaining()
     if (secs > 0) { toast.error(`Aguarde ${secs}s antes do próximo envio.`); return }
@@ -662,28 +652,24 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       return
     }
 
-    // Abre aba em branco AGORA — sincronamente dentro do gesto do usuário,
-    // antes de qualquer await. Isso garante que nunca será bloqueada pelo browser.
-    const whatsappTab = window.open('', '_blank')
-
+    // Não abrimos tab aqui — o picker sempre será exibido (campanha tem múltiplos templates).
+    // A tab será aberta dentro do gesto de clique em "Confirmar" no MessagePickerModal,
+    // garantindo que window.open nunca seja chamado após operações async.
     setCheckingId(lead.id)
     try {
       const warnings = await checkPreDispatch(lead)
       if (warnings.length > 0) {
-        whatsappTab?.close()  // fecha aba — usuário precisa confirmar antes de disparar
         setPreDispatchWarn({
           lead,
           items: warnings,
           onConfirm: () => {
             setPreDispatchWarn(undefined)
-            // Novo gesto (clique em "Disparar mesmo assim") — abre nova aba agora
-            const tab = window.open('', '_blank')
-            proceedWithDispatch(lead, tab)
+            setPickerLead(lead)
           },
         })
         return
       }
-      await proceedWithDispatch(lead, whatsappTab)
+      setPickerLead(lead)
     } finally {
       setCheckingId(undefined)
     }
@@ -1109,7 +1095,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         leadName={pickerLead?.name}
         onPick={(msg, idx) => {
           if (!pickerLead) return
-          // Gesto do clique no template — abre aba em branco agora, dentro do gesto
+          // Único lugar onde window.open é chamado — dentro do gesto de clique do usuário,
+          // sem nenhum await anterior. Garante compatibilidade com iOS Safari.
           const tab = window.open('', '_blank')
           sendWhatsApp(pickerLead, msg, idx, tab)
         }}
