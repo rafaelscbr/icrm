@@ -53,16 +53,8 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   // chegou ao servidor — mantém a versão local para evitar re-exibir na fila.
   load: async () => {
     set({ loading: true })
-    // ── [PERF] Instrumentação temporária ─────────────────────────────────
-    const t0 = performance.now()
-    console.log('[PERF] campaignLeads.load() — iniciando...')
-    // ─────────────────────────────────────────────────────────────────────
     try {
       const raw = await db.campaignLeads.fetchAll()
-      // ── [PERF] Após fetch ───────────────────────────────────────────────
-      const tFetch = performance.now()
-      console.log(`[PERF] campaignLeads.load() — fetch concluído: ${raw.length} linhas em ${Math.round(tFetch - t0)}ms`)
-      // ─────────────────────────────────────────────────────────────────────
 
       // Deduplica por (campaignId + telefone) — descarta duplicatas de import
       const seen = new Set<string>()
@@ -72,11 +64,6 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
         seen.add(key)
         return true
       })
-
-      // ── [PERF] Após dedup ──────────────────────────────────────────────
-      const tDedup = performance.now()
-      console.log(`[PERF] campaignLeads.load() — dedup: ${raw.length - fresh.length} duplicatas removidas em ${Math.round(tDedup - tFetch)}ms`)
-      // ─────────────────────────────────────────────────────────────────────
 
       // Merge: preserva escritas otimistas pendentes.
       // Para cada lead do banco, se o estado local tem updatedAt posterior, mantém local.
@@ -96,11 +83,6 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
       // Inclui leads locais que ainda não chegaram ao banco (addBulk recente)
       const pendingLocal = currentLeads.filter(l => !freshIds.has(l.id))
       merged.push(...pendingLocal)
-
-      // ── [PERF] Após merge ─────────────────────────────────────────────
-      const tMerge = performance.now()
-      console.log(`[PERF] campaignLeads.load() — merge/dedup JS: ${Math.round(tMerge - tDedup)}ms | total load(): ${Math.round(tMerge - t0)}ms`)
-      // ─────────────────────────────────────────────────────────────────────
 
       set({ leads: merged })
     } catch (err) {
