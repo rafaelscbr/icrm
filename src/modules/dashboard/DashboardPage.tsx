@@ -687,20 +687,24 @@ export function DashboardPage() {
     [allProfiles]
   )
 
-  const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
+  const { contacts, load: loadContacts, getBirthdaysThisMonth, loading: loadingContacts } = useContactsStore()
   const { properties, load: loadProperties }                    = usePropertiesStore()
-  const { sales, load: loadSales, getByPeriod, getValueByPeriod } = useSalesStore()
-  const { tasks, load: loadTasks, getUpcoming, getOverdue }     = useTasksStore()
+  const { sales, load: loadSales, getByPeriod, getValueByPeriod, loading: loadingSales } = useSalesStore()
+  const { tasks, load: loadTasks, getUpcoming, getOverdue, loading: loadingTasks }     = useTasksStore()
   const { load: loadCampaigns }    = useCampaignsStore()
   const { load: loadCampLeads }    = useCampaignLeadsStore()
-  const { leads, load: loadMyLeads } = useLeadsStore()
+  const { leads, load: loadMyLeads, loading: loadingLeads } = useLeadsStore()
   const { loadAll: loadInteractions } = useLeadInteractionsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
+  // Carregamento inicial — dispara todos em paralelo
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks()
     loadCampaigns(); loadCampLeads(); loadMyLeads(); loadInteractions()
   }, [])
+
+  // Loading: aguarda os 4 stores críticos do dashboard
+  const isLoading = loadingContacts || loadingSales || loadingTasks || loadingLeads
 
   const periodLabel   = getLabel()
   const salesInPeriod = getByPeriod(startDate, endDate)
@@ -731,6 +735,17 @@ export function DashboardPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}
     >
+      {/* Skeleton de carregamento inicial */}
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-20 gap-4 animate-pulse">
+          <div className="w-10 h-10 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+          <p className="text-sm text-t3">Carregando dados...</p>
+        </div>
+      )}
+
+      {/* Conteúdo principal — oculto durante carregamento */}
+      {!isLoading && <>
+
       {/* Period selector */}
       <div className="flex items-center justify-between mb-6 px-1">
         <div className="flex items-center gap-2">
@@ -918,7 +933,9 @@ export function DashboardPage() {
       {/* 10. Potencial de recompra */}
       <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
 
-      {/* Modais */}
+      </> /* fim !isLoading */}
+
+      {/* Modais — sempre montados fora do bloco de loading */}
       <TaskForm isOpen={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
       {selectedLead && <LeadModal lead={selectedLead} onClose={() => setSelectedLead(null)} />}
     </PageLayout>

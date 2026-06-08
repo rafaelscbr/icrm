@@ -23,10 +23,10 @@ import { STATUS_CONFIG } from './config'
 type PageTab = 'campanhas' | 'performance'
 
 export function CampaignsPage() {
-  const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus, update } = useCampaignsStore()
+  const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus, update, loading: loadingCampaigns } = useCampaignsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const campaigns = isAdmin && viewAsBrokerId ? allCampaigns.filter(c => c.brokerId === viewAsBrokerId) : allCampaigns
-  const { leads, load: loadLeads, removeForCampaign, transferLeadsToBroker } = useCampaignLeadsStore()
+  const { leads, load: loadLeads, removeForCampaign, transferLeadsToBroker, loading: loadingLeads } = useCampaignLeadsStore()
   const { load: loadDisparos } = useDisparosStore()
   const brokers = allProfiles.filter(p => p.role === 'broker')
 
@@ -39,6 +39,8 @@ export function CampaignsPage() {
   const [transferBrokerId,  setTransferBrokerId]  = useState<string>('')
 
   useEffect(() => { loadCampaigns(); loadLeads(); loadDisparos() }, [loadCampaigns, loadLeads, loadDisparos])
+
+  const isLoading = loadingCampaigns || loadingLeads
 
   // Show detail view
   if (selectedId) {
@@ -82,6 +84,17 @@ export function CampaignsPage() {
       <div className="mb-4">
         <DailyLimitBar />
       </div>
+
+      {/* Skeleton de carregamento inicial */}
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-10 h-10 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+          <p className="text-sm text-t3">Carregando campanhas...</p>
+        </div>
+      )}
+
+      {/* Conteúdo — oculto durante carregamento */}
+      {!isLoading && <>
 
       {/* Abas principais */}
       <div className="flex items-center gap-1 mb-6 bg-s2/50 border border-line rounded-xl p-1 w-fit">
@@ -264,6 +277,8 @@ export function CampaignsPage() {
       )}
 
       </> /* fim aba campanhas */}
+
+      </> /* fim !isLoading */}
 
       <CampaignForm isOpen={createOpen}        onClose={() => setCreateOpen(false)}    />
       <CampaignForm isOpen={Boolean(editCampaign)} onClose={() => setEditCampaign(undefined)} campaign={editCampaign} />
