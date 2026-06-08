@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Calendar, User, Building2, Plus, ExternalLink,
   CheckCircle2, ListChecks, X, UserCheck, ChevronRight, ChevronLeft,
-  Clock, Flag, FileText, Zap,
+  Clock, Flag, FileText, Zap, Users,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Task, TaskCategory, TaskPriority, ChecklistItem } from '../../types'
@@ -77,7 +77,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
   const [category,    setCategory]    = useState<TaskCategory | ''>(task?.category ?? '')
   const [contactId,   setContactId]   = useState(task?.contactId ?? defaultContactId ?? '')
   const [propertyId,  setPropertyId]  = useState(task?.propertyId ?? '')
-  const [assignedToId, setAssignedToId] = useState(task?.assignedToId ?? '')
+  const [assignedToId,   setAssignedToId]   = useState(task?.assignedToId ?? '')
+  const [participantIds, setParticipantIds] = useState<string[]>(task?.participants ?? [])
   const [markDone,    setMarkDone]    = useState(task?.status === 'done')
   const [completedDate, setCompletedDate] = useState(task?.completedAt ? task.completedAt.split('T')[0] : today)
 
@@ -107,6 +108,18 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
     return allProfiles.filter(p => p.role === 'admin' && p.active)
   }, [isAdmin, allProfiles, profile?.id])
 
+  // Perfis disponíveis para compartilhamento — todos exceto o próprio usuário
+  const shareableProfiles = useMemo(() =>
+    allProfiles.filter(p => p.active && p.id !== profile?.id),
+    [allProfiles, profile?.id]
+  )
+
+  function toggleParticipant(userId: string) {
+    setParticipantIds(prev =>
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    )
+  }
+
   // ── Reset on open ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return
@@ -123,6 +136,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
     setContactSearch(resolvedContactId ? (contacts.find(c => c.id === resolvedContactId)?.name ?? '') : '')
     setPropertySearch(task?.propertyId ? (properties.find(p => p.id === task.propertyId)?.name ?? '') : '')
     setAssignedToId(task?.assignedToId ?? '')
+    setParticipantIds(task?.participants ?? [])
     setMarkDone(task?.status === 'done')
     setCompletedDate(task?.completedAt ? task.completedAt.split('T')[0] : todayStr())
     setChecklist(task?.checklist ?? [])
@@ -169,7 +183,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
       contactId:   contactId  || undefined,
       propertyId:  propertyId || undefined,
       checklist:   checklist.length > 0 ? checklist : undefined,
-      assignedToId: assignedToId || undefined,
+      assignedToId:  assignedToId || undefined,
+      participants:  participantIds.length > 0 ? participantIds : [],
     }
 
     if (isEditing && task) { update(task.id, data); toast.success('Tarefa atualizada') }
@@ -509,6 +524,43 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Compartilhar com */}
+      {shareableProfiles.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+            <Users size={12} className={participantIds.length > 0 ? 'text-cyan-400' : ''} />
+            Compartilhar com
+            <span className="font-normal normal-case tracking-normal text-t5">(opcional · todos podem ver e editar)</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {shareableProfiles.map(p => {
+              const active = participantIds.includes(p.id)
+              return (
+                <button key={p.id} type="button" onClick={() => toggleParticipant(p.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
+                    ${active
+                      ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                      : 'border-line text-t3 hover:text-t1 hover:border-line-strong'
+                    }`}
+                >
+                  <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0
+                    ${active ? 'bg-cyan-500/30 text-cyan-300' : 'bg-s3/50 text-t3'}`}>
+                    {p.name[0].toUpperCase()}
+                  </div>
+                  {p.name}
+                </button>
+              )
+            })}
+          </div>
+          {participantIds.length > 0 && (
+            <p className="text-[10px] text-cyan-400/70 flex items-center gap-1">
+              <Users size={9} />
+              {participantIds.length} participante{participantIds.length !== 1 ? 's' : ''} · todos recebem as atualizações em tempo real
+            </p>
+          )}
         </div>
       )}
 

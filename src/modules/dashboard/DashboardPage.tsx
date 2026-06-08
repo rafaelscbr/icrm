@@ -808,7 +808,10 @@ export function DashboardPage() {
       {/* 5a. Meu desempenho — admin como corretor (sem viewAs) */}
       {isAdmin && !viewAsBrokerId && (() => {
         const myLeads  = leads.filter(l => l.brokerId === profile?.id && !l.discardReason)
-        const myTasks  = tasks.filter(t => t.brokerId === profile?.id && t.status !== 'done')
+        const myTasks  = tasks.filter(t =>
+          (t.brokerId === profile?.id || t.participants?.includes(profile?.id ?? ''))
+          && t.status !== 'done'
+        )
         const mySales  = salesInPeriod.filter(s => s.brokerId === profile?.id)
         if (myLeads.length === 0 && mySales.length === 0) return null
         return (

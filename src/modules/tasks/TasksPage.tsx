@@ -4,7 +4,7 @@ import {
   CheckCircle2, Circle, Clock, Trash2, Pencil, User,
   Building2, AlertTriangle, CheckCheck, ListTodo, CalendarClock,
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
-  BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight,
+  BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { ListContainer } from '../../components/ui/ListContainer'
@@ -266,6 +266,19 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
             </span>
           )}
 
+          {/* Compartilhamento: você é o criador e compartilhou com outros */}
+          {t.participants && t.participants.length > 0 && t.brokerId === currentUserId && (
+            <span className="flex items-center gap-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-md">
+              <Users size={10} /> Compartilhada · {t.participants.length}
+            </span>
+          )}
+          {/* Compartilhamento: você é participante (não é o criador) */}
+          {t.participants?.includes(currentUserId ?? '') && t.brokerId !== currentUserId && (
+            <span className="flex items-center gap-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-md">
+              <Users size={10} /> De: {allProfiles.find(p => p.id === t.brokerId)?.name ?? 'Criador'}
+            </span>
+          )}
+
           {isDone && t.completedAt && (
             <span className="flex items-center gap-1 text-xs text-green-400/70">
               <CheckCircle2 size={10} />
@@ -520,10 +533,14 @@ export function TasksPage() {
   const { properties, load: loadProperties }          = usePropertiesStore()
   const { isAdmin, viewAsBrokerId, profile, allProfiles } = useAuthStore()
 
-  // Quando admin está no modo "ver como corretor", filtra tarefas do corretor
-  // (criadas por ele OU delegadas para ele)
+  // Quando admin está no modo "ver como corretor", filtra tarefas do corretor:
+  // criadas por ele OU delegadas para ele OU compartilhadas com ele
   const tasks = isAdmin && viewAsBrokerId
-    ? allTasks.filter(t => t.brokerId === viewAsBrokerId || t.assignedToId === viewAsBrokerId)
+    ? allTasks.filter(t =>
+        t.brokerId === viewAsBrokerId ||
+        t.assignedToId === viewAsBrokerId ||
+        t.participants?.includes(viewAsBrokerId)
+      )
     : allTasks
 
   const [formOpen,     setFormOpen]     = useState(false)

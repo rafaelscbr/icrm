@@ -684,9 +684,54 @@ export const db = {
   },
 
   tasks: {
-    fetchAll: () => fetchAll<TaskRow, Task>('tasks', toTask),
-    upsert:   (t: Task)     => upsertOne('tasks', fromTask(t)),
-    delete:   (id: string)  => deleteOne('tasks', id),
+    fetchAll: async (): Promise<Task[]> => {
+      const tasks = await fetchAll<TaskRow, Task>('tasks', toTask)
+      if (tasks.length === 0) return tasks
+
+      // Busca participantes de todas as tarefas carregadas e mescla
+      const taskIds = tasks.map(t => t.id)
+      const { data: parts } = await supabase
+        .from('task_participants')
+        .select('task_id, user_id')
+        .in('task_id', taskIds)
+
+      const partMap: Record<string, string[]> = {}
+      for (const p of (parts ?? [])) {
+        const tid = p.task_id as string
+        if (!partMap[tid]) partMap[tid] = []
+        partMap[tid].push(p.user_id as string)
+      }
+
+      return tasks.map(t => ({
+        ...t,
+        participants: partMap[t.id] ?? [],
+      }))
+    },
+
+    upsert: (t: Task) => upsertOne('tasks', fromTask(t)),
+    delete: (id: string) => deleteOne('tasks', id),
+
+    /**
+     * Substitui a lista de participantes de uma tarefa.
+     * Deleta todos os registros existentes e insere os novos.
+     * Só o criador (broker_id) pode gerenciar participantes (garantido por RLS).
+     */
+    setParticipants: async (taskId: string, userIds: string[]): Promise<void> => {
+      // Remove participantes anteriores
+      const { error: delErr } = await supabase
+        .from('task_participants')
+        .delete()
+        .eq('task_id', taskId)
+      if (delErr) throw delErr
+
+      if (userIds.length === 0) return
+
+      const now = new Date().toISOString()
+      const { error: insErr } = await supabase
+        .from('task_participants')
+        .insert(userIds.map(uid => ({ task_id: taskId, user_id: uid, added_at: now })))
+      if (insErr) throw insErr
+    },
   },
 
   goals: {

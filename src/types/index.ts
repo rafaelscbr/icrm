@@ -103,7 +103,8 @@ export interface Task {
   googleEventId?: string
   checklist?: ChecklistItem[]   // stored in tasks.checklist (JSONB)
   brokerId?: string
-  assignedToId?: string   // delegação: pessoa para quem a tarefa foi atribuída
+  assignedToId?: string   // delegação 1:1: pessoa para quem a tarefa foi delegada
+  participants?: string[] // compartilhamento N:N: IDs dos usuários com acesso compartilhado
   createdAt: string
   updatedAt: string
 }

@@ -59,6 +59,7 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
           brokerId: (r.broker_id as string | null) ?? undefined,
           assignedToId: (r.assigned_to_id as string | null) ?? undefined,
           checklist: (r.checklist as Task['checklist']) ?? undefined,
+          participants: [],
           createdAt: r.created_at as string,
           updatedAt: r.updated_at as string,
         }
@@ -82,6 +83,7 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
             brokerId: (r.broker_id as string | null) ?? undefined,
             assignedToId: (r.assigned_to_id as string | null) ?? undefined,
             checklist: (r.checklist as Task['checklist']) ?? undefined,
+            // participants não vem no payload do tasks — preserva o valor atual
             updatedAt: r.updated_at as string,
           }),
         }))
@@ -89,6 +91,14 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks' }, (payload) => {
         const id = (payload.old as { id: string }).id
         set(s => ({ tasks: s.tasks.filter(t => t.id !== id) }))
+      })
+      // Quando participantes mudam (alguém é adicionado/removido), recarrega as tarefas
+      // para que o novo participante veja a tarefa e o criador veja a lista atualizada.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_participants' }, () => {
+        get().load()
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'task_participants' }, () => {
+        get().load()
       })
       .subscribe()
 
@@ -99,7 +109,12 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
     const now = new Date().toISOString()
     const task: Task = { ...data, id: generateId(), createdAt: now, updatedAt: now }
     set(s => ({ tasks: [task, ...s.tasks] }))
-    db.tasks.upsert(task).catch(err => console.error('[tasks] add:', err))
+    db.tasks.upsert(task)
+      .then(() => {
+        const parts = data.participants ?? []
+        if (parts.length > 0) return db.tasks.setParticipants(task.id, parts)
+      })
+      .catch(err => console.error('[tasks] add:', err))
     return task
   },
 
@@ -111,7 +126,14 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
     set({ tasks })
     const updated = tasks.find(t => t.id === id)
     if (!updated) return
-    db.tasks.upsert(updated).catch(err => console.error('[tasks] update:', err))
+    db.tasks.upsert(updated)
+      .then(() => {
+        // Só atualiza participantes se o campo foi explicitamente incluído no patch
+        if ('participants' in data) {
+          return db.tasks.setParticipants(id, data.participants ?? [])
+        }
+      })
+      .catch(err => console.error('[tasks] update:', err))
   },
 
   remove: (id) => {
