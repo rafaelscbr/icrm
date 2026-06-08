@@ -153,6 +153,12 @@ interface PeriodData {
   disparosHoje: number
   disparosSemana: number
   disparosMes: number
+  disparosHojeNew: number
+  disparosSemanaNew: number
+  disparosMesNew: number
+  disparosHojeFollowup: number
+  disparosSemanaFollowup: number
+  disparosMesFollowup: number
   daily: number
   weekVisits: number
   weekProp: number
@@ -165,7 +171,12 @@ function usePeriodData(tasks: Task[]): PeriodData {
   const { getAllInteractions, loadAll, allLoaded } = useLeadInteractionsStore()
   const { sales }        = useSalesStore()
   // Fonte única: disparo_logs no Supabase (por corretor via RLS)
-  const { countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes, load: loadDisparos } = useDisparosStore()
+  const {
+    countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes,
+    countDayNew: disparosHojeNew, countWeekNew: disparosSemanaNew, countMonthNew: disparosMesNew,
+    countDayFollowup: disparosHojeFollowup, countWeekFollowup: disparosSemanaFollowup, countMonthFollowup: disparosMesFollowup,
+    load: loadDisparos,
+  } = useDisparosStore()
 
   useEffect(() => { loadDisparos() }, [loadDisparos])
   useEffect(() => { if (!allLoaded) loadAll() }, [allLoaded, loadAll])
@@ -195,12 +206,19 @@ function usePeriodData(tasks: Task[]): PeriodData {
     return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
   }, [getAllInteractions, allLoaded, sales, tasks, weekStartMs, monthStartMs])
 
-  return { disparosHoje, disparosSemana, disparosMes, ...metrics }
+  return {
+    disparosHoje, disparosSemana, disparosMes,
+    disparosHojeNew, disparosSemanaNew, disparosMesNew,
+    disparosHojeFollowup, disparosSemanaFollowup, disparosMesFollowup,
+    ...metrics,
+  }
 }
 
 function calcScore(kpis: Array<{ value: number; target: number }>): number {
-  if (!kpis.length) return 0
-  const avg = kpis.reduce((acc, k) => acc + Math.min(1, k.target > 0 ? k.value / k.target : 0), 0) / kpis.length
+  // KPIs com target=0 são informativos (sem meta definida) e não entram no cálculo
+  const scored = kpis.filter(k => k.target > 0)
+  if (!scored.length) return 0
+  const avg = scored.reduce((acc, k) => acc + Math.min(1, k.value / k.target), 0) / scored.length
   return Math.round(avg * 100)
 }
 
@@ -374,19 +392,22 @@ function PerformanceHero({ tasks, period }: { tasks: Task[]; period: PeriodTab }
 
   const kpis = useMemo(() => {
     if (period === 'hoje') return [
-      { label: 'Disparos',             value: data.disparosHoje,   target: TARGETS.hoje.disparos,    icon: <Megaphone size={14} />,    note: 'lista fria'     },
-      { label: 'Interações com leads', value: data.daily,          target: TARGETS.hoje.interacoes,  icon: <MessageCircle size={14} />, note: 'mensagens/calls' },
+      { label: 'Novos Disparos',        value: data.disparosHojeNew,      target: TARGETS.hoje.disparos,    icon: <Zap size={14} />,           note: 'base fria'       },
+      { label: 'Follow-ups',            value: data.disparosHojeFollowup, target: 0,                        icon: <Megaphone size={14} />,     note: 'acompanhamento'  },
+      { label: 'Interações com leads',  value: data.daily,                target: TARGETS.hoje.interacoes,  icon: <MessageCircle size={14} />, note: 'mensagens/calls' },
     ]
     if (period === 'semana') return [
-      { label: 'Disparos enviados',  value: data.disparosSemana, target: TARGETS.semana.disparos,  icon: <Zap size={14} />,         note: 'lista fria'  },
-      { label: 'Visitas realizadas', value: data.weekVisits,     target: TARGETS.semana.visitas,   icon: <Footprints size={14} />,  note: 'presenciais' },
-      { label: 'Propostas enviadas', value: data.weekProp,       target: TARGETS.semana.propostas, icon: <FileText size={14} />,    note: 'por semana'  },
+      { label: 'Novos Disparos',    value: data.disparosSemanaNew,      target: TARGETS.semana.disparos,  icon: <Zap size={14} />,        note: 'base fria'      },
+      { label: 'Follow-ups',        value: data.disparosSemanaFollowup, target: 0,                        icon: <Megaphone size={14} />,  note: 'acompanhamento' },
+      { label: 'Visitas realizadas', value: data.weekVisits,            target: TARGETS.semana.visitas,   icon: <Footprints size={14} />, note: 'presenciais'    },
+      { label: 'Propostas enviadas', value: data.weekProp,              target: TARGETS.semana.propostas, icon: <FileText size={14} />,   note: 'por semana'     },
     ]
     return [
-      { label: 'Disparos enviados',  value: data.disparosMes,    target: TARGETS.mes.disparos,  icon: <Zap size={14} />,            note: 'lista fria'   },
-      { label: 'Visitas realizadas', value: data.monthVisits,    target: TARGETS.mes.visitas,   icon: <Footprints size={14} />,     note: 'presenciais'  },
-      { label: 'Propostas enviadas', value: data.monthProp,      target: TARGETS.mes.propostas, icon: <FileText size={14} />,       note: 'por mês'      },
-      { label: 'Vendas fechadas',    value: data.monthSales,     target: TARGETS.mes.vendas,    icon: <BadgeDollarSign size={14} />, note: 'no mês'      },
+      { label: 'Novos Disparos',     value: data.disparosMesNew,      target: TARGETS.mes.disparos,  icon: <Zap size={14} />,             note: 'base fria'    },
+      { label: 'Follow-ups',         value: data.disparosMesFollowup, target: 0,                     icon: <Megaphone size={14} />,        note: 'acompanhamento' },
+      { label: 'Visitas realizadas', value: data.monthVisits,         target: TARGETS.mes.visitas,   icon: <Footprints size={14} />,       note: 'presenciais'  },
+      { label: 'Propostas enviadas', value: data.monthProp,           target: TARGETS.mes.propostas, icon: <FileText size={14} />,         note: 'por mês'      },
+      { label: 'Vendas fechadas',    value: data.monthSales,          target: TARGETS.mes.vendas,    icon: <BadgeDollarSign size={14} />,  note: 'no mês'       },
     ]
   }, [period, data])
 

@@ -20,6 +20,7 @@ import { useTasksStore } from '../../store/useTasksStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
 import { formatPhone, whatsappUrl, formatCurrency, localDateStr } from '../../lib/formatters'
+import { saveFollowupToContact } from '../../lib/db'
 import toast from 'react-hot-toast'
 
 interface KanbanTabProps {
@@ -198,17 +199,27 @@ function LeadCard({
     e.stopPropagation()
 
     if (lead.funnelStage === 'attended') {
+      // Follow-up: registra sem mensagem pré-pronta, abre WhatsApp só com número
       const templateIndex = Math.min(dispatchStep, templates.length - 1)
-      const msg = templates[templateIndex].replace(/\{nome\}/gi, lead.name)
-      navigator.clipboard?.writeText(msg).catch(() => {})
       try {
-        await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
-        await markContacted(lead.id, msg, templateIndex, sentBy)
+        await persistDisparo({
+          brokerId: profile?.id, campaignId: campaign.id,
+          leadId: lead.id, leadName: lead.name,
+          dispatchType: 'followup',
+        })
+        await markContacted(lead.id, '', templateIndex, sentBy)
       } catch {
         toast.error('Disparo não realizado — não foi possível registrar. Verifique sua conexão.', { duration: 7000 })
         return
       }
-      const url = whatsappUrl(lead.phone, msg)
+      // Salva no histórico do contato (best-effort, sem bloqueio)
+      if (profile?.id) {
+        saveFollowupToContact({
+          phone: lead.phone, campaignId: campaign.id,
+          brokerId: profile.id, step: templateIndex,
+        }).catch(() => {})
+      }
+      const url = whatsappUrl(lead.phone)
       toast((t) => (
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold text-t1">{dispatchStep + 1}ª mensagem registrada!</span>
@@ -223,11 +234,16 @@ function LeadCard({
       return
     }
 
+    // Novo disparo (funnelStage !== 'attended')
     const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
     navigator.clipboard?.writeText(msg).catch(() => {})
     const wasNew = lead.funnelStage === 'new'
     try {
-      await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
+      await persistDisparo({
+        brokerId: profile?.id, campaignId: campaign.id,
+        leadId: lead.id, leadName: lead.name,
+        dispatchType: 'new',
+      })
       await markContacted(lead.id, msg, 0, sentBy)
     } catch {
       toast.error('Disparo não realizado — não foi possível registrar. Verifique sua conexão.', { duration: 7000 })

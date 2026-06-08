@@ -600,7 +600,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
     try {
       await markContacted(lead.id, msg, templateIndex, sentBy)
-      await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
+      await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil, dispatchType: 'new' })
     } catch (err) {
       toast.error(
         'Disparo não realizado — não foi possível registrar no sistema. Verifique sua conexão e tente novamente.',

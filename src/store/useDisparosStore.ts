@@ -45,18 +45,30 @@ export interface DisparoLog {
 
 /** Resumo de disparos por corretor para a tela de analytics */
 export interface BrokerDisparoSummary {
-  brokerId:    string
-  total:       number
-  today:       number
-  thisWeek:    number
-  thisMonth:   number
-  history:     { date: string; label: string; count: number }[]
+  brokerId:        string
+  total:           number
+  totalNew:        number
+  totalFollowup:   number
+  today:           number
+  thisWeek:        number
+  thisWeekNew:     number
+  thisWeekFollowup: number
+  thisMonth:       number
+  thisMonthNew:    number
+  thisMonthFollowup: number
+  history:         { date: string; label: string; count: number }[]
 }
 
 export interface DisparosState {
-  countDay:      number
-  countWeek:     number
-  countMonth:    number
+  countDay:           number
+  countWeek:          number
+  countMonth:         number
+  countDayNew:        number
+  countWeekNew:       number
+  countMonthNew:      number
+  countDayFollowup:   number
+  countWeekFollowup:  number
+  countMonthFollowup: number
   history:       { date: string; label: string; count: number }[]
   /** Timestamp UTC até quando o cooldown anti-ban do broker está ativo.
    *  Persistido no banco — sobrevive a navegação, F5 e troca de dispositivo. */
@@ -67,12 +79,13 @@ export interface DisparosState {
   subscribe:   () => () => void
   /** Grava disparo com contexto completo */
   increment: (ctx?: {
-    brokerId?:      string
-    leadListId?:    string
-    campaignId?:    string
-    leadId?:        string
-    leadName?:      string
-    cooldownUntil?: string
+    brokerId?:       string
+    leadListId?:     string
+    campaignId?:     string
+    leadId?:         string
+    leadName?:       string
+    cooldownUntil?:  string
+    dispatchType?:   'new' | 'followup'
   }) => Promise<void>
   /**
    * Devolve 1 crédito ao limite diário quando um lead é marcado como
@@ -88,12 +101,18 @@ export interface DisparosState {
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useDisparosStore = create<DisparosState>()((set, get) => ({
-  countDay:      0,
-  countWeek:     0,
-  countMonth:    0,
-  history:       [],
-  cooldownUntil: null,
-  loading:       false,
+  countDay:           0,
+  countWeek:          0,
+  countMonth:         0,
+  countDayNew:        0,
+  countWeekNew:       0,
+  countMonthNew:      0,
+  countDayFollowup:   0,
+  countWeekFollowup:  0,
+  countMonthFollowup: 0,
+  history:            [],
+  cooldownUntil:      null,
+  loading:            false,
 
   load: async () => {
     // Filtra sempre pelo broker atual — o contador é individual, nunca agregado.
@@ -107,10 +126,25 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
       const startOfWeek  = daysAgoIso(7)
       const startOfMonth = daysAgoIso(30)
 
-      const [dayRes, weekRes, monthRes, histRes, cooldownRes] = await Promise.all([
+      const [
+        dayRes, weekRes, monthRes,
+        dayNewRes, weekNewRes, monthNewRes,
+        dayFollowupRes, weekFollowupRes, monthFollowupRes,
+        histRes, cooldownRes,
+      ] = await Promise.all([
+        // Totais (inclui 'legacy')
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfDay),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfWeek),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfMonth),
+        // Novos disparos (tipo 'new')
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'new').gte('fired_at', startOfDay),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'new').gte('fired_at', startOfWeek),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'new').gte('fired_at', startOfMonth),
+        // Follow-ups (tipo 'followup')
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfDay),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfWeek),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfMonth),
+        // Histórico (todos os tipos para o gráfico de barras)
         supabase.from('disparo_logs').select('fired_at').eq('broker_id', brokerId).gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
         // Busca o cooldown_until mais recente para reconstruir o countdown após navegação/F5
         supabase.from('disparo_logs').select('cooldown_until').eq('broker_id', brokerId).not('cooldown_until', 'is', null).order('fired_at', { ascending: false }).limit(1),
@@ -132,7 +166,20 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
       const cooldownRow = (cooldownRes.data ?? [])[0] as { cooldown_until: string } | undefined
       const cooldownUntil = cooldownRow?.cooldown_until ?? null
 
-      set({ countDay: dayRes.count ?? 0, countWeek: weekRes.count ?? 0, countMonth: monthRes.count ?? 0, history, cooldownUntil, loading: false })
+      set({
+        countDay:           dayRes.count           ?? 0,
+        countWeek:          weekRes.count          ?? 0,
+        countMonth:         monthRes.count         ?? 0,
+        countDayNew:        dayNewRes.count        ?? 0,
+        countWeekNew:       weekNewRes.count       ?? 0,
+        countMonthNew:      monthNewRes.count      ?? 0,
+        countDayFollowup:   dayFollowupRes.count   ?? 0,
+        countWeekFollowup:  weekFollowupRes.count  ?? 0,
+        countMonthFollowup: monthFollowupRes.count ?? 0,
+        history,
+        cooldownUntil,
+        loading: false,
+      })
     } catch (err) {
       console.error('[DisparosStore] Erro ao carregar:', err)
       set({ loading: false })
@@ -169,13 +216,14 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
     // Sem atualização otimista — o Realtime dispara load() ao confirmar o INSERT no banco,
     // garantindo que o contador sempre reflita o valor real persistido.
     const { error } = await supabase.from('disparo_logs').insert({
-      fired_at:      new Date().toISOString(),
-      broker_id:     ctx.brokerId      ?? null,
-      lead_list_id:  ctx.leadListId    ?? null,
-      campaign_id:   ctx.campaignId    ?? null,
-      lead_id:       ctx.leadId        ?? null,
-      lead_name:     ctx.leadName      ?? null,
+      fired_at:       new Date().toISOString(),
+      broker_id:      ctx.brokerId      ?? null,
+      lead_list_id:   ctx.leadListId    ?? null,
+      campaign_id:    ctx.campaignId    ?? null,
+      lead_id:        ctx.leadId        ?? null,
+      lead_name:      ctx.leadName      ?? null,
       cooldown_until: ctx.cooldownUntil ?? null,
+      dispatch_type:  ctx.dispatchType  ?? 'new',
     })
 
     if (error) {
@@ -236,30 +284,59 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
 
     const { data } = await supabase
       .from('disparo_logs')
-      .select('broker_id, fired_at')
+      .select('broker_id, fired_at, dispatch_type')
       .gte('fired_at', startOfMonth)
       .not('broker_id', 'is', null)
 
     const rows = data ?? []
-    const byBroker: Record<string, { total: number; today: number; thisWeek: number; thisMonth: number; byDay: Record<string, number> }> = {}
+    const byBroker: Record<string, {
+      total: number; totalNew: number; totalFollowup: number
+      today: number
+      thisWeek: number; thisWeekNew: number; thisWeekFollowup: number
+      thisMonth: number; thisMonthNew: number; thisMonthFollowup: number
+      byDay: Record<string, number>
+    }> = {}
 
     for (const row of rows) {
-      const bid = row.broker_id as string
-      if (!byBroker[bid]) byBroker[bid] = { total: 0, today: 0, thisWeek: 0, thisMonth: 0, byDay: {} }
+      const bid  = row.broker_id as string
+      const type = (row.dispatch_type as string) ?? 'legacy'
+      if (!byBroker[bid]) byBroker[bid] = {
+        total: 0, totalNew: 0, totalFollowup: 0,
+        today: 0,
+        thisWeek: 0, thisWeekNew: 0, thisWeekFollowup: 0,
+        thisMonth: 0, thisMonthNew: 0, thisMonthFollowup: 0,
+        byDay: {},
+      }
       byBroker[bid].total++
       byBroker[bid].thisMonth++
-      if (row.fired_at >= startOfWeek) byBroker[bid].thisWeek++
-      if (row.fired_at >= startOfDay)  byBroker[bid].today++
+      if (type === 'new')      byBroker[bid].totalNew++
+      if (type === 'followup') byBroker[bid].totalFollowup++
+      if (row.fired_at >= startOfWeek) {
+        byBroker[bid].thisWeek++
+        if (type === 'new')      byBroker[bid].thisWeekNew++
+        if (type === 'followup') byBroker[bid].thisWeekFollowup++
+      }
+      if (row.fired_at >= startOfMonth) {
+        if (type === 'new')      byBroker[bid].thisMonthNew++
+        if (type === 'followup') byBroker[bid].thisMonthFollowup++
+      }
+      if (row.fired_at >= startOfDay) byBroker[bid].today++
       const day = firedAtLocalDate(row.fired_at as string)
       byBroker[bid].byDay[day] = (byBroker[bid].byDay[day] ?? 0) + 1
     }
 
     return Object.entries(byBroker).map(([brokerId, d]) => ({
       brokerId,
-      total:     d.total,
-      today:     d.today,
-      thisWeek:  d.thisWeek,
-      thisMonth: d.thisMonth,
+      total:            d.total,
+      totalNew:         d.totalNew,
+      totalFollowup:    d.totalFollowup,
+      today:            d.today,
+      thisWeek:         d.thisWeek,
+      thisWeekNew:      d.thisWeekNew,
+      thisWeekFollowup: d.thisWeekFollowup,
+      thisMonth:        d.thisMonth,
+      thisMonthNew:     d.thisMonthNew,
+      thisMonthFollowup: d.thisMonthFollowup,
       history: Array.from({ length: 30 }, (_, i) => {
         const dt = new Date()
         dt.setDate(dt.getDate() - (29 - i))

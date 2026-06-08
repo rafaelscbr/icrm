@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast'
 import { supabase } from './supabase'
 import { getCurrentUserId, requireBrokerId } from './auth'
+import { generateId } from './formatters'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
@@ -1060,4 +1061,44 @@ export const db = {
       if (error) throw error
     },
   },
+}
+
+// ─── Helpers autônomos ────────────────────────────────────────────────────────
+
+/**
+ * Registra um follow-up no histórico do contato em `lead_campaign_dispatches`.
+ * Best-effort: retorna silenciosamente se o contato não for encontrado pelo telefone.
+ * Nunca lança exceção — o disparo principal não deve ser bloqueado por isso.
+ */
+export async function saveFollowupToContact(params: {
+  phone:      string
+  campaignId: string
+  brokerId:   string
+  step:       number   // 0-based, igual a messageIndex
+}): Promise<void> {
+  // Normaliza o telefone para busca (apenas dígitos)
+  const digits = params.phone.replace(/\D/g, '')
+
+  // Tenta localizar o contato por telefone (ignora não encontrado)
+  const { data: contact } = await supabase
+    .from('contacts')
+    .select('id')
+    .or(`phone.eq.${params.phone},phone.eq.${digits}`)
+    .maybeSingle()
+
+  if (!contact) return
+
+  await supabase.from('lead_campaign_dispatches').insert({
+    id:            generateId(),
+    contact_id:    contact.id,
+    campaign_id:   params.campaignId,
+    list_id:       null,
+    broker_id:     params.brokerId,
+    dispatched_at: new Date().toISOString(),
+    message_index: params.step,
+    channel:       'whatsapp',
+    notes:         `Follow-up ${params.step + 1}/5`,
+    warmup_score:  0,
+  })
+  // Erro silencioso — não bloqueia o fluxo de disparo
 }

@@ -54,7 +54,8 @@ function Delta({ curr, prev }: { curr: number; prev: number }) {
 interface BrokerStats {
   id: string; name: string; initial: string
   interactions: number; advances: number; discards: number
-  newLeads: number; sales: number; revenue: number; disparos: number
+  newLeads: number; sales: number; revenue: number
+  disparos: number; disparosNew: number; disparosFollowup: number
   convRate: number
 }
 
@@ -66,32 +67,38 @@ export function BrokersTab() {
   const { loadBrokerSummaries }                    = useDisparosStore()
 
   const [period, setPeriod]                 = useState<Period>('mes')
-  const [disparosByBroker, setDisparos]     = useState<Record<string, number>>({})
+  const [disparosByBroker, setDisparos]     = useState<Record<string, { total: number; new: number; followup: number }>>({})
   const [prevDisparos, setPrevDisparos]     = useState<Record<string, number>>({})
+
+  function buildDisparosMap(summaries: import('../../store/useDisparosStore').BrokerDisparoSummary[], p: Period) {
+    const curr: Record<string, { total: number; new: number; followup: number }> = {}
+    summaries.forEach(s => {
+      if (p === 'semana') {
+        curr[s.brokerId] = { total: s.thisWeek, new: s.thisWeekNew, followup: s.thisWeekFollowup }
+      } else if (p === 'mes') {
+        curr[s.brokerId] = { total: s.thisMonth, new: s.thisMonthNew, followup: s.thisMonthFollowup }
+      } else {
+        curr[s.brokerId] = { total: s.total, new: s.totalNew, followup: s.totalFollowup }
+      }
+    })
+    return curr
+  }
 
   useEffect(() => {
     if (allProfiles.length === 0) fetchAllProfiles().catch(() => {})
     loadLeads(); loadSales()
     if (!allLoaded) loadAll()
     loadBrokerSummaries().then(summaries => {
-      const curr: Record<string, number> = {}
+      setDisparos(buildDisparosMap(summaries, period))
       const prev: Record<string, number> = {}
-      summaries.forEach(s => {
-        curr[s.brokerId] = period === 'semana' ? s.thisWeek : period === 'mes' ? s.thisMonth : s.total
-        prev[s.brokerId] = 0
-      })
-      setDisparos(curr)
+      summaries.forEach(s => { prev[s.brokerId] = 0 })
       setPrevDisparos(prev)
     }).catch(() => {})
   }, [])
 
   useEffect(() => {
     loadBrokerSummaries().then(summaries => {
-      const curr: Record<string, number> = {}
-      summaries.forEach(s => {
-        curr[s.brokerId] = period === 'semana' ? s.thisWeek : period === 'mes' ? s.thisMonth : s.total
-      })
-      setDisparos(curr)
+      setDisparos(buildDisparosMap(summaries, period))
     }).catch(() => {})
   }, [period])
 
@@ -124,9 +131,12 @@ export function BrokersTab() {
       const advances     = brokerInts.filter(i => i.type === 'stage_change' && inPeriod(i.interactedAt)).length
       const discards     = brokerInts.filter(i => i.type === 'discard' && inPeriod(i.interactedAt)).length
       const newLeads     = brokerLeads.filter(l => inPeriod(l.createdAt)).length
-      const brokerSales  = sales.filter(s => s.brokerId === broker.id && inPeriod(s.date))
-      const revenue      = brokerSales.reduce((a, s) => a + s.value, 0)
-      const disparos     = disparosByBroker[broker.id] ?? 0
+      const brokerSales       = sales.filter(s => s.brokerId === broker.id && inPeriod(s.date))
+      const revenue           = brokerSales.reduce((a, s) => a + s.value, 0)
+      const brokerDisparos    = disparosByBroker[broker.id]
+      const disparos          = brokerDisparos?.total    ?? 0
+      const disparosNew       = brokerDisparos?.new      ?? 0
+      const disparosFollowup  = brokerDisparos?.followup ?? 0
 
       const totalLeads   = brokerLeads.length
       const totalSales   = sales.filter(s => s.brokerId === broker.id).length
@@ -136,7 +146,7 @@ export function BrokersTab() {
         id: broker.id, name: broker.name,
         initial: broker.name.charAt(0).toUpperCase(),
         interactions, advances, discards, newLeads,
-        sales: brokerSales.length, revenue, disparos, convRate,
+        sales: brokerSales.length, revenue, disparos, disparosNew, disparosFollowup, convRate,
       }
     })
   }, [brokers, allLeads, allInteractions, sales, disparosByBroker, from])
@@ -151,10 +161,11 @@ export function BrokersTab() {
       })
       const inPrevRange = (iso: string) => new Date(iso) >= prevFrom && new Date(iso) < from
       result[broker.id] = {
-        interactions: brokerInts.filter(i => REAL_TYPES.has(i.type) && inPrevRange(i.interactedAt)).length,
-        advances:     brokerInts.filter(i => i.type === 'stage_change' && inPrevRange(i.interactedAt)).length,
-        discards:     brokerInts.filter(i => i.type === 'discard' && inPrevRange(i.interactedAt)).length,
-        disparos:     prevDisparos[broker.id] ?? 0,
+        interactions:    brokerInts.filter(i => REAL_TYPES.has(i.type) && inPrevRange(i.interactedAt)).length,
+        advances:        brokerInts.filter(i => i.type === 'stage_change' && inPrevRange(i.interactedAt)).length,
+        discards:        brokerInts.filter(i => i.type === 'discard' && inPrevRange(i.interactedAt)).length,
+        disparosNew:     prevDisparos[broker.id] ?? 0,
+        disparosFollowup: 0,
       }
     })
     return result
@@ -170,12 +181,13 @@ export function BrokersTab() {
   }
 
   const METRICS = (s: BrokerStats, prev: Partial<BrokerStats>) => [
-    { label: 'Disparos base fria', icon: Zap,            color: 'text-violet-400', bg: 'bg-violet-500/10', value: s.disparos,     prevVal: prev.disparos },
-    { label: 'Interações leads',   icon: MessageCircle,  color: 'text-green-400',  bg: 'bg-green-500/10',  value: s.interactions, prevVal: prev.interactions },
-    { label: 'Avanços no funil',   icon: ArrowRight,     color: 'text-brand',      bg: 'bg-brand/10',      value: s.advances,     prevVal: prev.advances },
-    { label: 'Leads novos',        icon: UserPlus,       color: 'text-sky-400',    bg: 'bg-sky-500/10',    value: s.newLeads,     prevVal: undefined },
-    { label: 'Descartes',          icon: XCircle,        color: 'text-error',      bg: 'bg-error-bg',      value: s.discards,     prevVal: prev.discards },
-    { label: 'Vendas',             icon: TrendingUp,     color: 'text-success',    bg: 'bg-success-bg',    value: s.sales,        prevVal: undefined },
+    { label: 'Novos Disparos',     icon: Zap,            color: 'text-violet-400', bg: 'bg-violet-500/10', value: s.disparosNew,      prevVal: prev.disparosNew },
+    { label: 'Follow-ups',         icon: BarChart2,      color: 'text-indigo-400', bg: 'bg-indigo-500/10', value: s.disparosFollowup, prevVal: prev.disparosFollowup },
+    { label: 'Interações leads',   icon: MessageCircle,  color: 'text-green-400',  bg: 'bg-green-500/10',  value: s.interactions,     prevVal: prev.interactions },
+    { label: 'Avanços no funil',   icon: ArrowRight,     color: 'text-brand',      bg: 'bg-brand/10',      value: s.advances,         prevVal: prev.advances },
+    { label: 'Leads novos',        icon: UserPlus,       color: 'text-sky-400',    bg: 'bg-sky-500/10',    value: s.newLeads,         prevVal: undefined },
+    { label: 'Descartes',          icon: XCircle,        color: 'text-error',      bg: 'bg-error-bg',      value: s.discards,         prevVal: prev.discards },
+    { label: 'Vendas',             icon: TrendingUp,     color: 'text-success',    bg: 'bg-success-bg',    value: s.sales,            prevVal: undefined },
     { label: 'Receita',            icon: DollarSign,     color: 'text-success',    bg: 'bg-success-bg',    value: null, revenue: s.revenue, prevVal: undefined },
   ]
 
