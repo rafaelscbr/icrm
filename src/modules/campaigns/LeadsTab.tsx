@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import {
   MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown,
   ThumbsUp, Loader2, Clock, Moon, AlertCircle, ShoppingBag, Circle,
@@ -179,38 +179,48 @@ function isBusinessHours(): boolean {
 
 function MessagePickerModal({ isOpen, onClose, templates, onPick, leadName }: {
   isOpen: boolean; onClose: () => void
-  templates: string[]; onPick: (msg: string, index: number) => void
+  templates: string[]; onPick: (msg: string, index: number) => Promise<void>
   leadName?: string
 }) {
   const [selected, setSelected] = useState<number | null>(null)
+  const [loading,  setLoading]  = useState(false)
 
-  // Reset ao abrir
-  useEffect(() => { if (isOpen) setSelected(null) }, [isOpen])
+  // useLayoutEffect garante reset síncrono antes do paint — elimina estado stale
+  // que o useEffect normal causava (disparo assíncrono após render com índice antigo)
+  useLayoutEffect(() => { if (isOpen) setSelected(null) }, [isOpen])
 
-  function handleConfirm() {
-    if (selected === null) return
-    onPick(templates[selected], selected)
-    onClose()
+  async function handleConfirm() {
+    if (selected === null || loading) return
+    setLoading(true)
+    try {
+      await onPick(templates[selected], selected)
+      // Só fecha após confirmação do banco — se onPick lançar, modal fica aberto para retry
+      onClose()
+    } catch {
+      // Erro já exibido por sendWhatsApp via toast; mantém modal aberto para retry
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={loading ? () => {} : onClose}
       title=""
       size="md"
       footer={
         <div className="flex items-center gap-3 w-full">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-t3 hover:text-t1 border border-line hover:border-line-strong bg-surface transition-all cursor-pointer">
+          <button onClick={onClose} disabled={loading} className="px-4 py-2 rounded-xl text-sm text-t3 hover:text-t1 border border-line hover:border-line-strong bg-surface transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
             Cancelar
           </button>
           <button
             onClick={handleConfirm}
-            disabled={selected === null}
+            disabled={selected === null || loading}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-brand hover:bg-brand-dark text-[#0F1730] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <MessageCircle size={14} />
-            Enviar mensagem {selected !== null ? `${selected + 1}` : ''}
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />}
+            {loading ? 'Registrando…' : `Enviar mensagem${selected !== null ? ` ${selected + 1}` : ''}`}
           </button>
         </div>
       }
@@ -576,6 +586,12 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
   // Após confirmação do banco, exibe toast com link <a> para o usuário abrir o WhatsApp.
   // Link <a> com target="_blank" nunca é bloqueado por popup blocker nem por
   // transient user activation — funciona em iOS Safari, Android e desktop.
+  //
+  // ORDEM DAS ESCRITAS — crítica para evitar cooldown fantasma:
+  // 1. markContacted: atualiza o lead (operação de negócio principal)
+  // 2. persistDisparo: grava o log + seta cooldownUntil no store
+  // Dessa forma, se markContacted falhar, persistDisparo nunca é chamado
+  // e cooldownUntil não é setado — o usuário não fica travado no cooldown.
   async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
     const cooldownMs    = randomCooldownMs()
     const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString()
@@ -583,14 +599,14 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     navigator.clipboard?.writeText(msg).catch(() => {})
 
     try {
-      await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
       await markContacted(lead.id, msg, templateIndex, sentBy)
-    } catch {
+      await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
+    } catch (err) {
       toast.error(
         'Disparo não realizado — não foi possível registrar no sistema. Verifique sua conexão e tente novamente.',
         { duration: 7000 }
       )
-      return
+      throw err  // re-lança para que handleConfirm mantenha o modal aberto
     }
 
     clearReady()
@@ -1087,13 +1103,17 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       <LeadEditModal
         isOpen={Boolean(editLead)} onClose={() => setEditLead(undefined)} lead={editLead}
       />
+      {/* key={pickerLead.id} força remount completo a cada lead:
+           garante estado local limpo (selected=null, loading=false) sem depender
+           de useLayoutEffect para apagar estado de disparos anteriores           */}
       <MessagePickerModal
+        key={pickerLead?.id ?? '__picker_closed__'}
         isOpen={Boolean(pickerLead)} onClose={() => setPickerLead(undefined)}
         templates={pickerLead ? getTemplates(pickerLead) : []}
         leadName={pickerLead?.name}
-        onPick={(msg, idx) => {
+        onPick={async (msg, idx) => {
           if (!pickerLead) return
-          sendWhatsApp(pickerLead, msg, idx)
+          await sendWhatsApp(pickerLead, msg, idx)
         }}
       />
       <Modal isOpen={Boolean(deleteLead)} onClose={() => setDeleteLead(undefined)} title="Remover lead" size="sm">
