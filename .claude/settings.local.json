@@ -57,7 +57,27 @@
       "Bash(cat /Users/rafasouza/Documents/icrm/.claude/settings.json 2>/dev/null || cat /Users/rafasouza/.claude/settings.json 2>/dev/null)",
       "Bash(git reset *)",
       "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__list_tables",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(sed -n '280,295p' /Users/rafasouza/Documents/icrm/src/modules/campaigns/LeadsTab.tsx)",
+      "Bash(sed -n '460,490p' /Users/rafasouza/Documents/icrm/src/modules/campaigns/LeadsTab.tsx)",
+      "Bash(sed -i '' 's|<Card className=\"!p-0 overflow-hidden\">|<ListContainer>|g' /Users/rafasouza/Documents/icrm/src/modules/contacts/ContactsPage.tsx)",
+      "Bash(sed -i '' 's|</Card>|</ListContainer>|g' /Users/rafasouza/Documents/icrm/src/modules/contacts/ContactsPage.tsx)",
+      "Bash(sed -i '' 's|<Card className=\"!p-0 overflow-hidden\">|<ListContainer>|g' /Users/rafasouza/Documents/icrm/src/pages/ActivityLogsPage.tsx)",
+      "Bash(sed -i '' 's|</Card>|</ListContainer>|g' /Users/rafasouza/Documents/icrm/src/pages/ActivityLogsPage.tsx)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm diff --stat)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm add src/modules/campaigns/CampaignsPage.tsx)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm commit -m ' *)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm log --oneline -3)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm show d559b07 --stat)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm show 0e4332e --stat)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm show 5a14129 -- src/lib/formatters.ts)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm add src/lib/formatters.ts)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm add src/store/useCampaignLeadsStore.ts src/store/useDisparosStore.ts src/modules/campaigns/LeadParecerModal.tsx)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm add src/store/useDisparosStore.ts)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm push origin main)",
+      "Bash(grep -n \"throw error\\\\|return$\\\\|if \\(error\\)\" /Users/rafasouza/Documents/icrm/src/store/useDisparosStore.ts)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in d.items\\(\\) if k in ['devDependencies','scripts','dependencies']}, indent=2\\)\\)\")",
+      "Bash(npm test *)"
     ]
   }
 }

@@ -177,7 +177,7 @@ function isBusinessHours(): boolean {
 
 // ─── Message picker ───────────────────────────────────────────────────────────
 
-function MessagePickerModal({ isOpen, onClose, templates, onPick, leadName }: {
+export function MessagePickerModal({ isOpen, onClose, templates, onPick, leadName }: {
   isOpen: boolean; onClose: () => void
   templates: string[]; onPick: (msg: string, index: number) => Promise<void>
   leadName?: string
