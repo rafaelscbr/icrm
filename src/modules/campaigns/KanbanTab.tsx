@@ -15,6 +15,7 @@ import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { CampaignLead, Campaign, FunnelStage, Lead, Task } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useDisparosStore } from '../../store/useDisparosStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { FUNNEL_STAGES, SITUATION_CONFIG } from './config'
@@ -171,6 +172,7 @@ function LeadCard({
   ghost?: boolean
 }) {
   const { markContacted, update } = useCampaignLeadsStore()
+  const { increment: persistDisparo } = useDisparosStore()
   const { profile } = useAuthStore()
   const sentBy = profile ? { id: profile.id, name: profile.name } : undefined
   const situation = SITUATION_CONFIG.find(s => s.value === lead.situation)
@@ -192,24 +194,57 @@ function LeadCard({
 
   const templates = [campaign.message, ...(campaign.messages ?? [])]
 
-  function handleSendAndRegister(e: React.MouseEvent) {
+  async function handleSendAndRegister(e: React.MouseEvent) {
     e.stopPropagation()
+
     if (lead.funnelStage === 'attended') {
       const templateIndex = Math.min(dispatchStep, templates.length - 1)
       const msg = templates[templateIndex].replace(/\{nome\}/gi, lead.name)
       navigator.clipboard?.writeText(msg).catch(() => {})
-      window.open(whatsappUrl(lead.phone, msg), '_blank')
-      markContacted(lead.id, msg, templateIndex, sentBy)
-      toast.success(`${dispatchStep + 1}ª mensagem registrada! · Copiada como backup`)
+      try {
+        await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
+        await markContacted(lead.id, msg, templateIndex, sentBy)
+      } catch {
+        toast.error('Disparo não realizado — não foi possível registrar. Verifique sua conexão.', { duration: 7000 })
+        return
+      }
+      const url = whatsappUrl(lead.phone, msg)
+      toast((t) => (
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-t1">{dispatchStep + 1}ª mensagem registrada!</span>
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-sm font-semibold transition-colors">
+            <MessageCircle size={14} />
+            Abrir WhatsApp
+          </a>
+        </div>
+      ), { duration: 20_000 })
       return
     }
+
     const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
     navigator.clipboard?.writeText(msg).catch(() => {})
-    window.open(whatsappUrl(lead.phone, msg), '_blank')
     const wasNew = lead.funnelStage === 'new'
-    markContacted(lead.id, msg, 0, sentBy)
-    if (wasNew) toast.success('1ª mensagem registrada! · Copiada como backup')
-    else toast.success('Mensagem registrada! · Copiada como backup')
+    try {
+      await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name })
+      await markContacted(lead.id, msg, 0, sentBy)
+    } catch {
+      toast.error('Disparo não realizado — não foi possível registrar. Verifique sua conexão.', { duration: 7000 })
+      return
+    }
+    const url = whatsappUrl(lead.phone, msg)
+    toast((t) => (
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-t1">{wasNew ? '1ª mensagem registrada!' : 'Mensagem registrada!'}</span>
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          onClick={() => toast.dismiss(t.id)}
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-sm font-semibold transition-colors">
+          <MessageCircle size={14} />
+          Abrir WhatsApp
+        </a>
+      </div>
+    ), { duration: 20_000 })
   }
 
   function handleOpenOnly(e: React.MouseEvent) {

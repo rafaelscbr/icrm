@@ -572,23 +572,11 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     return all.map(m => m.replace(/\{nome\}/gi, firstName))
   }
 
-  // whatsappTab é uma aba em branco aberta SINCRONAMENTE dentro do gesto do usuário,
-  // antes de qualquer await. Browsers móveis (iOS Safari) bloqueiam window.open()
-  // chamado após operações async — abrir a aba dentro do gesto garante que nunca
-  // será bloqueada. Ela é redirecionada ao WhatsApp após confirmação do banco,
-  // ou fechada silenciosamente em caso de falha.
-  async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number, whatsappTab?: Window | null) {
-    // Verificação ANTES de qualquer operação no banco.
-    // Se a aba WhatsApp não pôde ser aberta (popup bloqueado), o banco não deve ser
-    // atualizado — disparo não aconteceu de fato.
-    if (!whatsappTab) {
-      toast.error(
-        'Não foi possível abrir o WhatsApp. Habilite popups para este site e tente novamente.',
-        { duration: 8000 }
-      )
-      return
-    }
-
+  // Banco é gravado ANTES de qualquer abertura do WhatsApp.
+  // Após confirmação do banco, exibe toast com link <a> para o usuário abrir o WhatsApp.
+  // Link <a> com target="_blank" nunca é bloqueado por popup blocker nem por
+  // transient user activation — funciona em iOS Safari, Android e desktop.
+  async function sendWhatsApp(lead: CampaignLead, msg: string, templateIndex: number) {
     const cooldownMs    = randomCooldownMs()
     const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString()
 
@@ -598,7 +586,6 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       await persistDisparo({ brokerId: profile?.id, campaignId: campaign.id, leadId: lead.id, leadName: lead.name, cooldownUntil })
       await markContacted(lead.id, msg, templateIndex, sentBy)
     } catch {
-      whatsappTab.close()
       toast.error(
         'Disparo não realizado — não foi possível registrar no sistema. Verifique sua conexão e tente novamente.',
         { duration: 7000 }
@@ -606,29 +593,40 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
       return
     }
 
-    // Banco confirmou — redireciona a aba já aberta para o WhatsApp
-    if (!whatsappTab.closed) {
-      whatsappTab.location.href = whatsappUrl(lead.phone, msg)
-    } else {
-      // Usuário fechou a aba manualmente durante o processamento. Banco foi atualizado
-      // (intenção era disparar) e mensagem está na área de transferência como backup.
-      toast('Disparo registrado. A aba do WhatsApp foi fechada — cole a mensagem e envie manualmente.', {
-        icon: '⚠️', duration: 10_000,
-      })
-    }
-
     clearReady()
     const secs  = startWithMs(cooldownMs)
     const total = dailyIncrement()
     setForceOffHours(false)
     const wasNew = lead.funnelStage === 'new'
+    const url = whatsappUrl(lead.phone, msg)
+
     if (total >= DAILY_WARN && total < DAILY_LIMIT) {
       toast(`⚠️ ${total} disparos hoje — limite ${DAILY_WARN} recomendado. Cuidado com o ban!`, { duration: 5000, icon: '⚠️' })
-    } else if (wasNew) {
-      toast.success(`1ª mensagem enviada! Próximo disparo em ${secs}s. · Mensagem copiada como backup`)
-    } else {
-      toast.success(`Mensagem enviada. Próximo disparo em ${secs}s. · Mensagem copiada como backup`)
     }
+
+    toast(
+      (t) => (
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-semibold text-t1">
+              {wasNew ? '1ª mensagem registrada!' : 'Mensagem registrada!'}
+            </span>
+            <span className="text-xs text-t3">Próximo disparo em {secs}s · Copiada como backup</span>
+          </div>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-sm font-semibold transition-colors"
+          >
+            <MessageCircle size={14} />
+            Abrir WhatsApp
+          </a>
+        </div>
+      ),
+      { duration: 20_000 }
+    )
   }
 
   async function handleWhatsApp(lead: CampaignLead) {
@@ -1095,10 +1093,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         leadName={pickerLead?.name}
         onPick={(msg, idx) => {
           if (!pickerLead) return
-          // Único lugar onde window.open é chamado — dentro do gesto de clique do usuário,
-          // sem nenhum await anterior. Garante compatibilidade com iOS Safari.
-          const tab = window.open('', '_blank')
-          sendWhatsApp(pickerLead, msg, idx, tab)
+          sendWhatsApp(pickerLead, msg, idx)
         }}
       />
       <Modal isOpen={Boolean(deleteLead)} onClose={() => setDeleteLead(undefined)} title="Remover lead" size="sm">
