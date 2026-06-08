@@ -328,7 +328,7 @@ function LeadCard({
         {lead.lastSentByName && (
           <p className="mb-1.5 text-[10px] text-violet-400/80 truncate">
             💬 {lead.lastSentByName}
-            {lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+            {lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
             {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
           </p>
         )}
