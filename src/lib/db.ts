@@ -611,8 +611,16 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
   const PAGE = 1000
   const result: T[] = []
   let from = 0
+  // ── [PERF] Instrumentação temporária ─────────────────────────────────────
+  const perfStart = performance.now()
+  let pageCount   = 0
+  // ─────────────────────────────────────────────────────────────────────────
 
   while (true) {
+    // ── [PERF] Tempo por página ───────────────────────────────────────────
+    const pageStart = performance.now()
+    pageCount++
+    // ─────────────────────────────────────────────────────────────────────
     const { data, error } = await supabase
       .from(table)
       .select('*')
@@ -628,10 +636,24 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
       throw error
     }
 
+    // ── [PERF] Log por página ─────────────────────────────────────────────
+    const pageMs = Math.round(performance.now() - pageStart)
+    console.log(`[PERF] ${table} — página ${pageCount} (offset ${from}): ${data.length} linhas em ${pageMs}ms`)
+    // ─────────────────────────────────────────────────────────────────────
+
     result.push(...(data as R[]).map(mapper))
     if (data.length < PAGE) break
     from += PAGE
   }
+
+  // ── [PERF] Resumo total ───────────────────────────────────────────────
+  const totalMs   = Math.round(performance.now() - perfStart)
+  const totalRows = result.length
+  console.log(
+    `[PERF] ${table} — TOTAL: ${totalRows} linhas, ${pageCount} request(s) HTTP sequenciais, ${totalMs}ms parede`,
+    `| ~${Math.round(totalRows * 784 / 1024)} KB raw | ~${Math.round(totalRows * 784 * 1.4 / 1024)} KB JSON`
+  )
+  // ─────────────────────────────────────────────────────────────────────
 
   // Remove duplicatas remanescentes (segurança extra)
   const seen = new Set<string>()
