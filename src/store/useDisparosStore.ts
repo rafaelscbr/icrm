@@ -69,7 +69,9 @@ export interface DisparosState {
   countDayFollowup:   number
   countWeekFollowup:  number
   countMonthFollowup: number
-  history:       { date: string; label: string; count: number }[]
+  history:      { date: string; label: string; count: number }[]
+  /** Histórico dos últimos 30 dias apenas para dispatch_type='new' (gráficos de métricas) */
+  historyNew:   { date: string; label: string; count: number }[]
   /** Timestamp UTC até quando o cooldown anti-ban do broker está ativo.
    *  Persistido no banco — sobrevive a navegação, F5 e troca de dispositivo. */
   cooldownUntil: string | null
@@ -111,6 +113,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
   countWeekFollowup:  0,
   countMonthFollowup: 0,
   history:            [],
+  historyNew:         [],
   cooldownUntil:      null,
   loading:            false,
 
@@ -130,7 +133,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
         dayRes, weekRes, monthRes,
         dayNewRes, weekNewRes, monthNewRes,
         dayFollowupRes, weekFollowupRes, monthFollowupRes,
-        histRes, cooldownRes,
+        histRes, histNewRes, cooldownRes,
       ] = await Promise.all([
         // Totais (inclui 'legacy')
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfDay),
@@ -144,8 +147,10 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfDay),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfWeek),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfMonth),
-        // Histórico (todos os tipos para o gráfico de barras)
+        // Histórico total (todos os tipos — para o gráfico de cooldown/anti-ban)
         supabase.from('disparo_logs').select('fired_at').eq('broker_id', brokerId).gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
+        // Histórico apenas 'new' (para gráficos de métricas)
+        supabase.from('disparo_logs').select('fired_at').eq('broker_id', brokerId).eq('dispatch_type', 'new').gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
         // Busca o cooldown_until mais recente para reconstruir o countdown após navegação/F5
         supabase.from('disparo_logs').select('cooldown_until').eq('broker_id', brokerId).not('cooldown_until', 'is', null).order('fired_at', { ascending: false }).limit(1),
       ])
@@ -156,12 +161,22 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
         byDay[d] = (byDay[d] ?? 0) + 1
       }
 
-      const history = Array.from({ length: 30 }, (_, i) => {
-        const dt = new Date()
-        dt.setDate(dt.getDate() - (29 - i))
-        const date = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
-        return { date, label: `${dt.getDate()}/${dt.getMonth() + 1}`, count: byDay[date] ?? 0 }
-      })
+      const byDayNew: Record<string, number> = {}
+      for (const row of (histNewRes.data ?? [])) {
+        const d = firedAtLocalDate(row.fired_at as string)
+        byDayNew[d] = (byDayNew[d] ?? 0) + 1
+      }
+
+      const buildHistory = (byDayMap: Record<string, number>) =>
+        Array.from({ length: 30 }, (_, i) => {
+          const dt = new Date()
+          dt.setDate(dt.getDate() - (29 - i))
+          const date = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+          return { date, label: `${dt.getDate()}/${dt.getMonth() + 1}`, count: byDayMap[date] ?? 0 }
+        })
+
+      const history    = buildHistory(byDay)
+      const historyNew = buildHistory(byDayNew)
 
       const cooldownRow = (cooldownRes.data ?? [])[0] as { cooldown_until: string } | undefined
       const cooldownUntil = cooldownRow?.cooldown_until ?? null
@@ -177,6 +192,7 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
         countWeekFollowup:  weekFollowupRes.count  ?? 0,
         countMonthFollowup: monthFollowupRes.count ?? 0,
         history,
+        historyNew,
         cooldownUntil,
         loading: false,
       })

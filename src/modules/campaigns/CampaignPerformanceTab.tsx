@@ -71,8 +71,8 @@ interface Props {
 
 export function CampaignPerformanceTab({ leads }: Props) {
 
-  // Disparos do Supabase (persistentes entre dispositivos e limpezas de cache)
-  const { countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes, history, load: loadDisparos } = useDisparosStore()
+  // Disparos do Supabase (apenas 'new' — não contabiliza follow-ups nas metas)
+  const { countDayNew: disparosHoje, countWeekNew: disparosSemana, countMonthNew: disparosMes, historyNew: history, load: loadDisparos } = useDisparosStore()
   useEffect(() => { loadDisparos() }, [loadDisparos])
 
   // Interessados por dia (funnelStage === 'attended', agrupados por stageUpdatedAt)

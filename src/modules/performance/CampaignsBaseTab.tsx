@@ -15,7 +15,8 @@ export function CampaignsBaseTab() {
   const { lists, load: loadLists }                = useLeadListsStore()
   const { campaigns, load: loadCampaigns }        = useCampaignsStore()
   const { leads: campLeads, load: loadCampLeads } = useCampaignLeadsStore()
-  const { countMonth: disparosMes, countWeek: disparosSemana, countDay: disparosHoje, history, load: loadDisparos } = useDisparosStore()
+  // Apenas 'new' — follow-ups não entram na contagem de base fria
+  const { countMonthNew: disparosMes, countWeekNew: disparosSemana, countDayNew: disparosHoje, historyNew: history, load: loadDisparos } = useDisparosStore()
 
   useEffect(() => {
     loadLists(); loadCampaigns(); loadCampLeads(); loadDisparos()
