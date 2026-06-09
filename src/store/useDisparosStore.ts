@@ -282,9 +282,11 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
   increment: async (ctx = {}) => {
     // Sem atualização otimista — o Realtime dispara load() ao confirmar o INSERT no banco,
     // garantindo que o contador sempre reflita o valor real persistido.
+    // broker_id: usa ctx.brokerId se fornecido, senão fallback para getCurrentUserId()
+    // para garantir que o registro nunca fica sem broker_id quando há sessão ativa.
     const { error } = await supabase.from('disparo_logs').insert({
       fired_at:       new Date().toISOString(),
-      broker_id:      ctx.brokerId      ?? null,
+      broker_id:      ctx.brokerId ?? getCurrentUserId() ?? null,
       lead_list_id:   ctx.leadListId    ?? null,
       campaign_id:    ctx.campaignId    ?? null,
       lead_id:        ctx.leadId        ?? null,
