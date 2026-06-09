@@ -15,8 +15,14 @@ export function CampaignsBaseTab() {
   const { lists, load: loadLists }                = useLeadListsStore()
   const { campaigns, load: loadCampaigns }        = useCampaignsStore()
   const { leads: campLeads, load: loadCampLeads } = useCampaignLeadsStore()
-  // Apenas 'new' — follow-ups não entram na contagem de base fria
-  const { countMonthNew: disparosMes, countWeekNew: disparosSemana, countDayNew: disparosHoje, historyNew: history, load: loadDisparos } = useDisparosStore()
+  // Totais globais (todos os corretores) — analytics admin, não o contador pessoal do usuário
+  const {
+    countMonthNewGlobal: disparosMes,
+    countWeekNewGlobal:  disparosSemana,
+    countDayNewGlobal:   disparosHoje,
+    historyNewGlobal:    history,
+    loadGlobal:          loadDisparos,
+  } = useDisparosStore()
 
   useEffect(() => {
     loadLists(); loadCampaigns(); loadCampLeads(); loadDisparos()

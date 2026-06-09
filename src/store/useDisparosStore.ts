@@ -72,11 +72,18 @@ export interface DisparosState {
   history:      { date: string; label: string; count: number }[]
   /** Histórico dos últimos 30 dias apenas para dispatch_type='new' (gráficos de métricas) */
   historyNew:   { date: string; label: string; count: number }[]
+  /** Totais globais (todos os corretores) — usados em telas de analytics admin */
+  countDayNewGlobal:   number
+  countWeekNewGlobal:  number
+  countMonthNewGlobal: number
+  historyNewGlobal:    { date: string; label: string; count: number }[]
   /** Timestamp UTC até quando o cooldown anti-ban do broker está ativo.
    *  Persistido no banco — sobrevive a navegação, F5 e troca de dispositivo. */
   cooldownUntil: string | null
   loading:       boolean
   load:          () => Promise<void>
+  /** Carrega totais globais (sem filtro de broker) — para telas de analytics admin */
+  loadGlobal:    () => Promise<void>
   /** Assina disparo_logs via Realtime — retorna função de cancelamento */
   subscribe:   () => () => void
   /** Grava disparo com contexto completo */
@@ -114,6 +121,10 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
   countMonthFollowup: 0,
   history:            [],
   historyNew:         [],
+  countDayNewGlobal:   0,
+  countWeekNewGlobal:  0,
+  countMonthNewGlobal: 0,
+  historyNewGlobal:    [],
   cooldownUntil:      null,
   loading:            false,
 
@@ -199,6 +210,45 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
     } catch (err) {
       console.error('[DisparosStore] Erro ao carregar:', err)
       set({ loading: false })
+    }
+  },
+
+  loadGlobal: async () => {
+    // Sem filtro de broker — retorna totais de TODOS os corretores.
+    // Usado exclusivamente em telas de analytics admin (CampaignsBaseTab, etc.).
+    const startOfDay   = daysAgoIso(0)
+    const startOfWeek  = daysAgoIso(7)
+    const startOfMonth = daysAgoIso(30)
+
+    try {
+      const [dayRes, weekRes, monthRes, histNewRes] = await Promise.all([
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('dispatch_type', 'new').gte('fired_at', startOfDay),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('dispatch_type', 'new').gte('fired_at', startOfWeek),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('dispatch_type', 'new').gte('fired_at', startOfMonth),
+        supabase.from('disparo_logs').select('fired_at').eq('dispatch_type', 'new').gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
+      ])
+
+      const byDayNew: Record<string, number> = {}
+      for (const row of (histNewRes.data ?? [])) {
+        const d = firedAtLocalDate(row.fired_at as string)
+        byDayNew[d] = (byDayNew[d] ?? 0) + 1
+      }
+
+      const historyNewGlobal = Array.from({ length: 30 }, (_, i) => {
+        const dt = new Date()
+        dt.setDate(dt.getDate() - (29 - i))
+        const date = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+        return { date, label: `${dt.getDate()}/${dt.getMonth() + 1}`, count: byDayNew[date] ?? 0 }
+      })
+
+      set({
+        countDayNewGlobal:   dayRes.count   ?? 0,
+        countWeekNewGlobal:  weekRes.count  ?? 0,
+        countMonthNewGlobal: monthRes.count ?? 0,
+        historyNewGlobal,
+      })
+    } catch (err) {
+      console.error('[DisparosStore] Erro ao carregar globais:', err)
     }
   },
 
