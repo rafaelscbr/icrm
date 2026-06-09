@@ -248,10 +248,10 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     }
 
     if (lead) {
-      update(lead.id, { ...data, createdAt: entryDate + 'T00:00:00.000Z' })
+      update(lead.id, { ...data, createdAt: entryDate + 'T12:00:00.000Z' })
       toast.success('Lead atualizado!')
     } else {
-      add({ ...data, createdAt: entryDate + 'T00:00:00.000Z' })
+      add({ ...data, createdAt: entryDate + 'T12:00:00.000Z' })
       if (isRetroactive) toast.success(`Lead registrado retroativamente para ${new Date(entryDate + 'T12:00:00').toLocaleDateString('pt-BR')}`)
       else toast.success('Lead criado!')
     }

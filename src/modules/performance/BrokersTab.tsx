@@ -18,6 +18,11 @@ import { formatCurrency } from '../../lib/formatters'
 
 const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
 
+/** Converte um Date para string YYYY-MM-DD no fuso local */
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 type Period = 'semana' | 'mes' | 'total'
 
 const PERIODS: { id: Period; label: string }[] = [
@@ -115,6 +120,12 @@ export function BrokersTab() {
     return new Date(f.getTime() - diff)
   }, [period])
 
+  // Strings YYYY-MM-DD derivadas das datas de corte — usadas para comparação
+  // de datas sem problema de timezone (leads são salvos como midnight UTC =
+  // data local correta em string, mas em timestamp é 3h antes da meia-noite local).
+  const fromStr    = useMemo(() => toDateStr(from),    [from])
+  const prevFromStr = useMemo(() => toDateStr(prevFrom), [prevFrom])
+
   const allInteractions = useMemo(() => Object.values(byLead).flat(), [byLead])
 
   const stats = useMemo((): BrokerStats[] => {
@@ -125,7 +136,10 @@ export function BrokersTab() {
         return lead?.brokerId === broker.id
       })
 
-      function inPeriod(iso: string) { return new Date(iso) >= from }
+      // Compara apenas YYYY-MM-DD — evita offset UTC-3 excluir registros do dia correto.
+      // LeadForm salva created_at como midnight UTC do dia selecionado; interactions
+      // são timestamps completos mas basta o dia para a granularidade semanal/mensal.
+      function inPeriod(iso: string) { return iso.substring(0, 10) >= fromStr }
 
       const interactions = brokerInts.filter(i => REAL_TYPES.has(i.type) && inPeriod(i.interactedAt)).length
       const advances     = brokerInts.filter(i => i.type === 'stage_change' && inPeriod(i.interactedAt)).length
@@ -149,7 +163,7 @@ export function BrokersTab() {
         sales: brokerSales.length, revenue, disparos, disparosNew, disparosFollowup, convRate,
       }
     })
-  }, [brokers, allLeads, allInteractions, sales, disparosByBroker, from])
+  }, [brokers, allLeads, allInteractions, sales, disparosByBroker, fromStr])
 
   const prevStats = useMemo((): Record<string, Partial<BrokerStats>> => {
     const result: Record<string, Partial<BrokerStats>> = {}
@@ -159,7 +173,7 @@ export function BrokersTab() {
         const lead = allLeads.find(l => l.id === i.leadId)
         return lead?.brokerId === broker.id
       })
-      const inPrevRange = (iso: string) => new Date(iso) >= prevFrom && new Date(iso) < from
+      const inPrevRange = (iso: string) => iso.substring(0, 10) >= prevFromStr && iso.substring(0, 10) < fromStr
       result[broker.id] = {
         interactions:    brokerInts.filter(i => REAL_TYPES.has(i.type) && inPrevRange(i.interactedAt)).length,
         advances:        brokerInts.filter(i => i.type === 'stage_change' && inPrevRange(i.interactedAt)).length,
@@ -169,7 +183,7 @@ export function BrokersTab() {
       }
     })
     return result
-  }, [brokers, allLeads, allInteractions, prevFrom, from, period, prevDisparos])
+  }, [brokers, allLeads, allInteractions, prevFromStr, fromStr, period, prevDisparos])
 
   if (brokers.length === 0) {
     return (
