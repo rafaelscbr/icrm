@@ -200,17 +200,15 @@ function LeadCard({
 
     try {
       if (lead.funnelStage === 'attended') {
-        // Follow-up: copia o próximo template e abre WhatsApp com a mensagem pré-preenchida
+        // Follow-up: sem mensagem pré-pronta — abre WhatsApp só com o número
         const templateIndex = Math.min(dispatchStep, templates.length - 1)
-        const msg = templates[templateIndex].replace(/\{nome\}/gi, lead.name)
-        navigator.clipboard?.writeText(msg).catch(() => {})
 
         await persistDisparo({
           brokerId: profile?.id, campaignId: campaign.id,
           leadId: lead.id, leadName: lead.name,
           dispatchType: 'followup',
         })
-        await markContacted(lead.id, msg, templateIndex, sentBy)
+        await markContacted(lead.id, '', templateIndex, sentBy)
 
         // Salva no histórico do contato (best-effort, sem bloqueio)
         if (profile?.id) {
@@ -220,7 +218,7 @@ function LeadCard({
           }).catch(() => {})
         }
 
-        const url = whatsappUrl(lead.phone, msg)
+        const url = whatsappUrl(lead.phone)
         toast((t) => (
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-t1">{dispatchStep + 1}ª mensagem registrada!</span>
