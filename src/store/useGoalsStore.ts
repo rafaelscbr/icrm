@@ -5,11 +5,10 @@ import { db } from '../lib/db'
 import { supabase } from '../lib/supabase'
 
 const DEFAULT_GOALS: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>[] = [
-  { name: 'Visitas semanais',        category: 'visita',       target: 2, period: 'weekly',  active: true },
-  { name: 'Visitas mensais',         category: 'visita',       target: 8, period: 'monthly', active: true },
-  { name: 'Agenciamentos semanais',  category: 'agenciamento', target: 2, period: 'weekly',  active: true },
-  { name: 'Propostas semanais',      category: 'proposta',     target: 1, period: 'weekly',  active: true },
-  { name: 'Vendas mensais',          category: 'venda',        target: 1, period: 'monthly', active: true },
+  { name: 'Visitas semanais',    category: 'visita',   target: 2, period: 'weekly',  active: true },
+  { name: 'Visitas mensais',     category: 'visita',   target: 8, period: 'monthly', active: true },
+  { name: 'Propostas semanais',  category: 'proposta', target: 1, period: 'weekly',  active: true },
+  { name: 'Vendas mensais',      category: 'venda',    target: 1, period: 'monthly', active: true },
 ]
 
 function makeGoal(data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): Goal {
@@ -36,18 +35,13 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
     set({ loading: true })
     try {
       let goals = await db.goals.fetchAll()
+      // Filtra fora qualquer meta de agenciamento que ainda exista no banco
+      // (a migration 026 já deleta, mas aqui protege contra race condition)
+      goals = goals.filter(g => g.category !== ('agenciamento' as string))
       if (goals.length === 0) {
         const defaults = DEFAULT_GOALS.map(makeGoal)
         await Promise.all(defaults.map(g => db.goals.upsert(g)))
         goals = defaults
-      } else {
-        // Migration: weekly agenciamento target was incorrectly set to 8 (that's the monthly value)
-        const wrong = goals.find(g => g.category === 'agenciamento' && g.period === 'weekly' && g.target === 8)
-        if (wrong) {
-          const fixed = { ...wrong, target: 2, updatedAt: new Date().toISOString() }
-          await db.goals.upsert(fixed)
-          goals = goals.map(g => g.id === wrong.id ? fixed : g)
-        }
       }
       set({ goals })
     } catch (err) {

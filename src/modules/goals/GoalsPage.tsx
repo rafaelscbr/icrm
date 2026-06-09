@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Target, Pencil, Trash2, CheckCircle2, TrendingUp,
-  Calendar, CalendarDays, Footprints, Handshake, FileText,
+  Calendar, CalendarDays, Footprints, FileText,
   BadgeDollarSign, History, Megaphone, Zap, MessageCircle,
   ChevronRight, Plus, Award,
 } from 'lucide-react'
@@ -248,10 +248,9 @@ function GoalRing({ value, target, hex }: { value: number; target: number; hex: 
 }
 
 const CAT_CFG: Record<GoalCategory, { icon: typeof Target; text: string; bg: string; border: string; hex: string; label: string }> = {
-  visita:       { icon: Footprints,      text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25', hex: '#6366f1', label: 'Visita'        },
-  agenciamento: { icon: Handshake,       text: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/25',   hex: '#06b6d4', label: 'Agenciamento'  },
-  proposta:     { icon: FileText,        text: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25',  hex: '#f59e0b', label: 'Proposta'      },
-  venda:        { icon: BadgeDollarSign, text: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25',  hex: '#22c55e', label: 'Venda'         },
+  visita:   { icon: Footprints,      text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25', hex: '#6366f1', label: 'Visita'   },
+  proposta: { icon: FileText,        text: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25',  hex: '#f59e0b', label: 'Proposta' },
+  venda:    { icon: BadgeDollarSign, text: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25',  hex: '#22c55e', label: 'Venda'    },
 }
 
 function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {

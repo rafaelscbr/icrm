@@ -30,7 +30,6 @@ import { useNotificationsStore } from './store/useNotificationsStore'
 import { useTasksStore } from './store/useTasksStore'
 import { useSalesStore } from './store/useSalesStore'
 import { useGoalsStore } from './store/useGoalsStore'
-import { useDailyLogsStore } from './store/useDailyLogsStore'
 import { useLeadInteractionsStore } from './store/useLeadInteractionsStore'
 import { useLeadsStore } from './store/useLeadsStore'
 
@@ -78,7 +77,6 @@ function AppRoutes() {
   const { subscribe: subscribeTasks }        = useTasksStore()
   const { subscribe: subscribeSales }        = useSalesStore()
   const { subscribe: subscribeGoals }        = useGoalsStore()
-  const { subscribe: subscribeDailyLogs }    = useDailyLogsStore()
   const { subscribe: subscribeInteractions } = useLeadInteractionsStore()
   const { subscribe: subscribeLeads }        = useLeadsStore()
 
@@ -106,7 +104,6 @@ function AppRoutes() {
     const unsubTasks        = subscribeTasks()
     const unsubSales        = subscribeSales()
     const unsubGoals        = subscribeGoals()
-    const unsubDailyLogs    = subscribeDailyLogs()
     const unsubInteractions = subscribeInteractions()
 
     return () => {
@@ -115,7 +112,6 @@ function AppRoutes() {
       unsubTasks()
       unsubSales()
       unsubGoals()
-      unsubDailyLogs()
       unsubInteractions()
     }
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps

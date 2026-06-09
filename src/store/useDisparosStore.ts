@@ -150,18 +150,18 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfDay),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfWeek),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).gte('fired_at', startOfMonth),
-        // Novos disparos (tipo 'new')
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'new').gte('fired_at', startOfDay),
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'new').gte('fired_at', startOfWeek),
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'new').gte('fired_at', startOfMonth),
+        // Novos disparos: 'new' + 'legacy' (tudo que não é followup)
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).neq('dispatch_type', 'followup').gte('fired_at', startOfDay),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).neq('dispatch_type', 'followup').gte('fired_at', startOfWeek),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).neq('dispatch_type', 'followup').gte('fired_at', startOfMonth),
         // Follow-ups (tipo 'followup')
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfDay),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfWeek),
         supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('broker_id', brokerId).eq('dispatch_type', 'followup').gte('fired_at', startOfMonth),
         // Histórico total (todos os tipos — para o gráfico de cooldown/anti-ban)
         supabase.from('disparo_logs').select('fired_at').eq('broker_id', brokerId).gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
-        // Histórico apenas 'new' (para gráficos de métricas)
-        supabase.from('disparo_logs').select('fired_at').eq('broker_id', brokerId).eq('dispatch_type', 'new').gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
+        // Histórico 'new' + 'legacy' (tudo que não é followup) — para gráficos de métricas
+        supabase.from('disparo_logs').select('fired_at').eq('broker_id', brokerId).neq('dispatch_type', 'followup').gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
         // Busca o cooldown_until mais recente para reconstruir o countdown após navegação/F5
         supabase.from('disparo_logs').select('cooldown_until').eq('broker_id', brokerId).not('cooldown_until', 'is', null).order('fired_at', { ascending: false }).limit(1),
       ])
@@ -222,10 +222,11 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
 
     try {
       const [dayRes, weekRes, monthRes, histNewRes] = await Promise.all([
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('dispatch_type', 'new').gte('fired_at', startOfDay),
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('dispatch_type', 'new').gte('fired_at', startOfWeek),
-        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).eq('dispatch_type', 'new').gte('fired_at', startOfMonth),
-        supabase.from('disparo_logs').select('fired_at').eq('dispatch_type', 'new').gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
+        // 'new' + 'legacy' (tudo que não é followup) — sem filtro de broker
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).neq('dispatch_type', 'followup').gte('fired_at', startOfDay),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).neq('dispatch_type', 'followup').gte('fired_at', startOfWeek),
+        supabase.from('disparo_logs').select('id', { count: 'exact', head: true }).neq('dispatch_type', 'followup').gte('fired_at', startOfMonth),
+        supabase.from('disparo_logs').select('fired_at').neq('dispatch_type', 'followup').gte('fired_at', startOfMonth).order('fired_at', { ascending: true }),
       ])
 
       const byDayNew: Record<string, number> = {}
@@ -375,15 +376,17 @@ export const useDisparosStore = create<DisparosState>()((set, get) => ({
       }
       byBroker[bid].total++
       byBroker[bid].thisMonth++
-      if (type === 'new')      byBroker[bid].totalNew++
+      // 'new' + 'legacy' = disparo para novo lead (legacy = antes da coluna dispatch_type existir)
+      // 'followup' = acompanhamento de lead que já respondeu
+      if (type !== 'followup') byBroker[bid].totalNew++
       if (type === 'followup') byBroker[bid].totalFollowup++
       if (row.fired_at >= startOfWeek) {
         byBroker[bid].thisWeek++
-        if (type === 'new')      byBroker[bid].thisWeekNew++
+        if (type !== 'followup') byBroker[bid].thisWeekNew++
         if (type === 'followup') byBroker[bid].thisWeekFollowup++
       }
       if (row.fired_at >= startOfMonth) {
-        if (type === 'new')      byBroker[bid].thisMonthNew++
+        if (type !== 'followup') byBroker[bid].thisMonthNew++
         if (type === 'followup') byBroker[bid].thisMonthFollowup++
       }
       if (row.fired_at >= startOfDay) byBroker[bid].today++

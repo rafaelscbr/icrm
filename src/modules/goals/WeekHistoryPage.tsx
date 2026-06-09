@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   History, ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus,
-  Footprints, Handshake, FileText, BadgeDollarSign, Target,
+  Footprints, FileText, BadgeDollarSign, Target,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -17,17 +17,15 @@ import { WeekSnapshot, GoalCategory } from '../../types'
 const MONTHS_PT_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 const CATEGORY_ICON: Record<GoalCategory, typeof Target> = {
-  visita:       Footprints,
-  agenciamento: Handshake,
-  proposta:     FileText,
-  venda:        BadgeDollarSign,
+  visita:   Footprints,
+  proposta: FileText,
+  venda:    BadgeDollarSign,
 }
 
 const CATEGORY_COLOR: Record<GoalCategory, { text: string; bar: string }> = {
-  visita:       { text: 'text-brand', bar: 'bg-indigo-500' },
-  agenciamento: { text: 'text-cyan-400',   bar: 'bg-cyan-500'   },
-  proposta:     { text: 'text-amber-400',  bar: 'bg-amber-500'  },
-  venda:        { text: 'text-green-400',  bar: 'bg-green-500'  },
+  visita:   { text: 'text-brand',       bar: 'bg-indigo-500' },
+  proposta: { text: 'text-amber-400',   bar: 'bg-amber-500'  },
+  venda:    { text: 'text-green-400',   bar: 'bg-green-500'  },
 }
 
 function formatWeekLabel(weekStart: string, weekEnd: string): { range: string; year: string } {
