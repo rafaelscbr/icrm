@@ -198,31 +198,59 @@ function LeadCard({
   async function handleSendAndRegister(e: React.MouseEvent) {
     e.stopPropagation()
 
-    if (lead.funnelStage === 'attended') {
-      // Follow-up: registra sem mensagem pré-pronta, abre WhatsApp só com número
-      const templateIndex = Math.min(dispatchStep, templates.length - 1)
-      try {
+    try {
+      if (lead.funnelStage === 'attended') {
+        // Follow-up: copia o próximo template e abre WhatsApp com a mensagem pré-preenchida
+        const templateIndex = Math.min(dispatchStep, templates.length - 1)
+        const msg = templates[templateIndex].replace(/\{nome\}/gi, lead.name)
+        navigator.clipboard?.writeText(msg).catch(() => {})
+
         await persistDisparo({
           brokerId: profile?.id, campaignId: campaign.id,
           leadId: lead.id, leadName: lead.name,
           dispatchType: 'followup',
         })
-        await markContacted(lead.id, '', templateIndex, sentBy)
-      } catch {
-        toast.error('Disparo não realizado — não foi possível registrar. Verifique sua conexão.', { duration: 7000 })
+        await markContacted(lead.id, msg, templateIndex, sentBy)
+
+        // Salva no histórico do contato (best-effort, sem bloqueio)
+        if (profile?.id) {
+          saveFollowupToContact({
+            phone: lead.phone, campaignId: campaign.id,
+            brokerId: profile.id, step: templateIndex,
+          }).catch(() => {})
+        }
+
+        const url = whatsappUrl(lead.phone, msg)
+        toast((t) => (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-t1">{dispatchStep + 1}ª mensagem registrada!</span>
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              onClick={() => toast.dismiss(t.id)}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-sm font-semibold transition-colors">
+              <MessageCircle size={14} />
+              Abrir WhatsApp
+            </a>
+          </div>
+        ), { duration: 20_000 })
         return
       }
-      // Salva no histórico do contato (best-effort, sem bloqueio)
-      if (profile?.id) {
-        saveFollowupToContact({
-          phone: lead.phone, campaignId: campaign.id,
-          brokerId: profile.id, step: templateIndex,
-        }).catch(() => {})
-      }
-      const url = whatsappUrl(lead.phone)
+
+      // Novo disparo (funnelStage !== 'attended')
+      const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
+      navigator.clipboard?.writeText(msg).catch(() => {})
+      const wasNew = lead.funnelStage === 'new'
+
+      await persistDisparo({
+        brokerId: profile?.id, campaignId: campaign.id,
+        leadId: lead.id, leadName: lead.name,
+        dispatchType: 'new',
+      })
+      await markContacted(lead.id, msg, 0, sentBy)
+
+      const url = whatsappUrl(lead.phone, msg)
       toast((t) => (
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-t1">{dispatchStep + 1}ª mensagem registrada!</span>
+          <span className="text-sm font-semibold text-t1">{wasNew ? '1ª mensagem registrada!' : 'Mensagem registrada!'}</span>
           <a href={url} target="_blank" rel="noopener noreferrer"
             onClick={() => toast.dismiss(t.id)}
             className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-sm font-semibold transition-colors">
@@ -231,36 +259,9 @@ function LeadCard({
           </a>
         </div>
       ), { duration: 20_000 })
-      return
-    }
-
-    // Novo disparo (funnelStage !== 'attended')
-    const msg = campaign.message.replace(/\{nome\}/gi, lead.name)
-    navigator.clipboard?.writeText(msg).catch(() => {})
-    const wasNew = lead.funnelStage === 'new'
-    try {
-      await persistDisparo({
-        brokerId: profile?.id, campaignId: campaign.id,
-        leadId: lead.id, leadName: lead.name,
-        dispatchType: 'new',
-      })
-      await markContacted(lead.id, msg, 0, sentBy)
     } catch {
       toast.error('Disparo não realizado — não foi possível registrar. Verifique sua conexão.', { duration: 7000 })
-      return
     }
-    const url = whatsappUrl(lead.phone, msg)
-    toast((t) => (
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold text-t1">{wasNew ? '1ª mensagem registrada!' : 'Mensagem registrada!'}</span>
-        <a href={url} target="_blank" rel="noopener noreferrer"
-          onClick={() => toast.dismiss(t.id)}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-sm font-semibold transition-colors">
-          <MessageCircle size={14} />
-          Abrir WhatsApp
-        </a>
-      </div>
-    ), { duration: 20_000 })
   }
 
   function handleOpenOnly(e: React.MouseEvent) {
