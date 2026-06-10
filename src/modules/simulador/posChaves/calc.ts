@@ -1,17 +1,15 @@
-export type ReforcoPeriodo = 'semestral' | 'anual'
+import { PagamentoBase } from '../shared/types'
 
-export interface FluxoInput {
+// Modo Pós-chaves: o cliente paga uma fatia do valor até as chaves
+// (entrada + reforços + parcelas) e o restante vira saldo devedor
+// financiado no banco na entrega.
+
+export interface PosChavesInput extends PagamentoBase {
   valorTotal: number
   pctChaves: number
-  entradaQtd: number
-  entradaValor: number
-  reforcoQtd: number
-  reforcoValor: number
-  reforcoPeriodo: ReforcoPeriodo
-  parcelasQtd: number
 }
 
-export interface FluxoResult {
+export interface PosChavesResult {
   valorAteChaves: number
   saldoDevedor: number
   entradaTotal: number
@@ -21,7 +19,7 @@ export interface FluxoResult {
   erro?: string
 }
 
-export function calcularFluxo(input: FluxoInput): FluxoResult {
+export function calcularPosChaves(input: PosChavesInput): PosChavesResult {
   const { valorTotal, pctChaves, entradaQtd, entradaValor, reforcoQtd, reforcoValor, parcelasQtd } = input
 
   const valorAteChaves = valorTotal * (pctChaves / 100)
