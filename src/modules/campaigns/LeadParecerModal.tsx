@@ -94,7 +94,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
             setTimeout(() => reject(new Error('timeout')), 8000)
           ),
         ])
-        toast.success('Parecer salvo · 1 crédito devolvido ao limite do dia', { icon: '↩️' })
+        toast.success('Parecer salvo · 1 crédito devolvido ao limite do dia')
       } else if (stage === 'scheduled' && prevStage !== 'scheduled') {
         toast.success('Agendamento registrado! Transfira este lead para o funil principal.')
       } else {
@@ -103,7 +103,7 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
     } catch {
       // Parecer salvo — mas operação secundária (devolução de crédito) falhou
       toast('Parecer salvo. Crédito não devolvido — verifique sua conexão e tente novamente.', {
-        icon: '⚠️', duration: 8000,
+        duration: 8000,
       })
     } finally {
       setIsSaving(false)
@@ -119,20 +119,20 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
         <div className="flex flex-col gap-6">
 
           {/* Lead identity */}
-          <div className="flex items-center gap-3 p-3 bg-s2/60 rounded-xl border border-line">
-            <div className="w-9 h-9 bg-brand-tint rounded-full flex items-center justify-center text-sm font-bold text-brand-text flex-shrink-0">
+          <div className="flex items-center gap-3 p-3 bg-s2/60 rounded-[14px] border border-line">
+            <div className="w-9 h-9 bg-s2 border border-line rounded-[12px] flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
               {lead.name[0].toUpperCase()}
             </div>
             <div>
-              <p className="text-sm font-semibold text-t1">{lead.name}</p>
-              <p className="text-xs text-t3 tabular-nums">{formatPhone(lead.phone)}</p>
+              <p className="font-heading text-sm font-bold text-t1 tracking-[-0.01em]">{lead.name}</p>
+              <p className="font-label text-xs text-t3 tabular-nums tracking-wide">{formatPhone(lead.phone)}</p>
             </div>
           </div>
 
           {/* Funnel stage */}
           <div>
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider mb-3">Etapa do Funil</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <p className="font-label text-[10px] font-medium text-t3 uppercase tracking-[0.12em] mb-3">Etapa do funil</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Etapa do funil">
               {stagesWithoutNew.map(s => {
                 const active = stage === s.value
                 return (
@@ -140,15 +140,17 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
                     key={s.value}
                     type="button"
                     onClick={() => setStageLocal(s.value)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all cursor-pointer
+                    role="radio"
+                    aria-checked={active}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-[14px] border text-sm font-medium transition-all duration-150 cursor-pointer
                       ${active
                         ? `${s.bg} ${s.border} ${s.color}`
                         : 'bg-s2/50 border-line text-t3 hover:border-line-strong hover:text-t2'
                       }`}
                   >
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${active ? s.dot : 'bg-slate-700'}`} />
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${active ? s.dot : 'bg-s3'}`} />
                     {s.label}
-                    {active && <CheckCircle2 size={12} className="ml-auto" />}
+                    {active && <CheckCircle2 size={12} strokeWidth={1.6} className="ml-auto" />}
                   </button>
                 )
               })}
@@ -158,8 +160,8 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
           {/* Situation */}
           <div>
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider mb-3">Situação (opcional)</p>
-            <div className="flex flex-col gap-2">
+            <p className="font-label text-[10px] font-medium text-t3 uppercase tracking-[0.12em] mb-3">Situação (opcional)</p>
+            <div className="flex flex-col gap-2" role="radiogroup" aria-label="Situação do lead">
               {SITUATION_CONFIG.map(s => {
                 const active = situation === s.value
                 return (
@@ -167,14 +169,16 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
                     key={s.value}
                     type="button"
                     onClick={() => setSituationL(active ? undefined : s.value)}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm transition-all cursor-pointer text-left
+                    role="radio"
+                    aria-checked={active}
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-[14px] border text-sm transition-all duration-150 cursor-pointer text-left
                       ${active
                         ? `${s.bg} border-line-strong ${s.color}`
                         : 'bg-s2/50 border-line text-t3 hover:border-line-input hover:text-t2'
                       }`}
                   >
                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0
-                      ${active ? 'border-current bg-current' : 'border-slate-600'}`}>
+                      ${active ? 'border-current bg-current' : 'border-line-strong'}`}>
                       {active && <div className="w-1.5 h-1.5 rounded-full page-bg" />}
                     </div>
                     {s.label}
@@ -186,31 +190,32 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
           {/* Notes */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Observações</label>
+            <label htmlFor="parecer-notes" className="font-label text-[10px] font-medium text-t3 uppercase tracking-[0.12em]">Observações</label>
             <textarea
+              id="parecer-notes"
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
-              placeholder="Anotações sobre este lead..."
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              placeholder="Anotações sobre este lead…"
+              className="w-full bg-s3/50 border border-line rounded-[14px] px-3 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand-tint resize-none"
             />
           </div>
 
           {/* Sugestão de migração quando seleciona 'scheduled' e ainda não migrou */}
           {stage === 'scheduled' && !lead.transferredAt && (
-            <div className="flex items-start gap-3 p-3.5 bg-violet-500/8 border border-violet-500/30 rounded-xl">
-              <Sparkles size={14} className="text-violet-400 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-3.5 bg-brand-tint border border-brand/40 rounded-[14px]">
+              <Sparkles size={14} strokeWidth={1.6} className="text-brand flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-violet-200">Pronto para o funil principal</p>
+                <p className="font-heading text-xs font-bold text-t1">Pronto para o funil principal</p>
                 <p className="text-[11px] text-t3 mt-0.5 leading-relaxed">
                   Lead agendado — migre agora com histórico e produto vinculado para contar na pipeline de visitas.
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowTransfer(true)}
-                  className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-violet-300 hover:text-violet-100 transition-colors"
+                  className="mt-2 flex items-center gap-1.5 font-heading text-[11px] font-bold text-brand-text hover:text-brand transition-colors"
                 >
-                  <ArrowRight size={11} />
+                  <ArrowRight size={11} strokeWidth={1.6} />
                   Migrar para o funil principal
                 </button>
               </div>
@@ -219,10 +224,10 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
           {/* Já migrado — info */}
           {lead.transferredAt && (
-            <div className="flex items-center gap-2.5 p-3 bg-violet-500/5 border border-violet-500/15 rounded-xl">
-              <GitMerge size={13} className="text-violet-400 flex-shrink-0" />
-              <p className="text-xs text-violet-300/80">
-                Migrado para o funil principal em {new Date(lead.transferredAt).toLocaleDateString('pt-BR')}
+            <div className="flex items-center gap-2.5 p-3 bg-s2/60 border border-line rounded-[14px]">
+              <GitMerge size={13} strokeWidth={1.6} className="text-t4 flex-shrink-0" />
+              <p className="text-xs text-t3">
+                Migrado para o funil principal em <span className="font-label tabular-nums">{new Date(lead.transferredAt).toLocaleDateString('pt-BR')}</span>
               </p>
             </div>
           )}
@@ -232,9 +237,9 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
             <button
               type="button"
               onClick={() => setShowTransfer(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-violet-300 hover:text-white bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/25 hover:border-violet-500/40 rounded-xl transition-all"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 font-heading text-xs font-bold text-t2 hover:text-t1 bg-s2 hover:bg-s3 border border-line hover:border-line-strong rounded-[14px] transition-all duration-150"
             >
-              <GitMerge size={13} />
+              <GitMerge size={13} strokeWidth={1.6} />
               {lead.transferredAt ? 'Migrar novamente para o Funil' : 'Enviar para o Funil Principal'}
             </button>
           </div>

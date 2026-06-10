@@ -48,10 +48,13 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
 
       {/* Panel */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className={`
           relative w-full ${desktopSizes[size]}
           bg-surface border border-line
-          rounded-t-2xl lg:rounded-xl
+          rounded-t-[18px] lg:rounded-[18px]
           shadow-modal
           max-h-[92vh] flex flex-col
           animate-in
@@ -70,9 +73,10 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s2 text-t3 hover:text-t1 transition-colors cursor-pointer flex-shrink-0"
+            aria-label="Fechar"
+            className="w-8 h-8 flex items-center justify-center rounded-[10px] hover:bg-s2 text-t3 hover:text-t1 transition-colors cursor-pointer flex-shrink-0"
           >
-            <X size={16} />
+            <X size={16} strokeWidth={1.6} />
           </button>
         </div>
 
