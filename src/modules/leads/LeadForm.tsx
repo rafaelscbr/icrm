@@ -217,7 +217,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     setStep(1)
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     let resolvedContactId = selectedContactId
     if (!isEdit && contactMode === 'create') {
       const nc = addContact({ name: newName.trim(), phone: newPhone.trim(), tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
@@ -247,15 +247,17 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       notes: notes.trim() || undefined,
     }
 
-    if (lead) {
-      update(lead.id, { ...data, createdAt: entryDate + 'T12:00:00.000Z' })
-      toast.success('Lead atualizado!')
-    } else {
-      add({ ...data, createdAt: entryDate + 'T12:00:00.000Z' })
-      if (isRetroactive) toast.success(`Lead registrado retroativamente para ${new Date(entryDate + 'T12:00:00').toLocaleDateString('pt-BR')}`)
-      else toast.success('Lead criado!')
-    }
-    onClose()
+    try {
+      if (lead) {
+        await update(lead.id, { ...data, createdAt: entryDate + 'T12:00:00.000Z' })
+        toast.success('Lead atualizado!')
+      } else {
+        await add({ ...data, createdAt: entryDate + 'T12:00:00.000Z' })
+        if (isRetroactive) toast.success(`Lead registrado retroativamente para ${new Date(entryDate + 'T12:00:00').toLocaleDateString('pt-BR')}`)
+        else toast.success('Lead criado!')
+      }
+      onClose()
+    } catch { /* erro já toastado pela camada db — modal permanece aberto */ }
   }
 
   if (!isOpen) return null

@@ -10,9 +10,10 @@ interface LeadInteractionsStore {
   allLoaded:         boolean
   loadForLead:       (leadId: string) => Promise<void>
   loadAll:           () => Promise<void>
+  reload:            () => Promise<void>
   subscribe:         () => () => void
-  add:               (data: Omit<LeadInteraction, 'id' | 'createdAt'>) => LeadInteraction
-  remove:            (id: string, leadId: string) => void
+  add:               (data: Omit<LeadInteraction, 'id' | 'createdAt'>) => Promise<LeadInteraction>
+  remove:            (id: string, leadId: string) => Promise<void>
   getForLead:        (leadId: string) => LeadInteraction[]
   getAllInteractions: () => LeadInteraction[]
 }
@@ -24,6 +25,11 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
 
   loadAll: async () => {
     if (get().allLoaded) return
+    await get().reload()
+  },
+
+  // Recarrega tudo do banco (reconciliação após reconexão/aba voltar a ficar visível)
+  reload: async () => {
     try {
       const items = await db.leadInteractions.fetchAll()
       const byLead: Record<string, LeadInteraction[]> = {}
@@ -31,7 +37,7 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
         if (!byLead[i.leadId]) byLead[i.leadId] = []
         byLead[i.leadId].push(i)
       })
-      set(s => ({ byLead: { ...s.byLead, ...byLead }, allLoaded: true }))
+      set({ byLead, allLoaded: true })
     } catch {
       // error already toasted by db layer
     }
@@ -52,10 +58,13 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
 
   subscribe: () => {
     const channelName = 'lead-interactions-realtime'
-    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
-    if (existing) return () => {}
+    if (supabase.getChannels().some(c => c.topic === `realtime:${channelName}`)) return () => {}
 
-    const channel = supabase
+    let disposed = false
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let channel: ReturnType<typeof buildChannel> | null = null
+
+    const buildChannel = () => supabase
       .channel(channelName)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lead_interactions' }, (payload) => {
         const r = payload.new as Record<string, unknown>
@@ -91,32 +100,58 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
           },
         }))
       })
-      .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Reconexão automática + reconciliação (mesmo padrão do canal de leads)
+    const connect = (isReconnect: boolean) => {
+      if (disposed) return
+      channel = buildChannel()
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          if (isReconnect && get().allLoaded) get().reload()
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (disposed) return
+          if (channel) { supabase.removeChannel(channel); channel = null }
+          if (retryTimer) clearTimeout(retryTimer)
+          retryTimer = setTimeout(() => connect(true), 4000)
+        }
+      })
+    }
+    connect(false)
+
+    return () => {
+      disposed = true
+      if (retryTimer) clearTimeout(retryTimer)
+      if (channel) supabase.removeChannel(channel)
+    }
   },
 
-  add: (data) => {
+  // Banco primeiro — o estado local só muda após o write ser confirmado.
+  // Falha → erro toastado pela camada db + throw para o caller não exibir sucesso.
+  add: async (data) => {
     const now = new Date().toISOString()
     const item: LeadInteraction = { ...data, id: generateId(), createdAt: now }
-    set(s => ({
-      byLead: {
-        ...s.byLead,
-        [data.leadId]: [item, ...(s.byLead[data.leadId] ?? [])],
-      },
-    }))
-    db.leadInteractions.upsert(item).catch(err => console.error('[interactions] add:', err))
+    await db.leadInteractions.upsert(item)
+    set(s => {
+      const leadItems = s.byLead[data.leadId] ?? []
+      if (leadItems.some(i => i.id === item.id)) return s // realtime pode ter chegado antes
+      return {
+        byLead: {
+          ...s.byLead,
+          [data.leadId]: [item, ...leadItems],
+        },
+      }
+    })
     return item
   },
 
-  remove: (id, leadId) => {
+  remove: async (id, leadId) => {
+    await db.leadInteractions.delete(id)
     set(s => ({
       byLead: {
         ...s.byLead,
         [leadId]: (s.byLead[leadId] ?? []).filter(i => i.id !== id),
       },
     }))
-    db.leadInteractions.delete(id).catch(err => console.error('[interactions] remove:', err))
   },
 
   getForLead:        (leadId) => get().byLead[leadId] ?? [],

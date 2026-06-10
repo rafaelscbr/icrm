@@ -83,7 +83,7 @@ export function LeadTimeline({ leadId }: Props) {
   async function handleSave() {
     setSaving(true)
     try {
-      add({
+      await add({
         leadId,
         type,
         description: description.trim() || undefined,
@@ -95,14 +95,20 @@ export function LeadTimeline({ leadId }: Props) {
       setOutcome('')
       setDatetime(localDatetimeValue())
       setShowForm(false)
+    } catch {
+      // erro já toastado pela camada db — não exibe sucesso
     } finally {
       setSaving(false)
     }
   }
 
-  function handleRemove(id: string) {
-    remove(id, leadId)
-    toast.success('Interação removida')
+  async function handleRemove(id: string) {
+    try {
+      await remove(id, leadId)
+      toast.success('Interação removida')
+    } catch {
+      // erro já toastado pela camada db
+    }
   }
 
   return (

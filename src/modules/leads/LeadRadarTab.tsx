@@ -78,7 +78,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
       radarAreaMin: linked.areaSqm,
       radarBedrooms: linked.bedrooms,
     }
-    update(lead.id, autofill)
+    update(lead.id, autofill).catch(() => { /* erro já toastado */ })
     setRadarPropertyType(linked.type)
     setRadarRegion(linked.neighborhood)
     setRadarValueMin(fmtBRL(Math.round(linked.value * 0.8)))
@@ -91,7 +91,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
   function scheduleUpdate(patch: Partial<Lead>) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      update(lead.id, patch)
+      update(lead.id, patch).catch(() => { /* erro já toastado */ })
     }, 800)
   }
 

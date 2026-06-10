@@ -58,29 +58,31 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
 
   const duplicate = lead ? leads.find(l => l.phone === lead.phone && !l.discardedAt) : undefined
 
-  function handleTransfer() {
+  async function handleTransfer() {
     if (!lead) return
 
-    const newLead = add({
-      name:          lead.name,
-      phone:         lead.phone,
-      email:         lead.email,
-      origin:        'campanha',
-      funnelStage,
-      followupStep:  0,
-      propertyId:    lead.propertyId,
-      averageTicket: ticket ? Number(ticket.replace(/\D/g, '')) : undefined,
-      notes:         [
-        notes.trim(),
-        campaign ? `Origem: campanha "${campaign.name}"` : '',
-      ].filter(Boolean).join('\n') || undefined,
-    })
+    try {
+      const newLead = await add({
+        name:          lead.name,
+        phone:         lead.phone,
+        email:         lead.email,
+        origin:        'campanha',
+        funnelStage,
+        followupStep:  0,
+        propertyId:    lead.propertyId,
+        averageTicket: ticket ? Number(ticket.replace(/\D/g, '')) : undefined,
+        notes:         [
+          notes.trim(),
+          campaign ? `Origem: campanha "${campaign.name}"` : '',
+        ].filter(Boolean).join('\n') || undefined,
+      })
 
-    markAsTransferred(lead.id, newLead.id)
-    toast.success(`${lead.name} migrado para o funil principal`)
-    onClose()
-    // Abre modal de tarefa de visita após fechar
-    onTransferred?.(newLead)
+      markAsTransferred(lead.id, newLead.id)
+      toast.success(`${lead.name} migrado para o funil principal`)
+      onClose()
+      // Abre modal de tarefa de visita após fechar
+      onTransferred?.(newLead)
+    } catch { /* erro já toastado pela camada db */ }
   }
 
   if (!lead) return null

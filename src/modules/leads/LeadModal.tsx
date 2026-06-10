@@ -146,51 +146,68 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
-  function handleWhatsApp() {
+  // Toast de sucesso só após confirmação do banco — erros já são toastados pela camada db
+  async function handleWhatsApp() {
     window.open(whatsappUrl(contact?.phone ?? lead.phone), '_blank')
-    advanceFollowup(lead.id)
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
-    addInteraction({ leadId: lead.id, type: 'whatsapp', description: 'Interagiu via WhatsApp', interactedAt: new Date().toISOString() })
-    toast.success(`WhatsApp · ${nextStep}ª msg registrada`)
+    try {
+      await advanceFollowup(lead.id)
+      await addInteraction({ leadId: lead.id, type: 'whatsapp', description: 'Interagiu via WhatsApp', interactedAt: new Date().toISOString() })
+      toast.success(`WhatsApp · ${nextStep}ª msg registrada`)
+    } catch { /* erro já toastado */ }
   }
 
-  function handleCall() {
+  async function handleCall() {
     window.open(`tel:${contact?.phone ?? lead.phone}`)
-    addInteraction({ leadId: lead.id, type: 'ligacao', description: 'Ligação realizada', interactedAt: new Date().toISOString() })
-    toast.success('Ligação registrada')
+    try {
+      await addInteraction({ leadId: lead.id, type: 'ligacao', description: 'Ligação realizada', interactedAt: new Date().toISOString() })
+      toast.success('Ligação registrada')
+    } catch { /* erro já toastado */ }
   }
 
-  function handleSaveNote() {
+  async function handleSaveNote() {
     if (!noteText.trim()) return
-    addInteraction({ leadId: lead.id, type: 'nota', description: noteText.trim(), interactedAt: new Date().toISOString() })
-    toast.success('Nota salva')
-    setNoteText('')
-    setShowNoteInput(false)
+    try {
+      await addInteraction({ leadId: lead.id, type: 'nota', description: noteText.trim(), interactedAt: new Date().toISOString() })
+      toast.success('Nota salva')
+      setNoteText('')
+      setShowNoteInput(false)
+    } catch { /* erro já toastado */ }
   }
 
-  function handleSetStage(stage: LeadFunnelStage) {
+  async function handleSetStage(stage: LeadFunnelStage) {
     if (stage === lead.funnelStage) return
-    setStage(lead.id, stage)
-    toast.success(`Movido para ${STAGE_META[stage].label}`)
+    try {
+      await setStage(lead.id, stage)
+      toast.success(`Movido para ${STAGE_META[stage].label}`)
+    } catch { /* erro já toastado */ }
   }
 
-  function handleDiscard() {
+  async function handleDiscard() {
     if (!selectedReason) { toast.error('Selecione um motivo'); return }
-    discard(lead.id, selectedReason)
-    toast.success('Lead descartado')
-    setShowDiscard(false)
-    onClose()
+    try {
+      await discard(lead.id, selectedReason)
+      toast.success('Lead descartado')
+      setShowDiscard(false)
+      onClose()
+    } catch { /* erro já toastado */ }
   }
 
-  function handleConvert() {
+  async function handleConvert() {
     if (isLinked) return
-    const c = addContact({ name: lead.name, phone: lead.phone, tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
-    convertToContact(lead.id, c.id)
-    toast.success('Lead convertido em contato!')
+    try {
+      const c = addContact({ name: lead.name, phone: lead.phone, tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
+      await convertToContact(lead.id, c.id)
+      toast.success('Lead convertido em contato!')
+    } catch { /* erro já toastado */ }
   }
 
-  function handleRestore() { restore(lead.id); toast.success('Lead restaurado'); onClose() }
-  function handleDelete()   { remove(lead.id);  toast.success('Lead excluído');   onClose() }
+  async function handleRestore() {
+    try { await restore(lead.id); toast.success('Lead restaurado'); onClose() } catch { /* erro já toastado */ }
+  }
+  async function handleDelete() {
+    try { await remove(lead.id); toast.success('Lead excluído'); onClose() } catch { /* erro já toastado */ }
+  }
 
   async function handleAddToList() {
     if (!selectedListId || !lead.contactId) return
@@ -269,7 +286,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               {/* Ações do header */}
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button
-                  onClick={() => { toggleFlag(lead.id); toast.success(lead.flagged ? 'Prioridade removida' : '🔥 Prioridade máxima!') }}
+                  onClick={async () => {
+                    try {
+                      await toggleFlag(lead.id)
+                      toast.success(lead.flagged ? 'Prioridade removida' : 'Prioridade máxima')
+                    } catch { /* erro já toastado */ }
+                  }}
                   className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all
                     ${lead.flagged ? 'text-orange-400 bg-orange-500/15 border border-orange-500/30' : 'text-t4 hover:text-orange-400 hover:bg-orange-500/10'}`}
                   title={lead.flagged ? 'Remover prioridade' : 'Prioridade máxima'}
@@ -363,10 +385,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   {[1, 2, 3, 4, 5].map(step => (
                     <button
                       key={step}
-                      onClick={() => {
+                      onClick={async () => {
                         const next = lead.followupStep === step ? step - 1 : step
-                        update(lead.id, { followupStep: next })
-                        toast.success(`${next}ª tentativa marcada`)
+                        try {
+                          await update(lead.id, { followupStep: next })
+                          toast.success(`${next}ª tentativa marcada`)
+                        } catch { /* erro já toastado */ }
                       }}
                       className={`flex-1 h-8 rounded-lg text-xs font-bold transition-all border
                         ${step <= lead.followupStep

@@ -33,6 +33,7 @@ import { useSalesStore } from './store/useSalesStore'
 import { useGoalsStore } from './store/useGoalsStore'
 import { useLeadInteractionsStore } from './store/useLeadInteractionsStore'
 import { useLeadsStore } from './store/useLeadsStore'
+import { supabase } from './lib/supabase'
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -116,6 +117,23 @@ function AppRoutes() {
       unsubInteractions()
     }
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ao voltar para a aba após inatividade: renova a sessão (token JWT pode ter
+  // vencido), reautentica o socket realtime e reconcilia os dados com o banco.
+  useEffect(() => {
+    if (!user) return
+    async function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      const { data } = await supabase.auth.getSession()
+      if (data.session) supabase.realtime.setAuth(data.session.access_token)
+      useLeadsStore.getState().load()
+      if (useLeadInteractionsStore.getState().allLoaded) {
+        useLeadInteractionsStore.getState().reload()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [user?.id])
 
   if (!user) return <Navigate to="/login" replace />
 

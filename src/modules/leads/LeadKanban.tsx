@@ -9,16 +9,23 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { MessageCircle, UserCheck, GripVertical, Phone, Flame, Snowflake } from 'lucide-react'
-import { Lead, LeadFunnelStage } from '../../types'
+import {
+  MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake,
+  Home, Users, Mail, StickyNote, Sparkles, Smartphone, Globe, Handshake,
+  Megaphone, Loader2, Wifi, WifiOff,
+} from 'lucide-react'
+import { Lead, LeadFunnelStage, LeadInteractionType } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
+import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { LeadModal } from './LeadModal'
 import toast from 'react-hot-toast'
 
+// Shape exportado — consumido por LeadsPage, LeadsDashboard, LeadsPerformance e
+// TransferToFunnelModal. Não alterar campos sem revisar esses arquivos.
 export const STAGE_CONFIG: Record<LeadFunnelStage, {
   label: string; color: string; bg: string; border: string;
   headerBg: string; headerText: string; dot: string;
@@ -33,8 +40,17 @@ export const STAGE_CONFIG: Record<LeadFunnelStage, {
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
-const ORIGIN_EMOJI: Record<string, string> = {
-  felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝', campanha: '📣',
+const ORIGIN_META: Record<string, { icon: typeof Sparkles; label: string }> = {
+  felicita: { icon: Sparkles,   label: 'Felicità' },
+  meta_ads: { icon: Smartphone, label: 'Meta Ads' },
+  portal:   { icon: Globe,      label: 'Portal' },
+  offline:  { icon: Handshake,  label: 'Offline' },
+  campanha: { icon: Megaphone,  label: 'Campanha' },
+}
+
+const INTERACTION_ICON: Record<string, typeof Phone> = {
+  ligacao: Phone, whatsapp: MessageCircle, visita: Home,
+  reuniao: Users, email: Mail,
 }
 
 const COOLING_DAYS = 2
@@ -49,26 +65,26 @@ function daysInStage(stageChangedAt?: string, createdAt?: string): number {
   return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
 }
 
+// Semântica única de cor: vermelho = precisa de ação, âmbar = atenção, neutro = ok.
+// Lead contatado recentemente nunca aparece vermelho, mesmo parado na etapa.
 function stageDaysColor(days: number, recentContact: boolean): string {
-  // lead contatado recentemente nunca aparece "vermelho/abandonado",
-  // mesmo que esteja há semanas parado na etapa
-  if (days <= 3 || recentContact) return 'text-t3 bg-slate-500/10 border-slate-500/20'
-  if (days <= 7)  return 'text-amber-400 bg-amber-500/10 border-amber-500/25'
-  return 'text-red-400 bg-red-500/10 border-red-500/25'
+  if (days <= 3 || recentContact) return 'text-t4 bg-s2 border-line'
+  if (days <= 7)  return 'text-warning bg-warning-bg border-warning-line'
+  return 'text-error bg-error-bg border-error-line'
 }
 
 function contactLabel(days: number, hasInteraction: boolean): { text: string; cls: string } {
   const d = Math.floor(days)
   if (!hasInteraction) {
     if (d <= COOLING_DAYS) return { text: 'Sem contato registrado', cls: 'text-t4' }
-    if (d <= 7)  return { text: `${d}d sem contato`, cls: 'text-amber-400' }
-    return { text: `${d}d sem contato`, cls: 'text-red-400' }
+    if (d <= 7)  return { text: `${d}d sem contato`, cls: 'text-warning' }
+    return { text: `${d}d sem contato`, cls: 'text-error' }
   }
-  if (d <= 0) return { text: 'Contato hoje', cls: 'text-emerald-400' }
-  if (d === 1) return { text: 'Contato ontem', cls: 'text-emerald-400/80' }
+  if (d <= 0)  return { text: 'Contato hoje',  cls: 'text-success' }
+  if (d === 1) return { text: 'Contato ontem', cls: 'text-success' }
   if (d <= COOLING_DAYS) return { text: `${d}d sem contato`, cls: 'text-t4' }
-  if (d <= 7)  return { text: `${d}d sem contato`, cls: 'text-amber-400' }
-  return { text: `${d}d sem contato`, cls: 'text-red-400' }
+  if (d <= 7)  return { text: `${d}d sem contato`, cls: 'text-warning' }
+  return { text: `${d}d sem contato`, cls: 'text-error' }
 }
 
 function effectiveOrder(lead: Lead): number {
@@ -84,9 +100,9 @@ function orderBetween(above: Lead | null, below: Lead | null): number {
 // ─── Card sortável ────────────────────────────────────────────────────────────
 
 function LeadCard({
-  lead, onClick, isOverlay = false,
+  lead, onClick, isOverlay = false, isSaving = false,
 }: {
-  lead: Lead; onClick: () => void; isOverlay?: boolean
+  lead: Lead; onClick: () => void; isOverlay?: boolean; isSaving?: boolean
 }) {
   const { advanceFollowup, toggleFlag, update } = useLeadsStore()
   const { getById } = useContactsStore()
@@ -110,23 +126,27 @@ function LeadCard({
   const interactions = getForLead(lead.id)
   const lastInteraction = interactions[0] ?? null
   const noContactDays = isOverlay ? 0 : daysWithoutInteraction(lastInteraction?.interactedAt, lead.createdAt)
-  const isCooling = !isOverlay && noContactDays > COOLING_DAYS
   const stageDays = isOverlay ? 0 : daysInStage(lead.stageChangedAt, lead.createdAt)
   const stageDaysClass = stageDaysColor(stageDays, noContactDays <= COOLING_DAYS)
   const contactInfo = !isOverlay ? contactLabel(noContactDays, !!lastInteraction) : null
+  const originMeta = ORIGIN_META[lead.origin]
+  const LastIcon = lastInteraction ? (INTERACTION_ICON[lastInteraction.type as LeadInteractionType] ?? StickyNote) : StickyNote
 
-  function handleWhatsApp(e: React.MouseEvent) {
+  // Registra no banco e só então confirma — sem otimismo
+  async function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
     window.open(whatsappUrl(displayPhone), '_blank')
-    advanceFollowup(lead.id)
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
-    addInteraction({
-      leadId: lead.id,
-      type: 'whatsapp',
-      description: 'Interagiu via WhatsApp',
-      interactedAt: new Date().toISOString(),
-    })
-    toast.success(`WhatsApp · ${nextStep}ª msg registrada`)
+    try {
+      await advanceFollowup(lead.id)
+      await addInteraction({
+        leadId: lead.id,
+        type: 'whatsapp',
+        description: 'Interagiu via WhatsApp',
+        interactedAt: new Date().toISOString(),
+      })
+      toast.success(`WhatsApp · ${nextStep}ª msg registrada`)
+    } catch { /* erro já toastado pela camada db */ }
   }
 
   function handleWhatsAppOpen(e: React.MouseEvent) {
@@ -141,41 +161,34 @@ function LeadCard({
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={`group relative border rounded-xl p-3 cursor-pointer transition-all duration-150 hover:translate-y-[-1px] active:scale-[0.98]
+      className={`group relative border rounded-[14px] p-3 cursor-pointer bg-surface shadow-card
+        transition-all duration-200 hover:translate-y-[-1px] hover:shadow-lg
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
-        ${isOverlay ? 'rotate-1 shadow-2xl shadow-amber-500/15 border-amber-500/40' : ''}
-        ${lead.flagged
-          ? 'bg-gradient-to-br from-orange-500/10 to-red-500/5 border-orange-500/50 shadow-lg shadow-orange-500/10 hover:border-orange-500/70 hover:shadow-orange-500/20'
-          : lead.funnelStage === 'venda'
-            ? 'bg-green-500/5 border-green-500/25 hover:border-line-strong hover:shadow-lg hover:shadow-black/20'
-            : isLinked
-              ? 'bg-surface border-violet-500/25 hover:border-line-strong hover:shadow-lg hover:shadow-black/30'
-              : 'bg-surface border-line hover:border-line-strong hover:shadow-lg hover:shadow-black/30'
-        }
+        ${isOverlay ? 'shadow-modal border-brand/40' : ''}
+        ${isSaving ? 'opacity-60 pointer-events-none' : ''}
+        ${lead.flagged ? 'border-brand/40' : 'border-line hover:border-line-strong'}
       `}
     >
-      {lead.flagged && (
-        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/50 z-10">
-          <Flame size={10} className="text-white" />
-        </div>
-      )}
-      {isCooling && (
-        <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/50 z-10" title="Sem interação há +2 dias">
-          <Snowflake size={10} className="text-white" />
+      {isSaving && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[14px] bg-surface/40">
+          <Loader2 size={16} className="animate-spin text-brand" strokeWidth={1.6} />
         </div>
       )}
 
-      <div className="absolute top-2 right-2 flex items-center gap-0.5">
+      <div className="absolute top-2.5 right-2.5 flex items-center gap-0.5">
         <button
-          onClick={e => { e.stopPropagation(); toggleFlag(lead.id) }}
-          className={`w-5 h-5 flex items-center justify-center rounded transition-all ${
+          onClick={async e => {
+            e.stopPropagation()
+            try { await toggleFlag(lead.id) } catch { /* erro já toastado */ }
+          }}
+          className={`w-5 h-5 flex items-center justify-center rounded transition-all duration-150 ${
             lead.flagged
-              ? 'text-orange-400 hover:text-orange-300'
-              : 'text-t5 opacity-0 group-hover:opacity-100 hover:text-orange-400'
+              ? 'text-brand'
+              : 'text-t5 opacity-0 group-hover:opacity-100 hover:text-brand'
           }`}
           title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
         >
-          <Flame size={11} />
+          <Star size={12} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
         </button>
         <div
           {...listeners}
@@ -183,120 +196,133 @@ function LeadCard({
           onClick={e => e.stopPropagation()}
           className="w-5 h-5 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors"
         >
-          <GripVertical size={12} />
+          <GripVertical size={12} strokeWidth={1.6} />
         </div>
       </div>
 
-      <div className="flex items-start gap-2 pr-12 mb-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-line flex items-center justify-center text-sm font-black text-t2 flex-shrink-0">
+      {/* Nome + telefone + origem */}
+      <div className="flex items-start gap-2.5 pr-12 mb-2">
+        <div className="w-8 h-8 rounded-[10px] bg-s2 border border-line flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
           {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-t1 truncate leading-tight">{displayName}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] text-t4">{ORIGIN_EMOJI[lead.origin]}</span>
-            <span className="text-[10px] text-t4 tabular-nums">{formatPhone(displayPhone)}</span>
-            {!isOverlay && (
-              <span
-                title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}
-                className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${stageDaysClass}`}
-              >
-                {stageDays}d na etapa
-              </span>
+          <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.01em]">
+            {displayName}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1">
+            {originMeta && (
+              <originMeta.icon size={11} strokeWidth={1.6} className="text-t4 flex-shrink-0" aria-label={originMeta.label} />
             )}
+            <span className="font-label text-[10px] text-t4 tabular-nums tracking-wide">{formatPhone(displayPhone)}</span>
           </div>
         </div>
       </div>
 
+      {/* Recência de contato — a informação de ação do corretor */}
+      {contactInfo && (
+        <div className="flex items-center gap-1.5 mb-2 min-w-0">
+          <span className={`text-[11px] font-semibold flex-shrink-0 ${contactInfo.cls}`}>{contactInfo.text}</span>
+          {lastInteraction && (
+            <span className="flex items-center gap-1 text-[10px] text-t4 truncate min-w-0">
+              <span className="flex-shrink-0">·</span>
+              <LastIcon size={10} strokeWidth={1.6} className="flex-shrink-0" />
+              <span className="truncate">{lastInteraction.description ?? lastInteraction.type}</span>
+            </span>
+          )}
+          {!isOverlay && (
+            <span
+              title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}
+              className={`ml-auto flex-shrink-0 font-label text-[9px] font-medium uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums ${stageDaysClass}`}
+            >
+              {stageDays}d na etapa
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Tentativas de followup */}
       {lead.funnelStage === 'followup' && (
         <div className="mb-2">
           <div className="flex items-center gap-1 mb-1">
             {[1, 2, 3, 4, 5].map(step => (
               <div
                 key={step}
-                onClick={e => {
+                onClick={async e => {
                   e.stopPropagation()
-                  update(lead.id, { followupStep: lead.followupStep === step ? step - 1 : step })
-                  toast.success(`${lead.followupStep === step ? step - 1 : step}ª tentativa marcada`)
+                  const next = lead.followupStep === step ? step - 1 : step
+                  try {
+                    await update(lead.id, { followupStep: next })
+                    toast.success(`${next}ª tentativa marcada`)
+                  } catch { /* erro já toastado */ }
                 }}
                 title={`Marcar ${step}ª tentativa`}
-                className={`flex-1 h-2.5 rounded-full transition-all cursor-pointer hover:opacity-90 active:scale-95
+                className={`flex-1 h-2 rounded-full transition-all duration-150 cursor-pointer active:scale-95
                   ${step <= lead.followupStep
-                    ? 'bg-blue-400 hover:bg-blue-300'
-                    : 'bg-s3 hover:bg-blue-400/40'
+                    ? 'bg-info hover:opacity-80'
+                    : 'bg-s3 hover:bg-info-bg'
                   }`}
               />
             ))}
           </div>
-          <p className="text-[10px] text-blue-400/70">
-            {lead.followupStep === 0 ? 'Clique para marcar tentativas' : `${lead.followupStep}ª de 5 tentativas`}
+          <p className="font-label text-[9px] uppercase tracking-[0.08em] text-t4">
+            {lead.followupStep === 0 ? 'Marcar tentativas' : `${lead.followupStep}ª de 5 tentativas`}
           </p>
         </div>
       )}
 
+      {/* Imóvel de interesse */}
       {(property || lead.propertyName) && (
-        <p className={`text-[11px] mb-2 truncate flex items-center gap-1 ${lead.propertyName && !property ? 'text-amber-400/70' : 'text-t3'}`}>
-          🏠 <span className="truncate">{property ? property.name : lead.propertyName}</span>
+        <p className="flex items-center gap-1.5 text-[11px] text-t3 mb-2 min-w-0">
+          <Home size={11} strokeWidth={1.6} className="text-brand flex-shrink-0" />
+          <span className="truncate">{property ? property.name : lead.propertyName}</span>
         </p>
       )}
 
+      {/* Ticket + comissão */}
       {lead.averageTicket && (
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] font-semibold text-violet-400">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="font-label text-xs font-semibold text-t1 tabular-nums">
             {formatCurrency(lead.averageTicket)}
           </span>
-          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/15 font-medium tabular-nums">
-            💰 {formatCurrency(lead.averageTicket * 0.02)}
+          <span className="font-label text-[9px] uppercase tracking-[0.08em] text-success bg-success-bg border border-success-line px-2 py-0.5 rounded-full tabular-nums">
+            Com. {formatCurrency(lead.averageTicket * 0.02)}
           </span>
         </div>
-      )}
-
-      {contactInfo && (
-        <p className="text-[10px] mb-2 truncate leading-snug">
-          <span className={`font-semibold ${contactInfo.cls}`}>{contactInfo.text}</span>
-          {lastInteraction && (
-            <span className="text-t4">
-              {' · '}
-              {lastInteraction.type === 'ligacao' ? '📞' : lastInteraction.type === 'whatsapp' ? '💬' : lastInteraction.type === 'visita' ? '🏠' : lastInteraction.type === 'reuniao' ? '🤝' : lastInteraction.type === 'email' ? '📧' : '📝'}{' '}
-              {lastInteraction.description ?? lastInteraction.type}
-            </span>
-          )}
-        </p>
       )}
 
       {isLinked && (
-        <div className="flex items-center gap-1 flex-wrap mb-1">
-          <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20">
-            <UserCheck size={8} /> No CRM
-          </span>
-        </div>
+        <span className="inline-flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] text-t3 px-2 py-0.5 rounded-full border border-line mb-1">
+          <UserCheck size={9} strokeWidth={1.6} /> No CRM
+        </span>
       )}
 
+      {/* Ações */}
       <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5">
         <button
           onClick={handleWhatsApp}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium text-green-300 hover:text-white bg-green-500/10 hover:bg-green-500 border border-green-500/20 hover:border-green-500 rounded-lg transition-all active:scale-95"
-          title="Registrar e abrir WhatsApp"
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-[11px] font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+          title="Registrar contato e abrir WhatsApp"
         >
-          <MessageCircle size={11} />
-          Registrar
+          <MessageCircle size={12} strokeWidth={1.6} />
+          Registrar contato
           {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
             <span className="opacity-60">· {lead.followupStep}ª</span>
           )}
         </button>
         <button
           onClick={handleWhatsAppOpen}
-          className="w-7 h-7 flex items-center justify-center text-green-500/70 hover:text-green-300 bg-s2 hover:bg-green-500/10 border border-line hover:border-green-500/20 rounded-lg transition-all"
+          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-success bg-s2 hover:bg-success-bg border border-line hover:border-success-line rounded-[10px] transition-all duration-150"
           title="Só abrir WhatsApp"
         >
-          <MessageCircle size={11} />
+          <MessageCircle size={12} strokeWidth={1.6} />
         </button>
         <a
           href={`tel:${displayPhone}`}
           onClick={e => e.stopPropagation()}
-          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-lg transition-all"
+          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150"
+          title="Ligar"
         >
-          <Phone size={11} />
+          <Phone size={12} strokeWidth={1.6} />
         </a>
       </div>
     </div>
@@ -306,38 +332,54 @@ function LeadCard({
 // ─── Coluna do kanban ─────────────────────────────────────────────────────────
 
 function KanbanColumn({
-  stage, leads, onCardClick, isActiveDragTarget,
+  stage, leads, onCardClick, isActiveDragTarget, savingId,
 }: {
   stage: LeadFunnelStage
   leads: Lead[]
   onCardClick: (lead: Lead) => void
   isActiveDragTarget: boolean
+  savingId: string | null
 }) {
   const conf = STAGE_CONFIG[stage]
   const { isOver, setNodeRef } = useDroppable({ id: stage })
+  const { byLead } = useLeadInteractionsStore()
   const ids = leads.map(l => l.id)
 
-  const totalPipeline  = leads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
+  const totalPipeline   = leads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
   const totalCommission = totalPipeline * 0.02
+  const coldCount = leads.filter(l => {
+    const last = (byLead[l.id] ?? [])[0]
+    return daysWithoutInteraction(last?.interactedAt, l.createdAt) > COOLING_DAYS
+  }).length
 
   return (
     <div className="flex flex-col w-72 flex-shrink-0">
-      <div className={`flex flex-col px-3 py-2.5 rounded-t-xl border border-b-0 ${conf.headerBg} ${conf.border}`}>
-        <div className="flex items-center gap-2.5">
-          <div className={`w-2 h-2 rounded-full ${conf.dot} shadow-sm flex-shrink-0`} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-t4">Etapa</p>
-            <span className={`text-sm font-bold leading-tight ${conf.headerText}`}>{conf.label}</span>
-          </div>
-          <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${conf.bg} ${conf.color} border ${conf.border} tabular-nums`}>
+      {/* Header — superfície neutra, etapa identificada pelo dot + label */}
+      <div className="flex flex-col px-3.5 py-2.5 rounded-t-[14px] border border-b-0 border-line bg-surface">
+        <div className="flex items-center gap-2">
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${conf.dot}`} />
+          <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t2">
+            {conf.label}
+          </span>
+          {coldCount > 0 && (
+            <span
+              className="flex items-center gap-0.5 font-label text-[9px] text-info bg-info-bg border border-info-line px-1.5 py-px rounded-full tabular-nums"
+              title={`${coldCount} ${coldCount === 1 ? 'lead' : 'leads'} sem contato há mais de ${COOLING_DAYS} dias`}
+            >
+              <Snowflake size={9} strokeWidth={1.6} /> {coldCount}
+            </span>
+          )}
+          <span className="ml-auto font-label text-[11px] font-medium text-t3 bg-s2 border border-line px-2 py-0.5 rounded-full tabular-nums">
             {leads.length}
           </span>
         </div>
         {totalPipeline > 0 && (
-          <div className="flex items-center gap-1.5 mt-1.5 pl-4">
-            <span className="text-[10px] text-violet-400 font-semibold tabular-nums">{formatCurrency(totalPipeline)}</span>
-            <span className="text-[10px] text-t4">·</span>
-            <span className="text-[10px] text-emerald-400 font-semibold tabular-nums">💰 {formatCurrency(totalCommission)}</span>
+          <div className="flex items-center gap-1.5 mt-1.5 pl-3.5">
+            <span className="font-label text-[10px] text-t2 font-medium tabular-nums">{formatCurrency(totalPipeline)}</span>
+            <span className="text-[10px] text-t5">·</span>
+            <span className="font-label text-[10px] text-success tabular-nums" title="Comissão estimada (2%)">
+              {formatCurrency(totalCommission)}
+            </span>
           </div>
         )}
       </div>
@@ -345,8 +387,11 @@ function KanbanColumn({
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div
           ref={setNodeRef}
-          className={`flex-1 min-h-[420px] rounded-b-xl border ${conf.border} page-bg p-2 flex flex-col gap-2 transition-all duration-150
-            ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-line-strong bg-s2' : ''}
+          className={`flex-1 min-h-[420px] rounded-b-[14px] border border-line p-2 flex flex-col gap-2 transition-all duration-200
+            ${isOver || isActiveDragTarget
+              ? 'border-brand/40 bg-[rgba(228,178,60,0.05)]'
+              : 'bg-s2/40'
+            }
           `}
         >
           {leads.length === 0 && (
@@ -355,7 +400,7 @@ function KanbanColumn({
             </div>
           )}
           {leads.map(lead => (
-            <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} />
+            <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} isSaving={savingId === lead.id} />
           ))}
         </div>
       </SortableContext>
@@ -372,9 +417,11 @@ interface LeadKanbanProps {
 export function LeadKanban({ leads }: LeadKanbanProps) {
   const { setStage, reorder } = useLeadsStore()
   const { loadAll: loadAllInteractions } = useLeadInteractionsStore()
+  const connected = useRealtimeStatusStore(s => s.connected)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<LeadFunnelStage | null>(null)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [savingId, setSavingId] = useState<string | null>(null)
 
   useEffect(() => { loadAllInteractions() }, [])
 
@@ -410,7 +457,9 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
     }
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  // Banco primeiro: o card fica em "salvando" até o banco confirmar.
+  // Sucesso → toast; falha → o card permanece onde estava (estado nunca mudou).
+  async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     setActiveId(null)
     setOverStage(null)
@@ -425,8 +474,12 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
     if (STAGES.includes(overId as LeadFunnelStage)) {
       const newStage = overId as LeadFunnelStage
       if (draggedLead.funnelStage !== newStage) {
-        setStage(leadId, newStage)
-        toast.success(`Lead movido para ${STAGE_CONFIG[newStage].label}`)
+        setSavingId(leadId)
+        try {
+          await setStage(leadId, newStage)
+          toast.success(`Lead movido para ${STAGE_CONFIG[newStage].label}`)
+        } catch { /* erro já toastado — card permanece na etapa original */ }
+        finally { setSavingId(null) }
       }
       return
     }
@@ -438,12 +491,6 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
 
     const targetStage = overLead.funnelStage
     const stageLeads = sortedByStage[targetStage]
-
-    // Cross-column: change stage first
-    if (draggedLead.funnelStage !== targetStage) {
-      setStage(leadId, targetStage)
-      toast.success(`Lead movido para ${STAGE_CONFIG[targetStage].label}`)
-    }
 
     // Compute new order based on neighbors in target column
     const activeIndex = stageLeads.findIndex(l => l.id === leadId)
@@ -464,11 +511,36 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
     const newIndex = newArr.findIndex(l => l.id === leadId)
     const above = newIndex > 0 ? newArr[newIndex - 1] : null
     const below = newIndex < newArr.length - 1 ? newArr[newIndex + 1] : null
-    reorder(leadId, orderBetween(above, below))
+
+    setSavingId(leadId)
+    try {
+      // Cross-column: muda a etapa primeiro, depois a posição
+      if (draggedLead.funnelStage !== targetStage) {
+        await setStage(leadId, targetStage)
+        toast.success(`Lead movido para ${STAGE_CONFIG[targetStage].label}`)
+      }
+      await reorder(leadId, orderBetween(above, below))
+    } catch { /* erro já toastado — posição original mantida */ }
+    finally { setSavingId(null) }
   }
 
   return (
     <>
+      {/* Status da conexão realtime */}
+      <div className="flex items-center justify-end gap-1.5 px-1 pb-2">
+        {connected ? (
+          <>
+            <Wifi size={11} strokeWidth={1.6} className="text-success" />
+            <span className="font-label text-[9px] uppercase tracking-[0.12em] text-t4">Tempo real ativo</span>
+          </>
+        ) : (
+          <>
+            <WifiOff size={11} strokeWidth={1.6} className="text-warning" />
+            <span className="font-label text-[9px] uppercase tracking-[0.12em] text-warning">Reconectando…</span>
+          </>
+        )}
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -484,6 +556,7 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
               leads={sortedByStage[stage]}
               onCardClick={setSelectedLead}
               isActiveDragTarget={overStage === stage && !!activeId}
+              savingId={savingId}
             />
           ))}
         </div>

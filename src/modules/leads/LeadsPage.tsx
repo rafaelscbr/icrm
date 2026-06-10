@@ -48,7 +48,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
     window.open(whatsappUrl(displayPhone), '_blank')
-    advanceFollowup(lead.id)
+    advanceFollowup(lead.id).catch(() => { /* erro já toastado pela camada db */ })
   }
 
   return (

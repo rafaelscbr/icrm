@@ -644,10 +644,32 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
   })
 }
 
+// Garante sessão válida antes de qualquer escrita. getSession() renova o token
+// automaticamente se expirado (comum após a aba ficar muito tempo inativa).
+async function ensureFreshSession(): Promise<void> {
+  const { data, error } = await supabase.auth.getSession()
+  if (error || !data.session) {
+    toast.error('Sessão expirada. Faça login novamente para continuar.')
+    throw error ?? new Error('Sessão ausente')
+  }
+}
+
+function isJwtError(error: { message?: string; code?: string }): boolean {
+  return error.code === 'PGRST301' || /jwt|expired|token/i.test(error.message ?? '')
+}
+
 async function upsertOne<R>(table: string, row: R): Promise<void> {
-  const { error } = await supabase
+  await ensureFreshSession()
+  let { error } = await supabase
     .from(table)
     .upsert(row as object, { onConflict: 'id' })
+  // Token pode ter vencido entre o check e o write — renova uma vez e repete
+  if (error && isJwtError(error)) {
+    const { error: refreshErr } = await supabase.auth.refreshSession()
+    if (!refreshErr) {
+      ;({ error } = await supabase.from(table).upsert(row as object, { onConflict: 'id' }))
+    }
+  }
   if (error) {
     toast.error(`Erro ao salvar em ${table}: ${error.message}`)
     throw error
@@ -655,7 +677,14 @@ async function upsertOne<R>(table: string, row: R): Promise<void> {
 }
 
 async function deleteOne(table: string, id: string): Promise<void> {
-  const { error } = await supabase.from(table).delete().eq('id', id)
+  await ensureFreshSession()
+  let { error } = await supabase.from(table).delete().eq('id', id)
+  if (error && isJwtError(error)) {
+    const { error: refreshErr } = await supabase.auth.refreshSession()
+    if (!refreshErr) {
+      ;({ error } = await supabase.from(table).delete().eq('id', id))
+    }
+  }
   if (error) {
     toast.error(`Erro ao excluir em ${table}: ${error.message}`)
     throw error

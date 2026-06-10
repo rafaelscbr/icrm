@@ -90,11 +90,12 @@ function daysInStage(lead: CampaignLead): number {
   return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
 }
 
-function stageAgeBadge(days: number): { label: string; color: string; bg: string } | null {
+// Semântica única de cor (igual ao funil): neutro = ok, âmbar = atenção, vermelho = ação
+function stageAgeBadge(days: number): { label: string; cls: string } | null {
   if (days < 1) return null
-  if (days <= 2)  return { label: `${days}d`, color: 'text-green-400',  bg: 'bg-green-500/10'  }
-  if (days <= 5)  return { label: `${days}d`, color: 'text-amber-400',  bg: 'bg-amber-500/10'  }
-  return { label: `${days}d`, color: 'text-red-400', bg: 'bg-red-500/10' }
+  if (days <= 2)  return { label: `${days}d`, cls: 'text-t4 bg-s2 border-line' }
+  if (days <= 5)  return { label: `${days}d`, cls: 'text-warning bg-warning-bg border-warning-line' }
+  return { label: `${days}d`, cls: 'text-error bg-error-bg border-error-line' }
 }
 
 // ─── Modal de última mensagem ─────────────────────────────────────────────────
@@ -272,24 +273,21 @@ function LeadCard({
       <div
         ref={setNodeRef}
         onClick={() => !isDragging && onParecer(lead)}
-        className={`group relative border rounded-xl p-3 cursor-pointer transition-all duration-150 hover:translate-y-[-1px] active:scale-[0.98] select-none
+        className={`group relative border rounded-[14px] p-3 cursor-pointer bg-surface shadow-card select-none
+          transition-all duration-200 hover:translate-y-[-1px] hover:shadow-lg
           ${isDragging || ghost ? 'opacity-30 scale-95' : ''}
-          ${ghost ? 'rotate-1 shadow-2xl shadow-amber-500/15 border-amber-500/40' : ''}
-          ${cold
-            ? 'bg-sky-500/5 border-sky-500/25 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/10'
-            : lead.funnelStage === 'scheduled'
-              ? 'bg-green-500/5 border-green-500/25 hover:border-line-strong hover:shadow-lg hover:shadow-black/20'
-              : lead.transferredAt
-                ? 'bg-violet-500/5 border-violet-500/25 hover:border-line-strong hover:shadow-lg hover:shadow-black/20'
-                : 'bg-surface border-line hover:border-line-strong hover:shadow-lg hover:shadow-black/30'
-          }
+          ${ghost ? 'shadow-modal border-brand/40' : ''}
+          ${cold ? 'border-info-line' : 'border-line hover:border-line-strong'}
         `}
       >
         {/* Indicador frio */}
         {cold && (
-          <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/50 z-10" title="Sem contato há +3 dias">
-            <Snowflake size={10} className="text-white" />
-          </div>
+          <span
+            className="absolute -top-2 left-3 z-10 flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] text-info bg-info-bg border border-info-line px-1.5 py-px rounded-full"
+            title="Sem contato há mais de 3 dias"
+          >
+            <Snowflake size={9} strokeWidth={1.6} /> Frio
+          </span>
         )}
 
         {/* Grip + ações no hover */}
@@ -324,27 +322,35 @@ function LeadCard({
         </div>
 
         {/* Avatar + nome + info */}
-        <div className="flex items-start gap-2 pr-12 mb-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-600/40 to-slate-700/20 border border-line flex items-center justify-center text-sm font-black text-t2 flex-shrink-0">
+        <div className="flex items-start gap-2.5 pr-12 mb-2">
+          <div className="w-8 h-8 rounded-[10px] bg-s2 border border-line flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
             {lead.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-t1 truncate leading-tight">{lead.name}</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[10px] text-t4 tabular-nums">{formatPhone(lead.phone)}</span>
-              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${ageBadge ? `${ageBadge.bg} ${ageBadge.color}` : 'text-t4 bg-transparent border-transparent'}`}>
-                {days > 0 ? `${days}d` : ''}
-              </span>
+            <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.01em]">{lead.name}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="font-label text-[10px] text-t4 tabular-nums tracking-wide">{formatPhone(lead.phone)}</span>
+              {ageBadge && (
+                <span
+                  title={`${days} ${days === 1 ? 'dia' : 'dias'} nesta etapa`}
+                  className={`ml-auto font-label text-[9px] font-medium uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums ${ageBadge.cls}`}
+                >
+                  {ageBadge.label} na etapa
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Quem disparou por último */}
         {lead.lastSentByName && (
-          <p className="mb-1.5 text-[10px] text-violet-400/80 truncate">
-            💬 {lead.lastSentByName}
-            {lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
-            {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
+          <p className="mb-1.5 flex items-center gap-1 text-[10px] text-t3 truncate">
+            <MessageCircle size={10} strokeWidth={1.6} className="flex-shrink-0 text-t4" />
+            <span className="truncate">
+              {lead.lastSentByName}
+              {lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+              {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
+            </span>
           </p>
         )}
 
@@ -355,14 +361,14 @@ function LeadCard({
 
         {/* Migrado */}
         {lead.transferredAt && (
-          <span className="mb-1.5 inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/20">
-            <GitMerge size={8} /> Migrado p/ funil
+          <span className="mb-1.5 inline-flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] text-t3 px-2 py-0.5 rounded-full border border-line">
+            <GitMerge size={9} strokeWidth={1.6} /> Migrado p/ funil
           </span>
         )}
 
         {/* Situação */}
         {situation && (
-          <span className={`mb-1.5 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${situation.bg} ${situation.color}`}>
+          <span className={`mb-1.5 inline-block font-label text-[9px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full ${situation.bg} ${situation.color}`}>
             {situation.label}
           </span>
         )}
@@ -370,7 +376,7 @@ function LeadCard({
         {/* Valor proposta */}
         {lead.proposalValue && (
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-semibold text-amber-400">{formatCurrency(lead.proposalValue)}</span>
+            <span className="font-label text-xs font-semibold text-t1 tabular-nums">{formatCurrency(lead.proposalValue)}</span>
           </div>
         )}
 
@@ -388,15 +394,15 @@ function LeadCard({
                     toast.success(newStep > 0 ? `${newStep}ª mensagem marcada` : 'Progresso removido')
                   }}
                   title={`Marcar ${step}ª mensagem como enviada`}
-                  className={`flex-1 h-2.5 rounded-full transition-all cursor-pointer hover:opacity-90 active:scale-95
-                    ${step <= dispatchStep ? 'bg-blue-400 hover:bg-blue-300' : 'bg-s3 hover:bg-blue-400/40'}`}
+                  className={`flex-1 h-2 rounded-full transition-all duration-150 cursor-pointer active:scale-95
+                    ${step <= dispatchStep ? 'bg-info hover:opacity-80' : 'bg-s3 hover:bg-info-bg'}`}
                 />
               ))}
             </div>
             {/* Mostra quantas JÁ foram enviadas */}
-            <p className="text-[10px] text-blue-400/70">
+            <p className="font-label text-[9px] uppercase tracking-[0.08em] text-t4">
               {dispatchStep === 0
-                ? 'Nenhuma mensagem de acompanhamento enviada'
+                ? 'Nenhuma mensagem enviada'
                 : `${dispatchStep} de 5 mensagens enviadas`}
             </p>
           </div>
@@ -406,10 +412,10 @@ function LeadCard({
         <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
           <button
             onClick={handleSendAndRegister}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium text-green-300 hover:text-white bg-green-500/10 hover:bg-green-500 border border-green-500/20 hover:border-green-500 rounded-lg transition-all active:scale-95"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-[11px] font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
             title="Enviar template e registrar disparo"
           >
-            <MessageCircle size={11} />
+            <MessageCircle size={12} strokeWidth={1.6} />
             Registrar
             {lead.funnelStage === 'attended' && (
               <span className="opacity-60">· {dispatchStep + 1}ª</span>
@@ -417,18 +423,18 @@ function LeadCard({
           </button>
           <button
             onClick={handleOpenOnly}
-            className="w-7 h-7 flex items-center justify-center text-green-500/70 hover:text-green-300 bg-s2 hover:bg-green-500/10 border border-line hover:border-green-500/20 rounded-lg transition-all"
+            className="w-7 h-7 flex items-center justify-center text-t3 hover:text-success bg-s2 hover:bg-success-bg border border-line hover:border-success-line rounded-[10px] transition-all duration-150"
             title="Só abrir WhatsApp"
           >
-            <MessageCircle size={11} />
+            <MessageCircle size={12} strokeWidth={1.6} />
           </button>
           <a
             href={`tel:${lead.phone}`}
             onClick={e => e.stopPropagation()}
-            className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-lg transition-all"
+            className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150"
             title="Ligar"
           >
-            <Phone size={11} />
+            <Phone size={12} strokeWidth={1.6} />
           </a>
         </div>
       </div>
@@ -470,34 +476,33 @@ function KanbanColumn({
 
   return (
     <div className="flex flex-col w-72 flex-shrink-0">
-      {/* Header da coluna — mesmo padrão do funil principal */}
-      <div className={`flex flex-col px-3 py-2.5 rounded-t-xl border border-b-0 ${stage.bg} ${stage.border}`}>
-        <div className="flex items-center gap-2.5">
-          <div className={`w-2 h-2 rounded-full ${stage.dot} shadow-sm flex-shrink-0`} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-t4">Etapa</p>
-            <span className={`text-sm font-bold leading-tight ${stage.color}`}>{stage.label}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${stage.bg} ${stage.color} border ${stage.border} tabular-nums`}>
+      {/* Header da coluna — superfície neutra, etapa identificada pelo dot + label */}
+      <div className="flex flex-col px-3.5 py-2.5 rounded-t-[14px] border border-b-0 border-line bg-surface">
+        <div className="flex items-center gap-2">
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${stage.dot}`} />
+          <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t2">
+            {stage.label}
+          </span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="font-label text-[11px] font-medium text-t3 bg-s2 border border-line px-2 py-0.5 rounded-full tabular-nums">
               {leads.length.toLocaleString('pt-BR')}
             </span>
             {leads.length > 0 && (
               <button
                 onClick={() => exportColumn(stage.value, leads)}
-                className={`p-1 rounded-md opacity-50 hover:opacity-100 transition-opacity ${stage.color}`}
+                className="p-1 rounded-md text-t4 hover:text-t2 transition-colors duration-150"
                 title={`Exportar ${stage.label}`}
               >
-                <Download size={10} />
+                <Download size={11} strokeWidth={1.6} />
               </button>
             )}
           </div>
         </div>
         {/* VGV da coluna */}
         {showVgv && colVGV > 0 && (
-          <div className="flex items-center gap-1.5 mt-1.5 pl-4">
-            <span className={`text-[10px] font-semibold tabular-nums ${stage.color} opacity-80`}>
-              VGV: {formatCurrency(colVGV)}
+          <div className="flex items-center gap-1.5 mt-1.5 pl-3.5">
+            <span className="font-label text-[10px] text-t2 font-medium tabular-nums">
+              VGV {formatCurrency(colVGV)}
             </span>
           </div>
         )}
@@ -506,8 +511,8 @@ function KanbanColumn({
       {/* Área droppable */}
       <div
         ref={setNodeRef}
-        className={`flex-1 min-h-[420px] rounded-b-xl border ${stage.border} page-bg p-2 flex flex-col gap-2 transition-all duration-150
-          ${isOver ? 'ring-1 ring-inset ring-line-strong bg-s2' : ''}`}
+        className={`flex-1 min-h-[420px] rounded-b-[14px] border border-line p-2 flex flex-col gap-2 transition-all duration-200
+          ${isOver ? 'border-brand/40 bg-[rgba(228,178,60,0.05)]' : 'bg-s2/40'}`}
       >
         {leads.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
@@ -536,11 +541,11 @@ function KanbanColumn({
 
 // ─── KanbanTab principal ──────────────────────────────────────────────────────
 
-const DATE_FILTERS: { value: DateFilter; label: string }[] = [
+const DATE_FILTERS: { value: DateFilter; label: string; icon?: typeof Snowflake }[] = [
   { value: 'all',   label: 'Todos'       },
   { value: 'today', label: 'Hoje'        },
   { value: 'week',  label: 'Esta semana' },
-  { value: 'cold',  label: '❄️ Lead Frio' },
+  { value: 'cold',  label: 'Lead frio', icon: Snowflake },
 ]
 
 export function KanbanTab({ leads, campaign }: KanbanTabProps) {
@@ -598,15 +603,16 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
           <button
             key={f.value}
             onClick={() => setDateFilter(f.value)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-label text-[11px] uppercase tracking-[0.08em] border transition-all duration-150 cursor-pointer ${
               dateFilter === f.value
                 ? 'bg-brand-tint border-brand/40 text-brand-text'
                 : 'bg-s2/60 border-line text-t3 hover:text-t2 hover:border-line-strong'
             }`}
           >
+            {f.icon && <f.icon size={11} strokeWidth={1.6} />}
             {f.label}
             {f.value !== 'all' && (
-              <span className="ml-1.5 opacity-60">
+              <span className="opacity-60 tabular-nums">
                 {applyDateFilter(leads, f.value).length}
               </span>
             )}
@@ -659,7 +665,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
 
         <DragOverlay>
           {activeLead && (
-            <div className="w-72 opacity-90 rotate-1 scale-105 shadow-2xl shadow-black/40">
+            <div className="w-72 opacity-95">
               <LeadCard lead={activeLead} campaign={campaign} onParecer={() => {}} ghost />
             </div>
           )}
