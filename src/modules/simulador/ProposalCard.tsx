@@ -2,7 +2,6 @@ import { forwardRef } from 'react'
 import { FluxoInput, FluxoResult, ReforcoPeriodo } from './calc'
 
 const PERIODO_LABELS: Record<ReforcoPeriodo, string> = {
-  mensal:    'mensal',
   semestral: 'semestral',
   anual:     'anual',
 }

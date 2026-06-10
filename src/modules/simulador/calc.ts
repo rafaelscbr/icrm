@@ -1,4 +1,4 @@
-export type ReforcoPeriodo = 'mensal' | 'semestral' | 'anual'
+export type ReforcoPeriodo = 'semestral' | 'anual'
 
 export interface FluxoInput {
   valorTotal: number

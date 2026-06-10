@@ -185,7 +185,6 @@ export function SimuladorPage() {
                     onChange={e => setForm(prev => ({ ...prev, reforcoPeriodo: e.target.value as ReforcoPeriodo }))}
                     disabled={form.reforcoQtd === 0}
                   >
-                    <option value="mensal">Mensal</option>
                     <option value="semestral">Semestral</option>
                     <option value="anual">Anual</option>
                   </Select>
