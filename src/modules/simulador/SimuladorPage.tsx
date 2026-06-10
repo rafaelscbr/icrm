@@ -34,10 +34,18 @@ export function SimuladorPage() {
     reforcoPeriodo: DEFAULT.reforcoPeriodo,
     parcelasQtd:  DEFAULT.parcelasQtd,
   })
+  const [entradaModo, setEntradaModo] = useState<'valor' | 'pct'>('valor')
+  const [entradaPct,  setEntradaPct]  = useState(5)
   const [exporting, setExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
-  const result = calcularFluxo(form)
+  // Em modo %, o valor da entrada é derivado do valor total do imóvel
+  const entradaValorEfetivo = entradaModo === 'pct'
+    ? form.valorTotal * (entradaPct / 100)
+    : form.entradaValor
+
+  const inputEfetivo: FluxoInput = { ...form, entradaValor: entradaValorEfetivo }
+  const result = calcularFluxo(inputEfetivo)
 
   const set = (field: keyof FluxoInput) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = parseFloat(e.target.value)
@@ -139,7 +147,29 @@ export function SimuladorPage() {
 
               {/* Entrada */}
               <div>
-                <p className="text-t3 text-xs font-medium mb-2.5">Entrada</p>
+                <div className="flex items-center justify-between mb-2.5">
+                  <p className="text-t3 text-xs font-medium">Entrada</p>
+                  {/* Toggle R$ fixo / % do total */}
+                  <div className="flex rounded-lg border border-line overflow-hidden">
+                    {([
+                      { modo: 'valor', label: 'R$ fixo' },
+                      { modo: 'pct',   label: '% do total' },
+                    ] as const).map(({ modo, label }) => (
+                      <button
+                        key={modo}
+                        type="button"
+                        onClick={() => setEntradaModo(modo)}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                          entradaModo === modo
+                            ? 'bg-brand/15 text-brand'
+                            : 'bg-surface text-t3 hover:text-t1'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-[110px_1fr] gap-3">
                   <Input
                     label="Quantidade"
@@ -149,12 +179,34 @@ export function SimuladorPage() {
                     value={form.entradaQtd || ''}
                     onChange={set('entradaQtd')}
                   />
-                  <CurrencyInput
-                    label="Valor por entrada"
-                    value={form.entradaValor}
-                    onChange={v => setForm(prev => ({ ...prev, entradaValor: v }))}
-                  />
+                  {entradaModo === 'valor' ? (
+                    <CurrencyInput
+                      label="Valor por entrada"
+                      value={form.entradaValor}
+                      onChange={v => setForm(prev => ({ ...prev, entradaValor: v }))}
+                    />
+                  ) : (
+                    <Input
+                      label="Porcentagem do valor total (%)"
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="100"
+                      value={entradaPct || ''}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value)
+                        setEntradaPct(isNaN(v) ? 0 : v)
+                      }}
+                    />
+                  )}
                 </div>
+                {entradaModo === 'pct' && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-t3">
+                    <span>{entradaPct}% de {fmtBRL(form.valorTotal)} =</span>
+                    <span className="font-semibold text-brand">{fmtBRL(entradaValorEfetivo)}</span>
+                    {form.entradaQtd > 1 && <span>por entrada</span>}
+                  </div>
+                )}
               </div>
 
               <div className="w-full h-px bg-line" />
@@ -242,7 +294,7 @@ export function SimuladorPage() {
             <div className="flex justify-center">
               <ProposalCard
                 ref={cardRef}
-                input={form}
+                input={inputEfetivo}
                 result={result}
                 empreendimento={empreendimento}
                 cliente={cliente}
