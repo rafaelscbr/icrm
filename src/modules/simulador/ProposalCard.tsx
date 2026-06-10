@@ -20,10 +20,11 @@ interface ProposalCardProps {
   result: FluxoResult
   empreendimento: string
   cliente: string
+  corretor: string
 }
 
 export const ProposalCard = forwardRef<HTMLDivElement, ProposalCardProps>(
-  ({ input, result, empreendimento, cliente }, ref) => {
+  ({ input, result, empreendimento, cliente, corretor }, ref) => {
     const today = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
     const font  = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
 
@@ -48,22 +49,10 @@ export const ProposalCard = forwardRef<HTMLDivElement, ProposalCardProps>(
             pointerEvents: 'none',
           }} />
 
-          {/* Logo + brand */}
+          {/* Corretor logado */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-            <div style={{
-              width: 38, height: 38, borderRadius: 10,
-              background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD2} 100%)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 17, fontWeight: 900, color: NAVY, letterSpacing: -1,
-              flexShrink: 0,
-            }}>S</div>
-            <div>
-              <div style={{ color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                Souza Imobiliária
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 9.5, letterSpacing: 1, marginTop: 1 }}>
-                Itajaí · SC
-              </div>
+            <div style={{ color: GOLD, fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+              {corretor}
             </div>
             <div style={{ flex: 1 }} />
             <div style={{

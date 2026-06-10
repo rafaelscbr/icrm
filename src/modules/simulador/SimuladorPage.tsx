@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { Calculator, Download, AlertCircle, TrendingDown } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import toast from 'react-hot-toast'
+import { useAuthStore } from '../../store/useAuthStore'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { Button } from '../../components/ui/Button'
@@ -22,6 +23,7 @@ const DEFAULT: FluxoInput & { empreendimento: string; cliente: string } = {
 }
 
 export function SimuladorPage() {
+  const { profile } = useAuthStore()
   const [empreendimento, setEmpreendimento] = useState(DEFAULT.empreendimento)
   const [cliente,        setCliente]        = useState(DEFAULT.cliente)
   const [form, setForm] = useState<FluxoInput>({
@@ -298,6 +300,7 @@ export function SimuladorPage() {
                 result={result}
                 empreendimento={empreendimento}
                 cliente={cliente}
+                corretor={profile?.name ?? ''}
               />
             </div>
 
