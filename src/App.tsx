@@ -18,6 +18,7 @@ import { TasksPage } from './modules/tasks/TasksPage'
 import { CampaignsPage } from './modules/campaigns/CampaignsPage'
 import { LeadsPage } from './modules/leads/LeadsPage'
 import { PermutaPage } from './modules/permuta/PermutaPage'
+import { SimuladorPage } from './modules/simulador/SimuladorPage'
 import { LoginPage } from './pages/LoginPage'
 import { AdminPage } from './pages/AdminPage'
 import { ActivityLogsPage } from './pages/ActivityLogsPage'
@@ -134,6 +135,7 @@ function AppRoutes() {
             <Route path="/leads" element={<PageWrapper><LeadsPage /></PageWrapper>} />
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
             <Route path="/permuta" element={<PageWrapper><PermutaPage /></PageWrapper>} />
+            <Route path="/simulador" element={<PageWrapper><SimuladorPage /></PageWrapper>} />
             <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
             <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />
             <Route path="/notificacoes" element={<PageWrapper><NotificationsPage /></PageWrapper>} />
