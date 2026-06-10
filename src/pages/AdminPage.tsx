@@ -10,16 +10,18 @@ import { useAuthStore, Profile } from '../store/useAuthStore'
 import toast from 'react-hot-toast'
 
 const ALL_MENU_ITEMS = [
-  { key: 'dashboard',   label: 'Dashboard',   section: 'Principal' },
-  { key: 'tarefas',     label: 'Tarefas',     section: 'Principal' },
-  { key: 'metas',       label: 'Metas',       section: 'Principal' },
-  { key: 'leads',       label: 'Leads',       section: 'Comercial' },
-  { key: 'contatos',    label: 'Contatos',    section: 'Comercial' },
-  { key: 'imoveis',     label: 'Imóveis',     section: 'Comercial' },
-  { key: 'vendas',      label: 'Vendas',      section: 'Comercial' },
-  { key: 'campanhas',   label: 'Campanhas',   section: 'Comercial' },
-  { key: 'permuta',     label: 'Permuta',     section: 'Comercial' },
-  { key: 'performance', label: 'Performance', section: 'Análise'   },
+  { key: 'dashboard',   label: 'Dashboard',          section: 'Principal' },
+  { key: 'tarefas',     label: 'Tarefas',            section: 'Principal' },
+  { key: 'metas',       label: 'Metas',              section: 'Principal' },
+  { key: 'escritorio',  label: 'Escritório Virtual', section: 'Principal' },
+  { key: 'leads',       label: 'Leads',              section: 'Comercial' },
+  { key: 'contatos',    label: 'Contatos',           section: 'Comercial' },
+  { key: 'imoveis',     label: 'Imóveis',            section: 'Comercial' },
+  { key: 'vendas',      label: 'Vendas',             section: 'Comercial' },
+  { key: 'campanhas',   label: 'Campanhas',          section: 'Comercial' },
+  { key: 'permuta',     label: 'Permuta',            section: 'Comercial' },
+  { key: 'simulador',   label: 'Simulador',          section: 'Comercial' },
+  { key: 'performance', label: 'Performance',        section: 'Análise'   },
 ]
 
 const SECTIONS = ['Principal', 'Comercial', 'Análise']
@@ -368,7 +370,7 @@ function ProfileRow({
             )}
             {menuRestricted && (
               <Badge variant="slate">
-                Menu restrito ({profile.allowedMenus!.length}/{9})
+                Menu restrito ({profile.allowedMenus!.length}/{ALL_MENU_ITEMS.length})
               </Badge>
             )}
           </div>
