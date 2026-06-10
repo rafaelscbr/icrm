@@ -12,7 +12,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake,
   Home, Users, Mail, StickyNote, Sparkles, Smartphone, Globe, Handshake,
-  Megaphone, Loader2, Wifi, WifiOff,
+  Megaphone, Loader2, Wifi, WifiOff, CheckCircle2,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadInteractionType } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -50,7 +50,7 @@ const ORIGIN_META: Record<string, { icon: typeof Sparkles; label: string }> = {
 
 const INTERACTION_ICON: Record<string, typeof Phone> = {
   ligacao: Phone, whatsapp: MessageCircle, visita: Home,
-  reuniao: Users, email: Mail,
+  reuniao: Users, email: Mail, tarefa: CheckCircle2,
 }
 
 const COOLING_DAYS = 2

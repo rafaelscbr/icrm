@@ -7,7 +7,9 @@ import {
   Database, ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
   Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight,
 } from 'lucide-react'
-import { Lead, LeadDiscardReason, LeadFunnelStage } from '../../types'
+import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType } from '../../types'
+import { useTasksStore } from '../../store/useTasksStore'
+import { NextStepSuggestion } from './NextStepSuggestion'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
@@ -50,9 +52,10 @@ const ORIGIN_CONFIG: Record<string, { label: string; icon: typeof Sparkles }> = 
 const INTERACTION_ICON: Record<string, typeof Phone> = {
   ligacao: Phone, whatsapp: MessageCircle, email: Mail, visita: Home,
   reuniao: Users, nota: StickyNote, stage_change: ArrowRight, discard: Trash2,
+  tarefa: CheckCircle2,
 }
 
-const REAL_INTERACTION_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
+const REAL_INTERACTION_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -124,6 +127,8 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [addingToList,      setAddingToList]      = useState(false)
   const [noteText,          setNoteText]          = useState('')
   const [showNoteInput,     setShowNoteInput]     = useState(false)
+  // Ciclo interação → tarefa: tipo da última interação registrada nesta sessão
+  const [nextStepFor,       setNextStepFor]       = useState<LeadInteractionType | null>(null)
 
   const { lists, load: loadLists } = useLeadListsStore()
   const activeLists = lists.filter(l => l.status === 'active')
@@ -157,6 +162,27 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     ? getNextAction(lead.funnelStage, lead.followupStep, daysSince)
     : { message: 'Venda realizada — manter relacionamento.', urgent: false }
 
+  // Próximo passo real: tarefa pendente vinculada ao contato deste lead
+  const { tasks } = useTasksStore()
+  const pendingTask = useMemo(() => {
+    if (!lead.contactId) return undefined
+    return tasks
+      .filter(t => t.contactId === lead.contactId && t.status === 'pending')
+      .sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))[0]
+  }, [tasks, lead.contactId])
+
+  const taskDue = useMemo(() => {
+    if (!pendingTask) return null
+    if (!pendingTask.dueDate) return { text: 'Sem prazo', overdue: false, today: false }
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const due = new Date(pendingTask.dueDate + 'T00:00:00')
+    const diff = Math.round((due.getTime() - today.getTime()) / 86_400_000)
+    if (diff < 0)   return { text: `Atrasada ${-diff}d`, overdue: true,  today: false }
+    if (diff === 0) return { text: 'Hoje',               overdue: false, today: true  }
+    if (diff === 1) return { text: 'Amanhã',             overdue: false, today: false }
+    return { text: due.toLocaleDateString('pt-BR'), overdue: false, today: false }
+  }, [pendingTask])
+
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   // Toast de sucesso só após confirmação do banco — erros já são toastados pela camada db
@@ -167,6 +193,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       await advanceFollowup(lead.id)
       await addInteraction({ leadId: lead.id, type: 'whatsapp', description: 'Interagiu via WhatsApp', interactedAt: new Date().toISOString() })
       toast.success(`WhatsApp · ${nextStep}ª msg registrada`)
+      setNextStepFor('whatsapp')
     } catch { /* erro já toastado */ }
   }
 
@@ -175,6 +202,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     try {
       await addInteraction({ leadId: lead.id, type: 'ligacao', description: 'Ligação realizada', interactedAt: new Date().toISOString() })
       toast.success('Ligação registrada')
+      setNextStepFor('ligacao')
     } catch { /* erro já toastado */ }
   }
 
@@ -387,30 +415,59 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
           {/* ── Corpo (scrollável) ──────────────────────────────────────────── */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
-            {/* Banner próxima ação — a informação nº 1 da tela */}
+            {/* Banner próxima ação — a informação nº 1 da tela.
+                Com tarefa pendente: mostra o compromisso real (e o prazo).
+                Sem tarefa: cai na sugestão heurística por etapa. */}
             {!isDiscarded && (
-              <div className={`flex items-start gap-2.5 rounded-[14px] p-3 border
-                ${lead.funnelStage === 'venda'
-                  ? 'bg-success-bg border-success-line'
-                  : nextUrgent
-                    ? 'bg-warning-bg border-warning-line'
-                    : 'bg-s2 border-line'
-                }`}>
-                <div className={`w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5
-                  ${lead.funnelStage === 'venda' ? 'bg-success-bg' : nextUrgent ? 'bg-warning-bg' : 'bg-s3'}`}>
-                  {lead.funnelStage === 'venda'
-                    ? <CheckCircle2 size={12} strokeWidth={1.6} className="text-success" />
-                    : <Zap size={12} strokeWidth={1.6} className={nextUrgent ? 'text-warning' : 'text-info'} />
-                  }
+              pendingTask && lead.funnelStage !== 'venda' ? (
+                <div className={`flex items-start gap-2.5 rounded-[14px] p-3 border
+                  ${taskDue?.overdue ? 'bg-error-bg border-error-line' : taskDue?.today ? 'bg-warning-bg border-warning-line' : 'bg-s2 border-line'}`}>
+                  <div className={`w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5
+                    ${taskDue?.overdue ? 'bg-error-bg' : taskDue?.today ? 'bg-warning-bg' : 'bg-s3'}`}>
+                    <ClipboardList size={12} strokeWidth={1.6} className={taskDue?.overdue ? 'text-error' : taskDue?.today ? 'text-warning' : 'text-info'} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-label text-[10px] font-medium uppercase tracking-[0.12em]
+                      ${taskDue?.overdue ? 'text-error' : taskDue?.today ? 'text-warning' : 'text-info'}`}>
+                      Próximo passo agendado
+                    </p>
+                    <p className="text-[13px] text-t1 mt-0.5 leading-relaxed truncate">{pendingTask.title}</p>
+                  </div>
+                  {taskDue && (
+                    <span className={`flex-shrink-0 font-label text-[10px] font-medium uppercase tracking-[0.06em] px-2 py-0.5 rounded-full border tabular-nums
+                      ${taskDue.overdue
+                        ? 'text-error bg-error-bg border-error-line'
+                        : taskDue.today
+                          ? 'text-warning bg-warning-bg border-warning-line'
+                          : 'text-t3 bg-s2 border-line'}`}>
+                      {taskDue.text}
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <p className={`font-label text-[10px] font-medium uppercase tracking-[0.12em]
-                    ${lead.funnelStage === 'venda' ? 'text-success' : nextUrgent ? 'text-warning' : 'text-info'}`}>
-                    {lead.funnelStage === 'venda' ? 'Venda realizada' : nextUrgent ? 'Ação urgente' : 'Próximo passo'}
-                  </p>
-                  <p className="text-[13px] text-t1 mt-0.5 leading-relaxed">{nextMsg}</p>
+              ) : (
+                <div className={`flex items-start gap-2.5 rounded-[14px] p-3 border
+                  ${lead.funnelStage === 'venda'
+                    ? 'bg-success-bg border-success-line'
+                    : nextUrgent
+                      ? 'bg-warning-bg border-warning-line'
+                      : 'bg-s2 border-line'
+                  }`}>
+                  <div className={`w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5
+                    ${lead.funnelStage === 'venda' ? 'bg-success-bg' : nextUrgent ? 'bg-warning-bg' : 'bg-s3'}`}>
+                    {lead.funnelStage === 'venda'
+                      ? <CheckCircle2 size={12} strokeWidth={1.6} className="text-success" />
+                      : <Zap size={12} strokeWidth={1.6} className={nextUrgent ? 'text-warning' : 'text-info'} />
+                    }
+                  </div>
+                  <div>
+                    <p className={`font-label text-[10px] font-medium uppercase tracking-[0.12em]
+                      ${lead.funnelStage === 'venda' ? 'text-success' : nextUrgent ? 'text-warning' : 'text-info'}`}>
+                      {lead.funnelStage === 'venda' ? 'Venda realizada' : nextUrgent ? 'Ação urgente' : 'Sugestão de próximo passo'}
+                    </p>
+                    <p className="text-[13px] text-t1 mt-0.5 leading-relaxed">{nextMsg}</p>
+                  </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* Tentativas de follow-up */}
@@ -479,6 +536,15 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <span className="font-heading text-[11px] font-bold">Tarefa</span>
                 </button>
               </div>
+            )}
+
+            {/* Sugestão de próximo passo — aparece após registrar contato */}
+            {!isDiscarded && nextStepFor && (
+              <NextStepSuggestion
+                lead={lead}
+                interactionType={nextStepFor}
+                onDone={() => setNextStepFor(null)}
+              />
             )}
 
             {/* Imóvel + ticket + comissão */}

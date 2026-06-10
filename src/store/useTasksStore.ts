@@ -3,6 +3,9 @@ import { Task, TaskStatus } from '../types'
 import { generateId, localDateStr } from '../lib/formatters'
 import { db } from '../lib/db'
 import { supabase } from '../lib/supabase'
+// Import circular com useLeadsStore é seguro: o uso é deferido (getState em runtime)
+import { useLeadsStore } from './useLeadsStore'
+import { useLeadInteractionsStore } from './useLeadInteractionsStore'
 
 interface TasksStore {
   tasks: Task[]
@@ -149,6 +152,22 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
       status: next,
       completedAt: next === 'done' ? new Date().toISOString() : undefined,
     })
+
+    // Ciclo tarefa → histórico: concluir tarefa vinculada a um lead registra
+    // a interação automaticamente na timeline (fonte única do que aconteceu).
+    if (next === 'done' && task.contactId) {
+      const lead = useLeadsStore.getState().leads.find(
+        l => l.contactId === task.contactId && !l.discardReason
+      )
+      if (lead) {
+        useLeadInteractionsStore.getState().add({
+          leadId: lead.id,
+          type: 'tarefa',
+          description: `Tarefa concluída: ${task.title}`,
+          interactedAt: new Date().toISOString(),
+        }).catch(err => console.error('[tasks] toggleDone interaction:', err))
+      }
+    }
   },
 
   getByStatus: (status) => get().tasks.filter(t => t.status === status),

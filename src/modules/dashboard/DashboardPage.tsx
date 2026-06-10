@@ -30,7 +30,7 @@ import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsap
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
+const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
 const COOLING_DAYS = 2
 
 const STAGE_LABELS: Partial<Record<LeadFunnelStage, { label: string; color: string }>> = {

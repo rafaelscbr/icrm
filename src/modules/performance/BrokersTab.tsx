@@ -16,7 +16,7 @@ import { useSalesStore } from '../../store/useSalesStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
 import { formatCurrency } from '../../lib/formatters'
 
-const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
+const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
 
 /** Converte um Date para string YYYY-MM-DD no fuso local */
 function toDateStr(d: Date): string {

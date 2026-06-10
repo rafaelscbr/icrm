@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Loader2, Clock, MessageCircle, Phone, Mail, Home, Users, FileText, ArrowRight, XCircle } from 'lucide-react'
+import { Plus, Trash2, Loader2, Clock, MessageCircle, Phone, Mail, Home, Users, FileText, ArrowRight, XCircle, CheckCircle2 } from 'lucide-react'
 import { LeadInteractionType, LeadInteractionOutcome } from '../../types'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
+import { useLeadsStore } from '../../store/useLeadsStore'
+import { NextStepSuggestion } from './NextStepSuggestion'
 import toast from 'react-hot-toast'
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -21,6 +23,7 @@ const TYPE_CONFIG: Record<LeadInteractionType, {
   nota:         { label: 'Nota',        Icon: FileText,      color: 'text-t2',         bg: 'bg-slate-500/10',  border: 'border-slate-500/25'  },
   stage_change: { label: 'Etapa',       Icon: ArrowRight,    color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/25' },
   discard:      { label: 'Descartado',  Icon: XCircle,       color: 'text-rose-400',   bg: 'bg-rose-500/10',   border: 'border-rose-500/25'   },
+  tarefa:       { label: 'Tarefa',      Icon: CheckCircle2,  color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/25' },
 }
 
 const OUTCOME_CONFIG: Record<LeadInteractionOutcome, { label: string; color: string; bg: string; border: string }> = {
@@ -66,6 +69,7 @@ interface Props {
 
 export function LeadTimeline({ leadId }: Props) {
   const { loadForLead, add, remove, getForLead, loaded } = useLeadInteractionsStore()
+  const lead = useLeadsStore(s => s.leads.find(l => l.id === leadId))
 
   const [type,        setType]        = useState<LeadInteractionType>('whatsapp')
   const [outcome,     setOutcome]     = useState<LeadInteractionOutcome | ''>('')
@@ -73,6 +77,8 @@ export function LeadTimeline({ leadId }: Props) {
   const [datetime,    setDatetime]    = useState(localDatetimeValue())
   const [saving,      setSaving]      = useState(false)
   const [showForm,    setShowForm]    = useState(false)
+  // Ciclo interação → tarefa: sugestão de próximo passo após salvar
+  const [suggestFor,  setSuggestFor]  = useState<{ type: LeadInteractionType; outcome?: LeadInteractionOutcome } | null>(null)
 
   useEffect(() => { loadForLead(leadId) }, [leadId])
 
@@ -91,6 +97,7 @@ export function LeadTimeline({ leadId }: Props) {
         interactedAt: new Date(datetime).toISOString(),
       })
       toast.success('Interação registrada')
+      setSuggestFor({ type, outcome: outcome || undefined })
       setDescription('')
       setOutcome('')
       setDatetime(localDatetimeValue())
@@ -113,6 +120,16 @@ export function LeadTimeline({ leadId }: Props) {
 
   return (
     <div className="space-y-5">
+
+      {/* Sugestão de próximo passo após registrar interação */}
+      {suggestFor && lead && (
+        <NextStepSuggestion
+          lead={lead}
+          interactionType={suggestFor.type}
+          outcome={suggestFor.outcome}
+          onDone={() => setSuggestFor(null)}
+        />
+      )}
 
       {/* ── Trigger button ───────────────────────────────────────────────── */}
       {!showForm ? (

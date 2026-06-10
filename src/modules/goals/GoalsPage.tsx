@@ -22,7 +22,7 @@ import { Goal, GoalCategory, Task } from '../../types'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota'])
+const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
 
 // Metas de disparo: 50/dia por corretor (proteção anti-ban individual)
 const TARGETS = {
