@@ -49,10 +49,26 @@ function daysInStage(stageChangedAt?: string, createdAt?: string): number {
   return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
 }
 
-function stageDaysColor(days: number): string {
-  if (days <= 3)  return 'text-t3 bg-slate-500/10 border-slate-500/20'
+function stageDaysColor(days: number, recentContact: boolean): string {
+  // lead contatado recentemente nunca aparece "vermelho/abandonado",
+  // mesmo que esteja há semanas parado na etapa
+  if (days <= 3 || recentContact) return 'text-t3 bg-slate-500/10 border-slate-500/20'
   if (days <= 7)  return 'text-amber-400 bg-amber-500/10 border-amber-500/25'
   return 'text-red-400 bg-red-500/10 border-red-500/25'
+}
+
+function contactLabel(days: number, hasInteraction: boolean): { text: string; cls: string } {
+  const d = Math.floor(days)
+  if (!hasInteraction) {
+    if (d <= COOLING_DAYS) return { text: 'Sem contato registrado', cls: 'text-t4' }
+    if (d <= 7)  return { text: `${d}d sem contato`, cls: 'text-amber-400' }
+    return { text: `${d}d sem contato`, cls: 'text-red-400' }
+  }
+  if (d <= 0) return { text: 'Contato hoje', cls: 'text-emerald-400' }
+  if (d === 1) return { text: 'Contato ontem', cls: 'text-emerald-400/80' }
+  if (d <= COOLING_DAYS) return { text: `${d}d sem contato`, cls: 'text-t4' }
+  if (d <= 7)  return { text: `${d}d sem contato`, cls: 'text-amber-400' }
+  return { text: `${d}d sem contato`, cls: 'text-red-400' }
 }
 
 function effectiveOrder(lead: Lead): number {
@@ -93,9 +109,11 @@ function LeadCard({
   const displayPhone = contact?.phone ?? lead.phone
   const interactions = getForLead(lead.id)
   const lastInteraction = interactions[0] ?? null
-  const isCooling = !isOverlay && daysWithoutInteraction(lastInteraction?.interactedAt, lead.createdAt) > COOLING_DAYS
+  const noContactDays = isOverlay ? 0 : daysWithoutInteraction(lastInteraction?.interactedAt, lead.createdAt)
+  const isCooling = !isOverlay && noContactDays > COOLING_DAYS
   const stageDays = isOverlay ? 0 : daysInStage(lead.stageChangedAt, lead.createdAt)
-  const stageDaysClass = stageDaysColor(stageDays)
+  const stageDaysClass = stageDaysColor(stageDays, noContactDays <= COOLING_DAYS)
+  const contactInfo = !isOverlay ? contactLabel(noContactDays, !!lastInteraction) : null
 
   function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
@@ -179,8 +197,11 @@ function LeadCard({
             <span className="text-[10px] text-t4">{ORIGIN_EMOJI[lead.origin]}</span>
             <span className="text-[10px] text-t4 tabular-nums">{formatPhone(displayPhone)}</span>
             {!isOverlay && (
-              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${stageDaysClass}`}>
-                {stageDays}d
+              <span
+                title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}
+                className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border tabular-nums ${stageDaysClass}`}
+              >
+                {stageDays}d na etapa
               </span>
             )}
           </div>
@@ -230,10 +251,16 @@ function LeadCard({
         </div>
       )}
 
-      {lastInteraction && (
-        <p className="text-[10px] text-t4 mb-2 truncate leading-snug">
-          {lastInteraction.type === 'ligacao' ? '📞' : lastInteraction.type === 'whatsapp' ? '💬' : lastInteraction.type === 'visita' ? '🏠' : lastInteraction.type === 'reuniao' ? '🤝' : lastInteraction.type === 'email' ? '📧' : '📝'}{' '}
-          {lastInteraction.description ?? lastInteraction.type}
+      {contactInfo && (
+        <p className="text-[10px] mb-2 truncate leading-snug">
+          <span className={`font-semibold ${contactInfo.cls}`}>{contactInfo.text}</span>
+          {lastInteraction && (
+            <span className="text-t4">
+              {' · '}
+              {lastInteraction.type === 'ligacao' ? '📞' : lastInteraction.type === 'whatsapp' ? '💬' : lastInteraction.type === 'visita' ? '🏠' : lastInteraction.type === 'reuniao' ? '🤝' : lastInteraction.type === 'email' ? '📧' : '📝'}{' '}
+              {lastInteraction.description ?? lastInteraction.type}
+            </span>
+          )}
         </p>
       )}
 
