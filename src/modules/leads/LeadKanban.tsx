@@ -161,16 +161,16 @@ function LeadCard({
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={`group relative border rounded-[14px] p-3 cursor-pointer bg-surface shadow-card
-        transition-all duration-200 hover:translate-y-[-1px] hover:shadow-lg
+      className={`group relative border rounded-[14px] p-3 cursor-pointer kanban-card shadow-card
+        transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? 'shadow-modal border-brand/40' : ''}
         ${isSaving ? 'opacity-60 pointer-events-none' : ''}
-        ${lead.flagged ? 'border-brand/40' : 'border-line hover:border-line-strong'}
+        ${lead.flagged ? 'border-brand/40' : ''}
       `}
     >
       {isSaving && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[14px] bg-surface/40">
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[14px] bg-black/20" role="status" aria-label="Salvando">
           <Loader2 size={16} className="animate-spin text-brand" strokeWidth={1.6} />
         </div>
       )}
@@ -194,6 +194,7 @@ function LeadCard({
           {...listeners}
           {...attributes}
           onClick={e => e.stopPropagation()}
+          aria-label="Arrastar lead"
           className="w-5 h-5 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors"
         >
           <GripVertical size={12} strokeWidth={1.6} />
@@ -313,6 +314,7 @@ function LeadCard({
           onClick={handleWhatsAppOpen}
           className="w-7 h-7 flex items-center justify-center text-t3 hover:text-success bg-s2 hover:bg-success-bg border border-line hover:border-success-line rounded-[10px] transition-all duration-150"
           title="Só abrir WhatsApp"
+          aria-label="Abrir WhatsApp sem registrar"
         >
           <MessageCircle size={12} strokeWidth={1.6} />
         </button>
@@ -321,6 +323,7 @@ function LeadCard({
           onClick={e => e.stopPropagation()}
           className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150"
           title="Ligar"
+          aria-label={`Ligar para ${displayName}`}
         >
           <Phone size={12} strokeWidth={1.6} />
         </a>
@@ -353,57 +356,58 @@ function KanbanColumn({
   }).length
 
   return (
-    <div className="flex flex-col w-72 flex-shrink-0">
-      {/* Header — superfície neutra, etapa identificada pelo dot + label */}
-      <div className="flex flex-col px-3.5 py-2.5 rounded-t-[14px] border border-b-0 border-line bg-surface">
-        <div className="flex items-center gap-2">
-          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${conf.dot}`} />
-          <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t2">
-            {conf.label}
-          </span>
-          {coldCount > 0 && (
-            <span
-              className="flex items-center gap-0.5 font-label text-[9px] text-info bg-info-bg border border-info-line px-1.5 py-px rounded-full tabular-nums"
-              title={`${coldCount} ${coldCount === 1 ? 'lead' : 'leads'} sem contato há mais de ${COOLING_DAYS} dias`}
-            >
-              <Snowflake size={9} strokeWidth={1.6} /> {coldCount}
+    <div className="flex flex-col w-[19rem] flex-shrink-0">
+      {/* Painel único preenchido — sem bordas, header integrado */}
+      <div className={`flex flex-col flex-1 rounded-[18px] kanban-col transition-shadow duration-200
+        ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-brand/40' : ''}
+      `}>
+        <div className="flex flex-col px-4 pt-3.5 pb-2.5">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${conf.dot}`} />
+            <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t2">
+              {conf.label}
             </span>
-          )}
-          <span className="ml-auto font-label text-[11px] font-medium text-t3 bg-s2 border border-line px-2 py-0.5 rounded-full tabular-nums">
-            {leads.length}
-          </span>
-        </div>
-        {totalPipeline > 0 && (
-          <div className="flex items-center gap-1.5 mt-1.5 pl-3.5">
-            <span className="font-label text-[10px] text-t2 font-medium tabular-nums">{formatCurrency(totalPipeline)}</span>
-            <span className="text-[10px] text-t5">·</span>
-            <span className="font-label text-[10px] text-success tabular-nums" title="Comissão estimada (2%)">
-              {formatCurrency(totalCommission)}
+            {coldCount > 0 && (
+              <span
+                className="flex items-center gap-0.5 font-label text-[9px] text-info bg-info-bg px-1.5 py-px rounded-full tabular-nums"
+                title={`${coldCount} ${coldCount === 1 ? 'lead' : 'leads'} sem contato há mais de ${COOLING_DAYS} dias`}
+              >
+                <Snowflake size={9} strokeWidth={1.6} /> {coldCount}
+              </span>
+            )}
+            <span className="ml-auto font-label text-[11px] font-semibold text-t3 tabular-nums">
+              {leads.length}
             </span>
           </div>
-        )}
-      </div>
-
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <div
-          ref={setNodeRef}
-          className={`flex-1 min-h-[420px] rounded-b-[14px] border border-line p-2 flex flex-col gap-2 transition-all duration-200
-            ${isOver || isActiveDragTarget
-              ? 'border-brand/40 bg-[rgba(228,178,60,0.05)]'
-              : 'bg-s2/40'
-            }
-          `}
-        >
-          {leads.length === 0 && (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-[11px] text-t4 text-center">Arraste cards aqui</p>
+          {totalPipeline > 0 && (
+            <div className="flex items-center gap-1.5 mt-1 pl-4">
+              <span className="font-label text-[10px] text-t3 font-medium tabular-nums">{formatCurrency(totalPipeline)}</span>
+              <span className="text-[10px] text-t5">·</span>
+              <span className="font-label text-[10px] text-success tabular-nums" title="Comissão estimada (2%)">
+                {formatCurrency(totalCommission)}
+              </span>
             </div>
           )}
-          {leads.map(lead => (
-            <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} isSaving={savingId === lead.id} />
-          ))}
         </div>
-      </SortableContext>
+
+        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+          <div
+            ref={setNodeRef}
+            className={`flex-1 min-h-[420px] rounded-b-[18px] px-2.5 pb-2.5 flex flex-col gap-2.5 transition-colors duration-200
+              ${isOver || isActiveDragTarget ? 'bg-[rgba(228,178,60,0.05)]' : ''}
+            `}
+          >
+            {leads.length === 0 && (
+              <div className="flex-1 flex items-center justify-center rounded-[14px] border border-dashed border-line m-0.5">
+                <p className="text-[11px] text-t4 text-center">Arraste cards aqui</p>
+              </div>
+            )}
+            {leads.map(lead => (
+              <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} isSaving={savingId === lead.id} />
+            ))}
+          </div>
+        </SortableContext>
+      </div>
     </div>
   )
 }
@@ -548,7 +552,7 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-3 overflow-x-auto pb-4 px-1">
+        <div className="flex gap-4 overflow-x-auto pb-4 px-1">
           {STAGES.map(stage => (
             <KanbanColumn
               key={stage}

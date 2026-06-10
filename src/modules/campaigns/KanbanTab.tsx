@@ -273,11 +273,11 @@ function LeadCard({
       <div
         ref={setNodeRef}
         onClick={() => !isDragging && onParecer(lead)}
-        className={`group relative border rounded-[14px] p-3 cursor-pointer bg-surface shadow-card select-none
-          transition-all duration-200 hover:translate-y-[-1px] hover:shadow-lg
+        className={`group relative border rounded-[14px] p-3 cursor-pointer kanban-card shadow-card select-none
+          transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
           ${isDragging || ghost ? 'opacity-30 scale-95' : ''}
           ${ghost ? 'shadow-modal border-brand/40' : ''}
-          ${cold ? 'border-info-line' : 'border-line hover:border-line-strong'}
+          ${cold ? '!border-info-line' : ''}
         `}
       >
         {/* Indicador frio */}
@@ -475,65 +475,70 @@ function KanbanColumn({
   }, [leads, ticket, showVgv, stage.value])
 
   return (
-    <div className="flex flex-col w-72 flex-shrink-0">
-      {/* Header da coluna — superfície neutra, etapa identificada pelo dot + label */}
-      <div className="flex flex-col px-3.5 py-2.5 rounded-t-[14px] border border-b-0 border-line bg-surface">
-        <div className="flex items-center gap-2">
-          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${stage.dot}`} />
-          <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t2">
-            {stage.label}
-          </span>
-          <div className="ml-auto flex items-center gap-1.5">
-            <span className="font-label text-[11px] font-medium text-t3 bg-s2 border border-line px-2 py-0.5 rounded-full tabular-nums">
-              {leads.length.toLocaleString('pt-BR')}
+    <div className="flex flex-col w-[19rem] flex-shrink-0">
+      {/* Painel único preenchido — sem bordas, header integrado */}
+      <div className={`flex flex-col flex-1 rounded-[18px] kanban-col transition-shadow duration-200
+        ${isOver ? 'ring-1 ring-inset ring-brand/40' : ''}
+      `}>
+        <div className="flex flex-col px-4 pt-3.5 pb-2.5">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${stage.dot}`} />
+            <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t2">
+              {stage.label}
             </span>
-            {leads.length > 0 && (
-              <button
-                onClick={() => exportColumn(stage.value, leads)}
-                className="p-1 rounded-md text-t4 hover:text-t2 transition-colors duration-150"
-                title={`Exportar ${stage.label}`}
-              >
-                <Download size={11} strokeWidth={1.6} />
-              </button>
-            )}
+            <div className="ml-auto flex items-center gap-1.5">
+              <span className="font-label text-[11px] font-semibold text-t3 tabular-nums">
+                {leads.length.toLocaleString('pt-BR')}
+              </span>
+              {leads.length > 0 && (
+                <button
+                  onClick={() => exportColumn(stage.value, leads)}
+                  className="p-1 rounded-md text-t4 hover:text-t2 transition-colors duration-150"
+                  title={`Exportar ${stage.label}`}
+                  aria-label={`Exportar leads da etapa ${stage.label}`}
+                >
+                  <Download size={11} strokeWidth={1.6} />
+                </button>
+              )}
+            </div>
           </div>
+          {/* VGV da coluna */}
+          {showVgv && colVGV > 0 && (
+            <div className="flex items-center gap-1.5 mt-1 pl-4">
+              <span className="font-label text-[10px] text-t3 font-medium tabular-nums">
+                VGV {formatCurrency(colVGV)}
+              </span>
+            </div>
+          )}
         </div>
-        {/* VGV da coluna */}
-        {showVgv && colVGV > 0 && (
-          <div className="flex items-center gap-1.5 mt-1.5 pl-3.5">
-            <span className="font-label text-[10px] text-t2 font-medium tabular-nums">
-              VGV {formatCurrency(colVGV)}
-            </span>
-          </div>
-        )}
-      </div>
 
-      {/* Área droppable */}
-      <div
-        ref={setNodeRef}
-        className={`flex-1 min-h-[420px] rounded-b-[14px] border border-line p-2 flex flex-col gap-2 transition-all duration-200
-          ${isOver ? 'border-brand/40 bg-[rgba(228,178,60,0.05)]' : 'bg-s2/40'}`}
-      >
-        {leads.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-[11px] text-t4 text-center">Arraste cards aqui</p>
-          </div>
-        ) : (
-          <>
-            {shown.map(lead => (
-              <LeadCard key={lead.id} lead={lead} campaign={campaign} onParecer={onParecer} />
-            ))}
-            {hasMore && (
-              <button
-                onClick={() => setVisible(v => v + COLUMN_PAGE)}
-                className="flex items-center justify-center gap-1.5 py-2 text-xs text-t3 hover:text-t2 border border-dashed border-line hover:border-line-strong rounded-xl transition-all cursor-pointer"
-              >
-                <ChevronDown size={12} />
-                +{(sorted.length - visible).toLocaleString('pt-BR')} leads
-              </button>
-            )}
-          </>
-        )}
+        {/* Área droppable */}
+        <div
+          ref={setNodeRef}
+          className={`flex-1 min-h-[420px] rounded-b-[18px] px-2.5 pb-2.5 flex flex-col gap-2.5 transition-colors duration-200
+            ${isOver ? 'bg-[rgba(228,178,60,0.05)]' : ''}`}
+        >
+          {leads.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center rounded-[14px] border border-dashed border-line m-0.5">
+              <p className="text-[11px] text-t4 text-center">Arraste cards aqui</p>
+            </div>
+          ) : (
+            <>
+              {shown.map(lead => (
+                <LeadCard key={lead.id} lead={lead} campaign={campaign} onParecer={onParecer} />
+              ))}
+              {hasMore && (
+                <button
+                  onClick={() => setVisible(v => v + COLUMN_PAGE)}
+                  className="flex items-center justify-center gap-1.5 py-2 font-label text-[11px] uppercase tracking-[0.08em] text-t3 hover:text-t2 border border-dashed border-line hover:border-line-strong rounded-[14px] transition-all duration-150 cursor-pointer"
+                >
+                  <ChevronDown size={12} strokeWidth={1.6} />
+                  +{(sorted.length - visible).toLocaleString('pt-BR')} leads
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -651,7 +656,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
         }}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-3 overflow-x-auto pb-6 min-h-[520px]">
+        <div className="flex gap-4 overflow-x-auto pb-6 min-h-[520px]">
           {CAMPAIGN_KANBAN_STAGES.map(stage => (
             <KanbanColumn
               key={stage.value}

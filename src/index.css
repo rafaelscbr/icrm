@@ -264,6 +264,26 @@ html.light .list-surface {
   box-shadow: var(--shadow-card);
 }
 
+/*
+ * Kanban — coluna preenchida (sem borda) e card elevado.
+ * Dark:  coluna surface-2 sobre page-bg; card surface-3 (mais claro) salta da coluna.
+ * Light: coluna papel-2 sobre papel; card branco flutua.
+ */
+.kanban-col {
+  background-color: var(--surface-2);
+}
+html.light .kanban-col {
+  background-color: var(--surface-2);
+}
+.kanban-card {
+  background-color: var(--surface-3);
+  border-color: var(--line);
+}
+html.light .kanban-card {
+  background-color: var(--surface);
+  border-color: var(--line);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    LIGHT MODE — overrides para classes Tailwind herdadas
    ══════════════════════════════════════════════════════════════════════════════ */
