@@ -1,5 +1,11 @@
 import { forwardRef } from 'react'
-import { FluxoInput, FluxoResult } from './calc'
+import { FluxoInput, FluxoResult, ReforcoPeriodo } from './calc'
+
+const PERIODO_LABELS: Record<ReforcoPeriodo, string> = {
+  mensal:    'mensal',
+  semestral: 'semestral',
+  anual:     'anual',
+}
 
 const NAVY  = '#0F1730'
 const NAVY2 = '#19274A'
@@ -88,41 +94,12 @@ export const ProposalCard = forwardRef<HTMLDivElement, ProposalCardProps>(
         {/* ── Gold divider ── */}
         <div style={{ height: 3, background: `linear-gradient(90deg, ${GOLD}, ${GOLD2} 50%, ${GOLD})` }} />
 
-        {/* ── Valores ── */}
-        <div style={{ padding: '22px 28px 18px', borderBottom: '1px solid #F0EDE8' }}>
-          <SectionLabel>Resumo de valores</SectionLabel>
-          <ValueRow label="Valor Total" value={fmt(input.valorTotal)} />
-          <ValueRow label={`Percentual até as chaves`} value={`${input.pctChaves.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`} />
-          <ValueRow label="Valor até as chaves" value={fmt(result.valorAteChaves)} highlight />
-        </div>
-
-        {/* ── Condições ── */}
-        <div style={{ padding: '18px 28px', borderBottom: '1px solid #F0EDE8' }}>
-          <SectionLabel>Condições de pagamento</SectionLabel>
-          <CondRow
-            qtd={input.entradaQtd}
-            label="Entrada"
-            valor={input.entradaValor}
-            total={result.entradaTotal}
-            showTotal={input.entradaQtd > 1}
-          />
-          {input.reforcoQtd > 0 && (
-            <CondRow
-              qtd={input.reforcoQtd}
-              label="Reforço"
-              valor={input.reforcoValor}
-              total={result.reforcoTotal}
-              showTotal={input.reforcoQtd > 1}
-            />
-          )}
-        </div>
-
-        {/* ── Hero: parcela ── */}
-        <div style={{ padding: '20px 28px' }}>
+        {/* ── Hero: parcela (o número que vende, primeiro) ── */}
+        <div style={{ padding: '22px 28px 4px' }}>
           <div style={{
             background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY2} 100%)`,
             borderRadius: 18,
-            padding: '32px 24px 28px',
+            padding: '30px 24px 26px',
             textAlign: 'center',
             position: 'relative',
             overflow: 'hidden',
@@ -144,16 +121,45 @@ export const ProposalCard = forwardRef<HTMLDivElement, ProposalCardProps>(
               pointerEvents: 'none',
             }} />
 
-            <div style={{ color: GOLD, fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 12 }}>
-              {input.parcelasQtd}× parcelas mensais até as chaves
+            <div style={{ color: GOLD2, fontSize: 15, fontWeight: 600, marginBottom: 10 }}>
+              {input.parcelasQtd} parcelas mensais de
             </div>
             <div style={{ color: '#FFFFFF', fontSize: 44, fontWeight: 900, lineHeight: 1, letterSpacing: -1.5 }}>
               {fmt(result.parcelaValor)}
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 6, letterSpacing: 0.5 }}>
-              por mês
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, marginTop: 10 }}>
+              até a entrega das chaves
             </div>
           </div>
+        </div>
+
+        {/* ── Condições ── */}
+        <div style={{ padding: '20px 28px 14px', borderBottom: '1px solid #F0EDE8' }}>
+          <SectionLabel>Condições de pagamento</SectionLabel>
+          <CondRow
+            qtd={input.entradaQtd}
+            label="Entrada"
+            valor={input.entradaValor}
+            total={result.entradaTotal}
+            showTotal={input.entradaQtd > 1}
+          />
+          {input.reforcoQtd > 0 && (
+            <CondRow
+              qtd={input.reforcoQtd}
+              label={`Reforço ${PERIODO_LABELS[input.reforcoPeriodo]}`}
+              valor={input.reforcoValor}
+              total={result.reforcoTotal}
+              showTotal={input.reforcoQtd > 1}
+            />
+          )}
+        </div>
+
+        {/* ── Valores ── */}
+        <div style={{ padding: '18px 28px' }}>
+          <SectionLabel>Resumo de valores</SectionLabel>
+          <ValueRow label="Valor Total" value={fmt(input.valorTotal)} />
+          <ValueRow label={`Percentual até as chaves`} value={`${input.pctChaves.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`} />
+          <ValueRow label="Valor até as chaves" value={fmt(result.valorAteChaves)} highlight />
         </div>
 
         {/* ── Saldo devedor ── */}

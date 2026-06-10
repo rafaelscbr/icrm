@@ -1,3 +1,5 @@
+export type ReforcoPeriodo = 'mensal' | 'semestral' | 'anual'
+
 export interface FluxoInput {
   valorTotal: number
   pctChaves: number
@@ -5,6 +7,7 @@ export interface FluxoInput {
   entradaValor: number
   reforcoQtd: number
   reforcoValor: number
+  reforcoPeriodo: ReforcoPeriodo
   parcelasQtd: number
 }
 

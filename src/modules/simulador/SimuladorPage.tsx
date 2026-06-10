@@ -3,8 +3,9 @@ import { Calculator, Download, AlertCircle, TrendingDown } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import toast from 'react-hot-toast'
 import { Input } from '../../components/ui/Input'
+import { Select } from '../../components/ui/Select'
 import { Button } from '../../components/ui/Button'
-import { calcularFluxo, FluxoInput } from './calc'
+import { calcularFluxo, FluxoInput, ReforcoPeriodo } from './calc'
 import { ProposalCard } from './ProposalCard'
 
 const DEFAULT: FluxoInput & { empreendimento: string; cliente: string } = {
@@ -16,6 +17,7 @@ const DEFAULT: FluxoInput & { empreendimento: string; cliente: string } = {
   entradaValor: 36412.06,
   reforcoQtd:   9,
   reforcoValor: 8000,
+  reforcoPeriodo: 'semestral',
   parcelasQtd:  56,
 }
 
@@ -29,6 +31,7 @@ export function SimuladorPage() {
     entradaValor: DEFAULT.entradaValor,
     reforcoQtd:   DEFAULT.reforcoQtd,
     reforcoValor: DEFAULT.reforcoValor,
+    reforcoPeriodo: DEFAULT.reforcoPeriodo,
     parcelasQtd:  DEFAULT.parcelasQtd,
   })
   const [exporting, setExporting] = useState(false)
@@ -99,14 +102,10 @@ export function SimuladorPage() {
             {/* Valores */}
             <Section title="Valores do empreendimento">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Valor Total (R$)"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={form.valorTotal || ''}
-                  onChange={set('valorTotal')}
-                  placeholder="758584.61"
+                <CurrencyInput
+                  label="Valor Total"
+                  value={form.valorTotal}
+                  onChange={v => setForm(prev => ({ ...prev, valorTotal: v }))}
                 />
                 <Input
                   label="Porcentagem até as chaves (%)"
@@ -150,14 +149,10 @@ export function SimuladorPage() {
                     value={form.entradaQtd || ''}
                     onChange={set('entradaQtd')}
                   />
-                  <Input
-                    label="Valor por entrada (R$)"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.entradaValor || ''}
-                    onChange={set('entradaValor')}
-                    placeholder="36412.06"
+                  <CurrencyInput
+                    label="Valor por entrada"
+                    value={form.entradaValor}
+                    onChange={v => setForm(prev => ({ ...prev, entradaValor: v }))}
                   />
                 </div>
               </div>
@@ -176,16 +171,24 @@ export function SimuladorPage() {
                     value={form.reforcoQtd}
                     onChange={set('reforcoQtd')}
                   />
-                  <Input
-                    label="Valor por reforço (R$)"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.reforcoValor || ''}
-                    onChange={set('reforcoValor')}
-                    placeholder="8000"
+                  <CurrencyInput
+                    label="Valor por reforço"
+                    value={form.reforcoValor}
+                    onChange={v => setForm(prev => ({ ...prev, reforcoValor: v }))}
                     disabled={form.reforcoQtd === 0}
                   />
+                </div>
+                <div className="mt-3">
+                  <Select
+                    label="Periodicidade do reforço"
+                    value={form.reforcoPeriodo}
+                    onChange={e => setForm(prev => ({ ...prev, reforcoPeriodo: e.target.value as ReforcoPeriodo }))}
+                    disabled={form.reforcoQtd === 0}
+                  >
+                    <option value="mensal">Mensal</option>
+                    <option value="semestral">Semestral</option>
+                    <option value="anual">Anual</option>
+                  </Select>
                 </div>
               </div>
 
@@ -272,6 +275,35 @@ export function SimuladorPage() {
 
 function fmtBRL(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
+}
+
+// Input monetário com máscara R$ — digita só números, formata como centavos.
+// Ex: digitar "758458461" exibe "R$ 758.584,61" e entrega 758584.61.
+function CurrencyInput({ label, value, onChange, disabled }: {
+  label: string
+  value: number
+  onChange: (v: number) => void
+  disabled?: boolean
+}) {
+  const display = value
+    ? `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : ''
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '')
+    onChange(digits ? parseInt(digits, 10) / 100 : 0)
+  }
+
+  return (
+    <Input
+      label={label}
+      inputMode="numeric"
+      value={display}
+      onChange={handleChange}
+      placeholder="R$ 0,00"
+      disabled={disabled}
+    />
+  )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
