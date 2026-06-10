@@ -14,6 +14,7 @@ interface LeadsStore {
   leads: Lead[]
   loading: boolean
   load: () => Promise<void>
+  reload: () => Promise<void>
   subscribe: () => () => void
   add: (data: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'> & { createdAt?: string }) => Promise<Lead>
   update: (id: string, data: Partial<Lead>) => Promise<void>
@@ -51,6 +52,17 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       console.error('[leads] load:', err)
     } finally {
       set({ loading: false })
+    }
+  },
+
+  // Reconciliação silenciosa — atualiza os dados sem ligar a flag `loading`,
+  // para a tela não trocar pelo spinner nem perder o contexto do usuário.
+  reload: async () => {
+    try {
+      const leads = await db.leads.fetchAll()
+      set({ leads })
+    } catch (err) {
+      console.error('[leads] reload:', err)
     }
   },
 
@@ -131,7 +143,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           useRealtimeStatusStore.getState().setConnected(true)
-          if (isReconnect) get().load() // reconciliação — banco é a fonte de verdade
+          if (isReconnect) get().reload() // reconciliação silenciosa — banco é a fonte de verdade
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           useRealtimeStatusStore.getState().setConnected(false)
           if (disposed) return

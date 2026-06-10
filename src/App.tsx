@@ -120,13 +120,18 @@ function AppRoutes() {
 
   // Ao voltar para a aba após inatividade: renova a sessão (token JWT pode ter
   // vencido), reautentica o socket realtime e reconcilia os dados com o banco.
+  // Reconciliação é SILENCIOSA (sem flag de loading — a tela não pisca) e tem
+  // intervalo mínimo para não refazer fetch a cada alternância rápida de aba.
   useEffect(() => {
     if (!user) return
+    let lastReconcile = 0
     async function onVisible() {
       if (document.visibilityState !== 'visible') return
       const { data } = await supabase.auth.getSession()
       if (data.session) supabase.realtime.setAuth(data.session.access_token)
-      useLeadsStore.getState().load()
+      if (Date.now() - lastReconcile < 30_000) return
+      lastReconcile = Date.now()
+      useLeadsStore.getState().reload()
       if (useLeadInteractionsStore.getState().allLoaded) {
         useLeadInteractionsStore.getState().reload()
       }
