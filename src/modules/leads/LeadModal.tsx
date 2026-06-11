@@ -5,7 +5,7 @@ import {
   ClipboardList, Star, ArrowLeftRight, Search, Check, Zap,
   ChevronDown, ChevronRight, History, Target, StickyNote, PhoneCall,
   Database, ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
-  Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight,
+  Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight, Timer,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType } from '../../types'
 import { useTasksStore } from '../../store/useTasksStore'
@@ -21,6 +21,7 @@ import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
+import { useSlaInfo } from './SlaBadge'
 import { LeadRadarTab } from './LeadRadarTab'
 import { LeadPermutaTab } from './LeadPermutaTab'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
@@ -145,6 +146,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [showDiscard, showEdit, showTaskForm, onClose])
 
+  const slaInfo    = useSlaInfo(lead)
   const property   = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact    = lead.contactId  ? getById(lead.contactId) : undefined
   const originConf = ORIGIN_CONFIG[lead.origin] ?? { label: lead.origin, icon: MapPin }
@@ -414,6 +416,27 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
           {/* ── Corpo (scrollável) ──────────────────────────────────────────── */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+
+            {/* SLA Meta Ads — prazo de 1º contato gerenciado pelo banco.
+                Sem registro no prazo, o lead transfere para o outro corretor. */}
+            {slaInfo && (
+              <div className={`flex items-start gap-2.5 rounded-[14px] p-3 border
+                ${slaInfo.urgent ? 'bg-error-bg border-error-line' : 'bg-warning-bg border-warning-line'}`}>
+                <div className={`w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5
+                  ${slaInfo.urgent ? 'bg-error-bg' : 'bg-warning-bg'}`}>
+                  <Timer size={12} strokeWidth={1.6} className={`${slaInfo.urgent ? 'text-error' : 'text-warning'} ${slaInfo.overdue ? 'animate-pulse' : ''}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-label text-[10px] font-medium uppercase tracking-[0.12em] ${slaInfo.urgent ? 'text-error' : 'text-warning'}`}>
+                    {slaInfo.overdue ? 'SLA vencido — transferência iminente' : `1º contato Meta Ads · ${slaInfo.text}`}
+                  </p>
+                  <p className="text-[13px] text-t1 mt-0.5 leading-relaxed">
+                    Clique em <strong>WhatsApp</strong> para registrar o 1º contato e parar o relógio.
+                    Prazo: {slaInfo.deadline}.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Banner próxima ação — a informação nº 1 da tela.
                 Com tarefa pendente: mostra o compromisso real (e o prazo).

@@ -490,6 +490,8 @@ interface LeadRow {
   radar_bedrooms: number | null
   kanban_order: number | null
   stage_changed_at: string | null
+  first_contact_at?: string | null
+  sla_due_at?: string | null
   broker_id: string | null
   created_at: string; updated_at: string
 }
@@ -520,6 +522,8 @@ function toLead(r: LeadRow): Lead {
     radarBedrooms: r.radar_bedrooms ?? undefined,
     kanbanOrder: r.kanban_order ?? undefined,
     stageChangedAt: r.stage_changed_at ?? undefined,
+    firstContactAt: r.first_contact_at ?? undefined,
+    slaDueAt: r.sla_due_at ?? undefined,
     brokerId:       r.broker_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }

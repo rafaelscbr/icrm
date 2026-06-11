@@ -22,6 +22,7 @@ import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { LeadModal } from './LeadModal'
+import { SlaBadge } from './SlaBadge'
 import toast from 'react-hot-toast'
 
 // Shape exportado — consumido por LeadsPage, LeadsDashboard, LeadsPerformance e
@@ -200,6 +201,13 @@ function LeadCard({
           <GripVertical size={12} strokeWidth={1.6} />
         </div>
       </div>
+
+      {/* SLA Meta Ads — registrar 1º contato no prazo ou o lead transfere */}
+      {!isOverlay && (
+        <div className="empty:hidden mb-2">
+          <SlaBadge lead={lead} />
+        </div>
+      )}
 
       {/* Nome + telefone + origem */}
       <div className="flex items-start gap-2.5 pr-12 mb-2">

@@ -77,7 +77,27 @@
       "Bash(git -C /Users/rafasouza/Documents/icrm push origin main)",
       "Bash(grep -n \"throw error\\\\|return$\\\\|if \\(error\\)\" /Users/rafasouza/Documents/icrm/src/store/useDisparosStore.ts)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in d.items\\(\\) if k in ['devDependencies','scripts','dependencies']}, indent=2\\)\\)\")",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(npx playwright *)",
+      "Bash(curl -s http://localhost:5174)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174/)",
+      "Bash(curl -s -X POST https://dczexbzsfdavcrwiungk.supabase.co/auth/v1/token?grant_type=password -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjemV4YnpzZmRhdmNyd2l1bmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MzE2OTgsImV4cCI6MjA5MjQwNzY5OH0.BCQ1B1sDvBz9Q0oOxG9o7kuQ9evLyYiXJ5QN3SfGENc' -H 'Content-Type: application/json' -d '{\"email\":\"e2e_test_dispatch@souza.test\",\"password\":\"E2eTest@2026!\"}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('OK — user:', d.get\\('user',{}\\).get\\('id','?'\\)\\) if 'access_token' in d else print\\('FAIL:', d.get\\('msg','?'\\)\\)\")",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__list_migrations",
+      "Bash(node -e \"require\\('html-to-image'\\); console.log\\('OK'\\)\")",
+      "Bash(git -C /Users/rafasouza/Documents/icrm status --short)",
+      "Bash(printf '---\\\\n')",
+      "Bash(sed -n 75,120p /Users/rafasouza/Documents/icrm/src/App.tsx)",
+      "Bash(sed -n 40,60p /Users/rafasouza/Documents/icrm/src/modules/leads/LeadsPage.tsx)",
+      "Bash(sed -n 245,270p /Users/rafasouza/Documents/icrm/src/modules/leads/LeadForm.tsx)",
+      "Bash(sed -n 55,95p /Users/rafasouza/Documents/icrm/src/modules/campaigns/TransferToFunnelModal.tsx)",
+      "Bash(python3 -)",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__list_edge_functions",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__get_edge_function",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__deploy_edge_function",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__get_advisors",
+      "Bash(npx vitest *)"
     ]
   }
 }

@@ -2,8 +2,9 @@ import { useMemo, useEffect } from 'react'
 import {
   Flame, DollarSign, TrendingDown, Activity,
   AlertTriangle, Clock, Crown, ChevronRight,
-  MessageCircle, XCircle, Zap, Thermometer, BarChart2,
+  MessageCircle, XCircle, Zap, Thermometer, BarChart2, Timer,
 } from 'lucide-react'
+import { SlaBadge, slaActive } from './SlaBadge'
 import { Lead, LeadFunnelStage } from '../../types'
 import { formatCurrency } from '../../lib/formatters'
 import { STAGE_CONFIG } from './LeadKanban'
@@ -62,6 +63,9 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
 
   const { loadAll, byLead, allLoaded } = useLeadInteractionsStore()
   useEffect(() => { loadAll() }, [])
+
+  // Leads Meta Ads com relógio de SLA rodando (1º contato pendente)
+  const slaLeads = useMemo(() => active.filter(slaActive), [active])
 
   // ── BLOCO 1 — North Star KPIs ───────────────────────────────────────────────
   const vgvPipeline = useMemo(() =>
@@ -212,6 +216,31 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
 
   return (
     <div className="p-5 space-y-4 max-w-7xl mx-auto">
+
+      {/* ── SLA Meta Ads — leads aguardando 1º contato ──────────────────────── */}
+      {slaLeads.length > 0 && (
+        <div className="bg-error-bg border border-error-line rounded-[14px] p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Timer size={13} strokeWidth={1.6} className="text-error" />
+            <p className="font-label text-[10px] font-medium uppercase tracking-[0.12em] text-error">
+              SLA Meta Ads — {slaLeads.length === 1 ? '1 lead aguardando' : `${slaLeads.length} leads aguardando`} 1º contato
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {slaLeads.map(l => (
+              <button
+                key={l.id}
+                onClick={() => onOpenLead(l)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-s2/60 border border-error-line text-xs text-t1 hover:bg-s2 transition-all duration-150"
+                title={`Abrir lead — prazo ${new Date(l.slaDueAt!).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`}
+              >
+                <span className="font-medium truncate max-w-[140px]">{l.name}</span>
+                <SlaBadge lead={l} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── BLOCO 1 — North Star KPIs ──────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

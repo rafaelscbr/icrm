@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
   MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2, TrendingUp,
+  Sparkles, Smartphone, Globe, Handshake, Megaphone,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { Button } from '../../components/ui/Button'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -16,16 +18,20 @@ import { LeadForm } from './LeadForm'
 import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadsDashboard } from './LeadsDashboard'
+import { SlaBadge } from './SlaBadge'
+import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { LeadSettings } from './LeadSettings'
 import { LeadsPerformance } from './LeadsPerformance'
 
-const ORIGIN_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string; border: string }> = {
-  felicita: { label: 'Felicità', emoji: '✨', color: 'text-rose-400',   bg: 'bg-rose-500/15',   border: 'border-rose-500/25'   },
-  meta_ads: { label: 'Meta ADS', emoji: '📱', color: 'text-blue-400',   bg: 'bg-s3/70',   border: 'border-blue-500/25'   },
-  portal:   { label: 'Portal',   emoji: '🌐', color: 'text-cyan-400',   bg: 'bg-cyan-500/15',   border: 'border-cyan-500/25'   },
-  offline:  { label: 'Offline',  emoji: '🤝', color: 'text-amber-400',  bg: 'bg-amber-500/15',  border: 'border-amber-500/25'  },
-  campanha: { label: 'Campanha', emoji: '📣', color: 'text-violet-400', bg: 'bg-violet-500/15', border: 'border-violet-500/25' },
+const ORIGIN_CONFIG: Record<string, { label: string; icon: typeof Sparkles; color: string; bg: string; border: string }> = {
+  felicita: { label: 'Felicità', icon: Sparkles,   color: 'text-rose-400',   bg: 'bg-rose-500/15',   border: 'border-rose-500/25'   },
+  meta_ads: { label: 'Meta ADS', icon: Smartphone, color: 'text-blue-400',   bg: 'bg-s3/70',         border: 'border-blue-500/25'   },
+  portal:   { label: 'Portal',   icon: Globe,      color: 'text-cyan-400',   bg: 'bg-cyan-500/15',   border: 'border-cyan-500/25'   },
+  offline:  { label: 'Offline',  icon: Handshake,  color: 'text-amber-400',  bg: 'bg-amber-500/15',  border: 'border-amber-500/25'  },
+  campanha: { label: 'Campanha', icon: Megaphone,  color: 'text-violet-400', bg: 'bg-violet-500/15', border: 'border-violet-500/25' },
 }
+
+const ORIGINS: LeadOrigin[] = ['felicita', 'meta_ads', 'portal', 'offline', 'campanha']
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
@@ -35,6 +41,7 @@ type Tab = 'leads' | 'kanban' | 'dashboard' | 'performance' | 'configuracoes'
 
 function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const { advanceFollowup } = useLeadsStore()
+  const { add: addInteraction } = useLeadInteractionsStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const property     = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
@@ -45,10 +52,21 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const originConf   = ORIGIN_CONFIG[lead.origin]
   const isDiscarded  = !!lead.discardReason
 
-  function handleWhatsApp(e: React.MouseEvent) {
+  // Mesmo comportamento do Kanban: registra a interação no banco (dispara o
+  // trigger de 1º contato do SLA Meta Ads) e avança o followup.
+  async function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
     window.open(whatsappUrl(displayPhone), '_blank')
-    advanceFollowup(lead.id).catch(() => { /* erro já toastado pela camada db */ })
+    try {
+      await advanceFollowup(lead.id)
+      await addInteraction({
+        leadId: lead.id,
+        type: 'whatsapp',
+        description: 'Interagiu via WhatsApp',
+        interactedAt: new Date().toISOString(),
+      })
+      toast.success('Contato registrado')
+    } catch { /* erro já toastado pela camada db */ }
   }
 
   return (
@@ -63,6 +81,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-t1 truncate">{displayName}</span>
+          <SlaBadge lead={lead} />
           {lead.contactId && (
             <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 flex-shrink-0">
               <UserCheck size={8} /> No CRM
@@ -85,7 +104,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       </div>
 
       <div className={`hidden sm:flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border flex-shrink-0 ${originConf.bg} ${originConf.color} ${originConf.border}`}>
-        {originConf.emoji} {originConf.label}
+        <originConf.icon size={11} strokeWidth={1.6} /> {originConf.label}
       </div>
 
       <span className={`inline-flex text-[11px] font-medium px-2 py-1 rounded-lg border flex-shrink-0 ${conf.bg} ${conf.color} ${conf.border}`}>
@@ -122,7 +141,7 @@ export function LeadsPage() {
   const [tab,           setTab]           = useState<Tab>('leads')
   const [search,        setSearch]        = useState('')
   const [filterStage,   setFilterStage]   = useState<LeadFunnelStage | null>(null)
-  const [filterOrigin]                    = useState<LeadOrigin | null>(null)
+  const [filterOrigin,  setFilterOrigin]  = useState<LeadOrigin | null>(null)
   const [showDiscarded, setShowDiscarded] = useState(false)
   const [showForm,      setShowForm]      = useState(false)
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
@@ -267,6 +286,28 @@ export function LeadsPage() {
               })}
             </div>
 
+            {/* Filtro por origem */}
+            <div className="flex items-center gap-1 flex-wrap" role="group" aria-label="Filtrar por origem">
+              <span className="w-px h-5 bg-line mx-1" aria-hidden="true" />
+              {ORIGINS.map(o => {
+                const conf = ORIGIN_CONFIG[o]
+                const isActive = filterOrigin === o
+                return (
+                  <button
+                    key={o}
+                    onClick={() => setFilterOrigin(isActive ? null : o)}
+                    aria-pressed={isActive}
+                    title={`Filtrar leads de origem ${conf.label}`}
+                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border transition-all
+                      ${isActive ? `${conf.bg} ${conf.border} ${conf.color} font-semibold` : 'bg-s3/50 border-line text-t3 hover:text-t2'}`}
+                  >
+                    <conf.icon size={11} strokeWidth={1.6} />
+                    <span className="hidden lg:inline">{conf.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
             {/* Descartados */}
             <button
               onClick={() => setShowDiscarded(v => !v)}
@@ -298,10 +339,10 @@ export function LeadsPage() {
                     {showDiscarded ? 'Nenhum lead descartado' : 'Nenhum lead encontrado'}
                   </p>
                   <p className="text-xs text-t4 mt-1">
-                    {search || filterStage ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
+                    {search || filterStage || filterOrigin ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
                   </p>
                 </div>
-                {!search && !filterStage && !showDiscarded && (
+                {!search && !filterStage && !filterOrigin && !showDiscarded && (
                   <Button onClick={() => setShowForm(true)} size="md">
                     <Plus size={14} /> Criar primeiro lead
                   </Button>

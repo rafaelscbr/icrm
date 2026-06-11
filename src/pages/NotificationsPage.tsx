@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, ClipboardList, CheckCheck, Filter } from 'lucide-react'
+import { Bell, ClipboardList, UserPlus, RefreshCw, CheckCheck, Filter } from 'lucide-react'
 import { PageLayout } from '../components/layout/PageLayout'
 import { ListContainer } from '../components/ui/ListContainer'
 import { Button } from '../components/ui/Button'
@@ -56,9 +56,19 @@ function NotificationItem({
 }: { n: AppNotification; onRead: (id: string) => void }) {
   const navigate = useNavigate()
 
+  const isLeadType = n.type === 'lead_assigned' || n.type === 'lead_recaptured'
+
   function handleClick() {
     if (!n.read) onRead(n.id)
     if (n.resourceType === 'task') navigate('/tarefas')
+    if (n.resourceType === 'lead') navigate('/leads')
+  }
+
+  function NotifIcon() {
+    const cls = !n.read ? 'text-brand' : 'text-slate-500'
+    if (n.type === 'lead_assigned')   return <UserPlus  size={16} className={cls} />
+    if (n.type === 'lead_recaptured') return <RefreshCw size={16} className={cls} />
+    return <ClipboardList size={16} className={cls} />
   }
 
   return (
@@ -70,7 +80,7 @@ function NotificationItem({
       {/* Ícone */}
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
         ${!n.read ? 'bg-indigo-500/20' : 'bg-s3/50'}`}>
-        <ClipboardList size={16} className={!n.read ? 'text-brand' : 'text-slate-500'} />
+        <NotifIcon />
       </div>
 
       {/* Conteúdo */}
@@ -83,7 +93,7 @@ function NotificationItem({
         </div>
         {n.body && (
           <p className="text-xs text-slate-500 mt-0.5 truncate">
-            📋 {n.body}
+            {isLeadType ? n.body : `📋 ${n.body}`}
           </p>
         )}
         <div className="flex items-center gap-2 mt-1.5">
@@ -99,6 +109,14 @@ function NotificationItem({
               <span className="text-slate-700">·</span>
               <span className="text-[11px] text-brand group-hover:text-brand-text transition-colors">
                 Abrir tarefa →
+              </span>
+            </>
+          )}
+          {n.resourceType === 'lead' && (
+            <>
+              <span className="text-slate-700">·</span>
+              <span className="text-[11px] text-brand group-hover:text-brand-text transition-colors">
+                Abrir lead →
               </span>
             </>
           )}

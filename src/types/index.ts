@@ -306,6 +306,8 @@ export interface Lead {
   radarBedrooms?: number
   kanbanOrder?: number      // float para ordenação manual dentro da coluna (maior = primeiro)
   stageChangedAt?: string   // quando entrou na etapa atual — base para tempo em etapa
+  firstContactAt?: string   // quando o 1º contato WhatsApp foi registrado (gerenciado por trigger)
+  slaDueAt?: string         // prazo SLA de 1º contato Meta Ads (gerenciado pelo banco)
   brokerId?:      string | null
   createdAt: string
   updatedAt: string
@@ -415,7 +417,7 @@ export interface ContactEvent {
 
 // ─── Notificações ─────────────────────────────────────────────────────────────
 
-export type NotificationType = 'task_assigned'
+export type NotificationType = 'task_assigned' | 'lead_assigned' | 'lead_recaptured'
 
 export interface AppNotification {
   id: string

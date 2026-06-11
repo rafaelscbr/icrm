@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, ClipboardList, ArrowRight, X } from 'lucide-react'
+import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X } from 'lucide-react'
 import { useNotificationsStore } from '../../store/useNotificationsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { AppNotification } from '../../types'
@@ -62,10 +62,16 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
 
   function handleClick(n: AppNotification) {
     markRead(n.id)
-    if (n.resourceType === 'task') {
-      navigate('/tarefas')
-    }
+    if (n.resourceType === 'task') navigate('/tarefas')
+    if (n.resourceType === 'lead') navigate('/leads')
     onClose()
+  }
+
+  function notifIcon(n: AppNotification) {
+    const cls = !n.read ? 'text-brand' : 'text-t3'
+    if (n.type === 'lead_assigned')   return <UserPlus  size={14} className={cls} />
+    if (n.type === 'lead_recaptured') return <RefreshCw size={14} className={cls} />
+    return <ClipboardList size={14} className={cls} />
   }
 
   function handleMarkAll() {
@@ -135,7 +141,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
               {/* Ícone */}
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5
                 ${!n.read ? 'bg-indigo-500/20' : 'bg-s3/50'}`}>
-                <ClipboardList size={14} className={!n.read ? 'text-brand' : 'text-t3'} />
+                {notifIcon(n)}
               </div>
 
               {/* Conteúdo */}
@@ -150,7 +156,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
                 </div>
                 {n.body && (
                   <p className="text-[11px] text-t3 mt-0.5 truncate">
-                    📋 {n.body}
+                    {n.resourceType === 'lead' ? n.body : `📋 ${n.body}`}
                   </p>
                 )}
                 <p className="text-[10px] text-t4 mt-1">{timeAgo(n.createdAt)}</p>
