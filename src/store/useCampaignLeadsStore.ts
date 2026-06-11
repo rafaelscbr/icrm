@@ -42,6 +42,10 @@ interface CampaignLeadsStore {
   getForCampaign: (campaignId: string) => CampaignLead[]
 }
 
+// Deduplica chamadas concorrentes — vários componentes montam ao mesmo tempo e
+// cada um chama load(); sem isso a tabela inteira era baixada 3-4x em paralelo.
+let inflightLoad: Promise<void> | null = null
+
 export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   leads: [],
   loading: false,
@@ -51,7 +55,9 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   // Usa merge inteligente para não sobrescrever atualizações otimistas pendentes:
   // se o estado local tem updatedAt mais recente que o banco, o upsert ainda não
   // chegou ao servidor — mantém a versão local para evitar re-exibir na fila.
-  load: async () => {
+  load: () => {
+    if (inflightLoad) return inflightLoad
+    inflightLoad = (async () => {
     set({ loading: true })
     try {
       const raw = await db.campaignLeads.fetchAll()
@@ -89,7 +95,10 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
       console.error('[campaignLeads] load:', err)
     } finally {
       set({ loading: false })
+      inflightLoad = null
     }
+    })()
+    return inflightLoad
   },
 
   // ── Importação em massa (XLSX) — DB-first ───────────────────────────────

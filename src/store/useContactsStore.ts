@@ -18,20 +18,29 @@ interface ContactsStore {
   getBirthdaysThisMonth: () => Contact[]
 }
 
+// Deduplica chamadas concorrentes — vários componentes montam ao mesmo tempo e
+// cada um chama load(); sem isso a tabela inteira era baixada 3-4x em paralelo.
+let inflightLoad: Promise<void> | null = null
+
 export const useContactsStore = create<ContactsStore>((set, get) => ({
   contacts: [],
   loading: false,
 
-  load: async () => {
-    set({ loading: true })
-    try {
-      const contacts = await db.contacts.fetchAll()
-      set({ contacts })
-    } catch (err) {
-      console.error('[contacts] load:', err)
-    } finally {
-      set({ loading: false })
-    }
+  load: () => {
+    if (inflightLoad) return inflightLoad
+    inflightLoad = (async () => {
+      set({ loading: true })
+      try {
+        const contacts = await db.contacts.fetchAll()
+        set({ contacts })
+      } catch (err) {
+        console.error('[contacts] load:', err)
+      } finally {
+        set({ loading: false })
+        inflightLoad = null
+      }
+    })()
+    return inflightLoad
   },
 
   add: (data) => {

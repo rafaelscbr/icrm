@@ -609,33 +609,43 @@ async function fetchAll<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> 
   return (data as R[]).map(mapper)
 }
 
-// Paginação automática para tabelas grandes (ex: campaign_leads com 8000+ registros)
-// O Supabase retorna no máximo 1000 linhas por request — este helper vai buscando
-// página a página até obter todos os registros.
+// Paginação automática para tabelas grandes (ex: campaign_leads com 14000+ registros)
+// O Supabase retorna no máximo 1000 linhas por request. Buscar página a página em
+// sequência travava a dashboard por ~1s por página — aqui contamos o total primeiro
+// e baixamos todas as páginas em paralelo.
 async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> {
   const PAGE = 1000
+
+  const { count, error: countError } = await supabase
+    .from(table)
+    .select('id', { count: 'exact', head: true })
+  if (countError) {
+    toast.error(`Erro ao carregar ${table}: ${countError.message}`)
+    throw countError
+  }
+
+  const pages = Math.max(1, Math.ceil((count ?? 0) / PAGE))
+  const responses = await Promise.all(
+    Array.from({ length: pages }, (_, i) =>
+      supabase
+        .from(table)
+        .select('*')
+        // Ordenação dupla garante estabilidade quando created_at é idêntico
+        // (comum em imports em massa). Sem isso, range() pode trazer o mesmo
+        // registro em duas páginas diferentes.
+        .order('created_at', { ascending: false })
+        .order('id',         { ascending: true  })
+        .range(i * PAGE, (i + 1) * PAGE - 1)
+    )
+  )
+
   const result: T[] = []
-  let from = 0
-
-  while (true) {
-    const { data, error } = await supabase
-      .from(table)
-      .select('*')
-      // Ordenação dupla garante estabilidade quando created_at é idêntico
-      // (comum em imports em massa). Sem isso, range() pode trazer o mesmo
-      // registro em duas páginas diferentes.
-      .order('created_at', { ascending: false })
-      .order('id',         { ascending: true  })
-      .range(from, from + PAGE - 1)
-
+  for (const { data, error } of responses) {
     if (error) {
       toast.error(`Erro ao carregar ${table}: ${error.message}`)
       throw error
     }
-
     result.push(...(data as R[]).map(mapper))
-    if (data.length < PAGE) break
-    from += PAGE
   }
 
   // Remove duplicatas remanescentes (segurança extra)
