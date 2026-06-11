@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Contact, ContactTag } from '../types'
 import { generateId, isBirthdayThisMonth } from '../lib/formatters'
 import { db } from '../lib/db'
+import { supabase } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/auth'
 import toast from 'react-hot-toast'
 
@@ -9,6 +10,8 @@ interface ContactsStore {
   contacts: Contact[]
   loading: boolean
   load: () => Promise<void>
+  /** Assina realtime de contacts — eventos disparam sync incremental */
+  subscribe: () => () => void
   add: (data: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>) => Contact
   update: (id: string, data: Partial<Contact>) => void
   remove: (id: string) => void
@@ -84,6 +87,74 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
       }
     })()
     return inflightLoad
+  },
+
+  // ── Realtime ─────────────────────────────────────────────────────────────────
+  // Evento como gatilho do load() incremental — o dado vem sempre do banco.
+  // Exclusões chegam só com o id e são aplicadas localmente.
+  subscribe: () => {
+    const channelName = 'contacts-realtime'
+    if (supabase.getChannels().some(c => c.topic === `realtime:${channelName}`)) return () => {}
+
+    let disposed = false
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let syncTimer: ReturnType<typeof setTimeout> | null = null
+    let deleteTimer: ReturnType<typeof setTimeout> | null = null
+    let pendingDeletes: string[] = []
+    let channel: ReturnType<typeof buildChannel> | null = null
+
+    const scheduleSync = () => {
+      // Store ainda não inicializado — não dispara o primeiro carregamento
+      // completo (12k+ linhas) por causa de evento alheio
+      if (lastSyncAt === null || syncTimer) return
+      syncTimer = setTimeout(() => {
+        syncTimer = null
+        useContactsStore.getState().load()
+      }, 500)
+    }
+
+    const scheduleDelete = (id: string) => {
+      pendingDeletes.push(id)
+      if (deleteTimer) return
+      deleteTimer = setTimeout(() => {
+        const ids = new Set(pendingDeletes)
+        pendingDeletes = []
+        deleteTimer = null
+        set(s => ({ contacts: s.contacts.filter(c => !ids.has(c.id)) }))
+      }, 300)
+    }
+
+    const buildChannel = () => supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contacts' }, scheduleSync)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts' }, scheduleSync)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'contacts' }, (payload) => {
+        scheduleDelete((payload.old as { id: string }).id)
+      })
+
+    const connect = (isReconnect: boolean) => {
+      if (disposed) return
+      channel = buildChannel()
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          if (isReconnect && lastSyncAt !== null) useContactsStore.getState().load()
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (disposed) return
+          if (channel) { supabase.removeChannel(channel); channel = null }
+          if (retryTimer) clearTimeout(retryTimer)
+          retryTimer = setTimeout(() => connect(true), 4000)
+        }
+      })
+    }
+    connect(false)
+
+    return () => {
+      disposed = true
+      if (retryTimer)  clearTimeout(retryTimer)
+      if (syncTimer)   clearTimeout(syncTimer)
+      if (deleteTimer) clearTimeout(deleteTimer)
+      if (channel) supabase.removeChannel(channel)
+    }
   },
 
   add: (data) => {

@@ -3,19 +3,21 @@
  *
  * Arquitetura: banco de dados como fonte de verdade única.
  *
- * Fluxo simples e confiável:
+ * Fluxo:
  * 1. Qualquer ação (disparo, mudança de etapa) → salva no banco imediatamente
- * 2. Polling periódico (configurável no CampaignDetail) recarrega do banco
- * 3. Todos os usuários (admin/corretor) enxergam exatamente o mesmo dado
- *
- * Sem Supabase Realtime channels — elimina SECURITY DEFINER issues, race
- * conditions e toda a complexidade de gestão de canais websocket.
+ * 2. Realtime como GATILHO: evento em campaign_leads agenda um load()
+ *    incremental — o dado em si sempre vem do banco, nunca do payload do
+ *    websocket (elimina as race conditions dos channels antigos)
+ * 3. Exclusões são aplicadas na hora pelo id do evento (não aparecem no delta)
+ * 4. Polling leve no CampaignDetail segue como fallback se o socket cair
+ * 5. Todos os usuários (admin/corretor) enxergam exatamente o mesmo dado
  */
 
 import { create } from 'zustand'
 import { Campaign, CampaignLead, FunnelStage, LeadSituation } from '../types'
 import { generateId } from '../lib/formatters'
 import { db }   from '../lib/db'
+import { supabase } from '../lib/supabase'
 import toast    from 'react-hot-toast'
 
 type NewLead = Omit<CampaignLead, 'id' | 'funnelStage' | 'createdAt' | 'updatedAt'>
@@ -24,6 +26,8 @@ interface CampaignLeadsStore {
   leads: CampaignLead[]
   loading: boolean
   load: () => Promise<void>
+  /** Assina realtime de campaign_leads — eventos disparam sync incremental */
+  subscribe: () => () => void
   addBulk: (data: NewLead[]) => Promise<{ added: number; skipped: number }>
   add: (data: NewLead) => Promise<CampaignLead>
   /** Persiste alteração no banco. Aplica rollback e exibe toast se falhar. */
@@ -152,6 +156,77 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     }
     })()
     return inflightLoad
+  },
+
+  // ── Realtime ─────────────────────────────────────────────────────────────────
+  // O evento é só o gatilho — o dado vem do banco via load() incremental.
+  // Bursts (import em massa, disparos em sequência) são coalescidos em uma
+  // sync a cada 500ms. Exclusões chegam só com o id e são aplicadas localmente.
+  subscribe: () => {
+    const channelName = 'campaign-leads-realtime'
+    if (supabase.getChannels().some(c => c.topic === `realtime:${channelName}`)) return () => {}
+
+    let disposed = false
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let syncTimer: ReturnType<typeof setTimeout> | null = null
+    let deleteTimer: ReturnType<typeof setTimeout> | null = null
+    let pendingDeletes: string[] = []
+    let channel: ReturnType<typeof buildChannel> | null = null
+
+    const scheduleSync = () => {
+      // Store ainda não inicializado (usuário nunca abriu campanhas) — não
+      // dispara o primeiro carregamento completo por causa de evento alheio
+      if (lastSyncAt === null || syncTimer) return
+      syncTimer = setTimeout(() => {
+        syncTimer = null
+        useCampaignLeadsStore.getState().load()
+      }, 500)
+    }
+
+    const scheduleDelete = (id: string) => {
+      pendingDeletes.push(id)
+      if (deleteTimer) return
+      deleteTimer = setTimeout(() => {
+        const ids = new Set(pendingDeletes)
+        pendingDeletes = []
+        deleteTimer = null
+        set(s => ({ leads: s.leads.filter(l => !ids.has(l.id)) }))
+      }, 300)
+    }
+
+    const buildChannel = () => supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'campaign_leads' }, scheduleSync)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaign_leads' }, scheduleSync)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'campaign_leads' }, (payload) => {
+        scheduleDelete((payload.old as { id: string }).id)
+      })
+
+    // Reconexão automática: se o canal cair (aba inativa, rede, token vencido),
+    // refaz o subscribe e ressincroniza para recuperar eventos perdidos.
+    const connect = (isReconnect: boolean) => {
+      if (disposed) return
+      channel = buildChannel()
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          if (isReconnect && lastSyncAt !== null) useCampaignLeadsStore.getState().load()
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (disposed) return
+          if (channel) { supabase.removeChannel(channel); channel = null }
+          if (retryTimer) clearTimeout(retryTimer)
+          retryTimer = setTimeout(() => connect(true), 4000)
+        }
+      })
+    }
+    connect(false)
+
+    return () => {
+      disposed = true
+      if (retryTimer)  clearTimeout(retryTimer)
+      if (syncTimer)   clearTimeout(syncTimer)
+      if (deleteTimer) clearTimeout(deleteTimer)
+      if (channel) supabase.removeChannel(channel)
+    }
   },
 
   // ── Importação em massa (XLSX) — DB-first ───────────────────────────────

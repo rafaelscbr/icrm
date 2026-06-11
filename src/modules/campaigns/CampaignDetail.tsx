@@ -276,8 +276,8 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   // Carrega leads frescos ao abrir cada campanha
   useEffect(() => { loadLeads() }, [campaignId])
 
-  // Polling: sincroniza com o banco a cada 15s — garante que admin e corretor
-  // veem sempre o mesmo dado, sem depender de websockets ou realtime channels.
+  // Polling de fallback: o realtime (App.tsx) já sincroniza a cada mudança;
+  // este intervalo garante consistência se o socket cair silenciosamente.
   // load() é incremental (só linhas alteradas); pausa quando a aba está oculta
   // (o handler de visibilitychange abaixo ressincroniza ao voltar).
   useEffect(() => {

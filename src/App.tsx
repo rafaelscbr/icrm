@@ -15,6 +15,10 @@ import { useSalesStore } from './store/useSalesStore'
 import { useGoalsStore } from './store/useGoalsStore'
 import { useLeadInteractionsStore } from './store/useLeadInteractionsStore'
 import { useLeadsStore } from './store/useLeadsStore'
+import { useCampaignsStore } from './store/useCampaignsStore'
+import { useCampaignLeadsStore } from './store/useCampaignLeadsStore'
+import { useCampaignActivityStore } from './store/useCampaignActivityStore'
+import { useContactsStore } from './store/useContactsStore'
 import { supabase } from './lib/supabase'
 
 // ── Code splitting por rota ──────────────────────────────────────────────────
@@ -115,11 +119,15 @@ function AppRoutes() {
     const unsubNotifications  = subscribeNotifications(user.id)
 
     // Entidades operacionais — RLS garante que cada usuário vê apenas o que tem permissão
-    const unsubLeads        = subscribeLeads()
-    const unsubTasks        = subscribeTasks()
-    const unsubSales        = subscribeSales()
-    const unsubGoals        = subscribeGoals()
-    const unsubInteractions = subscribeInteractions()
+    const unsubLeads         = subscribeLeads()
+    const unsubTasks         = subscribeTasks()
+    const unsubSales         = subscribeSales()
+    const unsubGoals         = subscribeGoals()
+    const unsubInteractions  = subscribeInteractions()
+    const unsubCampaigns     = useCampaignsStore.getState().subscribe()
+    const unsubCampaignLeads = useCampaignLeadsStore.getState().subscribe()
+    const unsubActivity      = useCampaignActivityStore.getState().subscribe()
+    const unsubContacts      = useContactsStore.getState().subscribe()
 
     return () => {
       unsubNotifications()
@@ -128,6 +136,10 @@ function AppRoutes() {
       unsubSales()
       unsubGoals()
       unsubInteractions()
+      unsubCampaigns()
+      unsubCampaignLeads()
+      unsubActivity()
+      unsubContacts()
     }
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
