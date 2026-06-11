@@ -108,7 +108,9 @@
       "Bash(sed -n '1,40p' /Users/rafasouza/Documents/icrm/src/components/ui/Input.tsx)",
       "Bash(sed -n '1,40p' /Users/rafasouza/Documents/icrm/src/components/ui/Select.tsx)",
       "Bash(npx eslint *)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(sed -n '125,165p' /Users/rafasouza/Documents/icrm/src/modules/campaigns/LeadsTab.tsx)",
+      "Bash(sed -n '135,165p' /Users/rafasouza/Documents/icrm/src/modules/campaigns/ActivityTab.tsx)"
     ]
   }
 }

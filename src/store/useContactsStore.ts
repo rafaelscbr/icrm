@@ -22,6 +22,15 @@ interface ContactsStore {
 // cada um chama load(); sem isso a tabela inteira era baixada 3-4x em paralelo.
 let inflightLoad: Promise<void> | null = null
 
+// Sync incremental: após o primeiro carregamento completo, load() busca apenas
+// contatos com updated_at posterior à marca d'água (a tabela tem 12k+ linhas —
+// rebaixar tudo a cada navegação travava a interface). Um carregamento completo
+// periódico reconcilia exclusões feitas por outros usuários.
+let lastSyncAt: string | null = null
+let lastFullLoadAt = 0
+const FULL_RELOAD_INTERVAL_MS = 5 * 60_000
+const SYNC_OVERLAP_MS = 2_000
+
 export const useContactsStore = create<ContactsStore>((set, get) => ({
   contacts: [],
   loading: false,
@@ -29,10 +38,44 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
   load: () => {
     if (inflightLoad) return inflightLoad
     inflightLoad = (async () => {
-      set({ loading: true })
+      const isFullLoad = lastSyncAt === null || Date.now() - lastFullLoadAt > FULL_RELOAD_INTERVAL_MS
+      // Spinner apenas quando ainda não há nada em tela — revisitas mostram o
+      // dado existente na hora e atualizam em segundo plano.
+      if (get().contacts.length === 0) set({ loading: true })
       try {
-        const contacts = await db.contacts.fetchAll()
-        set({ contacts })
+        if (isFullLoad) {
+          const contacts = await db.contacts.fetchAll()
+          for (const c of contacts) {
+            if (!lastSyncAt || new Date(c.updatedAt).getTime() > new Date(lastSyncAt).getTime()) {
+              lastSyncAt = c.updatedAt
+            }
+          }
+          if (!lastSyncAt) lastSyncAt = new Date(0).toISOString()
+          lastFullLoadAt = Date.now()
+          set({ contacts })
+        } else {
+          const changed = await db.contacts.fetchSince(
+            new Date(new Date(lastSyncAt!).getTime() - SYNC_OVERLAP_MS).toISOString()
+          )
+          if (changed.length > 0) {
+            for (const c of changed) {
+              if (new Date(c.updatedAt).getTime() > new Date(lastSyncAt!).getTime()) {
+                lastSyncAt = c.updatedAt
+              }
+            }
+            const current = get().contacts
+            const ids = new Set(current.map(c => c.id))
+            const changedById = new Map(changed.map(c => [c.id, c]))
+            // Escrita otimista pendente mais recente que o banco vence o delta
+            const merged = current.map(c => {
+              const ch = changedById.get(c.id)
+              if (!ch) return c
+              return new Date(c.updatedAt).getTime() > new Date(ch.updatedAt).getTime() ? c : ch
+            })
+            merged.push(...changed.filter(c => !ids.has(c.id)))
+            set({ contacts: merged })
+          }
+        }
       } catch (err) {
         console.error('[contacts] load:', err)
       } finally {

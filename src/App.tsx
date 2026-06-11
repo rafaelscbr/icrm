@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useThemeStore, applyTheme } from './store/useThemeStore'
@@ -9,24 +9,6 @@ import { logActivity } from './lib/activityLogger'
 import { Sidebar } from './components/layout/Sidebar'
 import { BottomNav } from './components/layout/BottomNav'
 import { GlobalSearch } from './components/shared/GlobalSearch'
-import { DashboardPage } from './modules/dashboard/DashboardPage'
-import { ContactsPage } from './modules/contacts/ContactsPage'
-import { PropertiesPage } from './modules/properties/PropertiesPage'
-import { SalesPage } from './modules/sales/SalesPage'
-import { PerformancePage } from './modules/performance/PerformancePage'
-import { TasksPage } from './modules/tasks/TasksPage'
-import { CampaignsPage } from './modules/campaigns/CampaignsPage'
-import { LeadsPage } from './modules/leads/LeadsPage'
-import { PermutaPage } from './modules/permuta/PermutaPage'
-import { SimuladorPage } from './modules/simulador/SimuladorPage'
-import { LoginPage } from './pages/LoginPage'
-import { AdminPage } from './pages/AdminPage'
-import { ActivityLogsPage } from './pages/ActivityLogsPage'
-import { GoalsPage } from './modules/goals/GoalsPage'
-import { WeekHistoryPage } from './modules/goals/WeekHistoryPage'
-import { NotificationsPage } from './pages/NotificationsPage'
-import { VirtualOfficePage } from './modules/office/VirtualOfficePage'
-import { LeadListsPage } from './modules/lead-lists/LeadListsPage'
 import { useNotificationsStore } from './store/useNotificationsStore'
 import { useTasksStore } from './store/useTasksStore'
 import { useSalesStore } from './store/useSalesStore'
@@ -34,6 +16,37 @@ import { useGoalsStore } from './store/useGoalsStore'
 import { useLeadInteractionsStore } from './store/useLeadInteractionsStore'
 import { useLeadsStore } from './store/useLeadsStore'
 import { supabase } from './lib/supabase'
+
+// ── Code splitting por rota ──────────────────────────────────────────────────
+// Cada página vira um chunk separado — o carregamento inicial baixa apenas a
+// tela aberta, em vez do app inteiro (gráficos, xlsx, kanban etc. de uma vez).
+const DashboardPage     = lazy(() => import('./modules/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const ContactsPage      = lazy(() => import('./modules/contacts/ContactsPage').then(m => ({ default: m.ContactsPage })))
+const PropertiesPage    = lazy(() => import('./modules/properties/PropertiesPage').then(m => ({ default: m.PropertiesPage })))
+const SalesPage         = lazy(() => import('./modules/sales/SalesPage').then(m => ({ default: m.SalesPage })))
+const PerformancePage   = lazy(() => import('./modules/performance/PerformancePage').then(m => ({ default: m.PerformancePage })))
+const TasksPage         = lazy(() => import('./modules/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
+const CampaignsPage     = lazy(() => import('./modules/campaigns/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
+const LeadsPage         = lazy(() => import('./modules/leads/LeadsPage').then(m => ({ default: m.LeadsPage })))
+const PermutaPage       = lazy(() => import('./modules/permuta/PermutaPage').then(m => ({ default: m.PermutaPage })))
+const SimuladorPage     = lazy(() => import('./modules/simulador/SimuladorPage').then(m => ({ default: m.SimuladorPage })))
+const LoginPage         = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const AdminPage         = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })))
+const ActivityLogsPage  = lazy(() => import('./pages/ActivityLogsPage').then(m => ({ default: m.ActivityLogsPage })))
+const GoalsPage         = lazy(() => import('./modules/goals/GoalsPage').then(m => ({ default: m.GoalsPage })))
+const WeekHistoryPage   = lazy(() => import('./modules/goals/WeekHistoryPage').then(m => ({ default: m.WeekHistoryPage })))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
+const VirtualOfficePage = lazy(() => import('./modules/office/VirtualOfficePage').then(m => ({ default: m.VirtualOfficePage })))
+const LeadListsPage     = lazy(() => import('./modules/lead-lists/LeadListsPage').then(m => ({ default: m.LeadListsPage })))
+
+// Fallback exibido enquanto o chunk da rota é baixado (apenas na 1ª visita)
+function RouteLoading() {
+  return (
+    <div className="h-full flex items-center justify-center py-24">
+      <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+}
 
 // ── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content in a div with the `page-fade` CSS animation class.
@@ -122,13 +135,40 @@ function AppRoutes() {
   // vencido), reautentica o socket realtime e reconcilia os dados com o banco.
   // Reconciliação é SILENCIOSA (sem flag de loading — a tela não pisca) e tem
   // intervalo mínimo para não refazer fetch a cada alternância rápida de aba.
+  //
+  // getSession() pode travar indefinidamente após a aba ficar suspensa por muito
+  // tempo (lock interno do supabase-js que não é liberado) — quando isso acontece
+  // NENHUMA leitura/escrita volta a funcionar até um F5. O timeout detecta o
+  // travamento e recarrega a página automaticamente (no máx. 1x a cada 2 min).
   useEffect(() => {
     if (!user) return
     let lastReconcile = 0
     async function onVisible() {
-      if (document.visibilityState !== 'visible') return
-      const { data } = await supabase.auth.getSession()
-      if (data.session) supabase.realtime.setAuth(data.session.access_token)
+      if (document.visibilityState !== 'visible') {
+        // Aba oculta: pausa o timer de refresh do token (ele é throttled pelo
+        // browser de qualquer forma); ao voltar, startAutoRefresh força a
+        // verificação imediata do token em vez de esperar o próximo tick.
+        supabase.auth.stopAutoRefresh()
+        return
+      }
+      supabase.auth.startAutoRefresh()
+
+      const result = await Promise.race([
+        supabase.auth.getSession().then(r => r.data.session),
+        new Promise<'hang'>(resolve => setTimeout(() => resolve('hang'), 8000)),
+      ])
+
+      if (result === 'hang') {
+        const last = Number(sessionStorage.getItem('souza:lastForcedReload') ?? 0)
+        if (Date.now() - last > 120_000) {
+          sessionStorage.setItem('souza:lastForcedReload', String(Date.now()))
+          console.warn('[session] getSession travado após inatividade — recarregando a página')
+          window.location.reload()
+        }
+        return
+      }
+
+      if (result) supabase.realtime.setAuth(result.access_token)
       if (Date.now() - lastReconcile < 30_000) return
       lastReconcile = Date.now()
       useLeadsStore.getState().reload()
@@ -148,6 +188,7 @@ function AppRoutes() {
       <div className="flex min-h-screen page-bg">
         <Sidebar />
         <main className="flex-1 overflow-auto pb-nav-safe lg:!pb-0">
+          <Suspense fallback={<RouteLoading />}>
           <Routes>
             <Route path="/" element={<PageWrapper><DashboardPage /></PageWrapper>} />
             <Route path="/contatos" element={<PageWrapper><ContactsPage /></PageWrapper>} />
@@ -167,6 +208,7 @@ function AppRoutes() {
             {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
             {isAdmin && <Route path="/admin/logs" element={<PageWrapper><ActivityLogsPage /></PageWrapper>} />}
           </Routes>
+          </Suspense>
         </main>
         <BottomNav />
       </div>
@@ -194,10 +236,16 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/*" element={<AppRoutes />} />
-      </Routes>
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-bg)' }}>
+          <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+        </div>
+      }>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/*" element={<AppRoutes />} />
+        </Routes>
+      </Suspense>
       <Toaster
         position="bottom-right"
         toastOptions={{

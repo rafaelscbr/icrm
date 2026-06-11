@@ -37,17 +37,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
-              networkTimeoutSeconds: 10,
-            },
-          },
-        ],
+        // Sem runtimeCaching da API do Supabase: o banco é a única fonte de
+        // verdade — servir resposta cacheada quando a rede falha mostraria
+        // dado velho silenciosamente. Falha de rede deve aparecer como erro.
       },
       devOptions: {
         enabled: true,

@@ -143,9 +143,10 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
     loadForCampaign(campaignId, since)
   }, [campaignId, period, customDate])
 
-  // Polling 15s para manter atualizado
+  // Polling 15s para manter atualizado — pausa quando a aba está oculta
   useEffect(() => {
     const interval = setInterval(() => {
+      if (document.hidden) return
       const since = periodToSince(period, customDate || undefined)
       loadForCampaign(campaignId, since)
     }, 15_000)

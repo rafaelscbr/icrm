@@ -597,16 +597,48 @@ function fromLeadInteraction(i: LeadInteraction): LeadInteractionRow {
 
 // ─── Operações genéricas ──────────────────────────────────────────────────────
 
+// Timeout nas leituras: após a aba ficar suspensa, requests podem ficar pendurados
+// para sempre (lock interno do supabase-js) — sem timeout, o inflightLoad dos
+// stores nunca resolve e o app inteiro para de responder até um F5 manual.
+const READ_TIMEOUT_MS = 30_000
+
 async function fetchAll<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> {
   const { data, error } = await supabase
     .from(table)
     .select('*')
     .order('created_at', { ascending: false })
+    .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
   if (error) {
     toast.error(`Erro ao carregar ${table}: ${error.message}`)
     throw error
   }
   return (data as R[]).map(mapper)
+}
+
+// Busca apenas linhas alteradas desde a marca d'água — base do sync incremental.
+// Pagina sequencialmente; na prática o delta tem poucas linhas (1 página).
+async function fetchSince<R, T>(table: string, sinceIso: string, mapper: (r: R) => T): Promise<T[]> {
+  const PAGE = 1000
+  const rows: R[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .gt('updated_at', sinceIso)
+      .order('updated_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+      .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
+    if (error) {
+      toast.error(`Erro ao sincronizar ${table}: ${error.message}`)
+      throw error
+    }
+    rows.push(...(data as R[]))
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+  return rows.map(mapper)
 }
 
 // Paginação automática para tabelas grandes (ex: campaign_leads com 14000+ registros)
@@ -619,6 +651,7 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
   const { count, error: countError } = await supabase
     .from(table)
     .select('id', { count: 'exact', head: true })
+    .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
   if (countError) {
     toast.error(`Erro ao carregar ${table}: ${countError.message}`)
     throw countError
@@ -636,6 +669,7 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
         .order('created_at', { ascending: false })
         .order('id',         { ascending: true  })
         .range(i * PAGE, (i + 1) * PAGE - 1)
+        .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
     )
   )
 
@@ -660,8 +694,18 @@ async function fetchAllPaginated<R, T>(table: string, mapper: (r: R) => T): Prom
 
 // Garante sessão válida antes de qualquer escrita. getSession() renova o token
 // automaticamente se expirado (comum após a aba ficar muito tempo inativa).
+// Com timeout: getSession() pode travar para sempre após suspensão da aba —
+// sem ele, todo clique de salvar ficava pendurado sem erro nem resposta.
 async function ensureFreshSession(): Promise<void> {
-  const { data, error } = await supabase.auth.getSession()
+  const result = await Promise.race([
+    supabase.auth.getSession(),
+    new Promise<'hang'>(resolve => setTimeout(() => resolve('hang'), 10_000)),
+  ])
+  if (result === 'hang') {
+    toast.error('Conexão com a sessão travada. Recarregue a página (F5) para continuar.')
+    throw new Error('getSession travado — provável lock após inatividade')
+  }
+  const { data, error } = result
   if (error || !data.session) {
     toast.error('Sessão expirada. Faça login novamente para continuar.')
     throw error ?? new Error('Sessão ausente')
@@ -709,9 +753,10 @@ async function deleteOne(table: string, id: string): Promise<void> {
 
 export const db = {
   contacts: {
-    fetchAll: () => fetchAllPaginated<ContactRow, Contact>('contacts', toContact),
-    upsert:   (c: Contact)  => upsertOne('contacts', fromContact(c)),
-    delete:   (id: string)  => deleteOne('contacts', id),
+    fetchAll:   () => fetchAllPaginated<ContactRow, Contact>('contacts', toContact),
+    fetchSince: (sinceIso: string) => fetchSince<ContactRow, Contact>('contacts', sinceIso, toContact),
+    upsert:     (c: Contact)  => upsertOne('contacts', fromContact(c)),
+    delete:     (id: string)  => deleteOne('contacts', id),
   },
 
   properties: {
@@ -1022,7 +1067,8 @@ export const db = {
   },
 
   campaignLeads: {
-    fetchAll: () => fetchAllPaginated<CampaignLeadRow, CampaignLead>('campaign_leads', toCampaignLead),
+    fetchAll:   () => fetchAllPaginated<CampaignLeadRow, CampaignLead>('campaign_leads', toCampaignLead),
+    fetchSince: (sinceIso: string) => fetchSince<CampaignLeadRow, CampaignLead>('campaign_leads', sinceIso, toCampaignLead),
     // upsert: usado apenas para INSERÇÃO de novas linhas (addBulk/add)
     upsert:   (l: CampaignLead)   => upsertOne('campaign_leads', fromCampaignLead(l)),
     // updateRow: usado para ATUALIZAR linhas existentes — usa .update() que tem
@@ -1056,9 +1102,10 @@ export const db = {
       if (error) throw error
     },
     transferBroker: async (campaignId: string, brokerId: string | null) => {
+      // updated_at marca a transferência para o sync incremental dos outros usuários
       const { error } = await supabase
         .from('campaign_leads')
-        .update({ broker_id: brokerId ?? getCurrentUserId() })
+        .update({ broker_id: brokerId ?? getCurrentUserId(), updated_at: new Date().toISOString() })
         .eq('campaign_id', campaignId)
       if (error) throw error
     },

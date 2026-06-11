@@ -46,51 +46,104 @@ interface CampaignLeadsStore {
 // cada um chama load(); sem isso a tabela inteira era baixada 3-4x em paralelo.
 let inflightLoad: Promise<void> | null = null
 
+// Sync incremental: após o primeiro carregamento completo, load() busca apenas
+// linhas com updated_at posterior à marca d'água — o polling de 15s deixa de
+// baixar a tabela inteira (14k+ linhas) e passa a trafegar poucas linhas.
+// Um carregamento completo periódico reconcilia exclusões feitas por outros
+// usuários (o delta não enxerga linhas removidas).
+let lastSyncAt: string | null = null     // maior updated_at já visto do banco
+let lastFullLoadAt = 0                   // epoch ms do último carregamento completo
+const FULL_RELOAD_INTERVAL_MS = 5 * 60_000
+const SYNC_OVERLAP_MS = 2_000            // margem contra empates de timestamp
+
 export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   leads: [],
   loading: false,
 
-  // ── Carrega todos os leads do banco ──────────────────────────────────────────
+  // ── Carrega leads do banco ───────────────────────────────────────────────────
   // Chamado ao abrir uma campanha e pelo polling periódico.
+  // Primeiro carregamento (e a cada 5 min): tabela completa. Demais chamadas:
+  // apenas o delta desde a última sync.
   // Usa merge inteligente para não sobrescrever atualizações otimistas pendentes:
   // se o estado local tem updatedAt mais recente que o banco, o upsert ainda não
   // chegou ao servidor — mantém a versão local para evitar re-exibir na fila.
   load: () => {
     if (inflightLoad) return inflightLoad
     inflightLoad = (async () => {
-    set({ loading: true })
+    const isFullLoad = lastSyncAt === null || Date.now() - lastFullLoadAt > FULL_RELOAD_INTERVAL_MS
+    // Spinner apenas quando ainda não há nada em tela — revisitas mostram o
+    // dado existente na hora e atualizam em segundo plano.
+    if (get().leads.length === 0) set({ loading: true })
     try {
-      const raw = await db.campaignLeads.fetchAll()
+      const raw = isFullLoad
+        ? await db.campaignLeads.fetchAll()
+        : await db.campaignLeads.fetchSince(
+            new Date(new Date(lastSyncAt!).getTime() - SYNC_OVERLAP_MS).toISOString()
+          )
 
-      // Deduplica por (campaignId + telefone) — descarta duplicatas de import
-      const seen = new Set<string>()
-      const fresh = raw.filter(l => {
-        const key = `${l.campaignId}:${l.phone.replace(/\D/g, '')}`
-        if (seen.has(key)) return false
-        seen.add(key)
-        return true
-      })
+      // Avança a marca d'água para o maior updated_at vindo do banco
+      for (const l of raw) {
+        if (!lastSyncAt || new Date(l.updatedAt).getTime() > new Date(lastSyncAt).getTime()) {
+          lastSyncAt = l.updatedAt
+        }
+      }
+      if (isFullLoad) {
+        lastFullLoadAt = Date.now()
+        if (!lastSyncAt) lastSyncAt = new Date(0).toISOString() // tabela vazia
+      }
 
       // Merge: preserva escritas otimistas pendentes.
       // Para cada lead do banco, se o estado local tem updatedAt posterior, mantém local.
+      // Compara como Date (não string) porque o banco retorna "+00:00" e o JS
+      // usa "Z" — formatos diferentes para o mesmo momento que a comparação
+      // de string sempre resolvia errado, nunca atualizando com dados do banco.
       const currentLeads = get().leads
       const currentMap   = new Map(currentLeads.map(l => [l.id, l]))
-      const freshIds     = new Set(fresh.map(l => l.id))
 
-      const merged = fresh.map(dbLead => {
-        const local = currentMap.get(dbLead.id)
-        // Compara como Date (não string) porque o banco retorna "+00:00" e o JS
-        // usa "Z" — formatos diferentes para o mesmo momento que a comparação
-        // de string sempre resolvia errado, nunca atualizando com dados do banco.
-        const localIsNewer = local && new Date(local.updatedAt).getTime() > new Date(dbLead.updatedAt).getTime()
-        return localIsNewer ? local : dbLead
-      })
+      if (isFullLoad) {
+        // Deduplica por (campaignId + telefone) — descarta duplicatas de import
+        const seen = new Set<string>()
+        const fresh = raw.filter(l => {
+          const key = `${l.campaignId}:${l.phone.replace(/\D/g, '')}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
 
-      // Inclui leads locais que ainda não chegaram ao banco (addBulk recente)
-      const pendingLocal = currentLeads.filter(l => !freshIds.has(l.id))
-      merged.push(...pendingLocal)
+        const freshIds = new Set(fresh.map(l => l.id))
+        const merged = fresh.map(dbLead => {
+          const local = currentMap.get(dbLead.id)
+          const localIsNewer = local && new Date(local.updatedAt).getTime() > new Date(dbLead.updatedAt).getTime()
+          return localIsNewer ? local : dbLead
+        })
 
-      set({ leads: merged })
+        // Inclui leads locais que ainda não chegaram ao banco (addBulk recente)
+        const pendingLocal = currentLeads.filter(l => !freshIds.has(l.id))
+        merged.push(...pendingLocal)
+
+        set({ leads: merged })
+      } else if (raw.length > 0) {
+        // Delta: substitui por id as linhas alteradas; novas entram no fim.
+        // Dedup por telefone: novas linhas cujo telefone já existe na campanha
+        // são descartadas (mesma regra do carregamento completo).
+        const phoneKeys = new Set(currentLeads.map(l => `${l.campaignId}:${l.phone.replace(/\D/g, '')}`))
+        const merged = [...currentLeads]
+        for (const dbLead of raw) {
+          const idx = merged.findIndex(l => l.id === dbLead.id)
+          if (idx >= 0) {
+            const local = merged[idx]
+            const localIsNewer = new Date(local.updatedAt).getTime() > new Date(dbLead.updatedAt).getTime()
+            if (!localIsNewer) merged[idx] = dbLead
+          } else {
+            const key = `${dbLead.campaignId}:${dbLead.phone.replace(/\D/g, '')}`
+            if (!phoneKeys.has(key)) {
+              phoneKeys.add(key)
+              merged.push(dbLead)
+            }
+          }
+        }
+        set({ leads: merged })
+      }
     } catch (err) {
       console.error('[campaignLeads] load:', err)
     } finally {

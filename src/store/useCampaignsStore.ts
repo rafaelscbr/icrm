@@ -19,7 +19,8 @@ export const useCampaignsStore = create<CampaignsStore>((set, get) => ({
   loading: false,
 
   load: async () => {
-    set({ loading: true })
+    // Spinner apenas no primeiro carregamento — revisitas mostram o dado em tela
+    if (get().campaigns.length === 0) set({ loading: true })
     try {
       const campaigns = await db.campaigns.fetchAll()
       set({ campaigns })

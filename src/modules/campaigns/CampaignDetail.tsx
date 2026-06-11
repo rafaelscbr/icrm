@@ -276,10 +276,13 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   // Carrega leads frescos ao abrir cada campanha
   useEffect(() => { loadLeads() }, [campaignId])
 
-  // Polling: recarrega do banco a cada 15s — garante que admin e corretor
-  // veem sempre o mesmo dado, sem depender de websockets ou realtime channels
+  // Polling: sincroniza com o banco a cada 15s — garante que admin e corretor
+  // veem sempre o mesmo dado, sem depender de websockets ou realtime channels.
+  // load() é incremental (só linhas alteradas); pausa quando a aba está oculta
+  // (o handler de visibilitychange abaixo ressincroniza ao voltar).
   useEffect(() => {
     const interval = setInterval(() => {
+      if (document.hidden) return
       useCampaignLeadsStore.getState().load()
     }, 15_000)
     return () => clearInterval(interval)
