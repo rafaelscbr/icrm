@@ -107,7 +107,8 @@
       "Bash(sed -n 490,610p /Users/rafasouza/Documents/icrm/src/modules/goals/GoalsPage.tsx)",
       "Bash(sed -n '1,40p' /Users/rafasouza/Documents/icrm/src/components/ui/Input.tsx)",
       "Bash(sed -n '1,40p' /Users/rafasouza/Documents/icrm/src/components/ui/Select.tsx)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(git fetch *)"
     ]
   }
 }
