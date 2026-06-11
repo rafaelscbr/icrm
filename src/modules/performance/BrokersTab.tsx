@@ -12,6 +12,7 @@ import { Card } from '../../components/ui/Card'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
+import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
 import { formatCurrency } from '../../lib/formatters'
@@ -68,6 +69,7 @@ export function BrokersTab() {
   const { allProfiles, fetchAllProfiles, isAdmin } = useAuthStore()
   const { leads: allLeads, load: loadLeads }       = useLeadsStore()
   const { byLead, loadAll, allLoaded }             = useLeadInteractionsStore()
+  const { activities: campaignActivities, loadAll: loadCampaignActivities, allLoaded: campaignActivitiesLoaded } = useCampaignActivityStore()
   const { sales, load: loadSales }                 = useSalesStore()
   const { loadBrokerSummaries }                    = useDisparosStore()
 
@@ -93,6 +95,7 @@ export function BrokersTab() {
     if (allProfiles.length === 0) fetchAllProfiles().catch(() => {})
     loadLeads(); loadSales()
     if (!allLoaded) loadAll()
+    if (!campaignActivitiesLoaded) loadCampaignActivities()
     loadBrokerSummaries().then(summaries => {
       setDisparos(buildDisparosMap(summaries, period))
       const prev: Record<string, number> = {}
@@ -133,7 +136,10 @@ export function BrokersTab() {
       const brokerLeads = allLeads.filter(l => l.brokerId === broker.id)
       // Atribui pela autoria (quem registrou a interação), não pelo dono do lead —
       // interações em leads de campanha de outro corretor contam para quem agiu.
-      const brokerInts  = allInteractions.filter(i => i.brokerId === broker.id)
+      const brokerInts = allInteractions.filter(i => i.brokerId === broker.id)
+      // Atividade em leads de campanha: parecer = interação; mudança de etapa = avanço.
+      // Disparo fica de fora — já aparece nas colunas de disparos (disparo_logs).
+      const brokerCampaignActs = campaignActivities.filter(a => a.brokerId === broker.id)
 
       // Compara apenas YYYY-MM-DD — evita offset UTC-3 excluir registros do dia correto.
       // LeadForm salva created_at como midnight UTC do dia selecionado; interactions
@@ -141,7 +147,9 @@ export function BrokersTab() {
       function inPeriod(iso: string) { return iso.substring(0, 10) >= fromStr }
 
       const interactions = brokerInts.filter(i => REAL_TYPES.has(i.type) && inPeriod(i.interactedAt)).length
+        + brokerCampaignActs.filter(a => a.actionType === 'parecer' && inPeriod(a.createdAt)).length
       const advances     = brokerInts.filter(i => i.type === 'stage_change' && inPeriod(i.interactedAt)).length
+        + brokerCampaignActs.filter(a => a.actionType === 'stage_change' && inPeriod(a.createdAt)).length
       const discards     = brokerInts.filter(i => i.type === 'discard' && inPeriod(i.interactedAt)).length
       const newLeads     = brokerLeads.filter(l => inPeriod(l.createdAt)).length
       const brokerSales       = sales.filter(s => s.brokerId === broker.id && inPeriod(s.date))
@@ -162,24 +170,27 @@ export function BrokersTab() {
         sales: brokerSales.length, revenue, disparos, disparosNew, disparosFollowup, convRate,
       }
     })
-  }, [brokers, allLeads, allInteractions, sales, disparosByBroker, fromStr])
+  }, [brokers, allLeads, allInteractions, campaignActivities, sales, disparosByBroker, fromStr])
 
   const prevStats = useMemo((): Record<string, Partial<BrokerStats>> => {
     const result: Record<string, Partial<BrokerStats>> = {}
     brokers.forEach(broker => {
       if (period === 'total') { result[broker.id] = {}; return }
       const brokerInts = allInteractions.filter(i => i.brokerId === broker.id)
+      const brokerCampaignActs = campaignActivities.filter(a => a.brokerId === broker.id)
       const inPrevRange = (iso: string) => iso.substring(0, 10) >= prevFromStr && iso.substring(0, 10) < fromStr
       result[broker.id] = {
-        interactions:    brokerInts.filter(i => REAL_TYPES.has(i.type) && inPrevRange(i.interactedAt)).length,
-        advances:        brokerInts.filter(i => i.type === 'stage_change' && inPrevRange(i.interactedAt)).length,
+        interactions:    brokerInts.filter(i => REAL_TYPES.has(i.type) && inPrevRange(i.interactedAt)).length
+          + brokerCampaignActs.filter(a => a.actionType === 'parecer' && inPrevRange(a.createdAt)).length,
+        advances:        brokerInts.filter(i => i.type === 'stage_change' && inPrevRange(i.interactedAt)).length
+          + brokerCampaignActs.filter(a => a.actionType === 'stage_change' && inPrevRange(a.createdAt)).length,
         discards:        brokerInts.filter(i => i.type === 'discard' && inPrevRange(i.interactedAt)).length,
         disparosNew:     prevDisparos[broker.id] ?? 0,
         disparosFollowup: 0,
       }
     })
     return result
-  }, [brokers, allInteractions, prevFromStr, fromStr, period, prevDisparos])
+  }, [brokers, allInteractions, campaignActivities, prevFromStr, fromStr, period, prevDisparos])
 
   if (brokers.length === 0) {
     return (

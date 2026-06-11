@@ -12,6 +12,7 @@ import { formatPhone } from '../../lib/formatters'
 import { TransferToFunnelModal } from './TransferToFunnelModal'
 import { VisitaTaskModal } from './VisitaTaskModal'
 import { supabase } from '../../lib/supabase'
+import { db } from '../../lib/db'
 import toast from 'react-hot-toast'
 
 interface LeadParecerModalProps {
@@ -78,7 +79,22 @@ export function LeadParecerModal({ isOpen, onClose, lead, campaign }: LeadParece
       return
     }
 
-    // Banco confirmou — operações secundárias com timeout de segurança.
+    // Banco confirmou — registra o parecer como atividade do corretor.
+    // Conta como interação na performance (autoria), independente do dono do lead.
+    if (profile) {
+      db.campaignActivity.insert({
+        id:         `${Date.now()}-act-${Math.random().toString(36).slice(2,7)}`,
+        campaignId: lead.campaignId,
+        leadId:     lead.id,
+        leadName:   lead.name,
+        brokerId:   profile.id,
+        brokerName: profile.name,
+        actionType: 'parecer',
+        metadata:   { situation, stageChanged },
+      }).catch(err => console.error('[activity] parecer:', err))
+    }
+
+    // Operações secundárias com timeout de segurança.
     const prevWasInvalid = prevSituation ? INVALID_PHONE_SITUATIONS.has(prevSituation) : false
     try {
       if (isInvalidPhone && !prevWasInvalid) {

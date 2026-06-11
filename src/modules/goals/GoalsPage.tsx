@@ -17,6 +17,7 @@ import { useWeekSnapshotStore } from '../../store/useWeekSnapshotStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
+import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
 import { Goal, GoalCategory, Task } from '../../types'
 
@@ -169,6 +170,7 @@ interface PeriodData {
 
 function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
   const { getAllInteractions, loadAll, allLoaded } = useLeadInteractionsStore()
+  const { getAll: getCampaignActivities, loadAll: loadCampaignActivities, allLoaded: campaignActivitiesLoaded } = useCampaignActivityStore()
   const { sales }        = useSalesStore()
   // Fonte única: disparo_logs no Supabase (por corretor via RLS)
   const {
@@ -180,6 +182,7 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
 
   useEffect(() => { loadDisparos() }, [loadDisparos])
   useEffect(() => { if (!allLoaded) loadAll() }, [allLoaded, loadAll])
+  useEffect(() => { if (!campaignActivitiesLoaded) loadCampaignActivities() }, [campaignActivitiesLoaded, loadCampaignActivities])
 
   const weekStartMs  = useMemo(() => getWeekStart().getTime(), [])
   const monthStartMs = useMemo(() => getMonthStart().getTime(), [])
@@ -193,7 +196,13 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
     const now    = new Date()
     const today  = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
 
+    // Pareceres em leads de campanha: registro real do corretor, conta como interação.
+    // Disparo já entra como acionamento (disparo_logs) e mudança de etapa não é contato.
+    const campaignRegs = getCampaignActivities().filter(a =>
+      a.actionType === 'parecer' && (!brokerId || a.brokerId === brokerId))
+
     const daily = all.filter(i => REAL_TYPES.has(i.type) && toLocalDate(i.interactedAt) === today).length
+      + campaignRegs.filter(a => toLocalDate(a.createdAt) === today).length
 
     const weekInteract  = all.filter(i => new Date(i.interactedAt) >= wStart)
     const monthInteract = all.filter(i => new Date(i.interactedAt) >= mStart)
@@ -206,7 +215,7 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
     const monthVisits = visitasDone.filter(t => { const d = t.completedAt ?? t.dueDate; return d && new Date(d) >= mStart }).length
 
     return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
-  }, [getAllInteractions, allLoaded, sales, tasks, weekStartMs, monthStartMs, brokerId])
+  }, [getAllInteractions, allLoaded, getCampaignActivities, campaignActivitiesLoaded, sales, tasks, weekStartMs, monthStartMs, brokerId])
 
   return {
     disparosHoje, disparosSemana, disparosMes,

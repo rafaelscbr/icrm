@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
-  MessageCircle, ArrowRight, GitMerge, UserCheck,
+  MessageCircle, ArrowRight, GitMerge, UserCheck, ClipboardList,
   Loader2, Activity, RefreshCw, Calendar, User, Filter,
 } from 'lucide-react'
 import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
@@ -17,6 +17,7 @@ const ACTION_CONFIG: Record<CampaignActivity['actionType'], {
   stage_change: { icon: <ArrowRight    size={13} />, label: 'Mudança de etapa',color: 'text-blue-400',   bg: 'bg-s3/60',   border: 'border-blue-500/20'   },
   transfer:     { icon: <GitMerge      size={13} />, label: 'Migração ao funil',color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
   assignment:   { icon: <UserCheck     size={13} />, label: 'Delegação',      color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
+  parecer:      { icon: <ClipboardList size={13} />, label: 'Parecer',        color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20'   },
 }
 
 // ─── Períodos de filtro ───────────────────────────────────────────────────────
@@ -180,6 +181,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
     dispatch:     filtered.filter(a => a.actionType === 'dispatch').length,
     stage_change: filtered.filter(a => a.actionType === 'stage_change').length,
     transfer:     filtered.filter(a => a.actionType === 'transfer').length,
+    parecer:      filtered.filter(a => a.actionType === 'parecer').length,
   }), [filtered])
 
   return (
@@ -276,6 +278,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
             { label: 'Disparos',     count: counts.dispatch,     color: 'text-green-400',  bg: 'bg-green-500/8'  },
             { label: 'Mudanças',     count: counts.stage_change, color: 'text-blue-400',   bg: 'bg-s3/50'   },
             { label: 'Migrações',    count: counts.transfer,     color: 'text-violet-400', bg: 'bg-violet-500/8' },
+            { label: 'Pareceres',    count: counts.parecer,      color: 'text-cyan-400',   bg: 'bg-cyan-500/8'   },
           ].map(s => (
             <div key={s.label} className={`rounded-xl ${s.bg} border border-line px-3 py-2.5 text-center`}>
               <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.count}</p>

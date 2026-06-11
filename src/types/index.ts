@@ -204,7 +204,7 @@ export interface CampaignParticipant {
   addedAt:    string
 }
 
-export type CampaignActivityType = 'dispatch' | 'stage_change' | 'transfer' | 'assignment'
+export type CampaignActivityType = 'dispatch' | 'stage_change' | 'transfer' | 'assignment' | 'parecer'
 
 export interface CampaignActivity {
   id:          string

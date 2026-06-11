@@ -1125,6 +1125,16 @@ export const db = {
   },
 
   campaignActivity: {
+    // Todas as campanhas — alimenta a contagem de performance por corretor
+    // (RLS: corretor enxerga só as próprias atividades; admin enxerga tudo)
+    fetchAll: async (limit = 5000): Promise<CampaignActivity[]> => {
+      const { data, error } = await supabase
+        .from('campaign_activity_log').select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (error) throw error
+      return (data as CampaignActivityRow[]).map(toCampaignActivity)
+    },
     fetchForCampaign: async (campaignId: string, limit = 500, since?: string): Promise<CampaignActivity[]> => {
       let q = supabase
         .from('campaign_activity_log').select('*')
