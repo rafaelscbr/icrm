@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   History, ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus,
-  Footprints, FileText, BadgeDollarSign, Target,
+  Footprints, FileText, BadgeDollarSign, Target, Zap,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -17,12 +17,14 @@ import { WeekSnapshot, GoalCategory } from '../../types'
 const MONTHS_PT_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 const CATEGORY_ICON: Record<GoalCategory, typeof Target> = {
+  acionamento: Zap,
   visita:   Footprints,
   proposta: FileText,
   venda:    BadgeDollarSign,
 }
 
 const CATEGORY_COLOR: Record<GoalCategory, { text: string; bar: string }> = {
+  acionamento: { text: 'text-cyan-400', bar: 'bg-cyan-500'   },
   visita:   { text: 'text-brand',       bar: 'bg-indigo-500' },
   proposta: { text: 'text-amber-400',   bar: 'bg-amber-500'  },
   venda:    { text: 'text-green-400',   bar: 'bg-green-500'  },

@@ -248,6 +248,7 @@ function GoalRing({ value, target, hex }: { value: number; target: number; hex: 
 }
 
 const CAT_CFG: Record<GoalCategory, { icon: typeof Target; text: string; bg: string; border: string; hex: string; label: string }> = {
+  acionamento: { icon: Zap,          text: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/25',   hex: '#06b6d4', label: 'Acionamento' },
   visita:   { icon: Footprints,      text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25', hex: '#6366f1', label: 'Visita'   },
   proposta: { icon: FileText,        text: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25',  hex: '#f59e0b', label: 'Proposta' },
   venda:    { icon: BadgeDollarSign, text: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25',  hex: '#22c55e', label: 'Venda'    },
@@ -472,6 +473,8 @@ export function GoalsPage() {
   const { sales: allSales, load: loadSales }  = useSalesStore()
   const { checkAndSave, snapshots, load: loadSnapshots } = useWeekSnapshotStore()
   const { isAdmin, viewAsBrokerId, profile }  = useAuthStore()
+  // Acionamentos do período (disparos sem followup) — alimenta metas de acionamento
+  const { countWeekNew: disparosWeek, countMonthNew: disparosMonth } = useDisparosStore()
 
   const [tab,          setTab]          = useState<PeriodTab>('semana')
   const [formOpen,     setFormOpen]     = useState(false)
@@ -577,7 +580,7 @@ export function GoalsPage() {
           {otherGoals.map(goal => (
             <GoalCard
               key={goal.id} goal={goal}
-              progress={calcProgress(goal, tasks, sales)}
+              progress={calcProgress(goal, tasks, sales, { week: disparosWeek, month: disparosMonth })}
               onEdit={() => { setEditing(goal); setFormOpen(true) }}
               onDelete={() => setDeleteTarget(goal)}
               onPause={() => update(goal.id, { active: false })}

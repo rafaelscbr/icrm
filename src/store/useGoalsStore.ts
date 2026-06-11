@@ -170,6 +170,9 @@ import { Task, Sale } from '../types'
 
 /** Computes progress for any goal within an explicit YYYY-MM-DD date range. */
 export function calcProgressForRange(goal: Goal, tasks: Task[], sales: Sale[], start: string, end: string): number {
+  // Acionamentos vivem em disparo_logs, não em tasks/sales — quem precisa do
+  // número usa useDisparosStore (página de metas) ou a RPC dashboard_performance.
+  if (goal.category === 'acionamento') return 0
   if (goal.category === 'venda') {
     return sales.filter(s => s.date >= start && s.date <= end).length
   }
@@ -182,7 +185,13 @@ export function calcProgressForRange(goal: Goal, tasks: Task[], sales: Sale[], s
   }).length
 }
 
-export function calcProgress(goal: Goal, tasks: Task[], sales: Sale[]): number {
+export function calcProgress(
+  goal: Goal, tasks: Task[], sales: Sale[],
+  disparos?: { week: number; month: number },
+): number {
+  if (goal.category === 'acionamento') {
+    return goal.period === 'weekly' ? (disparos?.week ?? 0) : (disparos?.month ?? 0)
+  }
   if (goal.category === 'venda') {
     const { start, end } = getMonthRangeDates()
     return sales.filter(s => s.date >= start && s.date <= end).length

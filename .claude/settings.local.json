@@ -97,7 +97,17 @@
       "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__get_edge_function",
       "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__deploy_edge_function",
       "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__get_advisors",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__get_project",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(sed -n 240,260p /Users/rafasouza/Documents/icrm/src/types/index.ts)",
+      "Bash(sed -n 330,345p /Users/rafasouza/Documents/icrm/src/types/index.ts)",
+      "Bash(sed -n 1,60p /Users/rafasouza/Documents/icrm/src/modules/goals/GoalsPage.tsx)",
+      "Bash(sed -n 490,610p /Users/rafasouza/Documents/icrm/src/modules/goals/GoalsPage.tsx)",
+      "Bash(sed -n '1,40p' /Users/rafasouza/Documents/icrm/src/components/ui/Input.tsx)",
+      "Bash(sed -n '1,40p' /Users/rafasouza/Documents/icrm/src/components/ui/Select.tsx)",
+      "Bash(npx eslint *)"
     ]
   }
 }

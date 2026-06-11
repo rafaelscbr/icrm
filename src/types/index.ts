@@ -240,7 +240,7 @@ export const DAILY_TARGETS = {
 
 // ─── Metas ───────────────────────────────────────────────────────────────────
 
-export type GoalCategory = 'visita' | 'proposta' | 'venda'
+export type GoalCategory = 'acionamento' | 'visita' | 'proposta' | 'venda'
 export type GoalPeriod   = 'weekly' | 'monthly'
 
 export interface Goal {

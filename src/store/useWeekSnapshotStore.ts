@@ -66,7 +66,9 @@ export const useWeekSnapshotStore = create<WeekSnapshotStore>((set, get) => ({
     const brokerId = getCurrentUserId()
     if (!brokerId) return
 
-    const weeklyGoals = goals.filter(g => g.active && g.period === 'weekly')
+    // Acionamento fica fora do snapshot: o realizado vem de disparo_logs e não é
+    // reconstituível retroativamente a partir de tasks/sales — gravaria 0 errado.
+    const weeklyGoals = goals.filter(g => g.active && g.period === 'weekly' && g.category !== 'acionamento')
     if (weeklyGoals.length === 0) return
 
     // Find earliest date in the dataset so we don't snapshot empty pre-app weeks

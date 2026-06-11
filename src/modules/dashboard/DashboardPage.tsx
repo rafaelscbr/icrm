@@ -8,6 +8,7 @@ import {
   ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { Task, Contact, Property, Lead, LeadFunnelStage, FunnelStage, calcSaleCommissions } from '../../types'
+import { PerformanceGoalsWidget } from './PerformanceGoalsWidget'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadModal } from '../leads/LeadModal'
 import { PageLayout } from '../../components/layout/PageLayout'
@@ -754,6 +755,9 @@ export function DashboardPage() {
         </div>
         <PeriodSelector />
       </div>
+
+      {/* 0. Meta x Realizado — desempenho vem antes dos números */}
+      <PerformanceGoalsWidget />
 
       {/* 1. KPI strip — topo para visão rápida */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
