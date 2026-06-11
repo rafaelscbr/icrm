@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { Lead } from '../../types'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { STAGE_CONFIG } from './LeadKanban'
 
 const STAGES = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda'] as const
@@ -64,10 +65,16 @@ interface Props {
 
 export function LeadsPerformance({ leads }: Props) {
   const { byLead, loadAll, allLoaded } = useLeadInteractionsStore()
+  const { isAdmin, viewAsBrokerId } = useAuthStore()
 
   useEffect(() => { if (!allLoaded) loadAll() }, [allLoaded])
 
-  const allInteractions = useMemo(() => Object.values(byLead).flat(), [byLead])
+  // Mesma visão da LeadsPage: admin vendo "Corretor X" conta só as interações
+  // feitas por ele (autoria via brokerId, inclusive em leads de campanha de outros)
+  const allInteractions = useMemo(() => {
+    const all = Object.values(byLead).flat()
+    return isAdmin && viewAsBrokerId ? all.filter(i => i.brokerId === viewAsBrokerId) : all
+  }, [byLead, isAdmin, viewAsBrokerId])
 
   // ── Semana atual e anterior ───────────────────────────────────────────────
   const thisWeekStart = startOfWeek(0)

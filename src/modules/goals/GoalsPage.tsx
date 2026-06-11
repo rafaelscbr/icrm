@@ -167,7 +167,7 @@ interface PeriodData {
   monthSales: number
 }
 
-function usePeriodData(tasks: Task[]): PeriodData {
+function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
   const { getAllInteractions, loadAll, allLoaded } = useLeadInteractionsStore()
   const { sales }        = useSalesStore()
   // Fonte única: disparo_logs no Supabase (por corretor via RLS)
@@ -185,7 +185,9 @@ function usePeriodData(tasks: Task[]): PeriodData {
   const monthStartMs = useMemo(() => getMonthStart().getTime(), [])
 
   const metrics = useMemo(() => {
-    const all    = getAllInteractions()
+    // Atribuição pela autoria: interações que o corretor fez (inclusive em leads
+    // de campanha de outros) contam para ele. Sem brokerId (visão global), conta tudo.
+    const all    = brokerId ? getAllInteractions().filter(i => i.brokerId === brokerId) : getAllInteractions()
     const wStart = new Date(weekStartMs)
     const mStart = new Date(monthStartMs)
     const now    = new Date()
@@ -204,7 +206,7 @@ function usePeriodData(tasks: Task[]): PeriodData {
     const monthVisits = visitasDone.filter(t => { const d = t.completedAt ?? t.dueDate; return d && new Date(d) >= mStart }).length
 
     return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
-  }, [getAllInteractions, allLoaded, sales, tasks, weekStartMs, monthStartMs])
+  }, [getAllInteractions, allLoaded, sales, tasks, weekStartMs, monthStartMs, brokerId])
 
   return {
     disparosHoje, disparosSemana, disparosMes,
@@ -387,8 +389,8 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
 
 // ─── Bloco hero com score e KPIs de período ────────────────────────────────
 
-function PerformanceHero({ tasks, period }: { tasks: Task[]; period: PeriodTab }) {
-  const data = usePeriodData(tasks)
+function PerformanceHero({ tasks, period, brokerId }: { tasks: Task[]; period: PeriodTab; brokerId: string | null }) {
+  const data = usePeriodData(tasks, brokerId)
 
   const kpis = useMemo(() => {
     if (period === 'hoje') return [
@@ -541,7 +543,7 @@ export function GoalsPage() {
       </div>
 
       {/* ── Hero de performance + KPIs ─────────────────────────────────── */}
-      <PerformanceHero tasks={tasks} period={tab} />
+      <PerformanceHero tasks={tasks} period={tab} brokerId={effectiveBrokerId} />
 
       {/* Histórico */}
       {snapshots.length > 0 && (

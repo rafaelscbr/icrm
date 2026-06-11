@@ -131,10 +131,9 @@ export function BrokersTab() {
   const stats = useMemo((): BrokerStats[] => {
     return brokers.map(broker => {
       const brokerLeads = allLeads.filter(l => l.brokerId === broker.id)
-      const brokerInts  = allInteractions.filter(i => {
-        const lead = allLeads.find(l => l.id === i.leadId)
-        return lead?.brokerId === broker.id
-      })
+      // Atribui pela autoria (quem registrou a interação), não pelo dono do lead —
+      // interações em leads de campanha de outro corretor contam para quem agiu.
+      const brokerInts  = allInteractions.filter(i => i.brokerId === broker.id)
 
       // Compara apenas YYYY-MM-DD — evita offset UTC-3 excluir registros do dia correto.
       // LeadForm salva created_at como midnight UTC do dia selecionado; interactions
@@ -169,10 +168,7 @@ export function BrokersTab() {
     const result: Record<string, Partial<BrokerStats>> = {}
     brokers.forEach(broker => {
       if (period === 'total') { result[broker.id] = {}; return }
-      const brokerInts = allInteractions.filter(i => {
-        const lead = allLeads.find(l => l.id === i.leadId)
-        return lead?.brokerId === broker.id
-      })
+      const brokerInts = allInteractions.filter(i => i.brokerId === broker.id)
       const inPrevRange = (iso: string) => iso.substring(0, 10) >= prevFromStr && iso.substring(0, 10) < fromStr
       result[broker.id] = {
         interactions:    brokerInts.filter(i => REAL_TYPES.has(i.type) && inPrevRange(i.interactedAt)).length,
@@ -183,7 +179,7 @@ export function BrokersTab() {
       }
     })
     return result
-  }, [brokers, allLeads, allInteractions, prevFromStr, fromStr, period, prevDisparos])
+  }, [brokers, allInteractions, prevFromStr, fromStr, period, prevDisparos])
 
   if (brokers.length === 0) {
     return (
