@@ -18,11 +18,11 @@ export function fmt(v: number) {
 
 // ── Moldura ───────────────────────────────────────────────────────────────────
 
-export function CardFrame({ children }: { children: ReactNode }) {
+export function CardFrame({ children, width = 420 }: { children: ReactNode; width?: number }) {
   return (
     <div
       style={{
-        width: 420,
+        width,
         background: '#FFFFFF',
         borderRadius: 24,
         overflow: 'hidden',

@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { SimuladorModo, SharedFields } from './shared/types'
 import { PosChavesSimulator } from './posChaves/Simulator'
 import { DiretoSimulator } from './direto/Simulator'
+import { AssociativoSimulator } from './associativo/Simulator'
 
 // Shell do simulador: header + seletor de modo + renderização do modo ativo.
 // Cada modo vive em sua própria pasta (calc.ts + Simulator.tsx + Card.tsx) e
@@ -13,7 +14,7 @@ import { DiretoSimulator } from './direto/Simulator'
 const MODOS: { value: SimuladorModo; label: string; disabled?: boolean }[] = [
   { value: 'pos_chaves',  label: 'Pós-chaves' },
   { value: 'direto',      label: 'Direto com a Construtora' },
-  { value: 'associativo', label: 'Associativo', disabled: true },
+  { value: 'associativo', label: 'Associativo' },
 ]
 
 export function SimuladorPage() {
@@ -84,6 +85,9 @@ export function SimuladorPage() {
         )}
         {modo === 'direto' && (
           <DiretoSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} />
+        )}
+        {modo === 'associativo' && (
+          <AssociativoSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} />
         )}
       </div>
     </div>
