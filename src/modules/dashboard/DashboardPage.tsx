@@ -680,7 +680,7 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const [taskFormOpen,  setTaskFormOpen]  = useState(false)
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
-  const { isAdmin, profile, allProfiles, viewAsBrokerId } = useAuthStore()
+  const { isAdmin, profile, allProfiles } = useAuthStore()
   const firstName = profile?.name?.split(' ')[0] ?? 'Corretor'
   // Mapa brokerId → nome para exibição nos alertas
   const brokerNames = useMemo(() =>
@@ -694,7 +694,7 @@ export function DashboardPage() {
   const { tasks, load: loadTasks, getUpcoming, getOverdue, loading: loadingTasks }     = useTasksStore()
   const { load: loadCampaigns }    = useCampaignsStore()
   const { load: loadCampLeads }    = useCampaignLeadsStore()
-  const { leads, load: loadMyLeads, loading: loadingLeads } = useLeadsStore()
+  const { load: loadMyLeads, loading: loadingLeads } = useLeadsStore()
   const { loadAll: loadInteractions } = useLeadInteractionsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
@@ -756,10 +756,31 @@ export function DashboardPage() {
         <PeriodSelector />
       </div>
 
-      {/* 0. Meta x Realizado — desempenho vem antes dos números */}
+      {/* 1. Meta x Realizado — desempenho é o protagonista */}
       <PerformanceGoalsWidget />
 
-      {/* 1. KPI strip — topo para visão rápida */}
+      {/* 2. Ação imediata — tarefas em atraso */}
+      <OverdueCard
+        tasks={overdueTasks}
+        contacts={contacts}
+        properties={properties}
+        onNavigate={() => navigate('/tarefas')}
+      />
+
+      {/* 3. Leads sem contato — esfriam a cada dia */}
+      <LeadAlertsWidget
+        onOpenLead={setSelectedLead}
+        onNavigate={() => navigate('/leads')}
+        brokerNames={brokerNames}
+      />
+
+      {/* 4. Pipeline de Campanhas */}
+      <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
+
+      {/* 5. Leads congelados em campanhas */}
+      <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
+
+      {/* 6. Números do período */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="relative bg-surface border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
@@ -786,7 +807,7 @@ export function DashboardPage() {
         <StatCard label={`Vendas — ${periodLabel}`} value={formatCurrency(valueInPeriod)} sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`} icon={<TrendingUp size={16} />} accent="purple" />
       </div>
 
-      {/* 2. Comissões do período */}
+      {/* 6b. Comissões do período */}
       {salesInPeriod.length > 0 && (
         <div className="grid grid-cols-2 gap-4 mb-6">
           <StatCard label={`Comissão gerada — ${periodLabel}`} value={formatCurrencyFull(periodComm)} sub="soma das comissões negociadas" icon={<DollarSign size={18} />} accent="purple" />
@@ -794,55 +815,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* 3. Tarefas em atraso */}
-      <OverdueCard
-        tasks={overdueTasks}
-        contacts={contacts}
-        properties={properties}
-        onNavigate={() => navigate('/tarefas')}
-      />
-
-      {/* 4. Alertas de leads sem contato */}
-      <LeadAlertsWidget
-        onOpenLead={setSelectedLead}
-        onNavigate={() => navigate('/leads')}
-        brokerNames={brokerNames}
-      />
-
-      {/* 5a. Meu desempenho — admin como corretor (sem viewAs) */}
-      {isAdmin && !viewAsBrokerId && (() => {
-        const myLeads  = leads.filter(l => l.brokerId === profile?.id && !l.discardReason)
-        const myTasks  = tasks.filter(t =>
-          (t.brokerId === profile?.id || t.participants?.includes(profile?.id ?? ''))
-          && t.status !== 'done'
-        )
-        const mySales  = salesInPeriod.filter(s => s.brokerId === profile?.id)
-        if (myLeads.length === 0 && mySales.length === 0) return null
-        return (
-          <div className="mb-6 p-4 rounded-xl border border-brand/20 bg-brand/5">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-[10px] font-bold text-[#0B0F1C]">
-                {(profile?.name ?? 'R').charAt(0).toUpperCase()}
-              </div>
-              <p className="text-xs font-bold text-brand uppercase tracking-wider">Meu desempenho — {firstName}</p>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Leads ativos',    value: myLeads.length,           color: 'text-brand'      },
-                { label: `Vendas no período`, value: mySales.length,         color: 'text-green-400'  },
-                { label: 'Tarefas abertas', value: myTasks.length,           color: 'text-violet-400' },
-              ].map(k => (
-                <div key={k.label} className="bg-s2/40 rounded-xl p-3 text-center">
-                  <p className={`text-2xl font-black tabular-nums ${k.color}`}>{k.value}</p>
-                  <p className="text-[10px] text-t4 mt-0.5">{k.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      })()}
-
-      {/* 5b. Corretores online — visível só para admin */}
+      {/* 7. Corretores online — visível só para admin */}
       {isAdmin && (
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
@@ -853,10 +826,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* 6. Pipeline de Campanhas */}
-      <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
-
-      {/* 7. Aniversários + Últimas vendas */}
+      {/* 8. Aniversários + Últimas vendas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card accent="yellow" className="animate-slide-up">
           <div className="flex items-center gap-2 mb-4">
@@ -931,11 +901,8 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* 8. Próximas tarefas */}
+      {/* 9. Próximas tarefas */}
       <UpcomingCard tasks={upcomingTasks} contacts={contacts} properties={properties} onNavigate={() => navigate('/tarefas')} />
-
-      {/* 9. Leads congelados em campanhas */}
-      <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
       {/* 10. Potencial de recompra */}
       <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
