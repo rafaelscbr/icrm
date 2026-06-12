@@ -95,14 +95,17 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
-  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, setStage, leads } = useLeadsStore()
+  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, setStage, transfer, leads } = useLeadsStore()
   const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
 
   const { add: addContact, getById }       = useContactsStore()
   const { add: addInteraction, getForLead } = useLeadInteractionsStore()
   const { properties }                      = usePropertiesStore()
   const { getByType }                       = useLeadConfigStore()
-  const { profile, isAdmin, allProfiles }   = useAuthStore()
+  const { profile, isAdmin, allProfiles, fetchAllProfiles } = useAuthStore()
+
+  // Transferência: admin transfere qualquer lead; corretor transfere os seus
+  const canTransfer = isAdmin || (!!profile && lead.brokerId === profile.id)
 
   const discardReasons = useMemo(() => getByType('discard_reason'), [getByType])
 
@@ -220,12 +223,16 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     } catch { /* erro já toastado */ }
   }
 
+  // Transferência completa via RPC: auditoria em lead_assignments, nota no
+  // histórico, notificação ao novo responsável e realinhamento RLS do contato
   async function handleReassignBroker(brokerId: string, name: string) {
     setShowBrokerMenu(false)
     if (brokerId === lead.brokerId) return
     try {
-      await update(lead.id, { brokerId })
-      toast.success(`Responsável: ${name}`)
+      await transfer(lead.id, brokerId)
+      toast.success(`Lead transferido para ${name}`)
+      // Corretor (não-admin) transferiu para outro: o lead saiu da lista dele
+      if (!isAdmin) onClose()
     } catch { /* erro já toastado */ }
   }
 
@@ -356,19 +363,23 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <span className="text-t5" aria-hidden="true">·</span>
                   <span className="font-label text-xs text-t4 tabular-nums">{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
 
-                  {/* Corretor responsável — sempre visível; admin reatribui em 1 clique */}
+                  {/* Corretor responsável — sempre visível; admin ou dono transfere em 1 clique */}
                   {(brokerName || isAdmin) && (
                     <>
                       <span className="text-t5" aria-hidden="true">·</span>
                       <div className="relative">
                         <button
-                          onClick={() => isAdmin && setShowBrokerMenu(v => !v)}
-                          disabled={!isAdmin}
-                          title={isAdmin ? 'Trocar corretor responsável' : `Corretor responsável: ${brokerName}`}
-                          aria-haspopup={isAdmin ? 'listbox' : undefined}
-                          aria-expanded={isAdmin ? showBrokerMenu : undefined}
+                          onClick={() => {
+                            if (!canTransfer) return
+                            if (allProfiles.length === 0) fetchAllProfiles()
+                            setShowBrokerMenu(v => !v)
+                          }}
+                          disabled={!canTransfer}
+                          title={canTransfer ? 'Transferir lead para outro corretor' : `Corretor responsável: ${brokerName}`}
+                          aria-haspopup={canTransfer ? 'listbox' : undefined}
+                          aria-expanded={canTransfer ? showBrokerMenu : undefined}
                           className={`flex items-center gap-1.5 pl-1 pr-2 py-0.5 rounded-full bg-brand-tint border border-brand/25 transition-all duration-150
-                            ${isAdmin ? 'cursor-pointer hover:border-brand/50' : 'cursor-default'}`}
+                            ${canTransfer ? 'cursor-pointer hover:border-brand/50' : 'cursor-default'}`}
                         >
                           <span className="w-4 h-4 rounded-full bg-brand flex items-center justify-center font-heading text-[10px] font-bold text-[#0F1730]">
                             {(brokerName ?? '?').charAt(0).toUpperCase()}
@@ -376,17 +387,17 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                           <span className="font-label text-[11px] text-brand-text truncate max-w-[120px]">
                             {brokerName ? brokerName.split(' ')[0] : 'Atribuir'}
                           </span>
-                          {isAdmin && <ChevronDown size={10} strokeWidth={1.6} className="text-brand-text" aria-hidden="true" />}
+                          {canTransfer && <ChevronDown size={10} strokeWidth={1.6} className="text-brand-text" aria-hidden="true" />}
                         </button>
-                        {isAdmin && showBrokerMenu && (
+                        {canTransfer && showBrokerMenu && (
                           <>
                             <div className="fixed inset-0 z-10" onClick={() => setShowBrokerMenu(false)} aria-hidden="true" />
                             <div
                               className="absolute left-0 top-full mt-1 z-20 min-w-[200px] bg-surface border border-line rounded-[14px] shadow-dropdown overflow-hidden py-1"
                               role="listbox"
-                              aria-label="Corretor responsável"
+                              aria-label="Transferir lead para"
                             >
-                              {allProfiles.map(p => (
+                              {allProfiles.filter(p => p.active).map(p => (
                                 <button
                                   key={p.id}
                                   role="option"

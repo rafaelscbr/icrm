@@ -25,6 +25,7 @@ interface LeadsStore {
   discard: (id: string, reason: LeadDiscardReason) => Promise<void>
   restore: (id: string) => Promise<void>
   convertToContact: (id: string, contactId: string) => Promise<void>
+  transfer: (id: string, toBrokerId: string) => Promise<void>
   toggleFlag: (id: string) => Promise<void>
   reorder: (id: string, kanbanOrder: number) => Promise<void>
   search: (query: string) => Lead[]
@@ -364,6 +365,20 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     if (contact) await db.contacts.upsert(contact)
     await db.leads.upsert(updated)
     set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
+  },
+
+  // Banco primeiro: a RPC valida permissão (dono/admin) e grava a trilha completa.
+  // Se eu deixei de ser o dono e não sou admin, o lead sai da minha lista (RLS).
+  transfer: async (id, toBrokerId) => {
+    await db.leads.transfer(id, toBrokerId)
+    const me = getCurrentUserId()
+    const { useAuthStore } = await import('./useAuthStore')
+    const isAdmin = useAuthStore.getState().isAdmin
+    set(s => ({
+      leads: (!isAdmin && toBrokerId !== me)
+        ? s.leads.filter(l => l.id !== id)
+        : s.leads.map(l => l.id === id ? { ...l, brokerId: toBrokerId, updatedAt: new Date().toISOString() } : l),
+    }))
   },
 
   toggleFlag: async (id) => {

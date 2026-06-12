@@ -870,6 +870,17 @@ export const db = {
     fetchAll: () => fetchAll<LeadRow, Lead>('leads', toLead),
     upsert:   (l: Lead) => upsertOne('leads', fromLead(l)),
     delete:   (id: string) => deleteOne('leads', id),
+    // Transferência manual — RPC SECURITY DEFINER valida dono/admin e grava
+    // auditoria (lead_assignments), interação e notificação numa transação
+    transfer: async (leadId: string, toBrokerId: string): Promise<void> => {
+      const { error } = await supabase.rpc('transfer_lead', {
+        p_lead_id: leadId, p_to_broker: toBrokerId,
+      })
+      if (error) {
+        toast.error(`Erro ao transferir lead: ${error.message}`)
+        throw error
+      }
+    },
   },
 
   leadInteractions: {
