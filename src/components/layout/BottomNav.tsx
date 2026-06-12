@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
-  Building2, Megaphone, BarChart3, X,
+  Building2, Megaphone, BarChart3, X, Bell,
   Search, Home, Tv2, ExternalLink, Plus, UserPlus, ArrowLeftRight,
   LogOut, ShieldCheck, Target, Database,
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSearchStore } from '../../store/useSearchStore'
+import { useUnreadCount } from '../../store/useNotificationsStore'
 
 const mainNav = [
   { to: '/',         icon: LayoutDashboard, label: 'Início',   end: true  },
@@ -43,6 +44,7 @@ export function BottomNav() {
   const navigate  = useNavigate()
   const { profile, isAdmin, logout } = useAuthStore()
   const setSearchOpen = useSearchStore(s => s.setOpen)
+  const unreadCount = useUnreadCount()
 
   const initial = (profile?.name ?? 'U').charAt(0).toUpperCase()
 
@@ -107,6 +109,45 @@ export function BottomNav() {
               )}
             </NavLink>
           ))}
+
+          {/* Notificações — sino sempre visível com contagem de não lidas */}
+          <NavLink
+            to="/notificacoes"
+            onClick={() => setDrawerOpen(false)}
+            aria-label={unreadCount > 0
+              ? `Notificações — ${unreadCount} não lida${unreadCount !== 1 ? 's' : ''}`
+              : 'Notificações'}
+            className="flex flex-col items-center justify-center gap-1 flex-1 h-full px-1 rounded-xl transition-all duration-150 active:scale-95"
+          >
+            {({ isActive }) => (
+              <>
+                <div
+                  className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+                  style={{ background: isActive ? 'var(--brand-tint)' : 'transparent' }}
+                >
+                  <Bell
+                    size={18}
+                    strokeWidth={isActive ? 2.5 : 2}
+                    style={{ color: isActive || unreadCount > 0 ? 'var(--brand)' : 'var(--nav-muted)' }}
+                  />
+                  {unreadCount > 0 && (
+                    <span
+                      className="absolute -top-0.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-brand text-[#0F1730] text-[11px] font-bold flex items-center justify-center tabular-nums leading-none"
+                      aria-hidden="true"
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className="text-[11px] font-medium leading-none max-w-full truncate"
+                  style={{ color: isActive ? 'var(--brand-text)' : 'var(--nav-muted)' }}
+                >
+                  Avisos
+                </span>
+              </>
+            )}
+          </NavLink>
 
           {/* Mais */}
           <button
