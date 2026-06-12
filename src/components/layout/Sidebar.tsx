@@ -374,22 +374,39 @@ export function Sidebar() {
 
       {/* ── Footer ───────────────────────────────────────────────── */}
       <div className="px-3 py-3 flex flex-col gap-1" style={{ borderTop: '1px solid var(--nav-line)' }}>
-        {/* Notificações — popover real */}
+        {/* Notificações — mesmo padrão visual dos itens de navegação */}
         <button
           ref={bellRef}
           onClick={() => setNotifOpen(v => !v)}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer"
+          aria-haspopup="dialog"
+          aria-expanded={notifOpen}
+          aria-label={unreadCount > 0
+            ? `Notificações — ${unreadCount} não lida${unreadCount !== 1 ? 's' : ''}`
+            : 'Notificações'}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
           style={{
-            color: 'var(--nav-text)',
-            background: notifOpen ? 'var(--nav-hover-bg)' : '',
+            color: notifOpen ? 'var(--nav-active-text)' : 'var(--nav-text)',
+            background: notifOpen ? 'var(--nav-active-bg)' : '',
+            borderLeft: notifOpen ? '3px solid var(--brand)' : '3px solid transparent',
+            paddingLeft: 'calc(0.75rem - 3px)',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover-bg)' }}
+          onMouseEnter={e => { if (!notifOpen) e.currentTarget.style.background = 'var(--nav-hover-bg)' }}
           onMouseLeave={e => { if (!notifOpen) e.currentTarget.style.background = '' }}
         >
-          <Bell size={14} style={{ color: unreadCount > 0 ? 'var(--brand)' : 'var(--nav-muted)' }} />
-          <span className="flex-1 text-left text-xs">Notificações</span>
+          <span className="relative flex-shrink-0" aria-hidden="true">
+            <Bell
+              size={16}
+              style={{ color: notifOpen || unreadCount > 0 ? 'var(--brand)' : 'var(--nav-muted)' }}
+              className="transition-colors"
+            />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand animate-pulse ring-2"
+                style={{ ['--tw-ring-color' as string]: 'var(--nav-bg)' }} />
+            )}
+          </span>
+          <span className="flex-1 text-left truncate">Notificações</span>
           {unreadCount > 0 && (
-            <span className="min-w-[16px] h-4 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center px-1">
+            <span className="min-w-[18px] h-[18px] rounded-full bg-brand text-[#0F1730] text-[11px] font-bold flex items-center justify-center px-1 tabular-nums flex-shrink-0">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
