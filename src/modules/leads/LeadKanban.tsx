@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadInteractionType } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
@@ -106,9 +107,15 @@ function LeadCard({
   lead: Lead; onClick: () => void; isOverlay?: boolean; isSaving?: boolean
 }) {
   const { advanceFollowup, toggleFlag, update } = useLeadsStore()
+  const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { add: addInteraction, getForLead } = useLeadInteractionsStore()
+
+  // Visão admin global: identifica o corretor responsável em cada card
+  const brokerName = isAdmin && !viewAsBrokerId && lead.brokerId
+    ? allProfiles.find(p => p.id === lead.brokerId)?.name
+    : undefined
 
   const {
     attributes, listeners, setNodeRef,
@@ -223,6 +230,14 @@ function LeadCard({
               <originMeta.icon size={11} strokeWidth={1.6} className="text-t4 flex-shrink-0" aria-label={originMeta.label} />
             )}
             <span className="font-label text-[10px] text-t4 tabular-nums tracking-wide">{formatPhone(displayPhone)}</span>
+            {brokerName && (
+              <span
+                title={`Corretor responsável: ${brokerName}`}
+                className="font-label text-[9px] font-medium uppercase tracking-[0.08em] text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-px rounded-full truncate max-w-[80px] flex-shrink-0"
+              >
+                {brokerName.split(' ')[0]}
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -42,8 +42,14 @@ type Tab = 'leads' | 'kanban' | 'dashboard' | 'performance' | 'configuracoes'
 function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const { advanceFollowup } = useLeadsStore()
   const { add: addInteraction } = useLeadInteractionsStore()
+  const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
+
+  // Visão admin global: identifica o corretor responsável
+  const brokerName = isAdmin && !viewAsBrokerId && lead.brokerId
+    ? allProfiles.find(p => p.id === lead.brokerId)?.name
+    : undefined
   const property     = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact      = lead.contactId  ? getById(lead.contactId) : undefined
   const displayName  = contact?.name   ?? lead.name
@@ -82,6 +88,14 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-t1 truncate">{displayName}</span>
           <SlaBadge lead={lead} />
+          {brokerName && (
+            <span
+              title={`Corretor responsável: ${brokerName}`}
+              className="font-label text-[9px] font-medium uppercase tracking-[0.08em] text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-px rounded-full flex-shrink-0"
+            >
+              {brokerName.split(' ')[0]}
+            </span>
+          )}
           {lead.contactId && (
             <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 flex-shrink-0">
               <UserCheck size={8} /> No CRM

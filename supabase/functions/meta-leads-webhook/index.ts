@@ -37,7 +37,7 @@ async function verifySignature(body: string, header: string, secret: string): Pr
 async function fetchLeadData(leadgenId: string): Promise<Record<string, unknown> | null> {
   const url =
     `https://graph.facebook.com/v23.0/${leadgenId}` +
-    `?fields=field_data,ad_name,form_id,created_time` +
+    `?fields=field_data,ad_name,campaign_name,adset_name,form_id,created_time` +
     `&access_token=${ACCESS_TOKEN}`
   try {
     const res  = await fetch(url)
@@ -49,6 +49,25 @@ async function fetchLeadData(leadgenId: string): Promise<Record<string, unknown>
     return data
   } catch (err) {
     console.error(`[meta] fetch Graph API falhou para ${leadgenId}:`, err)
+    return null
+  }
+}
+
+// Busca o nome do formulário — convenção: o formulário leva o nome do projeto,
+// que vira o produto de interesse do lead (leads.property_name)
+async function fetchFormName(formId: string | null): Promise<string | null> {
+  if (!formId) return null
+  try {
+    const res  = await fetch(
+      `https://graph.facebook.com/v23.0/${formId}?fields=name&access_token=${ACCESS_TOKEN}`,
+    )
+    const data = await res.json() as Record<string, unknown>
+    if (data.error) {
+      console.warn(`[meta] sem acesso ao nome do form ${formId}:`, JSON.stringify(data.error))
+      return null
+    }
+    return (data.name as string) ?? null
+  } catch {
     return null
   }
 }
@@ -149,7 +168,10 @@ Deno.serve(async (req: Request) => {
           continue
         }
 
-        // 3. Atualiza evento com o payload completo
+        // 3. Enriquece com o nome do formulário (= nome do projeto) e atualiza o evento
+        const formName = await fetchFormName((graphData.form_id as string) ?? c.form_id)
+        if (formName) graphData.form_name = formName
+
         await supabase
           .from('meta_webhook_events')
           .update({
