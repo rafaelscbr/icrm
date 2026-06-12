@@ -112,7 +112,8 @@
       "Bash(sed -n '125,165p' /Users/rafasouza/Documents/icrm/src/modules/campaigns/LeadsTab.tsx)",
       "Bash(sed -n '135,165p' /Users/rafasouza/Documents/icrm/src/modules/campaigns/ActivityTab.tsx)",
       "Bash(curl -s -w '\\\\nHTTP: %{http_code}\\\\n' -G https://dczexbzsfdavcrwiungk.supabase.co/functions/v1/meta-leads-webhook --data-urlencode hub.mode=subscribe --data-urlencode 'hub.verify_token=efqjhei13oi4u123f1EF@#' --data-urlencode hub.challenge=teste-claude-123)",
-      "Bash(sort -t: -k2 -rn)"
+      "Bash(sort -t: -k2 -rn)",
+      "Bash(python3 -c \"import sys; print\\(len\\(sys.stdin.read\\(\\)\\), 'chars'\\)\")"
     ]
   }
 }
