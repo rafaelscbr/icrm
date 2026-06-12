@@ -179,18 +179,18 @@ export function ActivityLogsPage() {
                         {cfg?.label ?? log.action}
                       </span>
                       {log.page && (
-                        <span className="text-[10px] text-t4 bg-s3/50 px-1.5 py-0.5 rounded">
+                        <span className="text-[11px] text-t4 bg-s3/50 px-1.5 py-0.5 rounded">
                           {pageLabel(log.page)}
                         </span>
                       )}
                     </div>
                     {log.details && Object.keys(log.details).length > 0 && !isPageVisit && (
-                      <p className="text-[10px] text-t4 mt-0.5 truncate">
+                      <p className="text-[11px] text-t4 mt-0.5 truncate">
                         {JSON.stringify(log.details)}
                       </p>
                     )}
                   </div>
-                  <span className="text-[10px] text-t4 flex-shrink-0 whitespace-nowrap">
+                  <span className="text-[11px] text-t4 flex-shrink-0 whitespace-nowrap">
                     {formatTime(log.created_at)}
                   </span>
                 </div>

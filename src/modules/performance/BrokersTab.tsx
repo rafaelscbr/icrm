@@ -46,11 +46,11 @@ function startOf(period: Period): Date {
 
 function Delta({ curr, prev }: { curr: number; prev: number }) {
   const d = curr - prev
-  if (prev === 0 && curr === 0) return <span className="text-[10px] text-t4">—</span>
-  if (d === 0) return <span className="flex items-center gap-0.5 text-[10px] text-t4"><Minus size={9}/> igual</span>
+  if (prev === 0 && curr === 0) return <span className="text-[11px] text-t4">—</span>
+  if (d === 0) return <span className="flex items-center gap-0.5 text-[11px] text-t4"><Minus size={9}/> igual</span>
   const up = d > 0
   return (
-    <span className={`flex items-center gap-0.5 text-[10px] font-medium ${up ? 'text-success' : 'text-error'}`}>
+    <span className={`flex items-center gap-0.5 text-[11px] font-medium ${up ? 'text-success' : 'text-error'}`}>
       {up ? <TrendingUp size={9}/> : <TrendingDown size={9}/>}
       {up ? '+' : ''}{d}
     </span>
@@ -268,12 +268,12 @@ export function BrokersTab() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-t1">{s.name}</p>
-                  <p className="text-[11px] text-t4">
+                  <p className="text-xs text-t4">
                     Taxa conversão histórica: <span className="text-t2 font-medium">{s.convRate}%</span>
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-t4 uppercase tracking-wider">Atividade</p>
+                  <p className="text-[11px] text-t4 uppercase tracking-wider">Atividade</p>
                   <p className="text-lg font-black text-brand tabular-nums">{s.disparos + s.interactions}</p>
                 </div>
               </div>
@@ -289,7 +289,7 @@ export function BrokersTab() {
                       </div>
                       <p className={`text-2xl font-black tabular-nums leading-none ${m.color}`}>{m.value}</p>
                       <div className="flex flex-col gap-0.5">
-                        <p className="text-[10px] text-t4 leading-tight">{m.label}</p>
+                        <p className="text-[11px] text-t4 leading-tight">{m.label}</p>
                         {m.prevVal !== undefined && period !== 'total' && (
                           <Delta curr={m.value as number} prev={m.prevVal as number} />
                         )}
@@ -319,7 +319,7 @@ export function BrokersTab() {
         <div className="flex items-center gap-2 mb-4">
           <BarChart2 size={14} className="text-violet-400" />
           <h2 className="text-sm font-semibold text-t1">Pulso de atividade — últimos 14 dias</h2>
-          <span className="ml-auto text-[11px] text-t4">WhatsApp + ligações + emails + visitas</span>
+          <span className="ml-auto text-xs text-t4">WhatsApp + ligações + emails + visitas</span>
         </div>
         {!allLoaded ? (
           <div className="flex items-center justify-center h-20 gap-2">
@@ -344,13 +344,13 @@ export function BrokersTab() {
                 <div key={s.id}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-t2">{s.name}</span>
-                    <span className="text-[11px] text-t4">{total14} interações</span>
+                    <span className="text-xs text-t4">{total14} interações</span>
                   </div>
                   <div className="flex items-end gap-1 h-10">
                     {daily.map((d, di) => (
                       <div key={d.label} className="flex-1 flex flex-col items-center gap-0.5 group relative">
                         {d.count > 0 && (
-                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 hidden group-hover:flex bg-surface text-t1 text-[9px] px-1 py-0.5 rounded whitespace-nowrap z-10 border border-line">
+                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 hidden group-hover:flex bg-surface text-t1 text-[11px] px-1 py-0.5 rounded whitespace-nowrap z-10 border border-line">
                             {d.label}: {d.count}
                           </div>
                         )}

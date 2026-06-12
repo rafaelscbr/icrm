@@ -95,7 +95,7 @@ export function NextStepSuggestion({ lead, interactionType, outcome, onDone }: P
           <CalendarPlus size={13} strokeWidth={1.6} className="text-brand flex-shrink-0" />
           <div className="min-w-0">
             <p className="font-heading text-xs font-bold text-t1">Agendar próximo passo?</p>
-            <p className="text-[11px] text-t3 truncate">{suggestion.title}</p>
+            <p className="text-xs text-t3 truncate">{suggestion.title}</p>
           </div>
         </div>
         <button
@@ -113,7 +113,7 @@ export function NextStepSuggestion({ lead, interactionType, outcome, onDone }: P
           <button
             key={c.label}
             onClick={() => createTask(c.date, c.label.toLowerCase())}
-            className={`px-2.5 py-1.5 rounded-full font-label text-[10px] uppercase tracking-[0.06em] border transition-all duration-150
+            className={`px-2.5 py-1.5 rounded-full font-label text-[11px] uppercase tracking-[0.06em] border transition-all duration-150
               ${c.date === addDays(suggestion.defaultDays)
                 ? 'bg-brand text-[#0F1730] border-brand font-semibold hover:bg-brand-dark'
                 : 'bg-s2/60 border-line text-t2 hover:border-brand/40 hover:text-t1'
@@ -132,12 +132,12 @@ export function NextStepSuggestion({ lead, interactionType, outcome, onDone }: P
               min={localDateStr()}
               value={customDate}
               onChange={e => setCustomDate(e.target.value)}
-              className="bg-s2 border border-line rounded-full px-2.5 py-1 text-[11px] text-t1 focus:outline-none focus:border-brand"
+              className="bg-s2 border border-line rounded-full px-2.5 py-1 text-xs text-t1 focus:outline-none focus:border-brand"
             />
             <button
               onClick={() => customDate && createTask(customDate, new Date(customDate + 'T12:00:00').toLocaleDateString('pt-BR'))}
               disabled={!customDate}
-              className="px-2.5 py-1.5 rounded-full font-label text-[10px] uppercase tracking-[0.06em] bg-brand text-[#0F1730] font-semibold disabled:opacity-40 transition-all duration-150"
+              className="px-2.5 py-1.5 rounded-full font-label text-[11px] uppercase tracking-[0.06em] bg-brand text-[#0F1730] font-semibold disabled:opacity-40 transition-all duration-150"
             >
               OK
             </button>
@@ -145,7 +145,7 @@ export function NextStepSuggestion({ lead, interactionType, outcome, onDone }: P
         ) : (
           <button
             onClick={() => setShowCustom(true)}
-            className="px-2.5 py-1.5 rounded-full font-label text-[10px] uppercase tracking-[0.06em] border border-dashed border-line text-t3 hover:text-t1 hover:border-brand/40 transition-all duration-150"
+            className="px-2.5 py-1.5 rounded-full font-label text-[11px] uppercase tracking-[0.06em] border border-dashed border-line text-t3 hover:text-t1 hover:border-brand/40 transition-all duration-150"
           >
             Escolher data
           </button>

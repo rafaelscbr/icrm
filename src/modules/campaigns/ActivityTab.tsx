@@ -207,7 +207,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
 
         {/* Período */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
+          <label className="text-[11px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
             <Calendar size={10} /> Período
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -215,7 +215,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
               <button
                 key={opt.value}
                 onClick={() => { setPeriod(opt.value); if (opt.value !== 'custom') setCustomDate('') }}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer
                   ${period === opt.value
                     ? 'bg-brand text-[#0F1730] border-brand'
                     : 'bg-s3/40 border-line text-t3 hover:text-t1 hover:border-brand/30'
@@ -238,7 +238,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
         {/* Tipo de ação + corretor (admin only) */}
         <div className="flex flex-wrap gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-semibold text-t4 uppercase tracking-wider">Tipo</label>
+            <label className="text-[11px] font-semibold text-t4 uppercase tracking-wider">Tipo</label>
             <select
               value={filterType}
               onChange={e => setFilterType(e.target.value as typeof filterType)}
@@ -254,7 +254,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
 
           {isAdmin && brokers.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
+              <label className="text-[11px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
                 <User size={10} /> Corretor
               </label>
               <select
@@ -283,7 +283,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
           ].map(s => (
             <div key={s.label} className={`rounded-xl ${s.bg} border border-line px-3 py-2.5 text-center`}>
               <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.count}</p>
-              <p className="text-[10px] text-t4 mt-0.5">{s.label}</p>
+              <p className="text-[11px] text-t4 mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -313,7 +313,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
           {/* Cabeçalho do dia */}
           <div className="flex items-center gap-3 mb-2 px-1">
             <div className="h-px flex-1 bg-line" />
-            <span className="text-[11px] font-semibold text-t4 bg-page px-2 capitalize">
+            <span className="text-xs font-semibold text-t4 bg-page px-2 capitalize">
               {group.label}
             </span>
             <div className="h-px flex-1 bg-line" />
@@ -341,7 +341,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
                       <span className="text-sm font-semibold text-t1">
                         {activity.brokerName ?? 'Sistema'}
                       </span>
-                      <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
+                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
                         {cfg.label}
                       </span>
                       {activity.leadName && (
@@ -353,7 +353,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
 
                     {/* Detalhe por tipo */}
                     {activity.actionType === 'dispatch' && (
-                      <p className="text-[11px] text-t4 mt-0.5">
+                      <p className="text-xs text-t4 mt-0.5">
                         {meta.messageIndex !== undefined
                           ? `Mensagem ${(meta.messageIndex as number) + 1}`
                           : 'Mensagem enviada'}
@@ -363,17 +363,17 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
                       </p>
                     )}
                     {activity.actionType === 'stage_change' && (
-                      <p className="text-[11px] text-t4 mt-0.5">
+                      <p className="text-xs text-t4 mt-0.5">
                         <span className="text-t3">{String(meta.from ?? '—')}</span>
                         {' → '}
                         <span className="text-blue-400 font-medium">{String(meta.to ?? '—')}</span>
                       </p>
                     )}
                     {activity.actionType === 'transfer' && (
-                      <p className="text-[11px] text-t4 mt-0.5">Migrado para o funil principal</p>
+                      <p className="text-xs text-t4 mt-0.5">Migrado para o funil principal</p>
                     )}
                     {activity.actionType === 'assignment' && (
-                      <p className="text-[11px] text-t4 mt-0.5">
+                      <p className="text-xs text-t4 mt-0.5">
                         Atribuído a {String(meta.assignedTo ?? '—')}
                       </p>
                     )}
@@ -381,7 +381,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
 
                   {/* Timestamp */}
                   <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                    <span className="text-[11px] text-t4" title={formatFullDate(activity.createdAt)}>
+                    <span className="text-xs text-t4" title={formatFullDate(activity.createdAt)}>
                       {formatDateTime(activity.createdAt)}
                     </span>
                   </div>

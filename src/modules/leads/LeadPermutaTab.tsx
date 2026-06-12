@@ -91,7 +91,7 @@ function ItemForm({ item, onChange, onRemove, isOnly }: ItemFormProps) {
                 <button
                   key={r}
                   onClick={() => set({ region: item.region === r ? undefined : r })}
-                  className={`text-[11px] px-2 py-0.5 rounded-lg border transition-all ${
+                  className={`text-xs px-2 py-0.5 rounded-lg border transition-all ${
                     item.region === r
                       ? 'bg-orange-500/20 border-orange-500/40 text-orange-300 font-medium'
                       : 'bg-s2/50 border-line text-t3 hover:text-t2 hover:border-line-input'
@@ -227,10 +227,10 @@ export function LeadPermutaTab({ contact }: LeadPermutaTabProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-orange-300">Perfil de Permuta</p>
-          <p className="text-[11px] text-t3 truncate">Contato: {contact.name}</p>
+          <p className="text-xs text-t3 truncate">Contato: {contact.name}</p>
         </div>
         {hasData && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 flex-shrink-0">
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 flex-shrink-0">
             {contact.permutaItems.length} item{contact.permutaItems.length > 1 ? 's' : ''}
           </span>
         )}
@@ -283,7 +283,7 @@ export function LeadPermutaTab({ contact }: LeadPermutaTabProps) {
         </button>
       </div>
 
-      <p className="text-[10px] text-t4 text-center">
+      <p className="text-[11px] text-t4 text-center">
         Salvo diretamente em {contact.name} — disponível em todo o CRM
       </p>
     </div>

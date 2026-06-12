@@ -15,6 +15,7 @@ import {
   Megaphone, Loader2, Wifi, WifiOff, CheckCircle2,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadInteractionType } from '../../types'
+import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useContactsStore } from '../../store/useContactsStore'
@@ -26,21 +27,11 @@ import { LeadModal } from './LeadModal'
 import { SlaBadge } from './SlaBadge'
 import toast from 'react-hot-toast'
 
-// Shape exportado — consumido por LeadsPage, LeadsDashboard, LeadsPerformance e
-// TransferToFunnelModal. Não alterar campos sem revisar esses arquivos.
-export const STAGE_CONFIG: Record<LeadFunnelStage, {
-  label: string; color: string; bg: string; border: string;
-  headerBg: string; headerText: string; dot: string;
-}> = {
-  lead:        { label: 'Leads',        color: 'text-t2',  bg: 'bg-slate-500/8',   border: 'border-slate-500/20', headerBg: 'bg-slate-500/15',  headerText: 'text-t1',  dot: 'bg-slate-400'   },
-  followup:    { label: 'Followup',     color: 'text-teal-300',   bg: 'bg-teal-500/8',    border: 'border-teal-500/20',  headerBg: 'bg-teal-500/12',   headerText: 'text-teal-200',   dot: 'bg-teal-400'    },
-  atendimento: { label: 'Atendimento',  color: 'text-violet-300', bg: 'bg-violet-500/8',  border: 'border-violet-500/20',headerBg: 'bg-violet-500/15', headerText: 'text-violet-200', dot: 'bg-violet-400'  },
-  visita:      { label: 'Visita',       color: 'text-amber-300',  bg: 'bg-amber-500/8',   border: 'border-amber-500/20', headerBg: 'bg-amber-500/15',  headerText: 'text-amber-200',  dot: 'bg-amber-400'   },
-  proposta:    { label: 'Proposta',     color: 'text-orange-300', bg: 'bg-orange-500/8',  border: 'border-orange-500/20',headerBg: 'bg-orange-500/15', headerText: 'text-orange-200', dot: 'bg-orange-400'  },
-  venda:       { label: 'Venda',        color: 'text-green-300',  bg: 'bg-green-500/8',   border: 'border-green-500/20', headerBg: 'bg-green-500/15',  headerText: 'text-green-200',  dot: 'bg-green-400'   },
-}
+// Re-export da fonte única — consumido por LeadsPage, LeadsDashboard,
+// LeadsPerformance e TransferToFunnelModal. Cores vivem em lib/stageTheme.ts.
+export const STAGE_CONFIG = STAGE_THEME
 
-const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
+const STAGES = FUNNEL_STAGES
 
 const ORIGIN_META: Record<string, { icon: typeof Sparkles; label: string }> = {
   felicita: { icon: Sparkles,   label: 'Felicità' },
@@ -189,23 +180,25 @@ function LeadCard({
             e.stopPropagation()
             try { await toggleFlag(lead.id) } catch { /* erro já toastado */ }
           }}
-          className={`w-5 h-5 flex items-center justify-center rounded transition-all duration-150 ${
+          className={`w-6 h-6 flex items-center justify-center rounded transition-all duration-150 ${
             lead.flagged
               ? 'text-brand'
-              : 'text-t5 opacity-0 group-hover:opacity-100 hover:text-brand'
+              : 'text-t5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:text-brand'
           }`}
           title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+          aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+          aria-pressed={!!lead.flagged}
         >
-          <Star size={12} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
+          <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
         </button>
         <div
           {...listeners}
           {...attributes}
           onClick={e => e.stopPropagation()}
           aria-label="Arrastar lead"
-          className="w-5 h-5 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors"
+          className="w-6 h-6 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors"
         >
-          <GripVertical size={12} strokeWidth={1.6} />
+          <GripVertical size={13} strokeWidth={1.6} />
         </div>
       </div>
 
@@ -229,11 +222,11 @@ function LeadCard({
             {originMeta && (
               <originMeta.icon size={11} strokeWidth={1.6} className="text-t4 flex-shrink-0" aria-label={originMeta.label} />
             )}
-            <span className="font-label text-[10px] text-t4 tabular-nums tracking-wide">{formatPhone(displayPhone)}</span>
+            <span className="font-label text-[11px] text-t4 tabular-nums tracking-wide">{formatPhone(displayPhone)}</span>
             {brokerName && (
               <span
                 title={`Corretor responsável: ${brokerName}`}
-                className="font-label text-[9px] font-medium uppercase tracking-[0.08em] text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-px rounded-full truncate max-w-[80px] flex-shrink-0"
+                className="font-label text-[11px] font-medium uppercase tracking-[0.08em] text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-px rounded-full truncate max-w-[80px] flex-shrink-0"
               >
                 {brokerName.split(' ')[0]}
               </span>
@@ -245,9 +238,9 @@ function LeadCard({
       {/* Recência de contato — a informação de ação do corretor */}
       {contactInfo && (
         <div className="flex items-center gap-1.5 mb-2 min-w-0">
-          <span className={`text-[11px] font-semibold flex-shrink-0 ${contactInfo.cls}`}>{contactInfo.text}</span>
+          <span className={`text-xs font-semibold flex-shrink-0 ${contactInfo.cls}`}>{contactInfo.text}</span>
           {lastInteraction && (
-            <span className="flex items-center gap-1 text-[10px] text-t4 truncate min-w-0">
+            <span className="flex items-center gap-1 text-[11px] text-t4 truncate min-w-0">
               <span className="flex-shrink-0">·</span>
               <LastIcon size={10} strokeWidth={1.6} className="flex-shrink-0" />
               <span className="truncate">{lastInteraction.description ?? lastInteraction.type}</span>
@@ -256,7 +249,7 @@ function LeadCard({
           {!isOverlay && (
             <span
               title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}
-              className={`ml-auto flex-shrink-0 font-label text-[9px] font-medium uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums ${stageDaysClass}`}
+              className={`ml-auto flex-shrink-0 font-label text-[11px] font-medium uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums ${stageDaysClass}`}
             >
               {stageDays}d na etapa
             </span>
@@ -288,7 +281,7 @@ function LeadCard({
               />
             ))}
           </div>
-          <p className="font-label text-[9px] uppercase tracking-[0.08em] text-t4">
+          <p className="font-label text-[11px] uppercase tracking-[0.08em] text-t4">
             {lead.followupStep === 0 ? 'Marcar tentativas' : `${lead.followupStep}ª de 5 tentativas`}
           </p>
         </div>
@@ -296,7 +289,7 @@ function LeadCard({
 
       {/* Imóvel de interesse */}
       {(property || lead.propertyName) && (
-        <p className="flex items-center gap-1.5 text-[11px] text-t3 mb-2 min-w-0">
+        <p className="flex items-center gap-1.5 text-xs text-t3 mb-2 min-w-0">
           <Home size={11} strokeWidth={1.6} className="text-brand flex-shrink-0" />
           <span className="truncate">{property ? property.name : lead.propertyName}</span>
         </p>
@@ -308,14 +301,14 @@ function LeadCard({
           <span className="font-label text-xs font-semibold text-t1 tabular-nums">
             {formatCurrency(lead.averageTicket)}
           </span>
-          <span className="font-label text-[9px] uppercase tracking-[0.08em] text-success bg-success-bg border border-success-line px-2 py-0.5 rounded-full tabular-nums">
+          <span className="font-label text-[11px] uppercase tracking-[0.08em] text-success bg-success-bg border border-success-line px-2 py-0.5 rounded-full tabular-nums">
             Com. {formatCurrency(lead.averageTicket * 0.02)}
           </span>
         </div>
       )}
 
       {isLinked && (
-        <span className="inline-flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] text-t3 px-2 py-0.5 rounded-full border border-line mb-1">
+        <span className="inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] text-t3 px-2 py-0.5 rounded-full border border-line mb-1">
           <UserCheck size={9} strokeWidth={1.6} /> No CRM
         </span>
       )}
@@ -324,7 +317,7 @@ function LeadCard({
       <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5">
         <button
           onClick={handleWhatsApp}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-[11px] font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
           title="Registrar contato e abrir WhatsApp"
         >
           <MessageCircle size={12} strokeWidth={1.6} />
@@ -387,26 +380,26 @@ function KanbanColumn({
         <div className="flex flex-col px-4 pt-3.5 pb-2.5">
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${conf.dot}`} />
-            <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t2">
-              {conf.label}
+            <span className="font-label text-xs font-medium uppercase tracking-[0.12em] text-t2">
+              {conf.columnLabel}
             </span>
             {coldCount > 0 && (
               <span
-                className="flex items-center gap-0.5 font-label text-[9px] text-info bg-info-bg px-1.5 py-px rounded-full tabular-nums"
+                className="flex items-center gap-0.5 font-label text-[11px] text-info bg-info-bg px-1.5 py-px rounded-full tabular-nums"
                 title={`${coldCount} ${coldCount === 1 ? 'lead' : 'leads'} sem contato há mais de ${COOLING_DAYS} dias`}
               >
                 <Snowflake size={9} strokeWidth={1.6} /> {coldCount}
               </span>
             )}
-            <span className="ml-auto font-label text-[11px] font-semibold text-t3 tabular-nums">
+            <span className="ml-auto font-label text-xs font-semibold text-t3 tabular-nums">
               {leads.length}
             </span>
           </div>
           {totalPipeline > 0 && (
             <div className="flex items-center gap-1.5 mt-1 pl-4">
-              <span className="font-label text-[10px] text-t3 font-medium tabular-nums">{formatCurrency(totalPipeline)}</span>
-              <span className="text-[10px] text-t5">·</span>
-              <span className="font-label text-[10px] text-success tabular-nums" title="Comissão estimada (2%)">
+              <span className="font-label text-[11px] text-t3 font-medium tabular-nums">{formatCurrency(totalPipeline)}</span>
+              <span className="text-[11px] text-t5">·</span>
+              <span className="font-label text-[11px] text-success tabular-nums" title="Comissão estimada (2%)">
                 {formatCurrency(totalCommission)}
               </span>
             </div>
@@ -422,7 +415,7 @@ function KanbanColumn({
           >
             {leads.length === 0 && (
               <div className="flex-1 flex items-center justify-center rounded-[14px] border border-dashed border-line m-0.5">
-                <p className="text-[11px] text-t4 text-center">Arraste cards aqui</p>
+                <p className="text-xs text-t4 text-center">Arraste cards aqui</p>
               </div>
             )}
             {leads.map(lead => (
@@ -558,12 +551,12 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
         {connected ? (
           <>
             <Wifi size={11} strokeWidth={1.6} className="text-success" />
-            <span className="font-label text-[9px] uppercase tracking-[0.12em] text-t4">Tempo real ativo</span>
+            <span className="font-label text-[11px] uppercase tracking-[0.12em] text-t4">Tempo real ativo</span>
           </>
         ) : (
           <>
             <WifiOff size={11} strokeWidth={1.6} className="text-warning" />
-            <span className="font-label text-[9px] uppercase tracking-[0.12em] text-warning">Reconectando…</span>
+            <span className="font-label text-[11px] uppercase tracking-[0.12em] text-warning">Reconectando…</span>
           </>
         )}
       </div>

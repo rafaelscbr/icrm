@@ -39,8 +39,8 @@
   --t1: #F6F3EC;
   --t2: #CFC9BC;
   --t3: #8A90A6;
-  --t4: #6B748A;   /* era #545E78 — clareado para contraste WCAG AA */
-  --t5: #525A70;   /* era #3A4260 — clareado para legibilidade */
+  --t4: #7A829B;   /* ≥4.5:1 sobre surface — pode ser usado em texto pequeno */
+  --t5: #5F6880;   /* apenas decorativo (separadores, ícones inativos) — nunca texto informativo */
 
   /* Lines / borders */
   --line:        rgba(255, 255, 255, 0.12);   /* era 0.08 — bordas mais visíveis */
@@ -103,8 +103,8 @@ html.light {
   --t1: #0F1730;
   --t2: #2A3660;
   --t3: #4A5573;
-  --t4: #8A90A6;
-  --t5: #AEAEAD;
+  --t4: #6B7490;   /* ≥4.5:1 sobre branco — pode ser usado em texto pequeno */
+  --t5: #9C9C9A;   /* apenas decorativo — nunca texto informativo */
 
   /* Lines */
   --line:        #D8D2C5;
@@ -138,8 +138,10 @@ html.light {
 @layer base {
   * { box-sizing: border-box; }
 
+  /* Base 16px: text-xs = 12px e text-sm = 14px — piso de legibilidade
+     para uso contínuo (8h/dia). Não reduzir abaixo de 16px. */
   html {
-    font-size: 15px;
+    font-size: 16px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -794,4 +796,13 @@ html.light .shimmer {
   .bg-white\/2               { background-color: rgba(255,255,255,0.02); }
   .border-white\/7           { border-color: rgba(255,255,255,0.07); }
   .border-white\/8           { border-color: rgba(255,255,255,0.08); }
+}
+
+/* ── Acessibilidade: respeita preferência do sistema por menos movimento ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

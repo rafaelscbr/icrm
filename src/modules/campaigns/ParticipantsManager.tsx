@@ -71,7 +71,7 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-t1 truncate">{profile?.name ?? p.brokerId}</p>
-                      <span className={`text-[10px] flex items-center gap-1 mt-0.5 ${p.role === 'owner' ? 'text-amber-400' : 'text-t3'}`}>
+                      <span className={`text-[11px] flex items-center gap-1 mt-0.5 ${p.role === 'owner' ? 'text-amber-400' : 'text-t3'}`}>
                         {p.role === 'owner' ? <><Crown size={9} /> Responsável</> : <><UserCheck size={9} /> Colaborador</>}
                       </span>
                     </div>

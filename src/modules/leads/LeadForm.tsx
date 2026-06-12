@@ -289,7 +289,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 {isEdit ? 'Editar Lead' : 'Novo Lead'}
               </h2>
               {!isEdit && (
-                <p className="text-[11px] text-t3 mt-0.5">
+                <p className="text-xs text-t3 mt-0.5">
                   {step === 1 ? '① Identificar contato' : '② Detalhes do funil'}
                 </p>
               )}
@@ -395,7 +395,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                             </div>
                           ) : (
                             <>
-                              <p className="text-[10px] font-semibold text-t4 px-3 pt-2.5 pb-1 uppercase tracking-widest">
+                              <p className="text-[11px] font-semibold text-t4 px-3 pt-2.5 pb-1 uppercase tracking-widest">
                                 {contactResults.length} encontrado{contactResults.length > 1 ? 's' : ''}
                               </p>
                               <div className="max-h-52 overflow-y-auto">
@@ -578,7 +578,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-amber-500/10 to-orange-500/8 border border-amber-500/25 rounded-xl animate-in fade-in zoom-in-95 duration-150">
                     <PenLine size={14} className="text-amber-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-amber-400/70">Nome livre (não cadastrado)</p>
+                      <p className="text-[11px] text-amber-400/70">Nome livre (não cadastrado)</p>
                       <p className="text-sm font-medium text-t1 truncate">{freePropertyName}</p>
                     </div>
                     <button onClick={clearProperty} className="text-xs text-t3 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
@@ -694,7 +694,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   <Calendar size={11} />
                   Data de entrada
                   {isRetroactive && (
-                    <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/25">
+                    <span className="ml-1 text-[11px] font-bold px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/25">
                       Retroativo
                     </span>
                   )}

@@ -147,7 +147,7 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
           {/* Funnel stage */}
           <div>
-            <p className="font-label text-[10px] font-medium text-t3 uppercase tracking-[0.12em] mb-3">Etapa do funil</p>
+            <p className="font-label text-[11px] font-medium text-t3 uppercase tracking-[0.12em] mb-3">Etapa do funil</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Etapa do funil">
               {stagesWithoutNew.map(s => {
                 const active = stage === s.value
@@ -176,7 +176,7 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
           {/* Situation */}
           <div>
-            <p className="font-label text-[10px] font-medium text-t3 uppercase tracking-[0.12em] mb-3">Situação (opcional)</p>
+            <p className="font-label text-[11px] font-medium text-t3 uppercase tracking-[0.12em] mb-3">Situação (opcional)</p>
             <div className="flex flex-col gap-2" role="radiogroup" aria-label="Situação do lead">
               {SITUATION_CONFIG.map(s => {
                 const active = situation === s.value
@@ -206,7 +206,7 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
 
           {/* Notes */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="parecer-notes" className="font-label text-[10px] font-medium text-t3 uppercase tracking-[0.12em]">Observações</label>
+            <label htmlFor="parecer-notes" className="font-label text-[11px] font-medium text-t3 uppercase tracking-[0.12em]">Observações</label>
             <textarea
               id="parecer-notes"
               value={notes}
@@ -223,13 +223,13 @@ const stagesWithoutNew = FUNNEL_STAGES.filter(s => s.value !== 'new')
               <Sparkles size={14} strokeWidth={1.6} className="text-brand flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="font-heading text-xs font-bold text-t1">Pronto para o funil principal</p>
-                <p className="text-[11px] text-t3 mt-0.5 leading-relaxed">
+                <p className="text-xs text-t3 mt-0.5 leading-relaxed">
                   Lead agendado — migre agora com histórico e produto vinculado para contar na pipeline de visitas.
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowTransfer(true)}
-                  className="mt-2 flex items-center gap-1.5 font-heading text-[11px] font-bold text-brand-text hover:text-brand transition-colors"
+                  className="mt-2 flex items-center gap-1.5 font-heading text-xs font-bold text-brand-text hover:text-brand transition-colors"
                 >
                   <ArrowRight size={11} strokeWidth={1.6} />
                   Migrar para o funil principal

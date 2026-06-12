@@ -97,9 +97,9 @@ function NotificationItem({
           </p>
         )}
         <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-[11px] text-slate-600">{timeAgo(n.createdAt)}</span>
+          <span className="text-xs text-slate-600">{timeAgo(n.createdAt)}</span>
           <span className="text-slate-700">·</span>
-          <span className="text-[11px] text-slate-600">
+          <span className="text-xs text-slate-600">
             {new Date(n.createdAt).toLocaleDateString('pt-BR', {
               day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
             })}
@@ -107,7 +107,7 @@ function NotificationItem({
           {n.resourceType === 'task' && (
             <>
               <span className="text-slate-700">·</span>
-              <span className="text-[11px] text-brand group-hover:text-brand-text transition-colors">
+              <span className="text-xs text-brand group-hover:text-brand-text transition-colors">
                 Abrir tarefa →
               </span>
             </>
@@ -115,7 +115,7 @@ function NotificationItem({
           {n.resourceType === 'lead' && (
             <>
               <span className="text-slate-700">·</span>
-              <span className="text-[11px] text-brand group-hover:text-brand-text transition-colors">
+              <span className="text-xs text-brand group-hover:text-brand-text transition-colors">
                 Abrir lead →
               </span>
             </>

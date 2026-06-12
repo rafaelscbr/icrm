@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Users, Building2, Megaphone, CheckSquare, X } from 'lucide-react'
+import { Search, Users, Building2, Megaphone, CheckSquare, X, UserPlus } from 'lucide-react'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
+import { useLeadsStore } from '../../store/useLeadsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
+import { formatPhone } from '../../lib/formatters'
 
 interface GlobalSearchProps {
   isOpen: boolean
@@ -16,23 +18,29 @@ const MAX_PER_SECTION = 5
 
 export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState('')
+  const [activeIndex, setActiveIndex] = useState(0)
   const inputRef   = useRef<HTMLInputElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const navigate   = useNavigate()
 
-  const contacts   = useContactsStore(s => s.contacts)
-  const properties = usePropertiesStore(s => s.properties)
-  const leads      = useCampaignLeadsStore(s => s.leads)
-  const tasks      = useTasksStore(s => s.tasks)
-  const campaigns  = useCampaignsStore(s => s.campaigns)
+  const contacts    = useContactsStore(s => s.contacts)
+  const properties  = usePropertiesStore(s => s.properties)
+  const campLeads   = useCampaignLeadsStore(s => s.leads)
+  const funnelLeads = useLeadsStore(s => s.leads)
+  const loadFunnelLeads = useLeadsStore(s => s.load)
+  const tasks       = useTasksStore(s => s.tasks)
+  const campaigns   = useCampaignsStore(s => s.campaigns)
 
   useEffect(() => {
     if (isOpen) {
       setQuery('')
+      setActiveIndex(0)
+      // Leads do funil podem ainda não ter sido carregados (lazy por rota)
+      if (useLeadsStore.getState().leads.length === 0) loadFunnelLeads()
       const t = setTimeout(() => inputRef.current?.focus(), 50)
       return () => clearTimeout(t)
     }
-  }, [isOpen])
+  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isOpen) return
@@ -55,7 +63,13 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     p.name.toLowerCase().includes(q) || p.neighborhood.toLowerCase().includes(q) || (p.developmentName ?? '').toLowerCase().includes(q)
   ).slice(0, MAX_PER_SECTION) : []
 
-  const filteredLeads      = q ? leads.filter(l =>
+  const filteredFunnelLeads = q ? funnelLeads.filter(l =>
+    !l.discardReason && (
+      l.name.toLowerCase().includes(q) || l.phone.includes(q) || (l.email ?? '').toLowerCase().includes(q)
+    )
+  ).slice(0, MAX_PER_SECTION) : []
+
+  const filteredCampLeads  = q ? campLeads.filter(l =>
     l.name.toLowerCase().includes(q) || l.phone.includes(q) || (l.email ?? '').toLowerCase().includes(q)
   ).slice(0, MAX_PER_SECTION) : []
 
@@ -64,7 +78,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   ).slice(0, MAX_PER_SECTION) : []
 
   const hasResults = filteredContacts.length > 0 || filteredProperties.length > 0 ||
-    filteredLeads.length > 0 || filteredTasks.length > 0
+    filteredFunnelLeads.length > 0 || filteredCampLeads.length > 0 || filteredTasks.length > 0
 
   function go(path: string) { navigate(path); onClose() }
   function goWithModal(basePath: string, id: string) { navigate(`${basePath}?open=${id}`); onClose() }
@@ -73,6 +87,33 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     if (!date) return ''
     const [y, m, d] = date.split('-')
     return `${d}/${m}/${y}`
+  }
+
+  // Lista plana na mesma ordem visual — base da navegação por teclado
+  const flatItems: Array<() => void> = [
+    ...filteredContacts.map(c => () => goWithModal('/contatos', c.id)),
+    ...filteredProperties.map(p => () => goWithModal('/imoveis', p.id)),
+    ...filteredFunnelLeads.map(l => () => goWithModal('/leads', l.id)),
+    ...filteredCampLeads.map(l => () => go(`/campanhas?id=${l.campaignId}`)),
+    ...filteredTasks.map(() => () => go('/tarefas')),
+  ]
+
+  const offProperties = filteredContacts.length
+  const offFunnel     = offProperties + filteredProperties.length
+  const offCamp       = offFunnel + filteredFunnelLeads.length
+  const offTasks      = offCamp + filteredCampLeads.length
+
+  function handleInputKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex(i => Math.min(i + 1, Math.max(flatItems.length - 1, 0)))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      flatItems[activeIndex]?.()
+    }
   }
 
   if (!isOpen) return null
@@ -98,18 +139,20 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             ref={inputRef}
             type="text"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => { setQuery(e.target.value); setActiveIndex(0) }}
+            onKeyDown={handleInputKeyDown}
             placeholder="Buscar contatos, imóveis, leads, tarefas…"
+            aria-label="Buscar em todo o CRM"
             className="flex-1 bg-transparent text-sm text-t1 placeholder-t4 outline-none"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="text-t4 hover:text-t2 transition-colors flex-shrink-0">
+            <button onClick={() => setQuery('')} className="text-t4 hover:text-t2 transition-colors flex-shrink-0" aria-label="Limpar busca">
               <X size={14} />
             </button>
           )}
           <kbd
-            className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] text-t4 font-mono flex-shrink-0"
-            style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}
+            className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[11px] text-t4 font-mono flex-shrink-0"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}
           >
             esc
           </kbd>
@@ -130,9 +173,10 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
           {filteredContacts.length > 0 && (
             <Section icon={<Users size={12} className="text-brand" />} label="Contatos">
-              {filteredContacts.map(c => (
+              {filteredContacts.map((c, i) => (
                 <ResultRow key={c.id} icon={<Users size={13} className="text-brand" />}
-                  title={c.name} subtitle={c.phone} tag="Ver contato"
+                  title={c.name} subtitle={formatPhone(c.phone)} tag="Ver contato"
+                  active={activeIndex === i} onHover={() => setActiveIndex(i)}
                   onClick={() => goWithModal('/contatos', c.id)} />
               ))}
             </Section>
@@ -140,19 +184,32 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
           {filteredProperties.length > 0 && (
             <Section icon={<Building2 size={12} className="text-cyan-400" />} label="Imóveis">
-              {filteredProperties.map(p => (
+              {filteredProperties.map((p, i) => (
                 <ResultRow key={p.id} icon={<Building2 size={13} className="text-cyan-400" />}
                   title={p.name} subtitle={p.neighborhood} tag="Ver imóvel"
+                  active={activeIndex === offProperties + i} onHover={() => setActiveIndex(offProperties + i)}
                   onClick={() => goWithModal('/imoveis', p.id)} />
               ))}
             </Section>
           )}
 
-          {filteredLeads.length > 0 && (
-            <Section icon={<Megaphone size={12} className="text-violet-400" />} label="Leads">
-              {filteredLeads.map(l => (
+          {filteredFunnelLeads.length > 0 && (
+            <Section icon={<UserPlus size={12} className="text-brand" />} label="Leads do funil">
+              {filteredFunnelLeads.map((l, i) => (
+                <ResultRow key={l.id} icon={<UserPlus size={13} className="text-brand" />}
+                  title={l.name} subtitle={formatPhone(l.phone)} tag="Abrir lead"
+                  active={activeIndex === offFunnel + i} onHover={() => setActiveIndex(offFunnel + i)}
+                  onClick={() => goWithModal('/leads', l.id)} />
+              ))}
+            </Section>
+          )}
+
+          {filteredCampLeads.length > 0 && (
+            <Section icon={<Megaphone size={12} className="text-violet-400" />} label="Leads de campanha">
+              {filteredCampLeads.map((l, i) => (
                 <ResultRow key={l.id} icon={<Megaphone size={13} className="text-violet-400" />}
-                  title={l.name} subtitle={`${l.phone} · ${getCampaignName(l.campaignId)}`} tag="Ver campanha"
+                  title={l.name} subtitle={`${formatPhone(l.phone)} · ${getCampaignName(l.campaignId)}`} tag="Ver campanha"
+                  active={activeIndex === offCamp + i} onHover={() => setActiveIndex(offCamp + i)}
                   onClick={() => go(`/campanhas?id=${l.campaignId}`)} />
               ))}
             </Section>
@@ -160,9 +217,10 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
           {filteredTasks.length > 0 && (
             <Section icon={<CheckSquare size={12} className="text-warning" />} label="Tarefas">
-              {filteredTasks.map(t => (
+              {filteredTasks.map((t, i) => (
                 <ResultRow key={t.id} icon={<CheckSquare size={13} className="text-warning" />}
                   title={t.title} subtitle={t.dueDate ? `Vence em ${fmtDate(t.dueDate)}` : 'Sem prazo'} tag="Ver tarefas"
+                  active={activeIndex === offTasks + i} onHover={() => setActiveIndex(offTasks + i)}
                   onClick={() => go('/tarefas')} />
               ))}
             </Section>
@@ -173,9 +231,10 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
         {/* Footer */}
         <div
-          className="px-4 py-2 flex items-center gap-3 text-[10px] text-t4"
+          className="px-4 py-2 flex items-center gap-3 text-[11px] text-t4"
           style={{ borderTop: '1px solid var(--line)' }}
         >
+          <span><kbd className="font-mono">↑↓</kbd> navegar</span>
           <span><kbd className="font-mono">↵</kbd> selecionar</span>
           <span><kbd className="font-mono">esc</kbd> fechar</span>
         </div>
@@ -189,38 +248,45 @@ function Section({ icon, label, children }: { icon: React.ReactNode; label: stri
     <div>
       <div className="flex items-center gap-2 px-4 pt-3 pb-1.5">
         {icon}
-        <span className="text-[10px] font-semibold text-t3 uppercase tracking-wider">{label}</span>
+        <span className="text-[11px] font-semibold text-t3 uppercase tracking-wider">{label}</span>
       </div>
       <div>{children}</div>
     </div>
   )
 }
 
-function ResultRow({ icon, title, subtitle, tag, onClick }: {
-  icon: React.ReactNode; title: string; subtitle: string; tag?: string; onClick: () => void
+function ResultRow({ icon, title, subtitle, tag, active, onHover, onClick }: {
+  icon: React.ReactNode; title: string; subtitle: string; tag?: string
+  active: boolean; onHover: () => void; onClick: () => void
 }) {
+  const ref = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (active) ref.current?.scrollIntoView({ block: 'nearest' })
+  }, [active])
+
   return (
     <button
+      ref={ref}
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-2.5 text-left group transition-colors"
-      style={{ background: 'transparent' }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'var(--s2)' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+      onMouseEnter={onHover}
+      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+      style={{ background: active ? 'var(--surface-2)' : 'transparent' }}
     >
       <div
         className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
-        style={{ background: 'var(--s2)' }}
+        style={{ background: 'var(--surface-2)' }}
       >
         {icon}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-t1 truncate leading-tight">{title}</p>
-        <p className="text-[11px] text-t3 truncate leading-tight mt-0.5">{subtitle}</p>
+        <p className="text-xs text-t3 truncate leading-tight mt-0.5">{subtitle}</p>
       </div>
-      {tag && (
+      {tag && active && (
         <span
-          className="flex-shrink-0 text-[10px] px-2 py-0.5 rounded font-medium transition-colors"
-          style={{ color: 'var(--brand)', background: 'var(--brand-tint)', border: '1px solid var(--brand)/20' }}
+          className="flex-shrink-0 text-[11px] px-2 py-0.5 rounded font-medium"
+          style={{ color: 'var(--brand)', background: 'var(--brand-tint)' }}
         >
           {tag}
         </span>

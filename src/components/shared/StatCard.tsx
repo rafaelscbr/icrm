@@ -52,7 +52,7 @@ export function StatCard({ label, value, sub, icon, accent = 'brand', trend, tre
       <div className="p-5 pt-6">
         {/* Header row */}
         <div className="flex items-start justify-between mb-4">
-          <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest leading-tight pr-2">
+          <p className="text-xs font-semibold text-t3 uppercase tracking-widest leading-tight pr-2">
             {label}
           </p>
           <div className={`w-9 h-9 ${cfg.iconBg} rounded-lg flex items-center justify-center ${cfg.icon} flex-shrink-0`}>

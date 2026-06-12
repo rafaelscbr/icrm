@@ -104,7 +104,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
           </div>
           {campaign && (
             <div className="flex-shrink-0 text-right">
-              <p className="text-[10px] text-t4">Campanha</p>
+              <p className="text-[11px] text-t4">Campanha</p>
               <p className="text-xs text-t3 font-medium truncate max-w-[120px]">{campaign.name}</p>
             </div>
           )}
@@ -116,7 +116,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             <ExternalLink size={14} className="text-violet-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-violet-300">Já migrado para o funil principal</p>
-              <p className="text-[11px] text-violet-400/70 mt-0.5">
+              <p className="text-xs text-violet-400/70 mt-0.5">
                 Transferido em {new Date(lead.transferredAt).toLocaleDateString('pt-BR')}.
                 Migrar novamente criará uma segunda entrada no funil.
               </p>
@@ -130,7 +130,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-amber-300">Lead já existe no funil</p>
-              <p className="text-[11px] text-amber-400/70 mt-0.5">
+              <p className="text-xs text-amber-400/70 mt-0.5">
                 Já há um lead com este telefone na etapa <span className="font-medium">{STAGE_CONFIG[duplicate.funnelStage].label}</span>.
               </p>
             </div>
@@ -144,7 +144,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             <Lock size={14} className="text-cyan-400 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-xs font-semibold text-cyan-200">Entrará diretamente em Visita</p>
-              <p className="text-[11px] text-t3 mt-0.5">
+              <p className="text-xs text-t3 mt-0.5">
                 Lead agendado → etapa mapeada automaticamente para o funil comercial.
               </p>
             </div>
@@ -179,7 +179,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
                 )
               })}
             </div>
-            <p className="text-[11px] text-t4 mt-2">
+            <p className="text-xs text-t4 mt-2">
               Etapa mapeada da campanha: <span className="text-t3 font-medium">{stageConf.label}</span>
             </p>
           </div>
@@ -220,20 +220,20 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
         {/* Flow preview */}
         <div className="flex items-center gap-2 px-3 py-2.5 bg-violet-500/5 border border-violet-500/15 rounded-xl">
           <GitMerge size={13} className="text-violet-400 flex-shrink-0" />
-          <span className="text-[11px] text-t3">Campanha</span>
+          <span className="text-xs text-t3">Campanha</span>
           <ArrowRight size={11} className="text-t5 flex-shrink-0" />
-          <span className={`text-[11px] font-semibold ${stageConf.color}`}>{stageConf.label}</span>
+          <span className={`text-xs font-semibold ${stageConf.color}`}>{stageConf.label}</span>
           {isScheduledHandoff && (
             <>
               <ArrowRight size={11} className="text-t5 flex-shrink-0" />
-              <span className="text-[11px] text-cyan-400 font-semibold">Tarefa de visita</span>
+              <span className="text-xs text-cyan-400 font-semibold">Tarefa de visita</span>
             </>
           )}
-          <span className="ml-auto text-[10px] text-t4">origem: campanha</span>
+          <span className="ml-auto text-[11px] text-t4">origem: campanha</span>
         </div>
 
         {isScheduledHandoff && (
-          <p className="text-[11px] text-t3 -mt-2">
+          <p className="text-xs text-t3 -mt-2">
             Após migrar, você poderá cadastrar a data e horário da visita.
           </p>
         )}

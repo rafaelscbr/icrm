@@ -38,7 +38,7 @@ export function Badge({ variant = 'slate', children, size = 'sm', dot = false }:
     <span
       className={`
         inline-flex items-center gap-1.5 font-medium rounded-md
-        ${size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'}
+        ${size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs'}
         ${variants[variant]}
       `}
     >

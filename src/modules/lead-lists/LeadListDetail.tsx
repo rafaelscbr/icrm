@@ -149,17 +149,17 @@ export function LeadListDetail({ list, onBack }: Props) {
           {profile && Object.keys(profile).length > 0 && (
             <div className="flex flex-wrap gap-2">
               {profile.type && (
-                <span className="flex items-center gap-1 text-[11px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg px-2 py-1">
+                <span className="flex items-center gap-1 text-xs bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg px-2 py-1">
                   <Database size={10} /> {profile.type}
                 </span>
               )}
               {profile.region && (
-                <span className="flex items-center gap-1 text-[11px] bg-s3/50 text-t3 border border-line rounded-lg px-2 py-1">
+                <span className="flex items-center gap-1 text-xs bg-s3/50 text-t3 border border-line rounded-lg px-2 py-1">
                   <MapPin size={10} /> {profile.region}
                 </span>
               )}
               {(profile.valueMin || profile.valueMax) && (
-                <span className="flex items-center gap-1 text-[11px] bg-s3/50 text-t3 border border-line rounded-lg px-2 py-1">
+                <span className="flex items-center gap-1 text-xs bg-s3/50 text-t3 border border-line rounded-lg px-2 py-1">
                   <Banknote size={10} />
                   {profile.valueMin ? formatCurrency(profile.valueMin) : ''}
                   {profile.valueMin && profile.valueMax ? ' – ' : ''}
@@ -167,12 +167,12 @@ export function LeadListDetail({ list, onBack }: Props) {
                 </span>
               )}
               {profile.bedrooms && (
-                <span className="flex items-center gap-1 text-[11px] bg-s3/50 text-t3 border border-line rounded-lg px-2 py-1">
+                <span className="flex items-center gap-1 text-xs bg-s3/50 text-t3 border border-line rounded-lg px-2 py-1">
                   <BedDouble size={10} /> {profile.bedrooms} quartos
                 </span>
               )}
               {profile.source && (
-                <span className="flex items-center gap-1 text-[11px] bg-s3/50 text-t3 border border-line rounded-lg px-2 py-1">
+                <span className="flex items-center gap-1 text-xs bg-s3/50 text-t3 border border-line rounded-lg px-2 py-1">
                   {profile.source}
                 </span>
               )}
@@ -257,7 +257,7 @@ export function LeadListDetail({ list, onBack }: Props) {
                     <td className="px-4 py-3 hidden md:table-cell text-center">
                       {scores.get(m.contactId)
                         ? <ScoreBadge size="sm" {...scores.get(m.contactId)!} />
-                        : <span className="text-[10px] text-t4">—</span>
+                        : <span className="text-[11px] text-t4">—</span>
                       }
                     </td>
                     <td className="px-4 py-3">

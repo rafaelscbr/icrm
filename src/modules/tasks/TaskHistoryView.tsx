@@ -200,7 +200,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
             <CalendarDays size={15} className="text-brand" />
             <span className="text-sm font-semibold text-slate-100 capitalize">{dateLabel}</span>
             {isToday && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-brand-text border border-brand/30">
+              <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-brand-text border border-brand/30">
                 HOJE
               </span>
             )}
@@ -231,7 +231,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                     : 'hover:bg-s3/50 border border-transparent'
                   }`}
               >
-                <span className="text-[10px] text-t4 uppercase">
+                <span className="text-[11px] text-t4 uppercase">
                   {dt.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3)}
                 </span>
                 <span className={`text-sm font-bold ${sel ? 'text-brand-text' : 'text-t2'}`}>
@@ -245,7 +245,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="text-[9px] text-t4">{done}/{count}</span>
+                    <span className="text-[11px] text-t4">{done}/{count}</span>
                   </div>
                 ) : (
                   <div className="w-1.5 h-1.5 rounded-full bg-s3/70" />
@@ -263,12 +263,12 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
             <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-s2/50 border border-line">
               <p className="text-xs text-t4">Total</p>
               <p className="text-2xl font-bold text-slate-100 tabular-nums">{total}</p>
-              <p className="text-[11px] text-t4">tarefas no dia</p>
+              <p className="text-xs text-t4">tarefas no dia</p>
             </div>
             <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-green-500/8 border border-green-500/20">
               <p className="text-xs text-t4">Concluídas</p>
               <p className="text-2xl font-bold text-green-400 tabular-nums">{doneTasks.length}</p>
-              <p className="text-[11px] text-t4">de {total}</p>
+              <p className="text-xs text-t4">de {total}</p>
             </div>
             <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-indigo-500/8 border border-brand/25">
               <p className="text-xs text-t4">Conclusão</p>

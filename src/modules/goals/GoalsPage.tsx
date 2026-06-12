@@ -119,7 +119,7 @@ function KpiCard({ label, value, target, icon, note }: {
           <span className="flex-shrink-0 opacity-70">{icon}</span>
           <span className="text-xs font-medium truncate">{label}</span>
         </div>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.badge}`}>
+        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.badge}`}>
           {done ? '✓' : `${pct}%`}
         </span>
       </div>
@@ -140,8 +140,8 @@ function KpiCard({ label, value, target, icon, note }: {
           />
         </div>
         <div className="flex justify-between items-center">
-          <span className={`text-[10px] font-medium ${done ? 'text-green-400' : 'text-t4'}`}>{cfg.label}</span>
-          {note && <span className="text-[10px] text-t4">{note}</span>}
+          <span className={`text-[11px] font-medium ${done ? 'text-green-400' : 'text-t4'}`}>{cfg.label}</span>
+          {note && <span className="text-[11px] text-t4">{note}</span>}
         </div>
       </div>
     </div>
@@ -292,7 +292,7 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-t1 truncate leading-none">{goal.name}</p>
-          <p className="text-[10px] text-t4 mt-1">{goal.period === 'weekly' ? 'Semanal' : 'Mensal'} · meta {goal.target}</p>
+          <p className="text-[11px] text-t4 mt-1">{goal.period === 'weekly' ? 'Semanal' : 'Mensal'} · meta {goal.target}</p>
         </div>
       </div>
 
@@ -300,7 +300,7 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
         <GoalRing value={progress} target={goal.target} hex={cfg.hex} />
       </div>
 
-      {done && <p className="text-[11px] text-green-400 font-semibold text-center -mt-2">Meta atingida! 🎉</p>}
+      {done && <p className="text-xs text-green-400 font-semibold text-center -mt-2">Meta atingida! 🎉</p>}
 
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onPause} className="flex-1 text-xs text-t4 hover:text-t2 py-1.5 rounded-xl hover:bg-s3/60 transition-colors cursor-pointer">Pausar</button>
@@ -331,7 +331,7 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
           <span className={`text-xs font-medium ${ok ? 'text-green-400' : 'text-t3'}`}>
             {ok ? 'Meta atingida!' : `${value} / ${target}`}
           </span>
-          <span className="text-[10px] text-t4">{pct}%</span>
+          <span className="text-[11px] text-t4">{pct}%</span>
         </div>
         <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
           <div className={`h-full rounded-full transition-all duration-500 ${ok ? 'bg-green-500' : 'bg-indigo-500'}`} style={{ width: `${pct}%` }} />
@@ -347,12 +347,12 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
           <div className="w-8 h-8 bg-indigo-500/10 rounded-xl flex items-center justify-center"><Footprints size={15} className="text-indigo-400" /></div>
           <div>
             <p className="text-sm font-semibold text-t1 leading-none">Visitas</p>
-            <p className="text-[10px] text-t4 mt-1">{metaSem}/sem · {metaMes}/mês</p>
+            <p className="text-[11px] text-t4 mt-1">{metaSem}/sem · {metaMes}/mês</p>
           </div>
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {visitGoals.slice(0,1).map(g => (
-            <button key={g.id} onClick={() => onPause(g.id)} className="text-[10px] text-t4 hover:text-t2 px-2 py-1 rounded-lg hover:bg-s3/50 transition-colors cursor-pointer">Pausar</button>
+            <button key={g.id} onClick={() => onPause(g.id)} className="text-[11px] text-t4 hover:text-t2 px-2 py-1 rounded-lg hover:bg-s3/50 transition-colors cursor-pointer">Pausar</button>
           ))}
           {visitGoals.slice(0,1).map(g => (
             <button key={`e${g.id}`} onClick={() => onEdit(g)} className="p-1.5 rounded-xl hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"><Pencil size={13} /></button>
@@ -369,25 +369,25 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
         ].map(({ val, label, ok, color }) => (
           <div key={label} className={`rounded-xl p-3 border ${ok ? 'border-green-500/20 bg-green-500/5' : 'border-line bg-s2/50'}`}>
             <p className={`text-2xl font-black tabular-nums leading-none ${color}`}>{val}</p>
-            <p className="text-[10px] text-t4 mt-1.5 leading-tight whitespace-pre-line">{label}</p>
+            <p className="text-[11px] text-t4 mt-1.5 leading-tight whitespace-pre-line">{label}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-col gap-3">
         <div>
-          <p className="text-[10px] text-t4 mb-1.5 flex items-center gap-1"><Calendar size={9}/> Semana — meta {metaSem}</p>
+          <p className="text-[11px] text-t4 mb-1.5 flex items-center gap-1"><Calendar size={9}/> Semana — meta {metaSem}</p>
           <Bar value={realizadasSemana} target={metaSem} ok={semOk} />
         </div>
         <div>
-          <p className="text-[10px] text-t4 mb-1.5 flex items-center gap-1"><CalendarDays size={9}/> Mês — meta {metaMes}</p>
+          <p className="text-[11px] text-t4 mb-1.5 flex items-center gap-1"><CalendarDays size={9}/> Mês — meta {metaMes}</p>
           <Bar value={realizadasMes} target={metaMes} ok={mesOk} />
         </div>
       </div>
 
       <div className="flex flex-wrap gap-1.5 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {visitGoals.map(g => (
-          <button key={g.id} onClick={() => onDelete(g)} className="text-[10px] text-t4 hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer">
+          <button key={g.id} onClick={() => onDelete(g)} className="text-[11px] text-t4 hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer">
             <Trash2 size={9}/> {g.period === 'weekly' ? 'Excluir meta semanal' : 'Excluir meta mensal'}
           </button>
         ))}
@@ -442,7 +442,7 @@ function PerformanceHero({ tasks, period, brokerId }: { tasks: Task[]; period: P
         <ScoreRing score={score} />
 
         <div className="flex-1 min-w-0 relative">
-          <p className="text-[10px] font-semibold text-t4 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+          <p className="text-[11px] font-semibold text-t4 uppercase tracking-widest flex items-center gap-1.5 mb-1">
             <Award size={10} className="text-indigo-400" />
             Performance {PERIOD_INFO[period].label}
           </p>
@@ -457,7 +457,7 @@ function PerformanceHero({ tasks, period, brokerId }: { tasks: Task[]; period: P
               const s = getStatus(k.value, k.target)
               const color = s === 'done' ? 'text-green-400' : s === 'good' ? 'text-indigo-400' : s === 'warn' ? 'text-amber-400' : 'text-rose-400'
               return (
-                <span key={k.label} className="flex items-center gap-1 text-[11px]">
+                <span key={k.label} className="flex items-center gap-1 text-xs">
                   <span className={`font-bold tabular-nums ${color}`}>{k.value}</span>
                   <span className="text-t4">/{k.target}</span>
                   <span className="text-t4 opacity-60">{k.label}</span>
@@ -546,7 +546,7 @@ export function GoalsPage() {
             }`}
           >
             <span className={`text-sm font-semibold ${tab === t.id ? 'text-indigo-200' : ''}`}>{t.label}</span>
-            <span className="text-[10px] text-t4">{t.sub}</span>
+            <span className="text-[11px] text-t4">{t.sub}</span>
           </button>
         ))}
       </div>

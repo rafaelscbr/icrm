@@ -283,7 +283,7 @@ function LeadCard({
         {/* Indicador frio */}
         {cold && (
           <span
-            className="absolute -top-2 left-3 z-10 flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] text-info bg-info-bg border border-info-line px-1.5 py-px rounded-full"
+            className="absolute -top-2 left-3 z-10 flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] text-info bg-info-bg border border-info-line px-1.5 py-px rounded-full"
             title="Sem contato há mais de 3 dias"
           >
             <Snowflake size={9} strokeWidth={1.6} /> Frio
@@ -329,11 +329,11 @@ function LeadCard({
           <div className="min-w-0 flex-1">
             <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.01em]">{lead.name}</p>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="font-label text-[10px] text-t4 tabular-nums tracking-wide">{formatPhone(lead.phone)}</span>
+              <span className="font-label text-[11px] text-t4 tabular-nums tracking-wide">{formatPhone(lead.phone)}</span>
               {ageBadge && (
                 <span
                   title={`${days} ${days === 1 ? 'dia' : 'dias'} nesta etapa`}
-                  className={`ml-auto font-label text-[9px] font-medium uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums ${ageBadge.cls}`}
+                  className={`ml-auto font-label text-[11px] font-medium uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums ${ageBadge.cls}`}
                 >
                   {ageBadge.label} na etapa
                 </span>
@@ -344,7 +344,7 @@ function LeadCard({
 
         {/* Quem disparou por último */}
         {lead.lastSentByName && (
-          <p className="mb-1.5 flex items-center gap-1 text-[10px] text-t3 truncate">
+          <p className="mb-1.5 flex items-center gap-1 text-[11px] text-t3 truncate">
             <MessageCircle size={10} strokeWidth={1.6} className="flex-shrink-0 text-t4" />
             <span className="truncate">
               {lead.lastSentByName}
@@ -356,19 +356,19 @@ function LeadCard({
 
         {/* Última mensagem */}
         {lead.lastMessage && (
-          <p className="mb-1.5 text-[10px] text-t4 line-clamp-1 italic">"{lead.lastMessage}"</p>
+          <p className="mb-1.5 text-[11px] text-t4 line-clamp-1 italic">"{lead.lastMessage}"</p>
         )}
 
         {/* Migrado */}
         {lead.transferredAt && (
-          <span className="mb-1.5 inline-flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] text-t3 px-2 py-0.5 rounded-full border border-line">
+          <span className="mb-1.5 inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] text-t3 px-2 py-0.5 rounded-full border border-line">
             <GitMerge size={9} strokeWidth={1.6} /> Migrado p/ funil
           </span>
         )}
 
         {/* Situação */}
         {situation && (
-          <span className={`mb-1.5 inline-block font-label text-[9px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full ${situation.bg} ${situation.color}`}>
+          <span className={`mb-1.5 inline-block font-label text-[11px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full ${situation.bg} ${situation.color}`}>
             {situation.label}
           </span>
         )}
@@ -400,7 +400,7 @@ function LeadCard({
               ))}
             </div>
             {/* Mostra quantas JÁ foram enviadas */}
-            <p className="font-label text-[9px] uppercase tracking-[0.08em] text-t4">
+            <p className="font-label text-[11px] uppercase tracking-[0.08em] text-t4">
               {dispatchStep === 0
                 ? 'Nenhuma mensagem enviada'
                 : `${dispatchStep} de 5 mensagens enviadas`}
@@ -412,7 +412,7 @@ function LeadCard({
         <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
           <button
             onClick={handleSendAndRegister}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-[11px] font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
             title="Enviar template e registrar disparo"
           >
             <MessageCircle size={12} strokeWidth={1.6} />
@@ -483,11 +483,11 @@ function KanbanColumn({
         <div className="flex flex-col px-4 pt-3.5 pb-2.5">
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${stage.dot}`} />
-            <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t2">
+            <span className="font-label text-xs font-medium uppercase tracking-[0.12em] text-t2">
               {stage.label}
             </span>
             <div className="ml-auto flex items-center gap-1.5">
-              <span className="font-label text-[11px] font-semibold text-t3 tabular-nums">
+              <span className="font-label text-xs font-semibold text-t3 tabular-nums">
                 {leads.length.toLocaleString('pt-BR')}
               </span>
               {leads.length > 0 && (
@@ -505,7 +505,7 @@ function KanbanColumn({
           {/* VGV da coluna */}
           {showVgv && colVGV > 0 && (
             <div className="flex items-center gap-1.5 mt-1 pl-4">
-              <span className="font-label text-[10px] text-t3 font-medium tabular-nums">
+              <span className="font-label text-[11px] text-t3 font-medium tabular-nums">
                 VGV {formatCurrency(colVGV)}
               </span>
             </div>
@@ -520,7 +520,7 @@ function KanbanColumn({
         >
           {leads.length === 0 ? (
             <div className="flex-1 flex items-center justify-center rounded-[14px] border border-dashed border-line m-0.5">
-              <p className="text-[11px] text-t4 text-center">Arraste cards aqui</p>
+              <p className="text-xs text-t4 text-center">Arraste cards aqui</p>
             </div>
           ) : (
             <>
@@ -530,7 +530,7 @@ function KanbanColumn({
               {hasMore && (
                 <button
                   onClick={() => setVisible(v => v + COLUMN_PAGE)}
-                  className="flex items-center justify-center gap-1.5 py-2 font-label text-[11px] uppercase tracking-[0.08em] text-t3 hover:text-t2 border border-dashed border-line hover:border-line-strong rounded-[14px] transition-all duration-150 cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-2 font-label text-xs uppercase tracking-[0.08em] text-t3 hover:text-t2 border border-dashed border-line hover:border-line-strong rounded-[14px] transition-all duration-150 cursor-pointer"
                 >
                   <ChevronDown size={12} strokeWidth={1.6} />
                   +{(sorted.length - visible).toLocaleString('pt-BR')} leads
@@ -608,7 +608,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
           <button
             key={f.value}
             onClick={() => setDateFilter(f.value)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-label text-[11px] uppercase tracking-[0.08em] border transition-all duration-150 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-label text-xs uppercase tracking-[0.08em] border transition-all duration-150 cursor-pointer ${
               dateFilter === f.value
                 ? 'bg-brand-tint border-brand/40 text-brand-text'
                 : 'bg-s2/60 border-line text-t3 hover:text-t2 hover:border-line-strong'

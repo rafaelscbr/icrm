@@ -197,7 +197,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                   <opt.icon size={16} className={kind === opt.value ? 'text-brand' : 'text-t4'} />
                   <div>
                     <p className="text-sm font-medium">{opt.label}</p>
-                    <p className="text-[10px] opacity-70">{opt.desc}</p>
+                    <p className="text-[11px] opacity-70">{opt.desc}</p>
                   </div>
                 </button>
               ))}

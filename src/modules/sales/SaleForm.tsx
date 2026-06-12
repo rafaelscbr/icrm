@@ -277,7 +277,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
             {/* Split — presets rápidos */}
             <div className="flex flex-col gap-2 pt-1 border-t border-violet-500/10">
-              <p className="text-[10px] font-medium text-t3 uppercase tracking-wider">Divisão da comissão</p>
+              <p className="text-[11px] font-medium text-t3 uppercase tracking-wider">Divisão da comissão</p>
               <div className="flex gap-1.5">
                 {([['100', 'Autônomo', '100%'], ['50', 'Parceria', '50/50'], ['40', 'Com imob.', '40%']] as const).map(([val, label, sub]) => (
                   <button
@@ -291,7 +291,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                     }`}
                   >
                     <span className="text-xs font-semibold">{label}</span>
-                    <span className="text-[10px] opacity-70">{sub}</span>
+                    <span className="text-[11px] opacity-70">{sub}</span>
                   </button>
                 ))}
                 {/* Input manual de split */}
@@ -306,7 +306,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                     className="w-10 bg-transparent text-xs text-t2 focus:outline-none text-center"
                     placeholder="—"
                   />
-                  <span className="text-[10px] text-t4">%</span>
+                  <span className="text-[11px] text-t4">%</span>
                 </div>
               </div>
             </div>
@@ -327,11 +327,11 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   /* Modo split: exibe divisão */
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
-                      <p className="text-[10px] text-t3 mb-0.5">Comissão total</p>
+                      <p className="text-[11px] text-t3 mb-0.5">Comissão total</p>
                       <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
                     </div>
                     <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
-                      <p className="text-[10px] text-t3 mb-0.5">Sua parte ({brokerPct}%)</p>
+                      <p className="text-[11px] text-t3 mb-0.5">Sua parte ({brokerPct}%)</p>
                       <p className="text-sm font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.brokerComm)}</p>
                     </div>
                   </div>

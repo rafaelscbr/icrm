@@ -239,7 +239,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         {/* Ticket médio */}
         <Card className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-t3 uppercase tracking-wider">Ticket Médio</p>
+            <p className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Ticket Médio</p>
             {!editingTicket && (
               <button onClick={() => setEditingTicket(true)} className="p-1 rounded-lg text-t4 hover:text-t2 hover:bg-s3/50 transition-colors cursor-pointer">
                 <Pencil size={12} />
@@ -268,25 +268,25 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
               {hasTicket ? fmtFull(ticket) : 'Não definido'}
             </p>
           )}
-          <p className="text-[11px] text-t4">Valor médio do produto</p>
+          <p className="text-xs text-t4">Valor médio do produto</p>
         </Card>
 
         {/* Vendas projetadas */}
         <Card className="flex flex-col gap-3">
-          <p className="text-[10px] font-semibold text-green-500/70 uppercase tracking-wider">Vendas Projetadas</p>
+          <p className="text-[11px] font-semibold text-green-500/70 uppercase tracking-wider">Vendas Projetadas</p>
           <p className="text-2xl font-bold tabular-nums text-green-400">
             {fmtLeads(totalSales)}
           </p>
-          <p className="text-[11px] text-t4">de {totalActive} leads ativos no funil</p>
+          <p className="text-xs text-t4">de {totalActive} leads ativos no funil</p>
         </Card>
 
         {/* VGV esperado */}
         <Card accent="indigo" className="flex flex-col gap-3">
-          <p className="text-[10px] font-semibold text-brand/70 uppercase tracking-wider">VGV Esperado</p>
+          <p className="text-[11px] font-semibold text-brand/70 uppercase tracking-wider">VGV Esperado</p>
           <p className={`text-2xl font-bold tabular-nums ${hasTicket ? 'text-brand-text' : 'text-t4'}`}>
             {hasTicket ? fmtCompact(totalVGV) : '—'}
           </p>
-          <p className="text-[11px] text-t4">{hasTicket ? `${fmtLeads(totalSales)} vendas × ${fmtFull(ticket)}` : 'Defina o ticket médio'}</p>
+          <p className="text-xs text-t4">{hasTicket ? `${fmtLeads(totalSales)} vendas × ${fmtFull(ticket)}` : 'Defina o ticket médio'}</p>
         </Card>
       </div>
 
@@ -306,7 +306,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         <div className="px-5 py-4 border-b border-line flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-t1">Funil de Previsibilidade</h3>
-            <p className="text-[11px] text-t4 mt-0.5">Cada taxa aplica sobre o resultado da etapa anterior em cascata</p>
+            <p className="text-xs text-t4 mt-0.5">Cada taxa aplica sobre o resultado da etapa anterior em cascata</p>
           </div>
           <div className="flex items-center gap-2">
             {hasCustomRates && (
@@ -334,13 +334,13 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${block.dotColor}`} />
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold ${block.textColor}`}>{block.label}</p>
-                    {block.sublabel && <p className="text-[11px] text-t4">{block.sublabel}</p>}
+                    {block.sublabel && <p className="text-xs text-t4">{block.sublabel}</p>}
                   </div>
                 </div>
 
                 {/* Leads reais (cumulativo para etapas intermediárias) */}
                 <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] text-t4 mb-0.5">{block.key === 'cold' ? 'leads reais' : 'acumulado'}</p>
+                  <p className="text-[11px] text-t4 mb-0.5">{block.key === 'cold' ? 'leads reais' : 'acumulado'}</p>
                   <p className={`text-lg font-bold tabular-nums ${block.realCount > 0 ? 'text-t1' : 'text-t4'}`}>
                     {block.realCount}
                   </p>
@@ -349,7 +349,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                 {/* Projeção entrada (exceto topo) */}
                 {block.projIn !== null && (
                   <div className="text-right flex-shrink-0 pl-3 border-l border-line">
-                    <p className="text-[10px] text-t4 mb-0.5">proj. da base</p>
+                    <p className="text-[11px] text-t4 mb-0.5">proj. da base</p>
                     <p className="text-sm font-semibold tabular-nums text-t3">
                       {fmtLeads(block.projIn)}
                     </p>
@@ -379,7 +379,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   </div>
                   {idx === 0 && (
                     <div className="text-right">
-                      <p className="text-[10px] text-t4">projeção</p>
+                      <p className="text-[11px] text-t4">projeção</p>
                       <p className="text-sm font-semibold tabular-nums text-t2">
                         {fmtLeads(projAfter.attended)} leads
                       </p>
@@ -387,7 +387,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   )}
                   {idx === 1 && (
                     <div className="text-right">
-                      <p className="text-[10px] text-t4">projeção</p>
+                      <p className="text-[11px] text-t4">projeção</p>
                       <p className="text-sm font-semibold tabular-nums text-t2">
                         {fmtLeads(projAfter.scheduled)} leads
                       </p>
@@ -395,7 +395,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
                   )}
                   {idx === 2 && (
                     <div className="text-right">
-                      <p className="text-[10px] text-t4">vendas projetadas</p>
+                      <p className="text-[11px] text-t4">vendas projetadas</p>
                       <p className="text-sm font-bold tabular-nums text-green-400">
                         {fmtLeads(projAfter.sale)}
                       </p>
@@ -413,20 +413,20 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
               <Trophy size={16} className="text-green-400 flex-shrink-0" />
               <div>
                 <p className="text-sm font-bold text-green-300">Vendas Projetadas</p>
-                <p className="text-[11px] text-t3 mt-0.5">
+                <p className="text-xs text-t3 mt-0.5">
                   {count.transferred} transferidos ao funil · {fmtLeads(proj.fromScheduled + proj.fromAttended + proj.fromCold)} projetadas da base fria
                 </p>
               </div>
             </div>
 
             <div className="text-right flex-shrink-0">
-              <p className="text-[10px] text-t3 mb-0.5">total projetado</p>
+              <p className="text-[11px] text-t3 mb-0.5">total projetado</p>
               <p className="text-xl font-bold tabular-nums text-green-400">{fmtLeads(totalSales)}</p>
             </div>
 
             {hasTicket && (
               <div className="text-right flex-shrink-0 pl-3 border-l border-green-500/20">
-                <p className="text-[10px] text-t3 mb-0.5">VGV esperado</p>
+                <p className="text-[11px] text-t3 mb-0.5">VGV esperado</p>
                 <p className="text-xl font-bold tabular-nums text-brand-text">{fmtCompact(totalVGV)}</p>
               </div>
             )}
@@ -437,7 +437,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         {/* Rodapé info */}
         <div className="px-5 py-3 border-t border-line flex items-center gap-2">
           <Sparkles size={11} className="text-indigo-500/60 flex-shrink-0" />
-          <p className="text-[11px] text-t4">
+          <p className="text-xs text-t4">
             Funil da campanha vai até "Agendou Apresentação". Após o agendamento, o lead é transferido para o funil principal e segue de lá. A taxa de fechamento representa a conversão combinada no funil principal.
             {hasCustomRates && <span className="text-brand/80"> Taxas personalizadas ativas.</span>}
           </p>

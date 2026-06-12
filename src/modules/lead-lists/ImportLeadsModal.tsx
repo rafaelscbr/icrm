@@ -352,7 +352,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
                 { label: 'Nome',     keys: 'nome, cliente, lead, prospect' },
                 { label: 'E-mail',   keys: 'email, mail, correio' },
               ].map(c => (
-                <div key={c.label} className="text-[11px]">
+                <div key={c.label} className="text-xs">
                   <p className="font-semibold text-t2 mb-0.5">{c.label}</p>
                   <p className="text-t4">{c.keys}</p>
                 </div>
@@ -388,7 +388,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
                 <span className={s.color}>{s.icon}</span>
                 <div>
                   <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value.toLocaleString('pt-BR')}</p>
-                  <p className="text-[11px] text-t4">{s.label}</p>
+                  <p className="text-xs text-t4">{s.label}</p>
                 </div>
               </div>
             ))}
@@ -417,7 +417,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
                 </tbody>
               </table>
               {parsed.length > 5 && (
-                <p className="text-center text-[11px] text-t4 py-2 border-t border-line/50">
+                <p className="text-center text-xs text-t4 py-2 border-t border-line/50">
                   + {(parsed.length - 5).toLocaleString('pt-BR')} registros
                 </p>
               )}
@@ -549,20 +549,20 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
 
               {/* Ações em massa */}
               <div className="flex items-center justify-between">
-                <p className="text-[11px] text-t4">
+                <p className="text-xs text-t4">
                   {filteredConflicted.length.toLocaleString('pt-BR')} lead{filteredConflicted.length !== 1 ? 's' : ''} com histórico
                   {filterType !== 'all' && ' (filtrado)'}
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setAllVisible(true)}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-green-500/10 hover:bg-green-500/15 border border-green-500/20 text-green-400 transition-all"
+                    className="text-xs px-2.5 py-1 rounded-lg bg-green-500/10 hover:bg-green-500/15 border border-green-500/20 text-green-400 transition-all"
                   >
                     Marcar todos
                   </button>
                   <button
                     onClick={() => setAllVisible(false)}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-s2/50 hover:bg-s3/50 border border-line text-t4 hover:text-t2 transition-all"
+                    className="text-xs px-2.5 py-1 rounded-lg bg-s2/50 hover:bg-s3/50 border border-line text-t4 hover:text-t2 transition-all"
                   >
                     Desmarcar todos
                   </button>
@@ -661,7 +661,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
                 <p className={`text-xl font-bold tabular-nums ${s.color}`}>
                   {s.value.toLocaleString('pt-BR')}
                 </p>
-                <p className="text-[11px] text-t4 mt-0.5">{s.label}</p>
+                <p className="text-xs text-t4 mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
@@ -671,7 +671,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
             <div className="p-3 bg-red-500/8 border border-red-500/20 rounded-xl">
               <p className="text-xs font-semibold text-red-400 mb-1">Erros encontrados</p>
               {stats.errors.map((e, i) => (
-                <p key={i} className="text-[11px] text-red-400/70">{e}</p>
+                <p key={i} className="text-xs text-red-400/70">{e}</p>
               ))}
             </div>
           )}
@@ -701,7 +701,7 @@ function SummaryCard({
         <p className={`text-lg font-bold tabular-nums leading-none ${color}`}>
           {value.toLocaleString('pt-BR')}
         </p>
-        <p className="text-[11px] text-t4 mt-0.5 leading-tight">{label}</p>
+        <p className="text-xs text-t4 mt-0.5 leading-tight">{label}</p>
       </div>
     </div>
   )
@@ -748,7 +748,7 @@ function ConflictRow({
           <span className="text-xs font-semibold text-t1 group-hover:text-white transition-colors">
             {lead.name}
           </span>
-          <span className="text-[11px] text-t4 font-mono">{formatPhone(lead.phone)}</span>
+          <span className="text-xs text-t4 font-mono">{formatPhone(lead.phone)}</span>
         </div>
 
         {/* Conflitos — um por linha */}
@@ -761,9 +761,9 @@ function ConflictRow({
                 <span className={`w-1 h-1 rounded-full mt-1.5 flex-shrink-0 ${cfg.dot}`} />
                 <div className="flex items-center gap-1 flex-wrap">
                   <Icon size={10} className={`${cfg.color} flex-shrink-0`} />
-                  <span className={`text-[11px] font-medium ${cfg.color}`}>{c.label}</span>
+                  <span className={`text-xs font-medium ${cfg.color}`}>{c.label}</span>
                   {c.subLabel && (
-                    <span className="text-[11px] text-t4">— {c.subLabel}</span>
+                    <span className="text-xs text-t4">— {c.subLabel}</span>
                   )}
                 </div>
               </div>
@@ -774,7 +774,7 @@ function ConflictRow({
 
       {/* Badge de cliente (destaque) */}
       {isClient && (
-        <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/25 text-red-400 font-medium">
+        <span className="flex-shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/25 text-red-400 font-medium">
           Cliente
         </span>
       )}

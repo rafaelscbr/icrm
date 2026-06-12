@@ -43,16 +43,16 @@ function formatDays(days: number): string {
 }
 
 function DeltaBadge({ current, prev, unit = '' }: { current: number; prev: number; unit?: string }) {
-  if (prev === 0 && current === 0) return <span className="text-[10px] text-t4">—</span>
+  if (prev === 0 && current === 0) return <span className="text-[11px] text-t4">—</span>
   const delta = current - prev
   if (delta === 0) return (
-    <span className="flex items-center gap-0.5 text-[10px] text-t3">
+    <span className="flex items-center gap-0.5 text-[11px] text-t3">
       <Minus size={9} /> igual à semana passada
     </span>
   )
   const up = delta > 0
   return (
-    <span className={`flex items-center gap-0.5 text-[10px] font-medium ${up ? 'text-emerald-400' : 'text-red-400'}`}>
+    <span className={`flex items-center gap-0.5 text-[11px] font-medium ${up ? 'text-emerald-400' : 'text-red-400'}`}>
       {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
       {up ? '+' : ''}{delta}{unit} vs semana passada
     </span>
@@ -204,7 +204,7 @@ export function LeadsPerformance({ leads }: Props) {
           </div>
           <div>
             <p className="text-sm font-semibold text-t1">Atividade da semana</p>
-            <p className="text-[11px] text-t4">Segunda a hoje · comparativo com semana anterior</p>
+            <p className="text-xs text-t4">Segunda a hoje · comparativo com semana anterior</p>
           </div>
         </div>
 
@@ -220,7 +220,7 @@ export function LeadsPerformance({ leads }: Props) {
                 <Icon size={13} className={color} />
               </div>
               <p className={`text-3xl font-black tabular-nums ${color}`}>{now}</p>
-              <p className="text-[11px] text-t3 mt-0.5 mb-2">{label}</p>
+              <p className="text-xs text-t3 mt-0.5 mb-2">{label}</p>
               <DeltaBadge current={now} prev={prev} />
             </div>
           ))}
@@ -236,13 +236,13 @@ export function LeadsPerformance({ leads }: Props) {
             </div>
             <p className="text-sm font-semibold text-t1">Ritmo de contatos — últimos 30 dias</p>
           </div>
-          <div className="flex items-center gap-4 text-[11px] text-t3">
+          <div className="flex items-center gap-4 text-xs text-t3">
             <span>Média: <span className="text-t2 font-semibold">{avgDaily}/dia ativo</span></span>
             <span>Melhor dia: <span className="text-violet-300 font-semibold">{bestDow.name} ({bestDow.total})</span></span>
           </div>
         </div>
 
-        <p className="text-[11px] text-t4 mb-4 ml-9">Contatos reais: WhatsApp, ligação, email, visita, reunião, nota</p>
+        <p className="text-xs text-t4 mb-4 ml-9">Contatos reais: WhatsApp, ligação, email, visita, reunião, nota</p>
 
         {/* Gráfico de barras */}
         <div className="flex items-end gap-[3px] h-28">
@@ -253,7 +253,7 @@ export function LeadsPerformance({ leads }: Props) {
             return (
               <div key={day.dateStr} className="flex-1 flex flex-col items-center gap-1 group relative">
                 {day.contacts > 0 && (
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:flex bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:flex bg-slate-800 text-white text-[11px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                     {day.label}: {day.contacts}
                   </div>
                 )}
@@ -276,7 +276,7 @@ export function LeadsPerformance({ leads }: Props) {
         {/* Labels de referência */}
         <div className="flex justify-between mt-1.5 px-0.5">
           {[0, 9, 19, 29].map(i => (
-            <span key={i} className="text-[9px] text-t5">{dailyRhythm[i]?.label}</span>
+            <span key={i} className="text-[11px] text-t5">{dailyRhythm[i]?.label}</span>
           ))}
         </div>
       </div>
@@ -289,7 +289,7 @@ export function LeadsPerformance({ leads }: Props) {
           </div>
           <div>
             <p className="text-sm font-semibold text-t1">Eficiência do funil</p>
-            <p className="text-[11px] text-t4">Tempo médio em etapa · taxa de avanço · descartes por etapa</p>
+            <p className="text-xs text-t4">Tempo médio em etapa · taxa de avanço · descartes por etapa</p>
           </div>
         </div>
 
@@ -302,7 +302,7 @@ export function LeadsPerformance({ leads }: Props) {
               {/* Etapa */}
               <div className="w-24 flex-shrink-0">
                 <p className={`text-xs font-bold ${item.conf.headerText}`}>{item.conf.label}</p>
-                <p className="text-[10px] text-t4">{item.count} ativo{item.count !== 1 ? 's' : ''}</p>
+                <p className="text-[11px] text-t4">{item.count} ativo{item.count !== 1 ? 's' : ''}</p>
               </div>
 
               {/* Tempo médio na etapa */}
@@ -313,7 +313,7 @@ export function LeadsPerformance({ leads }: Props) {
                     item.avgDays <= 3 ? 'text-t3' :
                     item.avgDays <= 7 ? 'text-amber-400' : 'text-red-400'
                   }`}>{formatDays(item.avgDays)}</p>
-                  <p className="text-[9px] text-t5">tempo médio</p>
+                  <p className="text-[11px] text-t5">tempo médio</p>
                 </div>
               </div>
 
@@ -322,7 +322,7 @@ export function LeadsPerformance({ leads }: Props) {
                 {item.convRate !== null ? (
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] text-t3">{item.advancedFrom} avançaram · {item.discardedHere} saíram</span>
+                      <span className="text-[11px] text-t3">{item.advancedFrom} avançaram · {item.discardedHere} saíram</span>
                       <span className={`text-xs font-bold tabular-nums ${
                         item.convRate >= 70 ? 'text-emerald-400' :
                         item.convRate >= 40 ? 'text-amber-400' : 'text-red-400'
@@ -339,14 +339,14 @@ export function LeadsPerformance({ leads }: Props) {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[10px] text-t5">Sem movimentações registradas ainda</p>
+                  <p className="text-[11px] text-t5">Sem movimentações registradas ainda</p>
                 )}
               </div>
             </div>
           ))}
         </div>
 
-        <p className="text-[10px] text-t5 mt-3">
+        <p className="text-[11px] text-t5 mt-3">
           * Taxa de avanço é calculada com base nos logs de movimentação a partir do momento em que a feature foi ativada.
           Dados crescem com o uso.
         </p>

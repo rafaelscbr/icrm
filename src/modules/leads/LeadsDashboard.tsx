@@ -222,7 +222,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         <div className="bg-error-bg border border-error-line rounded-[14px] p-3">
           <div className="flex items-center gap-2 mb-2">
             <Timer size={13} strokeWidth={1.6} className="text-error" />
-            <p className="font-label text-[10px] font-medium uppercase tracking-[0.12em] text-error">
+            <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-error">
               SLA Meta Ads — {slaLeads.length === 1 ? '1 lead aguardando' : `${slaLeads.length} leads aguardando`} 1º contato
             </p>
           </div>
@@ -279,10 +279,10 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       <div className="bg-page border border-line rounded-xl p-5">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-t3 mb-0.5">Funil de Vendas</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-t3 mb-0.5">Funil de Vendas</p>
             <p className="text-base font-bold text-t1">Pipeline Estratégico</p>
           </div>
-          <span className="text-[10px] text-t4 bg-s2/50 border border-line px-2 py-1 rounded-lg">↓% perda · ⚠ parado +7d</span>
+          <span className="text-[11px] text-t4 bg-s2/50 border border-line px-2 py-1 rounded-lg">↓% perda · ⚠ parado +7d</span>
         </div>
         <div className="flex items-stretch gap-1 overflow-x-auto pb-1 min-w-0">
           {funnelStages.map((item, i) => (
@@ -290,33 +290,33 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
               <div className={`flex flex-col w-[138px] rounded-xl border ${item.conf.border} ${item.conf.bg} p-3 gap-1`}>
                 {/* Queda da etapa anterior */}
                 {i > 0 ? (
-                  <span className={`text-[10px] font-bold ${
+                  <span className={`text-[11px] font-bold ${
                     item.dropRate > 50 ? 'text-red-400' :
                     item.dropRate > 25 ? 'text-amber-400' : 'text-green-400'
                   }`}>
                     ↓ {item.dropRate}% saiu
                   </span>
                 ) : (
-                  <span className="text-[10px] text-t4">{leads.length} total</span>
+                  <span className="text-[11px] text-t4">{leads.length} total</span>
                 )}
 
                 <p className={`text-xs font-semibold mt-0.5 ${item.conf.headerText}`}>{item.conf.label}</p>
                 <p className={`text-3xl font-bold leading-none ${item.conf.color}`}>{item.count}</p>
 
                 {item.vgv > 0 && (
-                  <p className="text-[10px] text-t3 mt-0.5">{formatCurrency(item.vgv)}</p>
+                  <p className="text-[11px] text-t3 mt-0.5">{formatCurrency(item.vgv)}</p>
                 )}
 
                 {item.parados > 0 && item.stage !== 'venda' && (
                   <div className="flex items-center gap-1 mt-1">
                     <AlertTriangle size={9} className="text-amber-400 flex-shrink-0" />
-                    <span className="text-[10px] text-amber-400">{item.parados} esfriando</span>
+                    <span className="text-[11px] text-amber-400">{item.parados} esfriando</span>
                   </div>
                 )}
                 {item.discardedHere > 0 && (
                   <div className="flex items-center gap-1 mt-0.5">
                     <XCircle size={9} className="text-rose-400 flex-shrink-0" />
-                    <span className="text-[10px] text-rose-400">{item.discardedHere} saíram aqui</span>
+                    <span className="text-[11px] text-rose-400">{item.discardedHere} saíram aqui</span>
                   </div>
                 )}
               </div>
@@ -336,17 +336,17 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         <div className="flex items-center gap-2 mb-1">
           <Thermometer size={13} className="text-orange-400" />
           <p className="text-sm font-semibold text-t1">Radar de Temperatura do Pipeline</p>
-          {!allLoaded && <span className="ml-2 text-[10px] text-t4 animate-pulse">carregando interações…</span>}
-          <span className="ml-auto text-[11px] text-t4">sem interação nos últimos 3 dias</span>
+          {!allLoaded && <span className="ml-2 text-[11px] text-t4 animate-pulse">carregando interações…</span>}
+          <span className="ml-auto text-xs text-t4">sem interação nos últimos 3 dias</span>
         </div>
-        <p className="text-[11px] text-t4 mb-4">
+        <p className="text-xs text-t4 mb-4">
           Leads que esfriaram — VGV em risco de perda por inatividade
         </p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-[10px] text-t4 uppercase tracking-wider border-b border-line">
+              <tr className="text-[11px] text-t4 uppercase tracking-wider border-b border-line">
                 <th className="text-left pb-2 pr-4">Etapa</th>
                 <th className="text-center pb-2 px-4">Total</th>
                 <th className="text-center pb-2 px-4">Frios +3d</th>
@@ -369,7 +369,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                 return (
                   <tr key={row.stage} className={`${tempBg} transition-colors`}>
                     <td className="py-2.5 pr-4">
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${row.conf.bg} ${row.conf.color} ${row.conf.border}`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${row.conf.bg} ${row.conf.color} ${row.conf.border}`}>
                         {row.label}
                       </span>
                     </td>
@@ -393,7 +393,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                               style={{ width: `${row.coldPct}%` }}
                             />
                           </div>
-                          <span className={`text-[11px] font-semibold ${tempColor}`}>
+                          <span className={`text-xs font-semibold ${tempColor}`}>
                             {row.coldPct.toFixed(0)}%
                           </span>
                         </div>
@@ -402,7 +402,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                       )}
                     </td>
                     <td className="text-right py-2.5 pl-4">
-                      <span className={`text-[11px] font-semibold ${row.vgvAtRisk > 0 ? 'text-orange-300' : 'text-t5'}`}>
+                      <span className={`text-xs font-semibold ${row.vgvAtRisk > 0 ? 'text-orange-300' : 'text-t5'}`}>
                         {row.vgvAtRisk > 0 ? formatCurrency(row.vgvAtRisk) : '—'}
                       </span>
                     </td>
@@ -413,7 +413,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
             {radarData.some(r => r.vgvAtRisk > 0) && (
               <tfoot>
                 <tr className="border-t border-line">
-                  <td colSpan={4} className="pt-2.5 text-[10px] text-t4">Total VGV em risco</td>
+                  <td colSpan={4} className="pt-2.5 text-[11px] text-t4">Total VGV em risco</td>
                   <td className="pt-2.5 text-right text-xs font-bold text-orange-300">
                     {formatCurrency(radarData.reduce((s, r) => s + r.vgvAtRisk, 0))}
                   </td>
@@ -438,9 +438,9 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
           <div className="flex items-center gap-2 mb-1">
             <Crown size={13} className="text-amber-400" />
             <p className="text-sm font-semibold text-t1">Prioridade de Contato</p>
-            <span className="ml-auto text-[11px] text-t4">Etapa × Ticket × Dias parado</span>
+            <span className="ml-auto text-xs text-t4">Etapa × Ticket × Dias parado</span>
           </div>
-          <p className="text-[11px] text-t4 mb-4">
+          <p className="text-xs text-t4 mb-4">
             Quem ligar agora para maximizar conversão
           </p>
 
@@ -473,10 +473,10 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-t1 truncate">{lead.name}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[10px] px-1.5 py-px rounded-full border ${conf.bg} ${conf.color} ${conf.border}`}>
+                        <span className={`text-[11px] px-1.5 py-px rounded-full border ${conf.bg} ${conf.color} ${conf.border}`}>
                           {conf.label}
                         </span>
-                        <span className={`text-[10px] flex items-center gap-0.5 ${days > 7 ? 'text-amber-400' : 'text-t4'}`}>
+                        <span className={`text-[11px] flex items-center gap-0.5 ${days > 7 ? 'text-amber-400' : 'text-t4'}`}>
                           <Clock size={8} /> {days}d sem atualização
                         </span>
                       </div>
@@ -488,7 +488,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                         {formatCurrency(lead.averageTicket)}
                       </span>
                     ) : (
-                      <span className="text-[10px] text-t5 flex-shrink-0">sem ticket</span>
+                      <span className="text-[11px] text-t5 flex-shrink-0">sem ticket</span>
                     )}
 
                     <ChevronRight size={11} className="text-t5 group-hover:text-t3 flex-shrink-0 transition-colors" />
@@ -505,7 +505,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
             <Zap size={13} className="text-t2" />
             <p className="text-sm font-semibold text-t1">Performance por Canal</p>
           </div>
-          <p className="text-[11px] text-t4 mb-4">
+          <p className="text-xs text-t4 mb-4">
             Onde investir mais esforço comercial
           </p>
 
@@ -518,9 +518,9 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                   <div className="flex items-center gap-2 mb-2.5">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
                     <span className="text-xs font-semibold text-t1">{c.emoji} {c.label}</span>
-                    <span className="ml-auto text-[10px] text-t3">{c.total} leads</span>
+                    <span className="ml-auto text-[11px] text-t3">{c.total} leads</span>
                     {isBestConv && (
-                      <span className="text-[9px] px-1.5 py-px rounded-full bg-green-500/20 text-green-400 border border-green-500/25">melhor conv.</span>
+                      <span className="text-[11px] px-1.5 py-px rounded-full bg-green-500/20 text-green-400 border border-green-500/25">melhor conv.</span>
                     )}
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
@@ -531,13 +531,13 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                       }`}>
                         {c.convRate.toFixed(1)}%
                       </p>
-                      <p className="text-[9px] text-t4 mt-0.5">conversão</p>
+                      <p className="text-[11px] text-t4 mt-0.5">conversão</p>
                     </div>
                     <div>
                       <p className="text-sm font-bold text-t2">
                         {c.avgTkt > 0 ? formatCurrency(c.avgTkt) : '—'}
                       </p>
-                      <p className="text-[9px] text-t4 mt-0.5">ticket médio</p>
+                      <p className="text-[11px] text-t4 mt-0.5">ticket médio</p>
                     </div>
                     <div>
                       <p className={`text-sm font-bold ${
@@ -546,15 +546,15 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                       }`}>
                         {c.discRate.toFixed(0)}%
                       </p>
-                      <p className="text-[9px] text-t4 mt-0.5">descartados</p>
+                      <p className="text-[11px] text-t4 mt-0.5">descartados</p>
                     </div>
                   </div>
 
                   {/* VGV bar */}
                   {c.vgv > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-line flex items-center justify-between">
-                      <span className="text-[10px] text-t4">VGV ativo</span>
-                      <span className="text-[11px] font-semibold text-violet-300">{formatCurrency(c.vgv)}</span>
+                      <span className="text-[11px] text-t4">VGV ativo</span>
+                      <span className="text-xs font-semibold text-violet-300">{formatCurrency(c.vgv)}</span>
                     </div>
                   )}
                 </div>
@@ -572,9 +572,9 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
           <div className="flex items-center gap-2 mb-1">
             <MessageCircle size={13} className="text-t2" />
             <p className="text-sm font-semibold text-t1">Inteligência de Follow-up</p>
-            <span className="ml-auto text-[11px] text-t4">{followupLeads.length} em followup</span>
+            <span className="ml-auto text-xs text-t4">{followupLeads.length} em followup</span>
           </div>
-          <p className="text-[11px] text-t4 mb-4">
+          <p className="text-xs text-t4 mb-4">
             Em qual mensagem os leads param de responder
           </p>
 
@@ -594,7 +594,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                 return (
                   <div key={i} className={`${isRisk ? 'bg-amber-500/5 border border-amber-500/15 rounded-xl p-2.5 -mx-1' : ''}`}>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[11px] w-38 flex-shrink-0 ${isRisk ? 'text-amber-400 font-semibold' : 'text-t3'}`}
+                      <span className={`text-xs w-38 flex-shrink-0 ${isRisk ? 'text-amber-400 font-semibold' : 'text-t3'}`}
                             style={{ width: '144px' }}>
                         {isRisk && '⚠ '}{label}
                       </span>
@@ -610,7 +610,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                       <span className="text-xs font-bold text-t1 w-5 text-right flex-shrink-0">
                         {item.count}
                       </span>
-                      <span className={`text-[10px] w-10 text-right flex-shrink-0 ${
+                      <span className={`text-[11px] w-10 text-right flex-shrink-0 ${
                         dropPct !== null && dropPct > 50 ? 'text-red-400' : 'text-t5'
                       }`}>
                         {dropPct !== null && item.count > 0 && dropPct > 0 ? `-${dropPct}%` : ''}
@@ -623,7 +623,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
               {/* Insight contextual */}
               {followupSteps[0].count > 0 && (
                 <div className="mt-1 pt-3 border-t border-line">
-                  <p className="text-[11px] text-amber-400/80">
+                  <p className="text-xs text-amber-400/80">
                     ⚡ {followupSteps[0].count} lead{followupSteps[0].count > 1 ? 's' : ''} nunca {followupSteps[0].count > 1 ? 'foram' : 'foi'} contactado{followupSteps[0].count > 1 ? 's' : ''} — acionar agora
                   </p>
                 </div>
@@ -637,9 +637,9 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
           <div className="flex items-center gap-2 mb-1">
             <XCircle size={13} className="text-red-400" />
             <p className="text-sm font-semibold text-t1">Análise de Perda</p>
-            <span className="ml-auto text-[11px] text-t4">{discarded.length} descartados</span>
+            <span className="ml-auto text-xs text-t4">{discarded.length} descartados</span>
           </div>
-          <p className="text-[11px] text-t4 mb-4">
+          <p className="text-xs text-t4 mb-4">
             VGV perdido por motivo — onde mais estamos deixando dinheiro na mesa
           </p>
 
@@ -653,11 +653,11 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                   <div key={item.key}>
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-1.5">
-                        {i === 0 && <span className="text-[9px] px-1.5 py-px rounded-full bg-red-500/20 text-red-400 border border-red-500/25">maior perda</span>}
-                        <span className="text-[11px] text-t3">{item.label}</span>
+                        {i === 0 && <span className="text-[11px] px-1.5 py-px rounded-full bg-red-500/20 text-red-400 border border-red-500/25">maior perda</span>}
+                        <span className="text-xs text-t3">{item.label}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-t4">{item.count} leads</span>
+                        <span className="text-[11px] text-t4">{item.count} leads</span>
                         <span className="text-xs font-semibold text-red-300">
                           {item.vgv > 0 ? formatCurrency(item.vgv) : '—'}
                         </span>
@@ -689,10 +689,10 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         <div className="flex items-center gap-2 mb-1">
           <BarChart2 size={13} className="text-violet-400" />
           <p className="text-sm font-semibold text-t1">Pulso Comercial</p>
-          {!allLoaded && <span className="ml-2 text-[10px] text-t4 animate-pulse">carregando…</span>}
-          <span className="ml-auto text-[11px] text-t4">interações registradas nos últimos 14 dias</span>
+          {!allLoaded && <span className="ml-2 text-[11px] text-t4 animate-pulse">carregando…</span>}
+          <span className="ml-auto text-xs text-t4">interações registradas nos últimos 14 dias</span>
         </div>
-        <p className="text-[11px] text-t4 mb-5">
+        <p className="text-xs text-t4 mb-5">
           Ritmo diário da equipe — queda indica inatividade comercial
         </p>
 
@@ -708,7 +708,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
               return (
                 <div key={day.dateStr} className="flex flex-col items-center gap-1 flex-1 min-w-[28px]">
                   {/* count label on top */}
-                  <span className={`text-[9px] font-semibold leading-none ${day.count > 0 ? (isToday ? 'text-violet-300' : 'text-t3') : 'text-transparent'}`}>
+                  <span className={`text-[11px] font-semibold leading-none ${day.count > 0 ? (isToday ? 'text-violet-300' : 'text-t3') : 'text-transparent'}`}>
                     {day.count}
                   </span>
                   {/* bar */}
@@ -721,7 +721,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                     />
                   </div>
                   {/* date label */}
-                  <span className={`text-[8px] leading-none truncate w-full text-center ${isToday ? 'text-violet-400 font-semibold' : 'text-t5'}`}>
+                  <span className={`text-[10px] leading-none truncate w-full text-center ${isToday ? 'text-violet-400 font-semibold' : 'text-t5'}`}>
                     {day.label}
                   </span>
                 </div>
@@ -738,10 +738,10 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
 
         {allLoaded && pulsoData.some(d => d.count > 0) && (
           <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
-            <span className="text-[11px] text-t4">
+            <span className="text-xs text-t4">
               Total no período: <span className="text-t2 font-semibold">{pulsoData.reduce((s, d) => s + d.count, 0)} interações</span>
             </span>
-            <span className="text-[11px] text-t4">
+            <span className="text-xs text-t4">
               Média/dia: <span className="text-t2 font-semibold">{(pulsoData.reduce((s, d) => s + d.count, 0) / 14).toFixed(1)}</span>
             </span>
           </div>
@@ -772,9 +772,9 @@ function NorthStar({ icon, label, value, sub, color, bg, border, highlight }: No
       <div className={`w-8 h-8 rounded-xl ${bg} border ${border} flex items-center justify-center mb-4 ${color} relative`}>
         {icon}
       </div>
-      <p className={`text-[11px] font-semibold uppercase tracking-widest text-t3 mb-1`}>{label}</p>
+      <p className={`text-xs font-semibold uppercase tracking-widest text-t3 mb-1`}>{label}</p>
       <p className={`text-3xl font-black leading-none tabular-nums ${color}`}>{value}</p>
-      <p className="text-[10px] text-t4 mt-2 leading-tight">{sub}</p>
+      <p className="text-[11px] text-t4 mt-2 leading-tight">{sub}</p>
     </div>
   )
 }

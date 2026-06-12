@@ -197,7 +197,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
           <div className="flex flex-col gap-1">
             <label className={labelClass}>Valor mín (R$)</label>
             <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-t4 pointer-events-none">R$</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-t4 pointer-events-none">R$</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -212,7 +212,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
           <div className="flex flex-col gap-1">
             <label className={labelClass}>Valor máx (R$)</label>
             <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-t4 pointer-events-none">R$</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-t4 pointer-events-none">R$</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -276,7 +276,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span className="text-sm font-semibold text-violet-400">{formatCurrencyFull(p.value)}</span>
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                  <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
                     score >= 5 ? 'bg-green-500/20 text-green-300' :
                     score >= 3 ? 'bg-blue-500/20 text-blue-300' :
                     'bg-s3/70 text-t3'

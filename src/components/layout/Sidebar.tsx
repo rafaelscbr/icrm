@@ -9,6 +9,7 @@ import {
 import { useThemeStore } from '../../store/useThemeStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useUnreadCount } from '../../store/useNotificationsStore'
+import { useSearchStore } from '../../store/useSearchStore'
 import { NotificationsPopover } from './NotificationsPopover'
 
 const navSections = [
@@ -55,6 +56,7 @@ export function Sidebar() {
   const bellRef = useRef<HTMLButtonElement>(null)
   const { theme, toggle } = useThemeStore()
   const { profile, isAdmin, logout, allProfiles, viewAsBrokerId, setViewAsBroker } = useAuthStore()
+  const setSearchOpen = useSearchStore(s => s.setOpen)
   const unreadCount = useUnreadCount()
   const navigate = useNavigate()
 
@@ -124,26 +126,30 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* ── Search pill ──────────────────────────────────────────── */}
+      {/* ── Search pill — abre a busca global (mesmo que ⌘K) ────── */}
       <div className="px-3 py-3">
-        <div
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-default select-none transition-all"
+        <button
+          onClick={() => setSearchOpen(true)}
+          aria-label="Abrir busca global"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none transition-all text-left"
           style={{
             background: 'var(--nav-hover-bg)',
             border: '1px solid var(--nav-line)',
           }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(228,178,60,0.35)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--nav-line)' }}
         >
           <Search size={13} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
           <span className="flex-1 text-xs" style={{ color: 'var(--nav-muted)' }}>Buscar…</span>
           <kbd
-            className="text-[10px] font-mono px-1.5 py-0.5 rounded leading-4 flex-shrink-0"
+            className="text-[11px] font-mono px-1.5 py-0.5 rounded leading-4 flex-shrink-0"
             style={{
               color: 'var(--nav-muted)',
               background: 'var(--nav-hover-bg)',
               border: '1px solid var(--nav-line)',
             }}
           >⌘K</kbd>
-        </div>
+        </button>
       </div>
 
       {/* ── Nav ──────────────────────────────────────────────────── */}
@@ -152,7 +158,7 @@ export function Sidebar() {
           <div key={section.label}>
             {/* Section label */}
             <p
-              className="px-3 mb-1.5 text-[11px] font-bold uppercase tracking-widest select-none"
+              className="px-3 mb-1.5 text-xs font-bold uppercase tracking-widest select-none"
               style={{ color: 'var(--nav-muted)' }}
             >
               {section.label}
@@ -206,7 +212,7 @@ export function Sidebar() {
         {isAdmin && (
           <div>
             <p
-              className="px-3 mb-1.5 text-[11px] font-bold uppercase tracking-widest select-none"
+              className="px-3 mb-1.5 text-xs font-bold uppercase tracking-widest select-none"
               style={{ color: 'var(--nav-muted)' }}
             >
               Administração
@@ -254,7 +260,7 @@ export function Sidebar() {
 
             {/* Seletor de visão — Global / Meu Desempenho / Corretor X */}
             <div className="mt-2 px-3">
-              <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5 select-none" style={{ color: 'var(--nav-muted)' }}>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-1.5 select-none" style={{ color: 'var(--nav-muted)' }}>
                 Visão
               </p>
               <div className="flex flex-col gap-0.5">
@@ -267,7 +273,7 @@ export function Sidebar() {
                     color: viewAsBrokerId === null ? 'var(--brand-text)' : 'var(--nav-muted)',
                   }}
                 >
-                  <div className="w-4 h-4 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-bold flex-shrink-0" style={{ color: 'var(--nav-muted)' }}>G</div>
+                  <div className="w-4 h-4 rounded-full bg-slate-500/30 flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ color: 'var(--nav-muted)' }}>G</div>
                   Visão Global
                 </button>
                 {/* Meu Desempenho (admin como corretor) */}
@@ -280,7 +286,7 @@ export function Sidebar() {
                       color: viewAsBrokerId === profile.id ? 'var(--brand-text)' : 'var(--nav-muted)',
                     }}
                   >
-                    <div className="w-4 h-4 rounded-full bg-emerald-500/30 flex items-center justify-center text-[8px] font-bold text-emerald-400 flex-shrink-0">
+                    <div className="w-4 h-4 rounded-full bg-emerald-500/30 flex items-center justify-center text-[10px] font-bold text-emerald-400 flex-shrink-0">
                       {profile.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="truncate">Meu Desempenho</span>
@@ -297,7 +303,7 @@ export function Sidebar() {
                       color: viewAsBrokerId === p.id ? 'var(--brand-text)' : 'var(--nav-muted)',
                     }}
                   >
-                    <div className="w-4 h-4 rounded-full bg-brand/30 flex items-center justify-center text-[8px] font-bold text-brand flex-shrink-0">
+                    <div className="w-4 h-4 rounded-full bg-brand/30 flex items-center justify-center text-[10px] font-bold text-brand flex-shrink-0">
                       {p.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="truncate">{p.name}</span>
@@ -311,7 +317,7 @@ export function Sidebar() {
         {/* ── Ferramentas ─────────────────────────────────────────── */}
         <div>
           <p
-            className="px-3 mb-1.5 text-[11px] font-bold uppercase tracking-widest select-none"
+            className="px-3 mb-1.5 text-xs font-bold uppercase tracking-widest select-none"
             style={{ color: 'var(--nav-muted)' }}
           >
             Ferramentas
@@ -383,7 +389,7 @@ export function Sidebar() {
           <Bell size={14} style={{ color: unreadCount > 0 ? 'var(--brand)' : 'var(--nav-muted)' }} />
           <span className="flex-1 text-left text-xs">Notificações</span>
           {unreadCount > 0 && (
-            <span className="min-w-[16px] h-4 rounded-full bg-brand text-white text-[9px] font-bold flex items-center justify-center px-1">
+            <span className="min-w-[16px] h-4 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center px-1">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
@@ -434,7 +440,7 @@ export function Sidebar() {
             <p className="text-xs font-semibold truncate leading-none" style={{ color: 'var(--nav-active-text)' }}>
               {profile?.name ?? 'Usuário'}
             </p>
-            <p className="text-[10px] mt-0.5" style={{ color: 'var(--nav-muted)' }}>
+            <p className="text-[11px] mt-0.5" style={{ color: 'var(--nav-muted)' }}>
               {isAdmin ? 'Admin · Corretor' : 'Corretor'}
             </p>
           </div>

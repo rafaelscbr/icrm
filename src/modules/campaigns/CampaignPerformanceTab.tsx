@@ -32,7 +32,7 @@ function MetaCard({ label, value, target, color }: {
   const done = value >= target
   return (
     <div className="bg-s2/50 border border-line rounded-xl p-4 flex flex-col gap-2">
-      <p className="text-[10px] text-t3 uppercase tracking-wide">{label}</p>
+      <p className="text-[11px] text-t3 uppercase tracking-wide">{label}</p>
       <div className="flex items-baseline gap-1">
         <span className={`text-3xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-t1'}`}>{value}</span>
         <span className="text-sm text-t4">/ {target}</span>
@@ -44,7 +44,7 @@ function MetaCard({ label, value, target, color }: {
           style={{ width: `${p}%` }}
         />
       </div>
-      <p className="text-[10px] text-t4">{p}% da meta</p>
+      <p className="text-[11px] text-t4">{p}% da meta</p>
     </div>
   )
 }
@@ -153,7 +153,7 @@ export function CampaignPerformanceTab({ leads }: Props) {
             { label: 'Transferidos',       value: `${transferred} (${pct(transferred, total)}%)`,   color: 'text-violet-400' },
           ].map(kpi => (
             <div key={kpi.label} className="bg-s2/50 border border-line rounded-xl p-3">
-              <p className="text-[10px] text-t3 mb-1">{kpi.label}</p>
+              <p className="text-[11px] text-t3 mb-1">{kpi.label}</p>
               <p className={`text-2xl font-black tabular-nums ${kpi.color}`}>{kpi.value}</p>
             </div>
           ))}
@@ -176,7 +176,7 @@ export function CampaignPerformanceTab({ leads }: Props) {
       {/* ── Gráfico disparos × interessados (30 dias) ─────────────────────── */}
       <Card>
         <h2 className="text-sm font-semibold text-t2 mb-1">Disparos × Interessados — últimos 30 dias</h2>
-        <p className="text-[11px] text-t4 mb-5">Disparos registrados automaticamente ao clicar WhatsApp nas campanhas</p>
+        <p className="text-xs text-t4 mb-5">Disparos registrados automaticamente ao clicar WhatsApp nas campanhas</p>
         {chartData.every(d => d.Disparos === 0) ? (
           <div className="flex flex-col items-center py-10 gap-2">
             <p className="text-sm text-t4">Nenhum disparo registrado ainda</p>
@@ -213,20 +213,20 @@ export function CampaignPerformanceTab({ leads }: Props) {
             const barPct  = total > 0 ? Math.round(row.value / total * 100) : 0
             return (
               <div key={row.label} className="flex items-center gap-3">
-                <p className="text-[11px] text-t3 w-36 flex-shrink-0">{row.label}</p>
+                <p className="text-xs text-t3 w-36 flex-shrink-0">{row.label}</p>
                 <div className="flex-1 h-5 bg-s2/60 rounded-md overflow-hidden">
                   <div className={`h-full ${row.color} opacity-70 rounded-md transition-all duration-700`} style={{ width: `${barPct}%` }} />
                 </div>
                 <span className={`text-sm font-bold tabular-nums w-8 text-right ${row.text}`}>{row.value}</span>
                 {i > 0 && (
-                  <span className="text-[10px] text-t5 w-10 text-right tabular-nums">{convPct}%</span>
+                  <span className="text-[11px] text-t5 w-10 text-right tabular-nums">{convPct}%</span>
                 )}
               </div>
             )
           })}
         </div>
         {avgDaysToInterest !== null && (
-          <p className="text-[11px] text-t4 mt-4 pt-3 border-t border-line">
+          <p className="text-xs text-t4 mt-4 pt-3 border-t border-line">
             ⏱ Tempo médio até demonstrar interesse: <span className="text-cyan-400 font-semibold">{avgDaysToInterest} dias</span> após o primeiro contato
           </p>
         )}

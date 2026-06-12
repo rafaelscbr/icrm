@@ -316,7 +316,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             >
               {s.label}
               {dueDate === s.value && !showCustomDate && (
-                <span className="ml-2 text-[11px] text-indigo-400/70">{fmtDate(dueDate)}</span>
+                <span className="ml-2 text-xs text-indigo-400/70">{fmtDate(dueDate)}</span>
               )}
             </button>
           ))}
@@ -437,7 +437,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                   onMouseDown={() => { setContactId(c.id); setContactSearch(c.name); setShowContactDrop(false) }}
                   className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer flex items-center gap-2"
                 >
-                  <div className="w-6 h-6 bg-brand-tint rounded-full flex items-center justify-center text-[10px] font-bold text-brand-text flex-shrink-0">
+                  <div className="w-6 h-6 bg-brand-tint rounded-full flex items-center justify-center text-[11px] font-bold text-brand-text flex-shrink-0">
                     {c.name[0].toUpperCase()}
                   </div>
                   <span>{c.name}</span>
@@ -517,7 +517,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                     : 'border-line text-t3 hover:text-t1 hover:border-line-strong'
                   }`}
               >
-                <div className="w-4 h-4 rounded-full bg-violet-500/30 flex items-center justify-center text-[9px] font-bold text-violet-300 flex-shrink-0">
+                <div className="w-4 h-4 rounded-full bg-violet-500/30 flex items-center justify-center text-[11px] font-bold text-violet-300 flex-shrink-0">
                   {p.name[0].toUpperCase()}
                 </div>
                 {p.name}
@@ -546,7 +546,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                       : 'border-line text-t3 hover:text-t1 hover:border-line-strong'
                     }`}
                 >
-                  <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0
+                  <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0
                     ${active ? 'bg-cyan-500/30 text-cyan-300' : 'bg-s3/50 text-t3'}`}>
                     {p.name[0].toUpperCase()}
                   </div>
@@ -556,7 +556,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             })}
           </div>
           {participantIds.length > 0 && (
-            <p className="text-[10px] text-cyan-400/70 flex items-center gap-1">
+            <p className="text-[11px] text-cyan-400/70 flex items-center gap-1">
               <Users size={9} />
               {participantIds.length} participante{participantIds.length !== 1 ? 's' : ''} · todos recebem as atualizações em tempo real
             </p>
@@ -574,7 +574,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
           <ListChecks size={14} />
           {showChecklist ? 'Checklist' : 'Adicionar checklist'}
           {!showChecklist && checklist.length > 0 && (
-            <span className="text-brand bg-brand-tint px-1.5 py-0.5 rounded-md text-[10px] font-bold">
+            <span className="text-brand bg-brand-tint px-1.5 py-0.5 rounded-md text-[11px] font-bold">
               {checklist.filter(i => i.done).length}/{checklist.length}
             </span>
           )}
@@ -591,7 +591,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                     <div className={`h-full rounded-full transition-all duration-300 ${pct === 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
                       style={{ width: `${pct}%` }} />
                   </div>
-                  <span className={`text-[11px] font-bold tabular-nums flex-shrink-0 ${pct === 100 ? 'text-green-400' : 'text-t3'}`}>
+                  <span className={`text-xs font-bold tabular-nums flex-shrink-0 ${pct === 100 ? 'text-green-400' : 'text-t3'}`}>
                     {done}/{checklist.length}
                   </span>
                 </div>
@@ -757,7 +757,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                 }}
                 className="flex items-center gap-1.5 group cursor-pointer"
               >
-                <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold transition-all
+                <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all
                   ${i < step  ? 'bg-indigo-500 text-white'
                   : i === step ? 'bg-indigo-500 text-white ring-2 ring-indigo-500/30 ring-offset-1 ring-offset-surface'
                   : 'bg-s3/50 text-t4'}`}

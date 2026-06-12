@@ -256,7 +256,7 @@ export function MessagePickerModal({ isOpen, onClose, templates, onPick, leadNam
               {/* Badge + seleção */}
               <div className="flex items-center justify-between px-4 pt-3 pb-2">
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold transition-all
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold transition-all
                     ${isSelected ? 'bg-brand text-[#0F1730]' : 'bg-s3/70 text-t3'}`}>
                     {i + 1}
                   </div>
@@ -291,7 +291,7 @@ export function MessagePickerModal({ isOpen, onClose, templates, onPick, leadNam
                   </p>
                   {/* Timestamp fake */}
                   <div className="flex items-center justify-end gap-1 mt-2">
-                    <span className="text-[10px] text-t5">agora</span>
+                    <span className="text-[11px] text-t5">agora</span>
                     <svg width="14" height="8" viewBox="0 0 16 9" fill="none" className={isSelected ? 'text-green-400' : 'text-t5'}>
                       <path d="M1 4.5L4 7.5L9 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M7 4.5L10 7.5L15 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -312,7 +312,7 @@ export function MessagePickerModal({ isOpen, onClose, templates, onPick, leadNam
 function StageBadge({ stage }: { stage: FunnelStage }) {
   const cfg = FUNNEL_STAGES.find(s => s.value === stage)!
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg ${cfg.bg} ${cfg.color}`}>
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-lg ${cfg.bg} ${cfg.color}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {cfg.short}
     </span>
@@ -739,7 +739,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             <span className="text-xl">⚡</span>
             <div className="flex-1">
               <p className="text-sm font-bold text-green-300 leading-none">Pronto para disparar!</p>
-              <p className="text-[11px] text-green-500/80 mt-0.5">Cooldown encerrou — clique em Disparar para enviar a próxima mensagem.</p>
+              <p className="text-xs text-green-500/80 mt-0.5">Cooldown encerrou — clique em Disparar para enviar a próxima mensagem.</p>
             </div>
             <button
               onClick={clearReady}
@@ -815,7 +815,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               {queueLeads.length}
             </span>
             <div className="flex-1 h-px bg-s2/60" />
-            <span className="text-[10px] text-t4 uppercase tracking-wider">não acionados · mais antigos primeiro</span>
+            <span className="text-[11px] text-t4 uppercase tracking-wider">não acionados · mais antigos primeiro</span>
           </div>
 
           {queueLeads.length === 0 ? (
@@ -829,7 +829,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           ) : (
             <ListContainer>
               {/* Header da tabela */}
-              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
+              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[11px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
                 <span>Nome</span>
                 <span>Telefone</span>
                 <span className="w-28 text-center">Ação</span>
@@ -872,13 +872,13 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                             <div className="flex items-center gap-1 mt-0.5">
                               <AlertCircle size={9}
                                 className={`flex-shrink-0 ${dispColor === 'red' ? 'text-red-400' : 'text-amber-400'}`} />
-                              <span className={`text-[10px] truncate ${dispColor === 'red' ? 'text-red-400/80' : 'text-amber-400/80'}`}>
+                              <span className={`text-[11px] truncate ${dispColor === 'red' ? 'text-red-400/80' : 'text-amber-400/80'}`}>
                                 {inlineHist.length} campanha{inlineHist.length > 1 ? 's' : ''} anterior{inlineHist.length > 1 ? 'es' : ''} · último: {new Date('dispatchedAt' in inlineHist[0] ? (inlineHist[0] as {dispatchedAt: string}).dispatchedAt : (inlineHist[0] as CrossDispatch).firedAt).toLocaleDateString('pt-BR')}
                               </span>
                             </div>
                           )}
                           {lead.extra && (
-                            <p className="text-[10px] text-t4 truncate">{lead.extra}</p>
+                            <p className="text-[11px] text-t4 truncate">{lead.extra}</p>
                           )}
                         </div>
                       </div>
@@ -890,7 +890,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                       {/* Botão de disparo — sempre visível */}
                       <div className="w-28 flex justify-center">
                         {atLim ? (
-                          <span className="text-[11px] text-red-400/60">limite atingido</span>
+                          <span className="text-xs text-red-400/60">limite atingido</span>
                         ) : onCd ? (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-line text-t3 text-xs tabular-nums">
                             <Clock size={11} /> {secs}s
@@ -951,7 +951,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
             {showContacted && (
               <ListContainer>
-                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[10px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
+                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[11px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
                   <span>Etapa</span>
                   <span>Nome</span>
                   <span>Telefone</span>
@@ -969,7 +969,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         <div className="flex items-center gap-2">
                           <StageBadge stage={lead.funnelStage} />
                           {situCfg && (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${situCfg.bg} ${situCfg.color}`}>
+                            <span className={`text-[11px] px-1.5 py-0.5 rounded ${situCfg.bg} ${situCfg.color}`}>
                               {situCfg.short}
                             </span>
                           )}
@@ -978,7 +978,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         <div className="min-w-0">
                           <p className="text-sm text-t2 truncate">{lead.name}</p>
                           {lead.lastSentByName && (
-                            <p className="text-[10px] text-violet-400/70 truncate">
+                            <p className="text-[11px] text-violet-400/70 truncate">
                               💬 {lead.lastSentByName}{lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
                               {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
                             </p>
@@ -1068,7 +1068,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                     return (
                       <div key={lead.id}
                         className="flex items-center gap-4 px-5 py-2.5 hover:bg-s3/50 transition-colors group row-accent">
-                        <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium ${situCfg?.bg ?? 'bg-s3/50'} ${situCfg?.color ?? 'text-t3'}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-lg font-medium ${situCfg?.bg ?? 'bg-s3/50'} ${situCfg?.color ?? 'text-t3'}`}>
                           {situCfg?.short ?? '—'}
                         </span>
                         <p className="flex-1 text-sm text-t3 truncate">{lead.name}</p>
@@ -1161,11 +1161,11 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               if (!hist || hist.length === 0) return null
               return (
                 <div className="flex flex-col gap-1.5 bg-s3/40 rounded-xl px-3 py-2.5 border border-line">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-t4 mb-0.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-t4 mb-0.5">
                     Total de abordagens: {hist.length}
                   </p>
                   {hist.slice(0, 5).map((h, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[11px] text-t3">
+                    <div key={i} className="flex items-center gap-2 text-xs text-t3">
                       <span className="w-1.5 h-1.5 rounded-full bg-t5 flex-shrink-0" />
                       <span className="truncate">{h.campaignName}</span>
                       <span className="text-t5 flex-shrink-0 tabular-nums">
@@ -1174,7 +1174,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                     </div>
                   ))}
                   {hist.length > 5 && (
-                    <p className="text-[10px] text-t5">+{hist.length - 5} mais…</p>
+                    <p className="text-[11px] text-t5">+{hist.length - 5} mais…</p>
                   )}
                 </div>
               )

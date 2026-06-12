@@ -82,7 +82,7 @@ export function CampaignsBaseTab() {
           <div key={k.label} className="relative bg-surface border border-line rounded-xl overflow-hidden p-5">
             <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-brand/40 to-transparent" />
             <div className="flex items-start justify-between mb-3">
-              <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest leading-tight">{k.label}</p>
+              <p className="text-xs font-semibold text-t3 uppercase tracking-widest leading-tight">{k.label}</p>
               <div className="w-8 h-8 bg-brand/10 rounded-lg flex items-center justify-center text-brand flex-shrink-0">{k.icon}</div>
             </div>
             <p className={`text-3xl font-bold tabular-nums leading-none mb-1 ${k.color}`}>{k.value}</p>
@@ -96,7 +96,7 @@ export function CampaignsBaseTab() {
         <div className="flex items-center gap-2 mb-4">
           <BarChart2 size={14} className="text-violet-400" />
           <h2 className="text-sm font-semibold text-t1">Ritmo de disparos — últimos 14 dias</h2>
-          <span className="ml-auto text-[11px] text-t4">
+          <span className="ml-auto text-xs text-t4">
             Total: <span className="text-t2 font-semibold">{hist14.reduce((a, d) => a + d.count, 0)}</span>
           </span>
         </div>
@@ -107,7 +107,7 @@ export function CampaignsBaseTab() {
             return (
               <div key={d.date} className="flex-1 flex flex-col items-center gap-1 group relative">
                 {d.count > 0 && (
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:flex bg-surface border border-line text-t1 text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:flex bg-surface border border-line text-t1 text-[11px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                     {d.label}: {d.count}
                   </div>
                 )}
@@ -117,7 +117,7 @@ export function CampaignsBaseTab() {
                     style={{ height: `${Math.max(pct, d.count > 0 ? 6 : 1)}%` }}
                   />
                 </div>
-                <span className={`text-[8px] truncate w-full text-center ${isToday ? 'text-violet-400 font-semibold' : 'text-t5'}`}>{d.label}</span>
+                <span className={`text-[10px] truncate w-full text-center ${isToday ? 'text-violet-400 font-semibold' : 'text-t5'}`}>{d.label}</span>
               </div>
             )
           })}
@@ -142,7 +142,7 @@ export function CampaignsBaseTab() {
             ].map(k => (
               <div key={k.label} className="p-3 rounded-xl bg-s2/50 border border-line">
                 <p className={`text-2xl font-black tabular-nums ${k.color}`}>{k.value}</p>
-                <p className="text-[10px] text-t4 mt-1">{k.label}</p>
+                <p className="text-[11px] text-t4 mt-1">{k.label}</p>
               </div>
             ))}
           </div>
@@ -154,7 +154,7 @@ export function CampaignsBaseTab() {
               <div key={c.id} className="flex items-center gap-3 py-2.5 border-t border-line">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-t1 truncate">{c.name}</p>
-                  <p className="text-[11px] text-t4">{cLeads.length} leads · {eng} engajados</p>
+                  <p className="text-xs text-t4">{cLeads.length} leads · {eng} engajados</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="w-20 h-1.5 bg-s3/60 rounded-full overflow-hidden">
@@ -191,7 +191,7 @@ export function CampaignsBaseTab() {
               return (
                 <div key={list.id}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-bold text-t4 w-4">{i + 1}</span>
+                    <span className="text-[11px] font-bold text-t4 w-4">{i + 1}</span>
                     <span className="text-xs text-t2 flex-1 truncate">{list.name}</span>
                     <span className="text-xs font-semibold text-t1 tabular-nums">{list.totalCount.toLocaleString('pt-BR')}</span>
                   </div>
@@ -216,12 +216,12 @@ export function CampaignsBaseTab() {
                 const pct = (count / totalLeads) * 100
                 return (
                   <div key={type} className="flex items-center gap-2">
-                    <span className="text-[11px] text-t3 w-28 truncate flex-shrink-0">{type}</span>
+                    <span className="text-xs text-t3 w-28 truncate flex-shrink-0">{type}</span>
                     <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
                       <div className="h-full bg-sky-500/60 rounded-full" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-[11px] font-semibold text-t2 w-16 text-right tabular-nums">{count.toLocaleString('pt-BR')}</span>
-                    <span className="text-[10px] text-t4 w-8 text-right">{pct.toFixed(0)}%</span>
+                    <span className="text-xs font-semibold text-t2 w-16 text-right tabular-nums">{count.toLocaleString('pt-BR')}</span>
+                    <span className="text-[11px] text-t4 w-8 text-right">{pct.toFixed(0)}%</span>
                   </div>
                 )
               })}
@@ -239,11 +239,11 @@ export function CampaignsBaseTab() {
                   const pct = (count / totalLeads) * 100
                   return (
                     <div key={region} className="flex items-center gap-2">
-                      <span className="text-[11px] text-t3 w-28 truncate flex-shrink-0">{region}</span>
+                      <span className="text-xs text-t3 w-28 truncate flex-shrink-0">{region}</span>
                       <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
                         <div className="h-full bg-teal-500/60 rounded-full" style={{ width: `${pct}%` }} />
                       </div>
-                      <span className="text-[11px] font-semibold text-t2 w-16 text-right tabular-nums">{count.toLocaleString('pt-BR')}</span>
+                      <span className="text-xs font-semibold text-t2 w-16 text-right tabular-nums">{count.toLocaleString('pt-BR')}</span>
                     </div>
                   )
                 })}

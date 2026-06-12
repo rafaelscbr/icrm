@@ -243,7 +243,7 @@ export function ContactCampaignHistory({ contactId }: Props) {
       {currentStatus.length > 0 && (
         <div className="rounded-xl border border-line bg-s2/30 overflow-hidden">
           <div className="px-3 py-2 border-b border-line/50 bg-s2/50">
-            <p className="text-[10px] font-bold text-t4 uppercase tracking-wider">Situação atual</p>
+            <p className="text-[11px] font-bold text-t4 uppercase tracking-wider">Situação atual</p>
           </div>
           <div className="flex flex-col divide-y divide-line/40">
             {currentStatus.map((s, i) => {
@@ -256,7 +256,7 @@ export function ContactCampaignHistory({ contactId }: Props) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-t1 truncate">{s.label}</p>
-                    <p className="text-[11px] text-t4">{s.sub}</p>
+                    <p className="text-xs text-t4">{s.sub}</p>
                   </div>
                 </div>
               )
@@ -272,7 +272,7 @@ export function ContactCampaignHistory({ contactId }: Props) {
           onClick={() => setExpanded(p => !p)}
           className="flex items-center justify-between w-full py-1.5 group"
         >
-          <p className="text-[10px] font-bold text-t4 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="text-[11px] font-bold text-t4 uppercase tracking-wider flex items-center gap-1.5">
             <Clock size={10} />
             Linha do tempo
             <span className="normal-case font-normal text-t4/60">({timeline.length} eventos)</span>
@@ -305,7 +305,7 @@ export function ContactCampaignHistory({ contactId }: Props) {
                     <div className="flex items-start gap-2 flex-wrap pt-1">
                       <p className="text-xs font-medium text-t2 flex-1 leading-snug">{event.title}</p>
                       {event.badge && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border flex-shrink-0
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full border flex-shrink-0
                           ${event.kind === 'sale'
                             ? 'bg-green-500/15 border-green-500/25 text-green-400'
                             : 'bg-violet-500/15 border-violet-500/25 text-violet-400'
@@ -317,9 +317,9 @@ export function ContactCampaignHistory({ contactId }: Props) {
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {event.subtitle && (
-                        <span className="text-[11px] text-t4 truncate">{event.subtitle}</span>
+                        <span className="text-xs text-t4 truncate">{event.subtitle}</span>
                       )}
-                      <span className="text-[10px] text-t4/60 flex items-center gap-0.5 flex-shrink-0">
+                      <span className="text-[11px] text-t4/60 flex items-center gap-0.5 flex-shrink-0">
                         <Clock size={8} /> {formatPTBR(event.date)}
                       </span>
                     </div>
@@ -333,7 +333,7 @@ export function ContactCampaignHistory({ contactId }: Props) {
             {hasMore && (
               <button
                 onClick={() => setShowAll(p => !p)}
-                className="flex items-center justify-center gap-1.5 mt-2 py-2 text-[11px] text-t4 hover:text-t2 border border-dashed border-line hover:border-line/80 rounded-xl transition-all"
+                className="flex items-center justify-center gap-1.5 mt-2 py-2 text-xs text-t4 hover:text-t2 border border-dashed border-line hover:border-line/80 rounded-xl transition-all"
               >
                 {showAll
                   ? <><ChevronUp size={11} /> Ver menos</>

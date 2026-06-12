@@ -88,7 +88,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
         <Sun size={14} className="text-amber-400" />
         <h2 className="text-sm font-semibold text-t2">Sazonalidade de vendas — histórico acumulado</h2>
         {hasData && (
-          <span className="ml-auto text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-400/20">
+          <span className="ml-auto text-[11px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-400/20">
             melhor: {bestMonth.monthFull}
           </span>
         )}
@@ -117,7 +117,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
                     {d.total > 0 ? formatCurrency(d.total) : '—'}
                   </span>
                   {d.years.size > 1 && (
-                    <span className="text-[10px] text-t4 w-20 text-right">
+                    <span className="text-[11px] text-t4 w-20 text-right">
                       ø {formatCurrency(d.avg)}/ano
                     </span>
                   )}
@@ -127,7 +127,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
           })}
         </div>
       )}
-      <p className="text-[10px] text-t4 mt-4">Total histórico de todas as vendas agrupado por mês do ano.</p>
+      <p className="text-[11px] text-t4 mt-4">Total histórico de todas as vendas agrupado por mês do ano.</p>
     </Card>
   )
 }

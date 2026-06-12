@@ -3,14 +3,16 @@ import {
   X, MessageCircle, UserCheck, Building2,
   Trash2, RotateCcw, Edit2, AlertTriangle, CheckCircle2,
   ClipboardList, Star, ArrowLeftRight, Search, Check, Zap,
-  ChevronDown, ChevronRight, History, Target, StickyNote, PhoneCall,
+  ChevronDown, History, Target, StickyNote, PhoneCall,
   Database, ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
   Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight, Timer,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType } from '../../types'
+import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { useTasksStore } from '../../store/useTasksStore'
 import { NextStepSuggestion } from './NextStepSuggestion'
 import { useLeadsStore } from '../../store/useLeadsStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
@@ -29,18 +31,9 @@ import toast from 'react-hot-toast'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
-
-const STAGE_META: Record<LeadFunnelStage, {
-  label: string; color: string; bg: string; border: string; activeBg: string;
-}> = {
-  lead:        { label: 'Lead',        color: 'text-t2',  bg: 'bg-slate-500/10',  border: 'border-slate-500/25',  activeBg: 'bg-slate-500/25'  },
-  followup:    { label: 'Followup',    color: 'text-blue-300',   bg: 'bg-s3/60',   border: 'border-blue-500/25',   activeBg: 'bg-blue-500/25'   },
-  atendimento: { label: 'Atendimento', color: 'text-violet-300', bg: 'bg-violet-500/10', border: 'border-violet-500/25', activeBg: 'bg-violet-500/25' },
-  visita:      { label: 'Visita',      color: 'text-amber-300',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25',  activeBg: 'bg-amber-500/25'  },
-  proposta:    { label: 'Proposta',    color: 'text-orange-300', bg: 'bg-orange-500/10', border: 'border-orange-500/25', activeBg: 'bg-orange-500/25' },
-  venda:       { label: 'Venda',       color: 'text-green-300',  bg: 'bg-green-500/10',  border: 'border-green-500/25',  activeBg: 'bg-green-500/25'  },
-}
+// Tema das etapas vem da fonte única — mesma cor no kanban, modal e dashboard
+const STAGES = FUNNEL_STAGES
+const STAGE_META = STAGE_THEME
 
 const ORIGIN_CONFIG: Record<string, { label: string; icon: typeof Sparkles }> = {
   felicita:  { label: 'Felicità',  icon: Sparkles   },
@@ -109,8 +102,16 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const { add: addInteraction, getForLead } = useLeadInteractionsStore()
   const { properties }                      = usePropertiesStore()
   const { getByType }                       = useLeadConfigStore()
+  const { profile, isAdmin, allProfiles }   = useAuthStore()
 
   const discardReasons = useMemo(() => getByType('discard_reason'), [getByType])
+
+  // Corretor responsável — sempre visível; admin pode reatribuir
+  const brokerName = lead.brokerId
+    ? (lead.brokerId === profile?.id
+        ? profile?.name
+        : allProfiles.find(p => p.id === lead.brokerId)?.name)
+    : undefined
 
   // UI state
   const [showDiscard,       setShowDiscard]       = useState(false)
@@ -128,6 +129,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [addingToList,      setAddingToList]      = useState(false)
   const [noteText,          setNoteText]          = useState('')
   const [showNoteInput,     setShowNoteInput]     = useState(false)
+  const [showBrokerMenu,    setShowBrokerMenu]    = useState(false)
   // Ciclo interação → tarefa: tipo da última interação registrada nesta sessão
   const [nextStepFor,       setNextStepFor]       = useState<LeadInteractionType | null>(null)
 
@@ -218,6 +220,15 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     } catch { /* erro já toastado */ }
   }
 
+  async function handleReassignBroker(brokerId: string, name: string) {
+    setShowBrokerMenu(false)
+    if (brokerId === lead.brokerId) return
+    try {
+      await update(lead.id, { brokerId })
+      toast.success(`Responsável: ${name}`)
+    } catch { /* erro já toastado */ }
+  }
+
   async function handleSetStage(stage: LeadFunnelStage) {
     if (stage === lead.funnelStage) return
     try {
@@ -293,7 +304,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
           role="dialog"
           aria-modal="true"
           aria-label={`Lead ${lead.name}`}
-          className="relative w-full max-w-lg modal-surface rounded-[18px] shadow-modal overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-xl modal-surface rounded-[18px] shadow-modal overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col max-h-[90vh]"
         >
 
           {/* ── Cabeçalho ──────────────────────────────────────────────────── */}
@@ -314,17 +325,17 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="font-heading text-base font-bold text-t1 leading-tight tracking-[-0.01em]">{lead.name}</h2>
                   {lead.flagged && !isDiscarded && (
-                    <span className="inline-flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/40">
+                    <span className="inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/40">
                       <Star size={8} strokeWidth={1.6} fill="currentColor" /> Prioridade
                     </span>
                   )}
                   {isLinked && (
-                    <span className="inline-flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full text-t3 border border-line">
+                    <span className="inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full text-t3 border border-line">
                       <UserCheck size={8} strokeWidth={1.6} /> CRM
                     </span>
                   )}
                   {isDiscarded && (
-                    <span className="inline-flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full bg-error-bg text-error border border-error-line">
+                    <span className="inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full bg-error-bg text-error border border-error-line">
                       <AlertTriangle size={8} strokeWidth={1.6} /> Descartado
                     </span>
                   )}
@@ -343,7 +354,60 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     {originConf.label}
                   </span>
                   <span className="text-t5" aria-hidden="true">·</span>
-                  <span className="font-label text-[11px] text-t4 tabular-nums">{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
+                  <span className="font-label text-xs text-t4 tabular-nums">{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
+
+                  {/* Corretor responsável — sempre visível; admin reatribui em 1 clique */}
+                  {(brokerName || isAdmin) && (
+                    <>
+                      <span className="text-t5" aria-hidden="true">·</span>
+                      <div className="relative">
+                        <button
+                          onClick={() => isAdmin && setShowBrokerMenu(v => !v)}
+                          disabled={!isAdmin}
+                          title={isAdmin ? 'Trocar corretor responsável' : `Corretor responsável: ${brokerName}`}
+                          aria-haspopup={isAdmin ? 'listbox' : undefined}
+                          aria-expanded={isAdmin ? showBrokerMenu : undefined}
+                          className={`flex items-center gap-1.5 pl-1 pr-2 py-0.5 rounded-full bg-brand-tint border border-brand/25 transition-all duration-150
+                            ${isAdmin ? 'cursor-pointer hover:border-brand/50' : 'cursor-default'}`}
+                        >
+                          <span className="w-4 h-4 rounded-full bg-brand flex items-center justify-center font-heading text-[10px] font-bold text-[#0F1730]">
+                            {(brokerName ?? '?').charAt(0).toUpperCase()}
+                          </span>
+                          <span className="font-label text-[11px] text-brand-text truncate max-w-[120px]">
+                            {brokerName ? brokerName.split(' ')[0] : 'Atribuir'}
+                          </span>
+                          {isAdmin && <ChevronDown size={10} strokeWidth={1.6} className="text-brand-text" aria-hidden="true" />}
+                        </button>
+                        {isAdmin && showBrokerMenu && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setShowBrokerMenu(false)} aria-hidden="true" />
+                            <div
+                              className="absolute left-0 top-full mt-1 z-20 min-w-[200px] bg-surface border border-line rounded-[14px] shadow-dropdown overflow-hidden py-1"
+                              role="listbox"
+                              aria-label="Corretor responsável"
+                            >
+                              {allProfiles.map(p => (
+                                <button
+                                  key={p.id}
+                                  role="option"
+                                  aria-selected={p.id === lead.brokerId}
+                                  onClick={() => handleReassignBroker(p.id, p.name)}
+                                  className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors
+                                    ${p.id === lead.brokerId ? 'text-brand-text bg-brand-tint' : 'text-t2 hover:bg-s2 hover:text-t1'}`}
+                                >
+                                  <span className="w-5 h-5 rounded-full bg-s3 border border-line flex items-center justify-center font-heading text-[10px] font-bold text-t2">
+                                    {p.name.charAt(0).toUpperCase()}
+                                  </span>
+                                  <span className="flex-1 truncate">{p.name}</span>
+                                  {p.id === lead.brokerId && <Check size={11} className="text-brand flex-shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -389,26 +453,22 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 const isCurrent = stage === lead.funnelStage
                 const isPast    = i < currentIndex
                 return (
-                  <div key={stage} className="flex items-center flex-1">
-                    <button
-                      onClick={() => handleSetStage(stage)}
-                      disabled={isDiscarded}
-                      title={`Mover para ${meta.label}`}
-                      aria-current={isCurrent ? 'step' : undefined}
-                      className={`w-full py-1.5 rounded-[10px] font-label text-[9px] font-medium uppercase tracking-[0.06em] transition-all duration-150 text-center border leading-tight
-                        ${isCurrent
-                          ? `${meta.activeBg} ${meta.color} ${meta.border} shadow-sm`
-                          : isPast
-                            ? 'bg-s3/50 text-t3 border-transparent hover:bg-s3 hover:text-t2'
-                            : 'bg-transparent text-t4 border-transparent hover:bg-s3/50 hover:text-t3'
-                        } ${isDiscarded ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      {meta.label}
-                    </button>
-                    {i < STAGES.length - 1 && (
-                      <ChevronRight size={10} strokeWidth={1.6} aria-hidden="true" className={`flex-shrink-0 mx-0.5 ${i < currentIndex ? 'text-t3' : 'text-t5'}`} />
-                    )}
-                  </div>
+                  <button
+                    key={stage}
+                    onClick={() => handleSetStage(stage)}
+                    disabled={isDiscarded}
+                    title={`Mover para ${meta.label}`}
+                    aria-current={isCurrent ? 'step' : undefined}
+                    className={`flex-1 py-2 rounded-[10px] font-label text-[11px] font-medium uppercase tracking-[0.04em] transition-all duration-150 text-center border leading-tight
+                      ${isCurrent
+                        ? `${meta.activeBg} ${meta.color} ${meta.border} shadow-sm`
+                        : isPast
+                          ? 'bg-s3/50 text-t3 border-transparent hover:bg-s3 hover:text-t2'
+                          : 'bg-transparent text-t4 border-transparent hover:bg-s3/50 hover:text-t3'
+                      } ${isDiscarded ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    {meta.label}
+                  </button>
                 )
               })}
             </div>
@@ -427,7 +487,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <Timer size={12} strokeWidth={1.6} className={`${slaInfo.urgent ? 'text-error' : 'text-warning'} ${slaInfo.overdue ? 'animate-pulse' : ''}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`font-label text-[10px] font-medium uppercase tracking-[0.12em] ${slaInfo.urgent ? 'text-error' : 'text-warning'}`}>
+                  <p className={`font-label text-[11px] font-medium uppercase tracking-[0.12em] ${slaInfo.urgent ? 'text-error' : 'text-warning'}`}>
                     {slaInfo.overdue ? 'SLA vencido — transferência iminente' : `1º contato Meta Ads · ${slaInfo.text}`}
                   </p>
                   <p className="text-[13px] text-t1 mt-0.5 leading-relaxed">
@@ -440,8 +500,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
             {/* Banner próxima ação — a informação nº 1 da tela.
                 Com tarefa pendente: mostra o compromisso real (e o prazo).
-                Sem tarefa: cai na sugestão heurística por etapa. */}
-            {!isDiscarded && (
+                Sem tarefa: cai na sugestão heurística por etapa.
+                Com SLA ativo e sem tarefa: o banner de SLA já diz o que fazer — não duplica. */}
+            {!isDiscarded && (pendingTask || !slaInfo) && (
               pendingTask && lead.funnelStage !== 'venda' ? (
                 <div className={`flex items-start gap-2.5 rounded-[14px] p-3 border
                   ${taskDue?.overdue ? 'bg-error-bg border-error-line' : taskDue?.today ? 'bg-warning-bg border-warning-line' : 'bg-s2 border-line'}`}>
@@ -450,14 +511,14 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     <ClipboardList size={12} strokeWidth={1.6} className={taskDue?.overdue ? 'text-error' : taskDue?.today ? 'text-warning' : 'text-info'} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-label text-[10px] font-medium uppercase tracking-[0.12em]
+                    <p className={`font-label text-[11px] font-medium uppercase tracking-[0.12em]
                       ${taskDue?.overdue ? 'text-error' : taskDue?.today ? 'text-warning' : 'text-info'}`}>
                       Próximo passo agendado
                     </p>
                     <p className="text-[13px] text-t1 mt-0.5 leading-relaxed truncate">{pendingTask.title}</p>
                   </div>
                   {taskDue && (
-                    <span className={`flex-shrink-0 font-label text-[10px] font-medium uppercase tracking-[0.06em] px-2 py-0.5 rounded-full border tabular-nums
+                    <span className={`flex-shrink-0 font-label text-[11px] font-medium uppercase tracking-[0.06em] px-2 py-0.5 rounded-full border tabular-nums
                       ${taskDue.overdue
                         ? 'text-error bg-error-bg border-error-line'
                         : taskDue.today
@@ -483,7 +544,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     }
                   </div>
                   <div>
-                    <p className={`font-label text-[10px] font-medium uppercase tracking-[0.12em]
+                    <p className={`font-label text-[11px] font-medium uppercase tracking-[0.12em]
                       ${lead.funnelStage === 'venda' ? 'text-success' : nextUrgent ? 'text-warning' : 'text-info'}`}>
                       {lead.funnelStage === 'venda' ? 'Venda realizada' : nextUrgent ? 'Ação urgente' : 'Sugestão de próximo passo'}
                     </p>
@@ -497,8 +558,8 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             {lead.funnelStage === 'followup' && (
               <div className="bg-s2 border border-line rounded-[14px] p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="font-label text-[10px] font-medium uppercase tracking-[0.12em] text-t3">Tentativas de contato</p>
-                  <span className="text-[10px] text-t4">clique para marcar</span>
+                  <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3">Tentativas de contato</p>
+                  <span className="text-[11px] text-t4">clique para marcar</span>
                 </div>
                 <div className="flex items-center gap-1.5" role="group" aria-label="Tentativas de contato">
                   {[1, 2, 3, 4, 5].map(step => (
@@ -523,7 +584,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-t4 mt-1.5">
+                <p className="text-xs text-t4 mt-1.5">
                   {lead.followupStep === 0 ? 'Nenhuma tentativa registrada' : `${lead.followupStep} de 5 tentativas realizadas`}
                 </p>
               </div>
@@ -538,7 +599,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   aria-label="Abrir WhatsApp e registrar contato"
                 >
                   <MessageCircle size={16} strokeWidth={1.6} />
-                  <span className="font-heading text-[11px] font-bold">WhatsApp</span>
+                  <span className="font-heading text-xs font-bold">WhatsApp</span>
                 </button>
 
                 <button
@@ -547,7 +608,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   aria-label="Ligar e registrar contato"
                 >
                   <PhoneCall size={16} strokeWidth={1.6} />
-                  <span className="font-heading text-[11px] font-bold">Ligar</span>
+                  <span className="font-heading text-xs font-bold">Ligar</span>
                 </button>
 
                 <button
@@ -556,7 +617,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   aria-label="Criar tarefa para este lead"
                 >
                   <ClipboardList size={16} strokeWidth={1.6} />
-                  <span className="font-heading text-[11px] font-bold">Tarefa</span>
+                  <span className="font-heading text-xs font-bold">Tarefa</span>
                 </button>
               </div>
             )}
@@ -591,7 +652,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <div className="text-right flex-shrink-0">
                     <p className="font-label text-sm font-semibold text-t1 tabular-nums">{formatCurrencyFull(ticket)}</p>
                     {commission > 0 && (
-                      <p className="font-label text-[10px] uppercase tracking-[0.06em] text-success tabular-nums">
+                      <p className="font-label text-[11px] uppercase tracking-[0.06em] text-success tabular-nums">
                         Com. {formatCurrency(commission)}
                       </p>
                     )}
@@ -643,11 +704,11 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               >
                 <div className="flex items-center gap-1.5">
                   <History size={12} strokeWidth={1.6} className="text-t4" />
-                  <span className="font-label text-[10px] font-medium uppercase tracking-[0.12em] text-t3 group-hover:text-t2 transition-colors">
+                  <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 group-hover:text-t2 transition-colors">
                     Histórico
                   </span>
                   {interactions.length > 0 && (
-                    <span className="font-label text-[10px] bg-s3 text-t3 px-1.5 py-0.5 rounded-full tabular-nums">{interactions.length}</span>
+                    <span className="font-label text-[11px] bg-s3 text-t3 px-1.5 py-0.5 rounded-full tabular-nums">{interactions.length}</span>
                   )}
                 </div>
                 <ChevronDown size={12} strokeWidth={1.6} aria-hidden="true" className={`text-t4 transition-transform duration-200 ${showHistory ? 'rotate-180' : ''}`} />
@@ -667,12 +728,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                           <ItemIcon size={10} strokeWidth={1.6} className="text-t3" />
                         </span>
                         <p className="flex-1 text-xs text-t2 truncate">{i.description ?? i.type}</p>
-                        <span className="font-label text-[10px] text-t4 flex-shrink-0 tabular-nums">{relativeTime(i.interactedAt)}</span>
+                        <span className="font-label text-[11px] text-t4 flex-shrink-0 tabular-nums">{relativeTime(i.interactedAt)}</span>
                       </div>
                     )
                   })}
                   {interactions.length > 3 && (
-                    <button onClick={() => setShowHistory(true)} className="flex items-center gap-1 text-[11px] text-brand-text hover:text-brand transition-colors">
+                    <button onClick={() => setShowHistory(true)} className="flex items-center gap-1 text-xs text-brand-text hover:text-brand transition-colors">
                       Ver todo histórico ({interactions.length}) <ArrowRight size={10} strokeWidth={1.6} />
                     </button>
                   )}
@@ -736,7 +797,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                           if (activeLists.length === 0) loadLists()
                           setShowAddToList(v => !v)
                         }}
-                        className="flex items-center gap-1 font-label text-[9px] uppercase tracking-[0.06em] text-brand-text bg-brand-tint border border-brand/25 px-2 py-1 rounded-full transition-all duration-150 hover:border-brand/40"
+                        className="flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.06em] text-brand-text bg-brand-tint border border-brand/25 px-2 py-1 rounded-full transition-all duration-150 hover:border-brand/40"
                         title="Adicionar a uma lista"
                       >
                         <ListPlus size={10} strokeWidth={1.6} /> Adicionar à lista
@@ -749,7 +810,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 {/* Seletor de lista — "Adicionar à lista" */}
                 {showAddToList && lead.contactId && (
                   <div className="px-3 py-3 border-t border-line bg-s2/80">
-                    <p className="font-label text-[10px] font-medium uppercase tracking-[0.12em] text-t3 mb-2">Lista destino</p>
+                    <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 mb-2">Lista destino</p>
                     <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-0.5 mb-3">
                       {activeLists.length === 0 ? (
                         <p className="text-xs text-t4 py-2 text-center">Nenhuma lista ativa</p>
@@ -800,7 +861,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                       <div className="flex flex-col items-center gap-2 py-4 text-center">
                         <Database size={20} strokeWidth={1.6} className="text-t4/50" />
                         <p className="text-xs text-t3 font-medium">Converta em contato para ver o histórico completo</p>
-                        <p className="text-[11px] text-t4">Listas, campanhas e vendas serão vinculadas ao contato</p>
+                        <p className="text-xs text-t4">Listas, campanhas e vendas serão vinculadas ao contato</p>
                         {!isDiscarded && !isLinked && (
                           <button
                             onClick={handleConvert}
@@ -819,7 +880,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             {/* Notas salvas */}
             {lead.notes && (
               <div className="bg-s2 border border-line rounded-[14px] p-3">
-                <p className="font-label text-[10px] font-medium uppercase tracking-[0.12em] text-t3 mb-1.5">Observações</p>
+                <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 mb-1.5">Observações</p>
                 <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap">{lead.notes}</p>
               </div>
             )}
@@ -836,9 +897,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     }
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-label text-[10px] font-medium text-error uppercase tracking-[0.12em] mb-0.5">Descartado</p>
+                    <p className="font-label text-[11px] font-medium text-error uppercase tracking-[0.12em] mb-0.5">Descartado</p>
                     <p className="text-sm font-medium text-t1">{r?.label ?? lead.discardReason}</p>
-                    {lead.discardedAt && <p className="font-label text-[11px] text-t4 mt-0.5 tabular-nums">{new Date(lead.discardedAt).toLocaleDateString('pt-BR')}</p>}
+                    {lead.discardedAt && <p className="font-label text-xs text-t4 mt-0.5 tabular-nums">{new Date(lead.discardedAt).toLocaleDateString('pt-BR')}</p>}
                   </div>
                 </div>
               )
@@ -931,7 +992,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5" role="radiogroup" aria-label="Motivo do descarte">
-              <p className="font-label text-[10px] font-medium text-t4 uppercase tracking-[0.12em] px-1 mb-2">Motivo do descarte</p>
+              <p className="font-label text-[11px] font-medium text-t4 uppercase tracking-[0.12em] px-1 mb-2">Motivo do descarte</p>
               {discardReasons
                 .filter(r => !discardSearch || r.label.toLowerCase().includes(discardSearch.toLowerCase()))
                 .map(r => {

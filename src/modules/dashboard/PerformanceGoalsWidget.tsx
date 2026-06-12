@@ -137,9 +137,9 @@ function MetricCell({
     <div className="bg-s2/40 rounded-xl p-3 flex flex-col gap-2 min-w-0">
       <div className="flex items-center gap-1.5">
         <Icon size={11} className={text} />
-        <p className="font-label text-[9px] font-medium uppercase tracking-[0.08em] text-t4 truncate">{label}</p>
+        <p className="font-label text-[11px] font-medium uppercase tracking-[0.08em] text-t4 truncate">{label}</p>
         {cfg && (
-          <span className={`ml-auto flex-shrink-0 text-[9px] font-bold px-1.5 py-px rounded-full border ${cfg.chip}`}>
+          <span className={`ml-auto flex-shrink-0 text-[11px] font-bold px-1.5 py-px rounded-full border ${cfg.chip}`}>
             {cfg.label}
           </span>
         )}
@@ -148,17 +148,17 @@ function MetricCell({
       <div className="flex items-baseline gap-1">
         <p className="text-2xl font-black text-t1 tabular-nums leading-none">{realized.toLocaleString('pt-BR')}</p>
         {hasGoal
-          ? <p className="text-[11px] text-t4 tabular-nums">/ {target.toLocaleString('pt-BR')}</p>
+          ? <p className="text-xs text-t4 tabular-nums">/ {target.toLocaleString('pt-BR')}</p>
           : (
             <button
               onClick={onSetGoal}
-              className="text-[10px] text-t4 hover:text-brand transition-colors cursor-pointer ml-1"
+              className="text-[11px] text-t4 hover:text-brand transition-colors cursor-pointer ml-1"
             >
               definir meta →
             </button>
           )
         }
-        {cfg && <p className={`text-[11px] font-bold tabular-nums ml-auto ${cfg.pct}`}>{pct}%</p>}
+        {cfg && <p className={`text-xs font-bold tabular-nums ml-auto ${cfg.pct}`}>{pct}%</p>}
       </div>
 
       {hasGoal && cfg && (
@@ -175,7 +175,7 @@ function MetricCell({
       )}
 
       {(hint || sub) && (
-        <p className="text-[10px] text-t4 truncate tabular-nums">
+        <p className="text-[11px] text-t4 truncate tabular-nums">
           {hint}{hint && sub ? ' · ' : ''}{sub}
         </p>
       )}
@@ -226,7 +226,7 @@ function BrokerRow({
               <p className="font-heading text-[13px] font-bold text-t1 tracking-[-0.01em] truncate">{name}</p>
             </div>
             {scoreLabel && (
-              <p className="font-label text-[9px] font-medium uppercase tracking-[0.08em] text-t4 mt-1">
+              <p className="font-label text-[11px] font-medium uppercase tracking-[0.08em] text-t4 mt-1">
                 Desempenho · {scoreLabel}
               </p>
             )}
@@ -347,11 +347,11 @@ export function PerformanceGoalsWidget() {
             <Target size={15} className="text-brand" />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Meta x Realizado</p>
+            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Meta x Realizado</p>
             <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
               {periodLabel || 'Desempenho'}
               {pace && (
-                <span className="text-[10px] font-medium text-t4 ml-2">
+                <span className="text-[11px] font-medium text-t4 ml-2">
                   dia {pace.elapsed} de {pace.total}
                 </span>
               )}
@@ -364,7 +364,7 @@ export function PerformanceGoalsWidget() {
               <button
                 key={value}
                 onClick={() => setPeriod(value)}
-                className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                   period === value
                     ? 'bg-brand/15 text-brand border border-brand/25'
                     : 'text-t3 hover:text-t2 border border-transparent'

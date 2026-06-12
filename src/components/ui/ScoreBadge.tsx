@@ -14,7 +14,7 @@ export function ScoreBadge({ score, label, emoji, color, bg, border, size = 'md'
       <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border ${bg} ${border}`}>
         <span className="text-xs leading-none">{emoji}</span>
         <span className={`text-xs font-bold tabular-nums ${color}`}>{score}</span>
-        <span className={`text-[10px] ${color} opacity-70`}>{label}</span>
+        <span className={`text-[11px] ${color} opacity-70`}>{label}</span>
       </div>
     )
   }
@@ -35,7 +35,7 @@ export function ScoreBadge({ score, label, emoji, color, bg, border, size = 'md'
       <span className="text-xl leading-none">{emoji}</span>
       <div>
         <p className={`text-xl font-black tabular-nums leading-none ${color}`}>{score}</p>
-        <p className={`text-[11px] font-semibold mt-0.5 ${color} opacity-75`}>{label}</p>
+        <p className={`text-xs font-semibold mt-0.5 ${color} opacity-75`}>{label}</p>
       </div>
     </div>
   )

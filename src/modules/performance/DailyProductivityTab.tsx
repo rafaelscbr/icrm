@@ -225,7 +225,7 @@ function HistoryRow({ log, onEdit }: { log: DailyLog; onEdit: (log: DailyLog) =>
     <div className="group flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-s2/50 transition-colors -mx-4">
       <div className="w-20 flex-shrink-0">
         <p className="text-sm font-medium text-t2 tabular-nums">{formatDateShort(log.date)}</p>
-        {log.closed && <p className="text-[10px] text-t4">Fechado</p>}
+        {log.closed && <p className="text-[11px] text-t4">Fechado</p>}
       </div>
       <div className={`flex items-baseline gap-0.5 w-16 ${leadsOk ? 'text-green-400' : 'text-t3'}`}>
         <span className="text-sm font-bold tabular-nums">{log.newLeads}</span>

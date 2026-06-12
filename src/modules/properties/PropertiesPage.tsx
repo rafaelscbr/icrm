@@ -108,7 +108,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
               <span className="text-xs text-t3">{kpi.label}</span>
             </div>
             <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
-            <p className="text-[10px] text-t4 mt-0.5">{kpi.sub}</p>
+            <p className="text-[11px] text-t4 mt-0.5">{kpi.sub}</p>
           </Card>
         ))}
       </div>
@@ -137,7 +137,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
                     />
                   </div>
                   <span className="text-xs tabular-nums text-t3 w-5 text-right">{count}</span>
-                  <span className="text-[10px] text-t4 w-10 text-right">{pct}%</span>
+                  <span className="text-[11px] text-t4 w-10 text-right">{pct}%</span>
                   <span className="text-xs tabular-nums text-emerald-400 w-28 text-right">{formatCurrencyFull(regionVgv)}</span>
                 </div>
               )

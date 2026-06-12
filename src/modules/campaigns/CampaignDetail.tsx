@@ -181,12 +181,12 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
                     <div className="flex items-center gap-2">
                       <p className={`text-sm font-medium truncate ${selected ? 'text-t1' : 'text-t2'}`}>{list.name}</p>
                       {inConflict && (
-                        <span className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 flex-shrink-0">
+                        <span className="flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 flex-shrink-0">
                           <AlertTriangle size={9} /> Em outra campanha
                         </span>
                       )}
                     </div>
-                    {list.description && <p className="text-[11px] text-t5 truncate">{list.description}</p>}
+                    {list.description && <p className="text-xs text-t5 truncate">{list.description}</p>}
                   </div>
                   <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg flex-shrink-0
                     ${selected
@@ -214,7 +214,7 @@ function AddListsModal({ isOpen, onClose, campaignId }: AddListsModalProps) {
               const campNames = conflictCampaignNames.get(listId) ?? []
               const listName  = activeLists.find(l => l.id === listId)?.name ?? '—'
               return campNames.length > 0 ? (
-                <div key={listId} className="ml-5 text-[11px] text-amber-300/80">
+                <div key={listId} className="ml-5 text-xs text-amber-300/80">
                   <span className="font-medium">{listName}</span>
                   {' → '}{campNames.join(', ')}
                 </div>
@@ -401,7 +401,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
               <Icon size={12} />
               {label}
               {value === 'leads' && (
-                <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
+                <span className={`ml-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full
                   ${tab === value ? 'bg-indigo-500/30 text-brand-text' : 'bg-s3/70 text-t3'}`}>
                   {campaignLeads.length}
                 </span>

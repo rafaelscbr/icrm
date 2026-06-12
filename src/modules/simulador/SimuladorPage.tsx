@@ -58,7 +58,7 @@ export function SimuladorPage() {
               role="radio"
               aria-checked={modo === m.value}
               title={m.disabled ? 'Em breve' : undefined}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-label text-[11px] uppercase tracking-[0.08em] border transition-all duration-150
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-label text-xs uppercase tracking-[0.08em] border transition-all duration-150
                 ${m.disabled
                   ? 'bg-s2/40 border-line text-t5 cursor-not-allowed'
                   : modo === m.value
@@ -69,7 +69,7 @@ export function SimuladorPage() {
               {m.disabled && <Lock size={10} strokeWidth={1.6} />}
               {m.label}
               {m.disabled && (
-                <span className="font-label text-[9px] normal-case tracking-normal text-t5 bg-s3 px-1.5 py-px rounded-full">
+                <span className="font-label text-[11px] normal-case tracking-normal text-t5 bg-s3 px-1.5 py-px rounded-full">
                   Em breve
                 </span>
               )}

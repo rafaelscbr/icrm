@@ -891,10 +891,10 @@ export function VirtualOfficePage() {
                 <span className="text-xs font-semibold text-t2">{meta.label}</span>
               </div>
               {names.length === 0 ? (
-                <span className="text-[11px] text-t4">Vazia</span>
+                <span className="text-xs text-t4">Vazia</span>
               ) : (
                 names.map(n => (
-                  <span key={n} className="text-[11px] text-t3 flex items-center gap-1">
+                  <span key={n} className="text-xs text-t3 flex items-center gap-1">
                     <span className={`w-1.5 h-1.5 rounded-full ${room === 'break' ? 'bg-slate-600' : 'bg-green-400'}`}/>
                     {n}{room === 'break' && ' (offline)'}
                   </span>

@@ -71,7 +71,7 @@ function StepBar({ current }: { current: number }) {
                 {done ? <Check size={13} strokeWidth={2.5} /> : <Icon size={13} />}
               </div>
               {/* Label — só visível em telas maiores */}
-              <span className={`hidden sm:block text-[10px] font-medium transition-colors ${active ? 'text-brand-text' : done ? 'text-indigo-400' : 'text-t4'}`}>
+              <span className={`hidden sm:block text-[11px] font-medium transition-colors ${active ? 'text-brand-text' : done ? 'text-indigo-400' : 'text-t4'}`}>
                 {s.label}
               </span>
             </div>
@@ -276,7 +276,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                   className="w-full bg-s3/50 border border-line rounded-xl pl-12 pr-4 py-3.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px]"
                 />
               </div>
-              <p className="text-[11px] text-t5">Usado para calcular VGV na aba de Previsão</p>
+              <p className="text-xs text-t5">Usado para calcular VGV na aba de Previsão</p>
             </div>
 
             {isAdmin && brokers.length > 0 && (
@@ -294,7 +294,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
-                <p className="text-[11px] text-t5">O corretor selecionado verá e fará os disparos desta campanha</p>
+                <p className="text-xs text-t5">O corretor selecionado verá e fará os disparos desta campanha</p>
               </div>
             )}
           </div>
@@ -325,7 +325,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                   <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
                     Mensagem 1 <span className="text-brand normal-case font-normal">(principal)</span>
                   </label>
-                  <span className="text-[10px] text-t5">{allCount} template{allCount !== 1 ? 's' : ''}</span>
+                  <span className="text-[11px] text-t5">{allCount} template{allCount !== 1 ? 's' : ''}</span>
                 </div>
                 <textarea
                   value={message}
@@ -409,7 +409,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm font-medium truncate ${selected ? 'text-t1' : 'text-t2'}`}>{list.name}</p>
-                        {list.description && <p className="text-[11px] text-t5 truncate">{list.description}</p>}
+                        {list.description && <p className="text-xs text-t5 truncate">{list.description}</p>}
                       </div>
                       <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg flex-shrink-0 ${selected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-s3/70 text-t4'}`}>
                         {list.totalCount.toLocaleString()}

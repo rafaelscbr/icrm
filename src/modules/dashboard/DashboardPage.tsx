@@ -7,7 +7,8 @@ import {
   ListTodo, Snowflake, RefreshCw, Megaphone,
   ChevronDown, ChevronUp,
 } from 'lucide-react'
-import { Task, Contact, Property, Lead, LeadFunnelStage, FunnelStage, calcSaleCommissions } from '../../types'
+import { Task, Contact, Property, Lead, FunnelStage, calcSaleCommissions } from '../../types'
+import { STAGE_THEME } from '../../lib/stageTheme'
 import { PerformanceGoalsWidget } from './PerformanceGoalsWidget'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadModal } from '../leads/LeadModal'
@@ -34,14 +35,8 @@ import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsap
 const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
 const COOLING_DAYS = 2
 
-const STAGE_LABELS: Partial<Record<LeadFunnelStage, { label: string; color: string }>> = {
-  lead:        { label: 'Lead',        color: 'text-t2'  },
-  followup:    { label: 'Followup',    color: 'text-blue-400'   },
-  atendimento: { label: 'Atendimento', color: 'text-violet-400' },
-  visita:      { label: 'Visita',      color: 'text-amber-400'  },
-  proposta:    { label: 'Proposta',    color: 'text-orange-400' },
-  venda:       { label: 'Venda',       color: 'text-green-400'  },
-}
+// Tema das etapas vem da fonte única — mesma cor no kanban, modal e dashboard
+const STAGE_LABELS = STAGE_THEME
 
 // ─── Pipeline de Campanhas ────────────────────────────────────────────────────
 
@@ -88,7 +83,7 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
             <Megaphone size={15} className="text-purple-400" />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Pipeline de Campanhas</p>
+            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Pipeline de Campanhas</p>
             <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
               {activeCampaigns.length} campanha{activeCampaigns.length !== 1 ? 's' : ''} ativa{activeCampaigns.length !== 1 ? 's' : ''} · {grandTotal.toLocaleString('pt-BR')} leads
             </h2>
@@ -97,23 +92,23 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
         {totalSales > 0 && (
           <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 px-3 py-1.5 rounded-xl">
             <span className="text-green-400 text-xs font-bold tabular-nums">{totalSales}</span>
-            <span className="text-green-500/70 text-[10px]">venda{totalSales !== 1 ? 's' : ''}</span>
+            <span className="text-green-500/70 text-[11px]">venda{totalSales !== 1 ? 's' : ''}</span>
           </div>
         )}
       </div>
 
       {/* Funil geral */}
       <div className="px-5 pt-4 pb-3 border-b border-line">
-        <p className="text-[10px] font-bold text-t4 uppercase tracking-widest mb-3">Resumo geral</p>
+        <p className="text-[11px] font-bold text-t4 uppercase tracking-widest mb-3">Resumo geral</p>
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
           {CAMPAIGN_STAGES.map(({ stage, shortLabel, bg, text, border }) => {
             const count = totalPerStage.find(s => s.stage === stage)?.count ?? 0
             const pct   = grandTotal > 0 ? Math.round(count / grandTotal * 100) : 0
             return (
               <div key={stage} className={`flex flex-col items-center gap-1 rounded-xl p-3 border ${bg} ${border}`}>
-                <p className={`text-[10px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
+                <p className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
                 <p className="text-2xl font-black text-t1 tabular-nums leading-none">{count.toLocaleString('pt-BR')}</p>
-                <p className="text-[10px] text-t4 tabular-nums">{pct}%</p>
+                <p className="text-[11px] text-t4 tabular-nums">{pct}%</p>
               </div>
             )
           })}
@@ -141,7 +136,7 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-t1 truncate">{campaign.name}</p>
-                  <p className="text-[11px] text-t4 mt-0.5">{total.toLocaleString('pt-BR')} leads · {sales > 0 ? `${sales} venda${sales !== 1 ? 's' : ''}` : 'Sem vendas ainda'}</p>
+                  <p className="text-xs text-t4 mt-0.5">{total.toLocaleString('pt-BR')} leads · {sales > 0 ? `${sales} venda${sales !== 1 ? 's' : ''}` : 'Sem vendas ainda'}</p>
                 </div>
 
                 {/* Mini funnel preview */}
@@ -150,7 +145,7 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
                     const cnt = stageCounts.find(s => s.stage === stage)?.count ?? 0
                     if (cnt === 0) return null
                     return (
-                      <span key={stage} className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${bg} ${text}`}>
+                      <span key={stage} className={`text-[11px] font-bold px-2 py-0.5 rounded-lg ${bg} ${text}`}>
                         {cnt}
                       </span>
                     )
@@ -159,7 +154,7 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
 
                 <button
                   onClick={e => { e.stopPropagation(); onNavigate(campaign.id) }}
-                  className="flex-shrink-0 text-[10px] text-brand/60 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors mr-1"
+                  className="flex-shrink-0 text-[11px] text-brand/60 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors mr-1"
                 >
                   Abrir
                 </button>
@@ -179,9 +174,9 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
                       const pct = total > 0 ? Math.round(cnt / total * 100) : 0
                       return (
                         <div key={stage} className={`flex flex-col items-center gap-1 rounded-xl p-2.5 border ${bg} ${border}`}>
-                          <p className={`text-[10px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
+                          <p className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
                           <p className="text-xl font-black text-t1 tabular-nums leading-none">{cnt}</p>
-                          <p className="text-[10px] text-t4">{pct}%</p>
+                          <p className="text-[11px] text-t4">{pct}%</p>
                         </div>
                       )
                     })}
@@ -198,10 +193,10 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
                       return (
                         <div key={stage} className="flex items-center gap-1 flex-shrink-0">
                           {idx > 0 && (
-                            <span className="text-[10px] text-t4 tabular-nums">→ {conv}%</span>
+                            <span className="text-[11px] text-t4 tabular-nums">→ {conv}%</span>
                           )}
                           <div className="flex flex-col items-center">
-                            <span className={`text-[9px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</span>
+                            <span className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</span>
                             <span className="text-xs font-bold text-t1">{cur}</span>
                           </div>
                         </div>
@@ -209,9 +204,9 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
                     })}
                     {sales > 0 && (
                       <>
-                        <span className="text-[10px] text-t4">→</span>
+                        <span className="text-[11px] text-t4">→</span>
                         <div className="flex flex-col items-center">
-                          <span className="text-[9px] font-bold uppercase tracking-wide text-green-400">Vendas</span>
+                          <span className="text-[11px] font-bold uppercase tracking-wide text-green-400">Vendas</span>
                           <span className="text-xs font-bold text-green-400">{sales}</span>
                         </div>
                       </>
@@ -278,7 +273,7 @@ function LeadAlertsWidget({
           </div>
           <div>
             <h2 className="text-sm font-bold text-t1 leading-none">Leads sem contato</h2>
-            <p className="text-[11px] text-t3 mt-0.5">Precisam de atenção agora</p>
+            <p className="text-xs text-t3 mt-0.5">Precisam de atenção agora</p>
           </div>
           <span className="ml-1 bg-info/20 text-info text-xs font-bold px-2.5 py-1 rounded-xl border border-info-line tabular-nums">
             {alertLeads.length}
@@ -310,16 +305,16 @@ function LeadAlertsWidget({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-t1 truncate">{lead.name}</p>
                 <div className="flex items-center gap-1.5">
-                  <span className={`text-[10px] ${stageConf?.color ?? 'text-t3'}`}>{stageConf?.label ?? lead.funnelStage}</span>
+                  <span className={`text-[11px] ${stageConf?.color ?? 'text-t3'}`}>{stageConf?.label ?? lead.funnelStage}</span>
                   {lead.brokerId && brokerNames[lead.brokerId] && (
-                    <span className="text-[9px] text-violet-400/70 bg-violet-500/8 px-1.5 py-px rounded-full border border-violet-500/15">
+                    <span className="text-[11px] text-violet-400/70 bg-violet-500/8 px-1.5 py-px rounded-full border border-violet-500/15">
                       {brokerNames[lead.brokerId]}
                     </span>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border tabular-nums ${daysBadge}`}>{daysInt}d</span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded border tabular-nums ${daysBadge}`}>{daysInt}d</span>
                 <a
                   href={whatsappUrl(lead.phone)}
                   target="_blank"
@@ -360,7 +355,7 @@ function OverdueCard({
           </div>
           <div>
             <h2 className="text-sm font-bold text-red-300 leading-none">Tarefas em atraso</h2>
-            <p className="text-[11px] text-red-500/70 mt-0.5">Atenção imediata necessária</p>
+            <p className="text-xs text-red-500/70 mt-0.5">Atenção imediata necessária</p>
           </div>
           <span className="ml-1 bg-red-500/25 text-red-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-red-500/30 tabular-nums animate-pulse">{tasks.length}</span>
         </div>
@@ -384,7 +379,7 @@ function OverdueCard({
                   {contact  && <span className="text-xs text-t3 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
                   {property && <span className="text-xs text-t3 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
                   {t.brokerId && (
-                    <span className="text-[10px] text-violet-400/70 bg-violet-500/10 px-1.5 py-0.5 rounded-full border border-violet-500/20">
+                    <span className="text-[11px] text-violet-400/70 bg-violet-500/10 px-1.5 py-0.5 rounded-full border border-violet-500/20">
                       {(contacts as unknown as {id: string; name: string}[]).find(c => c.id === t.brokerId)?.name ?? 'Corretor'}
                     </span>
                   )}
@@ -415,7 +410,7 @@ function UpcomingCard({
             <CalendarCheck size={15} className="text-brand" />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-t4 uppercase">Próximas Tarefas</p>
+            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Próximas Tarefas</p>
             <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
               {tasks.length > 0 ? `${tasks.length} agendada${tasks.length !== 1 ? 's' : ''}` : 'Agenda livre'}
             </h2>
@@ -506,7 +501,7 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
           </div>
           <div>
             <h2 className="text-sm font-bold text-t1 leading-none">Leads congelados</h2>
-            <p className="text-[11px] text-t3 mt-0.5">Sem movimento há +2 dias nas campanhas</p>
+            <p className="text-xs text-t3 mt-0.5">Sem movimento há +2 dias nas campanhas</p>
           </div>
           <span className="ml-1 bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-amber-500/25 tabular-nums">{frozen.length}</span>
         </div>
@@ -518,17 +513,17 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
             <div key={cid} className="px-5 py-3 hover:bg-amber-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-t2">{campaign?.name ?? 'Campanha'}</p>
-                <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">{cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}</span>
+                <span className="text-[11px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">{cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}</span>
               </div>
               <div className="flex flex-col gap-1">
                 {cLeads.slice(0, 3).map(l => (
                   <div key={l.id} className="flex items-center gap-2">
-                    <span className="text-[10px] text-t3 w-24 truncate">{l.name}</span>
-                    <span className="text-[10px] text-amber-400/70 bg-amber-500/8 px-1.5 py-0.5 rounded border border-amber-500/15">{FROZEN_LABELS[l.funnelStage] ?? l.funnelStage}</span>
-                    <span className="text-[10px] text-t4 ml-auto">{l.days}d sem mov.</span>
+                    <span className="text-[11px] text-t3 w-24 truncate">{l.name}</span>
+                    <span className="text-[11px] text-amber-400/70 bg-amber-500/8 px-1.5 py-0.5 rounded border border-amber-500/15">{FROZEN_LABELS[l.funnelStage] ?? l.funnelStage}</span>
+                    <span className="text-[11px] text-t4 ml-auto">{l.days}d sem mov.</span>
                   </div>
                 ))}
-                {cLeads.length > 3 && <p className="text-[10px] text-t4">+{cLeads.length - 3} mais</p>}
+                {cLeads.length > 3 && <p className="text-[11px] text-t4">+{cLeads.length - 3} mais</p>}
               </div>
             </div>
           )
@@ -566,7 +561,7 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-t1 leading-none">Potencial de recompra</h2>
-            <p className="text-[11px] text-t3 mt-0.5">Clientes que compraram há +6 meses</p>
+            <p className="text-xs text-t3 mt-0.5">Clientes que compraram há +6 meses</p>
           </div>
           <span className="ml-1 bg-emerald-500/15 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-xl border border-emerald-500/20 tabular-nums">{candidates.length}</span>
         </div>
@@ -580,10 +575,10 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
             <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-t1 truncate">{c.name}</p>
-              <p className="text-[10px] text-t3">{totalSales} compra{totalSales !== 1 ? 's' : ''} · última: {lastSale ? formatDate(lastSale.date) : '—'}</p>
+              <p className="text-[11px] text-t3">{totalSales} compra{totalSales !== 1 ? 's' : ''} · última: {lastSale ? formatDate(lastSale.date) : '—'}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-[10px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">{daysSince}d sem compra</span>
+              <span className="text-[11px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">{daysSince}d sem compra</span>
               <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors">
                 <MessageCircle size={12} />
               </a>
@@ -592,7 +587,7 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
         ))}
         {candidates.length > 5 && (
           <div className="px-5 py-2 text-center">
-            <button onClick={onNavigate} className="text-[11px] text-t4 hover:text-emerald-400 transition-colors cursor-pointer">+{candidates.length - 5} outros candidatos →</button>
+            <button onClick={onNavigate} className="text-xs text-t4 hover:text-emerald-400 transition-colors cursor-pointer">+{candidates.length - 5} outros candidatos →</button>
           </div>
         )}
       </div>
@@ -653,7 +648,7 @@ function OnlineBrokersPanel() {
                   <>
                     <span className="text-t4">·</span>
                     <span className="text-xs text-t4 truncate">{locationText}</span>
-                    <span className="text-[9px] text-t4 uppercase tracking-wide">
+                    <span className="text-[11px] text-t4 uppercase tracking-wide">
                       {b.locationSource === 'gps' ? 'GPS' : 'IP'}
                     </span>
                   </>
@@ -662,7 +657,7 @@ function OnlineBrokersPanel() {
             </div>
             {mapsUrl && (
               <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-                className="flex-shrink-0 text-[10px] text-brand/70 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors"
+                className="flex-shrink-0 text-[11px] text-brand/70 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors"
               >
                 Ver mapa
               </a>
@@ -785,16 +780,16 @@ export function DashboardPage() {
         <div className="relative bg-surface border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
           <div className="p-5">
-            <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
+            <p className="text-xs font-semibold text-t3 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
             <div className="flex items-center gap-4 mb-3">
               <div className="flex-1">
                 <p className="text-3xl font-black text-t1 tabular-nums leading-none">{tasksDoneInPeriod}</p>
-                <p className="text-[10px] text-t4 mt-1 flex items-center gap-1"><ClipboardCheck size={9} className="text-green-500" /> realizadas</p>
+                <p className="text-[11px] text-t4 mt-1 flex items-center gap-1"><ClipboardCheck size={9} className="text-green-500" /> realizadas</p>
               </div>
               <div className="w-px h-8 bg-line flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-3xl font-black text-violet-300 tabular-nums leading-none">{tasksPendingInPeriod}</p>
-                <p className="text-[10px] text-t4 mt-1 flex items-center gap-1"><ListTodo size={9} className="text-violet-500" /> pendentes</p>
+                <p className="text-[11px] text-t4 mt-1 flex items-center gap-1"><ListTodo size={9} className="text-violet-500" /> pendentes</p>
               </div>
             </div>
             <div className="h-1 bg-s3/50 rounded-full overflow-hidden">

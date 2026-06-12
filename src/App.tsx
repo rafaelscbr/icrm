@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useThemeStore, applyTheme } from './store/useThemeStore'
@@ -19,6 +19,7 @@ import { useCampaignsStore } from './store/useCampaignsStore'
 import { useCampaignLeadsStore } from './store/useCampaignLeadsStore'
 import { useCampaignActivityStore } from './store/useCampaignActivityStore'
 import { useContactsStore } from './store/useContactsStore'
+import { useSearchStore } from './store/useSearchStore'
 import { supabase } from './lib/supabase'
 
 // ── Code splitting por rota ──────────────────────────────────────────────────
@@ -90,7 +91,7 @@ function PresenceTracker() {
 
 // ── AppRoutes ────────────────────────────────────────────────────────────────
 function AppRoutes() {
-  const [searchOpen, setSearchOpen] = useState(false)
+  const { open: searchOpen, setOpen: setSearchOpen } = useSearchStore()
   const { user, isAdmin } = useAuthStore()
   const { load: loadNotifications, subscribe: subscribeNotifications } = useNotificationsStore()
   const { subscribe: subscribeTasks }        = useTasksStore()

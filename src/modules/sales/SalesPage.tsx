@@ -270,7 +270,7 @@ export function SalesPage() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-100 truncate">{client?.name ?? '—'}</p>
                         {isRetro && (
-                          <span className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-wide">retroativo</span>
+                          <span className="text-[11px] font-semibold text-amber-500/80 uppercase tracking-wide">retroativo</span>
                         )}
                       </div>
                     </div>
@@ -299,7 +299,7 @@ export function SalesPage() {
                         <span className="text-xs text-t4">Comissão</span>
                         <div className="text-right">
                           <p className="text-xs text-violet-400 tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
-                          <p className="text-[11px] text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
+                          <p className="text-xs text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
                         </div>
                       </div>
                     )}
@@ -314,7 +314,7 @@ export function SalesPage() {
                 <p className="text-sm font-bold text-slate-100 tabular-nums">
                   {formatCurrencyFull(filtered.reduce((acc, s) => acc + s.value, 0))}
                 </p>
-                <p className="text-[11px] text-violet-400 tabular-nums">
+                <p className="text-xs text-violet-400 tabular-nums">
                   {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0))}
                 </p>
               </div>
@@ -352,7 +352,7 @@ export function SalesPage() {
                     <div className="min-w-0">
                       <span className="text-sm text-t1 truncate block">{client?.name ?? '—'}</span>
                       {isRetro && (
-                        <span className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-wide">retroativo</span>
+                        <span className="text-[11px] font-semibold text-amber-500/80 uppercase tracking-wide">retroativo</span>
                       )}
                     </div>
                   </div>
@@ -366,7 +366,7 @@ export function SalesPage() {
                     {hasComm ? (
                       <>
                         <p className="text-xs text-violet-400 tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
-                        <p className="text-[11px] text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
+                        <p className="text-xs text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
                       </>
                     ) : (
                       <span className="text-xs text-t5">—</span>
@@ -399,7 +399,7 @@ export function SalesPage() {
                 <p className="text-xs font-bold text-violet-400 tabular-nums">
                   {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0))}
                 </p>
-                <p className="text-[11px] text-emerald-400 tabular-nums">
+                <p className="text-xs text-emerald-400 tabular-nums">
                   {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0))}
                 </p>
               </div>

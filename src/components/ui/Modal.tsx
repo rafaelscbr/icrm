@@ -18,8 +18,12 @@ const desktopSizes = {
   xl: 'lg:max-w-4xl',
 }
 
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
 export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md', footer }: ModalProps) {
   const mouseDownTarget = useRef<EventTarget | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previousFocus = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -32,6 +36,29 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
       document.body.style.overflow = ''
     }
   }, [isOpen, onClose])
+
+  // Acessibilidade: foco entra no modal ao abrir e volta ao elemento de origem ao fechar
+  useEffect(() => {
+    if (!isOpen) return
+    previousFocus.current = document.activeElement as HTMLElement | null
+    panelRef.current?.focus()
+    return () => { previousFocus.current?.focus?.() }
+  }, [isOpen])
+
+  // Tab fica preso dentro do modal (focus trap)
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key !== 'Tab' || !panelRef.current) return
+    const focusables = panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)
+    if (focusables.length === 0) return
+    const first = focusables[0]
+    const last = focusables[focusables.length - 1]
+    const active = document.activeElement
+    if (e.shiftKey && (active === first || active === panelRef.current)) {
+      e.preventDefault(); last.focus()
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault(); first.focus()
+    }
+  }
 
   if (!isOpen) return null
 
@@ -48,9 +75,12 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
 
       {/* Panel */}
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
         className={`
           relative w-full ${desktopSizes[size]}
           bg-surface border border-line

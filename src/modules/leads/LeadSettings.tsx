@@ -95,7 +95,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
       <div className="p-4 space-y-4">
         <div className="flex gap-3">
           <div className="w-20 flex-shrink-0">
-            <label className="text-[10px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">Emoji</label>
+            <label className="text-[11px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">Emoji</label>
             <input
               value={emoji}
               onChange={e => setEmoji(e.target.value)}
@@ -105,7 +105,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
             />
           </div>
           <div className="flex-1">
-            <label className="text-[10px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">Nome</label>
+            <label className="text-[11px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">Nome</label>
             <input
               value={label}
               onChange={e => handleLabel(e.target.value)}
@@ -117,7 +117,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
 
         {!isEdit && (
           <div>
-            <label className="text-[10px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">
+            <label className="text-[11px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">
               Identificador interno
             </label>
             <input
@@ -126,13 +126,13 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
               placeholder="sem_retorno"
               className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2 text-sm text-t2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
             />
-            <p className="text-[10px] text-t4 mt-1">Gerado automaticamente · só letras, números e _</p>
+            <p className="text-[11px] text-t4 mt-1">Gerado automaticamente · só letras, números e _</p>
           </div>
         )}
 
         {type === 'origin' && (
           <div>
-            <label className="text-[10px] font-semibold text-t3 uppercase tracking-wider block mb-2">Cor</label>
+            <label className="text-[11px] font-semibold text-t3 uppercase tracking-wider block mb-2">Cor</label>
             <div className="flex flex-wrap gap-2">
               {COLORS.map(c => (
                 <button
@@ -221,9 +221,9 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
       <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line">
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-t1 truncate">{title}</h3>
-          <p className="text-[11px] text-t4 mt-0.5 truncate">{subtitle}</p>
+          <p className="text-xs text-t4 mt-0.5 truncate">{subtitle}</p>
         </div>
-        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-s3/70 text-blue-400 border border-blue-500/20 flex-shrink-0">
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-s3/70 text-blue-400 border border-blue-500/20 flex-shrink-0">
           {active.length} {active.length === 1 ? 'ativo' : 'ativos'}
         </span>
         <button
@@ -292,7 +292,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
                   <span className={`text-sm font-medium truncate ${type === 'origin' && item.color ? item.color : 'text-t1'}`}>
                     {item.label}
                   </span>
-                  <span className="text-[11px] text-t4 font-mono truncate hidden sm:block">{item.slug}</span>
+                  <span className="text-xs text-t4 font-mono truncate hidden sm:block">{item.slug}</span>
                 </div>
 
                 {/* Actions */}
@@ -311,7 +311,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
                         className="w-8 h-8 flex items-center justify-center text-t4 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all"
                         title="Desativar"
                       >
-                        <span className="text-[10px] font-bold">OFF</span>
+                        <span className="text-[11px] font-bold">OFF</span>
                       </button>
                       <button
                         onClick={() => setDelId(item.id)}
@@ -337,7 +337,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
         {/* Inactive items (collapsed) */}
         {inactive.length > 0 && dbAvailable && (
           <div className="pt-1">
-            <p className="text-[10px] font-semibold text-t5 uppercase tracking-wider px-1 mb-2">
+            <p className="text-[11px] font-semibold text-t5 uppercase tracking-wider px-1 mb-2">
               Inativos ({inactive.length})
             </p>
             {inactive.map(item => (
@@ -439,7 +439,7 @@ export function LeadSettings() {
               {copied ? 'Copiado!' : 'Copiar'}
             </button>
           </div>
-          <pre className="p-4 text-[11px] text-t3 font-mono leading-relaxed overflow-x-auto whitespace-pre">
+          <pre className="p-4 text-xs text-t3 font-mono leading-relaxed overflow-x-auto whitespace-pre">
             {SETUP_SQL}
           </pre>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
   MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2, TrendingUp,
@@ -91,13 +92,13 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
           {brokerName && (
             <span
               title={`Corretor responsável: ${brokerName}`}
-              className="font-label text-[9px] font-medium uppercase tracking-[0.08em] text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-px rounded-full flex-shrink-0"
+              className="font-label text-[11px] font-medium uppercase tracking-[0.08em] text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-px rounded-full flex-shrink-0"
             >
               {brokerName.split(' ')[0]}
             </span>
           )}
           {lead.contactId && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 flex-shrink-0">
+            <span className="inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 flex-shrink-0">
               <UserCheck size={8} /> No CRM
             </span>
           )}
@@ -121,7 +122,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         <originConf.icon size={11} strokeWidth={1.6} /> {originConf.label}
       </div>
 
-      <span className={`inline-flex text-[11px] font-medium px-2 py-1 rounded-lg border flex-shrink-0 ${conf.bg} ${conf.color} ${conf.border}`}>
+      <span className={`inline-flex text-xs font-medium px-2 py-1 rounded-lg border flex-shrink-0 ${conf.bg} ${conf.color} ${conf.border}`}>
         {conf.label}
         {lead.funnelStage === 'followup' && lead.followupStep > 0 && ` · ${lead.followupStep}ª`}
       </span>
@@ -159,8 +160,21 @@ export function LeadsPage() {
   const [showDiscarded, setShowDiscarded] = useState(false)
   const [showForm,      setShowForm]      = useState(false)
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
+  const [searchParams,  setSearchParams]  = useSearchParams()
 
   useEffect(() => { load(); loadProps(); loadContacts(); loadConfig() }, [])
+
+  // Deep-link da busca global: /leads?open=<id> abre o modal do lead
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId || allLeads.length === 0) return
+    const target = allLeads.find(l => l.id === openId)
+    if (target) {
+      setSelectedLead(target)
+      searchParams.delete('open')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [searchParams, allLeads]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const active    = leads.filter(l => !l.discardReason)
   const discarded = leads.filter(l => !!l.discardReason)
@@ -229,7 +243,7 @@ export function LeadsPage() {
               <Icon size={12} />
               {label}
               {badge !== undefined && (
-                <span className={`ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
+                <span className={`ml-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full
                   ${tab === value ? 'bg-brand/15 text-brand' : 'bg-s3/50 text-t3'}`}>
                   {badge}
                 </span>

@@ -191,7 +191,7 @@ export function TasksLinkedModal({
               const CatIcon = cfg.icon
               return (
                 <div key={cat}>
-                  <p className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider mb-1 ${cfg.color}`}>
+                  <p className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider mb-1 ${cfg.color}`}>
                     <CatIcon size={11} /> {cfg.label} · {catTasks.length}
                   </p>
                   <div className="rounded-xl px-3" style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}>
@@ -205,7 +205,7 @@ export function TasksLinkedModal({
 
             {uncategorized.length > 0 && (
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-t4 mb-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-t4 mb-1">
                   Sem categoria · {uncategorized.length}
                 </p>
                 <div className="rounded-xl px-3" style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}>

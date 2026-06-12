@@ -52,7 +52,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
       <div className="flex items-center gap-2 mb-5">
         <Sun size={14} className="text-brand" />
         <h2 className="text-sm font-semibold text-t1">Sazonalidade — histórico acumulado</h2>
-        <span className="ml-auto text-[10px] text-brand bg-brand/10 px-2 py-0.5 rounded border border-brand/20">
+        <span className="ml-auto text-[11px] text-brand bg-brand/10 px-2 py-0.5 rounded border border-brand/20">
           melhor mês: {bestMonth.monthFull}
         </span>
       </div>
@@ -196,7 +196,7 @@ export function SalesTab() {
             <div className="flex flex-col gap-3">
               {byBroker.map((b) => (
                 <div key={b.id} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center text-[10px] font-bold text-brand flex-shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center text-[11px] font-bold text-brand flex-shrink-0">
                     {b.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -210,7 +210,7 @@ export function SalesTab() {
                         style={{ width: `${byBroker[0].count > 0 ? (b.count / byBroker[0].count) * 100 : 0}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-t4 mt-0.5">{formatCurrencyFull(b.revenue)}</p>
+                    <p className="text-[11px] text-t4 mt-0.5">{formatCurrencyFull(b.revenue)}</p>
                   </div>
                 </div>
               ))}

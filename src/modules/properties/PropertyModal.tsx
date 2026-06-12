@@ -117,7 +117,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         <div className="grid grid-cols-2 gap-3">
           {(property.bedrooms || property.suites || property.areaSqm) && (
             <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
-              <p className="text-[10px] font-semibold text-t3 uppercase tracking-wider">Características</p>
+              <p className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Características</p>
               <div className="flex flex-col gap-1">
                 {property.bedrooms && (
                   <div className="flex items-center gap-1.5 text-xs text-t2">
@@ -142,7 +142,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           )}
 
           <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
-            <p className="text-[10px] font-semibold text-t3 uppercase tracking-wider">Financeiro</p>
+            <p className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Financeiro</p>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1.5 text-xs">
                 <DollarSign size={11} className="text-emerald-400" />
@@ -164,7 +164,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           <div className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
             <User size={13} className="text-brand flex-shrink-0" />
             <div>
-              <p className="text-[10px] text-t3">Proprietário</p>
+              <p className="text-[11px] text-t3">Proprietário</p>
               <p className="text-xs font-medium text-t1">{owner.name}</p>
             </div>
           </div>
@@ -173,7 +173,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         {/* Notas */}
         {property.notes && (
           <div className="px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-            <p className="text-[10px] text-t3 mb-1">Observações</p>
+            <p className="text-[11px] text-t3 mb-1">Observações</p>
             <p className="text-xs text-t2 leading-relaxed">{property.notes}</p>
           </div>
         )}
@@ -200,9 +200,9 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
                     <div className="text-right">
                       <p className="text-xs font-bold text-green-400">{formatCurrencyFull(sale.value)}</p>
                       {brokerCommission > 0 && (
-                        <p className="text-[10px] text-violet-400">{formatCurrencyFull(brokerCommission)}</p>
+                        <p className="text-[11px] text-violet-400">{formatCurrencyFull(brokerCommission)}</p>
                       )}
-                      <p className="text-[10px] text-t4">{formatDate(sale.date)}</p>
+                      <p className="text-[11px] text-t4">{formatDate(sale.date)}</p>
                     </div>
                   </div>
                 )
@@ -218,7 +218,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
               <Clock size={13} className="text-brand" />
               <h3 className="text-sm font-semibold text-t2">Tarefas vinculadas</h3>
             </div>
-            <div className="flex gap-2 text-[10px]">
+            <div className="flex gap-2 text-[11px]">
               {pendingTasks.length > 0 && (
                 <span className="bg-brand-tint text-brand px-2 py-0.5 rounded-full font-medium border border-brand/25">
                   {pendingTasks.length} pendente{pendingTasks.length > 1 ? 's' : ''}
@@ -253,12 +253,12 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {task.category && (
-                          <span className="text-[10px] text-t4">
+                          <span className="text-[11px] text-t4">
                             {CATEGORY_LABELS[task.category] ?? task.category}
                           </span>
                         )}
                         {task.dueDate && (
-                          <span className="text-[10px] text-t4 flex items-center gap-0.5">
+                          <span className="text-[11px] text-t4 flex items-center gap-0.5">
                             <Clock size={8} /> {formatDate(task.dueDate)}
                           </span>
                         )}

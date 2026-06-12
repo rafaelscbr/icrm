@@ -9,6 +9,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Avatar } from '../../components/ui/Avatar'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { Contact, ContactTag, PermutaItem } from '../../types'
+import { STAGE_THEME } from '../../lib/stageTheme'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
@@ -74,14 +75,8 @@ interface ContactModalProps {
   onClose: () => void
 }
 
-const LEAD_STAGE_CONFIG = {
-  lead:        { label: 'Lead',        color: 'text-t2',  bg: 'bg-slate-500/20',  border: 'border-slate-500/30'  },
-  followup:    { label: 'Followup',    color: 'text-blue-300',   bg: 'bg-blue-500/20',   border: 'border-blue-500/30'   },
-  atendimento: { label: 'Atendimento', color: 'text-violet-300', bg: 'bg-violet-500/20', border: 'border-violet-500/30' },
-  visita:      { label: 'Visita',      color: 'text-amber-300',  bg: 'bg-amber-500/20',  border: 'border-amber-500/30'  },
-  proposta:    { label: 'Proposta',    color: 'text-orange-300', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
-  venda:       { label: 'Venda',       color: 'text-green-300',  bg: 'bg-green-500/20',  border: 'border-green-500/30'  },
-}
+// Tema das etapas vem da fonte única — mesma cor no kanban, modal e dashboard
+const LEAD_STAGE_CONFIG = STAGE_THEME
 
 export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
   const { tasks }      = useTasksStore()
@@ -221,7 +216,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                 <Cake size={13} className="text-yellow-400 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] text-t3">Aniversário</p>
+                  <p className="text-[11px] text-t3">Aniversário</p>
                   <p className="text-xs text-t1 font-medium">{formatDate(contact.birthdate)}</p>
                 </div>
               </div>
@@ -230,7 +225,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                 <Heart size={13} className="text-pink-400 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] text-t3">Cônjuge</p>
+                  <p className="text-[11px] text-t3">Cônjuge</p>
                   <p className="text-xs text-t1 font-medium truncate">{contact.spouseName ?? 'Sim'}</p>
                 </div>
               </div>
@@ -239,7 +234,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                 <Baby size={13} className="text-cyan-400 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] text-t3">Filhos</p>
+                  <p className="text-[11px] text-t3">Filhos</p>
                   <p className="text-xs text-t1 font-medium truncate">{contact.childrenNames ?? 'Sim'}</p>
                 </div>
               </div>
@@ -253,7 +248,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
             <div className="flex items-center gap-2 mb-3">
               <Home size={13} className="text-indigo-400" />
               <h3 className="text-sm font-semibold text-t2">Imóveis cadastrados</h3>
-              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/20 font-medium">
+              <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/20 font-medium">
                 {ownedProperties.length} imóvel{ownedProperties.length > 1 ? 'is' : ''}
               </span>
             </div>
@@ -280,17 +275,17 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                     <p className="text-xs font-semibold text-t1 truncate group-hover:text-white transition-colors">
                       {prop.name}
                     </p>
-                    <p className="text-[10px] text-t3 truncate mt-0.5">
+                    <p className="text-[11px] text-t3 truncate mt-0.5">
                       {PROPERTY_TYPE_LABELS[prop.type] ?? prop.type} · {prop.neighborhood}{prop.city ? ` · ${prop.city}` : ''}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       {prop.bedrooms != null && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-t3">
+                        <span className="flex items-center gap-0.5 text-[11px] text-t3">
                           <Bed size={9} /> {prop.bedrooms} dorm{prop.bedrooms !== 1 ? 's' : ''}
                         </span>
                       )}
                       {prop.areaSqm != null && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-t3">
+                        <span className="flex items-center gap-0.5 text-[11px] text-t3">
                           <Square size={9} /> {prop.areaSqm}m²
                         </span>
                       )}
@@ -312,15 +307,15 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
         {linkedSales.length > 0 && (
           <div className="grid grid-cols-3 gap-3">
             <div className="flex flex-col gap-1 px-3 py-2.5 bg-green-500/8 rounded-xl border border-green-500/20">
-              <p className="text-[10px] text-t3">Vendas</p>
+              <p className="text-[11px] text-t3">Vendas</p>
               <p className="text-lg font-bold text-green-400 tabular-nums">{linkedSales.length}</p>
             </div>
             <div className="flex flex-col gap-1 px-3 py-2.5 bg-s3/50 rounded-xl border border-blue-500/20">
-              <p className="text-[10px] text-t3">VGV gerado</p>
+              <p className="text-[11px] text-t3">VGV gerado</p>
               <p className="text-sm font-bold text-blue-400 tabular-nums">{formatCurrencyFull(totalSalesValue)}</p>
             </div>
             <div className="flex flex-col gap-1 px-3 py-2.5 bg-violet-500/8 rounded-xl border border-violet-500/20">
-              <p className="text-[10px] text-t3">Sua comissão</p>
+              <p className="text-[11px] text-t3">Sua comissão</p>
               <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrencyFull(totalCommission)}</p>
             </div>
           </div>
@@ -341,14 +336,14 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                   <div key={sale.id} className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-t1 truncate">{sale.propertyName}</p>
-                      {prop && <p className="text-[10px] text-t3 truncate">{prop.neighborhood}{prop.city ? ` · ${prop.city}` : ''}</p>}
+                      {prop && <p className="text-[11px] text-t3 truncate">{prop.neighborhood}{prop.city ? ` · ${prop.city}` : ''}</p>}
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-xs font-bold text-green-400">{formatCurrencyFull(sale.value)}</p>
                       {brokerCommission > 0 && (
-                        <p className="text-[10px] text-violet-400">Comissão: {formatCurrencyFull(brokerCommission)}</p>
+                        <p className="text-[11px] text-violet-400">Comissão: {formatCurrencyFull(brokerCommission)}</p>
                       )}
-                      <p className="text-[10px] text-t4">{formatDate(sale.date)}</p>
+                      <p className="text-[11px] text-t4">{formatDate(sale.date)}</p>
                     </div>
                   </div>
                 )
@@ -363,7 +358,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
             <div className="flex items-center gap-2 mb-3">
               <UserPlus size={13} className="text-violet-400" />
               <h3 className="text-sm font-semibold text-t2">Leads no Funil</h3>
-              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 font-medium">
+              <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 font-medium">
                 {activeLeads.length} ativo{activeLeads.length > 1 ? 's' : ''}
               </span>
             </div>
@@ -379,19 +374,19 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${conf.bg} ${conf.color} ${conf.border}`}>
+                        <span className={`inline-flex text-[11px] font-medium px-1.5 py-0.5 rounded-full border ${conf.bg} ${conf.color} ${conf.border}`}>
                           {conf.label}
                           {lead.funnelStage === 'followup' && lead.followupStep > 0 && ` · ${lead.followupStep}ª msg`}
                         </span>
                       </div>
                       {prop && (
-                        <p className="text-[10px] text-t3 mt-0.5 truncate">🏠 {prop.name}</p>
+                        <p className="text-[11px] text-t3 mt-0.5 truncate">🏠 {prop.name}</p>
                       )}
                       {lead.averageTicket && !prop && (
-                        <p className="text-[10px] text-violet-400 mt-0.5">{formatCurrencyFull(lead.averageTicket)}</p>
+                        <p className="text-[11px] text-violet-400 mt-0.5">{formatCurrencyFull(lead.averageTicket)}</p>
                       )}
                     </div>
-                    <p className="text-[10px] text-t4 flex-shrink-0">{formatDate(lead.createdAt)}</p>
+                    <p className="text-[11px] text-t4 flex-shrink-0">{formatDate(lead.createdAt)}</p>
                   </button>
                 )
               })}
@@ -408,14 +403,14 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               (contact?.permutaItems?.length ?? 0) > 0 ? (
                 <button
                   onClick={openPermutaEdit}
-                  className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-t3 hover:text-t1 transition-all"
+                  className="ml-auto flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-t3 hover:text-t1 transition-all"
                 >
                   <Pencil size={9} /> Editar
                 </button>
               ) : (
                 <button
                   onClick={openPermutaEdit}
-                  className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 text-amber-400 hover:text-amber-300 transition-all"
+                  className="ml-auto flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 text-amber-400 hover:text-amber-300 transition-all"
                 >
                   <Plus size={9} /> Adicionar
                 </button>
@@ -432,7 +427,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
             <div className="flex flex-col gap-2">
               {contact!.permutaItems.map(item => (
                 <div key={item.id} className="flex items-start gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                  <span className={`inline-flex self-start text-[10px] font-medium px-2 py-0.5 rounded-full border flex-shrink-0 ${
+                  <span className={`inline-flex self-start text-[11px] font-medium px-2 py-0.5 rounded-full border flex-shrink-0 ${
                     item.type === 'imovel'
                       ? 'bg-brand-tint text-brand-text border-indigo-500/25'
                       : 'bg-amber-500/15 text-amber-300 border-amber-500/25'
@@ -538,7 +533,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                   {idx === permutaItems.length - 1 && (
                     <button
                       onClick={addPermutaItem}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] text-t3 hover:text-t2 border border-dashed border-line hover:border-white/22 rounded-lg transition-all"
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-t3 hover:text-t2 border border-dashed border-line hover:border-white/22 rounded-lg transition-all"
                     >
                       <Plus size={10} /> Adicionar outro bem
                     </button>
@@ -571,7 +566,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               <Tag size={13} className="text-brand" />
               <h3 className="text-sm font-semibold text-t2">Tarefas vinculadas</h3>
             </div>
-            <div className="flex gap-2 text-[10px]">
+            <div className="flex gap-2 text-[11px]">
               {pendingTasks.length > 0 && (
                 <span className="bg-brand-tint text-brand px-2 py-0.5 rounded-full font-medium border border-brand/25">
                   {pendingTasks.length} pendente{pendingTasks.length > 1 ? 's' : ''}
@@ -607,25 +602,25 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {task.category && (
-                          <span className="text-[10px] text-t4">
+                          <span className="text-[11px] text-t4">
                             {CATEGORY_LABELS[task.category] ?? task.category}
                           </span>
                         )}
                         {task.dueDate && (
-                          <span className="text-[10px] text-t4 flex items-center gap-0.5">
+                          <span className="text-[11px] text-t4 flex items-center gap-0.5">
                             <Clock size={8} /> {formatDate(task.dueDate)}
                           </span>
                         )}
                       </div>
                     </div>
                     {ago && (
-                      <span className="text-[10px] text-t4 flex-shrink-0">{ago}</span>
+                      <span className="text-[11px] text-t4 flex-shrink-0">{ago}</span>
                     )}
                   </div>
                 )
               })}
               {cancelledTasks.length > 0 && (
-                <p className="text-[10px] text-t5 text-center mt-1">
+                <p className="text-[11px] text-t5 text-center mt-1">
                   + {cancelledTasks.length} cancelada{cancelledTasks.length > 1 ? 's' : ''} (oculta{cancelledTasks.length > 1 ? 's' : ''})
                 </p>
               )}

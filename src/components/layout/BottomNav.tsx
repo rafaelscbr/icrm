@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useSearchStore } from '../../store/useSearchStore'
 
 const mainNav = [
   { to: '/',         icon: LayoutDashboard, label: 'Início',   end: true  },
@@ -16,15 +17,16 @@ const mainNav = [
   { to: '/tarefas',  icon: CheckSquare,     label: 'Tarefas',  end: false },
 ]
 
+// Nomes idênticos aos da Sidebar — desktop e mobile nunca divergem
 const moreNav = [
-  { to: '/imoveis',     icon: Building2,      label: 'Imóveis'     },
-  { to: '/leads',       icon: UserPlus,       label: 'Leads'       },
-  { to: '/base-leads',  icon: Database,       label: 'Base Leads'  },
-  { to: '/metas',       icon: Target,         label: 'Metas'       },
-  { to: '/campanhas',   icon: Megaphone,      label: 'Campanhas'   },
-  { to: '/permuta',     icon: ArrowLeftRight, label: 'Permuta'     },
-  { to: '/performance', icon: BarChart3,      label: 'Performance' },
-  { to: '/escritorio',  icon: Tv2,            label: 'Escritório'  },
+  { to: '/imoveis',     icon: Building2,      label: 'Imóveis'       },
+  { to: '/leads',       icon: UserPlus,       label: 'Leads'         },
+  { to: '/base-leads',  icon: Database,       label: 'Base de Leads' },
+  { to: '/metas',       icon: Target,         label: 'Metas'         },
+  { to: '/campanhas',   icon: Megaphone,      label: 'Campanhas'     },
+  { to: '/permuta',     icon: ArrowLeftRight, label: 'Permuta'       },
+  { to: '/performance', icon: BarChart3,      label: 'Análise'       },
+  { to: '/escritorio',  icon: Tv2,            label: 'Escritório'    },
 ]
 
 const tools = [
@@ -40,6 +42,7 @@ export function BottomNav() {
   const location  = useLocation()
   const navigate  = useNavigate()
   const { profile, isAdmin, logout } = useAuthStore()
+  const setSearchOpen = useSearchStore(s => s.setOpen)
 
   const initial = (profile?.name ?? 'U').charAt(0).toUpperCase()
 
@@ -95,7 +98,7 @@ export function BottomNav() {
                     />
                   </div>
                   <span
-                    className="text-[10px] font-medium leading-none"
+                    className="text-[11px] font-medium leading-none"
                     style={{ color: isActive ? 'var(--brand-text)' : 'var(--nav-muted)' }}
                   >
                     {label}
@@ -120,7 +123,7 @@ export function BottomNav() {
               }
             </div>
             <span
-              className="text-[10px] font-medium leading-none"
+              className="text-[11px] font-medium leading-none"
               style={{ color: drawerOpen || isMoreActive ? 'var(--brand-text)' : 'var(--nav-muted)' }}
             >
               Mais
@@ -152,9 +155,21 @@ export function BottomNav() {
               <div className="w-10 h-1 rounded-full" style={{ background: 'var(--line-strong)' }} />
             </div>
 
+            {/* Busca global — única porta de entrada no mobile (sem ⌘K) */}
+            <div className="px-4 pb-3">
+              <button
+                onClick={() => { setDrawerOpen(false); setSearchOpen(true) }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:scale-95 transition-all"
+                style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}
+              >
+                <Search size={16} style={{ color: 'var(--t3)' }} className="flex-shrink-0" />
+                <span className="text-sm text-t3">Buscar contatos, imóveis, leads…</span>
+              </button>
+            </div>
+
             {/* Páginas */}
             <div className="px-4 pb-3">
-              <p className="text-[10px] font-bold text-t4 uppercase tracking-widest mb-3 px-2">Páginas</p>
+              <p className="text-[11px] font-bold text-t4 uppercase tracking-widest mb-3 px-2">Páginas</p>
               <div className="grid grid-cols-4 gap-2">
                 {moreNav.map(({ to, icon: Icon, label }) => (
                   <NavLink
@@ -182,7 +197,7 @@ export function BottomNav() {
 
             {/* Ferramentas */}
             <div className="px-4 pt-3 pb-4" style={{ borderTop: '1px solid var(--line)' }}>
-              <p className="text-[10px] font-bold text-t4 uppercase tracking-widest mb-3 px-2">Ferramentas</p>
+              <p className="text-[11px] font-bold text-t4 uppercase tracking-widest mb-3 px-2">Ferramentas</p>
               <div className="grid grid-cols-2 gap-2">
                 {tools.map(({ label, href, icon: Icon }) => (
                   <a

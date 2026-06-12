@@ -160,7 +160,7 @@ export function LeadTimeline({ leadId }: Props) {
 
             {/* Tipo */}
             <div>
-              <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest mb-2.5">Tipo de contato</p>
+              <p className="text-xs font-semibold text-t3 uppercase tracking-widest mb-2.5">Tipo de contato</p>
               <div className="grid grid-cols-3 gap-2">
                 {TYPES.map(t => {
                   const c = TYPE_CONFIG[t]
@@ -185,7 +185,7 @@ export function LeadTimeline({ leadId }: Props) {
 
             {/* Data e hora */}
             <div>
-              <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest mb-2">Data e hora</p>
+              <p className="text-xs font-semibold text-t3 uppercase tracking-widest mb-2">Data e hora</p>
               <div className="relative">
                 <Clock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-t3 pointer-events-none" />
                 <input
@@ -200,8 +200,8 @@ export function LeadTimeline({ leadId }: Props) {
             {/* Resultado */}
             <div>
               <div className="flex items-baseline gap-2 mb-2.5">
-                <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest">Resultado</p>
-                <span className="text-[11px] text-t4">(opcional)</span>
+                <p className="text-xs font-semibold text-t3 uppercase tracking-widest">Resultado</p>
+                <span className="text-xs text-t4">(opcional)</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {OUTCOMES.map(o => {
@@ -211,7 +211,7 @@ export function LeadTimeline({ leadId }: Props) {
                     <button
                       key={o}
                       onClick={() => setOutcome(isSelected ? '' : o)}
-                      className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
+                      className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                         isSelected
                           ? `${c.bg} ${c.border} ${c.color}`
                           : 'bg-s2/50 border-line text-t3 hover:text-t2 hover:border-line-input hover:bg-s3/50'
@@ -227,8 +227,8 @@ export function LeadTimeline({ leadId }: Props) {
             {/* Observações */}
             <div>
               <div className="flex items-baseline gap-2 mb-2">
-                <p className="text-[11px] font-semibold text-t3 uppercase tracking-widest">Observações</p>
-                <span className="text-[11px] text-t4">(opcional)</span>
+                <p className="text-xs font-semibold text-t3 uppercase tracking-widest">Observações</p>
+                <span className="text-xs text-t4">(opcional)</span>
               </div>
               <textarea
                 value={description}
@@ -268,7 +268,7 @@ export function LeadTimeline({ leadId }: Props) {
         </div>
       ) : (
         <div>
-          <p className="text-[11px] font-semibold text-t4 uppercase tracking-widest mb-4 px-0.5">
+          <p className="text-xs font-semibold text-t4 uppercase tracking-widest mb-4 px-0.5">
             {interactions.length} {interactions.length === 1 ? 'interação' : 'interações'}
           </p>
 
@@ -295,13 +295,13 @@ export function LeadTimeline({ leadId }: Props) {
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
                           <span className={`text-xs font-semibold ${tc.color}`}>{tc.label}</span>
                           {oc && (
-                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${oc.bg} ${oc.border} ${oc.color}`}>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${oc.bg} ${oc.border} ${oc.color}`}>
                               {oc.label}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className="text-[11px] text-t4 whitespace-nowrap">
+                          <span className="text-xs text-t4 whitespace-nowrap">
                             {formatInteractionDate(item.interactedAt)}
                           </span>
                           <button

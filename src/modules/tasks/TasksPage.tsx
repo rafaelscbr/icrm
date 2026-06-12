@@ -200,12 +200,12 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
           </p>
           <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[t.priority]}`} />
           {isToday && !isDone && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-brand-text border border-brand/30">
+            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-brand-text border border-brand/30">
               HOJE
             </span>
           )}
           {overdue && !isDone && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/25">
+            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/25">
               ATRASADA
             </span>
           )}
@@ -456,7 +456,7 @@ function CalendarView({
         {/* Header dias da semana */}
         <div className="grid grid-cols-7 bg-s2/60 border-b border-line">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} className="py-2 text-center text-[10px] font-semibold text-t3 uppercase tracking-wider">{d}</div>
+            <div key={d} className="py-2 text-center text-[11px] font-semibold text-t3 uppercase tracking-wider">{d}</div>
           ))}
         </div>
 
@@ -477,7 +477,7 @@ function CalendarView({
               >
                 {day !== null && (
                   <>
-                    <div className={`text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1
+                    <div className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1
                       ${isToday ? 'bg-indigo-500 text-white' : 'text-t3'}`}>
                       {day}
                     </div>
@@ -486,7 +486,7 @@ function CalendarView({
                         <button
                           key={t.id}
                           onClick={() => onEdit(t)}
-                          className={`w-full text-left flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium border truncate transition-all
+                          className={`w-full text-left flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium border truncate transition-all
                             ${t.status === 'done' ? 'opacity-40' : ''}
                             ${PRIORITY_PILL[t.priority]}`}
                           title={`${t.dueTime ? t.dueTime + ' — ' : ''}${t.title}`}
@@ -499,7 +499,7 @@ function CalendarView({
                         </button>
                       ))}
                       {dayTasks.length > MAX_SHOWN && (
-                        <p className="text-[9px] text-t4 pl-1.5">
+                        <p className="text-[11px] text-t4 pl-1.5">
                           +{dayTasks.length - MAX_SHOWN} mais
                         </p>
                       )}
@@ -517,7 +517,7 @@ function CalendarView({
         {Object.entries(CAT_DOT).slice(0, 6).map(([cat, dot]) => (
           <div key={cat} className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${dot}`} />
-            <span className="text-[10px] text-t3 capitalize">{cat.replace(/_/g, ' ')}</span>
+            <span className="text-[11px] text-t3 capitalize">{cat.replace(/_/g, ' ')}</span>
           </div>
         ))}
       </div>
@@ -692,7 +692,7 @@ export function TasksPage() {
               <span className={s.color}>{s.icon}</span>
               <div>
                 <p className={`text-xl font-bold tabular-nums leading-none ${s.color}`}>{s.value}</p>
-                <p className="text-[11px] text-t4 mt-0.5">{s.label}</p>
+                <p className="text-xs text-t4 mt-0.5">{s.label}</p>
               </div>
             </div>
           ))}

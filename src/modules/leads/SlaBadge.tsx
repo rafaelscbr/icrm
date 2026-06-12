@@ -66,7 +66,7 @@ export function SlaBadge({ lead }: { lead: Lead }) {
   return (
     <span
       title={`Lead Meta Ads — registrar 1º contato até ${info.deadline}. Sem registro, o lead transfere automaticamente para o outro corretor.`}
-      className={`inline-flex items-center gap-1 font-label text-[9px] font-semibold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums flex-shrink-0 ${cls}`}
+      className={`inline-flex items-center gap-1 font-label text-[11px] font-semibold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums flex-shrink-0 ${cls}`}
     >
       <Timer size={9} strokeWidth={1.6} />
       {info.text}

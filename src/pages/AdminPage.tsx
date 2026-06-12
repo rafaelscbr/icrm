@@ -275,7 +275,7 @@ export function AdminPage() {
             const items = ALL_MENU_ITEMS.filter(i => i.section === section)
             return (
               <div key={section}>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-t4 mb-2">{section}</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-t4 mb-2">{section}</p>
                 <div className="flex flex-col gap-1">
                   {items.map(item => {
                     const enabled = menuSelection.includes(item.key)

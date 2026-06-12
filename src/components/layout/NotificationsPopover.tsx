@@ -92,7 +92,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
           <Bell size={14} className="text-brand" />
           <span className="text-sm font-semibold text-slate-100">Notificações</span>
           {unreadAll > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-brand text-white text-[10px] font-bold leading-none">
+            <span className="px-1.5 py-0.5 rounded-full bg-brand text-white text-[11px] font-bold leading-none">
               {unreadAll}
             </span>
           )}
@@ -102,7 +102,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
             <button
               onClick={handleMarkAll}
               title="Marcar tudo como lido"
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-t3 hover:text-brand hover:bg-indigo-500/10 transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-t3 hover:text-brand hover:bg-indigo-500/10 transition-colors cursor-pointer"
             >
               <CheckCheck size={11} /> Limpar
             </button>
@@ -155,11 +155,11 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
                   )}
                 </div>
                 {n.body && (
-                  <p className="text-[11px] text-t3 mt-0.5 truncate">
+                  <p className="text-xs text-t3 mt-0.5 truncate">
                     {n.resourceType === 'lead' ? n.body : `📋 ${n.body}`}
                   </p>
                 )}
-                <p className="text-[10px] text-t4 mt-1">{timeAgo(n.createdAt)}</p>
+                <p className="text-[11px] text-t4 mt-1">{timeAgo(n.createdAt)}</p>
               </div>
             </button>
           ))

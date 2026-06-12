@@ -80,10 +80,10 @@ export function ChecklistBadge({ checklist, size = 'md' }: ChecklistBadgeProps) 
       ${size === 'sm' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
       <ProgressRing pct={pct} color={ringHex} />
       <div className="flex flex-col leading-none">
-        <span className={`font-bold tabular-nums ${textCls} ${size === 'sm' ? 'text-[10px]' : 'text-xs'}`}>
+        <span className={`font-bold tabular-nums ${textCls} ${size === 'sm' ? 'text-[11px]' : 'text-xs'}`}>
           {done}/{total}
         </span>
-        <span className="text-[9px] text-t4 mt-0.5">
+        <span className="text-[11px] text-t4 mt-0.5">
           {allDone ? 'completo ✓' : 'checklist'}
         </span>
       </div>

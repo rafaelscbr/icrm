@@ -87,7 +87,7 @@ function ScoreBadge({ score }: { score: number }) {
     score >= 5 ? 'Ótimo match' :
     score >= 3 ? 'Bom match' : 'Match parcial'
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
+    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
       {label} · {score}pts
     </span>
   )
@@ -97,44 +97,44 @@ function PropertyDetails({ property }: { property: Property }) {
   return (
     <div className="mt-2 pt-2 border-t border-line flex flex-wrap gap-x-4 gap-y-1">
       {property.neighborhood && (
-        <span className="text-[11px] text-t3">
+        <span className="text-xs text-t3">
           📍 <span className="text-t2">{property.neighborhood}</span>
         </span>
       )}
       {property.city && (
-        <span className="text-[11px] text-t3">
+        <span className="text-xs text-t3">
           🏙️ <span className="text-t2">{property.city}</span>
         </span>
       )}
       {property.type && (
-        <span className="text-[11px] text-t3">
+        <span className="text-xs text-t3">
           🏗️ <span className="text-t2">{TYPE_LABELS[property.type] ?? property.type}</span>
         </span>
       )}
       {property.bedrooms !== undefined && (
-        <span className="text-[11px] text-t3 flex items-center gap-1">
+        <span className="text-xs text-t3 flex items-center gap-1">
           <BedDouble size={10} className="text-t3" />
           <span className="text-t2">{property.bedrooms} dorm.</span>
         </span>
       )}
       {property.suites !== undefined && (
-        <span className="text-[11px] text-t3">
+        <span className="text-xs text-t3">
           🛁 <span className="text-t2">{property.suites} suíte{property.suites !== 1 ? 's' : ''}</span>
         </span>
       )}
       {property.areaSqm !== undefined && (
-        <span className="text-[11px] text-t3 flex items-center gap-1">
+        <span className="text-xs text-t3 flex items-center gap-1">
           <Maximize2 size={10} className="text-t3" />
           <span className="text-t2">{property.areaSqm} m²</span>
         </span>
       )}
       {property.condoFee !== undefined && property.condoFee > 0 && (
-        <span className="text-[11px] text-t3">
+        <span className="text-xs text-t3">
           🏢 Cond. <span className="text-t2">{formatCurrencyFull(property.condoFee)}/mês</span>
         </span>
       )}
       {property.notes && (
-        <p className="w-full text-[11px] text-t3 italic mt-0.5">"{property.notes}"</p>
+        <p className="w-full text-xs text-t3 italic mt-0.5">"{property.notes}"</p>
       )}
     </div>
   )
@@ -152,7 +152,7 @@ function ContactCard({ contact }: { contact: Contact }) {
           <p className="text-sm font-semibold text-t1 truncate">{contact.name}</p>
           <p className="text-xs text-t3 truncate">{contact.phone}</p>
         </div>
-        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-semibold flex-shrink-0">
+        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-semibold flex-shrink-0">
           {items.length} item{items.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -162,7 +162,7 @@ function ContactCard({ contact }: { contact: Contact }) {
             <span className="flex-shrink-0 mt-0.5">
               {item.type === 'imovel' ? <Home size={11} className="text-brand" /> : <Car size={11} className="text-amber-400" />}
             </span>
-            <div className="flex-1 min-w-0 text-[11px]">
+            <div className="flex-1 min-w-0 text-xs">
               {item.type === 'imovel' ? (
                 <span className="text-t2">
                   {item.region && `${item.region}`}{item.region && item.value && ' · '}{item.value && formatCurrencyFull(item.value)}
@@ -194,11 +194,11 @@ function PropertyCard({ property }: { property: Property }) {
           <p className="text-sm font-semibold text-t1 truncate">{property.name}</p>
           <p className="text-xs text-t3 truncate">{property.neighborhood}{property.city ? ` · ${property.city}` : ''}</p>
           <div className="mt-1.5 flex flex-wrap gap-1">
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20 font-medium">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20 font-medium">
               {formatCurrencyFull(property.value)}
             </span>
             {(property.permutaTypes ?? []).map(t => (
-              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">
+              <span key={t} className="text-[11px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">
                 {t === 'imovel' ? 'Aceita imóvel' : 'Aceita carro'}
               </span>
             ))}
@@ -206,7 +206,7 @@ function PropertyCard({ property }: { property: Property }) {
         </div>
         <button
           onClick={() => setExpanded(v => !v)}
-          className="flex-shrink-0 flex items-center gap-1 text-[10px] text-t3 hover:text-t2 px-2 py-1 rounded-lg bg-s3/50 hover:bg-s3/70 border border-line transition-all"
+          className="flex-shrink-0 flex items-center gap-1 text-[11px] text-t3 hover:text-t2 px-2 py-1 rounded-lg bg-s3/50 hover:bg-s3/70 border border-line transition-all"
         >
           + info
           <ChevronDown size={10} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
@@ -294,21 +294,21 @@ export function PermutaPage() {
           <Users size={16} className="text-orange-400 flex-shrink-0" />
           <div>
             <p className="text-xl font-bold text-slate-100">{contactsWithPermuta.length}</p>
-            <p className="text-[11px] text-t3">Contatos c/ permuta</p>
+            <p className="text-xs text-t3">Contatos c/ permuta</p>
           </div>
         </div>
         <div className="bg-s2/50 border border-line rounded-xl px-4 py-3 flex items-center gap-3">
           <Building2 size={16} className="text-violet-400 flex-shrink-0" />
           <div>
             <p className="text-xl font-bold text-slate-100">{propertiesWithPermuta.length}</p>
-            <p className="text-[11px] text-t3">Imóveis c/ permuta</p>
+            <p className="text-xs text-t3">Imóveis c/ permuta</p>
           </div>
         </div>
         <div className="bg-s2/50 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
           <Zap size={16} className="text-amber-400 flex-shrink-0" />
           <div>
             <p className="text-xl font-bold text-amber-300">{allMatches.length}</p>
-            <p className="text-[11px] text-t3">Matches encontrados</p>
+            <p className="text-xs text-t3">Matches encontrados</p>
           </div>
         </div>
       </div>
@@ -339,7 +339,7 @@ export function PermutaPage() {
           >
             <Icon size={13} />
             {label}
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${
               activeTab === id ? 'bg-orange-500/30 text-orange-200' : 'bg-s3/70 text-t3'
             }`}>
               {count}
@@ -424,7 +424,7 @@ function MatchCard({ match }: { match: PermutaMatch }) {
       <div className="flex items-center flex-wrap gap-1.5 mb-3">
         <ScoreBadge score={match.score} />
         {match.reasons.map(r => (
-          <span key={r} className="text-[10px] text-t3 bg-s3/50 px-1.5 py-0.5 rounded-md border border-line">
+          <span key={r} className="text-[11px] text-t3 bg-s3/50 px-1.5 py-0.5 rounded-md border border-line">
             {r}
           </span>
         ))}
@@ -441,17 +441,17 @@ function MatchCard({ match }: { match: PermutaMatch }) {
             <p className="text-xs font-semibold text-t2 truncate">{contact.name}</p>
           </div>
           <div className="flex flex-wrap gap-1">
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20">
               Quer dar {item.type === 'imovel' ? 'imóvel' : 'carro'}
             </span>
             {item.type === 'imovel' && item.region && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">{item.region}</span>
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">{item.region}</span>
             )}
             {item.type === 'carro' && item.carModel && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">{item.carModel}</span>
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">{item.carModel}</span>
             )}
             {offerValue && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">
                 {formatCurrencyFull(offerValue)}
               </span>
             )}
@@ -474,18 +474,18 @@ function MatchCard({ match }: { match: PermutaMatch }) {
             <p className="text-xs font-semibold text-t2 truncate">{property.name}</p>
           </div>
           <div className="flex flex-wrap gap-1 mb-2">
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20">
               {formatCurrencyFull(property.value)}
             </span>
             {(property.permutaTypes ?? []).map(t => (
-              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">
+              <span key={t} className="text-[11px] px-1.5 py-0.5 rounded-md bg-s3/50 text-t3 border border-line">
                 {t === 'imovel' ? 'Aceita imóvel' : 'Aceita carro'}
               </span>
             ))}
           </div>
           <button
             onClick={() => setPropertyExpanded(v => !v)}
-            className="flex items-center gap-1 text-[10px] text-t3 hover:text-t2 transition-colors"
+            className="flex items-center gap-1 text-[11px] text-t3 hover:text-t2 transition-colors"
           >
             <ChevronDown size={10} className={`transition-transform ${propertyExpanded ? 'rotate-180' : ''}`} />
             {propertyExpanded ? 'Menos detalhes' : '+ informações'}

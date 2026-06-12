@@ -154,7 +154,7 @@ export function DeleteLeadFromListModal({
           </div>
           <div>
             <p className="text-sm font-semibold text-t1">{contactName}</p>
-            <p className="text-[11px] text-t4">da lista "{listName}"</p>
+            <p className="text-xs text-t4">da lista "{listName}"</p>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ export function DeleteLeadFromListModal({
                 <TrendingUp size={13} className="text-red-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-red-400">Ativo no funil principal</p>
-                  <p className="text-[11px] text-t4">Etapa: {funnelLabel}</p>
+                  <p className="text-xs text-t4">Etapa: {funnelLabel}</p>
                 </div>
               </div>
             )}
@@ -184,7 +184,7 @@ export function DeleteLeadFromListModal({
             {/* Em outras listas */}
             {status.otherLists.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <p className="text-[10px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
+                <p className="text-[11px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
                   <Database size={9} /> Em outras listas ({status.otherLists.length})
                 </p>
                 {status.otherLists.map(l => (
@@ -199,7 +199,7 @@ export function DeleteLeadFromListModal({
             {/* Em campanhas */}
             {status.campaigns.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <p className="text-[10px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
+                <p className="text-[11px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
                   <Megaphone size={9} /> Em campanhas ({status.campaigns.length})
                 </p>
                 {status.campaigns.map(c => (
@@ -207,7 +207,7 @@ export function DeleteLeadFromListModal({
                     <Megaphone size={11} className="text-violet-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-t2 truncate">{c.name}</p>
-                      <p className="text-[11px] text-t4">Etapa: {c.stage}</p>
+                      <p className="text-xs text-t4">Etapa: {c.stage}</p>
                     </div>
                   </div>
                 ))}
@@ -227,7 +227,7 @@ export function DeleteLeadFromListModal({
         {/* Ações */}
         {status && !loading && (
           <div className="flex flex-col gap-2 pt-1 border-t border-line">
-            <p className="text-[10px] font-semibold text-t4 uppercase tracking-wider mb-0.5">
+            <p className="text-[11px] font-semibold text-t4 uppercase tracking-wider mb-0.5">
               O que deseja fazer?
             </p>
 
@@ -266,7 +266,7 @@ export function DeleteLeadFromListModal({
             ) : (
               <div className="flex items-start gap-2 px-3 py-2.5 bg-s2/30 border border-line/50 rounded-xl opacity-50">
                 <AlertTriangle size={12} className="text-t4 mt-0.5 flex-shrink-0" />
-                <p className="text-[11px] text-t4">
+                <p className="text-xs text-t4">
                   Excluir contato indisponível — lead ativo no funil principal
                 </p>
               </div>
@@ -308,7 +308,7 @@ function ActionButton({
       <div className="flex-shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-t1 group-hover:text-white transition-colors">{title}</p>
-        <p className="text-[11px] text-t4 mt-0.5">{subtitle}</p>
+        <p className="text-xs text-t4 mt-0.5">{subtitle}</p>
       </div>
       <ChevronRight size={12} className="text-t4 group-hover:text-t2 transition-colors flex-shrink-0" />
     </button>

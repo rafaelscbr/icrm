@@ -183,11 +183,11 @@ export function CampaignsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-t1 truncate">{c.name}</p>
                       <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border} border`}>
+                        <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border} border`}>
                           {statusCfg.label}
                         </span>
                         {isAdmin && brokerName && (
-                          <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                          <span className="flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
                             <UserCircle2 size={9} /> {brokerName}
                           </span>
                         )}
@@ -235,11 +235,11 @@ export function CampaignsPage() {
                         >
                           <span className={chip.color}>{chip.icon}</span>
                           <span className={`text-xs font-bold tabular-nums leading-tight ${chip.color}`}>{chip.value}</span>
-                          <span className="text-[9px] text-t4 text-center leading-tight">{chip.label}</span>
+                          <span className="text-[11px] text-t4 text-center leading-tight">{chip.label}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-t3">
+                    <div className="flex items-center gap-2 text-xs text-t3">
                       <span>Acionamento <span className="text-t2 font-semibold tabular-nums">{reachRate}%</span></span>
                       <span className="text-t5">·</span>
                       <span>Interesse <span className="text-t2 font-semibold tabular-nums">{interestRate}%</span></span>
@@ -266,7 +266,7 @@ export function CampaignsPage() {
                 {/* Date */}
                 <div className="flex items-center gap-1.5 -mt-2">
                   <Calendar size={10} className="text-t5" />
-                  <span className="text-[10px] text-t5">
+                  <span className="text-[11px] text-t5">
                     Criada em {new Date(c.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>

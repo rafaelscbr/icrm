@@ -129,7 +129,7 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
       <div className="flex items-start gap-2 bg-brand/8 border border-brand/20 rounded-xl px-3 py-2.5 mb-5">
         <Info size={13} className="text-brand flex-shrink-0 mt-0.5" />
         <p className="text-xs text-brand/90 leading-relaxed">
-          Use <code className="bg-s3/70 px-1.5 py-0.5 rounded text-[11px]">{'{nome}'}</code> para personalizar com o primeiro nome do lead.
+          Use <code className="bg-s3/70 px-1.5 py-0.5 rounded text-xs">{'{nome}'}</code> para personalizar com o primeiro nome do lead.
           Ter múltiplos templates reduz o risco de bloqueio no WhatsApp.
         </p>
       </div>
@@ -159,7 +159,7 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
               <div className="flex items-center justify-between px-4 pt-3 pb-2">
                 <div className="flex items-center gap-2">
                   {/* Numeração colorida */}
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold flex-shrink-0
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
                     ${isMain ? 'bg-brand text-[#0F1730]' : 'bg-s3/70 text-t3'}`}>
                     {index + 1}
                   </div>
@@ -167,7 +167,7 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
                     {isMain ? 'Mensagem principal' : `Variação ${index}`}
                   </span>
                   {isMain && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand/15 text-brand font-medium">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-brand/15 text-brand font-medium">
                       Obrigatória
                     </span>
                   )}
@@ -175,7 +175,7 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
 
                 <div className="flex items-center gap-1">
                   {/* Contador de caracteres */}
-                  <span className={`text-[10px] tabular-nums ${warning ? 'text-amber-400' : 'text-t5'}`}>
+                  <span className={`text-[11px] tabular-nums ${warning ? 'text-amber-400' : 'text-t5'}`}>
                     {msg.length}{warning ? ' ⚠️' : ''}
                   </span>
                   {/* Handle de drag (exceto msg principal) */}
@@ -216,7 +216,7 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
                     }`}
                 />
                 {warning && (
-                  <p className="text-[11px] text-amber-400 mt-1.5">
+                  <p className="text-xs text-amber-400 mt-1.5">
                     Mensagens muito longas podem ser cortadas pelo WhatsApp.
                   </p>
                 )}

@@ -108,7 +108,7 @@ export function PeriodSelector({ className = '' }: PeriodSelectorProps) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="text-sm font-medium">{optLabel}</span>
-                  {sub && <p className="text-[10px] text-t4 leading-none mt-0.5">{sub}</p>}
+                  {sub && <p className="text-[11px] text-t4 leading-none mt-0.5">{sub}</p>}
                 </div>
               </button>
             ))}
@@ -119,7 +119,7 @@ export function PeriodSelector({ className = '' }: PeriodSelectorProps) {
               <div className="grid grid-cols-2 gap-2">
                 {(['De', 'Até'] as const).map((lbl, i) => (
                   <div key={lbl}>
-                    <p className="text-[10px] text-t4 uppercase tracking-wider mb-1 px-0.5">{lbl}</p>
+                    <p className="text-[11px] text-t4 uppercase tracking-wider mb-1 px-0.5">{lbl}</p>
                     <input
                       type="date"
                       value={i === 0 ? customStart : customEnd}

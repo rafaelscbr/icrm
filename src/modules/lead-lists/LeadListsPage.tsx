@@ -175,7 +175,7 @@ export function LeadListsPage() {
           >
             {t.icon} {t.label}
             {t.value === 'active' && lists.filter(l => l.status === 'active').length > 0 && (
-              <span className="ml-1 bg-[#0B0F1C]/25 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none">
+              <span className="ml-1 bg-[#0B0F1C]/25 rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none">
                 {lists.filter(l => l.status === 'active').length}
               </span>
             )}
@@ -226,21 +226,21 @@ export function LeadListsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold text-t1 truncate">{list.name}</p>
                         {hasClients && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand bg-brand/10 border border-brand/25 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand bg-brand/10 border border-brand/25 px-1.5 py-0.5 rounded-full flex-shrink-0">
                             🏆 {listScore!.clients} venda{listScore!.clients > 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
                       {profile?.region || profile?.type ? (
-                        <p className="text-[10px] text-t3 truncate mt-0.5">
+                        <p className="text-[11px] text-t3 truncate mt-0.5">
                           {[profile.type, profile.region, profile.bedrooms ? `${profile.bedrooms}q` : null]
                             .filter(Boolean).join(' · ')}
                         </p>
                       ) : (
-                        <p className="text-[10px] text-t4 mt-0.5">Sem perfil definido</p>
+                        <p className="text-[11px] text-t4 mt-0.5">Sem perfil definido</p>
                       )}
                       {isAdmin && list.brokerId && (
-                        <p className="text-[9px] text-violet-400/70 mt-0.5">
+                        <p className="text-[11px] text-violet-400/70 mt-0.5">
                           {allProfiles.find(p => p.id === list.brokerId)?.name ?? 'Corretor'}
                         </p>
                       )}
@@ -269,25 +269,25 @@ export function LeadListsPage() {
                   <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
                     <Users size={11} className="text-t4 mb-1" />
                     <span className="text-sm font-bold tabular-nums text-t1">{list.totalCount.toLocaleString()}</span>
-                    <span className="text-[10px] text-t4">Leads</span>
+                    <span className="text-[11px] text-t4">Leads</span>
                   </div>
                   <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
                     <TrendingUp size={11} className="text-t4 mb-1" />
                     <span className="text-sm font-bold tabular-nums text-t3">
                       {profile?.valueMin ? `R$ ${(profile.valueMin / 1000).toFixed(0)}k` : '—'}
                     </span>
-                    <span className="text-[10px] text-t4">Ticket mín</span>
+                    <span className="text-[11px] text-t4">Ticket mín</span>
                   </div>
                   {listScore ? (
                     <div className={`flex flex-col items-center py-2 rounded-xl border ${listScore.bg} ${listScore.border}`}>
                       <span className="text-base leading-none mb-0.5">{listScore.emoji}</span>
                       <span className={`text-sm font-bold tabular-nums ${listScore.color}`}>{listScore.score}</span>
-                      <span className={`text-[10px] ${listScore.color} opacity-70`}>{listScore.label}</span>
+                      <span className={`text-[11px] ${listScore.color} opacity-70`}>{listScore.label}</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
                       <div className="w-3 h-3 border border-slate-600 border-t-transparent rounded-full animate-spin mb-1" />
-                      <span className="text-[10px] text-t5">score</span>
+                      <span className="text-[11px] text-t5">score</span>
                     </div>
                   )}
                 </div>
@@ -316,7 +316,7 @@ export function LeadListsPage() {
                 {/* Data */}
                 <div className="flex items-center gap-1.5 -mt-2">
                   <Calendar size={10} className="text-t5" />
-                  <span className="text-[10px] text-t5">
+                  <span className="text-[11px] text-t5">
                     Criada em {new Date(list.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>

@@ -217,11 +217,11 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
             >
               {/* Label do template + badge de leads */}
               <div className="flex items-center gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-tint text-brand text-[11px] font-bold flex items-center justify-center">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-tint text-brand text-xs font-bold flex items-center justify-center">
                   {item.idx + 1}
                 </span>
                 <span className="flex-1 text-xs font-semibold text-t2">{item.label}</span>
-                <span className="flex-shrink-0 text-[11px] font-semibold bg-s3/70 text-t2 px-2 py-0.5 rounded-full whitespace-nowrap">
+                <span className="flex-shrink-0 text-xs font-semibold bg-s3/70 text-t2 px-2 py-0.5 rounded-full whitespace-nowrap">
                   {item.total} lead{item.total !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -253,7 +253,7 @@ function ConversionByMessage({ leads, campaign }: { leads: CampaignLead[]; campa
                   {item.rate}%
                 </span>
               </div>
-              <p className="text-[10px] text-t4">
+              <p className="text-[11px] text-t4">
                 {item.engaged} de {item.total} engajaram
               </p>
             </div>
@@ -289,7 +289,7 @@ function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[11px] text-t4 uppercase tracking-wider border-b border-line">
+            <tr className="text-xs text-t4 uppercase tracking-wider border-b border-line">
               <th className="text-left pb-2 font-semibold">Corretor</th>
               <th className="text-right pb-2 font-semibold">Disparos</th>
               <th className="text-right pb-2 font-semibold">Interessados</th>
@@ -400,8 +400,8 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-[11px] text-slate-400 font-semibold">{invalidContacts} contato{invalidContacts !== 1 ? 's' : ''} inválido{invalidContacts !== 1 ? 's' : ''}</p>
-            <p className="text-[10px] text-t5">de {leads.length.toLocaleString('pt-BR')} leads</p>
+            <p className="text-xs text-slate-400 font-semibold">{invalidContacts} contato{invalidContacts !== 1 ? 's' : ''} inválido{invalidContacts !== 1 ? 's' : ''}</p>
+            <p className="text-[11px] text-t5">de {leads.length.toLocaleString('pt-BR')} leads</p>
           </div>
         </Card>
       )}
@@ -413,7 +413,7 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
         <Card className="lg:col-span-3">
           <div className="flex items-start justify-between mb-4">
             <h2 className="text-sm font-semibold text-t2">Funil de campanha</h2>
-            <span className="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">
+            <span className="text-[11px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">
               até agendamento → funil principal
             </span>
           </div>
@@ -437,7 +437,7 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
                 <div key={s.value} className="flex items-center gap-2 py-2 px-3 rounded-xl bg-s2/50 border border-line">
                   <span className={`flex-1 text-xs ${s.color}`}>{s.label}</span>
                   <span className="text-sm font-bold tabular-nums text-t1">{s.count}</span>
-                  <span className="text-[10px] text-t4 w-8 text-right">
+                  <span className="text-[11px] text-t4 w-8 text-right">
                     {total > 0 ? `${Math.round(s.count / total * 100)}%` : '—'}
                   </span>
                 </div>
@@ -464,7 +464,7 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
                 <span className="text-xs text-t3">Migrados p/ funil principal</span>
                 <div className="text-right">
                   <p className="text-sm font-bold text-violet-400 tabular-nums">{migrated}</p>
-                  {total > 0 && <p className="text-[10px] text-t3">{migratedRate}% do total</p>}
+                  {total > 0 && <p className="text-[11px] text-t3">{migratedRate}% do total</p>}
                 </div>
               </div>
               <div className="flex items-center justify-between py-2">
