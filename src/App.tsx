@@ -21,6 +21,7 @@ import { useCampaignActivityStore } from './store/useCampaignActivityStore'
 import { useContactsStore } from './store/useContactsStore'
 import { useSearchStore } from './store/useSearchStore'
 import { supabase } from './lib/supabase'
+import { syncPushSubscription } from './lib/push'
 
 // ── Code splitting por rota ──────────────────────────────────────────────────
 // Cada página vira um chunk separado — o carregamento inicial baixa apenas a
@@ -118,6 +119,9 @@ function AppRoutes() {
     // Notificações (filtradas por user_id)
     loadNotifications(user.id)
     const unsubNotifications  = subscribeNotifications(user.id)
+
+    // Web Push: renova a inscrição do dispositivo se a permissão já foi dada
+    syncPushSubscription(user.id)
 
     // Entidades operacionais — RLS garante que cada usuário vê apenas o que tem permissão
     const unsubLeads         = subscribeLeads()

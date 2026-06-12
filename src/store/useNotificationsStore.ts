@@ -1,7 +1,29 @@
 import { create } from 'zustand'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { db } from '../lib/db'
 import { AppNotification } from '../types'
+
+// Som curto de alerta — gerado via Web Audio (sem asset). Pode falhar
+// silenciosamente se o navegador ainda não liberou áudio (sem interação).
+function playAlertSound() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    const ctx = new Ctx()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(880, ctx.currentTime)
+    osc.frequency.setValueAtTime(1175, ctx.currentTime + 0.12)
+    gain.gain.setValueAtTime(0.12, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.35)
+    osc.onended = () => ctx.close()
+  } catch { /* áudio bloqueado pelo navegador — push e toast cobrem */ }
+}
 
 interface NotificationsStore {
   notifications: AppNotification[]
@@ -52,6 +74,14 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
     set(s => ({
       notifications: [n, ...s.notifications.filter(x => x.id !== n.id)],
     }))
+    // Lead novo/transferido/recapturado: alerta sonoro + toast com a urgência
+    if (n.type === 'lead_assigned' || n.type === 'lead_recaptured') {
+      playAlertSound()
+      toast(`${n.title}${n.body ? ` — ${n.body}` : ''}`, {
+        duration: 8000,
+        style: { borderLeft: '3px solid #E4B23C' },
+      })
+    }
   },
 
   subscribe: (userId: string) => {

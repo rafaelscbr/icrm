@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, ClipboardList, UserPlus, RefreshCw, CheckCheck, Filter } from 'lucide-react'
+import { Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, Filter } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { enablePush, pushPermission } from '../lib/push'
 import { PageLayout } from '../components/layout/PageLayout'
 import { ListContainer } from '../components/ui/ListContainer'
 import { Button } from '../components/ui/Button'
@@ -134,6 +136,19 @@ export function NotificationsPage() {
   const { user }                           = useAuthStore()
   const { notifications, markRead, markAllRead } = useNotificationsStore()
   const [filter, setFilter]                = useState<Filter>('all')
+  const [pushState, setPushState] = useState<NotificationPermission | 'unsupported'>(pushPermission())
+  const [enabling,  setEnabling]  = useState(false)
+
+  async function handleEnablePush() {
+    if (!user) return
+    setEnabling(true)
+    const result = await enablePush(user.id)
+    setEnabling(false)
+    setPushState(pushPermission())
+    if (result === 'ok')          toast.success('Notificações ativadas neste dispositivo')
+    else if (result === 'denied') toast.error('Permissão negada — habilite nas configurações do navegador')
+    else if (result === 'error')  toast.error('Não foi possível ativar — tente novamente')
+  }
 
   const unreadCount = notifications.filter(n => !n.read).length
 
@@ -178,12 +193,33 @@ export function NotificationsPage() {
           ))}
         </div>
 
-        {/* Ação */}
-        {unreadCount > 0 && (
-          <Button variant="secondary" onClick={handleMarkAll} className="flex items-center gap-2 !text-xs">
-            <CheckCheck size={13} /> Marcar tudo como lido
-          </Button>
-        )}
+        {/* Ações */}
+        <div className="flex items-center gap-2">
+          {pushState === 'default' && (
+            <Button onClick={handleEnablePush} disabled={enabling} className="flex items-center gap-2 !text-xs">
+              <BellRing size={13} />
+              {enabling ? 'Ativando…' : 'Ativar notificações no dispositivo'}
+            </Button>
+          )}
+          {pushState === 'granted' && (
+            <span className="flex items-center gap-1.5 text-xs text-success px-3 py-1.5 rounded-xl bg-success-bg border border-success-line">
+              <BellRing size={12} /> Push ativo neste dispositivo
+            </span>
+          )}
+          {pushState === 'denied' && (
+            <span
+              className="flex items-center gap-1.5 text-xs text-warning px-3 py-1.5 rounded-xl bg-warning-bg border border-warning-line"
+              title="Permissão bloqueada — habilite as notificações nas configurações do site no navegador"
+            >
+              <BellRing size={12} /> Push bloqueado pelo navegador
+            </span>
+          )}
+          {unreadCount > 0 && (
+            <Button variant="secondary" onClick={handleMarkAll} className="flex items-center gap-2 !text-xs">
+              <CheckCheck size={13} /> Marcar tudo como lido
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Lista de grupos */}

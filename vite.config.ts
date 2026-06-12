@@ -37,6 +37,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+        // Web Push: handlers de push/notificationclick anexados ao SW gerado
+        importScripts: ['push-sw.js'],
         // Sem runtimeCaching da API do Supabase: o banco é a única fonte de
         // verdade — servir resposta cacheada quando a rede falha mostraria
         // dado velho silenciosamente. Falha de rede deve aparecer como erro.
