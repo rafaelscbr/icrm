@@ -29,6 +29,7 @@ import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePresenceStore, pageLabel } from '../../store/usePresenceStore'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
+import toast from 'react-hot-toast'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -246,8 +247,25 @@ function dueDateLabel(dueDate?: string): { text: string; color: string } {
 function LeadAlertsWidget({
   onOpenLead, onNavigate, brokerNames = {},
 }: { onOpenLead: (lead: Lead) => void; onNavigate: () => void; brokerNames?: Record<string, string> }) {
-  const { leads } = useLeadsStore()
-  const { byLead } = useLeadInteractionsStore()
+  const { leads, advanceFollowup } = useLeadsStore()
+  const { byLead, add: addInteraction } = useLeadInteractionsStore()
+
+  // Mesmo comportamento do Kanban/lista: registra a interação no banco
+  // (dispara o trigger de 1º contato do SLA Meta Ads) e avança o followup
+  async function handleWhatsApp(e: React.MouseEvent, lead: Lead) {
+    e.stopPropagation()
+    window.open(whatsappUrl(lead.phone), '_blank')
+    try {
+      await advanceFollowup(lead.id)
+      await addInteraction({
+        leadId: lead.id,
+        type: 'whatsapp',
+        description: 'Interagiu via WhatsApp',
+        interactedAt: new Date().toISOString(),
+      })
+      toast.success('Contato registrado')
+    } catch { /* erro já toastado pela camada db */ }
+  }
 
   const alertLeads = useMemo(() => {
     const active = leads.filter(l => !l.discardReason && l.funnelStage !== 'venda')
@@ -315,15 +333,14 @@ function LeadAlertsWidget({
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded border tabular-nums ${daysBadge}`}>{daysInt}d</span>
-                <a
-                  href={whatsappUrl(lead.phone)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={e => e.stopPropagation()}
+                <button
+                  onClick={e => handleWhatsApp(e, lead)}
+                  title="Registrar contato e abrir WhatsApp"
+                  aria-label={`Registrar contato e abrir WhatsApp de ${lead.name}`}
                   className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors"
                 >
                   <MessageCircle size={12} />
-                </a>
+                </button>
               </div>
             </div>
           )
