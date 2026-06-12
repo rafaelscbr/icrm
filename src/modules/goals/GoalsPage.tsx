@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   Target, Pencil, Trash2, CheckCircle2, TrendingUp,
   Calendar, CalendarDays, Footprints, FileText,
-  BadgeDollarSign, History, Megaphone, Zap, MessageCircle,
+  BadgeDollarSign, History, Zap, MessageCircle,
   ChevronRight, Plus, Award,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
@@ -27,7 +27,7 @@ const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao',
 
 // Metas de disparo: 50/dia por corretor (proteção anti-ban individual)
 const TARGETS = {
-  hoje:   { interacoes: 10, disparos: 50 },
+  hoje:   { interacoes: 100, disparos: 50 },
   semana: { visitas: 2, propostas: 1, disparos: 250 },  // 50 × 5 dias úteis
   mes:    { visitas: 8, propostas: 4, vendas: 2, disparos: 1000 }, // 50 × 20 dias úteis
 }
@@ -157,9 +157,6 @@ interface PeriodData {
   disparosHojeNew: number
   disparosSemanaNew: number
   disparosMesNew: number
-  disparosHojeFollowup: number
-  disparosSemanaFollowup: number
-  disparosMesFollowup: number
   daily: number
   weekVisits: number
   weekProp: number
@@ -176,7 +173,6 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
   const {
     countDay: disparosHoje, countWeek: disparosSemana, countMonth: disparosMes,
     countDayNew: disparosHojeNew, countWeekNew: disparosSemanaNew, countMonthNew: disparosMesNew,
-    countDayFollowup: disparosHojeFollowup, countWeekFollowup: disparosSemanaFollowup, countMonthFollowup: disparosMesFollowup,
     load: loadDisparos,
   } = useDisparosStore()
 
@@ -220,7 +216,6 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
   return {
     disparosHoje, disparosSemana, disparosMes,
     disparosHojeNew, disparosSemanaNew, disparosMesNew,
-    disparosHojeFollowup, disparosSemanaFollowup, disparosMesFollowup,
     ...metrics,
   }
 }
@@ -404,18 +399,15 @@ function PerformanceHero({ tasks, period, brokerId }: { tasks: Task[]; period: P
   const kpis = useMemo(() => {
     if (period === 'hoje') return [
       { label: 'Novos Disparos',        value: data.disparosHojeNew,      target: TARGETS.hoje.disparos,    icon: <Zap size={14} />,           note: 'base fria'       },
-      { label: 'Follow-ups',            value: data.disparosHojeFollowup, target: 0,                        icon: <Megaphone size={14} />,     note: 'acompanhamento'  },
       { label: 'Interações com leads',  value: data.daily,                target: TARGETS.hoje.interacoes,  icon: <MessageCircle size={14} />, note: 'mensagens/calls' },
     ]
     if (period === 'semana') return [
       { label: 'Novos Disparos',    value: data.disparosSemanaNew,      target: TARGETS.semana.disparos,  icon: <Zap size={14} />,        note: 'base fria'      },
-      { label: 'Follow-ups',        value: data.disparosSemanaFollowup, target: 0,                        icon: <Megaphone size={14} />,  note: 'acompanhamento' },
       { label: 'Visitas realizadas', value: data.weekVisits,            target: TARGETS.semana.visitas,   icon: <Footprints size={14} />, note: 'presenciais'    },
       { label: 'Propostas enviadas', value: data.weekProp,              target: TARGETS.semana.propostas, icon: <FileText size={14} />,   note: 'por semana'     },
     ]
     return [
       { label: 'Novos Disparos',     value: data.disparosMesNew,      target: TARGETS.mes.disparos,  icon: <Zap size={14} />,             note: 'base fria'    },
-      { label: 'Follow-ups',         value: data.disparosMesFollowup, target: 0,                     icon: <Megaphone size={14} />,        note: 'acompanhamento' },
       { label: 'Visitas realizadas', value: data.monthVisits,         target: TARGETS.mes.visitas,   icon: <Footprints size={14} />,       note: 'presenciais'  },
       { label: 'Propostas enviadas', value: data.monthProp,           target: TARGETS.mes.propostas, icon: <FileText size={14} />,         note: 'por mês'      },
       { label: 'Vendas fechadas',    value: data.monthSales,          target: TARGETS.mes.vendas,    icon: <BadgeDollarSign size={14} />,  note: 'no mês'       },
