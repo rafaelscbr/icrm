@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Users, Building2, TrendingUp, DollarSign, Cake,
   ArrowRight, Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
   AlertTriangle, Clock, CalendarCheck, Siren, ClipboardCheck,
   ListTodo, Snowflake, RefreshCw, Megaphone,
-  ChevronDown, ChevronUp, BarChart2,
+  ChevronDown, ChevronUp, BarChart2, Target, Flame,
 } from 'lucide-react'
 import { Task, Contact, Property, Lead, FunnelStage, calcSaleCommissions } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -71,72 +71,197 @@ const CAMPAIGN_STAGES: Array<{
   { stage: 'proposal',     label: 'Em Proposta',          shortLabel: 'Proposta',    bg: 'bg-orange-500/12',  text: 'text-orange-400',  border: 'border-orange-500/25'},
 ]
 
-// ─── Helpers de data ──────────────────────────────────────────────────────────
+// ─── Primitivas de UI compartilhadas ──────────────────────────────────────────
 
-function daysAgo(iso: string): number {
-  return (Date.now() - new Date(iso).getTime()) / 86_400_000
+/** Rótulo de faixa — separa visualmente os blocos da página (escaneabilidade). */
+function SectionLabel({ icon: Icon, children, hint }: {
+  icon: React.ComponentType<{ size?: number; className?: string }>
+  children: ReactNode
+  hint?: string
+}) {
+  return (
+    <div className="flex items-center gap-2 mb-3 mt-1 px-1">
+      <span className="w-1 h-4 rounded-full bg-brand" aria-hidden />
+      <Icon size={13} className="text-t3" aria-hidden />
+      <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t3">{children}</h2>
+      {hint && <span className="text-[11px] text-t4 ml-auto">{hint}</span>}
+    </div>
+  )
 }
-function daysOverdue(dueDate: string): number {
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  return Math.floor((today.getTime() - new Date(dueDate + 'T00:00:00').getTime()) / 86_400_000)
+
+/** Cabeçalho padrão de card — chip de ícone + eyebrow + título. */
+function CardHeader({ icon: Icon, tone, eyebrow, title, right }: {
+  icon: React.ComponentType<{ size?: number; className?: string }>
+  tone: { chip: string; icon: string }
+  eyebrow: string
+  title: ReactNode
+  right?: ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 border-b border-line">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tone.chip}`}>
+          <Icon size={15} className={tone.icon} />
+        </div>
+        <div className="min-w-0">
+          <p className="font-label text-[11px] font-bold tracking-[0.12em] text-t4 uppercase truncate">{eyebrow}</p>
+          <h3 className="text-sm font-bold text-t1 leading-none mt-0.5 truncate">{title}</h3>
+        </div>
+      </div>
+      {right}
+    </div>
+  )
 }
-function dueDateLabel(dueDate?: string): { text: string; color: string } {
-  if (!dueDate) return { text: 'Sem prazo', color: 'text-t4' }
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((new Date(dueDate + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
-  if (diffDays === 0) return { text: 'Hoje!', color: 'text-amber-400' }
-  if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
-  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-t2' }
-  return { text: dueDate.split('-').reverse().join('/'), color: 'text-t3' }
+
+function ShimmerBlock({ className = '' }: { className?: string }) {
+  return <div className={`shimmer rounded-lg ${className}`} aria-hidden />
+}
+
+// ─── Gauge radial (semicírculo) ───────────────────────────────────────────────
+
+const PACE_TONE = {
+  done:    { text: 'text-brand',     chip: 'text-brand bg-brand-tint border-brand/30',           label: 'Meta batida' },
+  onTrack: { text: 'text-green-400', chip: 'text-green-400 bg-green-500/10 border-green-500/25',  label: 'No ritmo'    },
+  warning: { text: 'text-amber-400', chip: 'text-amber-400 bg-amber-500/10 border-amber-500/25',  label: 'Atenção'     },
+  behind:  { text: 'text-red-400',   chip: 'text-red-400 bg-red-500/10 border-red-500/25',        label: 'Atrasado'    },
+} as const
+type PaceKey = keyof typeof PACE_TONE
+
+function RadialGauge({ pct, expectedPct, centerTop, centerMain }: {
+  pct: number
+  expectedPct: number
+  centerTop: string
+  centerMain: string
+}) {
+  const size = 188, stroke = 15
+  const cx = size / 2, cy = size / 2
+  const r  = (size - stroke) / 2 - 2
+  const len = Math.PI * r
+  const fill = Math.min(Math.max(pct, 0), 100)
+  const dash = (fill / 100) * len
+
+  // marcador do ritmo esperado (posição ao longo do arco superior)
+  const a = Math.PI - (Math.min(Math.max(expectedPct, 0), 100) / 100) * Math.PI
+  const inner = r - stroke / 2 - 2
+  const outer = r + stroke / 2 + 2
+  const mx1 = cx + inner * Math.cos(a), my1 = cy - inner * Math.sin(a)
+  const mx2 = cx + outer * Math.cos(a), my2 = cy - outer * Math.sin(a)
+
+  return (
+    <svg
+      viewBox={`0 0 ${size} ${cy + 16}`}
+      className="w-full max-w-[260px] mx-auto"
+      role="img"
+      aria-label={`${Math.round(pct)} por cento da meta de VGL atingidos`}
+    >
+      <defs>
+        <linearGradient id="vglGauge" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="var(--brand-dark)" />
+          <stop offset="60%"  stopColor="var(--brand)" />
+          <stop offset="100%" stopColor="var(--brand-text)" />
+        </linearGradient>
+      </defs>
+
+      {/* trilho */}
+      <path
+        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none" stroke="var(--surface-3)" strokeWidth={stroke} strokeLinecap="round"
+      />
+      {/* preenchimento */}
+      <path
+        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none" stroke="url(#vglGauge)" strokeWidth={stroke} strokeLinecap="round"
+        strokeDasharray={`${dash} ${len}`}
+        style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.16,1,0.3,1)' }}
+      />
+      {/* marcador "ritmo esperado" */}
+      {expectedPct > 1 && expectedPct < 99 && (
+        <line
+          x1={mx1} y1={my1} x2={mx2} y2={my2}
+          stroke="var(--t2)" strokeWidth={2} strokeLinecap="round" opacity={0.55}
+        />
+      )}
+
+      {/* texto central */}
+      <text x={cx} y={cy - 34} textAnchor="middle" className="fill-t4 font-label"
+        fontSize={11} fontWeight={700} letterSpacing="1.5">{centerTop}</text>
+      <text x={cx} y={cy - 4} textAnchor="middle" className="fill-t1"
+        fontSize={34} fontWeight={800} fontFamily="inherit">{centerMain}</text>
+    </svg>
+  )
 }
 
 // ─── VGL Hero ─────────────────────────────────────────────────────────────────
 
-function VGLHero({ data, loading, error, onRetry }: {
+function VGLHero({ data, loading, error, onRetry, onNavigate }: {
   data: OverviewData | null
   loading: boolean
   error: string | null
   onRetry: () => void
+  onNavigate: () => void
 }) {
   const now = new Date()
   const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
   const monthTitle = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
 
-  const pct = data
-    ? data.vgl.target > 0
-      ? Math.min(Math.round(data.vgl.realizadoMes / data.vgl.target * 100), 100)
-      : 0
+  // Ritmo do mês (fração de dias corridos decorridos)
+  const daysInMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const monthFraction = now.getDate() / daysInMonth
+  const expectedPct   = Math.round(monthFraction * 100)
+
+  const pct = data && data.vgl.target > 0
+    ? Math.round(data.vgl.realizadoMes / data.vgl.target * 100)
     : 0
+  const falta = data ? Math.max(data.vgl.target - data.vgl.realizadoMes, 0) : 0
+
+  const pace: PaceKey = !data
+    ? 'behind'
+    : pct >= 100
+      ? 'done'
+      : pct >= expectedPct
+        ? 'onTrack'
+        : pct >= expectedPct * 0.7
+          ? 'warning'
+          : 'behind'
+  const tone = PACE_TONE[pace]
 
   return (
-    <div className="h-full rounded-xl border border-line bg-surface overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-brand/15 rounded-lg flex items-center justify-center">
-            <DollarSign size={15} className="text-brand" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Meta VGL</p>
-            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">{monthTitle}</h2>
-          </div>
-        </div>
-        <button
-          onClick={onRetry}
-          disabled={loading}
-          className="p-2 rounded-lg text-t4 hover:text-t2 hover:bg-s2/60 transition-colors cursor-pointer disabled:opacity-50"
-          aria-label="Atualizar VGL"
-        >
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-        </button>
-      </div>
+    <div
+      className="h-full rounded-xl border border-line bg-surface overflow-hidden flex flex-col relative"
+      style={{ boxShadow: 'var(--shadow-card)' }}
+    >
+      {/* brilho sutil da marca no topo */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 opacity-60"
+        style={{ background: 'radial-gradient(120% 80% at 50% -20%, var(--brand-tint), transparent 70%)' }}
+        aria-hidden
+      />
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand" aria-hidden />
 
-      {error && !data && (
-        <div className="flex items-center gap-2 px-5 py-3 bg-red-500/5 flex-1">
-          <AlertTriangle size={14} className="text-red-400 flex-shrink-0" />
-          <p className="text-xs text-red-300 flex-1 min-w-0 truncate">{error}</p>
+      <CardHeader
+        icon={DollarSign}
+        tone={{ chip: 'bg-brand-tint', icon: 'text-brand' }}
+        eyebrow="Meta da imobiliária · VGL"
+        title={monthTitle}
+        right={
           <button
             onClick={onRetry}
-            className="text-xs text-red-300 border border-red-500/30 hover:bg-red-500/10 px-2 py-1 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+            disabled={loading}
+            className="p-2 rounded-lg text-t4 hover:text-t2 hover:bg-s2/60 transition-colors cursor-pointer disabled:opacity-50"
+            aria-label="Atualizar dados de VGL"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+        }
+      />
+
+      {error && !data && (
+        <div className="flex items-center gap-2 px-5 py-4 bg-error-bg flex-1">
+          <AlertTriangle size={15} className="text-error flex-shrink-0" />
+          <p className="text-xs text-error flex-1 min-w-0 truncate" role="alert">{error}</p>
+          <button
+            onClick={onRetry}
+            className="text-xs text-error border border-error-line hover:bg-error-bg px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex-shrink-0"
           >
             Tentar
           </button>
@@ -144,139 +269,187 @@ function VGLHero({ data, loading, error, onRetry }: {
       )}
 
       {loading && !data && !error && (
-        <div className="flex-1 flex items-center justify-center py-6">
-          <div className="w-6 h-6 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8 px-5">
+          <ShimmerBlock className="w-44 h-24 rounded-full" />
+          <ShimmerBlock className="w-40 h-5" />
+          <ShimmerBlock className="w-28 h-4" />
         </div>
       )}
 
       {data && (
-        <div className="flex-1 flex flex-col px-5 py-5 gap-4 justify-center">
-          <div>
-            <p className="text-3xl font-black text-t1 tabular-nums leading-none">
+        <div className="flex-1 flex flex-col px-5 pt-4 pb-5 gap-3 relative">
+          <RadialGauge
+            pct={pct}
+            expectedPct={expectedPct}
+            centerTop="DA META"
+            centerMain={`${Math.min(pct, 999)}%`}
+          />
+
+          {/* valor realizado / meta */}
+          <div className="text-center -mt-2">
+            <p className="text-2xl font-black text-t1 tabular-nums leading-none">
               {formatCurrency(data.vgl.realizadoMes)}
             </p>
-            <p className="text-xs text-t3 mt-1.5">
-              de <span className="text-t2 font-semibold">{formatCurrencyFull(data.vgl.target)}</span> de meta
+            <p className="text-xs text-t3 mt-1">
+              de <span className="text-t2 font-semibold">{formatCurrencyFull(data.vgl.target)}</span>
             </p>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <div className="h-2.5 bg-s3/60 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-brand transition-all duration-700"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className={`text-xs font-bold tabular-nums ${pct >= 100 ? 'text-brand' : pct >= 75 ? 'text-green-400' : pct >= 45 ? 'text-amber-400' : 'text-t3'}`}>
-                {pct}%
-              </span>
-              <span className="text-[11px] text-t4 tabular-nums">
-                {data.vgl.vendasMes} venda{data.vgl.vendasMes !== 1 ? 's' : ''} este mês
-              </span>
-            </div>
+          {/* status + ritmo */}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${tone.chip}`}>
+              {tone.label}
+            </span>
+            <span className="text-[11px] text-t4 tabular-nums">
+              ritmo do mês: {expectedPct}%
+            </span>
           </div>
 
-          {pct < 100 ? (
-            <p className="text-xs text-t4">
-              Faltam <span className="font-semibold text-t2">{formatCurrency(data.vgl.target - data.vgl.realizadoMes)}</span> para a meta
-            </p>
-          ) : (
-            <p className="text-xs text-brand font-semibold">Meta atingida!</p>
-          )}
+          {/* rodapé — faltam / vendas */}
+          <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-line">
+            <button
+              onClick={onNavigate}
+              className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left"
+            >
+              <span className="text-[11px] text-t4 uppercase tracking-wide">Faltam</span>
+              <span className={`text-sm font-bold tabular-nums ${pct >= 100 ? 'text-brand' : 'text-t1'}`}>
+                {pct >= 100 ? 'Meta batida' : formatCurrency(falta)}
+              </span>
+            </button>
+            <button
+              onClick={onNavigate}
+              className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left"
+            >
+              <span className="text-[11px] text-t4 uppercase tracking-wide">Vendas no mês</span>
+              <span className="text-sm font-bold text-t1 tabular-nums">
+                {data.vgl.vendasMes} venda{data.vgl.vendasMes !== 1 ? 's' : ''}
+              </span>
+            </button>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-// ─── KPI mini-card ────────────────────────────────────────────────────────────
+// ─── KPI tile (clicável, acessível) ───────────────────────────────────────────
+
+const KPI_TONES = {
+  teal:   { bar: 'bg-teal-400',   chip: 'bg-teal-500/12',   icon: 'text-teal-400'   },
+  green:  { bar: 'bg-success',    chip: 'bg-success-bg',    icon: 'text-success'    },
+  amber:  { bar: 'bg-warning',    chip: 'bg-warning-bg',    icon: 'text-warning'    },
+  purple: { bar: 'bg-purple-500', chip: 'bg-purple-500/12', icon: 'text-purple-400' },
+} as const
 
 function OverviewKPICard({
-  title, value, sub, icon: Icon, textColor, warning, loading,
+  title, value, sub, icon: Icon, tone, onClick, alert, loading,
 }: {
   title: string
   value: string | number
   sub?: string
   icon: React.ComponentType<{ size?: number; className?: string }>
-  textColor: string
-  warning?: boolean
+  tone: keyof typeof KPI_TONES
+  onClick?: () => void
+  alert?: boolean
   loading?: boolean
 }) {
+  const t = KPI_TONES[tone]
+  const isAlert = alert && Number(value) > 0
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-line bg-surface p-4 flex flex-col gap-3" style={{ boxShadow: 'var(--shadow-card)' }}>
+        <ShimmerBlock className="w-24 h-3" />
+        <ShimmerBlock className="w-14 h-7" />
+        <ShimmerBlock className="w-20 h-3" />
+      </div>
+    )
+  }
+
   return (
-    <div className={`rounded-xl border p-4 flex flex-col gap-2 ${warning && Number(value) > 0 ? 'border-amber-500/30 bg-amber-500/5' : 'border-line bg-surface'}`}>
-      {loading ? (
-        <>
-          <div className="h-3 w-20 bg-s3/50 rounded animate-pulse" />
-          <div className="h-7 w-12 bg-s3/50 rounded animate-pulse" />
-        </>
-      ) : (
-        <>
-          <div className="flex items-center gap-2">
-            <Icon size={12} className={textColor} />
-            <p className="text-[11px] font-bold uppercase tracking-widest text-t4 truncate">{title}</p>
-          </div>
-          <p className={`text-2xl font-black tabular-nums leading-none ${warning && Number(value) > 0 ? 'text-amber-300' : 'text-t1'}`}>
-            {value}
-          </p>
-          {sub && <p className="text-[11px] text-t4">{sub}</p>}
-        </>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`${title}: ${value}${sub ? `. ${sub}` : ''}`}
+      className={`group relative text-left rounded-xl border bg-surface overflow-hidden p-4 flex flex-col gap-2
+        transition-all duration-200 cursor-pointer
+        hover:-translate-y-0.5 hover:border-line-strong hover:shadow-modal
+        ${isAlert ? 'border-warning-line' : 'border-line'}`}
+      style={{ boxShadow: 'var(--shadow-card)' }}
+    >
+      <div className={`absolute top-0 left-0 right-0 h-[3px] ${isAlert ? 'bg-warning' : t.bar}`} aria-hidden />
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t4 truncate">{title}</p>
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isAlert ? 'bg-warning-bg' : t.chip}`}>
+          <Icon size={13} className={isAlert ? 'text-warning' : t.icon} />
+        </div>
+      </div>
+      <p className={`text-[28px] font-black tabular-nums leading-none ${isAlert ? 'text-warning' : 'text-t1'}`}>
+        {value}
+      </p>
+      <div className="flex items-center justify-between gap-1 min-h-[16px]">
+        {sub && <p className="text-[11px] text-t4 truncate">{sub}</p>}
+        <ArrowRight size={12} className="text-t5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ml-auto flex-shrink-0" aria-hidden />
+      </div>
+    </button>
   )
 }
 
-// ─── Funil de leads (compacto, horizontal) ───────────────────────────────────
+// ─── Funil de leads (barras horizontais) ──────────────────────────────────────
 
-function LeadFunnelWidget({ data, loading, error }: {
+function LeadFunnelWidget({ data, loading, error, onNavigate }: {
   data: OverviewData | null
   loading: boolean
   error: string | null
+  onNavigate: () => void
 }) {
   const total = data?.leadFunnel.reduce((a, s) => a + s.count, 0) ?? 0
+  const max   = data ? Math.max(...data.leadFunnel.map(s => s.count), 1) : 1
 
   return (
-    <div className="rounded-xl border border-line bg-page overflow-hidden">
-      <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-line">
-        <div className="w-8 h-8 bg-teal-500/15 rounded-lg flex items-center justify-center">
-          <BarChart2 size={15} className="text-teal-400" />
-        </div>
-        <div>
-          <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Funil de Leads</p>
-          <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
-            {loading && !data ? 'Carregando...' : `${total.toLocaleString('pt-BR')} leads ativos`}
-          </h2>
-        </div>
-      </div>
+    <div className="rounded-xl border border-line bg-surface overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <CardHeader
+        icon={BarChart2}
+        tone={{ chip: 'bg-teal-500/15', icon: 'text-teal-400' }}
+        eyebrow="Funil de Leads"
+        title={loading && !data ? 'Carregando…' : `${total.toLocaleString('pt-BR')} leads ativos`}
+        right={
+          <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0">
+            Ver funil <ArrowRight size={12} />
+          </button>
+        }
+      />
 
-      {error && !data && (
-        <div className="px-5 py-3 text-xs text-red-400">{error}</div>
-      )}
+      {error && !data && <p className="px-5 py-4 text-xs text-error" role="alert">{error}</p>}
 
       {loading && !data && !error && (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-5 h-5 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+        <div className="flex flex-col gap-3 px-5 py-4">
+          {Array.from({ length: 6 }).map((_, i) => <ShimmerBlock key={i} className="w-full h-5" />)}
         </div>
       )}
 
       {data && (
-        <div className="flex flex-col divide-y divide-line/50 py-1">
+        <div className="flex flex-col py-2">
           {FUNNEL_STAGES.map(stage => {
             const theme = STAGE_THEME[stage]
             const count = data.leadFunnel.find(s => s.stage === stage)?.count ?? 0
             const pct   = total > 0 ? Math.round(count / total * 100) : 0
+            const barW  = Math.round(count / max * 100)
             return (
-              <div key={stage} className="px-5 py-2.5 flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${theme.dot}`} />
-                <p className={`text-[11px] font-medium w-24 flex-shrink-0 truncate ${theme.color}`}>{theme.label}</p>
-                <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
+              <div key={stage} className="px-5 py-2 flex items-center gap-3">
+                <p className={`text-xs font-medium w-24 flex-shrink-0 truncate ${theme.color}`}>{theme.label}</p>
+                <div
+                  className="flex-1 h-2 bg-s3/60 rounded-full overflow-hidden"
+                  role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+                  aria-label={`${theme.label}: ${count} leads (${pct}%)`}
+                >
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ${theme.dot}`}
-                    style={{ width: `${pct}%` }}
+                    className={`h-full rounded-full ${theme.dot} transition-all duration-700`}
+                    style={{ width: `${barW}%` }}
                   />
                 </div>
-                <p className="text-xs font-bold text-t2 tabular-nums w-8 text-right flex-shrink-0">{count}</p>
-                <p className="text-[11px] text-t4 tabular-nums w-8 text-right flex-shrink-0">{pct}%</p>
+                <p className="text-sm font-bold text-t1 tabular-nums w-9 text-right flex-shrink-0">{count}</p>
+                <p className="text-[11px] text-t4 tabular-nums w-9 text-right flex-shrink-0">{pct}%</p>
               </div>
             )
           })}
@@ -286,45 +459,49 @@ function LeadFunnelWidget({ data, loading, error }: {
   )
 }
 
-// ─── Funil de campanhas (compacto, 6 células) ─────────────────────────────────
+// ─── Funil de campanhas (resumo, 6 células) ───────────────────────────────────
 
-function CompactCampaignFunnel({ data, loading }: {
+function CompactCampaignFunnel({ data, loading, onNavigate }: {
   data: OverviewData | null
   loading: boolean
+  onNavigate: () => void
 }) {
   if (!loading && data && data.campaignFunnel.totalCampaigns === 0) {
     return (
-      <div className="rounded-xl border border-line bg-page flex items-center justify-center py-8">
+      <div className="rounded-xl border border-line bg-surface flex flex-col items-center justify-center py-10 gap-2" style={{ boxShadow: 'var(--shadow-card)' }}>
+        <Megaphone size={24} className="text-t4" />
         <p className="text-sm text-t3">Nenhuma campanha ativa</p>
+        <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text transition-colors cursor-pointer mt-0.5">
+          Ver campanhas →
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="rounded-xl border border-line bg-page overflow-hidden">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center">
-            <Megaphone size={15} className="text-purple-400" />
+    <div className="rounded-xl border border-line bg-surface overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <CardHeader
+        icon={Megaphone}
+        tone={{ chip: 'bg-purple-500/15', icon: 'text-purple-400' }}
+        eyebrow="Pipeline de Campanhas"
+        title={!data
+          ? 'Carregando…'
+          : `${data.campaignFunnel.totalCampaigns} ativa${data.campaignFunnel.totalCampaigns !== 1 ? 's' : ''} · ${data.campaignFunnel.totalLeads.toLocaleString('pt-BR')} leads`}
+        right={data && data.campaignFunnel.totalSales > 0 ? (
+          <div className="flex items-center gap-1.5 bg-success-bg border border-success-line px-3 py-1.5 rounded-xl flex-shrink-0">
+            <span className="text-success text-xs font-bold tabular-nums">{data.campaignFunnel.totalSales}</span>
+            <span className="text-success/70 text-[11px]">venda{data.campaignFunnel.totalSales !== 1 ? 's' : ''}</span>
           </div>
-          <div>
-            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Pipeline de Campanhas</p>
-            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
-              {!data ? 'Carregando...' : `${data.campaignFunnel.totalCampaigns} campanha${data.campaignFunnel.totalCampaigns !== 1 ? 's' : ''} · ${data.campaignFunnel.totalLeads.toLocaleString('pt-BR')} leads`}
-            </h2>
-          </div>
-        </div>
-        {data && data.campaignFunnel.totalSales > 0 && (
-          <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 px-3 py-1.5 rounded-xl">
-            <span className="text-green-400 text-xs font-bold tabular-nums">{data.campaignFunnel.totalSales}</span>
-            <span className="text-green-500/70 text-[11px]">venda{data.campaignFunnel.totalSales !== 1 ? 's' : ''}</span>
-          </div>
+        ) : (
+          <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0">
+            Abrir <ArrowRight size={12} />
+          </button>
         )}
-      </div>
+      />
 
       {loading && !data && (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-5 h-5 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+        <div className="grid grid-cols-3 gap-2 px-5 py-4">
+          {Array.from({ length: 6 }).map((_, i) => <ShimmerBlock key={i} className="h-20" />)}
         </div>
       )}
 
@@ -349,7 +526,7 @@ function CompactCampaignFunnel({ data, loading }: {
   )
 }
 
-// ─── Painel de alertas (ação imediata) ────────────────────────────────────────
+// ─── Painel de ação imediata ──────────────────────────────────────────────────
 
 function AlertsPanel({ alertas, loading, error, onNavigateTasks, onNavigateLeads, onNavigateCampaigns }: {
   alertas: OverviewData['alertas'] | undefined
@@ -359,108 +536,87 @@ function AlertsPanel({ alertas, loading, error, onNavigateTasks, onNavigateLeads
   onNavigateLeads: () => void
   onNavigateCampaigns: () => void
 }) {
-  const totalAlerts = alertas
+  const total = alertas
     ? alertas.tarefasEmAtraso + alertas.leadsCongelados + alertas.slaEstourado
     : 0
 
-  return (
-    <div className="rounded-xl border border-line bg-page overflow-hidden">
-      <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-line">
-        <div className="w-8 h-8 bg-red-500/15 rounded-lg flex items-center justify-center">
-          <AlertTriangle size={15} className="text-red-400" />
-        </div>
-        <div>
-          <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Ação Imediata</p>
-          <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
-            {!alertas
-              ? (loading ? 'Carregando...' : 'Alertas')
-              : totalAlerts === 0
-                ? 'Tudo em dia'
-                : `${totalAlerts} item${totalAlerts !== 1 ? 's' : ''} pendente${totalAlerts !== 1 ? 's' : ''}`
-            }
-          </h2>
-        </div>
-      </div>
+  const rows = alertas ? [
+    { key: 'atraso',   label: 'Tarefas em atraso',  hint: 'Atenção imediata necessária', count: alertas.tarefasEmAtraso, icon: Siren,     tone: 'text-red-400',    chip: 'bg-red-500/15',    onClick: onNavigateTasks },
+    { key: 'congelado',label: 'Leads congelados',   hint: 'Sem movimento há +2 dias',    count: alertas.leadsCongelados, icon: Snowflake, tone: 'text-amber-400',  chip: 'bg-amber-500/15',  onClick: onNavigateCampaigns },
+    { key: 'sla',      label: 'SLA estourado',      hint: 'Leads sem 1º contato no prazo',count: alertas.slaEstourado,    icon: Clock,     tone: 'text-orange-400', chip: 'bg-orange-500/15', onClick: onNavigateLeads },
+  ] : []
 
-      {error && !alertas && (
-        <div className="px-5 py-3 text-xs text-red-400">{error}</div>
-      )}
+  return (
+    <div className="rounded-xl border border-line bg-surface overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <CardHeader
+        icon={AlertTriangle}
+        tone={{ chip: 'bg-red-500/15', icon: 'text-red-400' }}
+        eyebrow="Ação Imediata"
+        title={!alertas
+          ? (loading ? 'Carregando…' : 'Alertas')
+          : total === 0 ? 'Tudo em dia' : `${total} item${total !== 1 ? 's' : ''} pendente${total !== 1 ? 's' : ''}`}
+      />
+
+      {error && !alertas && <p className="px-5 py-4 text-xs text-error" role="alert">{error}</p>}
 
       {loading && !alertas && !error && (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-5 h-5 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+        <div className="flex flex-col gap-2 px-5 py-4">
+          {Array.from({ length: 3 }).map((_, i) => <ShimmerBlock key={i} className="w-full h-14" />)}
         </div>
       )}
 
-      {alertas && totalAlerts === 0 && (
-        <div className="flex flex-col items-center py-8 gap-2">
-          <CheckCircle2 size={24} className="text-green-500/50" />
+      {alertas && total === 0 && (
+        <div className="flex flex-col items-center py-10 gap-2">
+          <CheckCircle2 size={26} className="text-success/60" />
           <p className="text-sm text-t3">Nenhum alerta pendente</p>
         </div>
       )}
 
-      {alertas && totalAlerts > 0 && (
+      {alertas && total > 0 && (
         <div className="flex flex-col divide-y divide-line">
-          <button
-            onClick={onNavigateTasks}
-            className="flex items-center gap-4 px-5 py-4 hover:bg-s2/40 transition-colors text-left cursor-pointer w-full"
-          >
-            <div className="w-9 h-9 bg-red-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Siren size={15} className="text-red-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-t1">Tarefas em atraso</p>
-              <p className="text-xs text-t4">Atenção imediata necessária</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className={`text-xl font-black tabular-nums ${alertas.tarefasEmAtraso > 0 ? 'text-red-400' : 'text-t4'}`}>
-                {alertas.tarefasEmAtraso}
-              </span>
-              <ArrowRight size={13} className="text-t4" />
-            </div>
-          </button>
-
-          <button
-            onClick={onNavigateCampaigns}
-            className="flex items-center gap-4 px-5 py-4 hover:bg-s2/40 transition-colors text-left cursor-pointer w-full"
-          >
-            <div className="w-9 h-9 bg-amber-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Snowflake size={15} className="text-amber-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-t1">Leads congelados</p>
-              <p className="text-xs text-t4">Sem movimento há +2 dias</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className={`text-xl font-black tabular-nums ${alertas.leadsCongelados > 0 ? 'text-amber-400' : 'text-t4'}`}>
-                {alertas.leadsCongelados}
-              </span>
-              <ArrowRight size={13} className="text-t4" />
-            </div>
-          </button>
-
-          <button
-            onClick={onNavigateLeads}
-            className="flex items-center gap-4 px-5 py-4 hover:bg-s2/40 transition-colors text-left cursor-pointer w-full"
-          >
-            <div className="w-9 h-9 bg-orange-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Clock size={15} className="text-orange-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-t1">SLA estourado</p>
-              <p className="text-xs text-t4">Leads sem 1º contato no prazo</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className={`text-xl font-black tabular-nums ${alertas.slaEstourado > 0 ? 'text-orange-400' : 'text-t4'}`}>
-                {alertas.slaEstourado}
-              </span>
-              <ArrowRight size={13} className="text-t4" />
-            </div>
-          </button>
+          {rows.map(r => (
+            <button
+              key={r.key}
+              onClick={r.onClick}
+              aria-label={`${r.label}: ${r.count}. ${r.hint}`}
+              className="flex items-center gap-4 px-5 py-4 hover:bg-s2/40 transition-colors text-left cursor-pointer w-full"
+            >
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${r.chip}`}>
+                <r.icon size={15} className={r.tone} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-t1">{r.label}</p>
+                <p className="text-xs text-t4">{r.hint}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`text-xl font-black tabular-nums ${r.count > 0 ? r.tone : 'text-t4'}`}>{r.count}</span>
+                <ArrowRight size={13} className="text-t4" aria-hidden />
+              </div>
+            </button>
+          ))}
         </div>
       )}
     </div>
   )
+}
+
+// ─── Helpers de data ──────────────────────────────────────────────────────────
+
+function daysAgo(iso: string): number {
+  return (Date.now() - new Date(iso).getTime()) / 86_400_000
+}
+function daysOverdue(dueDate: string): number {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return Math.floor((today.getTime() - new Date(dueDate + 'T00:00:00').getTime()) / 86_400_000)
+}
+function dueDateLabel(dueDate?: string): { text: string; color: string } {
+  if (!dueDate) return { text: 'Sem prazo', color: 'text-t4' }
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((new Date(dueDate + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
+  if (diffDays === 0) return { text: 'Hoje!', color: 'text-amber-400' }
+  if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
+  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-t2' }
+  return { text: dueDate.split('-').reverse().join('/'), color: 'text-t3' }
 }
 
 // ─── Pipeline de Campanhas (detalhado — seção secundária) ─────────────────────
@@ -1133,83 +1289,83 @@ export function DashboardPage() {
       onCta={() => setTaskFormOpen(true)}
     >
 
-      {/* ── Linha 1: VGL hero + 4 KPIs ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {/* VGL Hero — ocupa 2 colunas e 2 linhas no desktop */}
+      {/* ══ Visão geral — centro de comando ══════════════════════════════ */}
+      <SectionLabel icon={Target} hint="Atualizado em tempo real">Visão geral</SectionLabel>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
+        {/* VGL Hero — 2 colunas × 2 linhas no desktop */}
         <div className="col-span-2 lg:row-span-2">
           <VGLHero
             data={overviewData}
             loading={overviewLoading}
             error={overviewError}
             onRetry={loadOverview}
+            onNavigate={() => navigate('/vendas')}
           />
         </div>
 
-        {/* KPI: leads ativos */}
         <OverviewKPICard
           title="Leads ativos"
           value={overviewData?.leadsAtivos ?? '—'}
-          sub="sem descarte e fora de venda"
+          sub="em aberto no funil"
           icon={Users}
-          textColor="text-teal-400"
+          tone="teal"
+          onClick={() => navigate('/leads')}
           loading={overviewLoading && !overviewData}
         />
-
-        {/* KPI: vendas do mês */}
         <OverviewKPICard
-          title="Vendas do mês"
+          title="Vendas no mês"
           value={overviewData?.vgl.vendasMes ?? '—'}
           sub={overviewData ? formatCurrency(overviewData.vgl.realizadoMes) : undefined}
           icon={TrendingUp}
-          textColor="text-green-400"
+          tone="green"
+          onClick={() => navigate('/vendas')}
           loading={overviewLoading && !overviewData}
         />
-
-        {/* KPI: leads sem interação */}
         <OverviewKPICard
           title="Sem interação"
           value={overviewData?.leadsSemInteracao ?? '—'}
           sub="leads há +48h sem contato"
-          icon={Snowflake}
-          textColor="text-amber-400"
-          warning
+          icon={Flame}
+          tone="amber"
+          alert
+          onClick={() => navigate('/leads')}
           loading={overviewLoading && !overviewData}
         />
-
-        {/* KPI: campanhas ativas */}
         <OverviewKPICard
           title="Campanhas ativas"
           value={overviewData?.campaignFunnel.totalCampaigns ?? '—'}
           sub={overviewData ? `${overviewData.campaignFunnel.totalLeads.toLocaleString('pt-BR')} leads em disparo` : undefined}
           icon={Megaphone}
-          textColor="text-purple-400"
+          tone="purple"
+          onClick={() => navigate('/campanhas')}
           loading={overviewLoading && !overviewData}
         />
       </div>
 
-      {/* ── Linha 2: Meta × Realizado ────────────────────────────────────── */}
+      {/* ══ Desempenho ══════════════════════════════════════════════════ */}
+      <SectionLabel icon={BarChart2}>Desempenho · Meta × Realizado</SectionLabel>
       <PerformanceGoalsWidget />
 
-      {/* ── Linha 3: Funil de leads | Funil de campanhas ────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      {/* ══ Pipeline ════════════════════════════════════════════════════ */}
+      <SectionLabel icon={Megaphone}>Pipeline</SectionLabel>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-7">
         <LeadFunnelWidget
           data={overviewData}
           loading={overviewLoading}
           error={overviewError}
+          onNavigate={() => navigate('/leads')}
         />
         <CompactCampaignFunnel
           data={overviewData}
           loading={overviewLoading}
+          onNavigate={() => navigate('/campanhas')}
         />
       </div>
 
-      {/* ── Linha 4: Leads sem interação (lista) | Ação imediata ─────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <LeadAlertsWidget
-          onOpenLead={setSelectedLead}
-          onNavigate={() => navigate('/leads')}
-          brokerNames={brokerNames}
-        />
+      {/* ══ Precisa de ação ═════════════════════════════════════════════ */}
+      <SectionLabel icon={AlertTriangle}>Precisa de ação</SectionLabel>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start mb-7">
         <AlertsPanel
           alertas={overviewData?.alertas}
           loading={overviewLoading}
@@ -1218,12 +1374,21 @@ export function DashboardPage() {
           onNavigateLeads={() => navigate('/leads')}
           onNavigateCampaigns={() => navigate('/campanhas')}
         />
+        {/* LeadAlertsWidget já retorna null quando vazio — envolve em fragmento sem mb */}
+        <div className="[&>div]:mb-0">
+          <LeadAlertsWidget
+            onOpenLead={setSelectedLead}
+            onNavigate={() => navigate('/leads')}
+            brokerNames={brokerNames}
+          />
+        </div>
       </div>
 
-      {/* ── Seção secundária (expansível) ───────────────────────────────── */}
+      {/* ══ Seção secundária (expansível) ═══════════════════════════════ */}
       <button
         onClick={() => setShowSecondary(s => !s)}
-        className="w-full flex items-center justify-center gap-2 py-3 mb-4 rounded-xl border border-line text-xs font-semibold text-t3 hover:text-t2 hover:bg-s2/40 transition-colors cursor-pointer"
+        aria-expanded={showSecondary}
+        className="w-full flex items-center justify-center gap-2 py-3 mb-6 rounded-xl border border-line bg-surface text-xs font-semibold text-t3 hover:text-t2 hover:border-line-strong transition-colors cursor-pointer"
       >
         {showSecondary ? (
           <><ChevronUp size={14} /> Ocultar detalhes</>
@@ -1233,7 +1398,7 @@ export function DashboardPage() {
       </button>
 
       {showSecondary && (
-        <>
+        <div className="animate-slide-up">
           {/* Seletor de período */}
           <div className="flex items-center justify-between mb-6 px-1">
             <div className="flex items-center gap-2">
@@ -1382,7 +1547,7 @@ export function DashboardPage() {
 
           {/* Detalhamento por campanha */}
           <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
-        </>
+        </div>
       )}
 
       {/* Modais */}
