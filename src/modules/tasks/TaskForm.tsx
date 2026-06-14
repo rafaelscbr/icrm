@@ -24,7 +24,7 @@ interface TaskFormProps {
 }
 
 const CATEGORY_OPTIONS: { value: TaskCategory; label: string; icon: string }[] = [
-  { value: 'visita',             label: 'Visita',          icon: '🏠' },
+  { value: 'visita',             label: 'Atendimento',     icon: '🤝' },
   { value: 'proposta',           label: 'Proposta',        icon: '📋' },
   { value: 'agenciamento',       label: 'Agenciamento',    icon: '🤝' },
   { value: 'busca_imovel',       label: 'Busca de Imóvel', icon: '🔍' },

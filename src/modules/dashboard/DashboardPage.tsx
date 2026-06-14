@@ -5,10 +5,10 @@ import {
   ArrowRight, Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
   AlertTriangle, Clock, CalendarCheck, Siren, ClipboardCheck,
   ListTodo, Snowflake, RefreshCw, Megaphone,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, BarChart2,
 } from 'lucide-react'
 import { Task, Contact, Property, Lead, FunnelStage, calcSaleCommissions } from '../../types'
-import { STAGE_THEME } from '../../lib/stageTheme'
+import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { PerformanceGoalsWidget } from './PerformanceGoalsWidget'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadModal } from '../leads/LeadModal'
@@ -29,17 +29,31 @@ import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePresenceStore, pageLabel } from '../../store/usePresenceStore'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
+import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
+
+// ─── Tipos da RPC dashboard_overview ─────────────────────────────────────────
+
+interface OverviewData {
+  vgl: { target: number; realizadoMes: number; vendasMes: number }
+  leadFunnel: Array<{ stage: string; count: number }>
+  leadsAtivos: number
+  leadsSemInteracao: number
+  campaignFunnel: {
+    totalCampaigns: number
+    totalLeads: number
+    totalSales: number
+    stages: Array<{ stage: string; count: number }>
+  }
+  alertas: { tarefasEmAtraso: number; leadsCongelados: number; slaEstourado: number }
+}
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
 const COOLING_DAYS = 2
 
-// Tema das etapas vem da fonte única — mesma cor no kanban, modal e dashboard
 const STAGE_LABELS = STAGE_THEME
-
-// ─── Pipeline de Campanhas ────────────────────────────────────────────────────
 
 const CAMPAIGN_STAGES: Array<{
   stage: FunnelStage
@@ -49,13 +63,407 @@ const CAMPAIGN_STAGES: Array<{
   text: string
   border: string
 }> = [
-  { stage: 'new',          label: 'Para Ativar',   shortLabel: 'Ativar',   bg: 'bg-amber-500/12',   text: 'text-amber-400',   border: 'border-amber-500/25' },
-  { stage: 'sent',         label: 'Em Abordagem',  shortLabel: 'Abordagem', bg: 'bg-blue-500/12',    text: 'text-blue-400',    border: 'border-blue-500/25'  },
-  { stage: 'attended',     label: 'Demonstrou Interesse', shortLabel: 'Interesse', bg: 'bg-cyan-500/12', text: 'text-cyan-400', border: 'border-cyan-500/25' },
-  { stage: 'scheduled',    label: 'Visita Agendada', shortLabel: 'Visita', bg: 'bg-violet-500/12',  text: 'text-violet-400',  border: 'border-violet-500/25'},
-  { stage: 'presentation', label: 'Apresentação',  shortLabel: 'Apresentação', bg: 'bg-purple-500/12', text: 'text-purple-400', border: 'border-purple-500/25' },
-  { stage: 'proposal',     label: 'Em Proposta',   shortLabel: 'Proposta', bg: 'bg-orange-500/12',  text: 'text-orange-400',  border: 'border-orange-500/25'},
+  { stage: 'new',          label: 'Para Ativar',          shortLabel: 'Ativar',      bg: 'bg-amber-500/12',   text: 'text-amber-400',   border: 'border-amber-500/25' },
+  { stage: 'sent',         label: 'Em Abordagem',         shortLabel: 'Abordagem',   bg: 'bg-blue-500/12',    text: 'text-blue-400',    border: 'border-blue-500/25'  },
+  { stage: 'attended',     label: 'Demonstrou Interesse', shortLabel: 'Interesse',   bg: 'bg-cyan-500/12',    text: 'text-cyan-400',    border: 'border-cyan-500/25'  },
+  { stage: 'scheduled',    label: 'Visita Agendada',      shortLabel: 'Visita',      bg: 'bg-violet-500/12',  text: 'text-violet-400',  border: 'border-violet-500/25'},
+  { stage: 'presentation', label: 'Apresentação',         shortLabel: 'Apresentação', bg: 'bg-purple-500/12', text: 'text-purple-400',  border: 'border-purple-500/25'},
+  { stage: 'proposal',     label: 'Em Proposta',          shortLabel: 'Proposta',    bg: 'bg-orange-500/12',  text: 'text-orange-400',  border: 'border-orange-500/25'},
 ]
+
+// ─── Helpers de data ──────────────────────────────────────────────────────────
+
+function daysAgo(iso: string): number {
+  return (Date.now() - new Date(iso).getTime()) / 86_400_000
+}
+function daysOverdue(dueDate: string): number {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return Math.floor((today.getTime() - new Date(dueDate + 'T00:00:00').getTime()) / 86_400_000)
+}
+function dueDateLabel(dueDate?: string): { text: string; color: string } {
+  if (!dueDate) return { text: 'Sem prazo', color: 'text-t4' }
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((new Date(dueDate + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
+  if (diffDays === 0) return { text: 'Hoje!', color: 'text-amber-400' }
+  if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
+  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-t2' }
+  return { text: dueDate.split('-').reverse().join('/'), color: 'text-t3' }
+}
+
+// ─── VGL Hero ─────────────────────────────────────────────────────────────────
+
+function VGLHero({ data, loading, error, onRetry }: {
+  data: OverviewData | null
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+}) {
+  const now = new Date()
+  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const monthTitle = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+
+  const pct = data
+    ? data.vgl.target > 0
+      ? Math.min(Math.round(data.vgl.realizadoMes / data.vgl.target * 100), 100)
+      : 0
+    : 0
+
+  return (
+    <div className="h-full rounded-xl border border-line bg-surface overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-brand/15 rounded-lg flex items-center justify-center">
+            <DollarSign size={15} className="text-brand" />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Meta VGL</p>
+            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">{monthTitle}</h2>
+          </div>
+        </div>
+        <button
+          onClick={onRetry}
+          disabled={loading}
+          className="p-2 rounded-lg text-t4 hover:text-t2 hover:bg-s2/60 transition-colors cursor-pointer disabled:opacity-50"
+          aria-label="Atualizar VGL"
+        >
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      {error && !data && (
+        <div className="flex items-center gap-2 px-5 py-3 bg-red-500/5 flex-1">
+          <AlertTriangle size={14} className="text-red-400 flex-shrink-0" />
+          <p className="text-xs text-red-300 flex-1 min-w-0 truncate">{error}</p>
+          <button
+            onClick={onRetry}
+            className="text-xs text-red-300 border border-red-500/30 hover:bg-red-500/10 px-2 py-1 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+          >
+            Tentar
+          </button>
+        </div>
+      )}
+
+      {loading && !data && !error && (
+        <div className="flex-1 flex items-center justify-center py-6">
+          <div className="w-6 h-6 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+        </div>
+      )}
+
+      {data && (
+        <div className="flex-1 flex flex-col px-5 py-5 gap-4 justify-center">
+          <div>
+            <p className="text-3xl font-black text-t1 tabular-nums leading-none">
+              {formatCurrency(data.vgl.realizadoMes)}
+            </p>
+            <p className="text-xs text-t3 mt-1.5">
+              de <span className="text-t2 font-semibold">{formatCurrencyFull(data.vgl.target)}</span> de meta
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="h-2.5 bg-s3/60 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-brand transition-all duration-700"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-bold tabular-nums ${pct >= 100 ? 'text-brand' : pct >= 75 ? 'text-green-400' : pct >= 45 ? 'text-amber-400' : 'text-t3'}`}>
+                {pct}%
+              </span>
+              <span className="text-[11px] text-t4 tabular-nums">
+                {data.vgl.vendasMes} venda{data.vgl.vendasMes !== 1 ? 's' : ''} este mês
+              </span>
+            </div>
+          </div>
+
+          {pct < 100 ? (
+            <p className="text-xs text-t4">
+              Faltam <span className="font-semibold text-t2">{formatCurrency(data.vgl.target - data.vgl.realizadoMes)}</span> para a meta
+            </p>
+          ) : (
+            <p className="text-xs text-brand font-semibold">Meta atingida!</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── KPI mini-card ────────────────────────────────────────────────────────────
+
+function OverviewKPICard({
+  title, value, sub, icon: Icon, textColor, warning, loading,
+}: {
+  title: string
+  value: string | number
+  sub?: string
+  icon: React.ComponentType<{ size?: number; className?: string }>
+  textColor: string
+  warning?: boolean
+  loading?: boolean
+}) {
+  return (
+    <div className={`rounded-xl border p-4 flex flex-col gap-2 ${warning && Number(value) > 0 ? 'border-amber-500/30 bg-amber-500/5' : 'border-line bg-surface'}`}>
+      {loading ? (
+        <>
+          <div className="h-3 w-20 bg-s3/50 rounded animate-pulse" />
+          <div className="h-7 w-12 bg-s3/50 rounded animate-pulse" />
+        </>
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <Icon size={12} className={textColor} />
+            <p className="text-[11px] font-bold uppercase tracking-widest text-t4 truncate">{title}</p>
+          </div>
+          <p className={`text-2xl font-black tabular-nums leading-none ${warning && Number(value) > 0 ? 'text-amber-300' : 'text-t1'}`}>
+            {value}
+          </p>
+          {sub && <p className="text-[11px] text-t4">{sub}</p>}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Funil de leads (compacto, horizontal) ───────────────────────────────────
+
+function LeadFunnelWidget({ data, loading, error }: {
+  data: OverviewData | null
+  loading: boolean
+  error: string | null
+}) {
+  const total = data?.leadFunnel.reduce((a, s) => a + s.count, 0) ?? 0
+
+  return (
+    <div className="rounded-xl border border-line bg-page overflow-hidden">
+      <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-line">
+        <div className="w-8 h-8 bg-teal-500/15 rounded-lg flex items-center justify-center">
+          <BarChart2 size={15} className="text-teal-400" />
+        </div>
+        <div>
+          <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Funil de Leads</p>
+          <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
+            {loading && !data ? 'Carregando...' : `${total.toLocaleString('pt-BR')} leads ativos`}
+          </h2>
+        </div>
+      </div>
+
+      {error && !data && (
+        <div className="px-5 py-3 text-xs text-red-400">{error}</div>
+      )}
+
+      {loading && !data && !error && (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-5 h-5 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+        </div>
+      )}
+
+      {data && (
+        <div className="flex flex-col divide-y divide-line/50 py-1">
+          {FUNNEL_STAGES.map(stage => {
+            const theme = STAGE_THEME[stage]
+            const count = data.leadFunnel.find(s => s.stage === stage)?.count ?? 0
+            const pct   = total > 0 ? Math.round(count / total * 100) : 0
+            return (
+              <div key={stage} className="px-5 py-2.5 flex items-center gap-3">
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${theme.dot}`} />
+                <p className={`text-[11px] font-medium w-24 flex-shrink-0 truncate ${theme.color}`}>{theme.label}</p>
+                <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${theme.dot}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <p className="text-xs font-bold text-t2 tabular-nums w-8 text-right flex-shrink-0">{count}</p>
+                <p className="text-[11px] text-t4 tabular-nums w-8 text-right flex-shrink-0">{pct}%</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Funil de campanhas (compacto, 6 células) ─────────────────────────────────
+
+function CompactCampaignFunnel({ data, loading }: {
+  data: OverviewData | null
+  loading: boolean
+}) {
+  if (!loading && data && data.campaignFunnel.totalCampaigns === 0) {
+    return (
+      <div className="rounded-xl border border-line bg-page flex items-center justify-center py-8">
+        <p className="text-sm text-t3">Nenhuma campanha ativa</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-line bg-page overflow-hidden">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center">
+            <Megaphone size={15} className="text-purple-400" />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Pipeline de Campanhas</p>
+            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
+              {!data ? 'Carregando...' : `${data.campaignFunnel.totalCampaigns} campanha${data.campaignFunnel.totalCampaigns !== 1 ? 's' : ''} · ${data.campaignFunnel.totalLeads.toLocaleString('pt-BR')} leads`}
+            </h2>
+          </div>
+        </div>
+        {data && data.campaignFunnel.totalSales > 0 && (
+          <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 px-3 py-1.5 rounded-xl">
+            <span className="text-green-400 text-xs font-bold tabular-nums">{data.campaignFunnel.totalSales}</span>
+            <span className="text-green-500/70 text-[11px]">venda{data.campaignFunnel.totalSales !== 1 ? 's' : ''}</span>
+          </div>
+        )}
+      </div>
+
+      {loading && !data && (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-5 h-5 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+        </div>
+      )}
+
+      {data && (
+        <div className="px-5 pt-4 pb-4">
+          <div className="grid grid-cols-3 gap-2">
+            {CAMPAIGN_STAGES.map(({ stage, shortLabel, bg, text, border }) => {
+              const count = data.campaignFunnel.stages.find(s => s.stage === stage)?.count ?? 0
+              const pct   = data.campaignFunnel.totalLeads > 0 ? Math.round(count / data.campaignFunnel.totalLeads * 100) : 0
+              return (
+                <div key={stage} className={`flex flex-col items-center gap-1 rounded-xl p-3 border ${bg} ${border}`}>
+                  <p className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
+                  <p className="text-2xl font-black text-t1 tabular-nums leading-none">{count.toLocaleString('pt-BR')}</p>
+                  <p className="text-[11px] text-t4 tabular-nums">{pct}%</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Painel de alertas (ação imediata) ────────────────────────────────────────
+
+function AlertsPanel({ alertas, loading, error, onNavigateTasks, onNavigateLeads, onNavigateCampaigns }: {
+  alertas: OverviewData['alertas'] | undefined
+  loading: boolean
+  error: string | null
+  onNavigateTasks: () => void
+  onNavigateLeads: () => void
+  onNavigateCampaigns: () => void
+}) {
+  const totalAlerts = alertas
+    ? alertas.tarefasEmAtraso + alertas.leadsCongelados + alertas.slaEstourado
+    : 0
+
+  return (
+    <div className="rounded-xl border border-line bg-page overflow-hidden">
+      <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-line">
+        <div className="w-8 h-8 bg-red-500/15 rounded-lg flex items-center justify-center">
+          <AlertTriangle size={15} className="text-red-400" />
+        </div>
+        <div>
+          <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Ação Imediata</p>
+          <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
+            {!alertas
+              ? (loading ? 'Carregando...' : 'Alertas')
+              : totalAlerts === 0
+                ? 'Tudo em dia'
+                : `${totalAlerts} item${totalAlerts !== 1 ? 's' : ''} pendente${totalAlerts !== 1 ? 's' : ''}`
+            }
+          </h2>
+        </div>
+      </div>
+
+      {error && !alertas && (
+        <div className="px-5 py-3 text-xs text-red-400">{error}</div>
+      )}
+
+      {loading && !alertas && !error && (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-5 h-5 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+        </div>
+      )}
+
+      {alertas && totalAlerts === 0 && (
+        <div className="flex flex-col items-center py-8 gap-2">
+          <CheckCircle2 size={24} className="text-green-500/50" />
+          <p className="text-sm text-t3">Nenhum alerta pendente</p>
+        </div>
+      )}
+
+      {alertas && totalAlerts > 0 && (
+        <div className="flex flex-col divide-y divide-line">
+          <button
+            onClick={onNavigateTasks}
+            className="flex items-center gap-4 px-5 py-4 hover:bg-s2/40 transition-colors text-left cursor-pointer w-full"
+          >
+            <div className="w-9 h-9 bg-red-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Siren size={15} className="text-red-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-t1">Tarefas em atraso</p>
+              <p className="text-xs text-t4">Atenção imediata necessária</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={`text-xl font-black tabular-nums ${alertas.tarefasEmAtraso > 0 ? 'text-red-400' : 'text-t4'}`}>
+                {alertas.tarefasEmAtraso}
+              </span>
+              <ArrowRight size={13} className="text-t4" />
+            </div>
+          </button>
+
+          <button
+            onClick={onNavigateCampaigns}
+            className="flex items-center gap-4 px-5 py-4 hover:bg-s2/40 transition-colors text-left cursor-pointer w-full"
+          >
+            <div className="w-9 h-9 bg-amber-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Snowflake size={15} className="text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-t1">Leads congelados</p>
+              <p className="text-xs text-t4">Sem movimento há +2 dias</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={`text-xl font-black tabular-nums ${alertas.leadsCongelados > 0 ? 'text-amber-400' : 'text-t4'}`}>
+                {alertas.leadsCongelados}
+              </span>
+              <ArrowRight size={13} className="text-t4" />
+            </div>
+          </button>
+
+          <button
+            onClick={onNavigateLeads}
+            className="flex items-center gap-4 px-5 py-4 hover:bg-s2/40 transition-colors text-left cursor-pointer w-full"
+          >
+            <div className="w-9 h-9 bg-orange-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Clock size={15} className="text-orange-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-t1">SLA estourado</p>
+              <p className="text-xs text-t4">Leads sem 1º contato no prazo</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={`text-xl font-black tabular-nums ${alertas.slaEstourado > 0 ? 'text-orange-400' : 'text-t4'}`}>
+                {alertas.slaEstourado}
+              </span>
+              <ArrowRight size={13} className="text-t4" />
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Pipeline de Campanhas (detalhado — seção secundária) ─────────────────────
 
 function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
   const { campaigns }         = useCampaignsStore()
@@ -65,10 +473,8 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
   const activeCampaigns = campaigns.filter(c => c.status === 'active')
   if (activeCampaigns.length === 0) return null
 
-  // Totais gerais (todas as campanhas ativas)
-  const activeLeads = campLeads.filter(l => activeCampaigns.some(c => c.id === l.campaignId))
-
-  const totalPerStage = CAMPAIGN_STAGES.map(({ stage }) => ({
+  const activeLeads    = campLeads.filter(l => activeCampaigns.some(c => c.id === l.campaignId))
+  const totalPerStage  = CAMPAIGN_STAGES.map(({ stage }) => ({
     stage,
     count: activeLeads.filter(l => l.funnelStage === stage && !l.situation).length,
   }))
@@ -77,14 +483,13 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
 
   return (
     <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
-      {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center">
             <Megaphone size={15} className="text-purple-400" />
           </div>
           <div>
-            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Pipeline de Campanhas</p>
+            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Detalhe por Campanha</p>
             <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
               {activeCampaigns.length} campanha{activeCampaigns.length !== 1 ? 's' : ''} ativa{activeCampaigns.length !== 1 ? 's' : ''} · {grandTotal.toLocaleString('pt-BR')} leads
             </h2>
@@ -98,7 +503,6 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
         )}
       </div>
 
-      {/* Funil geral */}
       <div className="px-5 pt-4 pb-3 border-b border-line">
         <p className="text-[11px] font-bold text-t4 uppercase tracking-widest mb-3">Resumo geral</p>
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
@@ -116,7 +520,6 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
         </div>
       </div>
 
-      {/* Por campanha */}
       <div className="flex flex-col divide-y divide-line">
         {activeCampaigns.map(campaign => {
           const cLeads    = campLeads.filter(l => l.campaignId === campaign.id)
@@ -130,7 +533,6 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
 
           return (
             <div key={campaign.id} className="hover:bg-s2/40 transition-colors">
-              {/* Row header */}
               <button
                 onClick={() => setExpandedId(expanded ? null : campaign.id)}
                 className="w-full flex items-center gap-3 px-5 py-3 text-left cursor-pointer"
@@ -139,8 +541,6 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
                   <p className="text-sm font-semibold text-t1 truncate">{campaign.name}</p>
                   <p className="text-xs text-t4 mt-0.5">{total.toLocaleString('pt-BR')} leads · {sales > 0 ? `${sales} venda${sales !== 1 ? 's' : ''}` : 'Sem vendas ainda'}</p>
                 </div>
-
-                {/* Mini funnel preview */}
                 <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
                   {CAMPAIGN_STAGES.slice(0, 4).map(({ stage, text, bg }) => {
                     const cnt = stageCounts.find(s => s.stage === stage)?.count ?? 0
@@ -152,21 +552,17 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
                     )
                   })}
                 </div>
-
                 <button
                   onClick={e => { e.stopPropagation(); onNavigate(campaign.id) }}
                   className="flex-shrink-0 text-[11px] text-brand/60 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors mr-1"
                 >
                   Abrir
                 </button>
-
                 {expanded
                   ? <ChevronUp size={14} className="text-t4 flex-shrink-0" />
                   : <ChevronDown size={14} className="text-t4 flex-shrink-0" />
                 }
               </button>
-
-              {/* Expanded funnel */}
               {expanded && (
                 <div className="px-5 pb-4">
                   <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 mt-1">
@@ -182,8 +578,6 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
                       )
                     })}
                   </div>
-
-                  {/* Conversão progressiva */}
                   <div className="mt-3 flex items-center gap-1 overflow-x-auto">
                     {CAMPAIGN_STAGES.map(({ stage, shortLabel, text }, idx) => {
                       const cur  = stageCounts.find(s => s.stage === stage)?.count ?? 0
@@ -193,9 +587,7 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
                       const conv = prev > 0 ? Math.round(cur / prev * 100) : 0
                       return (
                         <div key={stage} className="flex items-center gap-1 flex-shrink-0">
-                          {idx > 0 && (
-                            <span className="text-[11px] text-t4 tabular-nums">→ {conv}%</span>
-                          )}
+                          {idx > 0 && <span className="text-[11px] text-t4 tabular-nums">→ {conv}%</span>}
                           <div className="flex flex-col items-center">
                             <span className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</span>
                             <span className="text-xs font-bold text-t1">{cur}</span>
@@ -223,26 +615,7 @@ function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void
   )
 }
 
-// ─── Helpers de data ──────────────────────────────────────────────────────────
-
-function daysAgo(iso: string): number {
-  return (Date.now() - new Date(iso).getTime()) / 86_400_000
-}
-function daysOverdue(dueDate: string): number {
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  return Math.floor((today.getTime() - new Date(dueDate + 'T00:00:00').getTime()) / 86_400_000)
-}
-function dueDateLabel(dueDate?: string): { text: string; color: string } {
-  if (!dueDate) return { text: 'Sem prazo', color: 'text-t4' }
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((new Date(dueDate + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
-  if (diffDays === 0) return { text: 'Hoje!', color: 'text-amber-400' }
-  if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
-  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-t2' }
-  return { text: dueDate.split('-').reverse().join('/'), color: 'text-t3' }
-}
-
-// ─── Alertas de leads ─────────────────────────────────────────────────────────
+// ─── Alertas de leads (sem interação) ─────────────────────────────────────────
 
 function LeadAlertsWidget({
   onOpenLead, onNavigate, brokerNames = {},
@@ -250,8 +623,6 @@ function LeadAlertsWidget({
   const { leads, advanceFollowup } = useLeadsStore()
   const { byLead, add: addInteraction } = useLeadInteractionsStore()
 
-  // Mesmo comportamento do Kanban/lista: registra a interação no banco
-  // (dispara o trigger de 1º contato do SLA Meta Ads) e avança o followup
   async function handleWhatsApp(e: React.MouseEvent, lead: Lead) {
     e.stopPropagation()
     window.open(whatsappUrl(lead.phone), '_blank')
@@ -271,9 +642,9 @@ function LeadAlertsWidget({
     const active = leads.filter(l => !l.discardReason && l.funnelStage !== 'venda')
     return active
       .map(l => {
-        const ints    = byLead[l.id] ?? []
+        const ints     = byLead[l.id] ?? []
         const lastReal = ints.find(i => REAL_TYPES.has(i.type))
-        const days    = daysAgo(lastReal?.interactedAt ?? l.createdAt)
+        const days     = daysAgo(lastReal?.interactedAt ?? l.createdAt)
         return { lead: l, days }
       })
       .filter(({ days }) => days > COOLING_DAYS)
@@ -301,7 +672,6 @@ function LeadAlertsWidget({
           Ver funil <ArrowRight size={12} />
         </button>
       </div>
-
       <div className="flex flex-col divide-y divide-line">
         {alertLeads.slice(0, 7).map(({ lead, days }) => {
           const stageConf = STAGE_LABELS[lead.funnelStage]
@@ -690,34 +1060,48 @@ function OnlineBrokersPanel() {
 
 export function DashboardPage() {
   const navigate = useNavigate()
-  const [taskFormOpen,  setTaskFormOpen]  = useState(false)
-  const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
+  const [taskFormOpen,    setTaskFormOpen]    = useState(false)
+  const [selectedLead,    setSelectedLead]    = useState<Lead | null>(null)
+  const [showSecondary,   setShowSecondary]   = useState(false)
+  const [overviewData,    setOverviewData]    = useState<OverviewData | null>(null)
+  const [overviewLoading, setOverviewLoading] = useState(true)
+  const [overviewError,   setOverviewError]   = useState<string | null>(null)
+
   const { isAdmin, profile, allProfiles } = useAuthStore()
   const firstName = profile?.name?.split(' ')[0] ?? 'Corretor'
-  // Mapa brokerId → nome para exibição nos alertas
   const brokerNames = useMemo(() =>
     Object.fromEntries(allProfiles.map(p => [p.id, p.name])),
     [allProfiles]
   )
 
-  const { contacts, load: loadContacts, getBirthdaysThisMonth, loading: loadingContacts } = useContactsStore()
-  const { properties, load: loadProperties }                    = usePropertiesStore()
-  const { sales, load: loadSales, getByPeriod, getValueByPeriod, loading: loadingSales } = useSalesStore()
-  const { tasks, load: loadTasks, getUpcoming, getOverdue, loading: loadingTasks }     = useTasksStore()
-  const { load: loadCampaigns }    = useCampaignsStore()
-  const { load: loadCampLeads }    = useCampaignLeadsStore()
-  const { load: loadMyLeads, loading: loadingLeads } = useLeadsStore()
+  const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
+  const { properties, load: loadProperties }   = usePropertiesStore()
+  const { sales, load: loadSales, getByPeriod, getValueByPeriod } = useSalesStore()
+  const { tasks, load: loadTasks, getUpcoming, getOverdue }        = useTasksStore()
+  const { load: loadCampaigns }   = useCampaignsStore()
+  const { load: loadCampLeads }   = useCampaignLeadsStore()
+  const { load: loadMyLeads }     = useLeadsStore()
   const { loadAll: loadInteractions } = useLeadInteractionsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
-  // Carregamento inicial — dispara todos em paralelo
+  async function loadOverview() {
+    setOverviewLoading(true)
+    setOverviewError(null)
+    const { data, error } = await supabase.rpc('dashboard_overview')
+    if (error) {
+      setOverviewError(error.message)
+      setOverviewLoading(false)
+      return
+    }
+    setOverviewData(data as OverviewData)
+    setOverviewLoading(false)
+  }
+
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks()
     loadCampaigns(); loadCampLeads(); loadMyLeads(); loadInteractions()
+    loadOverview()
   }, [])
-
-  // Loading: aguarda os 4 stores críticos do dashboard
-  const isLoading = loadingContacts || loadingSales || loadingTasks || loadingLeads
 
   const periodLabel   = getLabel()
   const salesInPeriod = getByPeriod(startDate, endDate)
@@ -748,180 +1132,260 @@ export function DashboardPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}
     >
-      {/* Skeleton de carregamento inicial */}
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 animate-pulse">
-          <div className="w-10 h-10 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
-          <p className="text-sm text-t3">Carregando dados...</p>
-        </div>
-      )}
 
-      {/* Conteúdo principal — oculto durante carregamento */}
-      {!isLoading && <>
-
-      {/* Period selector */}
-      <div className="flex items-center justify-between mb-6 px-1">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-4 rounded-full bg-brand" />
-          <p className="text-xs text-t3">Período: <span className="text-t1 font-semibold">{periodLabel}</span></p>
+      {/* ── Linha 1: VGL hero + 4 KPIs ──────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {/* VGL Hero — ocupa 2 colunas e 2 linhas no desktop */}
+        <div className="col-span-2 lg:row-span-2">
+          <VGLHero
+            data={overviewData}
+            loading={overviewLoading}
+            error={overviewError}
+            onRetry={loadOverview}
+          />
         </div>
-        <PeriodSelector />
+
+        {/* KPI: leads ativos */}
+        <OverviewKPICard
+          title="Leads ativos"
+          value={overviewData?.leadsAtivos ?? '—'}
+          sub="sem descarte e fora de venda"
+          icon={Users}
+          textColor="text-teal-400"
+          loading={overviewLoading && !overviewData}
+        />
+
+        {/* KPI: vendas do mês */}
+        <OverviewKPICard
+          title="Vendas do mês"
+          value={overviewData?.vgl.vendasMes ?? '—'}
+          sub={overviewData ? formatCurrency(overviewData.vgl.realizadoMes) : undefined}
+          icon={TrendingUp}
+          textColor="text-green-400"
+          loading={overviewLoading && !overviewData}
+        />
+
+        {/* KPI: leads sem interação */}
+        <OverviewKPICard
+          title="Sem interação"
+          value={overviewData?.leadsSemInteracao ?? '—'}
+          sub="leads há +48h sem contato"
+          icon={Snowflake}
+          textColor="text-amber-400"
+          warning
+          loading={overviewLoading && !overviewData}
+        />
+
+        {/* KPI: campanhas ativas */}
+        <OverviewKPICard
+          title="Campanhas ativas"
+          value={overviewData?.campaignFunnel.totalCampaigns ?? '—'}
+          sub={overviewData ? `${overviewData.campaignFunnel.totalLeads.toLocaleString('pt-BR')} leads em disparo` : undefined}
+          icon={Megaphone}
+          textColor="text-purple-400"
+          loading={overviewLoading && !overviewData}
+        />
       </div>
 
-      {/* 1. Meta x Realizado — desempenho é o protagonista */}
+      {/* ── Linha 2: Meta × Realizado ────────────────────────────────────── */}
       <PerformanceGoalsWidget />
 
-      {/* 2. Ação imediata — tarefas em atraso */}
-      <OverdueCard
-        tasks={overdueTasks}
-        contacts={contacts}
-        properties={properties}
-        onNavigate={() => navigate('/tarefas')}
-      />
-
-      {/* 3. Leads sem contato — esfriam a cada dia */}
-      <LeadAlertsWidget
-        onOpenLead={setSelectedLead}
-        onNavigate={() => navigate('/leads')}
-        brokerNames={brokerNames}
-      />
-
-      {/* 4. Pipeline de Campanhas */}
-      <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
-
-      {/* 5. Leads congelados em campanhas */}
-      <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
-
-      {/* 6. Números do período */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="relative bg-surface border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
-          <div className="p-5">
-            <p className="text-xs font-semibold text-t3 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
-            <div className="flex items-center gap-4 mb-3">
-              <div className="flex-1">
-                <p className="text-3xl font-black text-t1 tabular-nums leading-none">{tasksDoneInPeriod}</p>
-                <p className="text-[11px] text-t4 mt-1 flex items-center gap-1"><ClipboardCheck size={9} className="text-green-500" /> realizadas</p>
-              </div>
-              <div className="w-px h-8 bg-line flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-3xl font-black text-violet-300 tabular-nums leading-none">{tasksPendingInPeriod}</p>
-                <p className="text-[11px] text-t4 mt-1 flex items-center gap-1"><ListTodo size={9} className="text-violet-500" /> pendentes</p>
-              </div>
-            </div>
-            <div className="h-1 bg-s3/50 rounded-full overflow-hidden">
-              <div className="h-full rounded-full bg-green-500 transition-all duration-700" style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }} />
-            </div>
-          </div>
-        </div>
-        <StatCard label="Imóveis ativos" value={properties.length} sub={`${properties.filter(p => p.status === 'opportunity').length} oportunidades`} icon={<Building2 size={16} />} accent="blue" />
-        <StatCard label="Volume acumulado" value={formatCurrency(totalAccumulated)} sub={`${totalAccumulatedCount} venda${totalAccumulatedCount !== 1 ? 's' : ''} até ${periodLabel}`} icon={<DollarSign size={16} />} accent="green" />
-        <StatCard label={`Vendas — ${periodLabel}`} value={formatCurrency(valueInPeriod)} sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`} icon={<TrendingUp size={16} />} accent="purple" />
+      {/* ── Linha 3: Funil de leads | Funil de campanhas ────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <LeadFunnelWidget
+          data={overviewData}
+          loading={overviewLoading}
+          error={overviewError}
+        />
+        <CompactCampaignFunnel
+          data={overviewData}
+          loading={overviewLoading}
+        />
       </div>
 
-      {/* 6b. Comissões do período */}
-      {salesInPeriod.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <StatCard label={`Comissão gerada — ${periodLabel}`} value={formatCurrencyFull(periodComm)} sub="soma das comissões negociadas" icon={<DollarSign size={18} />} accent="purple" />
-          <StatCard label={`Sua comissão — ${periodLabel}`} value={formatCurrencyFull(periodBroker)} sub="sua parte no período" icon={<TrendingUp size={18} />} accent="green" />
-        </div>
-      )}
+      {/* ── Linha 4: Leads sem interação (lista) | Ação imediata ─────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <LeadAlertsWidget
+          onOpenLead={setSelectedLead}
+          onNavigate={() => navigate('/leads')}
+          brokerNames={brokerNames}
+        />
+        <AlertsPanel
+          alertas={overviewData?.alertas}
+          loading={overviewLoading}
+          error={overviewError}
+          onNavigateTasks={() => navigate('/tarefas')}
+          onNavigateLeads={() => navigate('/leads')}
+          onNavigateCampaigns={() => navigate('/campanhas')}
+        />
+      </div>
 
-      {/* 7. Corretores online — visível só para admin */}
-      {isAdmin && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-t3">Corretores Online</h2>
-          </div>
-          <OnlineBrokersPanel />
-        </div>
-      )}
+      {/* ── Seção secundária (expansível) ───────────────────────────────── */}
+      <button
+        onClick={() => setShowSecondary(s => !s)}
+        className="w-full flex items-center justify-center gap-2 py-3 mb-4 rounded-xl border border-line text-xs font-semibold text-t3 hover:text-t2 hover:bg-s2/40 transition-colors cursor-pointer"
+      >
+        {showSecondary ? (
+          <><ChevronUp size={14} /> Ocultar detalhes</>
+        ) : (
+          <><ChevronDown size={14} /> Mais detalhes: vendas, tarefas, aniversários, campanhas</>
+        )}
+      </button>
 
-      {/* 8. Aniversários + Últimas vendas */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card accent="yellow" className="animate-slide-up">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 bg-yellow-500/15 rounded-lg flex items-center justify-center"><Cake size={14} className="text-yellow-400" /></div>
-            <h2 className="text-sm font-semibold text-t1">Aniversários do mês</h2>
-            {birthdays.length > 0 && (
-              <span className="ml-auto bg-yellow-500/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-yellow-500/30">{birthdays.length}</span>
-            )}
-          </div>
-          {birthdays.length === 0 ? (
-            <div className="flex flex-col items-center py-6 gap-2">
-              <Gift size={28} className="text-t4" />
-              <p className="text-xs text-t4 text-center">Nenhum aniversário este mês</p>
+      {showSecondary && (
+        <>
+          {/* Seletor de período */}
+          <div className="flex items-center justify-between mb-6 px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-4 rounded-full bg-brand" />
+              <p className="text-xs text-t3">Período: <span className="text-t1 font-semibold">{periodLabel}</span></p>
             </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {birthdays.slice(0, 5).map(c => (
-                <div key={c.id} className="flex items-center gap-3 group">
-                  <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-t1 truncate font-medium">{c.name}</p>
+            <PeriodSelector />
+          </div>
+
+          {/* Tarefas em atraso (lista completa) */}
+          <OverdueCard
+            tasks={overdueTasks}
+            contacts={contacts}
+            properties={properties}
+            onNavigate={() => navigate('/tarefas')}
+          />
+
+          {/* Leads congelados em campanhas (lista completa) */}
+          <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
+
+          {/* Números do período */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <div className="relative bg-surface border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
+              <div className="p-5">
+                <p className="text-xs font-semibold text-t3 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="flex-1">
+                    <p className="text-3xl font-black text-t1 tabular-nums leading-none">{tasksDoneInPeriod}</p>
+                    <p className="text-[11px] text-t4 mt-1 flex items-center gap-1"><ClipboardCheck size={9} className="text-green-500" /> realizadas</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-yellow-400 tabular-nums">{getBirthdayDay(c.birthdate!).replace(/^0/, '')}/{c.birthdate!.split('-')[1]}</span>
-                    <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all">
-                      <MessageCircle size={12} />
-                    </a>
+                  <div className="w-px h-8 bg-line flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-3xl font-black text-violet-300 tabular-nums leading-none">{tasksPendingInPeriod}</p>
+                    <p className="text-[11px] text-t4 mt-1 flex items-center gap-1"><ListTodo size={9} className="text-violet-500" /> pendentes</p>
                   </div>
                 </div>
-              ))}
-              {birthdays.length > 5 && <p className="text-xs text-t4 text-center pt-1">+{birthdays.length - 5} mais</p>}
+                <div className="h-1 bg-s3/50 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-green-500 transition-all duration-700" style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }} />
+                </div>
+              </div>
             </div>
-          )}
-        </Card>
-
-        <Card className="lg:col-span-2 animate-slide-up">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center"><TrendingUp size={14} className="text-green-400" /></div>
-              <h2 className="text-sm font-semibold text-t1">Últimas vendas</h2>
-            </div>
-            <button onClick={() => navigate('/vendas')} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer hover:gap-2">
-              Ver todas <ArrowRight size={12} />
-            </button>
+            <StatCard label="Imóveis ativos" value={properties.length} sub={`${properties.filter(p => p.status === 'opportunity').length} oportunidades`} icon={<Building2 size={16} />} accent="blue" />
+            <StatCard label="Volume acumulado" value={formatCurrency(totalAccumulated)} sub={`${totalAccumulatedCount} venda${totalAccumulatedCount !== 1 ? 's' : ''} até ${periodLabel}`} icon={<DollarSign size={16} />} accent="green" />
+            <StatCard label={`Vendas — ${periodLabel}`} value={formatCurrency(valueInPeriod)} sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`} icon={<TrendingUp size={16} />} accent="purple" />
           </div>
-          {recentSales.length === 0 ? (
-            <div className="flex flex-col items-center py-8 gap-2">
-              <div className="w-12 h-12 bg-s3/50 rounded-xl flex items-center justify-center"><Sparkles size={20} className="text-t4" /></div>
-              <p className="text-sm text-t3">Nenhuma venda registrada ainda</p>
-              <button onClick={() => navigate('/vendas?new=1')} className="text-xs text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">Registrar primeira venda →</button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {recentSales.map(s => {
-                const client = contacts.find(c => c.id === s.clientId)
-                return (
-                  <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-s2/60 transition-colors -mx-3">
-                    <Avatar name={client?.name ?? s.propertyName} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-t1 truncate">{client?.name ?? '—'}</p>
-                      <p className="text-xs text-t3 truncate">{s.propertyName}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</p>
-                      <p className="text-xs text-t4">{formatDate(s.date)}</p>
-                    </div>
-                  </div>
-                )
-              })}
+
+          {salesInPeriod.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <StatCard label={`Comissão gerada — ${periodLabel}`} value={formatCurrencyFull(periodComm)} sub="soma das comissões negociadas" icon={<DollarSign size={18} />} accent="purple" />
+              <StatCard label={`Sua comissão — ${periodLabel}`} value={formatCurrencyFull(periodBroker)} sub="sua parte no período" icon={<TrendingUp size={18} />} accent="green" />
             </div>
           )}
-        </Card>
-      </div>
 
-      {/* 9. Próximas tarefas */}
-      <UpcomingCard tasks={upcomingTasks} contacts={contacts} properties={properties} onNavigate={() => navigate('/tarefas')} />
+          {/* Corretores online (admin) */}
+          {isAdmin && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-t3">Corretores Online</h2>
+              </div>
+              <OnlineBrokersPanel />
+            </div>
+          )}
 
-      {/* 10. Potencial de recompra */}
-      <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
+          {/* Aniversários + Últimas vendas */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <Card accent="yellow" className="animate-slide-up">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 bg-yellow-500/15 rounded-lg flex items-center justify-center"><Cake size={14} className="text-yellow-400" /></div>
+                <h2 className="text-sm font-semibold text-t1">Aniversários do mês</h2>
+                {birthdays.length > 0 && (
+                  <span className="ml-auto bg-yellow-500/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-yellow-500/30">{birthdays.length}</span>
+                )}
+              </div>
+              {birthdays.length === 0 ? (
+                <div className="flex flex-col items-center py-6 gap-2">
+                  <Gift size={28} className="text-t4" />
+                  <p className="text-xs text-t4 text-center">Nenhum aniversário este mês</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {birthdays.slice(0, 5).map(c => (
+                    <div key={c.id} className="flex items-center gap-3 group">
+                      <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-t1 truncate font-medium">{c.name}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-yellow-400 tabular-nums">{getBirthdayDay(c.birthdate!).replace(/^0/, '')}/{c.birthdate!.split('-')[1]}</span>
+                        <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all">
+                          <MessageCircle size={12} />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                  {birthdays.length > 5 && <p className="text-xs text-t4 text-center pt-1">+{birthdays.length - 5} mais</p>}
+                </div>
+              )}
+            </Card>
 
-      </> /* fim !isLoading */}
+            <Card className="lg:col-span-2 animate-slide-up">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center"><TrendingUp size={14} className="text-green-400" /></div>
+                  <h2 className="text-sm font-semibold text-t1">Últimas vendas</h2>
+                </div>
+                <button onClick={() => navigate('/vendas')} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer hover:gap-2">
+                  Ver todas <ArrowRight size={12} />
+                </button>
+              </div>
+              {recentSales.length === 0 ? (
+                <div className="flex flex-col items-center py-8 gap-2">
+                  <div className="w-12 h-12 bg-s3/50 rounded-xl flex items-center justify-center"><Sparkles size={20} className="text-t4" /></div>
+                  <p className="text-sm text-t3">Nenhuma venda registrada ainda</p>
+                  <button onClick={() => navigate('/vendas?new=1')} className="text-xs text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">Registrar primeira venda →</button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {recentSales.map(s => {
+                    const client = contacts.find(c => c.id === s.clientId)
+                    return (
+                      <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-s2/60 transition-colors -mx-3">
+                        <Avatar name={client?.name ?? s.propertyName} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-t1 truncate">{client?.name ?? '—'}</p>
+                          <p className="text-xs text-t3 truncate">{s.propertyName}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</p>
+                          <p className="text-xs text-t4">{formatDate(s.date)}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
 
-      {/* Modais — sempre montados fora do bloco de loading */}
+          {/* Próximas tarefas */}
+          <UpcomingCard tasks={upcomingTasks} contacts={contacts} properties={properties} onNavigate={() => navigate('/tarefas')} />
+
+          {/* Potencial de recompra */}
+          <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
+
+          {/* Detalhamento por campanha */}
+          <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
+        </>
+      )}
+
+      {/* Modais */}
       <TaskForm isOpen={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
       {selectedLead && <LeadModal lead={selectedLead} onClose={() => setSelectedLead(null)} />}
     </PageLayout>

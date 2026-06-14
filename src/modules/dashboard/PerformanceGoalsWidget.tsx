@@ -48,9 +48,9 @@ const METRICS: Array<{
 }> = [
   { key: 'acionamento', label: 'Acionamentos', icon: Zap,        text: 'text-cyan-400',
     realized: n => n.acionamentos },
-  { key: 'visita',      label: 'Visitas',      icon: Footprints, text: 'text-indigo-400',
+  { key: 'visita',      label: 'Atendimentos', icon: Footprints, text: 'text-indigo-400',
     realized: n => n.visitas,
-    sub: n => n.visitasAgendadas > n.visitas ? `${n.visitasAgendadas} agendadas` : null },
+    sub: n => n.visitasAgendadas > n.visitas ? `${n.visitasAgendadas} agendados` : null },
   { key: 'proposta',    label: 'Propostas',    icon: FileText,   text: 'text-amber-400',
     realized: n => n.propostas },
   { key: 'venda',       label: 'Vendas',       icon: BadgeDollarSign, text: 'text-green-400',

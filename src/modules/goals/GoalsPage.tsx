@@ -6,6 +6,7 @@ import {
   BadgeDollarSign, History, Zap, MessageCircle,
   ChevronRight, Plus, Award,
 } from 'lucide-react'
+import { DAILY_TARGETS, WEEKLY_TARGETS, MONTHLY_TARGETS } from '../../lib/metasConfig'
 import confetti from 'canvas-confetti'
 import { useAuthStore } from '../../store/useAuthStore'
 import { PageLayout } from '../../components/layout/PageLayout'
@@ -24,13 +25,6 @@ import { Goal, GoalCategory, Task } from '../../types'
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
-
-// Metas de disparo: 50/dia por corretor (proteção anti-ban individual)
-const TARGETS = {
-  hoje:   { interacoes: 100, disparos: 50 },
-  semana: { visitas: 2, propostas: 1, disparos: 250 },  // 50 × 5 dias úteis
-  mes:    { visitas: 8, propostas: 4, vendas: 2, disparos: 1000 }, // 50 × 20 dias úteis
-}
 
 type PeriodTab = 'hoje' | 'semana' | 'mes'
 
@@ -255,7 +249,7 @@ function GoalRing({ value, target, hex }: { value: number; target: number; hex: 
 
 const CAT_CFG: Record<GoalCategory, { icon: typeof Target; text: string; bg: string; border: string; hex: string; label: string }> = {
   acionamento: { icon: Zap,          text: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/25',   hex: '#06b6d4', label: 'Acionamento' },
-  visita:   { icon: Footprints,      text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25', hex: '#6366f1', label: 'Visita'   },
+  visita:   { icon: Footprints,      text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25', hex: '#6366f1', label: 'Atendimento' },
   proposta: { icon: FileText,        text: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25',  hex: '#f59e0b', label: 'Proposta' },
   venda:    { icon: BadgeDollarSign, text: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25',  hex: '#22c55e', label: 'Venda'    },
 }
@@ -341,7 +335,7 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-indigo-500/10 rounded-xl flex items-center justify-center"><Footprints size={15} className="text-indigo-400" /></div>
           <div>
-            <p className="text-sm font-semibold text-t1 leading-none">Visitas</p>
+            <p className="text-sm font-semibold text-t1 leading-none">Atendimentos</p>
             <p className="text-[11px] text-t4 mt-1">{metaSem}/sem · {metaMes}/mês</p>
           </div>
         </div>
@@ -398,19 +392,19 @@ function PerformanceHero({ tasks, period, brokerId }: { tasks: Task[]; period: P
 
   const kpis = useMemo(() => {
     if (period === 'hoje') return [
-      { label: 'Novos Disparos',        value: data.disparosHojeNew,      target: TARGETS.hoje.disparos,    icon: <Zap size={14} />,           note: 'base fria'       },
-      { label: 'Interações com leads',  value: data.daily,                target: TARGETS.hoje.interacoes,  icon: <MessageCircle size={14} />, note: 'mensagens/calls' },
+      { label: 'Novos Disparos',            value: data.disparosHojeNew,      target: DAILY_TARGETS.disparos,            icon: <Zap size={14} />,           note: 'base fria'       },
+      { label: 'Interações com leads',      value: data.daily,                target: DAILY_TARGETS.interacoes,          icon: <MessageCircle size={14} />, note: 'mensagens/calls' },
     ]
     if (period === 'semana') return [
-      { label: 'Novos Disparos',    value: data.disparosSemanaNew,      target: TARGETS.semana.disparos,  icon: <Zap size={14} />,        note: 'base fria'      },
-      { label: 'Visitas realizadas', value: data.weekVisits,            target: TARGETS.semana.visitas,   icon: <Footprints size={14} />, note: 'presenciais'    },
-      { label: 'Propostas enviadas', value: data.weekProp,              target: TARGETS.semana.propostas, icon: <FileText size={14} />,   note: 'por semana'     },
+      { label: 'Novos Disparos',            value: data.disparosSemanaNew,    target: WEEKLY_TARGETS.disparos,           icon: <Zap size={14} />,        note: 'base fria'      },
+      { label: 'Atendimentos realizados',   value: data.weekVisits,           target: WEEKLY_TARGETS.atendimentos,       icon: <Footprints size={14} />, note: 'vídeo/presencial' },
+      { label: 'Propostas enviadas',        value: data.weekProp,             target: WEEKLY_TARGETS.propostas,          icon: <FileText size={14} />,   note: 'por semana'     },
     ]
     return [
-      { label: 'Novos Disparos',     value: data.disparosMesNew,      target: TARGETS.mes.disparos,  icon: <Zap size={14} />,             note: 'base fria'    },
-      { label: 'Visitas realizadas', value: data.monthVisits,         target: TARGETS.mes.visitas,   icon: <Footprints size={14} />,       note: 'presenciais'  },
-      { label: 'Propostas enviadas', value: data.monthProp,           target: TARGETS.mes.propostas, icon: <FileText size={14} />,         note: 'por mês'      },
-      { label: 'Vendas fechadas',    value: data.monthSales,          target: TARGETS.mes.vendas,    icon: <BadgeDollarSign size={14} />,  note: 'no mês'       },
+      { label: 'Novos Disparos',            value: data.disparosMesNew,       target: MONTHLY_TARGETS.disparos,          icon: <Zap size={14} />,             note: 'base fria'    },
+      { label: 'Atendimentos realizados',   value: data.monthVisits,          target: MONTHLY_TARGETS.atendimentos,      icon: <Footprints size={14} />,       note: 'vídeo/presencial' },
+      { label: 'Propostas enviadas',        value: data.monthProp,            target: MONTHLY_TARGETS.propostas,         icon: <FileText size={14} />,         note: 'por mês'      },
+      { label: 'Vendas fechadas',           value: data.monthSales,           target: MONTHLY_TARGETS.vendas,            icon: <BadgeDollarSign size={14} />,  note: 'no mês'       },
     ]
   }, [period, data])
 

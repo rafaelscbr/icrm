@@ -3,12 +3,16 @@ import { Goal, GoalCategory } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 import { supabase } from '../lib/supabase'
+import { WEEKLY_TARGETS, MONTHLY_TARGETS } from '../lib/metasConfig'
 
 const DEFAULT_GOALS: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>[] = [
-  { name: 'Visitas semanais',    category: 'visita',   target: 2, period: 'weekly',  active: true },
-  { name: 'Visitas mensais',     category: 'visita',   target: 8, period: 'monthly', active: true },
-  { name: 'Propostas semanais',  category: 'proposta', target: 1, period: 'weekly',  active: true },
-  { name: 'Vendas mensais',      category: 'venda',    target: 1, period: 'monthly', active: true },
+  { name: 'Acionamentos semanais',  category: 'acionamento', target: WEEKLY_TARGETS.disparos,      period: 'weekly',  active: true },
+  { name: 'Acionamentos mensais',   category: 'acionamento', target: MONTHLY_TARGETS.disparos,     period: 'monthly', active: true },
+  { name: 'Atendimentos semanais',  category: 'visita',      target: WEEKLY_TARGETS.atendimentos,  period: 'weekly',  active: true },
+  { name: 'Atendimentos mensais',   category: 'visita',      target: MONTHLY_TARGETS.atendimentos, period: 'monthly', active: true },
+  { name: 'Propostas semanais',     category: 'proposta',    target: WEEKLY_TARGETS.propostas,     period: 'weekly',  active: true },
+  { name: 'Propostas mensais',      category: 'proposta',    target: MONTHLY_TARGETS.propostas,    period: 'monthly', active: true },
+  { name: 'Vendas mensais',         category: 'venda',       target: MONTHLY_TARGETS.vendas,       period: 'monthly', active: true },
 ]
 
 function makeGoal(data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): Goal {

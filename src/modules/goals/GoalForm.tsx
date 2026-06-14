@@ -15,10 +15,10 @@ interface GoalFormProps {
 }
 
 const CATEGORY_OPTIONS: { value: GoalCategory; label: string }[] = [
-  { value: 'acionamento', label: 'Acionamento' },
-  { value: 'visita',      label: 'Visita'      },
-  { value: 'proposta',    label: 'Proposta'    },
-  { value: 'venda',       label: 'Venda'       },
+  { value: 'acionamento', label: 'Acionamento'  },
+  { value: 'visita',      label: 'Atendimento'  },
+  { value: 'proposta',    label: 'Proposta'     },
+  { value: 'venda',       label: 'Venda'        },
 ]
 
 const PERIOD_OPTIONS: { value: GoalPeriod; label: string }[] = [
@@ -86,7 +86,7 @@ export function GoalForm({ isOpen, onClose, goal, forBrokerId }: GoalFormProps) 
           value={name}
           onChange={e => setName(e.target.value)}
           error={errors.name}
-          placeholder="Ex: Visitas semanais"
+          placeholder="Ex: Atendimentos semanais"
         />
 
         <div className="grid grid-cols-2 gap-3">

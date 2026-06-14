@@ -19,7 +19,7 @@ import { Home, FileText, TrendingUp, Zap } from 'lucide-react'
 // ─── config ───────────────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; bar: string; label: string }> = {
-  visita:             { icon: Home,       color: 'text-cyan-400',    bar: '#22d3ee', label: 'Visita'                },
+  visita:             { icon: Home,       color: 'text-cyan-400',    bar: '#22d3ee', label: 'Atendimento'           },
   agenciamento:       { icon: Building2,  color: 'text-brand',  bar: '#818cf8', label: 'Agenciamento'          },
   proposta:           { icon: FileText,   color: 'text-amber-400',   bar: '#fbbf24', label: 'Proposta'              },
   busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  bar: '#a78bfa', label: 'Busca de Imóvel'       },
