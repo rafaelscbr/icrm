@@ -5,6 +5,8 @@ import {
 } from 'lucide-react'
 import { LeadConfigEntry, LeadConfigType } from '../../types'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
+import { useAuthStore } from '../../store/useAuthStore'
+import { CampaignRoutingSettings } from './CampaignRoutingSettings'
 import toast from 'react-hot-toast'
 
 // ── SQL setup ─────────────────────────────────────────────────────────────────
@@ -366,6 +368,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
 
 export function LeadSettings() {
   const { load, dbAvailable, dbChecked, syncing } = useLeadConfigStore()
+  const { isAdmin } = useAuthStore()
   const [showSql, setShowSql] = useState(false)
   const [copied,  setCopied]  = useState(false)
 
@@ -462,6 +465,9 @@ export function LeadSettings() {
           dbAvailable={dbAvailable}
         />
       </div>
+
+      {/* Distribuição de campanhas Meta — só admin gerencia */}
+      {isAdmin && <CampaignRoutingSettings />}
 
       {/* Footer info */}
       <div className="text-center text-xs text-t5 pb-2">

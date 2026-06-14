@@ -6,7 +6,7 @@ import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
   LeadInteraction, LeadInteractionType, LeadInteractionOutcome,
-  LeadConfigEntry, LeadConfigType, PermutaItem,
+  LeadConfigEntry, LeadConfigType, PermutaItem, MetaFormRouting,
   AppNotification, NotificationType,
   LeadList, LeadListMember, CampaignList, LeadCampaignDispatch, BaseLeadProfile,
   CampaignParticipant, CampaignParticipantRole, CampaignActivity, CampaignActivityType,
@@ -880,6 +880,41 @@ export const db = {
         toast.error(`Erro ao transferir lead: ${error.message}`)
         throw error
       }
+    },
+  },
+
+  // Roteamento de leads Meta por campanha (formulário → corretores).
+  // Auto-descoberta no banco: cada formulário que recebe lead aparece aqui.
+  metaFormRouting: {
+    fetchAll: async (): Promise<MetaFormRouting[]> => {
+      const { data, error } = await supabase
+        .from('meta_form_routing')
+        .select('*')
+        .order('lead_count', { ascending: false })
+      if (error) { toast.error(`Erro ao carregar campanhas: ${error.message}`); throw error }
+      return (data as Array<{
+        form_id: string; form_name: string | null; broker_ids: string[] | null
+        active: boolean; lead_count: number; updated_at: string
+      }>).map(r => ({
+        formId: r.form_id, formName: r.form_name ?? undefined,
+        brokerIds: r.broker_ids ?? [], active: r.active, leadCount: r.lead_count,
+        updatedAt: r.updated_at,
+      }))
+    },
+    // Reseta o ponteiro ao trocar a lista — a rotação recomeça do 1º corretor
+    setBrokers: async (formId: string, brokerIds: string[]): Promise<void> => {
+      const { error } = await supabase
+        .from('meta_form_routing')
+        .update({ broker_ids: brokerIds, last_index: -1, updated_at: new Date().toISOString() })
+        .eq('form_id', formId)
+      if (error) { toast.error(`Erro ao salvar corretores: ${error.message}`); throw error }
+    },
+    setActive: async (formId: string, active: boolean): Promise<void> => {
+      const { error } = await supabase
+        .from('meta_form_routing')
+        .update({ active, updated_at: new Date().toISOString() })
+        .eq('form_id', formId)
+      if (error) { toast.error(`Erro ao atualizar campanha: ${error.message}`); throw error }
     },
   },
 

@@ -117,7 +117,8 @@
       "Read(//private/tmp/**)",
       "Bash(npx --yes web-push generate-vapid-keys --json)",
       "Bash(openssl rand *)",
-      "Bash(sed -n '35,60p' /Users/rafasouza/Documents/icrm/vite.config.ts)"
+      "Bash(sed -n '35,60p' /Users/rafasouza/Documents/icrm/vite.config.ts)",
+      "Bash(git -C /Users/rafasouza/Documents/icrm log --oneline -2)"
     ]
   }
 }

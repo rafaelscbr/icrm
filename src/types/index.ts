@@ -313,6 +313,17 @@ export interface Lead {
   updatedAt: string
 }
 
+// ─── Roteamento de leads Meta por campanha (formulário → corretores) ─────────
+
+export interface MetaFormRouting {
+  formId:    string
+  formName?: string       // nome do formulário = nome do projeto (Rogga, etc.)
+  brokerIds: string[]     // corretores que recebem; vazio = rodízio global
+  active:    boolean
+  leadCount: number       // quantos leads esse formulário já recebeu
+  updatedAt: string
+}
+
 // ─── Configuração de leads (motivos de descarte + origens) ───────────────────
 
 export type LeadConfigType = 'discard_reason' | 'origin'
