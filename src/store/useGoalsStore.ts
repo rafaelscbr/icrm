@@ -143,14 +143,13 @@ function localFmt(d: Date): string {
 }
 
 function getWeekRangeDates(): { start: string; end: string } {
+  // Semana = Domingo → Sábado (America/Sao_Paulo)
   const now = new Date()
-  const day = now.getDay()
-  const diffToMon = day === 0 ? -6 : 1 - day
-  const mon = new Date(now)
-  mon.setDate(now.getDate() + diffToMon)
-  const sun = new Date(mon)
-  sun.setDate(mon.getDate() + 6)
-  return { start: localFmt(mon), end: localFmt(sun) }
+  const start = new Date(now)
+  start.setDate(now.getDate() - now.getDay())   // domingo (getDay 0) = início
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)              // sábado = fim
+  return { start: localFmt(start), end: localFmt(end) }
 }
 
 function getMonthRangeDates(): { start: string; end: string } {

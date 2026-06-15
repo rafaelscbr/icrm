@@ -31,8 +31,9 @@ type PeriodTab = 'hoje' | 'semana' | 'mes'
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getWeekStart(): Date {
+  // Semana = Domingo → Sábado: volta até o domingo (getDay 0)
   const d = new Date(); d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d
+  d.setDate(d.getDate() - d.getDay()); return d
 }
 function getMonthStart(): Date {
   const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1)

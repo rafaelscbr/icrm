@@ -35,7 +35,7 @@ const PERIODS: { id: Period; label: string }[] = [
 function startOf(period: Period): Date {
   const now = new Date(); now.setHours(0, 0, 0, 0)
   if (period === 'semana') {
-    const dow = now.getDay(); now.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1))
+    now.setDate(now.getDate() - now.getDay()) // domingo = início da semana
   } else if (period === 'mes') {
     now.setDate(1)
   } else {

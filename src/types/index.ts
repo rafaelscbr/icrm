@@ -353,8 +353,8 @@ export interface WeekSnapshotEntry {
 
 export interface WeekSnapshot {
   id:        string   // weekStart (YYYY-MM-DD) — PK
-  weekStart: string   // Monday YYYY-MM-DD
-  weekEnd:   string   // Sunday YYYY-MM-DD
+  weekStart: string   // Domingo YYYY-MM-DD (início da semana)
+  weekEnd:   string   // Sábado YYYY-MM-DD (fim da semana)
   entries:   WeekSnapshotEntry[]
   score:     number   // 0–100
   savedAt:   string

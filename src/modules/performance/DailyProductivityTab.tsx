@@ -280,14 +280,12 @@ export function DailyProductivityTab() {
     toast.success('Dia reaberto.')
   }
 
-  // Week summary (Mon–Sun containing today) — usa data LOCAL para bater com os logs
+  // Week summary (Dom–Sáb contendo hoje) — usa data LOCAL para bater com os logs
   const now = new Date()
-  const dayOfWeek = now.getDay()
-  const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-  const monday = new Date(now); monday.setDate(now.getDate() + diffToMon)
-  const weekStart = localDateStr(monday)
-  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
-  const weekEnd = localDateStr(sunday)
+  const weekStartDate = new Date(now); weekStartDate.setDate(now.getDate() - now.getDay()) // domingo
+  const weekStart = localDateStr(weekStartDate)
+  const weekEndDate = new Date(weekStartDate); weekEndDate.setDate(weekStartDate.getDate() + 6) // sábado
+  const weekEnd = localDateStr(weekEndDate)
 
   const weekLogs      = logs.filter(l => l.date >= weekStart && l.date <= weekEnd)
   const weekLeads     = weekLogs.reduce((a, l) => a + l.newLeads, 0)

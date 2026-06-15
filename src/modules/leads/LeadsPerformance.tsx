@@ -16,11 +16,8 @@ const REAL_INTERACTION_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita'
 function startOfWeek(offsetWeeks = 0): Date {
   const d = new Date()
   d.setHours(0, 0, 0, 0)
-  // getDay(): 0=dom, 1=seg ... 6=sab
-  // Domingo (0) → volta 6 dias para segunda; demais → (getDay() - 1) dias
-  const dayOfWeek = d.getDay()
-  const distToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-  d.setDate(d.getDate() - distToMonday - offsetWeeks * 7)
+  // Semana = Domingo → Sábado. getDay(): 0=dom ... 6=sab → volta até o domingo
+  d.setDate(d.getDate() - d.getDay() - offsetWeeks * 7)
   return d
 }
 

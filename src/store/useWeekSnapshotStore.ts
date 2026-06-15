@@ -11,19 +11,18 @@ function localFmt(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-function getMondayOf(d: Date): Date {
-  const day = d.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  const mon = new Date(d)
-  mon.setDate(d.getDate() + diff)
-  mon.setHours(0, 0, 0, 0)
-  return mon
+// Semana = Domingo → Sábado (America/Sao_Paulo)
+function getWeekStartOf(d: Date): Date {
+  const start = new Date(d)
+  start.setDate(d.getDate() - d.getDay())   // domingo (getDay 0) = início
+  start.setHours(0, 0, 0, 0)
+  return start
 }
 
-function getSundayOf(monday: Date): Date {
-  const sun = new Date(monday)
-  sun.setDate(monday.getDate() + 6)
-  return sun
+function getWeekEndOf(start: Date): Date {
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)          // sábado = fim
+  return end
 }
 
 function computeScore(entries: WeekSnapshotEntry[]): number {
@@ -81,14 +80,14 @@ export const useWeekSnapshotStore = create<WeekSnapshotStore>((set, get) => ({
 
     const existing = new Set(get().snapshots.map(s => s.id))
     const now = new Date()
-    const thisMonday = getMondayOf(now)
+    const thisWeekStart = getWeekStartOf(now)
     const newSnapshots: WeekSnapshot[] = []
 
     // Check up to 52 past weeks (never the current week)
     for (let i = 1; i <= 52; i++) {
-      const monday = new Date(thisMonday)
-      monday.setDate(thisMonday.getDate() - i * 7)
-      const weekStart = localFmt(monday)
+      const weekStartDate = new Date(thisWeekStart)
+      weekStartDate.setDate(thisWeekStart.getDate() - i * 7)
+      const weekStart = localFmt(weekStartDate)
 
       // Skip weeks before the first recorded activity
       if (weekStart < firstDate.substring(0, 10)) break
@@ -97,8 +96,7 @@ export const useWeekSnapshotStore = create<WeekSnapshotStore>((set, get) => ({
       const snapId = weekStart
       if (existing.has(snapId)) continue
 
-      const sunday = getSundayOf(monday)
-      const weekEnd = localFmt(sunday)
+      const weekEnd = localFmt(getWeekEndOf(weekStartDate))
 
       const entries: WeekSnapshotEntry[] = weeklyGoals.map(goal => ({
         goalId:   goal.id,
