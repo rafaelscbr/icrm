@@ -270,7 +270,9 @@ export interface LeadInteraction {
   outcome?:     LeadInteractionOutcome
   interactedAt: string
   createdAt:    string
-  brokerId?:    string   // quem realizou a interação
+  brokerId?:    string          // quem realizou a interação
+  fromStage?:   LeadFunnelStage // preenchido em stage_change: etapa de origem
+  toStage?:     LeadFunnelStage // preenchido em stage_change: etapa de destino
 }
 
 export interface Lead {

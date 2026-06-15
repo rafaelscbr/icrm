@@ -264,11 +264,13 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     // Sugere agendar a tarefa de visita via modal (não cria silenciosamente)
     if (suggestVisita) set({ visitaSuggestLeadId: id })
 
-    // Registra mudança de etapa no histórico de interações
+    // Registra mudança de etapa no histórico de interações (com from/to estruturado)
     await useLeadInteractionsStore.getState().add({
       leadId: id,
       type: 'stage_change',
       description: `Movido de ${STAGE_LABEL[lead.funnelStage] ?? lead.funnelStage} → ${STAGE_LABEL[stage] ?? stage}`,
+      fromStage: lead.funnelStage,
+      toStage: stage,
       interactedAt: now,
     }).catch(err => console.error('[leads] setStage history:', err)) // etapa já salva — histórico não bloqueia
   },

@@ -567,6 +567,8 @@ interface LeadInteractionRow {
   interacted_at: string
   broker_id:     string | null
   created_at:    string
+  from_stage:    string | null
+  to_stage:      string | null
 }
 
 function toLeadInteraction(r: LeadInteractionRow): LeadInteraction {
@@ -579,6 +581,8 @@ function toLeadInteraction(r: LeadInteractionRow): LeadInteraction {
     interactedAt: r.interacted_at,
     createdAt:    r.created_at,
     brokerId:     r.broker_id ?? undefined,
+    fromStage:    (r.from_stage as LeadInteraction['fromStage']) ?? undefined,
+    toStage:      (r.to_stage as LeadInteraction['toStage']) ?? undefined,
   }
 }
 
@@ -592,6 +596,8 @@ function fromLeadInteraction(i: LeadInteraction): LeadInteractionRow {
     interacted_at: i.interactedAt,
     broker_id:     requireBrokerId(),
     created_at:    i.createdAt,
+    from_stage:    i.fromStage ?? null,
+    to_stage:      i.toStage ?? null,
   }
 }
 
