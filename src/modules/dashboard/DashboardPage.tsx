@@ -27,6 +27,7 @@ import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useAdminView } from '../../hooks/useAdminView'
 import { usePresenceStore, pageLabel } from '../../store/usePresenceStore'
 import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
 import { supabase } from '../../lib/supabase'
@@ -622,9 +623,13 @@ function dueDateLabel(dueDate?: string): { text: string; color: string } {
 // ─── Pipeline de Campanhas (detalhado — seção secundária) ─────────────────────
 
 function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
-  const { campaigns }         = useCampaignsStore()
-  const { leads: campLeads }  = useCampaignLeadsStore()
+  const { campaigns }             = useCampaignsStore()
+  const { leads: allCampLeads }   = useCampaignLeadsStore()
+  const { effectiveBrokerId, isGlobalView } = useAdminView()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // Visão "ver como corretor" → conta apenas os leads atribuídos a ele
+  const campLeads = isGlobalView ? allCampLeads : allCampLeads.filter(l => l.brokerId === effectiveBrokerId)
 
   const activeCampaigns = campaigns.filter(c => c.status === 'active')
   if (activeCampaigns.length === 0) return null
@@ -778,6 +783,7 @@ function LeadAlertsWidget({
 }: { onOpenLead: (lead: Lead) => void; onNavigate: () => void; brokerNames?: Record<string, string> }) {
   const { leads, advanceFollowup } = useLeadsStore()
   const { byLead, add: addInteraction } = useLeadInteractionsStore()
+  const { effectiveBrokerId, isGlobalView } = useAdminView()
 
   async function handleWhatsApp(e: React.MouseEvent, lead: Lead) {
     e.stopPropagation()
@@ -795,7 +801,10 @@ function LeadAlertsWidget({
   }
 
   const alertLeads = useMemo(() => {
-    const active = leads.filter(l => !l.discardReason && l.funnelStage !== 'venda')
+    const active = leads.filter(l =>
+      !l.discardReason && l.funnelStage !== 'venda' &&
+      (isGlobalView || l.brokerId === effectiveBrokerId)
+    )
     return active
       .map(l => {
         const ints     = byLead[l.id] ?? []
@@ -805,7 +814,7 @@ function LeadAlertsWidget({
       })
       .filter(({ days }) => days > COOLING_DAYS)
       .sort((a, b) => b.days - a.days)
-  }, [leads, byLead])
+  }, [leads, byLead, isGlobalView, effectiveBrokerId])
 
   if (alertLeads.length === 0) return null
 
@@ -1014,10 +1023,12 @@ const FROZEN_LABELS: Record<string, string> = { attended: 'Interesse', scheduled
 function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
   const { campaigns } = useCampaignsStore()
   const { leads }     = useCampaignLeadsStore()
+  const { effectiveBrokerId, isGlobalView } = useAdminView()
 
   const frozen = useMemo(() => {
     return leads
-      .filter(l => (FROZEN_STAGES as readonly string[]).includes(l.funnelStage) && !l.situation)
+      .filter(l => (FROZEN_STAGES as readonly string[]).includes(l.funnelStage) && !l.situation
+        && (isGlobalView || l.brokerId === effectiveBrokerId))
       .map(l => {
         const ref  = l.stageUpdatedAt ?? l.updatedAt ?? l.createdAt
         const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
@@ -1025,7 +1036,7 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
       })
       .filter(l => l.days >= 2)
       .sort((a, b) => b.days - a.days)
-  }, [leads])
+  }, [leads, isGlobalView, effectiveBrokerId])
 
   if (frozen.length === 0) return null
 
@@ -1081,6 +1092,7 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
 function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
   const { contacts } = useContactsStore()
   const { sales }    = useSalesStore()
+  const { effectiveBrokerId, isGlobalView } = useAdminView()
   const candidates = useMemo(() => {
     return contacts
       .filter(c => c.tags.includes('buyer'))
@@ -1091,8 +1103,10 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
         return { contact: c, lastSale, daysSince, totalSales: clientSales.length }
       })
       .filter(c => c.daysSince !== null && c.daysSince >= 180)
+      // Visão "ver como corretor" → só clientes cuja última venda foi dele
+      .filter(c => isGlobalView || c.lastSale?.brokerId === effectiveBrokerId)
       .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
-  }, [contacts, sales])
+  }, [contacts, sales, isGlobalView, effectiveBrokerId])
   if (candidates.length === 0) return null
 
   return (
@@ -1224,6 +1238,7 @@ export function DashboardPage() {
   const [overviewError,   setOverviewError]   = useState<string | null>(null)
 
   const { isAdmin, profile, allProfiles } = useAuthStore()
+  const { effectiveBrokerId, isGlobalView } = useAdminView()
   const firstName = profile?.name?.split(' ')[0] ?? 'Corretor'
   const brokerNames = useMemo(() =>
     Object.fromEntries(allProfiles.map(p => [p.id, p.name])),
@@ -1232,7 +1247,7 @@ export function DashboardPage() {
 
   const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
   const { properties, load: loadProperties }   = usePropertiesStore()
-  const { sales, load: loadSales, getByPeriod, getValueByPeriod } = useSalesStore()
+  const { sales, load: loadSales, getByPeriod } = useSalesStore()
   const { tasks, load: loadTasks, getUpcoming, getOverdue }        = useTasksStore()
   const { load: loadCampaigns }   = useCampaignsStore()
   const { load: loadCampLeads }   = useCampaignLeadsStore()
@@ -1243,7 +1258,9 @@ export function DashboardPage() {
   async function loadOverview() {
     setOverviewLoading(true)
     setOverviewError(null)
-    const { data, error } = await supabase.rpc('dashboard_overview')
+    // Respeita o modelo de visão: global (null), "Meu Desempenho" ou Corretor X.
+    // Para corretor comum effectiveBrokerId = próprio id; a RLS reforça o limite.
+    const { data, error } = await supabase.rpc('dashboard_overview', { p_broker_id: effectiveBrokerId })
     if (error) {
       setOverviewError(error.message)
       setOverviewLoading(false)
@@ -1253,25 +1270,39 @@ export function DashboardPage() {
     setOverviewLoading(false)
   }
 
+  // Stores carregam uma vez; a RPC de overview refaz fetch ao trocar a visão.
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks()
     loadCampaigns(); loadCampLeads(); loadMyLeads(); loadInteractions()
-    loadOverview()
   }, [])
 
+  useEffect(() => {
+    loadOverview()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveBrokerId])
+
+  // Escopo da visão para os widgets que leem stores no client (seção secundária).
+  // Para corretor comum o store já vem filtrado pela RLS; isto cobre o admin
+  // quando ele escolhe "Meu Desempenho" ou um corretor específico.
+  const inView      = <T extends { brokerId?: string | null }>(arr: T[]) =>
+    isGlobalView ? arr : arr.filter(x => x.brokerId === effectiveBrokerId)
+  const inViewTasks = (arr: Task[]) =>
+    isGlobalView ? arr : arr.filter(t => (t.assignedToId ?? t.brokerId) === effectiveBrokerId)
+
   const periodLabel   = getLabel()
-  const salesInPeriod = getByPeriod(startDate, endDate)
-  const valueInPeriod = getValueByPeriod(startDate, endDate)
-  const totalAccumulated      = sales.filter(s => s.date <= endDate).reduce((acc, s) => acc + s.value, 0)
-  const totalAccumulatedCount = sales.filter(s => s.date <= endDate).length
+  const salesInPeriod = inView(getByPeriod(startDate, endDate))
+  const valueInPeriod = salesInPeriod.reduce((a, s) => a + s.value, 0)
+  const accumulatedSales      = inView(sales.filter(s => s.date <= endDate))
+  const totalAccumulated      = accumulatedSales.reduce((acc, s) => acc + s.value, 0)
+  const totalAccumulatedCount = accumulatedSales.length
   const recentSales   = salesInPeriod.slice(0, 5)
-  const upcomingTasks = getUpcoming()
-  const overdueTasks  = getOverdue()
-  const birthdays     = getBirthdaysThisMonth()
+  const upcomingTasks = inViewTasks(getUpcoming())
+  const overdueTasks  = inViewTasks(getOverdue())
+  const birthdays     = inView(getBirthdaysThisMonth())
   const periodComm    = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
   const periodBroker  = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
-  const tasksDoneInPeriod    = tasks.filter(t => t.status === 'done' && t.completedAt && matchesPeriod(t.completedAt.split('T')[0], startDate, endDate)).length
-  const tasksPendingInPeriod = tasks.filter(t => t.status !== 'done' && t.dueDate && matchesPeriod(t.dueDate, startDate, endDate)).length
+  const tasksDoneInPeriod    = inViewTasks(tasks.filter(t => t.status === 'done' && t.completedAt && matchesPeriod(t.completedAt.split('T')[0], startDate, endDate))).length
+  const tasksPendingInPeriod = inViewTasks(tasks.filter(t => t.status !== 'done' && t.dueDate && matchesPeriod(t.dueDate, startDate, endDate))).length
 
   const greeting = () => {
     const h = new Date().getHours()
