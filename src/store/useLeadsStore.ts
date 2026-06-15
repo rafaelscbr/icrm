@@ -292,7 +292,11 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       }
     }
 
-    const updated = { ...lead, funnelStage: nextStage, followupStep: nextStep, updatedAt: now, kanbanOrder: Date.now() }
+    const stageChanged = nextStage !== lead.funnelStage
+    const updated = {
+      ...lead, funnelStage: nextStage, followupStep: nextStep, updatedAt: now, kanbanOrder: Date.now(),
+      ...(stageChanged ? { stageChangedAt: now } : {}),
+    }
     try {
       await db.leads.upsert(updated)
       set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
@@ -300,6 +304,18 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       console.error('[leads] advanceFollowup:', err)
       toast.error('Erro ao salvar followup. Verifique sua conexão e tente novamente.')
       throw err
+    }
+
+    // Registra a transição de etapa (ex.: lead → followup) para as métricas de conversão
+    if (stageChanged) {
+      await useLeadInteractionsStore.getState().add({
+        leadId: id,
+        type: 'stage_change',
+        description: `Movido de ${STAGE_LABEL[lead.funnelStage] ?? lead.funnelStage} → ${STAGE_LABEL[nextStage] ?? nextStage}`,
+        fromStage: lead.funnelStage,
+        toStage: nextStage,
+        interactedAt: now,
+      }).catch(err => console.error('[leads] advanceFollowup history:', err))
     }
   },
 
