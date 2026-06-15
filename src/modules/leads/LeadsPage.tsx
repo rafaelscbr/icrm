@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
   MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2, TrendingUp,
-  Sparkles, Smartphone, Globe, Handshake, Megaphone,
+  Sparkles, Smartphone, Globe, Handshake, Megaphone, Percent,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Button } from '../../components/ui/Button'
@@ -20,6 +20,7 @@ import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadVisitaTaskModal } from './LeadVisitaTaskModal'
 import { LeadsDashboard } from './LeadsDashboard'
+import { LeadConversionTab } from './LeadConversionTab'
 import { SlaBadge } from './SlaBadge'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { LeadSettings } from './LeadSettings'
@@ -37,7 +38,7 @@ const ORIGINS: LeadOrigin[] = ['felicita', 'meta_ads', 'portal', 'offline', 'cam
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
-type Tab = 'leads' | 'kanban' | 'dashboard' | 'performance' | 'configuracoes'
+type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'performance' | 'configuracoes'
 
 // ─── LeadRow ──────────────────────────────────────────────────────────────────
 
@@ -202,6 +203,7 @@ export function LeadsPage() {
     { value: 'leads',          label: 'Leads',          icon: List,        badge: active.length },
     { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                        },
     { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                         },
+    { value: 'conversao',      label: 'Conversão',       icon: Percent                           },
     { value: 'performance',    label: 'Performance',     icon: TrendingUp                        },
     { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                         },
   ]
@@ -209,6 +211,7 @@ export function LeadsPage() {
   const isListTab        = tab === 'leads'
   const isKanbanTab      = tab === 'kanban'
   const isDashTab        = tab === 'dashboard'
+  const isConvTab        = tab === 'conversao'
   const isPerformanceTab = tab === 'performance'
   const isConfigTab      = tab === 'configuracoes'
 
@@ -261,6 +264,9 @@ export function LeadsPage() {
           <LeadsDashboard leads={leads} onOpenLead={setSelectedLead} />
         </div>
       )}
+
+      {/* ── Conversão ─────────────────────────────────────────────────────────── */}
+      {isConvTab && <LeadConversionTab />}
 
       {/* ── Performance ───────────────────────────────────────────────────────── */}
       {isPerformanceTab && (
