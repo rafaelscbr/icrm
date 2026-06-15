@@ -18,6 +18,7 @@ import { Avatar } from '../../components/ui/Avatar'
 import { LeadForm } from './LeadForm'
 import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
+import { LeadVisitaTaskModal } from './LeadVisitaTaskModal'
 import { LeadsDashboard } from './LeadsDashboard'
 import { SlaBadge } from './SlaBadge'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
@@ -146,8 +147,9 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function LeadsPage() {
-  const { leads: allLeads, loading, load } = useLeadsStore()
+  const { leads: allLeads, loading, load, visitaSuggestLeadId, clearVisitaSuggest } = useLeadsStore()
   const { isAdmin, viewAsBrokerId } = useAuthStore()
+  const visitaSuggestLead = visitaSuggestLeadId ? allLeads.find(l => l.id === visitaSuggestLeadId) : undefined
   const leads = isAdmin && viewAsBrokerId ? allLeads.filter(l => l.brokerId === viewAsBrokerId) : allLeads
   const { load: loadProps }    = usePropertiesStore()
   const { load: loadContacts } = useContactsStore()
@@ -403,6 +405,11 @@ export function LeadsPage() {
       <LeadForm isOpen={showForm} onClose={() => setShowForm(false)} />
       {selectedLead && (
         <LeadModal lead={selectedLead} onClose={() => setSelectedLead(null)} />
+      )}
+
+      {/* Sugestão de agendamento ao mover lead para a coluna Visita */}
+      {visitaSuggestLead && (
+        <LeadVisitaTaskModal lead={visitaSuggestLead} onClose={clearVisitaSuggest} />
       )}
     </div>
   )

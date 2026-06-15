@@ -1,10 +1,9 @@
 import { create } from 'zustand'
 import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin } from '../types'
-import { generateId, localDateStr } from '../lib/formatters'
+import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 import { supabase } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/auth'
-import { useTasksStore } from './useTasksStore'
 import { useContactsStore } from './useContactsStore'
 import { useLeadInteractionsStore } from './useLeadInteractionsStore'
 import { useRealtimeStatusStore } from './useRealtimeStatusStore'
@@ -13,6 +12,9 @@ import toast from 'react-hot-toast'
 interface LeadsStore {
   leads: Lead[]
   loading: boolean
+  // Lead recém-movido para 'visita' que deve sugerir o agendamento de tarefa (modal)
+  visitaSuggestLeadId: string | null
+  clearVisitaSuggest: () => void
   load: () => Promise<void>
   reload: () => Promise<void>
   subscribe: () => () => void
@@ -43,6 +45,8 @@ const STAGE_LABEL: Record<string, string> = {
 export const useLeadsStore = create<LeadsStore>((set, get) => ({
   leads: [],
   loading: false,
+  visitaSuggestLeadId: null,
+  clearVisitaSuggest: () => set({ visitaSuggestLeadId: null }),
 
   load: async () => {
     set({ loading: true })
@@ -236,37 +240,13 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
 
-    let visitaTaskId = lead.visitaTaskId
-
-    // Auto-create visita task when moving into 'visita' stage
-    if (stage === 'visita' && !lead.visitaTaskId) {
-      const { add: addTask, tasks } = useTasksStore.getState()
-      const existing = lead.contactId
-        ? tasks.find(t => t.contactId === lead.contactId && t.category === 'visita' && t.status === 'pending')
-        : undefined
-
-      if (!existing) {
-        const task = addTask({
-          title: `Visita — ${lead.name}`,
-          category: 'visita',
-          priority: 'high',
-          status: 'pending',
-          dueDate: localDateStr(),
-          contactId: lead.contactId,
-          propertyId: lead.propertyId,
-          brokerId: lead.brokerId ?? getCurrentUserId() ?? undefined,
-        })
-        visitaTaskId = task.id
-      } else {
-        visitaTaskId = existing.id
-      }
-    }
+    // Entrou na etapa 'visita' agora (vindo de outra etapa) e ainda não tem tarefa?
+    const suggestVisita = stage === 'visita' && lead.funnelStage !== 'visita' && !lead.visitaTaskId
 
     const updated = {
       ...lead,
       funnelStage: stage,
       followupStep: stage === 'followup' ? (lead.followupStep || 1) : lead.followupStep,
-      visitaTaskId,
       updatedAt: now,
       kanbanOrder: Date.now(),
       stageChangedAt: now,
@@ -280,6 +260,9 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       toast.error('Erro ao atualizar etapa do lead. Verifique sua conexão e tente novamente.')
       throw err
     }
+
+    // Sugere agendar a tarefa de visita via modal (não cria silenciosamente)
+    if (suggestVisita) set({ visitaSuggestLeadId: id })
 
     // Registra mudança de etapa no histórico de interações
     await useLeadInteractionsStore.getState().add({
