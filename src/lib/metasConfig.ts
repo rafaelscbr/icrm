@@ -11,12 +11,14 @@ export const DAILY_TARGETS = {
 
 export const WEEKLY_TARGETS = {
   disparos:      250,  // 50 × 5 dias úteis
+  interacoes:    500,  // 100 × 5 dias úteis
   atendimentos:  2,
   propostas:     1,
 } as const
 
 export const MONTHLY_TARGETS = {
   disparos:      1000, // 50 × 20 dias úteis
+  interacoes:    2000, // 100 × 20 dias úteis
   atendimentos:  8,
   propostas:     4,
   vendas:        1,

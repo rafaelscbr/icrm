@@ -1,19 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Target, Zap, Footprints, FileText, BadgeDollarSign,
+  Target, Zap, Activity, Footprints, FileText, BadgeDollarSign,
   RefreshCw, AlertTriangle, ArrowRight, Crown,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
 import { Avatar } from '../../components/ui/Avatar'
 import { formatCurrency } from '../../lib/formatters'
-import { GoalPeriod } from '../../types'
+import { DAILY_TARGETS, WEEKLY_TARGETS, MONTHLY_TARGETS } from '../../lib/metasConfig'
+
+// ─── Período de visão ─────────────────────────────────────────────────────────
+
+type ViewPeriod = 'daily' | 'weekly' | 'monthly'
 
 // ─── Tipos do payload da RPC dashboard_performance ───────────────────────────
 
 interface PerfNumbers {
   acionamentos: number
+  interacoes: number
   visitas: number
   visitasAgendadas: number
   propostas: number
@@ -25,12 +30,14 @@ interface PerfBroker {
   id: string
   name: string
   avatarUrl: string | null
-  week: PerfNumbers
+  day:   PerfNumbers
+  week:  PerfNumbers
   month: PerfNumbers
-  goals: Record<string, number>   // ex: { acionamento_weekly: 250, venda_monthly: 2 }
+  goals: Record<string, number>   // ex: { acionamento_weekly: 250, venda_monthly: 1 }
 }
 
 interface PerfData {
+  day:   { start: string; end: string }
   week:  { start: string; end: string }
   month: { start: string; end: string }
   brokers: PerfBroker[]
@@ -39,7 +46,7 @@ interface PerfData {
 // ─── Categorias exibidas ──────────────────────────────────────────────────────
 
 const METRICS: Array<{
-  key: 'acionamento' | 'visita' | 'proposta' | 'venda'
+  key: 'acionamento' | 'interacao' | 'visita' | 'proposta' | 'venda'
   label: string
   icon: typeof Target
   text: string
@@ -47,8 +54,10 @@ const METRICS: Array<{
   realized: (n: PerfNumbers) => number
   sub?: (n: PerfNumbers) => string | null
 }> = [
-  { key: 'acionamento', label: 'Acionamentos', icon: Zap,        text: 'text-cyan-400',   chip: 'bg-cyan-500/12',
+  { key: 'acionamento', label: 'Disparos',     icon: Zap,        text: 'text-cyan-400',   chip: 'bg-cyan-500/12',
     realized: n => n.acionamentos },
+  { key: 'interacao',   label: 'Interações',   icon: Activity,   text: 'text-sky-400',    chip: 'bg-sky-500/12',
+    realized: n => n.interacoes },
   { key: 'visita',      label: 'Atendimentos', icon: Footprints, text: 'text-indigo-400', chip: 'bg-indigo-500/12',
     realized: n => n.visitas,
     sub: n => n.visitasAgendadas > n.visitas ? `${n.visitasAgendadas} agendados` : null },
@@ -59,10 +68,28 @@ const METRICS: Array<{
     sub: n => n.vgv > 0 ? formatCurrency(n.vgv) : null },
 ]
 
-// ─── Ritmo do período ─────────────────────────────────────────────────────────
-// Quanto do período já passou define quanto da meta "deveria" estar feito hoje.
+// ─── Resolução de meta (banco customizado → metasConfig) ──────────────────────
 
-interface Pace { elapsed: number; total: number; remaining: number; fraction: number }
+const CFG_TARGETS: Record<ViewPeriod, Record<string, number>> = {
+  daily:   { acionamento: DAILY_TARGETS.disparos,   interacao: DAILY_TARGETS.interacoes },
+  weekly:  { acionamento: WEEKLY_TARGETS.disparos,  interacao: WEEKLY_TARGETS.interacoes,  visita: WEEKLY_TARGETS.atendimentos,  proposta: WEEKLY_TARGETS.propostas },
+  monthly: { acionamento: MONTHLY_TARGETS.disparos, interacao: MONTHLY_TARGETS.interacoes, visita: MONTHLY_TARGETS.atendimentos, proposta: MONTHLY_TARGETS.propostas, venda: MONTHLY_TARGETS.vendas },
+}
+
+function targetFor(key: string, period: ViewPeriod, goals: Record<string, number>): number | undefined {
+  // Meta customizada no banco (apenas weekly/monthly) tem prioridade
+  const dbVal = goals[`${key}_${period}`]
+  if (typeof dbVal === 'number' && dbVal > 0) return dbVal
+  return CFG_TARGETS[period]?.[key]
+}
+
+function pickNumbers(b: PerfBroker, period: ViewPeriod): PerfNumbers {
+  return period === 'daily' ? b.day : period === 'weekly' ? b.week : b.month
+}
+
+// ─── Ritmo do período ─────────────────────────────────────────────────────────
+
+interface Pace { elapsed: number; total: number; remaining: number; fraction: number; isDaily: boolean }
 
 function calcPace(start: string, end: string): Pace {
   const DAY = 86_400_000
@@ -71,7 +98,16 @@ function calcPace(start: string, end: string): Pace {
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const total   = Math.round((e - s) / DAY) + 1
   const elapsed = Math.min(Math.max(Math.round((today.getTime() - s) / DAY) + 1, 0), total)
-  return { elapsed, total, remaining: Math.max(total - elapsed + 1, 1), fraction: elapsed / total }
+  return { elapsed, total, remaining: Math.max(total - elapsed + 1, 1), fraction: elapsed / total, isDaily: false }
+}
+
+// Ritmo do dia: fração da jornada de trabalho (9h–18h) já decorrida
+function calcDayPace(): Pace {
+  const now = new Date()
+  const h = now.getHours() + now.getMinutes() / 60
+  const START = 9, END = 18
+  const fraction = Math.min(Math.max((h - START) / (END - START), 0), 1)
+  return { elapsed: 0, total: 0, remaining: 1, fraction, isDaily: true }
 }
 
 type PaceStatus = 'done' | 'onTrack' | 'warning' | 'behind'
@@ -93,9 +129,9 @@ const STATUS_CFG: Record<PaceStatus, { chip: string; label: string; bar: string;
 
 // ─── Score do corretor (média de atingimento das metas do período) ────────────
 
-function computeScore(numbers: PerfNumbers, goals: Record<string, number>, period: GoalPeriod): number | null {
+function computeScore(numbers: PerfNumbers, resolveTarget: (key: string) => number | undefined): number | null {
   const pcts = METRICS
-    .map(m => ({ realized: m.realized(numbers), target: goals[`${m.key}_${period}`] }))
+    .map(m => ({ realized: m.realized(numbers), target: resolveTarget(m.key) }))
     .filter((x): x is { realized: number; target: number } => typeof x.target === 'number' && x.target > 0)
     .map(x => Math.min((x.realized / x.target) * 100, 100))
   if (pcts.length === 0) return null
@@ -139,15 +175,15 @@ function MetricCell({
   pace: Pace; onSetGoal: () => void
 }) {
   const hasGoal = target !== undefined && target > 0
-  const status  = hasGoal ? paceStatus(realized, target, pace.fraction) : null
+  const status  = hasGoal ? paceStatus(realized, target!, pace.fraction) : null
   const cfg     = status ? STATUS_CFG[status] : null
-  const pct     = hasGoal ? Math.round((realized / target) * 100) : 0
+  const pct     = hasGoal ? Math.round((realized / target!) * 100) : 0
   const expectedPct = hasGoal ? Math.min(Math.round(pace.fraction * 100), 100) : 0
 
-  const missing  = hasGoal ? Math.max(target - realized, 0) : 0
+  const missing  = hasGoal ? Math.max(target! - realized, 0) : 0
   const perDay   = hasGoal && missing > 0 ? Math.ceil(missing / pace.remaining) : 0
   const hint     = hasGoal && status !== 'done'
-    ? `faltam ${missing.toLocaleString('pt-BR')} · ~${perDay.toLocaleString('pt-BR')}/dia`
+    ? (pace.isDaily ? `faltam ${missing.toLocaleString('pt-BR')}` : `faltam ${missing.toLocaleString('pt-BR')} · ~${perDay.toLocaleString('pt-BR')}/dia`)
     : null
 
   return (
@@ -169,15 +205,17 @@ function MetricCell({
       <div className="flex items-baseline gap-1.5">
         <p className="text-2xl font-black text-t1 tabular-nums leading-none">{realized.toLocaleString('pt-BR')}</p>
         {hasGoal
-          ? <p className="text-xs text-t4 tabular-nums">/ {target.toLocaleString('pt-BR')}</p>
-          : (
-            <button
-              onClick={onSetGoal}
-              className="text-[11px] text-t4 hover:text-brand transition-colors cursor-pointer ml-1"
-            >
-              definir meta →
-            </button>
-          )
+          ? <p className="text-xs text-t4 tabular-nums">/ {target!.toLocaleString('pt-BR')}</p>
+          : pace.isDaily
+            ? <p className="text-[11px] text-t4">hoje</p>
+            : (
+              <button
+                onClick={onSetGoal}
+                className="text-[11px] text-t4 hover:text-brand transition-colors cursor-pointer ml-1"
+              >
+                definir meta →
+              </button>
+            )
         }
         {cfg && <p className={`text-sm font-black tabular-nums ml-auto ${cfg.pct}`}>{pct}%</p>}
       </div>
@@ -193,12 +231,11 @@ function MetricCell({
             className={`h-full rounded-full transition-all duration-700 ${cfg.bar}`}
             style={{ width: `${Math.min(pct, 100)}%` }}
           />
-          {/* Marcador do ritmo esperado para hoje */}
           {expectedPct > 0 && expectedPct < 100 && (
             <div
               className="absolute top-0 bottom-0 w-0.5 bg-t1/60 rounded-full"
               style={{ left: `${expectedPct}%` }}
-              title={`Ritmo esperado hoje: ${expectedPct}%`}
+              title={`Ritmo esperado: ${expectedPct}%`}
             />
           )}
         </div>
@@ -224,14 +261,14 @@ const SCORE_WORD: Array<{ min: number; label: string; tone: string }> = [
 ]
 
 function BrokerRow({
-  name, avatarUrl, numbers, goals, period, pace, highlight, isTop, onSetGoal,
+  name, avatarUrl, numbers, resolveTarget, pace, highlight, isTop, onSetGoal,
 }: {
   name: string; avatarUrl?: string | null
-  numbers: PerfNumbers; goals: Record<string, number>
-  period: GoalPeriod; pace: Pace; highlight?: boolean; isTop?: boolean
+  numbers: PerfNumbers; resolveTarget: (key: string) => number | undefined
+  pace: Pace; highlight?: boolean; isTop?: boolean
   onSetGoal: () => void
 }) {
-  const score = useMemo(() => computeScore(numbers, goals, period), [numbers, goals, period])
+  const score = useMemo(() => computeScore(numbers, resolveTarget), [numbers, resolveTarget])
   const word  = score === null ? null : SCORE_WORD.find(w => score >= w.min)!
 
   return (
@@ -269,7 +306,7 @@ function BrokerRow({
         </div>
 
         {/* Métricas */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 flex-1 min-w-0">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 flex-1 min-w-0">
           {METRICS.map(metric => (
             <MetricCell
               key={metric.key}
@@ -278,7 +315,7 @@ function BrokerRow({
               text={metric.text}
               chip={metric.chip}
               realized={metric.realized(numbers)}
-              target={goals[`${metric.key}_${period}`]}
+              target={resolveTarget(metric.key)}
               sub={metric.sub?.(numbers) ?? null}
               pace={pace}
               onSetGoal={onSetGoal}
@@ -299,7 +336,7 @@ export function PerformanceGoalsWidget() {
   const [data,    setData]    = useState<PerfData | null>(null)
   const [error,   setError]   = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [period,  setPeriod]  = useState<GoalPeriod>('weekly')
+  const [period,  setPeriod]  = useState<ViewPeriod>('daily')
 
   async function fetchData() {
     setLoading(true)
@@ -325,8 +362,8 @@ export function PerformanceGoalsWidget() {
     // Oculta perfis sem qualquer atividade e sem metas (ex: contas de teste)
     return brokers.filter(b => {
       const hasGoals    = Object.values(b.goals).some(t => t > 0)
-      const hasActivity = [b.week, b.month].some(n =>
-        n.acionamentos > 0 || n.visitas > 0 || n.visitasAgendadas > 0 || n.propostas > 0 || n.vendas > 0
+      const hasActivity = [b.day, b.week, b.month].some(n =>
+        n.acionamentos > 0 || n.interacoes > 0 || n.visitas > 0 || n.visitasAgendadas > 0 || n.propostas > 0 || n.vendas > 0
       )
       return hasGoals || hasActivity
     })
@@ -334,16 +371,27 @@ export function PerformanceGoalsWidget() {
 
   const range = useMemo(() => {
     if (!data) return null
-    return period === 'weekly' ? data.week : data.month
+    return period === 'daily' ? data.day : period === 'weekly' ? data.week : data.month
   }, [data, period])
 
-  const pace = useMemo(() => range ? calcPace(range.start, range.end) : null, [range])
+  const pace = useMemo(() => {
+    if (!range) return null
+    return period === 'daily' ? calcDayPace() : calcPace(range.start, range.end)
+  }, [range, period])
 
-  // Ordena por score (maior primeiro) — leaderboard; corrida vazia mantém ordem
+  // Resolver de meta por corretor + consolidado da equipe
+  const resolveForGoals = (goals: Record<string, number>) => (key: string) => targetFor(key, period, goals)
+  const teamResolve = (key: string) => {
+    const ts = visibleBrokers.map(b => targetFor(key, period, b.goals)).filter((t): t is number => typeof t === 'number' && t > 0)
+    return ts.length ? ts.reduce((a, t) => a + t, 0) : undefined
+  }
+
+  // Ordena por score (maior primeiro) — leaderboard
   const rankedBrokers = useMemo(() => {
     return [...visibleBrokers]
-      .map(b => ({ broker: b, score: computeScore(period === 'weekly' ? b.week : b.month, b.goals, period) }))
+      .map(b => ({ broker: b, score: computeScore(pickNumbers(b, period), resolveForGoals(b.goals)) }))
       .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibleBrokers, period])
 
   const topId = useMemo(() => {
@@ -354,6 +402,10 @@ export function PerformanceGoalsWidget() {
 
   const periodLabel = useMemo(() => {
     if (!data || !range) return ''
+    if (period === 'daily') {
+      const [, mo, da] = range.start.split('-')
+      return `Hoje · ${da}/${mo}`
+    }
     if (period === 'weekly') {
       const fmt = (d: string) => d.split('-').slice(1).reverse().join('/')
       return `${fmt(range.start)} – ${fmt(range.end)}`
@@ -363,28 +415,21 @@ export function PerformanceGoalsWidget() {
     return `${months[Number(m) - 1]} ${y}`
   }, [data, range, period])
 
-  // Totais da equipe — soma realizados; meta só soma onde está definida
-  const team = useMemo(() => {
+  // Totais da equipe — soma realizados
+  const teamNumbers = useMemo(() => {
     if (visibleBrokers.length < 2) return null
-    const numbers: PerfNumbers = visibleBrokers.reduce((acc, b) => {
-      const n = period === 'weekly' ? b.week : b.month
+    return visibleBrokers.reduce<PerfNumbers>((acc, b) => {
+      const n = pickNumbers(b, period)
       return {
         acionamentos: acc.acionamentos + n.acionamentos,
+        interacoes: acc.interacoes + n.interacoes,
         visitas: acc.visitas + n.visitas,
         visitasAgendadas: acc.visitasAgendadas + n.visitasAgendadas,
         propostas: acc.propostas + n.propostas,
         vendas: acc.vendas + n.vendas,
         vgv: acc.vgv + n.vgv,
       }
-    }, { acionamentos: 0, visitas: 0, visitasAgendadas: 0, propostas: 0, vendas: 0, vgv: 0 })
-
-    const goals: Record<string, number> = {}
-    for (const metric of METRICS) {
-      const key = `${metric.key}_${period}`
-      const targets = visibleBrokers.map(b => b.goals[key]).filter((t): t is number => typeof t === 'number' && t > 0)
-      if (targets.length > 0) goals[key] = targets.reduce((a, t) => a + t, 0)
-    }
-    return { numbers, goals }
+    }, { acionamentos: 0, interacoes: 0, visitas: 0, visitasAgendadas: 0, propostas: 0, vendas: 0, vgv: 0 })
   }, [visibleBrokers, period])
 
   return (
@@ -401,7 +446,7 @@ export function PerformanceGoalsWidget() {
               {periodLabel || 'Desempenho'}
               {pace && (
                 <span className="text-[11px] font-bold text-t3 bg-s2/60 border border-line px-1.5 py-0.5 rounded-md tabular-nums">
-                  dia {pace.elapsed}/{pace.total}
+                  {pace.isDaily ? `${Math.round(pace.fraction * 100)}% do dia` : `dia ${pace.elapsed}/${pace.total}`}
                 </span>
               )}
             </h3>
@@ -409,7 +454,7 @@ export function PerformanceGoalsWidget() {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex gap-0.5 p-0.5 rounded-xl border border-line bg-s2/40">
-            {([['weekly', 'Semana'], ['monthly', 'Mês']] as const).map(([value, label]) => (
+            {([['daily', 'Hoje'], ['weekly', 'Semana'], ['monthly', 'Mês']] as const).map(([value, label]) => (
               <button
                 key={value}
                 onClick={() => setPeriod(value)}
@@ -478,9 +523,8 @@ export function PerformanceGoalsWidget() {
               key={broker.id}
               name={broker.name}
               avatarUrl={broker.avatarUrl}
-              numbers={period === 'weekly' ? broker.week : broker.month}
-              goals={broker.goals}
-              period={period}
+              numbers={pickNumbers(broker, period)}
+              resolveTarget={resolveForGoals(broker.goals)}
               pace={pace}
               isTop={broker.id === topId}
               onSetGoal={() => navigate('/metas')}
@@ -488,12 +532,11 @@ export function PerformanceGoalsWidget() {
           ))}
 
           {/* Linha consolidada da equipe */}
-          {team && (
+          {teamNumbers && (
             <BrokerRow
               name="Equipe"
-              numbers={team.numbers}
-              goals={team.goals}
-              period={period}
+              numbers={teamNumbers}
+              resolveTarget={teamResolve}
               pace={pace}
               highlight
               onSetGoal={() => navigate('/metas')}
