@@ -1344,7 +1344,7 @@ export function DashboardPage() {
       </div>
 
       {/* ══ Desempenho ══════════════════════════════════════════════════ */}
-      <SectionLabel icon={BarChart2}>Desempenho · Meta × Realizado</SectionLabel>
+      <SectionLabel icon={BarChart2}>Desempenho</SectionLabel>
       <PerformanceGoalsWidget />
 
       {/* ══ Pipeline ════════════════════════════════════════════════════ */}

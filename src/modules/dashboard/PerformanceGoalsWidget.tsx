@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Target, Zap, Footprints, FileText, BadgeDollarSign,
-  RefreshCw, AlertTriangle, ArrowRight,
+  RefreshCw, AlertTriangle, ArrowRight, Crown,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -43,17 +43,18 @@ const METRICS: Array<{
   label: string
   icon: typeof Target
   text: string
+  chip: string
   realized: (n: PerfNumbers) => number
   sub?: (n: PerfNumbers) => string | null
 }> = [
-  { key: 'acionamento', label: 'Acionamentos', icon: Zap,        text: 'text-cyan-400',
+  { key: 'acionamento', label: 'Acionamentos', icon: Zap,        text: 'text-cyan-400',   chip: 'bg-cyan-500/12',
     realized: n => n.acionamentos },
-  { key: 'visita',      label: 'Atendimentos', icon: Footprints, text: 'text-indigo-400',
+  { key: 'visita',      label: 'Atendimentos', icon: Footprints, text: 'text-indigo-400', chip: 'bg-indigo-500/12',
     realized: n => n.visitas,
     sub: n => n.visitasAgendadas > n.visitas ? `${n.visitasAgendadas} agendados` : null },
-  { key: 'proposta',    label: 'Propostas',    icon: FileText,   text: 'text-amber-400',
+  { key: 'proposta',    label: 'Propostas',    icon: FileText,   text: 'text-amber-400',  chip: 'bg-amber-500/12',
     realized: n => n.propostas },
-  { key: 'venda',       label: 'Vendas',       icon: BadgeDollarSign, text: 'text-green-400',
+  { key: 'venda',       label: 'Vendas',       icon: BadgeDollarSign, text: 'text-green-400', chip: 'bg-green-500/12',
     realized: n => n.vendas,
     sub: n => n.vgv > 0 ? formatCurrency(n.vgv) : null },
 ]
@@ -84,40 +85,56 @@ function paceStatus(realized: number, target: number, fraction: number): PaceSta
 }
 
 const STATUS_CFG: Record<PaceStatus, { chip: string; label: string; bar: string; pct: string }> = {
-  done:    { chip: 'text-brand bg-brand/10 border-brand/30',          label: 'Meta batida', bar: 'bg-brand',     pct: 'text-brand'     },
-  onTrack: { chip: 'text-green-400 bg-green-500/10 border-green-500/25', label: 'No ritmo', bar: 'bg-green-500', pct: 'text-green-400' },
-  warning: { chip: 'text-amber-400 bg-amber-500/10 border-amber-500/25', label: 'Atenção',  bar: 'bg-amber-500', pct: 'text-amber-400' },
-  behind:  { chip: 'text-red-400 bg-red-500/10 border-red-500/25',       label: 'Atrasado', bar: 'bg-red-500',   pct: 'text-red-400'   },
+  done:    { chip: 'text-brand bg-brand-tint border-brand/30',           label: 'Meta batida', bar: 'bg-brand',     pct: 'text-brand'     },
+  onTrack: { chip: 'text-green-400 bg-green-500/10 border-green-500/25', label: 'No ritmo',    bar: 'bg-green-500', pct: 'text-green-400' },
+  warning: { chip: 'text-amber-400 bg-amber-500/10 border-amber-500/25', label: 'Atenção',     bar: 'bg-amber-500', pct: 'text-amber-400' },
+  behind:  { chip: 'text-red-400 bg-red-500/10 border-red-500/25',       label: 'Atrasado',    bar: 'bg-red-500',   pct: 'text-red-400'   },
 }
 
-// ─── Anel de score (média de atingimento das metas do corretor) ───────────────
+// ─── Score do corretor (média de atingimento das metas do período) ────────────
+
+function computeScore(numbers: PerfNumbers, goals: Record<string, number>, period: GoalPeriod): number | null {
+  const pcts = METRICS
+    .map(m => ({ realized: m.realized(numbers), target: goals[`${m.key}_${period}`] }))
+    .filter((x): x is { realized: number; target: number } => typeof x.target === 'number' && x.target > 0)
+    .map(x => Math.min((x.realized / x.target) * 100, 100))
+  if (pcts.length === 0) return null
+  return pcts.reduce((a, p) => a + p, 0) / pcts.length
+}
+
+// ─── Anel de score ────────────────────────────────────────────────────────────
 
 function ScoreRing({ score }: { score: number }) {
-  const r = 24; const sz = 60; const circ = 2 * Math.PI * r
-  const dash  = (Math.min(score, 100) / 100) * circ
-  const color = score >= 100 ? 'var(--brand, #D4AF37)' : score >= 75 ? '#22c55e' : score >= 45 ? '#f59e0b' : '#ef4444'
+  const sz = 66, stroke = 6, r = (sz - stroke) / 2 - 1
+  const circ = 2 * Math.PI * r
+  const dash = (Math.min(score, 100) / 100) * circ
+  const color = score >= 100 ? 'var(--brand)' : score >= 75 ? '#22c55e' : score >= 45 ? '#f59e0b' : '#ef4444'
   return (
-    <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`} className="flex-shrink-0">
-      <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={5} />
+    <svg
+      width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`} className="flex-shrink-0"
+      role="img" aria-label={`Desempenho ${Math.round(score)} de 100`}
+    >
+      <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
       <circle
-        cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth={5}
+        cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
         strokeLinecap="round" strokeDasharray={`${dash} ${circ}`}
         transform={`rotate(-90 ${sz/2} ${sz/2})`}
-        style={{ transition: 'stroke-dasharray 0.7s ease' }}
+        style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.16,1,0.3,1)' }}
       />
-      <text x={sz/2} y={sz/2 + 4} textAnchor="middle" fill="currentColor" className="text-t1" fontSize={14} fontWeight={800} fontFamily="inherit">
+      <text x={sz/2} y={sz/2 + 5} textAnchor="middle" fill="currentColor" className="text-t1"
+        fontSize={18} fontWeight={800} fontFamily="inherit">
         {Math.round(score)}
       </text>
     </svg>
   )
 }
 
-// ─── Célula de métrica (meta x realizado + ritmo) ─────────────────────────────
+// ─── Célula de métrica (meta × realizado + ritmo) ─────────────────────────────
 
 function MetricCell({
-  label, icon: Icon, text, realized, target, sub, pace, onSetGoal,
+  label, icon: Icon, text, chip, realized, target, sub, pace, onSetGoal,
 }: {
-  label: string; icon: typeof Target; text: string
+  label: string; icon: typeof Target; text: string; chip: string
   realized: number; target: number | undefined; sub: string | null
   pace: Pace; onSetGoal: () => void
 }) {
@@ -134,10 +151,13 @@ function MetricCell({
     : null
 
   return (
-    <div className="bg-s2/40 rounded-xl p-3 flex flex-col gap-2 min-w-0">
-      <div className="flex items-center gap-1.5">
-        <Icon size={11} className={text} />
-        <p className="font-label text-[11px] font-medium uppercase tracking-[0.08em] text-t4 truncate">{label}</p>
+    <div className="bg-s2/50 border border-line rounded-xl p-3 flex flex-col gap-2 min-w-0 transition-colors hover:border-line-strong">
+      {/* Cabeçalho — ícone + categoria + status */}
+      <div className="flex items-center gap-2">
+        <span className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${chip}`}>
+          <Icon size={11} className={text} />
+        </span>
+        <p className="font-label text-[11px] font-bold uppercase tracking-[0.08em] text-t4 truncate">{label}</p>
         {cfg && (
           <span className={`ml-auto flex-shrink-0 text-[11px] font-bold px-1.5 py-px rounded-full border ${cfg.chip}`}>
             {cfg.label}
@@ -145,7 +165,8 @@ function MetricCell({
         )}
       </div>
 
-      <div className="flex items-baseline gap-1">
+      {/* Realizado / meta + percentual */}
+      <div className="flex items-baseline gap-1.5">
         <p className="text-2xl font-black text-t1 tabular-nums leading-none">{realized.toLocaleString('pt-BR')}</p>
         {hasGoal
           ? <p className="text-xs text-t4 tabular-nums">/ {target.toLocaleString('pt-BR')}</p>
@@ -158,22 +179,32 @@ function MetricCell({
             </button>
           )
         }
-        {cfg && <p className={`text-xs font-bold tabular-nums ml-auto ${cfg.pct}`}>{pct}%</p>}
+        {cfg && <p className={`text-sm font-black tabular-nums ml-auto ${cfg.pct}`}>{pct}%</p>}
       </div>
 
+      {/* Barra de progresso com marcador de ritmo */}
       {hasGoal && cfg && (
-        <div className="relative h-1.5 bg-s3/60 rounded-full overflow-hidden">
+        <div
+          className="relative h-2 bg-s3/70 rounded-full overflow-hidden"
+          role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+          aria-label={`${label}: ${realized} de ${target} (${pct}%)`}
+        >
           <div
             className={`h-full rounded-full transition-all duration-700 ${cfg.bar}`}
             style={{ width: `${Math.min(pct, 100)}%` }}
           />
           {/* Marcador do ritmo esperado para hoje */}
           {expectedPct > 0 && expectedPct < 100 && (
-            <div className="absolute top-0 bottom-0 w-px bg-white/50" style={{ left: `${expectedPct}%` }} />
+            <div
+              className="absolute top-0 bottom-0 w-0.5 bg-t1/60 rounded-full"
+              style={{ left: `${expectedPct}%` }}
+              title={`Ritmo esperado hoje: ${expectedPct}%`}
+            />
           )}
         </div>
       )}
 
+      {/* Dica / subtítulo */}
       {(hint || sub) && (
         <p className="text-[11px] text-t4 truncate tabular-nums">
           {hint}{hint && sub ? ' · ' : ''}{sub}
@@ -185,49 +216,53 @@ function MetricCell({
 
 // ─── Linha de um corretor ─────────────────────────────────────────────────────
 
+const SCORE_WORD: Array<{ min: number; label: string; tone: string }> = [
+  { min: 100, label: 'Tudo batido', tone: 'text-brand'     },
+  { min: 75,  label: 'Forte',       tone: 'text-green-400' },
+  { min: 45,  label: 'No jogo',     tone: 'text-amber-400' },
+  { min: 0,   label: 'Reagir',      tone: 'text-red-400'   },
+]
+
 function BrokerRow({
-  name, avatarUrl, numbers, goals, period, pace, highlight, onSetGoal,
+  name, avatarUrl, numbers, goals, period, pace, highlight, isTop, onSetGoal,
 }: {
   name: string; avatarUrl?: string | null
   numbers: PerfNumbers; goals: Record<string, number>
-  period: GoalPeriod; pace: Pace; highlight?: boolean
+  period: GoalPeriod; pace: Pace; highlight?: boolean; isTop?: boolean
   onSetGoal: () => void
 }) {
-  // Score = média do atingimento (capado em 100) das metas definidas no período
-  const score = useMemo(() => {
-    const pcts = METRICS
-      .map(m => ({ realized: m.realized(numbers), target: goals[`${m.key}_${period}`] }))
-      .filter((x): x is { realized: number; target: number } => typeof x.target === 'number' && x.target > 0)
-      .map(x => Math.min((x.realized / x.target) * 100, 100))
-    if (pcts.length === 0) return null
-    return pcts.reduce((a, p) => a + p, 0) / pcts.length
-  }, [numbers, goals, period])
-
-  const scoreLabel = score === null ? null
-    : score >= 100 ? 'Tudo batido'
-    : score >= 75  ? 'Forte'
-    : score >= 45  ? 'No jogo'
-    : 'Reagir'
+  const score = useMemo(() => computeScore(numbers, goals, period), [numbers, goals, period])
+  const word  = score === null ? null : SCORE_WORD.find(w => score >= w.min)!
 
   return (
-    <div className={`px-5 py-4 ${highlight ? 'bg-s2/20' : ''}`}>
+    <div className={`px-5 py-4 transition-colors ${highlight ? 'bg-brand-tint/40' : 'hover:bg-s2/30'}`}>
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {/* Identidade + score */}
-        <div className="flex items-center gap-3 sm:w-44 flex-shrink-0">
-          {score !== null
-            ? <ScoreRing score={score} />
-            : <div className="w-[60px] h-[60px] rounded-full bg-s2/60 border border-line flex items-center justify-center flex-shrink-0">
-                <Target size={18} className="text-t4" />
-              </div>
-          }
+        <div className="flex items-center gap-3 sm:w-48 flex-shrink-0">
+          <div className="relative flex-shrink-0">
+            {score !== null
+              ? <ScoreRing score={score} />
+              : <div className="w-[66px] h-[66px] rounded-full bg-s2/60 border border-line flex items-center justify-center">
+                  <Target size={20} className="text-t4" />
+                </div>
+            }
+            {isTop && (
+              <span
+                className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-brand flex items-center justify-center shadow-brand"
+                title="Melhor desempenho"
+              >
+                <Crown size={11} className="text-[var(--brand-btn-text)]" />
+              </span>
+            )}
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Avatar name={name} photoUrl={avatarUrl ?? undefined} size="xs" />
-              <p className="font-heading text-[13px] font-bold text-t1 tracking-[-0.01em] truncate">{name}</p>
+              <p className="font-heading text-sm font-bold text-t1 tracking-[-0.01em] truncate">{name}</p>
             </div>
-            {scoreLabel && (
-              <p className="font-label text-[11px] font-medium uppercase tracking-[0.08em] text-t4 mt-1">
-                Desempenho · {scoreLabel}
+            {word && (
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.08em] mt-1.5">
+                <span className="text-t4">Desempenho</span> <span className={word.tone}>· {word.label}</span>
               </p>
             )}
           </div>
@@ -241,6 +276,7 @@ function BrokerRow({
               label={metric.label}
               icon={metric.icon}
               text={metric.text}
+              chip={metric.chip}
               realized={metric.realized(numbers)}
               target={goals[`${metric.key}_${period}`]}
               sub={metric.sub?.(numbers) ?? null}
@@ -303,6 +339,19 @@ export function PerformanceGoalsWidget() {
 
   const pace = useMemo(() => range ? calcPace(range.start, range.end) : null, [range])
 
+  // Ordena por score (maior primeiro) — leaderboard; corrida vazia mantém ordem
+  const rankedBrokers = useMemo(() => {
+    return [...visibleBrokers]
+      .map(b => ({ broker: b, score: computeScore(period === 'weekly' ? b.week : b.month, b.goals, period) }))
+      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+  }, [visibleBrokers, period])
+
+  const topId = useMemo(() => {
+    if (rankedBrokers.length < 2) return null
+    const top = rankedBrokers[0]
+    return top.score !== null && top.score > 0 ? top.broker.id : null
+  }, [rankedBrokers])
+
   const periodLabel = useMemo(() => {
     if (!data || !range) return ''
     if (period === 'weekly') {
@@ -339,31 +388,32 @@ export function PerformanceGoalsWidget() {
   }, [visibleBrokers, period])
 
   return (
-    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
+    <div className="rounded-xl border border-line bg-surface overflow-hidden mb-6 animate-slide-up" style={{ boxShadow: 'var(--shadow-card)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-brand/15 rounded-lg flex items-center justify-center">
+      <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 border-b border-line">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 bg-brand-tint rounded-lg flex items-center justify-center flex-shrink-0">
             <Target size={15} className="text-brand" />
           </div>
-          <div>
-            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Meta x Realizado</p>
-            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
+          <div className="min-w-0">
+            <p className="font-label text-[11px] font-bold tracking-[0.12em] text-t4 uppercase">Meta × Realizado</p>
+            <h3 className="text-sm font-bold text-t1 leading-none mt-0.5 flex items-center gap-2 flex-wrap">
               {periodLabel || 'Desempenho'}
               {pace && (
-                <span className="text-[11px] font-medium text-t4 ml-2">
-                  dia {pace.elapsed} de {pace.total}
+                <span className="text-[11px] font-bold text-t3 bg-s2/60 border border-line px-1.5 py-0.5 rounded-md tabular-nums">
+                  dia {pace.elapsed}/{pace.total}
                 </span>
               )}
-            </h2>
+            </h3>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex gap-0.5 p-0.5 rounded-xl border border-line bg-s2/40">
             {([['weekly', 'Semana'], ['monthly', 'Mês']] as const).map(([value, label]) => (
               <button
                 key={value}
                 onClick={() => setPeriod(value)}
+                aria-pressed={period === value}
                 className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                   period === value
                     ? 'bg-brand/15 text-brand border border-brand/25'
@@ -378,24 +428,35 @@ export function PerformanceGoalsWidget() {
             onClick={fetchData}
             disabled={loading}
             className="p-2 rounded-lg text-t4 hover:text-t2 hover:bg-s2/60 transition-colors cursor-pointer disabled:opacity-50"
-            aria-label="Atualizar"
+            aria-label="Atualizar desempenho"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
+      {/* Barra de tempo decorrido no período */}
+      {pace && !error && (
+        <div
+          className="h-1 bg-s3/50"
+          role="progressbar" aria-valuenow={Math.round(pace.fraction * 100)} aria-valuemin={0} aria-valuemax={100}
+          aria-label="Tempo decorrido no período"
+        >
+          <div className="h-full bg-brand/45 transition-all duration-700" style={{ width: `${pace.fraction * 100}%` }} />
+        </div>
+      )}
+
       {/* Erro de banco — exibido, nunca mascarado */}
       {error && (
-        <div className="flex items-center gap-3 px-5 py-4 bg-red-500/5">
-          <AlertTriangle size={16} className="text-red-400 flex-shrink-0" />
+        <div className="flex items-center gap-3 px-5 py-4 bg-error-bg">
+          <AlertTriangle size={16} className="text-error flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-red-300">Não foi possível carregar o desempenho</p>
-            <p className="text-xs text-red-400/70 truncate">{error}</p>
+            <p className="text-sm font-semibold text-error">Não foi possível carregar o desempenho</p>
+            <p className="text-xs text-error/70 truncate" role="alert">{error}</p>
           </div>
           <button
             onClick={fetchData}
-            className="text-xs text-red-300 border border-red-500/30 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+            className="text-xs text-error border border-error-line hover:bg-error-bg px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex-shrink-0"
           >
             Tentar novamente
           </button>
@@ -404,7 +465,7 @@ export function PerformanceGoalsWidget() {
 
       {/* Loading inicial */}
       {loading && !data && !error && (
-        <div className="flex items-center justify-center py-10">
+        <div className="flex items-center justify-center py-12">
           <div className="w-7 h-7 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
         </div>
       )}
@@ -412,7 +473,7 @@ export function PerformanceGoalsWidget() {
       {/* Corretores */}
       {data && pace && !error && (
         <div className="flex flex-col divide-y divide-line">
-          {visibleBrokers.map(broker => (
+          {rankedBrokers.map(({ broker }) => (
             <BrokerRow
               key={broker.id}
               name={broker.name}
@@ -421,6 +482,7 @@ export function PerformanceGoalsWidget() {
               goals={broker.goals}
               period={period}
               pace={pace}
+              isTop={broker.id === topId}
               onSetGoal={() => navigate('/metas')}
             />
           ))}
@@ -438,9 +500,9 @@ export function PerformanceGoalsWidget() {
             />
           )}
 
-          {visibleBrokers.length === 0 && (
-            <div className="flex flex-col items-center py-8 gap-2">
-              <Target size={26} className="text-t4" />
+          {rankedBrokers.length === 0 && (
+            <div className="flex flex-col items-center py-10 gap-2">
+              <Target size={28} className="text-t4" />
               <p className="text-sm text-t3">Nenhum desempenho para exibir ainda</p>
               <button
                 onClick={() => navigate('/metas')}
