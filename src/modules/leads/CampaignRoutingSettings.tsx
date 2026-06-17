@@ -162,17 +162,22 @@ export function CampaignRoutingSettings() {
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="font-label text-[10px] uppercase tracking-wide text-t4">Ticket (R$)</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={1000}
-                      value={rule.productTicket ?? ''}
-                      onChange={e => updateLocal(rule.formId, { productTicket: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      onBlur={() => saveProduct(rule)}
-                      placeholder="0"
-                      className="w-full sm:w-36 bg-s2 border border-line rounded-[10px] px-3 py-2 text-sm text-t1 tabular-nums placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/40"
-                    />
+                    <span className="font-label text-[10px] uppercase tracking-wide text-t4">Ticket</span>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-xs text-t3 font-medium select-none">R$</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={rule.productTicket != null ? rule.productTicket.toLocaleString('pt-BR') : ''}
+                        onChange={e => {
+                          const digits = e.target.value.replace(/\D/g, '')
+                          updateLocal(rule.formId, { productTicket: digits ? Number(digits) : undefined })
+                        }}
+                        onBlur={() => saveProduct(rule)}
+                        placeholder="500.000"
+                        className="w-full sm:w-40 bg-s2 border border-line rounded-[10px] pl-9 pr-3 py-2 text-sm text-t1 tabular-nums placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/40"
+                      />
+                    </div>
                   </label>
                 </div>
                 <p className="text-[11px] text-t4 mt-1.5">
