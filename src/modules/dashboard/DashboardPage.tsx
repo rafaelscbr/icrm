@@ -414,6 +414,62 @@ function OverviewKPICard({
 
 // ─── Funil de leads (barras horizontais) ──────────────────────────────────────
 
+// ─── Funil desenhado (SVG, afunilado) ─────────────────────────────────────────
+
+const LEAD_FUNNEL_HEX: Record<string, string> = {
+  lead: '#64748b', followup: '#2dd4bf', atendimento: '#a78bfa',
+  visita: '#fbbf24', proposta: '#fb923c', venda: '#4ade80',
+}
+const CAMP_FUNNEL_HEX: Record<string, string> = {
+  new: '#f59e0b', sent: '#3b82f6', attended: '#06b6d4',
+  scheduled: '#8b5cf6', presentation: '#a855f7', proposal: '#f97316', sale: '#22c55e',
+}
+
+function FunnelChart({ idPrefix, stages }: {
+  idPrefix: string
+  stages: Array<{ label: string; count: number; color: string }>
+}) {
+  const maxCount = Math.max(...stages.map(s => s.count), 1)
+  const VW = 384, cx = 158, maxHalf = 150, minHalf = 60
+  const bandH = 46, gap = 9
+  const H = stages.length * (bandH + gap) - gap
+  const halfW = (c: number) => minHalf + (c / maxCount) * (maxHalf - minHalf)
+
+  return (
+    <svg viewBox={`0 0 ${VW} ${H}`} className="w-full" role="img" aria-label="Funil de etapas">
+      <defs>
+        {stages.map((s, i) => (
+          <linearGradient key={i} id={`fnl-${idPrefix}-${i}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={s.color} stopOpacity={0.92} />
+            <stop offset="100%" stopColor={s.color} stopOpacity={0.55} />
+          </linearGradient>
+        ))}
+      </defs>
+      {stages.map((s, i) => {
+        const y    = i * (bandH + gap)
+        const wTop = halfW(s.count)
+        const wBot = halfW(stages[i + 1]?.count ?? s.count)
+        const conv = i > 0 && stages[i - 1].count > 0 ? Math.round(s.count / stages[i - 1].count * 100) : null
+        return (
+          <g key={i}>
+            <polygon
+              points={`${cx - wTop},${y} ${cx + wTop},${y} ${cx + wBot},${y + bandH} ${cx - wBot},${y + bandH}`}
+              fill={`url(#fnl-${idPrefix}-${i})`} stroke={s.color} strokeOpacity={0.3} strokeWidth={1}
+            />
+            <text x={cx} y={y + bandH / 2 - 2} textAnchor="middle" className="fill-t1" fontSize={10.5} fontWeight={700} letterSpacing="0.4" fontFamily="inherit">{s.label.toUpperCase()}</text>
+            <text x={cx} y={y + bandH / 2 + 15} textAnchor="middle" className="fill-t1" fontSize={16} fontWeight={800} fontFamily="inherit">{s.count.toLocaleString('pt-BR')}</text>
+            {conv !== null && (
+              <text x={VW - 4} y={y + bandH / 2 + 4} textAnchor="end" className="fill-t4" fontSize={11} fontWeight={700} fontFamily="inherit">{conv}%</text>
+            )}
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+// ─── Funil de leads (funil principal) ─────────────────────────────────────────
+
 function LeadFunnelWidget({ data, loading, error, onNavigate }: {
   data: OverviewData | null
   loading: boolean
@@ -421,7 +477,6 @@ function LeadFunnelWidget({ data, loading, error, onNavigate }: {
   onNavigate: () => void
 }) {
   const total = data?.leadFunnel.reduce((a, s) => a + s.count, 0) ?? 0
-  const max   = data ? Math.max(...data.leadFunnel.map(s => s.count), 1) : 1
 
   return (
     <div className="rounded-xl border border-line bg-surface overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
@@ -446,30 +501,15 @@ function LeadFunnelWidget({ data, loading, error, onNavigate }: {
       )}
 
       {data && (
-        <div className="flex flex-col py-2">
-          {FUNNEL_STAGES.map(stage => {
-            const theme = STAGE_THEME[stage]
-            const count = data.leadFunnel.find(s => s.stage === stage)?.count ?? 0
-            const pct   = total > 0 ? Math.round(count / total * 100) : 0
-            const barW  = Math.round(count / max * 100)
-            return (
-              <div key={stage} className="px-5 py-2 flex items-center gap-3">
-                <p className={`text-xs font-medium w-24 flex-shrink-0 truncate ${theme.color}`}>{theme.label}</p>
-                <div
-                  className="flex-1 h-2 bg-s3/60 rounded-full overflow-hidden"
-                  role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
-                  aria-label={`${theme.label}: ${count} leads (${pct}%)`}
-                >
-                  <div
-                    className={`h-full rounded-full ${theme.dot} transition-all duration-700`}
-                    style={{ width: `${barW}%` }}
-                  />
-                </div>
-                <p className="text-sm font-bold text-t1 tabular-nums w-9 text-right flex-shrink-0">{count}</p>
-                <p className="text-[11px] text-t4 tabular-nums w-9 text-right flex-shrink-0">{pct}%</p>
-              </div>
-            )
-          })}
+        <div className="px-5 pt-3 pb-4">
+          <FunnelChart
+            idPrefix="lead"
+            stages={FUNNEL_STAGES.map(stage => ({
+              label: STAGE_THEME[stage].label,
+              count: data.leadFunnel.find(s => s.stage === stage)?.count ?? 0,
+              color: LEAD_FUNNEL_HEX[stage],
+            }))}
+          />
         </div>
       )}
     </div>
@@ -523,20 +563,15 @@ function CompactCampaignFunnel({ data, loading, onNavigate }: {
       )}
 
       {data && (
-        <div className="px-5 pt-4 pb-4">
-          <div className="grid grid-cols-3 gap-2">
-            {CAMPAIGN_STAGES.map(({ stage, shortLabel, bg, text, border }) => {
-              const count = data.campaignFunnel.stages.find(s => s.stage === stage)?.count ?? 0
-              const pct   = data.campaignFunnel.totalLeads > 0 ? Math.round(count / data.campaignFunnel.totalLeads * 100) : 0
-              return (
-                <div key={stage} className={`flex flex-col items-center gap-1 rounded-xl p-3 border ${bg} ${border}`}>
-                  <p className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
-                  <p className="text-2xl font-black text-t1 tabular-nums leading-none">{count.toLocaleString('pt-BR')}</p>
-                  <p className="text-[11px] text-t4 tabular-nums">{pct}%</p>
-                </div>
-              )
-            })}
-          </div>
+        <div className="px-5 pt-3 pb-4">
+          <FunnelChart
+            idPrefix="camp"
+            stages={CAMPAIGN_STAGES.map(({ stage, shortLabel }) => ({
+              label: shortLabel,
+              count: data.campaignFunnel.stages.find(s => s.stage === stage)?.count ?? 0,
+              color: CAMP_FUNNEL_HEX[stage],
+            }))}
+          />
         </div>
       )}
     </div>

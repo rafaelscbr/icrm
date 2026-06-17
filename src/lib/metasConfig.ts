@@ -24,5 +24,6 @@ export const MONTHLY_TARGETS = {
   vendas:        1,
 } as const
 
-/** Meta central da imobiliária: VGL bruto mensal em R$ */
-export const VGL_MONTHLY_DEFAULT = 500_000
+/** Meta de VGL bruto mensal em R$ */
+export const VGL_COMPANY_DEFAULT = 1_000_000  // empresa (≈ 2 vendas)
+export const VGL_BROKER_DEFAULT  = 500_000    // por corretor (≈ 1 venda)
