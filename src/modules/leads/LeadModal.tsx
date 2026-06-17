@@ -361,7 +361,15 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     {originConf.label}
                   </span>
                   <span className="text-t5" aria-hidden="true">·</span>
-                  <span className="font-label text-xs text-t4 tabular-nums">{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
+                  <span
+                    className="flex items-center gap-1 font-label text-xs text-t4 tabular-nums"
+                    title="Entrou no funil (cadastro no formulário)"
+                  >
+                    <Timer size={11} strokeWidth={1.6} className="text-t4" aria-hidden="true" />
+                    {new Date(lead.createdAt).toLocaleString('pt-BR', {
+                      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })}
+                  </span>
 
                   {/* Corretor responsável — sempre visível; admin ou dono transfere em 1 clique */}
                   {(brokerName || isAdmin) && (
