@@ -901,9 +901,12 @@ export const db = {
       return (data as Array<{
         form_id: string; form_name: string | null; broker_ids: string[] | null
         active: boolean; lead_count: number; updated_at: string
+        product_name: string | null; product_ticket: number | null
       }>).map(r => ({
         formId: r.form_id, formName: r.form_name ?? undefined,
         brokerIds: r.broker_ids ?? [], active: r.active, leadCount: r.lead_count,
+        productName: r.product_name ?? undefined,
+        productTicket: r.product_ticket ?? undefined,
         updatedAt: r.updated_at,
       }))
     },
@@ -914,6 +917,14 @@ export const db = {
         .update({ broker_ids: brokerIds, last_index: -1, updated_at: new Date().toISOString() })
         .eq('form_id', formId)
       if (error) { toast.error(`Erro ao salvar corretores: ${error.message}`); throw error }
+    },
+    // Produto + ticket do formulário → herdados pelo lead (property_name / average_ticket)
+    setProduct: async (formId: string, productName: string | null, productTicket: number | null): Promise<void> => {
+      const { error } = await supabase
+        .from('meta_form_routing')
+        .update({ product_name: productName, product_ticket: productTicket, updated_at: new Date().toISOString() })
+        .eq('form_id', formId)
+      if (error) { toast.error(`Erro ao salvar produto: ${error.message}`); throw error }
     },
     setActive: async (formId: string, active: boolean): Promise<void> => {
       const { error } = await supabase

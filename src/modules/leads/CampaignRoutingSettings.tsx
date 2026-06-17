@@ -49,6 +49,25 @@ export function CampaignRoutingSettings() {
     finally { setSavingId(null) }
   }
 
+  // Atualiza localmente os campos de produto enquanto o admin digita
+  function updateLocal(formId: string, patch: Partial<MetaFormRouting>) {
+    setRules(rs => rs.map(r => r.formId === formId ? { ...r, ...patch } : r))
+  }
+
+  // Salva produto + ticket no blur (idempotente — herdados pelo lead que entrar)
+  async function saveProduct(rule: MetaFormRouting) {
+    setSavingId(rule.formId)
+    try {
+      await db.metaFormRouting.setProduct(
+        rule.formId,
+        rule.productName?.trim() || null,
+        rule.productTicket != null && !Number.isNaN(rule.productTicket) ? rule.productTicket : null,
+      )
+      toast.success('Produto salvo')
+    } catch { /* erro já toastado */ }
+    finally { setSavingId(null) }
+  }
+
   return (
     <div className="rounded-[14px] border border-line bg-s2/40 overflow-hidden">
       <div className="flex items-start gap-3 px-4 py-3.5 border-b border-line">
@@ -128,6 +147,37 @@ export function CampaignRoutingSettings() {
                     )
                   })}
                 </div>
+
+                {/* Produto + ticket do formulário — herdados pelo lead que entrar */}
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 mt-2.5">
+                  <label className="flex flex-col gap-1">
+                    <span className="font-label text-[10px] uppercase tracking-wide text-t4">Produto deste formulário</span>
+                    <input
+                      type="text"
+                      value={rule.productName ?? ''}
+                      onChange={e => updateLocal(rule.formId, { productName: e.target.value })}
+                      onBlur={() => saveProduct(rule)}
+                      placeholder="Ex.: Residencial Aurora"
+                      className="w-full bg-s2 border border-line rounded-[10px] px-3 py-2 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/40"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="font-label text-[10px] uppercase tracking-wide text-t4">Ticket (R$)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1000}
+                      value={rule.productTicket ?? ''}
+                      onChange={e => updateLocal(rule.formId, { productTicket: e.target.value === '' ? undefined : Number(e.target.value) })}
+                      onBlur={() => saveProduct(rule)}
+                      placeholder="0"
+                      className="w-full sm:w-36 bg-s2 border border-line rounded-[10px] px-3 py-2 text-sm text-t1 tabular-nums placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/40"
+                    />
+                  </label>
+                </div>
+                <p className="text-[11px] text-t4 mt-1.5">
+                  Quando um lead entrar por este formulário, o produto e o ticket já vêm preenchidos (alimenta a previsão de VGL).
+                </p>
 
                 {/* Aviso de fallback */}
                 {empty && rule.active && (

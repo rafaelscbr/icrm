@@ -323,6 +323,8 @@ export interface MetaFormRouting {
   brokerIds: string[]     // corretores que recebem; vazio = rodízio global
   active:    boolean
   leadCount: number       // quantos leads esse formulário já recebeu
+  productName?:   string  // produto que o formulário representa → vira property_name do lead
+  productTicket?: number  // ticket do produto → vira average_ticket do lead (previsão de VGL)
   updatedAt: string
 }
 
