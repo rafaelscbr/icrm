@@ -36,7 +36,11 @@ import toast from 'react-hot-toast'
 // ─── Tipos da RPC dashboard_overview ─────────────────────────────────────────
 
 interface OverviewData {
-  vgl: { target: number; realizadoMes: number; vendasMes: number }
+  vgl: {
+    target: number; realizadoMes: number; vendasMes: number
+    expectativa: number; expectativaVisita: number; expectativaProposta: number
+    leadsVisita: number; leadsProposta: number
+  }
   leadFunnel: Array<{ stage: string; count: number }>
   leadsAtivos: number
   leadsSemInteracao: number
@@ -128,12 +132,19 @@ const PACE_TONE = {
 } as const
 type PaceKey = keyof typeof PACE_TONE
 
-function RadialGauge({ pct, expectedPct, centerTop, centerMain }: {
+const GAUGE_STOPS = {
+  brand:    [['0%', 'var(--brand-dark)'], ['60%', 'var(--brand)'], ['100%', 'var(--brand-text)']],
+  pipeline: [['0%', '#0e7490'], ['60%', '#06b6d4'], ['100%', '#67e8f9']],
+} as const
+
+function RadialGauge({ pct, expectedPct = -1, centerTop, centerMain, tone = 'brand' }: {
   pct: number
-  expectedPct: number
+  expectedPct?: number
   centerTop: string
   centerMain: string
+  tone?: keyof typeof GAUGE_STOPS
 }) {
+  const gid = `vglGauge-${tone}`
   const size = 188, stroke = 15
   const cx = size / 2, cy = size / 2
   const r  = (size - stroke) / 2 - 2
@@ -156,10 +167,8 @@ function RadialGauge({ pct, expectedPct, centerTop, centerMain }: {
       aria-label={`${Math.round(pct)} por cento da meta de VGL atingidos`}
     >
       <defs>
-        <linearGradient id="vglGauge" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="var(--brand-dark)" />
-          <stop offset="60%"  stopColor="var(--brand)" />
-          <stop offset="100%" stopColor="var(--brand-text)" />
+        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="0">
+          {GAUGE_STOPS[tone].map(([off, col]) => <stop key={off} offset={off} stopColor={col} />)}
         </linearGradient>
       </defs>
 
@@ -171,7 +180,7 @@ function RadialGauge({ pct, expectedPct, centerTop, centerMain }: {
       {/* preenchimento */}
       <path
         d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-        fill="none" stroke="url(#vglGauge)" strokeWidth={stroke} strokeLinecap="round"
+        fill="none" stroke={`url(#${gid})`} strokeWidth={stroke} strokeLinecap="round"
         strokeDasharray={`${dash} ${len}`}
         style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.16,1,0.3,1)' }}
       />
@@ -192,84 +201,44 @@ function RadialGauge({ pct, expectedPct, centerTop, centerMain }: {
   )
 }
 
-// ─── VGL Hero ─────────────────────────────────────────────────────────────────
+// ─── Shell compartilhado dos gauges de VGL ───────────────────────────────────
 
-function VGLHero({ data, loading, error, onRetry, onNavigate }: {
-  data: OverviewData | null
-  loading: boolean
-  error: string | null
-  onRetry: () => void
-  onNavigate: () => void
+function GaugeHeroShell({
+  accentBar, glow, icon: Icon, iconTone, eyebrow, title, loading, error, hasData, onRetry, children,
+}: {
+  accentBar: string; glow: string
+  icon: React.ComponentType<{ size?: number; className?: string }>
+  iconTone: { chip: string; icon: string }
+  eyebrow: string; title: string
+  loading: boolean; error: string | null; hasData: boolean
+  onRetry: () => void; children: ReactNode
 }) {
-  const now = new Date()
-  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-  const monthTitle = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
-
-  // Ritmo do mês (fração de dias corridos decorridos)
-  const daysInMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const monthFraction = now.getDate() / daysInMonth
-  const expectedPct   = Math.round(monthFraction * 100)
-
-  const pct = data && data.vgl.target > 0
-    ? Math.round(data.vgl.realizadoMes / data.vgl.target * 100)
-    : 0
-  const falta = data ? Math.max(data.vgl.target - data.vgl.realizadoMes, 0) : 0
-
-  const pace: PaceKey = !data
-    ? 'behind'
-    : pct >= 100
-      ? 'done'
-      : pct >= expectedPct
-        ? 'onTrack'
-        : pct >= expectedPct * 0.7
-          ? 'warning'
-          : 'behind'
-  const tone = PACE_TONE[pace]
-
   return (
-    <div
-      className="h-full rounded-xl border border-line bg-surface overflow-hidden flex flex-col relative"
-      style={{ boxShadow: 'var(--shadow-card)' }}
-    >
-      {/* brilho sutil da marca no topo */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 opacity-60"
-        style={{ background: 'radial-gradient(120% 80% at 50% -20%, var(--brand-tint), transparent 70%)' }}
-        aria-hidden
-      />
-      <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand" aria-hidden />
+    <div className="h-full rounded-xl border border-line bg-surface overflow-hidden flex flex-col relative" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 opacity-60" style={{ background: `radial-gradient(120% 80% at 50% -20%, ${glow}, transparent 70%)` }} aria-hidden />
+      <div className={`absolute top-0 left-0 right-0 h-[3px] ${accentBar}`} aria-hidden />
 
       <CardHeader
-        icon={DollarSign}
-        tone={{ chip: 'bg-brand-tint', icon: 'text-brand' }}
-        eyebrow="Meta da imobiliária · VGL"
-        title={monthTitle}
+        icon={Icon}
+        tone={iconTone}
+        eyebrow={eyebrow}
+        title={title}
         right={
-          <button
-            onClick={onRetry}
-            disabled={loading}
-            className="p-2 rounded-lg text-t4 hover:text-t2 hover:bg-s2/60 transition-colors cursor-pointer disabled:opacity-50"
-            aria-label="Atualizar dados de VGL"
-          >
+          <button onClick={onRetry} disabled={loading} className="p-2 rounded-lg text-t4 hover:text-t2 hover:bg-s2/60 transition-colors cursor-pointer disabled:opacity-50" aria-label="Atualizar dados de VGL">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
         }
       />
 
-      {error && !data && (
+      {error && !hasData && (
         <div className="flex items-center gap-2 px-5 py-4 bg-error-bg flex-1">
           <AlertTriangle size={15} className="text-error flex-shrink-0" />
           <p className="text-xs text-error flex-1 min-w-0 truncate" role="alert">{error}</p>
-          <button
-            onClick={onRetry}
-            className="text-xs text-error border border-error-line hover:bg-error-bg px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex-shrink-0"
-          >
-            Tentar
-          </button>
+          <button onClick={onRetry} className="text-xs text-error border border-error-line hover:bg-error-bg px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex-shrink-0">Tentar</button>
         </div>
       )}
 
-      {loading && !data && !error && (
+      {loading && !hasData && !error && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8 px-5">
           <ShimmerBlock className="w-44 h-24 rounded-full" />
           <ShimmerBlock className="w-40 h-5" />
@@ -277,59 +246,106 @@ function VGLHero({ data, loading, error, onRetry, onNavigate }: {
         </div>
       )}
 
+      {hasData && children}
+    </div>
+  )
+}
+
+// ─── VGL Realizado × Meta ─────────────────────────────────────────────────────
+
+function VGLHero({ data, loading, error, onRetry, onNavigate }: {
+  data: OverviewData | null; loading: boolean; error: string | null; onRetry: () => void; onNavigate: () => void
+}) {
+  const now = new Date()
+  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const monthTitle = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const expectedPct = Math.round((now.getDate() / daysInMonth) * 100)
+  const pct = data && data.vgl.target > 0 ? Math.round(data.vgl.realizadoMes / data.vgl.target * 100) : 0
+  const falta = data ? Math.max(data.vgl.target - data.vgl.realizadoMes, 0) : 0
+  const pace: PaceKey = !data ? 'behind' : pct >= 100 ? 'done' : pct >= expectedPct ? 'onTrack' : pct >= expectedPct * 0.7 ? 'warning' : 'behind'
+  const tone = PACE_TONE[pace]
+
+  return (
+    <GaugeHeroShell
+      accentBar="bg-brand" glow="var(--brand-tint)"
+      icon={DollarSign} iconTone={{ chip: 'bg-brand-tint', icon: 'text-brand' }}
+      eyebrow="Realizado · VGL da imobiliária" title={monthTitle}
+      loading={loading} error={error} hasData={!!data} onRetry={onRetry}
+    >
       {data && (
         <div className="flex-1 flex flex-col px-5 pt-4 pb-5 gap-3 relative">
-          <RadialGauge
-            pct={pct}
-            expectedPct={expectedPct}
-            centerTop="DA META"
-            centerMain={`${Math.min(pct, 999)}%`}
-          />
-
-          {/* valor realizado / meta */}
+          <RadialGauge pct={pct} expectedPct={expectedPct} tone="brand" centerTop="DA META" centerMain={`${Math.min(pct, 999)}%`} />
           <div className="text-center -mt-2">
-            <p className="text-2xl font-black text-t1 tabular-nums leading-none">
-              {formatCurrency(data.vgl.realizadoMes)}
-            </p>
-            <p className="text-xs text-t3 mt-1">
-              de <span className="text-t2 font-semibold">{formatCurrencyFull(data.vgl.target)}</span>
-            </p>
+            <p className="text-2xl font-black text-t1 tabular-nums leading-none">{formatCurrency(data.vgl.realizadoMes)}</p>
+            <p className="text-xs text-t3 mt-1">de <span className="text-t2 font-semibold">{formatCurrencyFull(data.vgl.target)}</span></p>
           </div>
-
-          {/* status + ritmo */}
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${tone.chip}`}>
-              {tone.label}
-            </span>
-            <span className="text-[11px] text-t4 tabular-nums">
-              ritmo do mês: {expectedPct}%
-            </span>
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${tone.chip}`}>{tone.label}</span>
+            <span className="text-[11px] text-t4 tabular-nums">ritmo do mês: {expectedPct}%</span>
           </div>
-
-          {/* rodapé — faltam / vendas */}
           <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-line">
-            <button
-              onClick={onNavigate}
-              className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left"
-            >
+            <button onClick={onNavigate} className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left">
               <span className="text-[11px] text-t4 uppercase tracking-wide">Faltam</span>
-              <span className={`text-sm font-bold tabular-nums ${pct >= 100 ? 'text-brand' : 'text-t1'}`}>
-                {pct >= 100 ? 'Meta batida' : formatCurrency(falta)}
-              </span>
+              <span className={`text-sm font-bold tabular-nums ${pct >= 100 ? 'text-brand' : 'text-t1'}`}>{pct >= 100 ? 'Meta batida' : formatCurrency(falta)}</span>
             </button>
-            <button
-              onClick={onNavigate}
-              className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left"
-            >
+            <button onClick={onNavigate} className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left">
               <span className="text-[11px] text-t4 uppercase tracking-wide">Vendas no mês</span>
-              <span className="text-sm font-bold text-t1 tabular-nums">
-                {data.vgl.vendasMes} venda{data.vgl.vendasMes !== 1 ? 's' : ''}
-              </span>
+              <span className="text-sm font-bold text-t1 tabular-nums">{data.vgl.vendasMes} venda{data.vgl.vendasMes !== 1 ? 's' : ''}</span>
             </button>
           </div>
         </div>
       )}
-    </div>
+    </GaugeHeroShell>
+  )
+}
+
+// ─── VGL Previsão (pipeline visita + proposta) × Meta ─────────────────────────
+
+function VGLPrevisaoHero({ data, loading, error, onRetry, onNavigate }: {
+  data: OverviewData | null; loading: boolean; error: string | null; onRetry: () => void; onNavigate: () => void
+}) {
+  const exp      = data?.vgl.expectativa ?? 0
+  const target   = data?.vgl.target ?? 0
+  const pct      = data && target > 0 ? Math.round(exp / target * 100) : 0
+  const projecao = data ? data.vgl.realizadoMes + exp : 0
+  const projPct  = data && target > 0 ? Math.round(projecao / target * 100) : 0
+
+  return (
+    <GaugeHeroShell
+      accentBar="bg-cyan-500" glow="rgba(6,182,212,0.16)"
+      icon={TrendingUp} iconTone={{ chip: 'bg-cyan-500/15', icon: 'text-cyan-400' }}
+      eyebrow="Previsão · VGL em pipeline" title="Visita + Proposta"
+      loading={loading} error={error} hasData={!!data} onRetry={onRetry}
+    >
+      {data && (
+        <div className="flex-1 flex flex-col px-5 pt-4 pb-5 gap-3 relative">
+          <RadialGauge pct={pct} tone="pipeline" centerTop="DA META" centerMain={`${Math.min(pct, 999)}%`} />
+          <div className="text-center -mt-2">
+            <p className="text-2xl font-black text-t1 tabular-nums leading-none">{formatCurrency(exp)}</p>
+            <p className="text-xs text-t3 mt-1">em pipeline · meta <span className="text-t2 font-semibold">{formatCurrency(target)}</span></p>
+          </div>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full border text-cyan-300 bg-cyan-500/10 border-cyan-500/25">
+              Projeção {formatCurrency(projecao)}
+            </span>
+            <span className="text-[11px] text-t4 tabular-nums">{projPct}% da meta com o realizado</span>
+          </div>
+          <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-line">
+            <button onClick={onNavigate} className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left">
+              <span className="text-[11px] text-t4 uppercase tracking-wide">Em visita</span>
+              <span className="text-sm font-bold text-t1 tabular-nums">{formatCurrency(data.vgl.expectativaVisita)}</span>
+              <span className="text-[11px] text-t4">{data.vgl.leadsVisita} lead{data.vgl.leadsVisita !== 1 ? 's' : ''}</span>
+            </button>
+            <button onClick={onNavigate} className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left">
+              <span className="text-[11px] text-t4 uppercase tracking-wide">Em proposta</span>
+              <span className="text-sm font-bold text-t1 tabular-nums">{formatCurrency(data.vgl.expectativaProposta)}</span>
+              <span className="text-[11px] text-t4">{data.vgl.leadsProposta} lead{data.vgl.leadsProposta !== 1 ? 's' : ''}</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </GaugeHeroShell>
   )
 }
 
@@ -1323,18 +1339,26 @@ export function DashboardPage() {
       {/* ══ Visão geral — centro de comando ══════════════════════════════ */}
       <SectionLabel icon={Target} hint="Atualizado em tempo real">Visão geral</SectionLabel>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
-        {/* VGL Hero — 2 colunas × 2 linhas no desktop */}
-        <div className="col-span-2 lg:row-span-2">
-          <VGLHero
-            data={overviewData}
-            loading={overviewLoading}
-            error={overviewError}
-            onRetry={loadOverview}
-            onNavigate={() => navigate('/vendas')}
-          />
-        </div>
+      {/* Indicadores principais — VGL Realizado × Previsão */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+        <VGLHero
+          data={overviewData}
+          loading={overviewLoading}
+          error={overviewError}
+          onRetry={loadOverview}
+          onNavigate={() => navigate('/vendas')}
+        />
+        <VGLPrevisaoHero
+          data={overviewData}
+          loading={overviewLoading}
+          error={overviewError}
+          onRetry={loadOverview}
+          onNavigate={() => navigate('/leads')}
+        />
+      </div>
 
+      {/* KPIs secundários */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
         <OverviewKPICard
           title="Leads ativos"
           value={overviewData?.leadsAtivos ?? '—'}
