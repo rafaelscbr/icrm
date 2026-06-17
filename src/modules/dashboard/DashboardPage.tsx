@@ -414,52 +414,75 @@ function OverviewKPICard({
 
 // ─── Funil de leads (barras horizontais) ──────────────────────────────────────
 
-// ─── Funil desenhado (SVG, afunilado) ─────────────────────────────────────────
+// ─── Funil de vendas desenhado (SVG, forma fixa) ──────────────────────────────
 
 const LEAD_FUNNEL_HEX: Record<string, string> = {
-  lead: '#64748b', followup: '#2dd4bf', atendimento: '#a78bfa',
-  visita: '#fbbf24', proposta: '#fb923c', venda: '#4ade80',
+  lead: '#64748b', followup: '#2dd4bf', atendimento: '#8b5cf6',
+  visita: '#f59e0b', proposta: '#fb923c', venda: '#22c55e',
 }
 const CAMP_FUNNEL_HEX: Record<string, string> = {
   new: '#f59e0b', sent: '#3b82f6', attended: '#06b6d4',
-  scheduled: '#8b5cf6', presentation: '#a855f7', proposal: '#f97316', sale: '#22c55e',
+  scheduled: '#8b5cf6', presentation: '#a855f7', proposal: '#fb923c', sale: '#22c55e',
 }
 
+function hexToRgb(hex: string) {
+  return { r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) }
+}
+function shade(hex: string, f: number) {
+  const { r, g, b } = hexToRgb(hex)
+  return `rgb(${Math.round(r * f)}, ${Math.round(g * f)}, ${Math.round(b * f)})`
+}
+// Texto legível sobre a faixa — claro/escuro pela luminância da cor
+function readableText(hex: string) {
+  const { r, g, b } = hexToRgb(hex)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#16203a' : '#ffffff'
+}
+
+/**
+ * Funil de vendas com forma FIXA: o topo é sempre o mais largo e afunila etapa a
+ * etapa até a base. Só os números e a % de conversão mudam — o desenho é constante.
+ */
 function FunnelChart({ idPrefix, stages }: {
   idPrefix: string
   stages: Array<{ label: string; count: number; color: string }>
 }) {
-  const maxCount = Math.max(...stages.map(s => s.count), 1)
-  const VW = 384, cx = 158, maxHalf = 150, minHalf = 60
-  const bandH = 46, gap = 9
-  const H = stages.length * (bandH + gap) - gap
-  const halfW = (c: number) => minHalf + (c / maxCount) * (maxHalf - minHalf)
+  const n = stages.length
+  const VW = 460, cx = VW / 2
+  const topHalf = 210, botHalf = 80          // 420 no topo → 160 na base (forma fixa)
+  const bandH = 54, gap = 5
+  const H = n * bandH + (n - 1) * gap
+  const halfAt = (k: number) => topHalf - (topHalf - botHalf) * (k / n)
+  const ariaLabel = 'Funil: ' + stages.map(s => `${s.label} ${s.count}`).join(', ')
 
   return (
-    <svg viewBox={`0 0 ${VW} ${H}`} className="w-full" role="img" aria-label="Funil de etapas">
+    <svg viewBox={`0 0 ${VW} ${H}`} className="w-full" role="img" aria-label={ariaLabel}>
       <defs>
         {stages.map((s, i) => (
-          <linearGradient key={i} id={`fnl-${idPrefix}-${i}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor={s.color} stopOpacity={0.92} />
-            <stop offset="100%" stopColor={s.color} stopOpacity={0.55} />
+          <linearGradient key={i} id={`fn-${idPrefix}-${i}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={s.color} />
+            <stop offset="100%" stopColor={shade(s.color, 0.72)} />
           </linearGradient>
         ))}
       </defs>
       {stages.map((s, i) => {
-        const y    = i * (bandH + gap)
-        const wTop = halfW(s.count)
-        const wBot = halfW(stages[i + 1]?.count ?? s.count)
+        const yTop = i * (bandH + gap)
+        const wT   = halfAt(i)
+        const wB   = halfAt(i + 1)
+        const txt  = readableText(s.color)
         const conv = i > 0 && stages[i - 1].count > 0 ? Math.round(s.count / stages[i - 1].count * 100) : null
         return (
           <g key={i}>
             <polygon
-              points={`${cx - wTop},${y} ${cx + wTop},${y} ${cx + wBot},${y + bandH} ${cx - wBot},${y + bandH}`}
-              fill={`url(#fnl-${idPrefix}-${i})`} stroke={s.color} strokeOpacity={0.3} strokeWidth={1}
+              points={`${cx - wT},${yTop} ${cx + wT},${yTop} ${cx + wB},${yTop + bandH} ${cx - wB},${yTop + bandH}`}
+              fill={`url(#fn-${idPrefix}-${i})`}
             />
-            <text x={cx} y={y + bandH / 2 - 2} textAnchor="middle" className="fill-t1" fontSize={10.5} fontWeight={700} letterSpacing="0.4" fontFamily="inherit">{s.label.toUpperCase()}</text>
-            <text x={cx} y={y + bandH / 2 + 15} textAnchor="middle" className="fill-t1" fontSize={16} fontWeight={800} fontFamily="inherit">{s.count.toLocaleString('pt-BR')}</text>
+            <text x={cx} y={yTop + bandH / 2 - 3} textAnchor="middle" fill={txt} fillOpacity={0.85}
+              fontSize={10.5} fontWeight={700} letterSpacing="0.6" fontFamily="inherit">{s.label.toUpperCase()}</text>
+            <text x={cx} y={yTop + bandH / 2 + 15} textAnchor="middle" fill={txt}
+              fontSize={18} fontWeight={800} fontFamily="inherit">{s.count.toLocaleString('pt-BR')}</text>
             {conv !== null && (
-              <text x={VW - 4} y={y + bandH / 2 + 4} textAnchor="end" className="fill-t4" fontSize={11} fontWeight={700} fontFamily="inherit">{conv}%</text>
+              <text x={VW - 6} y={yTop + bandH / 2 + 4} textAnchor="end" className="fill-t4"
+                fontSize={11} fontWeight={700} fontFamily="inherit">↓ {conv}%</text>
             )}
           </g>
         )
@@ -1433,12 +1456,8 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* ══ Desempenho ══════════════════════════════════════════════════ */}
-      <SectionLabel icon={BarChart2}>Desempenho</SectionLabel>
-      <PerformanceGoalsWidget />
-
-      {/* ══ Pipeline ════════════════════════════════════════════════════ */}
-      <SectionLabel icon={Megaphone}>Pipeline</SectionLabel>
+      {/* ══ Funil de vendas ═════════════════════════════════════════════ */}
+      <SectionLabel icon={BarChart2}>Funil de vendas</SectionLabel>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-7">
         <LeadFunnelWidget
           data={overviewData}
@@ -1452,6 +1471,10 @@ export function DashboardPage() {
           onNavigate={() => navigate('/campanhas')}
         />
       </div>
+
+      {/* ══ Desempenho ══════════════════════════════════════════════════ */}
+      <SectionLabel icon={TrendingUp}>Desempenho</SectionLabel>
+      <PerformanceGoalsWidget />
 
       {/* ══ Precisa de ação ═════════════════════════════════════════════ */}
       <SectionLabel icon={AlertTriangle}>Precisa de ação</SectionLabel>
