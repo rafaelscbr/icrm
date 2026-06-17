@@ -1339,21 +1339,21 @@ export function DashboardPage() {
       {/* ══ Visão geral — centro de comando ══════════════════════════════ */}
       <SectionLabel icon={Target} hint="Atualizado em tempo real">Visão geral</SectionLabel>
 
-      {/* Indicadores principais — VGL Realizado × Previsão */}
+      {/* Indicadores principais — VGL Previsão × Realizado */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-        <VGLHero
-          data={overviewData}
-          loading={overviewLoading}
-          error={overviewError}
-          onRetry={loadOverview}
-          onNavigate={() => navigate('/vendas')}
-        />
         <VGLPrevisaoHero
           data={overviewData}
           loading={overviewLoading}
           error={overviewError}
           onRetry={loadOverview}
           onNavigate={() => navigate('/leads')}
+        />
+        <VGLHero
+          data={overviewData}
+          loading={overviewLoading}
+          error={overviewError}
+          onRetry={loadOverview}
+          onNavigate={() => navigate('/vendas')}
         />
       </div>
 
