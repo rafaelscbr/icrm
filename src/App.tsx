@@ -34,7 +34,6 @@ const PerformancePage   = lazy(() => import('./modules/performance/PerformancePa
 const TasksPage         = lazy(() => import('./modules/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
 const CampaignsPage     = lazy(() => import('./modules/campaigns/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
 const LeadsPage         = lazy(() => import('./modules/leads/LeadsPage').then(m => ({ default: m.LeadsPage })))
-const PermutaPage       = lazy(() => import('./modules/permuta/PermutaPage').then(m => ({ default: m.PermutaPage })))
 const SimuladorPage     = lazy(() => import('./modules/simulador/SimuladorPage').then(m => ({ default: m.SimuladorPage })))
 const LoginPage         = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 const AdminPage         = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })))
@@ -222,7 +221,6 @@ function AppRoutes() {
             <Route path="/campanhas" element={<PageWrapper><CampaignsPage /></PageWrapper>} />
             <Route path="/leads" element={<PageWrapper><LeadsPage /></PageWrapper>} />
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
-            <Route path="/permuta" element={<PageWrapper><PermutaPage /></PageWrapper>} />
             <Route path="/simulador" element={<PageWrapper><SimuladorPage /></PageWrapper>} />
             <Route path="/metas" element={<PageWrapper><GoalsPage /></PageWrapper>} />
             <Route path="/metas/historico" element={<PageWrapper><WeekHistoryPage /></PageWrapper>} />

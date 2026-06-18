@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
   Building2, Megaphone, BarChart3, X, Bell,
-  Search, Home, Tv2, ExternalLink, Plus, UserPlus, ArrowLeftRight,
+  Search, Home, Tv2, ExternalLink, Plus, UserPlus,
   LogOut, ShieldCheck, Target, Database,
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
@@ -25,7 +25,6 @@ const moreNav = [
   { to: '/base-leads',  icon: Database,       label: 'Base de Leads' },
   { to: '/metas',       icon: Target,         label: 'Metas'         },
   { to: '/campanhas',   icon: Megaphone,      label: 'Campanhas'     },
-  { to: '/permuta',     icon: ArrowLeftRight, label: 'Permuta'       },
   { to: '/performance', icon: BarChart3,      label: 'Análise'       },
   { to: '/escritorio',  icon: Tv2,            label: 'Escritório'    },
 ]

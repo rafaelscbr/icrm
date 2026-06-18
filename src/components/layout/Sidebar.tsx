@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
-  ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight, ArrowLeftRight, Calculator,
+  ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight, Calculator,
   Bell, ShieldCheck, LogOut, ScrollText, Target, Database,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
@@ -31,7 +31,6 @@ const navSections = [
       { key: 'imoveis',     to: '/imoveis',      icon: Building2,      label: 'Imóveis',       end: false },
       { key: 'vendas',      to: '/vendas',       icon: TrendingUp,     label: 'Vendas',        end: false },
       { key: 'campanhas',   to: '/campanhas',    icon: Megaphone,      label: 'Campanhas',     end: false },
-      { key: 'permuta',     to: '/permuta',      icon: ArrowLeftRight, label: 'Permuta',       end: false },
       { key: 'simulador',   to: '/simulador',    icon: Calculator,     label: 'Simulador',     end: false },
     ],
   },

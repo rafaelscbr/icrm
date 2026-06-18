@@ -19,7 +19,6 @@ const ALL_MENU_ITEMS = [
   { key: 'imoveis',     label: 'Imóveis',            section: 'Comercial' },
   { key: 'vendas',      label: 'Vendas',             section: 'Comercial' },
   { key: 'campanhas',   label: 'Campanhas',          section: 'Comercial' },
-  { key: 'permuta',     label: 'Permuta',            section: 'Comercial' },
   { key: 'simulador',   label: 'Simulador',          section: 'Comercial' },
   { key: 'performance', label: 'Performance',        section: 'Análise'   },
 ]

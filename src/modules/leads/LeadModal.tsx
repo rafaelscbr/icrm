@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import {
   X, MessageCircle, UserCheck, Building2,
   Trash2, RotateCcw, Edit2, AlertTriangle, CheckCircle2,
-  ClipboardList, Star, ArrowLeftRight, Search, Check, Zap,
+  ClipboardList, Star, Search, Check, Zap,
   ChevronDown, History, Target, StickyNote, PhoneCall,
   Database, ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
   Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight, Timer,
@@ -25,7 +25,6 @@ import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
 import { useSlaInfo } from './SlaBadge'
 import { LeadRadarTab } from './LeadRadarTab'
-import { LeadPermutaTab } from './LeadPermutaTab'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import toast from 'react-hot-toast'
 
@@ -125,7 +124,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showTaskForm,      setShowTaskForm]      = useState(false)
   const [showHistory,       setShowHistory]       = useState(false)
   const [showRadar,         setShowRadar]         = useState(false)
-  const [showPermuta,       setShowPermuta]       = useState(false)
   const [showBaseCamp,      setShowBaseCamp]      = useState(false)
   const [showAddToList,     setShowAddToList]     = useState(false)
   const [selectedListId,    setSelectedListId]    = useState('')
@@ -775,22 +773,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               {showRadar && (
                 <div className="px-1">
                   <LeadRadarTab lead={lead} properties={properties} />
-                </div>
-              )}
-
-              <button
-                onClick={() => setShowPermuta(v => !v)}
-                aria-expanded={showPermuta}
-                className="flex items-center justify-between w-full px-3 py-2.5 rounded-[14px] bg-s2 hover:bg-s3 border border-line transition-all duration-150"
-              >
-                <div className="flex items-center gap-2 text-xs font-medium text-t2">
-                  <ArrowLeftRight size={12} strokeWidth={1.6} className="text-t4" /> Permuta
-                </div>
-                <ChevronDown size={12} strokeWidth={1.6} aria-hidden="true" className={`text-t4 transition-transform duration-200 ${showPermuta ? 'rotate-180' : ''}`} />
-              </button>
-              {showPermuta && (
-                <div className="px-1">
-                  <LeadPermutaTab contact={contact} />
                 </div>
               )}
 
