@@ -421,6 +421,9 @@ export function Sidebar() {
         {/* Tema toggle */}
         <button
           onClick={toggle}
+          role="switch"
+          aria-checked={theme === 'light'}
+          aria-label="Alternar tema claro e escuro"
           title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer"
           style={{ color: 'var(--nav-text)' }}
@@ -464,6 +467,7 @@ export function Sidebar() {
           <button
             onClick={handleLogout}
             title="Sair"
+            aria-label="Sair da conta"
             className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer flex-shrink-0"
             style={{ color: 'var(--nav-muted)' }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}

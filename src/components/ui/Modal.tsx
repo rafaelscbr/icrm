@@ -78,7 +78,8 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby="modal-title"
+        aria-describedby={subtitle ? 'modal-subtitle' : undefined}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         className={`
@@ -98,8 +99,8 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
         {/* Header */}
         <div className="flex items-start justify-between px-5 lg:px-6 py-4 border-b border-line flex-shrink-0">
           <div className="min-w-0 pr-4">
-            <h2 className="text-base font-semibold text-t1 leading-tight">{title}</h2>
-            {subtitle && <p className="text-xs text-t3 mt-0.5">{subtitle}</p>}
+            <h2 id="modal-title" className="text-base font-semibold text-t1 leading-tight">{title}</h2>
+            {subtitle && <p id="modal-subtitle" className="text-xs text-t3 mt-0.5">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}

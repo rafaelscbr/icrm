@@ -202,9 +202,16 @@ function AppRoutes() {
   return (
     <>
       <PresenceTracker />
+      {/* Skip link — teclado pula a navegação e vai direto ao conteúdo */}
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-brand focus:text-[#0F1730] focus:font-semibold focus:shadow-modal"
+      >
+        Pular para o conteúdo
+      </a>
       <div className="flex min-h-screen page-bg">
         <Sidebar />
-        <main className="flex-1 overflow-auto pb-nav-safe lg:!pb-0">
+        <main id="conteudo" className="flex-1 overflow-auto pb-nav-safe lg:!pb-0">
           <Suspense fallback={<RouteLoading />}>
           <Routes>
             <Route path="/" element={<PageWrapper><DashboardPage /></PageWrapper>} />

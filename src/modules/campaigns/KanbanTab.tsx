@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
-  closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors,
+  closestCenter, DragEndEvent, PointerSensor, KeyboardSensor, useSensor, useSensors,
 } from '@dnd-kit/core'
 import * as XLSX from 'xlsx'
 import { LeadParecerModal } from './LeadParecerModal'
@@ -315,7 +315,8 @@ function LeadCard({
             {...listeners}
             {...attributes}
             onClick={e => e.stopPropagation()}
-            className="w-5 h-5 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors"
+            aria-label="Arrastar lead"
+            className="w-5 h-5 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors rounded focus-visible:outline-2 focus-visible:outline-brand"
           >
             <GripVertical size={12} />
           </div>
@@ -565,7 +566,9 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
   const [visitaLead,      setVisitaLead]         = useState<Lead | undefined>()
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // Acessibilidade: mover cards por teclado (Espaço pega/solta, setas movem)
+    useSensor(KeyboardSensor),
   )
 
   const filteredLeads = useMemo(() => applyDateFilter(leads, dateFilter), [leads, dateFilter])

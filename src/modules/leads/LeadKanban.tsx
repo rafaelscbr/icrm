@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from 'react'
 import {
   DndContext, DragOverlay, closestCenter,
   DragEndEvent, DragOverEvent, DragStartEvent,
-  PointerSensor, useSensor, useSensors,
+  PointerSensor, KeyboardSensor, useSensor, useSensors,
   useDroppable,
 } from '@dnd-kit/core'
 import {
   SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -446,7 +447,9 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
   useEffect(() => { loadAllInteractions() }, [])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // Acessibilidade: mover cards por teclado (Espaço pega/solta, setas movem)
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
   // Ordena cada coluna por kanbanOrder desc (ou updatedAt como fallback)

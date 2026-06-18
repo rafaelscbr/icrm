@@ -26,11 +26,14 @@ export function Button({
   children,
   className = '',
   disabled,
+  type,
   ...props
 }: ButtonProps) {
   return (
     <button
       {...props}
+      // Default seguro: nunca submete um form sem ser explicitamente type="submit"
+      type={type ?? 'button'}
       disabled={disabled}
       className={`
         inline-flex items-center justify-center font-semibold rounded-lg
