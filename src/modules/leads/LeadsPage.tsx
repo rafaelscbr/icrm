@@ -121,7 +121,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         {property ? (
           <p className="text-xs text-t2 truncate">{property.name}</p>
         ) : lead.propertyName ? (
-          <p className="text-xs text-amber-400/80 truncate">🏠 {lead.propertyName}</p>
+          <p className="text-xs text-amber-400/80 truncate flex items-center justify-end gap-1"><Home size={10} className="flex-shrink-0" /> {lead.propertyName}</p>
         ) : lead.averageTicket ? (
           <p className="text-xs font-semibold text-violet-400">{formatCurrency(lead.averageTicket)}</p>
         ) : (

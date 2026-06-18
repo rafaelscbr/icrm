@@ -4,6 +4,7 @@ import {
   Search, MapPin, ChevronRight, ChevronLeft,
   UserPlus, Users, CheckCircle2, AlertCircle, AlertTriangle,
   Calendar, Sparkles, PenLine,
+  Smartphone, Globe, Handshake, Target, MessageCircle, PhoneCall, Home, FileText, Trophy,
 } from 'lucide-react'
 import { Lead, LeadOrigin, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -15,20 +16,20 @@ import toast from 'react-hot-toast'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const ORIGINS: { value: LeadOrigin; label: string; emoji: string; grad: string; ring: string }[] = [
-  { value: 'felicita',  label: 'Felicità',  emoji: '✨', grad: 'from-rose-500 to-pink-600',    ring: 'ring-rose-500/50'   },
-  { value: 'meta_ads',  label: 'Meta ADS',  emoji: '📱', grad: 'from-blue-500 to-indigo-600',  ring: 'ring-blue-500/50'   },
-  { value: 'portal',    label: 'Portal',    emoji: '🌐', grad: 'from-cyan-500 to-sky-600',     ring: 'ring-cyan-500/50'   },
-  { value: 'offline',   label: 'Offline',   emoji: '🤝', grad: 'from-amber-500 to-orange-600', ring: 'ring-amber-500/50'  },
+const ORIGINS: { value: LeadOrigin; label: string; icon: typeof Sparkles; grad: string; ring: string }[] = [
+  { value: 'felicita',  label: 'Felicità',  icon: Sparkles,   grad: 'from-rose-500 to-pink-600',    ring: 'ring-rose-500/50'   },
+  { value: 'meta_ads',  label: 'Meta ADS',  icon: Smartphone, grad: 'from-blue-500 to-indigo-600',  ring: 'ring-blue-500/50'   },
+  { value: 'portal',    label: 'Portal',    icon: Globe,      grad: 'from-cyan-500 to-sky-600',     ring: 'ring-cyan-500/50'   },
+  { value: 'offline',   label: 'Offline',   icon: Handshake,  grad: 'from-amber-500 to-orange-600', ring: 'ring-amber-500/50'  },
 ]
 
-const STAGES: { value: LeadFunnelStage; label: string; emoji: string; color: string; active: string }[] = [
-  { value: 'lead',        label: 'Lead',        emoji: '🎯', color: 'text-t3',  active: 'bg-slate-500/25 border-slate-400/50 text-t1' },
-  { value: 'followup',    label: 'Followup',    emoji: '💬', color: 'text-blue-400',   active: 'bg-blue-500/25 border-blue-400/50 text-blue-200'    },
-  { value: 'atendimento', label: 'Atendimento', emoji: '🤙', color: 'text-violet-400', active: 'bg-violet-500/25 border-violet-400/50 text-violet-200'},
-  { value: 'visita',      label: 'Visita',      emoji: '🏠', color: 'text-amber-400',  active: 'bg-amber-500/25 border-amber-400/50 text-amber-200'  },
-  { value: 'proposta',    label: 'Proposta',    emoji: '📝', color: 'text-orange-400', active: 'bg-orange-500/25 border-orange-400/50 text-orange-200'},
-  { value: 'venda',       label: 'Venda',       emoji: '🏆', color: 'text-green-400',  active: 'bg-green-500/25 border-green-400/50 text-green-200'  },
+const STAGES: { value: LeadFunnelStage; label: string; icon: typeof Sparkles; color: string; active: string }[] = [
+  { value: 'lead',        label: 'Lead',        icon: Target,        color: 'text-t3',  active: 'bg-slate-500/25 border-slate-400/50 text-t1' },
+  { value: 'followup',    label: 'Followup',    icon: MessageCircle, color: 'text-blue-400',   active: 'bg-blue-500/25 border-blue-400/50 text-blue-200'    },
+  { value: 'atendimento', label: 'Atendimento', icon: PhoneCall,     color: 'text-violet-400', active: 'bg-violet-500/25 border-violet-400/50 text-violet-200'},
+  { value: 'visita',      label: 'Visita',      icon: Home,          color: 'text-amber-400',  active: 'bg-amber-500/25 border-amber-400/50 text-amber-200'  },
+  { value: 'proposta',    label: 'Proposta',    icon: FileText,      color: 'text-orange-400', active: 'bg-orange-500/25 border-orange-400/50 text-orange-200'},
+  { value: 'venda',       label: 'Venda',       icon: Trophy,        color: 'text-green-400',  active: 'bg-green-500/25 border-green-400/50 text-green-200'  },
 ]
 
 function formatPhoneInput(v: string) {
@@ -378,7 +379,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           autoFocus
                           placeholder="Nome ou telefone..."
                           className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4
-                            focus:outline-none focus:border-violet-500/60 focus:bg-violet-500/5 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                            focus:outline-none focus:border-brand focus:bg-brand-tint focus:ring-1 focus:ring-brand/25 transition-all"
                         />
                       </div>
 
@@ -444,7 +445,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                         value={newName}
                         onChange={e => setNewName(e.target.value)}
                         placeholder="Nome do lead"
-                        className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                        className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/25 transition-all"
                       />
                     </div>
                   </div>
@@ -463,7 +464,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           className={`w-full bg-s3/50 border rounded-xl pl-9 pr-3 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-1 transition-all ${
                             duplicateContact
                               ? 'border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/20 bg-amber-500/5'
-                              : 'border-line-input focus:border-violet-500/60 focus:ring-violet-500/20'
+                              : 'border-line-input focus:border-brand focus:ring-brand/25'
                           }`}
                         />
                       </div>
@@ -478,7 +479,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           onChange={e => setNewEmail(e.target.value)}
                           placeholder="email@..."
                           type="email"
-                          className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-3 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                          className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-3 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/25 transition-all"
                         />
                       </div>
                     </div>
@@ -558,7 +559,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           : 'bg-s2/60 border-line text-t3 hover:bg-s3 hover:text-t2 hover:border-line-strong'
                       }`}
                     >
-                      <span className="text-lg leading-none">{o.emoji}</span>
+                      <o.icon size={16} strokeWidth={1.6} className="flex-shrink-0" />
                       <span>{o.label}</span>
                       {origin === o.value && (
                         <CheckCircle2 size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70" />
@@ -600,7 +601,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                         value={propertySearch}
                         onChange={e => setPropertySearch(e.target.value)}
                         placeholder="Buscar no sistema ou digitar nome livre..."
-                        className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                        className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/25 transition-all"
                       />
                     </div>
                     {propertySearch.length >= 1 && (
@@ -664,7 +665,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                     onChange={e => handleAverageTicketChange(e.target.value)}
                     onBlur={handleAverageTicketBlur}
                     placeholder="Ex: 500.000"
-                    className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                    className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/25 transition-all"
                   />
                 </div>
               </div>
@@ -683,14 +684,14 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           : `bg-s2 border-line text-t3 hover:text-t2 hover:bg-s3`
                       }`}
                     >
-                      <span className="text-base leading-none">{s.emoji}</span>
+                      <s.icon size={15} strokeWidth={1.6} className="flex-shrink-0" />
                       <span>{s.label}</span>
                     </button>
                   ))}
                 </div>
                 {stage === 'visita' && (
                   <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/25 rounded-xl animate-in fade-in duration-200">
-                    <span className="text-sm">🏠</span>
+                    <Home size={14} className="text-amber-400 flex-shrink-0" />
                     <p className="text-xs text-amber-300 font-medium">Uma tarefa de visita será criada automaticamente e vai alimentar suas metas!</p>
                   </div>
                 )}
@@ -713,7 +714,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   value={entryDate}
                   max={localDateStr()}
                   onChange={e => setEntryDate(e.target.value)}
-                  className="w-full bg-s3/50 border border-line-input rounded-xl px-4 py-3 text-sm text-t1 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                  className="w-full bg-s3/50 border border-line-input rounded-xl px-4 py-3 text-sm text-t1 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/25 transition-all"
                 />
                 {isRetroactive && (
                   <p className="text-xs text-blue-400 mt-1 flex items-center gap-1">
@@ -730,7 +731,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Informações adicionais sobre o lead..."
                   rows={3}
-                  className="w-full bg-s3/50 border border-line-input rounded-xl px-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none"
+                  className="w-full bg-s3/50 border border-line-input rounded-xl px-4 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/25 transition-all resize-none"
                 />
               </div>
             </div>
@@ -766,7 +767,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   : 'bg-gradient-to-r bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30'
               }`}
             >
-              {lead ? 'Salvar alterações' : isRetroactive ? '📅 Registrar lead' : '✨ Criar Lead'}
+              {lead ? 'Salvar alterações' : isRetroactive ? 'Registrar lead' : 'Criar Lead'}
             </button>
           )}
         </div>
