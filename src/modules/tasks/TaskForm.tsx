@@ -3,6 +3,7 @@ import {
   Calendar, User, Building2, Plus, ExternalLink,
   CheckCircle2, ListChecks, X, UserCheck, ChevronRight, ChevronLeft,
   Clock, Flag, FileText, Zap, Users,
+  Handshake, Search, Radar, Megaphone, Settings, DollarSign, MessageCircle,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Task, TaskCategory, TaskPriority, ChecklistItem } from '../../types'
@@ -23,16 +24,16 @@ interface TaskFormProps {
   defaultContactId?: string
 }
 
-const CATEGORY_OPTIONS: { value: TaskCategory; label: string; icon: string }[] = [
-  { value: 'visita',             label: 'Atendimento',     icon: '🤝' },
-  { value: 'proposta',           label: 'Proposta',        icon: '📋' },
-  { value: 'agenciamento',       label: 'Agenciamento',    icon: '🤝' },
-  { value: 'busca_imovel',       label: 'Busca de Imóvel', icon: '🔍' },
-  { value: 'prospeccao_imoveis', label: 'Prospecção',      icon: '📡' },
-  { value: 'campanhas',          label: 'Campanha',        icon: '📢' },
-  { value: 'administrativo',     label: 'Admin',           icon: '⚙️' },
-  { value: 'souza_financeiro',   label: 'Souza Financeiro', icon: '$'  },
-  { value: 'outro',              label: 'Outro',            icon: '💬' },
+const CATEGORY_OPTIONS: { value: TaskCategory; label: string; icon: typeof FileText }[] = [
+  { value: 'visita',             label: 'Atendimento',     icon: Handshake },
+  { value: 'proposta',           label: 'Proposta',        icon: FileText },
+  { value: 'agenciamento',       label: 'Agenciamento',    icon: Building2 },
+  { value: 'busca_imovel',       label: 'Busca de Imóvel', icon: Search },
+  { value: 'prospeccao_imoveis', label: 'Prospecção',      icon: Radar },
+  { value: 'campanhas',          label: 'Campanha',        icon: Megaphone },
+  { value: 'administrativo',     label: 'Admin',           icon: Settings },
+  { value: 'souza_financeiro',   label: 'Souza Financeiro', icon: DollarSign },
+  { value: 'outro',              label: 'Outro',            icon: MessageCircle },
 ]
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string; bg: string; border: string; dot: string }[] = [
@@ -255,7 +256,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                   : 'bg-s3/40 border-line text-t3 hover:border-line-strong hover:text-t1'
                 }`}
             >
-              <span>{opt.icon}</span>
+              <opt.icon size={14} strokeWidth={1.6} className="flex-shrink-0" />
               <span>{opt.label}</span>
             </button>
           ))}

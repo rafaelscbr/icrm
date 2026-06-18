@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } fr
 import {
   MessageCircle, FileText, Pencil, Trash2, Search, ChevronDown,
   ThumbsUp, Loader2, Clock, Moon, AlertCircle, ShoppingBag, Circle,
+  Zap, Ban, CheckCircle2,
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { ListContainer } from '../../components/ui/ListContainer'
@@ -651,7 +652,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     if (!isBusinessHours() && !forceOffHours) {
       toast(t => (
         <span className="flex flex-col gap-1.5">
-          <span className="font-semibold text-amber-300 flex items-center gap-1.5">🌙 Fora do horário comercial</span>
+          <span className="font-semibold text-amber-300 flex items-center gap-1.5"><Moon size={13} /> Fora do horário comercial</span>
           <span className="text-xs text-t2">Enviar entre 20h e 8h aumenta o risco de banimento.</span>
           <button onClick={() => { toast.dismiss(t.id); setForceOffHours(true) }}
             className="mt-1 text-xs underline text-amber-400 text-left cursor-pointer">
@@ -736,7 +737,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           {/* ── Banner PRONTO — fixo, só some quando dispara de novo ── */}
         {isReady && !atLim && (
           <div className="mt-2 flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/15 border border-green-400/40 ring-1 ring-green-400/20 animate-pulse-once">
-            <span className="text-xl">⚡</span>
+            <Zap size={20} className="text-green-300 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-bold text-green-300 leading-none">Pronto para disparar!</p>
               <p className="text-xs text-green-500/80 mt-0.5">Cooldown encerrou — clique em Disparar para enviar a próxima mensagem.</p>
@@ -756,7 +757,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           <div className="flex flex-wrap gap-2 mt-2">
             {atLim && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs font-semibold">
-                🚫 Limite diário atingido — retome amanhã
+                <Ban size={13} className="flex-shrink-0" /> Limite diário atingido — retome amanhã
               </div>
             )}
             {!atLim && onCd && (
@@ -820,7 +821,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
           {queueLeads.length === 0 ? (
             <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-green-500/5 border border-green-500/15">
-              <span className="text-2xl">✅</span>
+              <CheckCircle2 size={24} className="text-green-400 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-green-400">Fila zerada!</p>
                 <p className="text-xs text-t3">Todos os leads desta campanha já foram acionados.</p>
@@ -978,8 +979,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         <div className="min-w-0">
                           <p className="text-sm text-t2 truncate">{lead.name}</p>
                           {lead.lastSentByName && (
-                            <p className="text-[11px] text-violet-400/70 truncate">
-                              💬 {lead.lastSentByName}{lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                            <p className="text-[11px] text-violet-400/70 truncate flex items-center gap-1">
+                              <MessageCircle size={10} className="flex-shrink-0" /> {lead.lastSentByName}{lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
                               {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
                             </p>
                           )}

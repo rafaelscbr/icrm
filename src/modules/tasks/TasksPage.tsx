@@ -5,6 +5,7 @@ import {
   Building2, AlertTriangle, CheckCheck, ListTodo, CalendarClock,
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
   BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users,
+  Briefcase,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { ListContainer } from '../../components/ui/ListContainer'
@@ -32,14 +33,14 @@ const PRIORITY_DOT: Record<TaskPriority, string> = {
 }
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; label: string; motto: string }> = {
-  visita:             { icon: Home,       color: 'text-cyan-400',    label: 'Visita',                motto: 'bora fechar negócio! 🏠'                },
-  agenciamento:       { icon: Building2,  color: 'text-brand',  label: 'Agenciamento',          motto: 'hora de ampliar o portfólio! 📋'        },
-  proposta:           { icon: FileText,   color: 'text-amber-400',   label: 'Proposta',              motto: 'proposta enviada é venda garantida! 💰'  },
-  busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel',       motto: 'encontre o imóvel certo para o lead! 🔍' },
-  prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis', motto: 'novos imóveis no portfólio! 🏘️'          },
-  campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas',             motto: 'marketing em ação! 📣'                   },
-  administrativo:     { icon: FileText,   color: 'text-t2',   label: 'Administrativo',        motto: 'mantendo a casa em ordem! 📁'            },
-  souza_financeiro:   { icon: Zap,        color: 'text-green-400',   label: 'Souza Financeiro',      motto: 'financeiro em dia! 💵'                   },
+  visita:             { icon: Home,       color: 'text-cyan-400',    label: 'Visita',                motto: 'bora fechar negócio!'                },
+  agenciamento:       { icon: Building2,  color: 'text-brand',  label: 'Agenciamento',          motto: 'hora de ampliar o portfólio!'        },
+  proposta:           { icon: FileText,   color: 'text-amber-400',   label: 'Proposta',              motto: 'proposta enviada é venda garantida!'  },
+  busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel',       motto: 'encontre o imóvel certo para o lead!' },
+  prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis', motto: 'novos imóveis no portfólio!'          },
+  campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas',             motto: 'marketing em ação!'                   },
+  administrativo:     { icon: FileText,   color: 'text-t2',   label: 'Administrativo',        motto: 'mantendo a casa em ordem!'            },
+  souza_financeiro:   { icon: Zap,        color: 'text-green-400',   label: 'Souza Financeiro',      motto: 'financeiro em dia!'                   },
   outro:              { icon: Zap,        color: 'text-t3',   label: 'Outro',                 motto: ''                                        },
 }
 
@@ -106,12 +107,12 @@ function SmartBanner({ tasks, firstName }: { tasks: Task[]; firstName: string })
   let accent = 'from-blue-500/10 to-blue-600/5'
 
   if (total === 0 && overdue.length === 0) {
-    headline = `${greeting}, ${firstName}! 🎉`
+    headline = `${greeting}, ${firstName}!`
     sub = 'Agenda limpa hoje. Aproveite para prospectar ou adiantar tarefas futuras.'
     accent = 'from-green-500/15 to-emerald-500/5'
   } else if (total === 0 && overdue.length > 0) {
     headline = `${greeting}, ${firstName}!`
-    sub = `Nada para hoje, mas você tem ${overdue.length} tarefa${overdue.length > 1 ? 's' : ''} em atraso. Hora de colocar em dia! ⚡`
+    sub = `Nada para hoje, mas você tem ${overdue.length} tarefa${overdue.length > 1 ? 's' : ''} em atraso. Hora de colocar em dia!`
     accent = 'from-red-500/15 to-orange-500/5'
   } else {
     headline = `${greeting}, ${firstName}! Temos ${total} tarefa${total > 1 ? 's' : ''} para hoje.`
@@ -122,8 +123,10 @@ function SmartBanner({ tasks, firstName }: { tasks: Task[]; firstName: string })
   return (
     <div className={`border border-line rounded-xl bg-gradient-to-r ${accent} px-6 py-5 mb-6`}>
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 bg-s3/70 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">
-          {total === 0 && overdue.length === 0 ? '✅' : total >= 5 ? '🔥' : '💼'}
+        <div className="w-10 h-10 bg-s3/70 rounded-xl flex items-center justify-center flex-shrink-0 text-brand">
+          {total === 0 && overdue.length === 0
+            ? <CheckCircle2 size={22} className="text-green-400" />
+            : total >= 5 ? <Flame size={22} /> : <Briefcase size={22} />}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-base font-semibold text-slate-100 mb-0.5">{headline}</p>
