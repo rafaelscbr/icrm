@@ -313,7 +313,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 value={bedrooms}
                 onChange={e => setBedrooms(e.target.value)}
                 placeholder="0"
-                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -324,7 +324,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 value={suites}
                 onChange={e => setSuites(e.target.value)}
                 placeholder="0"
-                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -335,7 +335,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                   value={areaSqm}
                   onChange={e => setAreaSqm(e.target.value.replace(/[^0-9,]/g, ''))}
                   placeholder="85"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-3 pr-9 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-3 pr-9 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-t3 pointer-events-none">m²</span>
               </div>
@@ -352,7 +352,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 value={fmtInput(condoFee)}
                 onChange={e => setCondoFee(e.target.value.replace(/\D/g, ''))}
                 placeholder="800"
-                className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
               />
             </div>
           </div>
@@ -372,7 +372,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 onChange={e => setValue(e.target.value.replace(/\D/g, ''))}
                 placeholder="850.000"
                 className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100
-                  placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
+                  placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25
                   ${errors.value ? 'border-red-500/50' : 'border-line'}`}
               />
             </div>
@@ -418,7 +418,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                 placeholder="Buscar contato..."
                 className={`
                   w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100
-                  placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50
+                  placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25
                   ${errors.owner ? 'border-red-500/50' : 'border-line'}
                 `}
               />
@@ -456,7 +456,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Informações adicionais, diferenciais do imóvel, condições especiais…"
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 resize-none"
             />
           </div>
 

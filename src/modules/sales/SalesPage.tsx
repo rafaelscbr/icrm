@@ -218,7 +218,7 @@ export function SalesPage() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar por cliente ou imóvel..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[44px]"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all min-h-[44px]"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">

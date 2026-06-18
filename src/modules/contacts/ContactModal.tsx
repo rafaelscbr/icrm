@@ -498,7 +498,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                         value={item.region ?? ''}
                         onChange={e => updatePermutaItem(item.id, { region: e.target.value || undefined })}
                         placeholder="Região (ex: Balneário Camboriú)"
-                        className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
                       />
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-t3 pointer-events-none">R$</span>
@@ -509,7 +509,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                           value={item.value ? item.value.toLocaleString('pt-BR') : ''}
                           onChange={e => updatePermutaItem(item.id, { value: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
                           placeholder="Valor do imóvel"
-                          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
                         />
                       </div>
                     </div>
@@ -521,7 +521,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                         value={item.carModel ?? ''}
                         onChange={e => updatePermutaItem(item.id, { carModel: e.target.value || undefined })}
                         placeholder="Modelo (ex: Toyota Corolla 2022)"
-                        className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
                       />
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-t3 pointer-events-none">R$</span>
@@ -532,7 +532,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                           value={item.carValue ? item.carValue.toLocaleString('pt-BR') : ''}
                           onChange={e => updatePermutaItem(item.id, { carValue: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
                           placeholder="Valor de entrada"
-                          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
                         />
                       </div>
                     </div>

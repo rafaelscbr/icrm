@@ -204,7 +204,7 @@ export function LeadListDetail({ list, onBack }: Props) {
           <div className="flex-1 relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t4" />
             <input
-              className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+              className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-indigo-500/50 transition-all"
               placeholder="Buscar por nome ou telefone…"
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1) }}

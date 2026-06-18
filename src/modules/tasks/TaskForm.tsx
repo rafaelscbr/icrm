@@ -43,7 +43,7 @@ const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string; bg:
 ]
 
 const inputBase =
-  'w-full bg-s3/50 border border-line hover:border-line-strong rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-150'
+  'w-full bg-s3/50 border border-line hover:border-line-strong rounded-xl px-3 py-3 min-h-[44px] text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-indigo-500/50 transition-all duration-150'
 
 function todayStr()    { return localDateStr() }
 function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return localDateStr(d) }

@@ -255,7 +255,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                 placeholder="Ex: Liber.ATO – Proprietários Maio/26"
                 aria-invalid={errors.name ? true : undefined}
                 aria-describedby={errors.name ? 'campaign-name-error' : undefined}
-                className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px]"
+                className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all min-h-[48px]"
               />
               {errors.name && <p id="campaign-name-error" className="text-xs text-red-400" role="alert">{errors.name}</p>}
             </div>
@@ -277,7 +277,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                   onChange={e => setTicketRaw(e.target.value.replace(/[^\d.,]/g, ''))}
                   onBlur={() => { const n = parseBRL(ticketRaw); setTicketRaw(n > 0 ? formatBRL(n) : '') }}
                   placeholder="Ex: 500.000"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-12 pr-4 py-3.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px]"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-12 pr-4 py-3.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all min-h-[48px]"
                 />
               </div>
               <p className="text-xs text-t5">Usado para calcular VGV na aba de Previsão</p>
@@ -292,7 +292,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                   id="campaign-owner"
                   value={responsavelId}
                   onChange={e => setResponsavelId(e.target.value)}
-                  className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px] appearance-none"
+                  className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all min-h-[48px] appearance-none"
                 >
                   <option value="">Minha conta (admin)</option>
                   {brokers.map(b => (
@@ -340,7 +340,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                   placeholder="Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de apresentar..."
                   aria-invalid={errors.message ? true : undefined}
                   aria-describedby={errors.message ? 'campaign-message-1-error' : undefined}
-                  className="w-full bg-s3/50 border border-line rounded-xl px-3 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
+                  className="w-full bg-s3/50 border border-line rounded-xl px-3 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-brand/25 resize-none transition-all"
                 />
                 {errors.message && <p id="campaign-message-1-error" className="text-xs text-red-400" role="alert">{errors.message}</p>}
               </div>
@@ -364,7 +364,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                     onChange={e => setMessages(m => m.map((v, i) => i === idx ? e.target.value : v))}
                     rows={4}
                     placeholder="Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de apresentar..."
-                    className="w-full bg-s3/50 border border-line rounded-xl px-3 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
+                    className="w-full bg-s3/50 border border-line rounded-xl px-3 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-brand/25 resize-none transition-all"
                   />
                 </div>
               ))}

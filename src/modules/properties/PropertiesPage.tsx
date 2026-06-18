@@ -216,7 +216,7 @@ export function PropertiesPage() {
             value={query}
             onChange={e => { setQuery(e.target.value) }}
             placeholder="Buscar imóvel ou bairro..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all"
           />
         </div>
         <div className="flex gap-2 flex-wrap">

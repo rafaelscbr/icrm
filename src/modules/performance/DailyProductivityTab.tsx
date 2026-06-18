@@ -146,7 +146,7 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
             max={new Date(Date.now() - 86400000).toISOString().split('T')[0]}
             value={date}
             onChange={e => setDate(e.target.value)}
-            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand/25"
           />
         </div>
 
@@ -188,7 +188,7 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
           onChange={e => setNotes(e.target.value)}
           rows={2}
           placeholder="Observações (opcional)"
-          className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+          className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 resize-none"
         />
 
         {/* Closed toggle */}
@@ -408,7 +408,7 @@ export function DailyProductivityTab() {
             onChange={e => updateToday({ notes: e.target.value })}
             rows={3}
             placeholder="Como foi o dia? Algum destaque, oportunidade ou ponto de atenção..."
-            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none disabled:opacity-50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 resize-none disabled:opacity-50"
           />
         )}
       </div>

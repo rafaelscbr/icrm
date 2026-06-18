@@ -142,7 +142,7 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
             autoFocus
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand/25"
           />
         </div>
         <div>
@@ -151,7 +151,7 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
             type="date"
             value={dueDate}
             onChange={e => setDueDate(e.target.value)}
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand/25"
           />
         </div>
         <div className="flex gap-2 mt-1">

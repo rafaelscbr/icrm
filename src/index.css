@@ -634,7 +634,6 @@ html.light .shimmer {
 
 /* Ring indigo → Areia */
 .ring-indigo-500\/30  { --tw-ring-color: rgba(228,178,60,0.30) !important; }
-.focus\:ring-indigo-500\/50:focus { --tw-ring-color: rgba(228,178,60,0.35) !important; }
 
 /* Texto em fundo Areia = Marinho (contraste 6.5:1) */
 .bg-brand,

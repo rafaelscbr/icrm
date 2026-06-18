@@ -102,7 +102,7 @@ export function ContactsPage() {
             value={query}
             onChange={e => { setQuery(e.target.value); setPage(1) }}
             placeholder="Buscar contato..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all min-h-[44px]"
+            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-indigo-500/50 transition-all min-h-[44px]"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">

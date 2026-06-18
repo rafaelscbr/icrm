@@ -128,7 +128,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               onFocus={() => setShowClientDrop(true)}
               onBlur={() => setTimeout(() => setShowClientDrop(false), 150)}
               placeholder="Buscar contato..."
-              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.client ? 'border-red-500/50' : 'border-line'}`}
+              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 ${errors.client ? 'border-red-500/50' : 'border-line'}`}
             />
             {errors.client && <p className="text-xs text-red-400">{errors.client}</p>}
             {showClientDrop && (
@@ -158,7 +158,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               onFocus={() => setShowPropDrop(true)}
               onBlur={() => setTimeout(() => setShowPropDrop(false), 150)}
               placeholder="Buscar imóvel ou digitar nome..."
-              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.property ? 'border-red-500/50' : 'border-line'}`}
+              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 ${errors.property ? 'border-red-500/50' : 'border-line'}`}
             />
             {errors.property && <p className="text-xs text-red-400">{errors.property}</p>}
             {showPropDrop && filteredProps.length > 0 && (
@@ -197,7 +197,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                 onChange={e => setValue(e.target.value)}
                 inputMode="numeric"
                 placeholder="600.000"
-                className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.value ? 'border-red-500/50' : 'border-line'}`}
+                className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 ${errors.value ? 'border-red-500/50' : 'border-line'}`}
               />
             </div>
             {errors.value && <p className="text-xs text-red-400 mt-1">{errors.value}</p>}
@@ -348,7 +348,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               onChange={e => setNotes(e.target.value)}
               placeholder="Informações adicionais..."
               rows={2}
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 resize-none"
             />
           </div>
 

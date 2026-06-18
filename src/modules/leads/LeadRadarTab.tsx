@@ -160,7 +160,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
         .slice(0, 8)
     : []
 
-  const inputClass = 'w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50'
+  const inputClass = 'w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25'
   const labelClass = 'text-xs font-medium text-t3 uppercase tracking-wider'
 
   return (

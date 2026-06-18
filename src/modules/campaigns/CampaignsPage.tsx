@@ -305,7 +305,7 @@ export function CampaignsPage() {
           <select
             value={transferBrokerId}
             onChange={e => setTransferBrokerId(e.target.value)}
-            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px] appearance-none"
+            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all min-h-[48px] appearance-none"
           >
             <option value="">Admin (sem corretor)</option>
             {brokers.map(b => (
