@@ -3,6 +3,7 @@ import {
   Flame, DollarSign, TrendingDown, Activity,
   AlertTriangle, Clock, Crown, ChevronRight,
   MessageCircle, XCircle, Zap, Thermometer, BarChart2, Timer,
+  Sparkles, Smartphone, Globe, Handshake, Megaphone, CheckCircle2,
 } from 'lucide-react'
 import { SlaBadge, slaActive } from './SlaBadge'
 import { Lead, LeadFunnelStage } from '../../types'
@@ -20,8 +21,8 @@ const ORIGIN_LABEL: Record<string, string> = {
 const ORIGIN_COLOR: Record<string, string> = {
   felicita: '#f43f5e', meta_ads: '#3b82f6', portal: '#06b6d4', offline: '#f59e0b', campanha: '#a855f7',
 }
-const ORIGIN_EMOJI: Record<string, string> = {
-  felicita: '✨', meta_ads: '📱', portal: '🌐', offline: '🤝', campanha: '📣',
+const ORIGIN_ICON: Record<string, typeof Sparkles> = {
+  felicita: Sparkles, meta_ads: Smartphone, portal: Globe, offline: Handshake, campanha: Megaphone,
 }
 const DISCARD_LABELS: Record<string, string> = {
   sem_condicao: 'Sem condição financeira',
@@ -140,7 +141,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       return {
         origin,
         label:    ORIGIN_LABEL[origin] ?? origin,
-        emoji:    ORIGIN_EMOJI[origin] ?? '',
+        icon:     ORIGIN_ICON[origin] ?? Sparkles,
         color:    ORIGIN_COLOR[origin] ?? '#64748b',
         total:    all.length,
         active:   act.length,
@@ -282,7 +283,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
             <p className="text-[11px] font-bold uppercase tracking-widest text-t3 mb-0.5">Funil de Vendas</p>
             <p className="text-base font-bold text-t1">Pipeline Estratégico</p>
           </div>
-          <span className="text-[11px] text-t4 bg-s2/50 border border-line px-2 py-1 rounded-lg">↓% perda · ⚠ parado +7d</span>
+          <span className="text-[11px] text-t4 bg-s2/50 border border-line px-2 py-1 rounded-lg inline-flex items-center gap-1"><TrendingDown size={11} /> perda · <AlertTriangle size={11} /> parado +7d</span>
         </div>
         <div className="flex items-stretch gap-1 overflow-x-auto pb-1 min-w-0">
           {funnelStages.map((item, i) => (
@@ -424,8 +425,8 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         </div>
 
         {allLoaded && radarData.every(r => r.cold === 0) && active.length > 0 && (
-          <p className="text-center text-xs text-green-400 mt-3">
-            ✅ Todos os leads tiveram interação nos últimos 3 dias
+          <p className="text-center text-xs text-green-400 mt-3 flex items-center justify-center gap-1.5">
+            <CheckCircle2 size={13} /> Todos os leads tiveram interação nos últimos 3 dias
           </p>
         )}
       </div>
@@ -517,7 +518,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                 <div key={c.origin} className={`p-3 rounded-xl border ${isBestConv ? 'bg-green-500/5 border-green-500/20' : 'bg-s2/30 border-line'}`}>
                   <div className="flex items-center gap-2 mb-2.5">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
-                    <span className="text-xs font-semibold text-t1">{c.emoji} {c.label}</span>
+                    <span className="text-xs font-semibold text-t1 flex items-center gap-1.5"><c.icon size={12} strokeWidth={1.6} className="text-t3" /> {c.label}</span>
                     <span className="ml-auto text-[11px] text-t3">{c.total} leads</span>
                     {isBestConv && (
                       <span className="text-[11px] px-1.5 py-px rounded-full bg-green-500/20 text-green-400 border border-green-500/25">melhor conv.</span>
@@ -596,7 +597,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                     <div className="flex items-center gap-2">
                       <span className={`text-xs w-38 flex-shrink-0 ${isRisk ? 'text-amber-400 font-semibold' : 'text-t3'}`}
                             style={{ width: '144px' }}>
-                        {isRisk && '⚠ '}{label}
+                        {isRisk && <AlertTriangle size={11} className="inline mr-1 -mt-0.5" />}{label}
                       </span>
                       <div className="flex-1 h-5 bg-s2/60 rounded-md overflow-hidden">
                         <div
@@ -623,8 +624,8 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
               {/* Insight contextual */}
               {followupSteps[0].count > 0 && (
                 <div className="mt-1 pt-3 border-t border-line">
-                  <p className="text-xs text-amber-400/80">
-                    ⚡ {followupSteps[0].count} lead{followupSteps[0].count > 1 ? 's' : ''} nunca {followupSteps[0].count > 1 ? 'foram' : 'foi'} contactado{followupSteps[0].count > 1 ? 's' : ''} — acionar agora
+                  <p className="text-xs text-amber-400/80 flex items-start gap-1.5">
+                    <Zap size={12} className="flex-shrink-0 mt-0.5" /> <span>{followupSteps[0].count} lead{followupSteps[0].count > 1 ? 's' : ''} nunca {followupSteps[0].count > 1 ? 'foram' : 'foi'} contactado{followupSteps[0].count > 1 ? 's' : ''} — acionar agora</span>
                   </p>
                 </div>
               )}

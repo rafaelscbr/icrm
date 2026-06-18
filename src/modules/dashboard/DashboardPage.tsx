@@ -6,6 +6,7 @@ import {
   AlertTriangle, Clock, CalendarCheck, Siren, ClipboardCheck,
   ListTodo, Snowflake, RefreshCw, Megaphone,
   ChevronDown, ChevronUp, BarChart2, Target, Flame,
+  Home, Settings, ClipboardList, Monitor,
 } from 'lucide-react'
 import { Task, Contact, Property, Lead, FunnelStage, calcSaleCommissions } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -1228,19 +1229,19 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
 
 // ─── Corretores online (admin only) ──────────────────────────────────────────
 
-const PAGE_ICONS: Record<string, string> = {
-  '/':            '📊',
-  '/leads':       '🎯',
-  '/contatos':    '👥',
-  '/imoveis':     '🏠',
-  '/vendas':      '💰',
-  '/campanhas':   '📣',
-  '/tarefas':     '✅',
-  '/performance': '📈',
-  '/permuta':     '🔄',
-  '/metas':       '🎯',
-  '/admin':       '⚙️',
-  '/admin/logs':  '📋',
+const PAGE_ICONS: Record<string, typeof Target> = {
+  '/':            BarChart2,
+  '/leads':       Target,
+  '/contatos':    Users,
+  '/imoveis':     Home,
+  '/vendas':      DollarSign,
+  '/campanhas':   Megaphone,
+  '/tarefas':     CheckCircle2,
+  '/performance': TrendingUp,
+  '/permuta':     RefreshCw,
+  '/metas':       Target,
+  '/admin':       Settings,
+  '/admin/logs':  ClipboardList,
 }
 
 function OnlineBrokersPanel() {
@@ -1273,7 +1274,7 @@ function OnlineBrokersPanel() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-t1 truncate">{b.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-xs">{PAGE_ICONS[b.currentPage] ?? '🖥️'}</span>
+                {(() => { const PageIcon = PAGE_ICONS[b.currentPage] ?? Monitor; return <PageIcon size={12} className="text-t4 flex-shrink-0" /> })()}
                 <span className="text-xs text-t3">{pageLabel(b.currentPage)}</span>
                 {locationText && (
                   <>
