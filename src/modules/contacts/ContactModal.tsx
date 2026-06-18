@@ -490,6 +490,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                     <div className="space-y-1.5">
                       <input
                         type="text"
+                        aria-label="Região do imóvel de permuta"
                         value={item.region ?? ''}
                         onChange={e => updatePermutaItem(item.id, { region: e.target.value || undefined })}
                         placeholder="Região (ex: Balneário Camboriú)"
@@ -500,6 +501,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                         <input
                           type="text"
                           inputMode="numeric"
+                          aria-label="Valor do imóvel de permuta"
                           value={item.value ? item.value.toLocaleString('pt-BR') : ''}
                           onChange={e => updatePermutaItem(item.id, { value: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
                           placeholder="Valor do imóvel"
@@ -511,6 +513,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                     <div className="space-y-1.5">
                       <input
                         type="text"
+                        aria-label="Modelo do carro de permuta"
                         value={item.carModel ?? ''}
                         onChange={e => updatePermutaItem(item.id, { carModel: e.target.value || undefined })}
                         placeholder="Modelo (ex: Toyota Corolla 2022)"
@@ -521,6 +524,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                         <input
                           type="text"
                           inputMode="numeric"
+                          aria-label="Valor de entrada do carro de permuta"
                           value={item.carValue ? item.carValue.toLocaleString('pt-BR') : ''}
                           onChange={e => updatePermutaItem(item.id, { carValue: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
                           placeholder="Valor de entrada"

@@ -367,10 +367,11 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-t2">Buscar contato *</label>
+                      <label htmlFor="lead-contact-search" className="text-xs font-medium text-t2">Buscar contato *</label>
                       <div className="relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3 pointer-events-none" />
                         <input
+                          id="lead-contact-search"
                           ref={searchRef}
                           value={contactQuery}
                           onChange={e => setContactQuery(e.target.value)}
@@ -434,10 +435,11 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
               {contactMode === 'create' && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-200">
                   <div>
-                    <label className="text-xs font-medium text-t2 mb-1.5 block">Nome completo *</label>
+                    <label htmlFor="lead-name" className="text-xs font-medium text-t2 mb-1.5 block">Nome completo *</label>
                     <div className="relative">
                       <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                       <input
+                        id="lead-name"
                         autoFocus
                         value={newName}
                         onChange={e => setNewName(e.target.value)}
@@ -448,10 +450,13 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-medium text-t2 mb-1.5 block">Telefone *</label>
+                      <label htmlFor="lead-phone" className="text-xs font-medium text-t2 mb-1.5 block">Telefone *</label>
                       <div className="relative">
                         <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                         <input
+                          id="lead-phone"
+                          inputMode="tel"
+                          aria-invalid={duplicateContact ? true : undefined}
                           value={newPhone}
                           onChange={e => setNewPhone(formatPhoneInput(e.target.value))}
                           placeholder="(11) 99999-9999"
@@ -464,10 +469,11 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-t2 mb-1.5 block">E-mail</label>
+                      <label htmlFor="lead-email" className="text-xs font-medium text-t2 mb-1.5 block">E-mail</label>
                       <div className="relative">
                         <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                         <input
+                          id="lead-email"
                           value={newEmail}
                           onChange={e => setNewEmail(e.target.value)}
                           placeholder="email@..."
@@ -590,6 +596,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                     <div className="relative">
                       <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                       <input
+                        aria-label="Buscar imóvel ou digitar nome livre"
                         value={propertySearch}
                         onChange={e => setPropertySearch(e.target.value)}
                         placeholder="Buscar no sistema ou digitar nome livre..."
@@ -646,10 +653,11 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Ticket */}
               <div>
-                <label className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider">Ticket Médio (R$)</label>
+                <label htmlFor="lead-ticket" className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider">Ticket Médio (R$)</label>
                 <div className="relative">
                   <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                   <input
+                    id="lead-ticket"
                     type="text"
                     inputMode="numeric"
                     value={averageTicket}
@@ -690,7 +698,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Data de entrada */}
               <div>
-                <label className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider flex items-center gap-1.5">
+                <label htmlFor="lead-entry-date" className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar size={11} />
                   Data de entrada
                   {isRetroactive && (
@@ -700,6 +708,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   )}
                 </label>
                 <input
+                  id="lead-entry-date"
                   type="date"
                   value={entryDate}
                   max={localDateStr()}

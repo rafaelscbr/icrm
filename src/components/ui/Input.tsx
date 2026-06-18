@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, CSSProperties, forwardRef } from 'react'
+import { InputHTMLAttributes, CSSProperties, forwardRef, useId } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -7,7 +7,12 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, className = '', style, ...props }, ref) => {
+  ({ label, error, hint, className = '', style, id, ...props }, ref) => {
+    const autoId = useId()
+    const inputId = id ?? autoId
+    const hintId  = hint  ? `${inputId}-hint`  : undefined
+    const errorId = error ? `${inputId}-error` : undefined
+
     const isDateOrTime =
       props.type === 'date' ||
       props.type === 'time' ||
@@ -19,14 +24,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label className="text-xs font-medium text-t2">
+          <label htmlFor={inputId} className="text-xs font-medium text-t2">
             {label}
             {props.required && <span className="text-error ml-1">*</span>}
           </label>
         )}
         <input
           ref={ref}
+          id={inputId}
           {...props}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={errorId ?? hintId}
           style={mergedStyle}
           className={`
             w-full bg-surface border rounded-lg px-3 py-2.5 text-sm text-t1 min-h-[42px]
@@ -38,8 +46,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ${className}
           `}
         />
-        {hint && !error && <p className="text-xs text-t4">{hint}</p>}
-        {error && <p className="text-xs text-error">{error}</p>}
+        {hint && !error && <p id={hintId} className="text-xs text-t4">{hint}</p>}
+        {error && <p id={errorId} className="text-xs text-error" role="alert">{error}</p>}
       </div>
     )
   }

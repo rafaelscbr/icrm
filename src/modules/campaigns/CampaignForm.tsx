@@ -245,20 +245,23 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Nome</label>
+              <label htmlFor="campaign-name" className="text-xs font-semibold text-t3 uppercase tracking-wider">Nome</label>
               <input
+                id="campaign-name"
                 autoFocus
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && next()}
                 placeholder="Ex: Liber.ATO – Proprietários Maio/26"
+                aria-invalid={errors.name ? true : undefined}
+                aria-describedby={errors.name ? 'campaign-name-error' : undefined}
                 className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px]"
               />
-              {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
+              {errors.name && <p id="campaign-name-error" className="text-xs text-red-400" role="alert">{errors.name}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
+              <label htmlFor="campaign-ticket" className="text-xs font-semibold text-t3 uppercase tracking-wider">
                 Ticket médio <span className="normal-case font-normal text-t5">(opcional)</span>
               </label>
               <div className="relative">
@@ -267,6 +270,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
                   <span className="text-xs">R$</span>
                 </div>
                 <input
+                  id="campaign-ticket"
                   type="text"
                   inputMode="numeric"
                   value={ticketRaw}
@@ -281,10 +285,11 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
 
             {isAdmin && brokers.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
+                <label htmlFor="campaign-owner" className="text-xs font-semibold text-t3 uppercase tracking-wider">
                   Responsável <span className="normal-case font-normal text-t5">(opcional)</span>
                 </label>
                 <select
+                  id="campaign-owner"
                   value={responsavelId}
                   onChange={e => setResponsavelId(e.target.value)}
                   className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[48px] appearance-none"
@@ -322,34 +327,39 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
             <div className="flex flex-col gap-3 max-h-[45vh] lg:max-h-none overflow-y-auto pr-0.5">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-t3 uppercase tracking-wider">
+                  <label htmlFor="campaign-message-1" className="text-xs font-semibold text-t3 uppercase tracking-wider">
                     Mensagem 1 <span className="text-brand normal-case font-normal">(principal)</span>
                   </label>
                   <span className="text-[11px] text-t5">{allCount} template{allCount !== 1 ? 's' : ''}</span>
                 </div>
                 <textarea
+                  id="campaign-message-1"
                   value={message}
                   onChange={e => setMessage(e.target.value)}
                   rows={4}
                   placeholder="Olá, {nome}! Tudo bem? Sou corretor de imóveis e gostaria de apresentar..."
+                  aria-invalid={errors.message ? true : undefined}
+                  aria-describedby={errors.message ? 'campaign-message-1-error' : undefined}
                   className="w-full bg-s3/50 border border-line rounded-xl px-3 py-3 text-sm text-t1 placeholder:text-t5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
                 />
-                {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
+                {errors.message && <p id="campaign-message-1-error" className="text-xs text-red-400" role="alert">{errors.message}</p>}
               </div>
 
               {messages.map((msg, idx) => (
                 <div key={idx} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Mensagem {idx + 2}</label>
+                    <label htmlFor={`campaign-message-${idx + 2}`} className="text-xs font-semibold text-t3 uppercase tracking-wider">Mensagem {idx + 2}</label>
                     <button
                       type="button"
                       onClick={() => setMessages(m => m.filter((_, i) => i !== idx))}
+                      aria-label={`Remover mensagem ${idx + 2}`}
                       className="text-t4 hover:text-red-400 transition-colors cursor-pointer p-1"
                     >
                       <Trash2 size={12} />
                     </button>
                   </div>
                   <textarea
+                    id={`campaign-message-${idx + 2}`}
                     value={msg}
                     onChange={e => setMessages(m => m.map((v, i) => i === idx ? e.target.value : v))}
                     rows={4}

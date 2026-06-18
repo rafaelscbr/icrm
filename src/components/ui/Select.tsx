@@ -1,4 +1,4 @@
-import { SelectHTMLAttributes, forwardRef, ReactNode } from 'react'
+import { SelectHTMLAttributes, forwardRef, ReactNode, useId } from 'react'
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string
@@ -7,11 +7,14 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, children, className = '', ...props }, ref) => {
+  ({ label, error, children, className = '', id, ...props }, ref) => {
+    const autoId = useId()
+    const selectId = id ?? autoId
+    const errorId  = error ? `${selectId}-error` : undefined
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label className="text-xs font-medium text-t2">
+          <label htmlFor={selectId} className="text-xs font-medium text-t2">
             {label}
             {props.required && <span className="text-error ml-1">*</span>}
           </label>
@@ -19,7 +22,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <div className="relative">
           <select
             ref={ref}
+            id={selectId}
             {...props}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={errorId}
             style={{
               WebkitAppearance: 'none',
               MozAppearance: 'none',
@@ -46,7 +52,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </svg>
           </div>
         </div>
-        {error && <p className="text-xs text-error">{error}</p>}
+        {error && <p id={errorId} className="text-xs text-error" role="alert">{error}</p>}
       </div>
     )
   }
