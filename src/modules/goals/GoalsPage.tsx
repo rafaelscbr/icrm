@@ -501,8 +501,11 @@ export function GoalsPage() {
     if (goals.length > 0) checkAndSave(tasks, sales, goals)
   }, [goals, tasks, sales, checkAndSave])
 
-  const active   = goals.filter(g => g.active)
-  const inactive = goals.filter(g => !g.active)
+  // Esta tela é de metas por contagem (acionamento/visita/proposta/venda).
+  // VGL é meta monetária da empresa e vive no hero da Dashboard — fora daqui.
+  // Filtrar por CAT_CFG evita crash com categorias sem config visual (vgl/agenciamento).
+  const active   = goals.filter(g => g.active && !!CAT_CFG[g.category])
+  const inactive = goals.filter(g => !g.active && !!CAT_CFG[g.category])
   const visitGoals = active.filter(g => g.category === 'visita')
   const otherGoals = active.filter(g => g.category !== 'visita')
 
