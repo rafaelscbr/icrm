@@ -995,7 +995,7 @@ function OverdueCard({
           const contact  = contacts.find(c => c.id === t.contactId)
           const property = properties.find(p => p.id === t.propertyId)
           return (
-            <div key={t.id} onClick={onNavigate} className="flex items-center gap-3 px-5 py-3 hover:bg-red-500/8 transition-colors cursor-pointer">
+            <button type="button" key={t.id} onClick={onNavigate} className="w-full text-left flex items-center gap-3 px-5 py-3 hover:bg-red-500/8 transition-colors cursor-pointer">
               <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center">
                 <AlertTriangle size={13} className="text-red-400" />
               </div>
@@ -1014,7 +1014,7 @@ function OverdueCard({
               <span className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-lg border border-red-500/20">
                 <Clock size={10} /> {days === 1 ? '1 dia' : `${days} dias`} atraso
               </span>
-            </div>
+            </button>
           )
         })}
       </div>
@@ -1059,7 +1059,7 @@ function UpcomingCard({
             const contact  = contacts.find(c => c.id === t.contactId)
             const property = properties.find(p => p.id === t.propertyId)
             return (
-              <div key={t.id} onClick={onNavigate} className="flex items-center gap-3 px-5 py-3 hover:bg-s2/60 transition-colors cursor-pointer">
+              <button type="button" key={t.id} onClick={onNavigate} className="w-full text-left flex items-center gap-3 px-5 py-3 hover:bg-s2/60 transition-colors cursor-pointer">
                 <Circle size={16} className="text-t4 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-t1 truncate">{t.title}</p>
@@ -1073,7 +1073,7 @@ function UpcomingCard({
                     <Clock size={10} /> {due.text}
                   </span>
                 )}
-              </div>
+              </button>
             )
           })}
           {tasks.length > 6 && (
@@ -1138,7 +1138,7 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
         {Object.entries(byCampaign).slice(0, 3).map(([cid, cLeads]) => {
           const campaign = campaigns.find(c => c.id === cid)
           return (
-            <div key={cid} className="px-5 py-3 hover:bg-amber-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
+            <button type="button" key={cid} className="w-full text-left px-5 py-3 hover:bg-amber-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-t2">{campaign?.name ?? 'Campanha'}</p>
                 <span className="text-[11px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">{cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}</span>
@@ -1153,7 +1153,7 @@ function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void })
                 ))}
                 {cLeads.length > 3 && <p className="text-[11px] text-t4">+{cLeads.length - 3} mais</p>}
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
