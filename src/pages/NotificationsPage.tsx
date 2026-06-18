@@ -94,8 +94,9 @@ function NotificationItem({
           {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />}
         </div>
         {n.body && (
-          <p className="text-xs text-slate-500 mt-0.5 truncate">
-            {isLeadType ? n.body : `📋 ${n.body}`}
+          <p className="text-xs text-slate-500 mt-0.5 truncate flex items-center gap-1">
+            {!isLeadType && <ClipboardList size={11} className="flex-shrink-0" />}
+            <span className="truncate">{n.body}</span>
           </p>
         )}
         <div className="flex items-center gap-2 mt-1.5">
@@ -234,7 +235,7 @@ export function NotificationsPage() {
             </p>
             <p className="text-sm text-slate-600 mt-1">
               {filter === 'unread'
-                ? 'Você está em dia com tudo! 🎉'
+                ? 'Você está em dia com tudo!'
                 : 'As notificações de tarefas delegadas aparecem aqui.'
               }
             </p>
