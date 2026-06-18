@@ -308,6 +308,10 @@ export interface Lead {
   radarBedrooms?: number
   kanbanOrder?: number      // float para ordenação manual dentro da coluna (maior = primeiro)
   stageChangedAt?: string   // quando entrou na etapa atual — base para tempo em etapa
+  // Encerramento de venda ganha — tira o lead do funil ativo e vira faturamento
+  closedAt?: string         // quando a venda foi concluída (lead ganho encerrado)
+  wonValue?: number         // valor real do negócio fechado
+  saleId?: string           // registro criado em sales ao concluir
   firstContactAt?: string   // quando o 1º contato WhatsApp foi registrado (gerenciado por trigger)
   slaDueAt?: string         // prazo SLA de 1º contato Meta Ads (gerenciado pelo banco)
   brokerId?:      string | null

@@ -13,7 +13,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake,
   Home, Users, Mail, StickyNote, Sparkles, Smartphone, Globe, Handshake,
-  Megaphone, Loader2, Wifi, WifiOff, CheckCircle2,
+  Megaphone, Loader2, Wifi, WifiOff, CheckCircle2, Trophy,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, LeadInteractionType } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -25,6 +25,7 @@ import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { LeadModal } from './LeadModal'
+import { ConcludeSaleModal } from './ConcludeSaleModal'
 import { SlaBadge } from './SlaBadge'
 import toast from 'react-hot-toast'
 
@@ -103,6 +104,7 @@ function LeadCard({
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { add: addInteraction, getForLead } = useLeadInteractionsStore()
+  const [showConclude, setShowConclude] = useState(false)
 
   // Visão admin global: identifica o corretor responsável em cada card
   const brokerName = isAdmin && !viewAsBrokerId && lead.brokerId
@@ -314,6 +316,18 @@ function LeadCard({
         </span>
       )}
 
+      {/* Concluir venda — só na etapa Venda; tira o lead do funil e cria a venda */}
+      {!isOverlay && lead.funnelStage === 'venda' && (
+        <button
+          onClick={e => { e.stopPropagation(); setShowConclude(true) }}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-[#0F1730] bg-brand hover:bg-brand-dark rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+          title="Concluir a venda e registrar no faturamento"
+        >
+          <Trophy size={12} strokeWidth={1.8} />
+          Concluir venda
+        </button>
+      )}
+
       {/* Ações */}
       <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5">
         <button
@@ -345,6 +359,12 @@ function LeadCard({
           <Phone size={12} strokeWidth={1.6} />
         </a>
       </div>
+
+      {showConclude && (
+        <div onClick={e => e.stopPropagation()}>
+          <ConcludeSaleModal lead={lead} onClose={() => setShowConclude(false)} />
+        </div>
+      )}
     </div>
   )
 }

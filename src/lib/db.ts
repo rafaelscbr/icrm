@@ -492,6 +492,9 @@ interface LeadRow {
   stage_changed_at: string | null
   first_contact_at?: string | null
   sla_due_at?: string | null
+  closed_at?: string | null
+  won_value?: number | null
+  sale_id?: string | null
   broker_id: string | null
   created_at: string; updated_at: string
 }
@@ -524,6 +527,9 @@ function toLead(r: LeadRow): Lead {
     stageChangedAt: r.stage_changed_at ?? undefined,
     firstContactAt: r.first_contact_at ?? undefined,
     slaDueAt: r.sla_due_at ?? undefined,
+    closedAt: r.closed_at ?? undefined,
+    wonValue: r.won_value ?? undefined,
+    saleId: r.sale_id ?? undefined,
     brokerId:       r.broker_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
   }
@@ -553,6 +559,9 @@ function fromLead(l: Lead): LeadRow {
     radar_bedrooms: l.radarBedrooms ?? null,
     kanban_order: l.kanbanOrder ?? null,
     stage_changed_at: l.stageChangedAt ?? null,
+    closed_at: l.closedAt ?? null,
+    won_value: l.wonValue ?? null,
+    sale_id: l.saleId ?? null,
     broker_id: l.brokerId ?? getCurrentUserId(),
     created_at: l.createdAt, updated_at: l.updatedAt,
   }

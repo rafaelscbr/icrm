@@ -192,12 +192,13 @@ export function LeadsPage() {
     }
   }, [searchParams, allLeads]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const active    = leads.filter(l => !l.discardReason)
+  // Funil ativo = aberto (nem descartado nem ganho/encerrado) — foto real do agora
+  const active    = leads.filter(l => !l.discardReason && !l.closedAt)
   const discarded = leads.filter(l => !!l.discardReason)
 
   // Conjunto base: respeita apenas o escopo de descartados (contagens estáveis)
   const scoped = useMemo(
-    () => leads.filter(l => showDiscarded ? !!l.discardReason : !l.discardReason),
+    () => leads.filter(l => showDiscarded ? !!l.discardReason : (!l.discardReason && !l.closedAt)),
     [leads, showDiscarded],
   )
 

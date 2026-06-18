@@ -59,7 +59,8 @@ interface Props {
 }
 
 export function LeadsDashboard({ leads, onOpenLead }: Props) {
-  const active    = useMemo(() => leads.filter(l => !l.discardReason), [leads])
+  // Pipeline atual = aberto: nem descartado, nem ganho/encerrado
+  const active    = useMemo(() => leads.filter(l => !l.discardReason && !l.closedAt), [leads])
   const discarded = useMemo(() => leads.filter(l => !!l.discardReason), [leads])
 
   const { loadAll, byLead, allLoaded } = useLeadInteractionsStore()

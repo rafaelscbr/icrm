@@ -7,6 +7,8 @@ import { getCurrentUserId } from '../lib/auth'
 import { useContactsStore } from './useContactsStore'
 import { useLeadInteractionsStore } from './useLeadInteractionsStore'
 import { useRealtimeStatusStore } from './useRealtimeStatusStore'
+import { useSalesStore } from './useSalesStore'
+import { usePropertiesStore } from './usePropertiesStore'
 import toast from 'react-hot-toast'
 
 interface LeadsStore {
@@ -24,6 +26,8 @@ interface LeadsStore {
   getById: (id: string) => Lead | undefined
   setStage: (id: string, stage: LeadFunnelStage) => Promise<void>
   advanceFollowup: (id: string) => Promise<void>
+  // Encerra um lead ganho: cria a venda em sales e tira o lead do funil ativo
+  concludeSale: (id: string, opts: { value: number; date: string }) => Promise<void>
   discard: (id: string, reason: LeadDiscardReason) => Promise<void>
   restore: (id: string) => Promise<void>
   convertToContact: (id: string, contactId: string) => Promise<void>
@@ -107,6 +111,9 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             stageChangedAt: (incoming.stage_changed_at as string | null) ?? undefined,
             firstContactAt: (incoming.first_contact_at as string | null) ?? undefined,
             slaDueAt: (incoming.sla_due_at as string | null) ?? undefined,
+            closedAt: (incoming.closed_at as string | null) ?? undefined,
+            wonValue: (incoming.won_value as number | null) ?? undefined,
+            saleId: (incoming.sale_id as string | null) ?? undefined,
             brokerId: (incoming.broker_id as string | null) ?? undefined,
             createdAt: incoming.created_at as string,
             updatedAt: incoming.updated_at as string,
@@ -134,6 +141,9 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             stageChangedAt: (r.stage_changed_at as string | null) ?? undefined,
             firstContactAt: (r.first_contact_at as string | null) ?? undefined,
             slaDueAt: (r.sla_due_at as string | null) ?? undefined,
+            closedAt: (r.closed_at as string | null) ?? undefined,
+            wonValue: (r.won_value as number | null) ?? undefined,
+            saleId: (r.sale_id as string | null) ?? undefined,
             brokerId: (r.broker_id as string | null) ?? undefined,
             updatedAt: r.updated_at as string,
           }),
@@ -319,6 +329,78 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     }
   },
 
+  // Banco primeiro: garante contato → cria a venda em sales → encerra o lead.
+  // Lead ganho sai do funil ativo (closedAt) e vira faturamento real (saleId).
+  concludeSale: async (id, { value, date }) => {
+    const now = new Date().toISOString()
+    const lead = get().leads.find(l => l.id === id)
+    if (!lead) return
+
+    // Garante um contato (clientId obrigatório na venda) — reaproveita o contato do lead
+    let contactId = lead.contactId
+    if (!contactId) {
+      const { contacts, add: addContact } = useContactsStore.getState()
+      const phone = lead.phone.replace(/\D/g, '')
+      const existing = contacts.find(c => c.phone.replace(/\D/g, '') === phone)
+      if (existing) {
+        contactId = existing.id
+      } else {
+        const nc = addContact({
+          name: lead.name, phone: lead.phone, tags: [],
+          hasChildren: false, isMarried: false, permutaItems: [],
+          brokerId: lead.brokerId ?? undefined,
+        })
+        await db.contacts.upsert(nc)
+        contactId = nc.id
+      }
+    }
+
+    // Nome do produto: imóvel cadastrado, nome livre ou o próprio lead
+    const property = lead.propertyId
+      ? usePropertiesStore.getState().properties.find(p => p.id === lead.propertyId)
+      : undefined
+    const propertyName = property?.name ?? lead.propertyName ?? lead.name
+
+    // Cria o registro de venda (entra no VGL do mês da data)
+    const sale = useSalesStore.getState().add({
+      clientId: contactId,
+      propertyId: lead.propertyId,
+      propertyName,
+      date,
+      value,
+      type: 'off_plan',
+      commissionPct: 5,
+      brokerPct: 40,
+      brokerId: lead.brokerId ?? undefined,
+    })
+
+    // Encerra o lead — sai do funil ativo
+    const updated = {
+      ...lead,
+      contactId,
+      convertedAt: lead.convertedAt ?? now,
+      closedAt: now,
+      wonValue: value,
+      saleId: sale.id,
+      updatedAt: now,
+    }
+    try {
+      await db.leads.upsert(updated)
+      set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
+    } catch (err) {
+      console.error('[leads] concludeSale:', err)
+      toast.error('Erro ao concluir a venda. Verifique sua conexão e tente novamente.')
+      throw err
+    }
+
+    await useLeadInteractionsStore.getState().add({
+      leadId: id,
+      type: 'nota',
+      description: `Venda concluída — R$ ${value.toLocaleString('pt-BR')}`,
+      interactedAt: now,
+    }).catch(err => console.error('[leads] concludeSale history:', err))
+  },
+
   discard: async (id, reason) => {
     const now = new Date().toISOString()
     const lead = get().leads.find(l => l.id === id)
@@ -416,6 +498,6 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     return get().leads.filter(l => l.origin === origin)
   },
 
-  getActive: () => get().leads.filter(l => !l.discardReason),
+  getActive: () => get().leads.filter(l => !l.discardReason && !l.closedAt),
   getDiscarded: () => get().leads.filter(l => !!l.discardReason),
 }))
