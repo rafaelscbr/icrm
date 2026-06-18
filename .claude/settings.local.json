@@ -159,7 +159,10 @@
       "Bash(sed -n '1,8p' modules/campaigns/EditMessagesModal.tsx)",
       "Bash(sed -n '94,100p' pages/NotificationsPage.tsx)",
       "Bash(sed -n '234,239p' pages/NotificationsPage.tsx)",
-      "Bash(sed -n '/from .lucide-react/{=;p;}' pages/NotificationsPage.tsx)"
+      "Bash(sed -n '/from .lucide-react/{=;p;}' pages/NotificationsPage.tsx)",
+      "Bash(sed -n '218,235p' src/types/index.ts)",
+      "Bash(sed -n '9,46p' src/modules/leads/LeadConversionTab.tsx)",
+      "Bash(git rm *)"
     ]
   }
 }

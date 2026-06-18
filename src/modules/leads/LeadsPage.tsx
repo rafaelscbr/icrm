@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
-  MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2, TrendingUp,
+  MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2,
   Sparkles, Smartphone, Globe, Handshake, Megaphone, Percent,
   GitBranch, Filter, User, Home, X,
 } from 'lucide-react'
@@ -25,7 +25,6 @@ import { LeadConversionTab } from './LeadConversionTab'
 import { SlaBadge } from './SlaBadge'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { LeadSettings } from './LeadSettings'
-import { LeadsPerformance } from './LeadsPerformance'
 import { FilterDropdown, FilterOption } from '../../components/shared/FilterDropdown'
 
 const ORIGIN_CONFIG: Record<string, { label: string; icon: typeof Sparkles; color: string; bg: string; border: string }> = {
@@ -47,7 +46,7 @@ function productKeyOf(lead: Lead): string | null {
   return null
 }
 
-type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'performance' | 'configuracoes'
+type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'configuracoes'
 
 // ─── LeadRow ──────────────────────────────────────────────────────────────────
 
@@ -290,7 +289,6 @@ export function LeadsPage() {
     { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                        },
     { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                         },
     { value: 'conversao',      label: 'Conversão',       icon: Percent                           },
-    { value: 'performance',    label: 'Performance',     icon: TrendingUp                        },
     { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                         },
   ]
 
@@ -298,7 +296,6 @@ export function LeadsPage() {
   const isKanbanTab      = tab === 'kanban'
   const isDashTab        = tab === 'dashboard'
   const isConvTab        = tab === 'conversao'
-  const isPerformanceTab = tab === 'performance'
   const isConfigTab      = tab === 'configuracoes'
 
   return (
@@ -353,13 +350,6 @@ export function LeadsPage() {
 
       {/* ── Conversão ─────────────────────────────────────────────────────────── */}
       {isConvTab && <LeadConversionTab />}
-
-      {/* ── Performance ───────────────────────────────────────────────────────── */}
-      {isPerformanceTab && (
-        <div className="flex-1 overflow-auto">
-          <LeadsPerformance leads={active} />
-        </div>
-      )}
 
       {/* ── Configurações ──────────────────────────────────────────────────────── */}
       {isConfigTab && (
