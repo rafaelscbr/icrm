@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import {
   Phone, Building2, Cake, Heart, Baby, Tag, CheckCircle2,
   Clock, Circle, AlertTriangle, TrendingUp, MessageCircle,
-  UserPlus, ArrowLeftRight, Pencil, Plus, X, Home, Bed, Square, Megaphone,
+  UserPlus, ArrowLeftRight, Pencil, Plus, X, Home, Bed, Square, Megaphone, Car,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Badge } from '../../components/ui/Badge'
@@ -380,7 +380,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                         </span>
                       </div>
                       {prop && (
-                        <p className="text-[11px] text-t3 mt-0.5 truncate">🏠 {prop.name}</p>
+                        <p className="text-[11px] text-t3 mt-0.5 truncate flex items-center gap-1"><Home size={10} className="flex-shrink-0" /> {prop.name}</p>
                       )}
                       {lead.averageTicket && !prop && (
                         <p className="text-[11px] text-violet-400 mt-0.5">{formatCurrencyFull(lead.averageTicket)}</p>
@@ -432,7 +432,9 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                       ? 'bg-brand-tint text-brand-text border-indigo-500/25'
                       : 'bg-amber-500/15 text-amber-300 border-amber-500/25'
                   }`}>
-                    {item.type === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+                    {item.type === 'imovel'
+                      ? <span className="flex items-center gap-1"><Home size={11} /> Imóvel</span>
+                      : <span className="flex items-center gap-1"><Car size={11} /> Carro</span>}
                   </span>
                   <div className="flex-1 min-w-0 space-y-0.5">
                     {item.type === 'imovel' && (
@@ -472,7 +474,9 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                               : 'bg-s3/50 border-line text-t3 hover:text-t2'
                           }`}
                         >
-                          {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+                          {t === 'imovel'
+                            ? <span className="flex items-center gap-1"><Home size={12} /> Imóvel</span>
+                            : <span className="flex items-center gap-1"><Car size={12} /> Carro</span>}
                         </button>
                       ))}
                     </div>

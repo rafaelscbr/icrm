@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Search, Building2, Pencil, Trash2, ImageOff,
   TrendingUp, Landmark, MapPin, BadgePercent, ClipboardList, ListFilter,
+  BedDouble, ShowerHead, Ruler,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
@@ -301,9 +302,9 @@ export function PropertiesPage() {
                   {/* Specs */}
                   {(p.bedrooms || p.suites || p.areaSqm) && (
                     <div className="flex items-center gap-3 text-xs text-t3">
-                      {p.bedrooms && <span>🛏 {p.bedrooms} dorm{p.bedrooms > 1 ? 's' : '.'}</span>}
-                      {p.suites   && <span>🚿 {p.suites} suíte{p.suites > 1 ? 's' : ''}</span>}
-                      {p.areaSqm  && <span>📐 {p.areaSqm} m²</span>}
+                      {p.bedrooms && <span className="flex items-center gap-1"><BedDouble size={12} /> {p.bedrooms} dorm{p.bedrooms > 1 ? 's' : '.'}</span>}
+                      {p.suites   && <span className="flex items-center gap-1"><ShowerHead size={12} /> {p.suites} suíte{p.suites > 1 ? 's' : ''}</span>}
+                      {p.areaSqm  && <span className="flex items-center gap-1"><Ruler size={12} /> {p.areaSqm} m²</span>}
                     </div>
                   )}
 

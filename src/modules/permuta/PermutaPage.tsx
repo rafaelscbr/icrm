@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   ArrowLeftRight, Home, Car, Building2, Users, Zap, ChevronRight,
-  Search, ChevronDown, BedDouble, Maximize2,
+  Search, ChevronDown, BedDouble, Maximize2, MapPin, Building, ShowerHead,
 } from 'lucide-react'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
@@ -97,18 +97,18 @@ function PropertyDetails({ property }: { property: Property }) {
   return (
     <div className="mt-2 pt-2 border-t border-line flex flex-wrap gap-x-4 gap-y-1">
       {property.neighborhood && (
-        <span className="text-xs text-t3">
-          📍 <span className="text-t2">{property.neighborhood}</span>
+        <span className="text-xs text-t3 flex items-center gap-1">
+          <MapPin size={10} className="text-t3" /> <span className="text-t2">{property.neighborhood}</span>
         </span>
       )}
       {property.city && (
-        <span className="text-xs text-t3">
-          🏙️ <span className="text-t2">{property.city}</span>
+        <span className="text-xs text-t3 flex items-center gap-1">
+          <Building2 size={10} className="text-t3" /> <span className="text-t2">{property.city}</span>
         </span>
       )}
       {property.type && (
-        <span className="text-xs text-t3">
-          🏗️ <span className="text-t2">{TYPE_LABELS[property.type] ?? property.type}</span>
+        <span className="text-xs text-t3 flex items-center gap-1">
+          <Building size={10} className="text-t3" /> <span className="text-t2">{TYPE_LABELS[property.type] ?? property.type}</span>
         </span>
       )}
       {property.bedrooms !== undefined && (
@@ -118,8 +118,8 @@ function PropertyDetails({ property }: { property: Property }) {
         </span>
       )}
       {property.suites !== undefined && (
-        <span className="text-xs text-t3">
-          🛁 <span className="text-t2">{property.suites} suíte{property.suites !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-t3 flex items-center gap-1">
+          <ShowerHead size={10} className="text-t3" /> <span className="text-t2">{property.suites} suíte{property.suites !== 1 ? 's' : ''}</span>
         </span>
       )}
       {property.areaSqm !== undefined && (
@@ -129,8 +129,8 @@ function PropertyDetails({ property }: { property: Property }) {
         </span>
       )}
       {property.condoFee !== undefined && property.condoFee > 0 && (
-        <span className="text-xs text-t3">
-          🏢 Cond. <span className="text-t2">{formatCurrencyFull(property.condoFee)}/mês</span>
+        <span className="text-xs text-t3 flex items-center gap-1">
+          <Building size={10} className="text-t3" /> Cond. <span className="text-t2">{formatCurrencyFull(property.condoFee)}/mês</span>
         </span>
       )}
       {property.notes && (

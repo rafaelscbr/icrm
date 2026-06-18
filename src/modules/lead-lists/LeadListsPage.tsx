@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Database, Users, Archive, Pencil, Trash2, FolderOpen,
   TrendingUp, Calendar, ChevronRight, BarChart3, Sparkles, AlertTriangle,
+  Zap, Trophy,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
 import { Card }          from '../../components/ui/Card'
@@ -132,7 +133,7 @@ export function LeadListsPage() {
               }`}
               title="Ordenar por score de qualidade"
             >
-              ⚡ {sortByScore ? 'Score ativo' : 'Por score'}
+              <Zap size={13} /> {sortByScore ? 'Score ativo' : 'Por score'}
             </button>
           )}
           <button
@@ -227,7 +228,7 @@ export function LeadListsPage() {
                         <p className="text-sm font-semibold text-t1 truncate">{list.name}</p>
                         {hasClients && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand bg-brand/10 border border-brand/25 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                            🏆 {listScore!.clients} venda{listScore!.clients > 1 ? 's' : ''}
+                            <Trophy size={11} /> {listScore!.clients} venda{listScore!.clients > 1 ? 's' : ''}
                           </span>
                         )}
                       </div>

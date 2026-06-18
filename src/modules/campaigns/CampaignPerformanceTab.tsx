@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
+import { Trophy, Check } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { CampaignLead } from '../../types'
 import { DAILY_LIMIT } from './dailyCounter'
@@ -36,7 +37,7 @@ function MetaCard({ label, value, target, color }: {
       <div className="flex items-baseline gap-1">
         <span className={`text-3xl font-black tabular-nums leading-none ${done ? 'text-green-400' : 'text-t1'}`}>{value}</span>
         <span className="text-sm text-t4">/ {target}</span>
-        {done && <span className="ml-1 text-green-400 text-base">✓</span>}
+        {done && <Check size={15} className="ml-1 text-green-400" strokeWidth={2.5} />}
       </div>
       <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
         <div
@@ -163,7 +164,7 @@ export function CampaignPerformanceTab({ leads }: Props) {
       {/* ── Melhor dia ────────────────────────────────────────────────────── */}
       {bestDay && bestDay.Interessados > 0 && (
         <div className="bg-amber-500/8 border border-amber-500/25 rounded-xl px-5 py-4 flex items-center gap-4">
-          <span className="text-3xl">🏆</span>
+          <Trophy size={30} className="text-amber-400 flex-shrink-0" />
           <div>
             <p className="text-xs font-bold text-amber-400 uppercase tracking-wide">Melhor dia</p>
             <p className="text-sm font-semibold text-t1 mt-0.5">

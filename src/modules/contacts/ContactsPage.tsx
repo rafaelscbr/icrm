@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter } from 'lucide-react'
+import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter, Cake } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Badge } from '../../components/ui/Badge'
@@ -161,7 +161,7 @@ export function ContactsPage() {
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="text-sm font-medium text-slate-100">{c.name}</p>
                   {c.birthdate && isBirthdayThisMonth(c.birthdate) && (
-                    <span className="text-sm">🎂</span>
+                    <Cake size={13} className="text-brand flex-shrink-0" aria-label="Aniversário neste mês" />
                   )}
                 </div>
                 <p className="text-xs text-t3">

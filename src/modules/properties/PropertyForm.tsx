@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, FormEvent } from 'react'
-import { ImagePlus, X, Plus, Building2, Layers } from 'lucide-react'
+import { ImagePlus, X, Plus, Building2, Layers, Home, Car } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
@@ -494,7 +494,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                             : 'bg-s3/50 border-line text-t3 hover:text-t2'
                         }`}
                       >
-                        {t === 'imovel' ? '🏠 Imóvel' : '🚗 Carro'}
+                        {t === 'imovel'
+                          ? <span className="flex items-center gap-1"><Home size={12} /> Imóvel</span>
+                          : <span className="flex items-center gap-1"><Car size={12} /> Carro</span>}
                       </button>
                     ))}
                   </div>

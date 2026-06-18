@@ -290,7 +290,7 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
         <GoalRing value={progress} target={goal.target} hex={cfg.hex} />
       </div>
 
-      {done && <p className="text-xs text-green-400 font-semibold text-center -mt-2">Meta atingida! 🎉</p>}
+      {done && <p className="text-xs text-green-400 font-semibold text-center -mt-2">Meta atingida!</p>}
 
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onPause} className="flex-1 text-xs text-t4 hover:text-t2 py-1.5 rounded-xl hover:bg-s3/60 transition-colors cursor-pointer">Pausar</button>

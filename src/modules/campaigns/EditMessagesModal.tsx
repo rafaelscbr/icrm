@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, MessageSquare, Info, GripVertical, Check, Loader2 } from 'lucide-react'
+import { Plus, Trash2, MessageSquare, Info, GripVertical, Check, Loader2, AlertTriangle } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { Campaign } from '../../types'
@@ -175,8 +175,8 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
 
                 <div className="flex items-center gap-1">
                   {/* Contador de caracteres */}
-                  <span className={`text-[11px] tabular-nums ${warning ? 'text-amber-400' : 'text-t5'}`}>
-                    {msg.length}{warning ? ' ⚠️' : ''}
+                  <span className={`text-[11px] tabular-nums inline-flex items-center gap-1 ${warning ? 'text-amber-400' : 'text-t5'}`}>
+                    {msg.length}{warning && <AlertTriangle size={11} />}
                   </span>
                   {/* Handle de drag (exceto msg principal) */}
                   {!isMain && (
