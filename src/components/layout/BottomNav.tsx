@@ -24,7 +24,7 @@ const moreNav = [
   { to: '/leads',       icon: UserPlus,       label: 'Leads'         },
   { to: '/base-leads',  icon: Database,       label: 'Base de Leads' },
   { to: '/metas',       icon: Target,         label: 'Metas'         },
-  { to: '/campanhas',   icon: Megaphone,      label: 'Campanhas'     },
+  { to: '/campanhas',   icon: Megaphone,      label: 'Disparo'       },
   { to: '/performance', icon: BarChart3,      label: 'Análise'       },
   { to: '/escritorio',  icon: Tv2,            label: 'Escritório'    },
 ]

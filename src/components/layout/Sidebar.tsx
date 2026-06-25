@@ -30,7 +30,7 @@ const navSections = [
       { key: 'base-leads',  to: '/base-leads',   icon: Database,       label: 'Base de Leads', end: false },
       { key: 'imoveis',     to: '/imoveis',      icon: Building2,      label: 'Imóveis',       end: false },
       { key: 'vendas',      to: '/vendas',       icon: TrendingUp,     label: 'Vendas',        end: false },
-      { key: 'campanhas',   to: '/campanhas',    icon: Megaphone,      label: 'Campanhas',     end: false },
+      { key: 'campanhas',   to: '/campanhas',    icon: Megaphone,      label: 'Disparo',       end: false },
       { key: 'simulador',   to: '/simulador',    icon: Calculator,     label: 'Simulador',     end: false },
     ],
   },
