@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import {
   MapPin, Bed, Bath, Square, DollarSign, BadgePercent,
-  CheckCircle2, Circle, AlertTriangle, Clock, Building2, ImageOff, User,
+  CheckCircle2, Circle, AlertTriangle, Clock, Building2, ImageOff, User, MessageCircle,
 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { StatusBadge } from '../../components/shared/StatusBadge'
@@ -10,7 +10,7 @@ import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useAuthStore } from '../../store/useAuthStore'
-import { formatCurrencyFull, formatDate } from '../../lib/formatters'
+import { formatCurrencyFull, formatDate, formatPhone, whatsappUrl } from '../../lib/formatters'
 import { calcSaleCommissions } from '../../types'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -163,10 +163,22 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         {isAdmin && owner && (
           <div className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
             <User size={13} className="text-brand flex-shrink-0" />
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-[11px] text-t3">Proprietário</p>
               <p className="text-xs font-medium text-t1">{owner.name}</p>
+              {owner.phone && (
+                <p className="text-[11px] text-t3 mt-0.5">{formatPhone(owner.phone)}</p>
+              )}
             </div>
+            {owner.phone && (
+              <button
+                type="button"
+                onClick={() => window.open(whatsappUrl(owner.phone), '_blank')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-green-500/15 border border-green-500/30 text-green-300 hover:bg-green-500/25 transition-colors cursor-pointer flex-shrink-0"
+              >
+                <MessageCircle size={13} strokeWidth={1.6} /> WhatsApp
+              </button>
+            )}
           </div>
         )}
 
