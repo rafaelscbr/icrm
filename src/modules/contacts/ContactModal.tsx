@@ -261,8 +261,8 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                 >
                   {/* Thumbnail */}
                   <div className="w-14 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-s3/60 border border-line">
-                    {prop.images[0] ? (
-                      <img src={prop.images[0]} alt={prop.name} className="w-full h-full object-cover" />
+                    {prop.thumbnail ? (
+                      <img src={prop.thumbnail} alt={prop.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Building2 size={18} className="text-t4" />

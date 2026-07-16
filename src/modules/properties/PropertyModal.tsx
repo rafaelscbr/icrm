@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   MapPin, Bed, Bath, Square, DollarSign, BadgePercent,
   CheckCircle2, Circle, AlertTriangle, Clock, Building2, ImageOff, User, MessageCircle,
@@ -10,6 +10,7 @@ import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useAuthStore } from '../../store/useAuthStore'
+import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { formatCurrencyFull, formatDate, formatPhone, whatsappUrl } from '../../lib/formatters'
 import { calcSaleCommissions } from '../../types'
 
@@ -53,6 +54,17 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
   const { contacts } = useContactsStore()
   const { sales }    = useSalesStore()
   const { isAdmin }  = useAuthStore()
+  const loadImages   = usePropertiesStore(s => s.loadImages)
+  // A listagem baixa só a thumbnail — as fotos completas vêm sob demanda ao
+  // abrir o detalhe. Lê do store (não do prop) para re-renderizar quando chegam.
+  const fullImages   = usePropertiesStore(
+    s => property ? s.properties.find(p => p.id === property.id)?.images : undefined
+  )
+
+  useEffect(() => {
+    if (!isOpen || !property) return
+    loadImages(property.id).catch(err => console.error('[PropertyModal] loadImages:', err))
+  }, [isOpen, property?.id])
 
   const linkedTasks = useMemo(
     () => property ? tasks.filter(t => t.propertyId === property.id).sort((a, b) => {
@@ -80,13 +92,16 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
     <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do imóvel" size="lg">
       <div className="flex flex-col gap-6">
 
-        {/* Imagem + header */}
-        {property.images[0] && (
+        {/* Imagem + header — thumbnail na hora, foto completa quando carregar */}
+        {(fullImages?.[0] ?? property.thumbnail) ? (
           <div className="w-full h-40 rounded-xl overflow-hidden -mt-1">
-            <img src={property.images[0]} alt={property.name} className="w-full h-full object-cover" />
+            <img
+              src={fullImages?.[0] ?? property.thumbnail}
+              alt={property.name}
+              className="w-full h-full object-cover"
+            />
           </div>
-        )}
-        {!property.images[0] && (
+        ) : (
           <div className="w-full h-28 rounded-xl bg-s2/50 border border-line flex items-center justify-center -mt-1">
             <ImageOff size={24} className="text-t4" />
           </div>

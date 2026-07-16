@@ -153,7 +153,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function PropertiesPage() {
-  const { properties, load, remove, search, filterByStatus } = usePropertiesStore()
+  const { properties, load, remove, search, filterByStatus, backfillThumbnails } = usePropertiesStore()
   const { load: loadContacts, getById } = useContactsStore()
   const { tasks } = useTasksStore()
   const { isAdmin, profile } = useAuthStore()
@@ -170,6 +170,14 @@ export function PropertiesPage() {
   const [viewProperty, setViewProperty] = useState<Property | undefined>()
 
   useEffect(() => { load(); loadContacts() }, [load, loadContacts])
+
+  // Migração one-shot: imóveis anteriores à coluna thumbnail ganham miniatura
+  // gerada aqui no navegador (apenas admin — RLS de UPDATE). Sem candidatos,
+  // não faz nenhuma requisição.
+  useEffect(() => {
+    if (!isAdmin || properties.length === 0) return
+    backfillThumbnails()
+  }, [isAdmin, properties.length, backfillThumbnails])
 
   // Abre modal automaticamente se vier ?open=<id> na URL
   useEffect(() => {
@@ -270,8 +278,8 @@ export function PropertiesPage() {
                   onClick={() => setViewProperty(p)}
                   className="h-36 bg-s2/50 flex items-center justify-center flex-shrink-0 cursor-pointer"
                 >
-                  {p.images[0] ? (
-                    <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                  {p.thumbnail ? (
+                    <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover" />
                   ) : (
                     <ImageOff size={24} className="text-t5" />
                   )}

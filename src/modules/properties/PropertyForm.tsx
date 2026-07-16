@@ -8,6 +8,7 @@ import { Property, PropertyStatus, PropertyType, PropertyKind } from '../../type
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { ContactForm } from '../contacts/ContactForm'
+import { compressImageFile, makeThumbnail } from '../../lib/image'
 import toast from 'react-hot-toast'
 
 interface PropertyFormProps {
@@ -32,7 +33,7 @@ const TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
 ]
 
 export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
-  const { add, update } = usePropertiesStore()
+  const { add, update, loadImages } = usePropertiesStore()
   const { contacts, getById } = useContactsStore()
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -56,6 +57,10 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
   const [status,          setStatus]          = useState<PropertyStatus>(property?.status ?? 'opportunity')
   const [ownerId,         setOwnerId]         = useState(property?.ownerId ?? '')
   const [images,          setImages]          = useState<string[]>(property?.images ?? [])
+  // A listagem não baixa as fotos (só thumbnail) — na edição elas são carregadas
+  // sob demanda. Enquanto não chegam, a seção de fotos fica bloqueada e o submit
+  // não toca em images/thumbnail (evita sobrescrever as fotos existentes).
+  const [imagesLoaded,    setImagesLoaded]    = useState(!property || property.images !== undefined)
   const [ownerSearch,     setOwnerSearch]     = useState(property ? (getById(property.ownerId ?? '')?.name ?? '') : '')
   const [showOwnerDropdown, setShowOwnerDropdown] = useState(false)
   const [newContactOpen,  setNewContactOpen]  = useState(false)
@@ -85,6 +90,17 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     setStatus(property?.status ?? 'opportunity')
     setOwnerId(property?.ownerId ?? '')
     setImages(property?.images ?? [])
+    if (property && property.images === undefined) {
+      setImagesLoaded(false)
+      loadImages(property.id)
+        .then(imgs => { setImages(imgs); setImagesLoaded(true) })
+        .catch(err => {
+          console.error('[PropertyForm] loadImages:', err)
+          toast.error('Não foi possível carregar as fotos do imóvel. A seção de fotos ficou bloqueada para não sobrescrever as existentes.')
+        })
+    } else {
+      setImagesLoaded(true)
+    }
     setOwnerSearch(property ? (getById(property.ownerId ?? '')?.name ?? '') : '')
     setAcceptsPermuta(property?.acceptsPermuta ?? false)
     setPermutaTypes(property?.permutaTypes ?? [])
@@ -98,10 +114,16 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
   function handleImages(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
-    files.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = (ev) => setImages(prev => [...prev, ev.target?.result as string])
-      reader.readAsDataURL(file)
+    // Comprime antes de guardar (máx. 1600px JPEG) — as fotos são persistidas
+    // em base64 no banco e cada download conta como egress
+    files.forEach(async file => {
+      try {
+        const dataUrl = await compressImageFile(file)
+        setImages(prev => [...prev, dataUrl])
+      } catch (err) {
+        console.error('[PropertyForm] compressão de imagem:', err)
+        toast.error(`Não foi possível processar a foto ${file.name}`)
+      }
     })
   }
 
@@ -131,13 +153,31 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     return Number(v.replace(/\D/g, ''))
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!validate()) return
 
     const resolvedName = kind === 'off_plan' ? developmentName.trim() : name.trim()
 
+    // Fotos: só entram no payload se foram carregadas nesta edição — caso
+    // contrário a chave é omitida e o banco mantém as fotos existentes.
+    let imageFields: { images?: string[]; thumbnail?: string } = {}
+    if (imagesLoaded) {
+      let thumbnail: string | undefined
+      if (images[0]) {
+        try {
+          thumbnail = await makeThumbnail(images[0])
+        } catch (err) {
+          console.error('[PropertyForm] makeThumbnail:', err)
+          toast.error('Não foi possível gerar a miniatura da foto. Tente remover e adicionar a foto novamente.')
+          return
+        }
+      }
+      imageFields = { images, thumbnail }
+    }
+
     const data = {
+      ...imageFields,
       kind,
       name:            resolvedName,
       developmentName: kind === 'off_plan' ? developmentName.trim() : undefined,
@@ -155,7 +195,6 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
       value:           parseValue(value),
       status,
       ownerId:         kind === 'ready' ? ownerId : undefined,
-      images,
       acceptsPermuta,
       permutaTypes:    acceptsPermuta ? permutaTypes : [],
       permutaRegions:  acceptsPermuta && permutaTypes.includes('imovel') ? permutaRegions : [],
@@ -207,6 +246,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
           {/* Images */}
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium text-t3 uppercase tracking-wider">Fotos (opcional)</p>
+            {!imagesLoaded ? (
+              <p className="text-xs text-t4 py-2">Carregando fotos…</p>
+            ) : (
             <div className="flex gap-2 flex-wrap">
               {images.map((img, i) => (
                 <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden">
@@ -229,6 +271,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               </button>
               <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={handleImages} />
             </div>
+            )}
           </div>
 
           {/* Name field — conditional */}

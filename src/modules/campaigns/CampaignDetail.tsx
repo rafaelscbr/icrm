@@ -278,7 +278,8 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
 
   // Polling de fallback: o realtime (App.tsx) já sincroniza a cada mudança;
   // este intervalo garante consistência se o socket cair silenciosamente.
-  // load() é incremental (só linhas alteradas); pausa quando a aba está oculta
+  // load() é incremental (só linhas alteradas e exclusões via deleted_rows);
+  // pausa quando a aba está oculta
   // (o handler de visibilitychange abaixo ressincroniza ao voltar).
   useEffect(() => {
     const interval = setInterval(() => {

@@ -27,11 +27,12 @@ let inflightLoad: Promise<void> | null = null
 
 // Sync incremental: após o primeiro carregamento completo, load() busca apenas
 // contatos com updated_at posterior à marca d'água (a tabela tem 12k+ linhas —
-// rebaixar tudo a cada navegação travava a interface). Um carregamento completo
-// periódico reconcilia exclusões feitas por outros usuários.
+// rebaixar tudo a cada navegação travava a interface). Exclusões feitas por
+// outros usuários chegam pelo delta de deleted_rows (trigger no banco) — o
+// carregamento completo acontece uma única vez por sessão. O reload periódico
+// de 5 min foi removido: baixava ~5 MB por ciclo (egress).
 let lastSyncAt: string | null = null
-let lastFullLoadAt = 0
-const FULL_RELOAD_INTERVAL_MS = 5 * 60_000
+let lastDeleteSyncAt: string | null = null
 const SYNC_OVERLAP_MS = 2_000
 
 export const useContactsStore = create<ContactsStore>((set, get) => ({
@@ -41,11 +42,14 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
   load: () => {
     if (inflightLoad) return inflightLoad
     inflightLoad = (async () => {
-      const isFullLoad = lastSyncAt === null || Date.now() - lastFullLoadAt > FULL_RELOAD_INTERVAL_MS
+      const isFullLoad = lastSyncAt === null
       // Spinner apenas quando ainda não há nada em tela — revisitas mostram o
       // dado existente na hora e atualizam em segundo plano.
       if (get().contacts.length === 0) set({ loading: true })
       try {
+        const overlap = (iso: string) =>
+          new Date(new Date(iso).getTime() - SYNC_OVERLAP_MS).toISOString()
+
         if (isFullLoad) {
           const contacts = await db.contacts.fetchAll()
           for (const c of contacts) {
@@ -54,12 +58,15 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
             }
           }
           if (!lastSyncAt) lastSyncAt = new Date(0).toISOString()
-          lastFullLoadAt = Date.now()
+          // Exclusões anteriores ao carregamento completo já estão refletidas
+          // (as linhas simplesmente não vieram) — o delta parte da mesma âncora.
+          lastDeleteSyncAt = lastSyncAt
           set({ contacts })
         } else {
-          const changed = await db.contacts.fetchSince(
-            new Date(new Date(lastSyncAt!).getTime() - SYNC_OVERLAP_MS).toISOString()
-          )
+          const [changed, deleted] = await Promise.all([
+            db.contacts.fetchSince(overlap(lastSyncAt!)),
+            db.contacts.fetchDeletedSince(overlap(lastDeleteSyncAt ?? lastSyncAt!)),
+          ])
           if (changed.length > 0) {
             for (const c of changed) {
               if (new Date(c.updatedAt).getTime() > new Date(lastSyncAt!).getTime()) {
@@ -77,6 +84,24 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
             })
             merged.push(...changed.filter(c => !ids.has(c.id)))
             set({ contacts: merged })
+          }
+
+          // Remove contatos excluídos no banco desde a última sync (deleted_rows).
+          // Guarda de timestamp: se o contato local é mais recente que a exclusão
+          // registrada (reimport com o mesmo id), mantém a versão local.
+          if (deleted.length > 0) {
+            const deletedAtById = new Map(deleted.map(d => [d.id, d.deletedAt]))
+            set(s => ({
+              contacts: s.contacts.filter(c => {
+                const delAt = deletedAtById.get(c.id)
+                return !delAt || new Date(c.updatedAt).getTime() > new Date(delAt).getTime()
+              }),
+            }))
+            for (const d of deleted) {
+              if (!lastDeleteSyncAt || new Date(d.deletedAt).getTime() > new Date(lastDeleteSyncAt).getTime()) {
+                lastDeleteSyncAt = d.deletedAt
+              }
+            }
           }
         }
       } catch (err) {

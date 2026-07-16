@@ -104,7 +104,11 @@ interface PropertyRow {
   bedrooms: number | null; suites: number | null
   area_sqm: number | null; condo_fee: number | null; notes: string | null
   value: number; status: string; owner_id: string | null
-  development_name: string | null; images: string[]
+  development_name: string | null
+  // images só vem no carregamento sob demanda (fetchImages) — a listagem baixa
+  // apenas thumbnail. Chave ausente no upsert = coluna intocada no banco.
+  images?: string[] | null
+  thumbnail: string | null
   accepts_permuta: boolean; permuta_types: string[]; permuta_regions: string[]
   created_by_id: string | null
   created_at: string; updated_at: string
@@ -251,7 +255,9 @@ function toProperty(r: PropertyRow): Property {
     notes: r.notes ?? undefined,
     value: r.value, status: r.status as Property['status'],
     ownerId: r.owner_id ?? undefined, developmentName: r.development_name ?? undefined,
-    images: r.images ?? [],
+    // undefined = fotos ainda não carregadas (listagem); array = carregadas
+    images: r.images === undefined ? undefined : (r.images ?? []),
+    thumbnail: r.thumbnail ?? undefined,
     acceptsPermuta: r.accepts_permuta ?? false,
     permutaTypes: (r.permuta_types ?? []) as Array<'imovel' | 'carro'>,
     permutaRegions: r.permuta_regions ?? [],
@@ -270,7 +276,10 @@ function fromProperty(p: Property): PropertyRow {
     notes: p.notes ?? null,
     value: p.value, status: p.status,
     owner_id: p.ownerId ?? null, development_name: p.developmentName ?? null,
-    images: p.images,
+    // images ausente = fotos não carregadas nesta sessão — omitir a chave para
+    // o upsert não sobrescrever as fotos existentes no banco com []
+    ...(p.images !== undefined ? { images: p.images } : {}),
+    thumbnail: p.thumbnail ?? null,
     accepts_permuta: p.acceptsPermuta ?? false,
     permuta_types: p.permutaTypes ?? [],
     permuta_regions: p.permutaRegions ?? [],
@@ -617,10 +626,10 @@ function fromLeadInteraction(i: LeadInteraction): LeadInteractionRow {
 // stores nunca resolve e o app inteiro para de responder até um F5 manual.
 const READ_TIMEOUT_MS = 30_000
 
-async function fetchAll<R, T>(table: string, mapper: (r: R) => T): Promise<T[]> {
+async function fetchAll<R, T>(table: string, mapper: (r: R) => T, columns = '*'): Promise<T[]> {
   const { data, error } = await supabase
     .from(table)
-    .select('*')
+    .select(columns)
     .order('created_at', { ascending: false })
     .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
   if (error) {
@@ -654,6 +663,38 @@ async function fetchSince<R, T>(table: string, sinceIso: string, mapper: (r: R) 
     from += PAGE
   }
   return rows.map(mapper)
+}
+
+// Busca ids removidos desde a marca d'água — complemento do sync incremental.
+// Exclusões não deixam rastro na tabela original; o trigger log_deleted_row
+// registra cada DELETE em deleted_rows e o cliente remove do estado local.
+// Pagina porque a exclusão de uma campanha inteira pode registrar milhares de ids.
+async function fetchDeletedSince(
+  table: string,
+  sinceIso: string
+): Promise<{ id: string; deletedAt: string }[]> {
+  const PAGE = 1000
+  const rows: { row_id: string; deleted_at: string }[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await supabase
+      .from('deleted_rows')
+      .select('row_id, deleted_at')
+      .eq('table_name', table)
+      .gt('deleted_at', sinceIso)
+      .order('deleted_at', { ascending: true })
+      .order('row_id', { ascending: true })
+      .range(from, from + PAGE - 1)
+      .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
+    if (error) {
+      toast.error(`Erro ao sincronizar exclusões de ${table}: ${error.message}`)
+      throw error
+    }
+    rows.push(...(data as { row_id: string; deleted_at: string }[]))
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+  return rows.map(r => ({ id: r.row_id, deletedAt: r.deleted_at }))
 }
 
 // Paginação automática para tabelas grandes (ex: campaign_leads com 14000+ registros)
@@ -770,12 +811,41 @@ export const db = {
   contacts: {
     fetchAll:   () => fetchAllPaginated<ContactRow, Contact>('contacts', toContact),
     fetchSince: (sinceIso: string) => fetchSince<ContactRow, Contact>('contacts', sinceIso, toContact),
+    fetchDeletedSince: (sinceIso: string) => fetchDeletedSince('contacts', sinceIso),
     upsert:     (c: Contact)  => upsertOne('contacts', fromContact(c)),
     delete:     (id: string)  => deleteOne('contacts', id),
   },
 
   properties: {
-    fetchAll: () => fetchAll<PropertyRow, Property>('properties', toProperty),
+    // A listagem NÃO baixa images (fotos base64, ~142 kB por imóvel) — apenas
+    // thumbnail. As fotos completas vêm sob demanda via fetchImages.
+    fetchAll: () => fetchAll<PropertyRow, Property>(
+      'properties', toProperty,
+      'id,kind,name,type,neighborhood,city,address,complement,unit,bedrooms,suites,' +
+      'area_sqm,condo_fee,notes,value,status,owner_id,development_name,thumbnail,' +
+      'accepts_permuta,permuta_types,permuta_regions,created_by_id,created_at,updated_at'
+    ),
+    fetchImages: async (id: string): Promise<string[]> => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('images')
+        .eq('id', id)
+        .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
+        .maybeSingle()
+      if (error) {
+        toast.error(`Erro ao carregar fotos do imóvel: ${error.message}`)
+        throw error
+      }
+      return (data?.images as string[] | null) ?? []
+    },
+    // Update pontual da miniatura (backfill) — não trafega as fotos de volta
+    updateThumbnail: async (id: string, thumbnail: string) => {
+      const { error } = await supabase
+        .from('properties')
+        .update({ thumbnail, updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw error
+    },
     upsert:   (p: Property) => upsertOne('properties', fromProperty(p)),
     delete:   (id: string)  => deleteOne('properties', id),
   },
@@ -1141,6 +1211,7 @@ export const db = {
   campaignLeads: {
     fetchAll:   () => fetchAllPaginated<CampaignLeadRow, CampaignLead>('campaign_leads', toCampaignLead),
     fetchSince: (sinceIso: string) => fetchSince<CampaignLeadRow, CampaignLead>('campaign_leads', sinceIso, toCampaignLead),
+    fetchDeletedSince: (sinceIso: string) => fetchDeletedSince('campaign_leads', sinceIso),
     // upsert: usado apenas para INSERÇÃO de novas linhas (addBulk/add)
     upsert:   (l: CampaignLead)   => upsertOne('campaign_leads', fromCampaignLead(l)),
     // updateRow: usado para ATUALIZAR linhas existentes — usa .update() que tem

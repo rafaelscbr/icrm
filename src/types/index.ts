@@ -68,7 +68,8 @@ export interface Property {
   value: number             // para off_plan = ticket médio
   status: PropertyStatus
   ownerId?: string          // não aplicável para off_plan
-  images: string[]
+  images?: string[]         // undefined = não carregadas (listagem); usePropertiesStore.loadImages carrega sob demanda
+  thumbnail?: string        // miniatura leve (JPEG ~480px) exibida em grids e cards
   // Permuta
   acceptsPermuta?: boolean
   permutaTypes?: Array<'imovel' | 'carro'>

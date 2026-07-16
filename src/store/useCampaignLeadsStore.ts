@@ -8,7 +8,9 @@
  * 2. Realtime como GATILHO: evento em campaign_leads agenda um load()
  *    incremental — o dado em si sempre vem do banco, nunca do payload do
  *    websocket (elimina as race conditions dos channels antigos)
- * 3. Exclusões são aplicadas na hora pelo id do evento (não aparecem no delta)
+ * 3. Exclusões são aplicadas na hora pelo id do evento realtime E aparecem no
+ *    delta via deleted_rows (trigger no banco) — cobre socket caído sem
+ *    precisar rebaixar a tabela inteira
  * 4. Polling leve no CampaignDetail segue como fallback se o socket cair
  * 5. Todos os usuários (admin/corretor) enxergam exatamente o mesmo dado
  */
@@ -53,12 +55,13 @@ let inflightLoad: Promise<void> | null = null
 // Sync incremental: após o primeiro carregamento completo, load() busca apenas
 // linhas com updated_at posterior à marca d'água — o polling de 15s deixa de
 // baixar a tabela inteira (14k+ linhas) e passa a trafegar poucas linhas.
-// Um carregamento completo periódico reconcilia exclusões feitas por outros
-// usuários (o delta não enxerga linhas removidas).
-let lastSyncAt: string | null = null     // maior updated_at já visto do banco
-let lastFullLoadAt = 0                   // epoch ms do último carregamento completo
-const FULL_RELOAD_INTERVAL_MS = 5 * 60_000
-const SYNC_OVERLAP_MS = 2_000            // margem contra empates de timestamp
+// Exclusões feitas por outros usuários chegam pelo delta de deleted_rows
+// (trigger no banco) — o carregamento completo acontece uma única vez por
+// sessão. O reload periódico de 5 min foi removido: baixava ~6 MB a cada
+// ciclo e era o principal consumidor de egress do projeto.
+let lastSyncAt: string | null = null       // maior updated_at já visto do banco
+let lastDeleteSyncAt: string | null = null // maior deleted_at já visto de deleted_rows
+const SYNC_OVERLAP_MS = 2_000              // margem contra empates de timestamp
 
 export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   leads: [],
@@ -66,24 +69,28 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
 
   // ── Carrega leads do banco ───────────────────────────────────────────────────
   // Chamado ao abrir uma campanha e pelo polling periódico.
-  // Primeiro carregamento (e a cada 5 min): tabela completa. Demais chamadas:
-  // apenas o delta desde a última sync.
+  // Primeiro carregamento da sessão: tabela completa. Demais chamadas: apenas
+  // o delta desde a última sync (alterações + exclusões via deleted_rows).
   // Usa merge inteligente para não sobrescrever atualizações otimistas pendentes:
   // se o estado local tem updatedAt mais recente que o banco, o upsert ainda não
   // chegou ao servidor — mantém a versão local para evitar re-exibir na fila.
   load: () => {
     if (inflightLoad) return inflightLoad
     inflightLoad = (async () => {
-    const isFullLoad = lastSyncAt === null || Date.now() - lastFullLoadAt > FULL_RELOAD_INTERVAL_MS
+    const isFullLoad = lastSyncAt === null
     // Spinner apenas quando ainda não há nada em tela — revisitas mostram o
     // dado existente na hora e atualizam em segundo plano.
     if (get().leads.length === 0) set({ loading: true })
     try {
-      const raw = isFullLoad
-        ? await db.campaignLeads.fetchAll()
-        : await db.campaignLeads.fetchSince(
-            new Date(new Date(lastSyncAt!).getTime() - SYNC_OVERLAP_MS).toISOString()
-          )
+      const overlap = (iso: string) =>
+        new Date(new Date(iso).getTime() - SYNC_OVERLAP_MS).toISOString()
+
+      const [raw, deleted] = isFullLoad
+        ? [await db.campaignLeads.fetchAll(), [] as { id: string; deletedAt: string }[]]
+        : await Promise.all([
+            db.campaignLeads.fetchSince(overlap(lastSyncAt!)),
+            db.campaignLeads.fetchDeletedSince(overlap(lastDeleteSyncAt ?? lastSyncAt!)),
+          ])
 
       // Avança a marca d'água para o maior updated_at vindo do banco
       for (const l of raw) {
@@ -92,8 +99,10 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
         }
       }
       if (isFullLoad) {
-        lastFullLoadAt = Date.now()
         if (!lastSyncAt) lastSyncAt = new Date(0).toISOString() // tabela vazia
+        // Exclusões anteriores ao carregamento completo já estão refletidas
+        // (as linhas simplesmente não vieram) — o delta parte da mesma âncora.
+        lastDeleteSyncAt = lastSyncAt
       }
 
       // Merge: preserva escritas otimistas pendentes.
@@ -147,6 +156,24 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
           }
         }
         set({ leads: merged })
+      }
+
+      // Remove linhas excluídas no banco desde a última sync (deleted_rows).
+      // Guarda de timestamp: se a linha local é mais recente que a exclusão
+      // registrada (reimport com o mesmo id), mantém a versão local.
+      if (deleted.length > 0) {
+        const deletedAtById = new Map(deleted.map(d => [d.id, d.deletedAt]))
+        set(s => ({
+          leads: s.leads.filter(l => {
+            const delAt = deletedAtById.get(l.id)
+            return !delAt || new Date(l.updatedAt).getTime() > new Date(delAt).getTime()
+          }),
+        }))
+        for (const d of deleted) {
+          if (!lastDeleteSyncAt || new Date(d.deletedAt).getTime() > new Date(lastDeleteSyncAt).getTime()) {
+            lastDeleteSyncAt = d.deletedAt
+          }
+        }
       }
     } catch (err) {
       console.error('[campaignLeads] load:', err)
