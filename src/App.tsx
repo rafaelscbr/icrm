@@ -43,6 +43,7 @@ const WeekHistoryPage   = lazy(() => import('./modules/goals/WeekHistoryPage').t
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
 const VirtualOfficePage = lazy(() => import('./modules/office/VirtualOfficePage').then(m => ({ default: m.VirtualOfficePage })))
 const LeadListsPage     = lazy(() => import('./modules/lead-lists/LeadListsPage').then(m => ({ default: m.LeadListsPage })))
+const PulsePage         = lazy(() => import('./modules/pulse/PulsePage').then(m => ({ default: m.PulsePage })))
 
 // Fallback exibido enquanto o chunk da rota é baixado (apenas na 1ª visita)
 function RouteLoading() {
@@ -265,6 +266,13 @@ export default function App() {
       }>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          {/*
+            iCRM Pulse — quiosque. Fica FORA de AppRoutes de propósito: dentro
+            dele herdaria as 10 subscriptions realtime e os stores pesados do
+            app, e o iPad ficaria 12h segurando a base inteira de leads e
+            contatos na memória. O Pulse abre um canal só e faz uma leitura só.
+          */}
+          <Route path="/pulse" element={<PulsePage />} />
           <Route path="/*" element={<AppRoutes />} />
         </Routes>
       </Suspense>
