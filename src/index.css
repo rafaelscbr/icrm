@@ -228,6 +228,32 @@ html.light {
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
   }
+
+  /*
+   * iCRM Pulse — viewport de quiosque.
+   *
+   * `h-screen` (100vh) NÃO serve aqui: no Safari do iPad, 100vh é a altura da
+   * janela com a barra de endereço RETRAÍDA. Com a barra visível o elemento
+   * fica mais alto que a área útil e a página ganha aquela rolagem de poucos
+   * pixels — fatal numa tela que ninguém toca. 100dvh acompanha a barra.
+   *
+   * `position: fixed` trava de vez: mesmo que a altura dinâmica oscile
+   * enquanto o Safari anima a barra, a tela não rola. `overscroll-behavior`
+   * mata o efeito elástico do iOS ao arrastar.
+   */
+  .pulse-viewport {
+    position: fixed;
+    inset: 0;
+    height: 100vh;          /* fallback para browsers sem dvh */
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    padding:
+      max(0.75rem, env(safe-area-inset-top,    0px))
+      max(0.75rem, env(safe-area-inset-right,  0px))
+      max(0.75rem, env(safe-area-inset-bottom, 0px))
+      max(0.75rem, env(safe-area-inset-left,   0px));
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════

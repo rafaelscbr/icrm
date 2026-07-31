@@ -121,6 +121,27 @@ export function PulsePage() {
 
   useKiosk({ onViradaDoDia })
 
+  // Trava a rolagem do documento enquanto o Pulse está montado. O container já
+  // é `position: fixed`, mas sem isto o Safari ainda permite arrastar o body e
+  // revelar uma faixa vazia. Restaurado no unmount para não afetar o resto do app.
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const antes = {
+      html:       html.style.overflow,
+      body:       body.style.overflow,
+      overscroll: body.style.overscrollBehavior,
+    }
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    body.style.overscrollBehavior = 'none'
+    return () => {
+      html.style.overflow = antes.html
+      body.style.overflow = antes.body
+      body.style.overscrollBehavior = antes.overscroll
+    }
+  }, [])
+
   useEffect(() => {
     if (!user || !isAdmin) return
     bootstrap('inicial')
@@ -144,7 +165,7 @@ export function PulsePage() {
 
   if (connection === 'error') {
     return (
-      <div className="h-screen flex flex-col items-center justify-center gap-4 px-8 text-center" style={{ background: 'var(--page-bg)' }}>
+      <div className="pulse-viewport flex flex-col items-center justify-center gap-4 px-8 text-center" style={{ background: 'var(--page-bg)' }}>
         <AlertTriangle size={40} strokeWidth={1.6} className="text-error" aria-hidden />
         <h1 className="font-heading font-extrabold text-2xl text-t1">Não consegui carregar o Pulse</h1>
         <p className="text-t3 max-w-md">{erro}</p>
@@ -160,7 +181,7 @@ export function PulsePage() {
 
   return (
     <div
-      className="h-screen w-screen overflow-hidden flex flex-col gap-3 p-3 select-none"
+      className="pulse-viewport flex flex-col gap-3 select-none"
       style={{ background: 'var(--page-bg)' }}
     >
       {/* ── Cabeçalho ───────────────────────────────────────────────────────── */}
@@ -197,7 +218,13 @@ export function PulsePage() {
       <div className="flex-1 min-h-0 grid grid-cols-[1.35fr_1fr] gap-3">
         <div className="flex flex-col gap-3 min-h-0">
           <LiveFeed feed={feed} brokerNames={brokerNames} className="flex-1 min-h-0" />
-          <DayChart porHora={porHora} horaAtual={new Date(agora).getHours()} className="h-[168px] shrink-0" />
+          {/* Altura proporcional: num iPad mais baixo (barra do Safari + tab bar)
+              o gráfico encolhe em vez de espremer o feed, que é o que importa. */}
+          <DayChart
+            porHora={porHora}
+            horaAtual={new Date(agora).getHours()}
+            className="shrink-0 h-[clamp(120px,29%,180px)]"
+          />
         </div>
 
         <div className="flex flex-col gap-3 min-h-0">

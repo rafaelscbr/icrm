@@ -8,8 +8,14 @@ import { Painel, PainelTitulo } from './Primitives'
  * requestAnimationFrame rodando 12 horas para animar uma linha parada.
  */
 
-const HORA_INICIO = 7
-const HORA_FIM    = 21   // inclusive
+/**
+ * Faixa padrão: o horário em que a imobiliária opera. Mas ela se ESTICA quando
+ * há atividade fora dela — lead do Meta cai de madrugada, e um gráfico que
+ * marca "0 ações" enquanto o feed ao lado lista três leads não é um recorte,
+ * é uma contradição na mesma tela.
+ */
+const HORA_INICIO_PADRAO = 7
+const HORA_FIM_PADRAO    = 21
 
 interface Props {
   porHora:    number[]
@@ -18,8 +24,17 @@ interface Props {
 }
 
 export function DayChart({ porHora, horaAtual, className = '' }: Props) {
-  const faixa = porHora.slice(HORA_INICIO, HORA_FIM + 1)
-  const total = faixa.reduce((a, b) => a + b, 0)
+  const comAtividade = porHora
+    .map((v, h) => ({ v, h }))
+    .filter(x => x.v > 0)
+    .map(x => x.h)
+
+  const inicio = Math.min(HORA_INICIO_PADRAO, ...comAtividade)
+  const fim    = Math.max(HORA_FIM_PADRAO,    ...comAtividade)
+
+  const faixa = porHora.slice(inicio, fim + 1)
+  // Total do DIA inteiro, não só do trecho desenhado.
+  const total = porHora.reduce((a, b) => a + b, 0)
   const pico  = Math.max(...faixa, 1)
 
   const W = 100
@@ -75,11 +90,11 @@ export function DayChart({ porHora, horaAtual, className = '' }: Props) {
           />
 
           {/* Marcador da hora corrente — onde estamos na curva do dia */}
-          {horaAtual >= HORA_INICIO && horaAtual <= HORA_FIM && (
+          {horaAtual >= inicio && horaAtual <= fim && (
             <line
-              x1={(horaAtual - HORA_INICIO) * passo}
+              x1={(horaAtual - inicio) * passo}
               y1="0"
-              x2={(horaAtual - HORA_INICIO) * passo}
+              x2={(horaAtual - inicio) * passo}
               y2={H}
               stroke="var(--line-strong)"
               strokeWidth="0.5"
@@ -91,8 +106,9 @@ export function DayChart({ porHora, horaAtual, className = '' }: Props) {
 
         <div className="flex justify-between pt-1">
           {faixa.map((_, i) => {
-            const h = HORA_INICIO + i
-            const marcar = h % 2 === 0
+            const h = inicio + i
+            // Faixa esticada ganha rótulos mais espaçados para não virar borrão.
+            const marcar = h % (faixa.length > 17 ? 3 : 2) === 0
             return (
               <span
                 key={h}

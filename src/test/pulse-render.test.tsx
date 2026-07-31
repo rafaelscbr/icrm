@@ -91,6 +91,25 @@ describe('painéis do Pulse renderizam com dados', () => {
     expect(screen.getByText('23 ações')).toBeInTheDocument()
   })
 
+  it('DayChart conta atividade fora do horário comercial — lead do Meta cai de madrugada', () => {
+    const porHora = Array(24).fill(0)
+    porHora[0] = 1; porHora[2] = 1; porHora[3] = 1   // fora da faixa padrão 7h–21h
+    const { unmount } = render(<DayChart porHora={porHora} horaAtual={8} />)
+    // O total é do dia inteiro; marcar "0 ações" com o feed listando 3 leads
+    // ao lado seria uma contradição na mesma tela.
+    expect(screen.getByText('3 ações')).toBeInTheDocument()
+    // A faixa se estica até a madrugada, então a hora 00 vira rótulo do eixo.
+    expect(screen.getByText('00')).toBeInTheDocument()
+    unmount()
+  })
+
+  it('DayChart estica a faixa para a madrugada e para a noite', () => {
+    const porHora = Array(24).fill(0)
+    porHora[23] = 5
+    render(<DayChart porHora={porHora} horaAtual={23} />)
+    expect(screen.getByText('5 ações')).toBeInTheDocument()
+  })
+
   it('ClimateGauge mostra o nível calculado', () => {
     const clima = calcClimate({
       atividade30min: 10, leadsNovosHoje: 12, corretoresOnline: 5,
