@@ -37,7 +37,12 @@
       (function () {
         try {
           var raw = localStorage.getItem('icrm-theme')
-          var theme = raw ? (JSON.parse(raw).state || {}).theme : 'light'
+          if (!raw) { document.documentElement.classList.add('light'); return }
+          var saved = JSON.parse(raw)
+          // Espelha a migração v0→v1 do useThemeStore: quem tinha "dark" gravado
+          // de antes do Souza OS vai para o claro. Sem isto a tela pisca escura
+          // antes do React montar e corrigir.
+          var theme = (saved.version || 0) < 1 ? 'light' : (saved.state || {}).theme
           if (theme !== 'dark') document.documentElement.classList.add('light')
         } catch (e) {
           document.documentElement.classList.add('light')
