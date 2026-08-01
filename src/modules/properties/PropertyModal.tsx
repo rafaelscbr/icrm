@@ -51,7 +51,7 @@ interface PropertyModalProps {
 
 export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps) {
   const { tasks }    = useTasksStore()
-  const { contacts } = useContactsStore()
+  const { contacts, loadByIds: loadContactsByIds } = useContactsStore()
   const { sales }    = useSalesStore()
   const { isAdmin }  = useAuthStore()
   const loadImages   = usePropertiesStore(s => s.loadImages)
@@ -79,6 +79,15 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
     () => property ? sales.filter(s => s.propertyId === property.id).sort((a, b) => b.date.localeCompare(a.date)) : [],
     [property, sales]
   )
+
+  // Os clientes das vendas vinculadas NÃO estão cobertos pelo loadByIds da
+  // PropertiesPage (que carrega só os proprietários). Sem isto, o nome do
+  // cliente de cada venda apareceria como "—" agora que o store deixou de
+  // manter os 12.543 contatos em memória.
+  useEffect(() => {
+    const ids = linkedSales.map(s => s.clientId).filter(Boolean)
+    if (ids.length > 0) loadContactsByIds(ids)
+  }, [linkedSales]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const owner = property?.ownerId ? contacts.find(c => c.id === property.ownerId) : undefined
 
