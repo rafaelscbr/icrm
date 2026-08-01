@@ -10,6 +10,8 @@ interface ContactsStore {
   contacts: Contact[]
   loading: boolean
   load: () => Promise<void>
+  /** Carrega só os contatos indicados (merge). Não avança a marca d'água do sync. */
+  loadByIds: (ids: string[]) => Promise<void>
   /** Assina realtime de contacts — eventos disparam sync incremental */
   subscribe: () => () => void
   add: (data: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>) => Contact
@@ -112,6 +114,28 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
       }
     })()
     return inflightLoad
+  },
+
+  // Carrega SÓ os contatos indicados, mesclando com o que já existe.
+  //
+  // Para telas que precisam apenas do nome de alguns contatos (o cliente de uma
+  // venda, o contato de uma tarefa) — no Dashboard eram ~40 lookups custando o
+  // fetchAll de 12.543 linhas. NÃO mexe na marca d'água do sync incremental:
+  // este carregamento é parcial, e avançar `lastSyncAt` faria o delta seguinte
+  // pular os contatos que nunca foram baixados.
+  loadByIds: async (ids) => {
+    const faltantes = ids.filter(id => id && !get().contacts.some(c => c.id === id))
+    if (faltantes.length === 0) return
+    try {
+      const novos = await db.contacts.fetchByIds(faltantes)
+      if (novos.length === 0) return
+      set(s => {
+        const existentes = new Set(s.contacts.map(c => c.id))
+        return { contacts: [...s.contacts, ...novos.filter(c => !existentes.has(c.id))] }
+      })
+    } catch (err) {
+      console.error('[contacts] loadByIds:', err)
+    }
   },
 
   // ── Realtime ─────────────────────────────────────────────────────────────────

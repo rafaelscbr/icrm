@@ -49,10 +49,29 @@ interface OverviewData {
   alertas: { tarefasEmAtraso: number; slaEstourado: number }
 }
 
+// ─── Tipos da RPC dashboard_extras ───────────────────────────────────────────
+//
+// Substitui dois fetchAll que rodavam em TODA abertura do app (o Dashboard é a
+// rota "/"): contacts (7,7 MB / 12.543 linhas, para usar ~40) e
+// lead_interactions (1,5 MB / 4.517 linhas, para extrair uma data por lead).
+// Os três widgets pedem agregação, não a tabela. Payload: ~6 kB.
+
+interface ExtrasData {
+  aniversariantes: Array<{
+    id: string; nome: string; telefone: string
+    birthdate: string; photoUrl: string | null
+  }>
+  recompra: Array<{
+    id: string; nome: string; telefone: string; photoUrl: string | null
+    totalVendas: number; ultimaVenda: string; diasDesde: number
+  }>
+  recompraTotal: number
+  /** leads ativos sem contato real há mais de 2 dias — cruzado com o store de leads */
+  leadsSemContato: Array<{ leadId: string; dias: number }>
+}
+
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
-const COOLING_DAYS = 2
 
 const STAGE_LABELS = STAGE_THEME
 
@@ -589,9 +608,6 @@ function AlertsPanel({ alertas, loading, error, onNavigateTasks, onNavigateLeads
 
 // ─── Helpers de data ──────────────────────────────────────────────────────────
 
-function daysAgo(iso: string): number {
-  return (Date.now() - new Date(iso).getTime()) / 86_400_000
-}
 function daysOverdue(dueDate: string): number {
   const today = new Date(); today.setHours(0, 0, 0, 0)
   return Math.floor((today.getTime() - new Date(dueDate + 'T00:00:00').getTime()) / 86_400_000)
@@ -609,11 +625,15 @@ function dueDateLabel(dueDate?: string): { text: string; color: string } {
 // ─── Alertas de leads (sem interação) ─────────────────────────────────────────
 
 function LeadAlertsWidget({
-  onOpenLead, onNavigate, brokerNames = {},
-}: { onOpenLead: (lead: Lead) => void; onNavigate: () => void; brokerNames?: Record<string, string> }) {
+  extras, onOpenLead, onNavigate, brokerNames = {},
+}: {
+  extras: ExtrasData | null
+  onOpenLead: (lead: Lead) => void
+  onNavigate: () => void
+  brokerNames?: Record<string, string>
+}) {
   const { leads, advanceFollowup } = useLeadsStore()
-  const { byLead, add: addInteraction } = useLeadInteractionsStore()
-  const { effectiveBrokerId, isGlobalView } = useAdminView()
+  const { add: addInteraction } = useLeadInteractionsStore()
 
   async function handleWhatsApp(e: React.MouseEvent, lead: Lead) {
     e.stopPropagation()
@@ -630,21 +650,17 @@ function LeadAlertsWidget({
     } catch { /* erro já toastado pela camada db */ }
   }
 
+  // A lista (lead + dias sem contato) vem agregada da RPC; o objeto Lead sai do
+  // store, que já está carregado e é onde estão nome, telefone e etapa. Antes,
+  // descobrir "dias desde o último contato" custava baixar as 4.517 interações.
+  // O escopo da visão é aplicado no banco, via p_broker_id.
   const alertLeads = useMemo(() => {
-    const active = leads.filter(l =>
-      !l.discardReason && l.funnelStage !== 'venda' &&
-      (isGlobalView || l.brokerId === effectiveBrokerId)
-    )
-    return active
-      .map(l => {
-        const ints     = byLead[l.id] ?? []
-        const lastReal = ints.find(i => REAL_TYPES.has(i.type))
-        const days     = daysAgo(lastReal?.interactedAt ?? l.createdAt)
-        return { lead: l, days }
-      })
-      .filter(({ days }) => days > COOLING_DAYS)
-      .sort((a, b) => b.days - a.days)
-  }, [leads, byLead, isGlobalView, effectiveBrokerId])
+    if (!extras) return []
+    const porId = new Map(leads.map(l => [l.id, l]))
+    return extras.leadsSemContato
+      .map(({ leadId, dias }) => ({ lead: porId.get(leadId), days: dias }))
+      .filter((x): x is { lead: Lead; days: number } => x.lead !== undefined)
+  }, [extras, leads])
 
   if (alertLeads.length === 0) return null
 
@@ -847,24 +863,14 @@ function UpcomingCard({
 
 // ─── Potencial de recompra ────────────────────────────────────────────────────
 
-function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
-  const { contacts } = useContactsStore()
-  const { sales }    = useSalesStore()
-  const { effectiveBrokerId, isGlobalView } = useAdminView()
-  const candidates = useMemo(() => {
-    return contacts
-      .filter(c => c.tags.includes('buyer'))
-      .map(c => {
-        const clientSales = sales.filter(s => s.clientId === c.id).sort((a, b) => b.date.localeCompare(a.date))
-        const lastSale    = clientSales[0]
-        const daysSince   = lastSale ? Math.floor((Date.now() - new Date(lastSale.date).getTime()) / 86_400_000) : null
-        return { contact: c, lastSale, daysSince, totalSales: clientSales.length }
-      })
-      .filter(c => c.daysSince !== null && c.daysSince >= 180)
-      // Visão "ver como corretor" → só clientes cuja última venda foi dele
-      .filter(c => isGlobalView || c.lastSale?.brokerId === effectiveBrokerId)
-      .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
-  }, [contacts, sales, isGlobalView, effectiveBrokerId])
+// Candidatos vêm agregados da RPC (contato + última venda + dias). Cruzar 12.543
+// contatos com as vendas no cliente exigia baixar a tabela de contatos inteira
+// para encontrar 17 linhas. O escopo da visão é aplicado no banco.
+function RepurchaseWidget({ extras, onNavigate }: {
+  extras:     ExtrasData | null
+  onNavigate: () => void
+}) {
+  const candidates = extras?.recompra ?? []
   if (candidates.length === 0) return null
 
   return (
@@ -885,16 +891,16 @@ function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
         </button>
       </div>
       <div className="flex flex-col divide-y divide-emerald-500/8">
-        {candidates.slice(0, 5).map(({ contact: c, lastSale, daysSince, totalSales }) => (
+        {candidates.slice(0, 5).map(c => (
           <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-emerald-500/5 transition-colors">
-            <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
+            <Avatar name={c.nome} photoUrl={c.photoUrl ?? undefined} size="sm" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-t1 truncate">{c.name}</p>
-              <p className="text-[11px] text-t3">{totalSales} compra{totalSales !== 1 ? 's' : ''} · última: {lastSale ? formatDate(lastSale.date) : '—'}</p>
+              <p className="text-sm font-medium text-t1 truncate">{c.nome}</p>
+              <p className="text-[11px] text-t3">{c.totalVendas} compra{c.totalVendas !== 1 ? 's' : ''} · última: {formatDate(c.ultimaVenda)}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-[11px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">{daysSince}d sem compra</span>
-              <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors">
+              <span className="text-[11px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">{c.diasDesde}d sem compra</span>
+              <a href={whatsappUrl(c.telefone)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors">
                 <MessageCircle size={12} />
               </a>
             </div>
@@ -992,6 +998,7 @@ export function DashboardPage() {
   const [selectedLead,    setSelectedLead]    = useState<Lead | null>(null)
   const [showSecondary,   setShowSecondary]   = useState(false)
   const [overviewData,    setOverviewData]    = useState<OverviewData | null>(null)
+  const [extras,          setExtras]          = useState<ExtrasData | null>(null)
   const [overviewLoading, setOverviewLoading] = useState(true)
   const [overviewError,   setOverviewError]   = useState<string | null>(null)
 
@@ -1003,12 +1010,11 @@ export function DashboardPage() {
     [allProfiles]
   )
 
-  const { contacts, load: loadContacts, getBirthdaysThisMonth } = useContactsStore()
+  const { contacts, loadByIds: loadContactsByIds } = useContactsStore()
   const { properties, load: loadProperties }   = usePropertiesStore()
   const { sales, load: loadSales, getByPeriod } = useSalesStore()
   const { tasks, load: loadTasks, getUpcoming, getOverdue }        = useTasksStore()
   const { load: loadMyLeads }     = useLeadsStore()
-  const { loadAll: loadInteractions } = useLeadInteractionsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
   async function loadOverview() {
@@ -1026,16 +1032,44 @@ export function DashboardPage() {
     setOverviewLoading(false)
   }
 
-  // Stores carregam uma vez; a RPC de overview refaz fetch ao trocar a visão.
+  async function loadExtras() {
+    const { data, error } = await supabase.rpc('dashboard_extras', { p_broker_id: effectiveBrokerId })
+    if (error) {
+      // Não derruba a tela: os widgets que dependem disso simplesmente não
+      // renderizam, como já acontecia quando não havia candidatos.
+      console.error('[dashboard] extras:', error)
+      return
+    }
+    setExtras(data as ExtrasData)
+  }
+
+  // Stores carregam uma vez; as RPCs refazem fetch ao trocar a visão.
+  //
+  // `loadContacts()` e `loadInteractions()` saíram daqui: baixavam 7,7 MB
+  // (12.543 contatos) e 1,5 MB (4.517 interações) em toda abertura do app para
+  // alimentar três widgets que só precisam de agregação — agora vinda da RPC
+  // dashboard_extras (~6 kB). Os poucos contatos exibidos por nome em tarefas e
+  // vendas são buscados por id logo abaixo.
   useEffect(() => {
-    loadContacts(); loadProperties(); loadSales(); loadTasks()
-    loadMyLeads(); loadInteractions()
+    loadProperties(); loadSales(); loadTasks(); loadMyLeads()
   }, [])
 
   useEffect(() => {
     loadOverview()
+    loadExtras()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveBrokerId])
+
+  // Nomes dos contatos citados por tarefas e vendas — dezenas de linhas, não
+  // 12.543. Roda de novo quando tarefas ou vendas mudam (realtime inclusive).
+  useEffect(() => {
+    const ids = [
+      ...tasks.map(t => t.contactId),
+      ...sales.map(s => s.clientId),
+    ].filter((id): id is string => !!id)
+    if (ids.length > 0) loadContactsByIds(ids)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, sales])
 
   // Escopo da visão para os widgets que leem stores no client (seção secundária).
   // Para corretor comum o store já vem filtrado pela RLS; isto cobre o admin
@@ -1054,7 +1088,7 @@ export function DashboardPage() {
   const recentSales   = salesInPeriod.slice(0, 5)
   const upcomingTasks = inViewTasks(getUpcoming())
   const overdueTasks  = inViewTasks(getOverdue())
-  const birthdays     = inView(getBirthdaysThisMonth())
+  const birthdays     = extras?.aniversariantes ?? []
   const periodComm    = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
   const periodBroker  = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
   const tasksDoneInPeriod    = inViewTasks(tasks.filter(t => t.status === 'done' && t.completedAt && matchesPeriod(t.completedAt.split('T')[0], startDate, endDate))).length
@@ -1157,6 +1191,7 @@ export function DashboardPage() {
         {/* LeadAlertsWidget já retorna null quando vazio — envolve em fragmento sem mb */}
         <div className="[&>div]:mb-0">
           <LeadAlertsWidget
+            extras={extras}
             onOpenLead={setSelectedLead}
             onNavigate={() => navigate('/leads')}
             brokerNames={brokerNames}
@@ -1260,13 +1295,13 @@ export function DashboardPage() {
                 <div className="flex flex-col gap-3">
                   {birthdays.slice(0, 5).map(c => (
                     <div key={c.id} className="flex items-center gap-3 group">
-                      <Avatar name={c.name} photoUrl={c.photoUrl} size="sm" />
+                      <Avatar name={c.nome} photoUrl={c.photoUrl ?? undefined} size="sm" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-t1 truncate font-medium">{c.name}</p>
+                        <p className="text-sm text-t1 truncate font-medium">{c.nome}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-yellow-400 tabular-nums">{getBirthdayDay(c.birthdate!).replace(/^0/, '')}/{c.birthdate!.split('-')[1]}</span>
-                        <a href={whatsappUrl(c.phone)} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all">
+                        <span className="text-xs font-bold text-yellow-400 tabular-nums">{getBirthdayDay(c.birthdate).replace(/^0/, '')}/{c.birthdate.split('-')[1]}</span>
+                        <a href={whatsappUrl(c.telefone)} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all">
                           <MessageCircle size={12} />
                         </a>
                       </div>
@@ -1320,7 +1355,7 @@ export function DashboardPage() {
           <UpcomingCard tasks={upcomingTasks} contacts={contacts} properties={properties} onNavigate={() => navigate('/tarefas')} />
 
           {/* Potencial de recompra */}
-          <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
+          <RepurchaseWidget extras={extras} onNavigate={() => navigate('/contatos')} />
         </div>
       )}
 

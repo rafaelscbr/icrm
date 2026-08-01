@@ -810,6 +810,22 @@ async function deleteOne(table: string, id: string): Promise<void> {
 export const db = {
   contacts: {
     fetchAll:   () => fetchAllPaginated<ContactRow, Contact>('contacts', toContact),
+    // Busca pontual por id — para telas que só precisam do NOME de alguns
+    // contatos (ex.: o cliente de uma venda ou o contato de uma tarefa).
+    // Evita o fetchAll de 12.543 linhas (~7,7 MB) por causa de ~40 lookups.
+    fetchByIds: async (ids: string[]): Promise<Contact[]> => {
+      if (ids.length === 0) return []
+      const unicos = [...new Set(ids)]
+      const out: Contact[] = []
+      // A lista vai na URL (filtro `in`) — fatia para não estourar o limite.
+      for (let i = 0; i < unicos.length; i += 200) {
+        const { data, error } = await supabase
+          .from('contacts').select('*').in('id', unicos.slice(i, i + 200))
+        if (error) { toast.error(`Erro ao carregar contatos: ${error.message}`); throw error }
+        out.push(...(data as ContactRow[]).map(toContact))
+      }
+      return out
+    },
     fetchSince: (sinceIso: string) => fetchSince<ContactRow, Contact>('contacts', sinceIso, toContact),
     fetchDeletedSince: (sinceIso: string) => fetchDeletedSince('contacts', sinceIso),
     upsert:     (c: Contact)  => upsertOne('contacts', fromContact(c)),
