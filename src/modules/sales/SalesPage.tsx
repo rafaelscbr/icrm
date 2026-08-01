@@ -121,63 +121,41 @@ export function SalesPage() {
         <PeriodSelector />
       </div>
 
-      {/* KPIs — todos respeitam o período */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-5 lg:mb-6">
-        <Card accent="purple">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 bg-brand-tint rounded-lg flex items-center justify-center">
-              <TrendingUp size={14} className="text-brand-text" />
-            </div>
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">VGV no período</p>
-          </div>
-          <p className="text-base lg:text-2xl font-bold text-brand-text tabular-nums">
-            <span className="lg:hidden">{formatCurrency(valueInPeriod)}</span>
-            <span className="hidden lg:inline">{formatCurrencyFull(valueInPeriod)}</span>
+      {/* ── KPIs — com hierarquia ──────────────────────────────────────────
+          Eram quatro cards idênticos: mesmo tamanho, mesmo peso, nenhum
+          protagonista. VGV é o número que define o mês, então ele fica grande
+          e sozinho; ticket, comissão gerada e comissão do corretor são apoio
+          e ocupam o porte compacto. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5 lg:mb-6">
+        <div className="lg:col-span-1 relative overflow-hidden rounded-[16px] border border-line card-surface gold-edge p-5">
+          <p className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3">VGV no período</p>
+          <p className="font-heading text-[clamp(1.9rem,3.5vw,2.5rem)] font-black text-t1 tabular-nums leading-none tracking-[-0.03em] mt-3">
+            {formatCurrency(valueInPeriod)}
           </p>
-          <p className="text-xs text-t3 mt-1">{salesInPeriod.length} venda{salesInPeriod.length !== 1 ? 's' : ''}</p>
-        </Card>
+          <p className="text-xs text-t3 mt-2">
+            {salesInPeriod.length} venda{salesInPeriod.length !== 1 ? 's' : ''} · ticket médio {formatCurrency(avgTicket)}
+          </p>
+        </div>
 
-        <Card accent="green">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center">
-              <TrendingUp size={14} className="text-green-400" />
+        <div className="lg:col-span-2 grid grid-cols-2 gap-3">
+          {[
+            { label: 'Comissão gerada', value: periodComm,   hint: 'negociada no período', icon: BadgePercent, tone: 'text-t1'      },
+            { label: 'Sua comissão',    value: periodBroker, hint: 'sua parte no período', icon: DollarSign,   tone: 'text-success' },
+          ].map(k => (
+            <div key={k.label} className="rounded-[14px] border border-line card-surface p-4 flex flex-col">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3 truncate">{k.label}</p>
+                <span className="w-7 h-7 rounded-lg bg-s3 flex items-center justify-center flex-shrink-0">
+                  <k.icon size={13} className="text-t3" />
+                </span>
+              </div>
+              <p className={`font-heading text-[22px] font-black tabular-nums leading-none mt-3 ${k.tone}`}>
+                {formatCurrency(k.value)}
+              </p>
+              <p className="text-[11px] text-t4 mt-2">{k.hint}</p>
             </div>
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Ticket médio</p>
-          </div>
-          <p className="text-base lg:text-2xl font-bold text-green-300 tabular-nums">
-            <span className="lg:hidden">{formatCurrency(avgTicket)}</span>
-            <span className="hidden lg:inline">{formatCurrencyFull(avgTicket)}</span>
-          </p>
-          <p className="text-xs text-t3 mt-1">por venda no período</p>
-        </Card>
-
-        <Card>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 bg-brand-tint rounded-lg flex items-center justify-center">
-              <BadgePercent size={14} className="text-brand-text" />
-            </div>
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Comissão gerada</p>
-          </div>
-          <p className="text-base lg:text-2xl font-bold text-brand-text tabular-nums">
-            <span className="lg:hidden">{formatCurrency(periodComm)}</span>
-            <span className="hidden lg:inline">{formatCurrencyFull(periodComm)}</span>
-          </p>
-          <p className="text-xs text-t3 mt-1">negociada no período</p>
-        </Card>
-
-        <Card>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 bg-emerald-500/15 rounded-lg flex items-center justify-center">
-              <DollarSign size={14} className="text-emerald-400" />
-            </div>
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Sua comissão</p>
-          </div>
-          <p className="text-base lg:text-2xl font-bold text-emerald-300 tabular-nums">
-            <span className="lg:hidden">{formatCurrency(periodBroker)}</span>
-            <span className="hidden lg:inline">{formatCurrencyFull(periodBroker)}</span>
-          </p>
-          <p className="text-xs text-t3 mt-1">sua parte no período</p>
-        </Card>
+          ))}
+        </div>
       </div>
 
       {/* Gráfico mensal */}
@@ -186,18 +164,18 @@ export function SalesPage() {
           <h2 className="text-sm font-semibold text-t2 mb-4">Evolução mensal — últimos 12 meses</h2>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="month" tick={{ fill: '#475569', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+              <XAxis dataKey="month" tick={{ fill: 'var(--t4)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis
-                tick={{ fill: '#475569', fontSize: 11 }}
+                tick={{ fill: 'var(--t4)', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatAxisValue}
                 width={42}
               />
               <Tooltip
-                contentStyle={{ background: '#0D1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
-                labelStyle={{ color: '#94a3b8', fontSize: 11 }}
+                contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: 'var(--shadow-dropdown)' }}
+                labelStyle={{ color: 'var(--t3)', fontSize: 11 }}
                 formatter={(value: number, _name: string, props: { payload?: { count?: number } }) => [
                   `${formatCurrency(value)}  ·  ${props.payload?.count ?? 0} venda${(props.payload?.count ?? 0) !== 1 ? 's' : ''}`,
                   'VGV',
@@ -206,9 +184,9 @@ export function SalesPage() {
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#a78bfa"
+                stroke="var(--brand)"
                 strokeWidth={2}
-                dot={{ fill: '#a78bfa', r: 3 }}
+                dot={{ fill: 'var(--brand)', r: 3 }}
                 activeDot={{ r: 5 }}
                 name="VGV"
               />

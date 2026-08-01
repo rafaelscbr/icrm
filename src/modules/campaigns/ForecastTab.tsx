@@ -315,7 +315,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
               </button>
             )}
             {dirty && (
-              <button onClick={saveRates} className="flex items-center gap-1.5 text-xs text-brand-text hover:text-indigo-200 bg-brand-tint hover:bg-brand-tint border border-brand/30 rounded-xl px-3 py-1.5 transition-all cursor-pointer">
+              <button onClick={saveRates} className="flex items-center gap-1.5 text-xs text-brand-text hover:text-brand bg-brand-tint hover:bg-brand-tint border border-brand/30 rounded-xl px-3 py-1.5 transition-all cursor-pointer">
                 <Save size={11} /> Salvar taxas
               </button>
             )}

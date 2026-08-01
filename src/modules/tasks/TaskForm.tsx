@@ -259,7 +259,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
               onClick={() => setCategory(category === opt.value ? '' : opt.value)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer border
                 ${category === opt.value
-                  ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-200'
+                  ? 'bg-brand-tint border-brand/40 text-t1'
                   : 'bg-s3/40 border-line text-t3 hover:border-line-strong hover:text-t1'
                 }`}
             >
@@ -318,7 +318,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
               onClick={() => { setDueDate(s.value); setShowCustomDate(false) }}
               className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all cursor-pointer
                 ${dueDate === s.value && !showCustomDate
-                  ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-200'
+                  ? 'bg-brand-tint border-brand/40 text-t1'
                   : 'bg-s3/40 border-line text-t3 hover:border-line-strong hover:text-t1'
                 }`}
             >
@@ -333,7 +333,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
             onClick={() => setShowCustomDate(v => !v)}
             className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all cursor-pointer flex items-center gap-1.5
               ${showCustomDate
-                ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-200'
+                ? 'bg-brand-tint border-brand/40 text-t1'
                 : 'bg-s3/40 border-line text-t3 hover:border-line-strong hover:text-t1'
               }`}
           >

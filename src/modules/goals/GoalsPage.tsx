@@ -48,12 +48,13 @@ function toLocalDate(iso: string) {
 function ScoreRing({ score }: { score: number }) {
   const r = 54; const sz = 136; const circ = 2 * Math.PI * r
   const dash = (score / 100) * circ
-  const color = score >= 80 ? '#22c55e' : score >= 50 ? '#6366f1' : score >= 25 ? '#f59e0b' : '#ef4444'
+  // Semântica única: verde = ok, ouro = caminho, âmbar = atenção, vermelho = risco.
+  const color = score >= 80 ? 'var(--success)' : score >= 50 ? 'var(--brand)' : score >= 25 ? 'var(--warning)' : 'var(--error)'
   const label = score >= 80 ? 'Excelente' : score >= 50 ? 'No caminho' : score >= 25 ? 'Atenção' : 'Começar agora'
   return (
     <div className="flex flex-col items-center gap-1">
       <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
-        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={10} />
+        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={10} />
         <circle
           cx={sz/2} cy={sz/2} r={r} fill="none"
           stroke={color} strokeWidth={10} strokeLinecap="round"
@@ -61,10 +62,10 @@ function ScoreRing({ score }: { score: number }) {
           strokeDashoffset={circ / 4}
           style={{ transition: 'stroke-dasharray 1s cubic-bezier(0.16,1,0.3,1), stroke 0.5s' }}
         />
-        <text x={sz/2} y={sz/2 - 6} textAnchor="middle" fill="white" fontSize={28} fontWeight="900" fontFamily="system-ui">
+        <text x={sz/2} y={sz/2 - 6} textAnchor="middle" fill="var(--t1)" fontSize={28} fontWeight="900" fontFamily="inherit">
           {score}
         </text>
-        <text x={sz/2} y={sz/2 + 10} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize={10} fontFamily="system-ui">
+        <text x={sz/2} y={sz/2 + 10} textAnchor="middle" fill="var(--t4)" fontSize={10} fontFamily="inherit">
           pontos
         </text>
       </svg>
@@ -232,16 +233,16 @@ function GoalRing({ value, target, hex }: { value: number; target: number; hex: 
   const dash = (pct / 100) * circ
   return (
     <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
-      <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={7} />
+      <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={7} />
       <circle cx={sz/2} cy={sz/2} r={r} fill="none"
-        stroke={done ? '#22c55e' : hex} strokeWidth={7} strokeLinecap="round"
+        stroke={done ? 'var(--success)' : hex} strokeWidth={7} strokeLinecap="round"
         strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={circ / 4}
         style={{ transition: 'stroke-dasharray 700ms cubic-bezier(0.16,1,0.3,1)' }}
       />
-      <text x={sz/2} y={sz/2 - 4} textAnchor="middle" fill={done ? '#4ade80' : 'white'} fontSize={13} fontWeight="800" fontFamily="system-ui">
+      <text x={sz/2} y={sz/2 - 4} textAnchor="middle" fill={done ? 'var(--success)' : 'var(--t1)'} fontSize={13} fontWeight="800" fontFamily="inherit">
         {Math.round(pct)}%
       </text>
-      <text x={sz/2} y={sz/2 + 10} textAnchor="middle" fill="#475569" fontSize={9} fontFamily="system-ui">
+      <text x={sz/2} y={sz/2 + 10} textAnchor="middle" fill="var(--t4)" fontSize={9} fontFamily="inherit">
         {value}/{target}
       </text>
     </svg>
@@ -249,10 +250,10 @@ function GoalRing({ value, target, hex }: { value: number; target: number; hex: 
 }
 
 const CAT_CFG: Record<GoalCategory, { icon: typeof Target; text: string; bg: string; border: string; hex: string; label: string }> = {
-  acionamento: { icon: Zap,          text: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line',   hex: '#06b6d4', label: 'Acionamento' },
-  visita:   { icon: Footprints,      text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25', hex: '#6366f1', label: 'Atendimento' },
-  proposta: { icon: FileText,        text: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25',  hex: '#f59e0b', label: 'Proposta' },
-  venda:    { icon: BadgeDollarSign, text: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25',  hex: '#22c55e', label: 'Venda'    },
+  acionamento: { icon: Zap,          text: 'text-t2',                       bg: 'bg-s3',                          border: 'border-line',                        hex: 'var(--t3)',              label: 'Acionamento' },
+  visita:      { icon: Footprints,   text: 'text-[var(--stage-visita)]',    bg: 'bg-[var(--stage-visita-bg)]',    border: 'border-[var(--stage-visita-line)]',   hex: 'var(--stage-visita)',    label: 'Atendimento' },
+  proposta:    { icon: FileText,     text: 'text-[var(--stage-proposta)]',  bg: 'bg-[var(--stage-proposta-bg)]',  border: 'border-[var(--stage-proposta-line)]', hex: 'var(--stage-proposta)',  label: 'Proposta'    },
+  venda:       { icon: BadgeDollarSign, text: 'text-success',               bg: 'bg-success-bg',                  border: 'border-success-line',                hex: 'var(--success)',         label: 'Venda'       },
 }
 
 function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
@@ -266,7 +267,7 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
   useEffect(() => {
     if (done && !firedRef.current) {
       firedRef.current = true
-      confetti({ particleCount: 70, spread: 55, origin: { y: 0.6 }, colors: ['#6366f1','#22c55e','#f59e0b','#06b6d4'] })
+      confetti({ particleCount: 70, spread: 55, origin: { y: 0.6 }, colors: ['#E4B23C','#C2922A','#34C88A','#F6F3EC'] })
     }
   }, [done])
 
@@ -529,13 +530,17 @@ export function GoalsPage() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex-1 flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
+            aria-pressed={tab === t.id}
+            className={`flex-1 flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl transition-all cursor-pointer border ${
               tab === t.id
-                ? 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 shadow-sm'
-                : 'text-t3 hover:text-t2 hover:bg-s3/50 border border-transparent'
+                ? 'bg-brand-tint border-brand/30 shadow-card'
+                : 'text-t3 hover:text-t2 hover:bg-s3/50 border-transparent'
             }`}
           >
-            <span className={`text-sm font-semibold ${tab === t.id ? 'text-indigo-200' : ''}`}>{t.label}</span>
+            {/* `text-indigo-200` ficava aqui e não existe no remapeamento de
+                indigo→marca do index.css: sobrava lavanda claro sobre fundo
+                dourado, ilegível no tema claro. */}
+            <span className={`text-sm font-semibold ${tab === t.id ? 'text-t1' : ''}`}>{t.label}</span>
             <span className="text-[11px] text-t4">{t.sub}</span>
           </button>
         ))}
