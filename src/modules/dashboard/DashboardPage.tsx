@@ -8,7 +8,7 @@ import {
   ChevronDown, ChevronUp, BarChart2, Target, Flame,
   Home, Settings, ClipboardList, Monitor,
 } from 'lucide-react'
-import { Task, Contact, Property, Lead, FunnelStage, calcSaleCommissions } from '../../types'
+import { Task, Contact, Property, Lead, calcSaleCommissions } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { PerformanceGoalsWidget } from './PerformanceGoalsWidget'
 import { TaskForm } from '../tasks/TaskForm'
@@ -25,8 +25,6 @@ import { useTasksStore } from '../../store/useTasksStore'
 import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
-import { useCampaignsStore } from '../../store/useCampaignsStore'
-import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useAdminView } from '../../hooks/useAdminView'
 import { usePresenceStore, pageLabel } from '../../store/usePresenceStore'
@@ -45,13 +43,10 @@ interface OverviewData {
   leadFunnel: Array<{ stage: string; count: number }>
   leadsAtivos: number
   leadsSemInteracao: number
-  campaignFunnel: {
-    totalCampaigns: number
-    totalLeads: number
-    totalSales: number
-    stages: Array<{ stage: string; count: number }>
-  }
-  alertas: { tarefasEmAtraso: number; leadsCongelados: number; slaEstourado: number }
+  // A RPC ainda devolve `campaignFunnel` e `alertas.leadsCongelados`, mas o
+  // Dashboard não exibe mais nada de campanhas (o módulo será refatorado à
+  // parte). Ficam fora do tipo para o contrato refletir só o que a tela usa.
+  alertas: { tarefasEmAtraso: number; slaEstourado: number }
 }
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -60,22 +55,6 @@ const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao',
 const COOLING_DAYS = 2
 
 const STAGE_LABELS = STAGE_THEME
-
-const CAMPAIGN_STAGES: Array<{
-  stage: FunnelStage
-  label: string
-  shortLabel: string
-  bg: string
-  text: string
-  border: string
-}> = [
-  { stage: 'new',          label: 'Para Ativar',          shortLabel: 'Ativar',      bg: 'bg-amber-500/12',   text: 'text-amber-400',   border: 'border-amber-500/25' },
-  { stage: 'sent',         label: 'Em Abordagem',         shortLabel: 'Abordagem',   bg: 'bg-blue-500/12',    text: 'text-blue-400',    border: 'border-blue-500/25'  },
-  { stage: 'attended',     label: 'Demonstrou Interesse', shortLabel: 'Interesse',   bg: 'bg-cyan-500/12',    text: 'text-cyan-400',    border: 'border-cyan-500/25'  },
-  { stage: 'scheduled',    label: 'Visita Agendada',      shortLabel: 'Visita',      bg: 'bg-violet-500/12',  text: 'text-violet-400',  border: 'border-violet-500/25'},
-  { stage: 'presentation', label: 'Apresentação',         shortLabel: 'Apresentação', bg: 'bg-purple-500/12', text: 'text-purple-400',  border: 'border-purple-500/25'},
-  { stage: 'proposal',     label: 'Em Proposta',          shortLabel: 'Proposta',    bg: 'bg-orange-500/12',  text: 'text-orange-400',  border: 'border-orange-500/25'},
-]
 
 // ─── Primitivas de UI compartilhadas ──────────────────────────────────────────
 
@@ -421,11 +400,6 @@ const LEAD_FUNNEL_HEX: Record<string, string> = {
   lead: '#64748b', followup: '#2dd4bf', atendimento: '#8b5cf6',
   visita: '#f59e0b', proposta: '#fb923c', venda: '#22c55e',
 }
-const CAMP_FUNNEL_HEX: Record<string, string> = {
-  new: '#f59e0b', sent: '#3b82f6', attended: '#06b6d4',
-  scheduled: '#8b5cf6', presentation: '#a855f7', proposal: '#fb923c', sale: '#22c55e',
-}
-
 function hexToRgb(hex: string) {
   return { r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) }
 }
@@ -540,85 +514,22 @@ function LeadFunnelWidget({ data, loading, error, onNavigate }: {
   )
 }
 
-// ─── Funil de campanhas (resumo, 6 células) ───────────────────────────────────
-
-function CompactCampaignFunnel({ data, loading, onNavigate }: {
-  data: OverviewData | null
-  loading: boolean
-  onNavigate: () => void
-}) {
-  if (!loading && data && data.campaignFunnel.totalCampaigns === 0) {
-    return (
-      <div className="rounded-xl border border-line bg-surface flex flex-col items-center justify-center py-10 gap-2" style={{ boxShadow: 'var(--shadow-card)' }}>
-        <Megaphone size={24} className="text-t4" />
-        <p className="text-sm text-t3">Nenhuma campanha ativa</p>
-        <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text transition-colors cursor-pointer mt-0.5">
-          Ver campanhas →
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="rounded-xl border border-line bg-surface overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
-      <CardHeader
-        icon={Megaphone}
-        tone={{ chip: 'bg-purple-500/15', icon: 'text-purple-400' }}
-        eyebrow="Pipeline de Campanhas"
-        title={!data
-          ? 'Carregando…'
-          : `${data.campaignFunnel.totalCampaigns} ativa${data.campaignFunnel.totalCampaigns !== 1 ? 's' : ''} · ${data.campaignFunnel.totalLeads.toLocaleString('pt-BR')} leads`}
-        right={data && data.campaignFunnel.totalSales > 0 ? (
-          <div className="flex items-center gap-1.5 bg-success-bg border border-success-line px-3 py-1.5 rounded-xl flex-shrink-0">
-            <span className="text-success text-xs font-bold tabular-nums">{data.campaignFunnel.totalSales}</span>
-            <span className="text-success/70 text-[11px]">venda{data.campaignFunnel.totalSales !== 1 ? 's' : ''}</span>
-          </div>
-        ) : (
-          <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0">
-            Abrir <ArrowRight size={12} />
-          </button>
-        )}
-      />
-
-      {loading && !data && (
-        <div className="grid grid-cols-3 gap-2 px-5 py-4">
-          {Array.from({ length: 6 }).map((_, i) => <ShimmerBlock key={i} className="h-20" />)}
-        </div>
-      )}
-
-      {data && (
-        <div className="px-5 pt-3 pb-4">
-          <FunnelChart
-            idPrefix="camp"
-            stages={CAMPAIGN_STAGES.map(({ stage, shortLabel }) => ({
-              label: shortLabel,
-              count: data.campaignFunnel.stages.find(s => s.stage === stage)?.count ?? 0,
-              color: CAMP_FUNNEL_HEX[stage],
-            }))}
-          />
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Painel de ação imediata ──────────────────────────────────────────────────
 
-function AlertsPanel({ alertas, loading, error, onNavigateTasks, onNavigateLeads, onNavigateCampaigns }: {
+function AlertsPanel({ alertas, loading, error, onNavigateTasks, onNavigateLeads }: {
   alertas: OverviewData['alertas'] | undefined
   loading: boolean
   error: string | null
   onNavigateTasks: () => void
   onNavigateLeads: () => void
-  onNavigateCampaigns: () => void
 }) {
   const total = alertas
-    ? alertas.tarefasEmAtraso + alertas.leadsCongelados + alertas.slaEstourado
+    ? alertas.tarefasEmAtraso + alertas.slaEstourado
     : 0
 
+  // "Leads congelados" saiu com o resto de campanhas — volta no módulo novo.
   const rows = alertas ? [
     { key: 'atraso',   label: 'Tarefas em atraso',  hint: 'Atenção imediata necessária', count: alertas.tarefasEmAtraso, icon: Siren,     tone: 'text-red-400',    chip: 'bg-red-500/15',    onClick: onNavigateTasks },
-    { key: 'congelado',label: 'Leads congelados',   hint: 'Sem movimento há +2 dias',    count: alertas.leadsCongelados, icon: Snowflake, tone: 'text-amber-400',  chip: 'bg-amber-500/15',  onClick: onNavigateCampaigns },
     { key: 'sla',      label: 'SLA estourado',      hint: 'Leads sem 1º contato no prazo',count: alertas.slaEstourado,    icon: Clock,     tone: 'text-orange-400', chip: 'bg-orange-500/15', onClick: onNavigateLeads },
   ] : []
 
@@ -693,162 +604,6 @@ function dueDateLabel(dueDate?: string): { text: string; color: string } {
   if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
   if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-t2' }
   return { text: dueDate.split('-').reverse().join('/'), color: 'text-t3' }
-}
-
-// ─── Pipeline de Campanhas (detalhado — seção secundária) ─────────────────────
-
-function CampaignFunnelWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
-  const { campaigns }             = useCampaignsStore()
-  const { leads: allCampLeads }   = useCampaignLeadsStore()
-  const { effectiveBrokerId, isGlobalView } = useAdminView()
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-
-  // Visão "ver como corretor" → conta apenas os leads atribuídos a ele
-  const campLeads = isGlobalView ? allCampLeads : allCampLeads.filter(l => l.brokerId === effectiveBrokerId)
-
-  const activeCampaigns = campaigns.filter(c => c.status === 'active')
-  if (activeCampaigns.length === 0) return null
-
-  const activeLeads    = campLeads.filter(l => activeCampaigns.some(c => c.id === l.campaignId))
-  const totalPerStage  = CAMPAIGN_STAGES.map(({ stage }) => ({
-    stage,
-    count: activeLeads.filter(l => l.funnelStage === stage && !l.situation).length,
-  }))
-  const totalSales = activeLeads.filter(l => l.funnelStage === 'sale').length
-  const grandTotal = activeLeads.length
-
-  return (
-    <div className="rounded-xl border border-line bg-page overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center">
-            <Megaphone size={15} className="text-purple-400" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Detalhe por Campanha</p>
-            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
-              {activeCampaigns.length} campanha{activeCampaigns.length !== 1 ? 's' : ''} ativa{activeCampaigns.length !== 1 ? 's' : ''} · {grandTotal.toLocaleString('pt-BR')} leads
-            </h2>
-          </div>
-        </div>
-        {totalSales > 0 && (
-          <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 px-3 py-1.5 rounded-xl">
-            <span className="text-green-400 text-xs font-bold tabular-nums">{totalSales}</span>
-            <span className="text-green-500/70 text-[11px]">venda{totalSales !== 1 ? 's' : ''}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="px-5 pt-4 pb-3 border-b border-line">
-        <p className="text-[11px] font-bold text-t4 uppercase tracking-widest mb-3">Resumo geral</p>
-        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
-          {CAMPAIGN_STAGES.map(({ stage, shortLabel, bg, text, border }) => {
-            const count = totalPerStage.find(s => s.stage === stage)?.count ?? 0
-            const pct   = grandTotal > 0 ? Math.round(count / grandTotal * 100) : 0
-            return (
-              <div key={stage} className={`flex flex-col items-center gap-1 rounded-xl p-3 border ${bg} ${border}`}>
-                <p className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
-                <p className="text-2xl font-black text-t1 tabular-nums leading-none">{count.toLocaleString('pt-BR')}</p>
-                <p className="text-[11px] text-t4 tabular-nums">{pct}%</p>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="flex flex-col divide-y divide-line">
-        {activeCampaigns.map(campaign => {
-          const cLeads    = campLeads.filter(l => l.campaignId === campaign.id)
-          const total     = cLeads.length
-          const expanded  = expandedId === campaign.id
-          const stageCounts = CAMPAIGN_STAGES.map(({ stage }) => ({
-            stage,
-            count: cLeads.filter(l => l.funnelStage === stage && !l.situation).length,
-          }))
-          const sales = cLeads.filter(l => l.funnelStage === 'sale').length
-
-          return (
-            <div key={campaign.id} className="hover:bg-s2/40 transition-colors">
-              <button
-                onClick={() => setExpandedId(expanded ? null : campaign.id)}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left cursor-pointer"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-t1 truncate">{campaign.name}</p>
-                  <p className="text-xs text-t4 mt-0.5">{total.toLocaleString('pt-BR')} leads · {sales > 0 ? `${sales} venda${sales !== 1 ? 's' : ''}` : 'Sem vendas ainda'}</p>
-                </div>
-                <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
-                  {CAMPAIGN_STAGES.slice(0, 4).map(({ stage, text, bg }) => {
-                    const cnt = stageCounts.find(s => s.stage === stage)?.count ?? 0
-                    if (cnt === 0) return null
-                    return (
-                      <span key={stage} className={`text-[11px] font-bold px-2 py-0.5 rounded-lg ${bg} ${text}`}>
-                        {cnt}
-                      </span>
-                    )
-                  })}
-                </div>
-                <button
-                  onClick={e => { e.stopPropagation(); onNavigate(campaign.id) }}
-                  className="flex-shrink-0 text-[11px] text-brand/60 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors mr-1"
-                >
-                  Abrir
-                </button>
-                {expanded
-                  ? <ChevronUp size={14} className="text-t4 flex-shrink-0" />
-                  : <ChevronDown size={14} className="text-t4 flex-shrink-0" />
-                }
-              </button>
-              {expanded && (
-                <div className="px-5 pb-4">
-                  <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 mt-1">
-                    {CAMPAIGN_STAGES.map(({ stage, shortLabel, bg, text, border }) => {
-                      const cnt = stageCounts.find(s => s.stage === stage)?.count ?? 0
-                      const pct = total > 0 ? Math.round(cnt / total * 100) : 0
-                      return (
-                        <div key={stage} className={`flex flex-col items-center gap-1 rounded-xl p-2.5 border ${bg} ${border}`}>
-                          <p className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</p>
-                          <p className="text-xl font-black text-t1 tabular-nums leading-none">{cnt}</p>
-                          <p className="text-[11px] text-t4">{pct}%</p>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="mt-3 flex items-center gap-1 overflow-x-auto">
-                    {CAMPAIGN_STAGES.map(({ stage, shortLabel, text }, idx) => {
-                      const cur  = stageCounts.find(s => s.stage === stage)?.count ?? 0
-                      const prev = idx > 0
-                        ? (stageCounts.find(s => s.stage === CAMPAIGN_STAGES[idx - 1].stage)?.count ?? 0)
-                        : total
-                      const conv = prev > 0 ? Math.round(cur / prev * 100) : 0
-                      return (
-                        <div key={stage} className="flex items-center gap-1 flex-shrink-0">
-                          {idx > 0 && <span className="text-[11px] text-t4 tabular-nums">→ {conv}%</span>}
-                          <div className="flex flex-col items-center">
-                            <span className={`text-[11px] font-bold uppercase tracking-wide ${text}`}>{shortLabel}</span>
-                            <span className="text-xs font-bold text-t1">{cur}</span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    {sales > 0 && (
-                      <>
-                        <span className="text-[11px] text-t4">→</span>
-                        <div className="flex flex-col items-center">
-                          <span className="text-[11px] font-bold uppercase tracking-wide text-green-400">Vendas</span>
-                          <span className="text-xs font-bold text-green-400">{sales}</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
 }
 
 // ─── Alertas de leads (sem interação) ─────────────────────────────────────────
@@ -1090,78 +845,6 @@ function UpcomingCard({
   )
 }
 
-// ─── Leads congelados em campanhas ───────────────────────────────────────────
-
-const FROZEN_STAGES    = ['attended', 'scheduled', 'presentation', 'proposal'] as const
-const FROZEN_LABELS: Record<string, string> = { attended: 'Interesse', scheduled: 'Agendado', presentation: 'Apresentação', proposal: 'Proposta' }
-
-function FrozenLeadsWidget({ onNavigate }: { onNavigate: (id: string) => void }) {
-  const { campaigns } = useCampaignsStore()
-  const { leads }     = useCampaignLeadsStore()
-  const { effectiveBrokerId, isGlobalView } = useAdminView()
-
-  const frozen = useMemo(() => {
-    return leads
-      .filter(l => (FROZEN_STAGES as readonly string[]).includes(l.funnelStage) && !l.situation
-        && (isGlobalView || l.brokerId === effectiveBrokerId))
-      .map(l => {
-        const ref  = l.stageUpdatedAt ?? l.updatedAt ?? l.createdAt
-        const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
-        return { ...l, days }
-      })
-      .filter(l => l.days >= 2)
-      .sort((a, b) => b.days - a.days)
-  }, [leads, isGlobalView, effectiveBrokerId])
-
-  if (frozen.length === 0) return null
-
-  const byCampaign = frozen.reduce<Record<string, typeof frozen>>((acc, l) => {
-    if (!acc[l.campaignId]) acc[l.campaignId] = []
-    acc[l.campaignId].push(l)
-    return acc
-  }, {})
-
-  return (
-    <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-amber-500/15">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-amber-500/15 rounded-xl flex items-center justify-center">
-            <Snowflake size={15} className="text-amber-400" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-t1 leading-none">Leads congelados</h2>
-            <p className="text-xs text-t3 mt-0.5">Sem movimento há +2 dias nas campanhas</p>
-          </div>
-          <span className="ml-1 bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-amber-500/25 tabular-nums">{frozen.length}</span>
-        </div>
-      </div>
-      <div className="flex flex-col divide-y divide-amber-500/10">
-        {Object.entries(byCampaign).slice(0, 3).map(([cid, cLeads]) => {
-          const campaign = campaigns.find(c => c.id === cid)
-          return (
-            <button type="button" key={cid} className="w-full text-left px-5 py-3 hover:bg-amber-500/5 transition-colors cursor-pointer" onClick={() => onNavigate(cid)}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-t2">{campaign?.name ?? 'Campanha'}</p>
-                <span className="text-[11px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">{cLeads.length} lead{cLeads.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                {cLeads.slice(0, 3).map(l => (
-                  <div key={l.id} className="flex items-center gap-2">
-                    <span className="text-[11px] text-t3 w-24 truncate">{l.name}</span>
-                    <span className="text-[11px] text-amber-400/70 bg-amber-500/8 px-1.5 py-0.5 rounded border border-amber-500/15">{FROZEN_LABELS[l.funnelStage] ?? l.funnelStage}</span>
-                    <span className="text-[11px] text-t4 ml-auto">{l.days}d sem mov.</span>
-                  </div>
-                ))}
-                {cLeads.length > 3 && <p className="text-[11px] text-t4">+{cLeads.length - 3} mais</p>}
-              </div>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // ─── Potencial de recompra ────────────────────────────────────────────────────
 
 function RepurchaseWidget({ onNavigate }: { onNavigate: () => void }) {
@@ -1324,8 +1007,6 @@ export function DashboardPage() {
   const { properties, load: loadProperties }   = usePropertiesStore()
   const { sales, load: loadSales, getByPeriod } = useSalesStore()
   const { tasks, load: loadTasks, getUpcoming, getOverdue }        = useTasksStore()
-  const { load: loadCampaigns }   = useCampaignsStore()
-  const { load: loadCampLeads }   = useCampaignLeadsStore()
   const { load: loadMyLeads }     = useLeadsStore()
   const { loadAll: loadInteractions } = useLeadInteractionsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
@@ -1348,7 +1029,7 @@ export function DashboardPage() {
   // Stores carregam uma vez; a RPC de overview refaz fetch ao trocar a visão.
   useEffect(() => {
     loadContacts(); loadProperties(); loadSales(); loadTasks()
-    loadCampaigns(); loadCampLeads(); loadMyLeads(); loadInteractions()
+    loadMyLeads(); loadInteractions()
   }, [])
 
   useEffect(() => {
@@ -1446,30 +1127,16 @@ export function DashboardPage() {
           onClick={() => navigate('/leads')}
           loading={overviewLoading && !overviewData}
         />
-        <OverviewKPICard
-          title="Campanhas ativas"
-          value={overviewData?.campaignFunnel.totalCampaigns ?? '—'}
-          sub={overviewData ? `${overviewData.campaignFunnel.totalLeads.toLocaleString('pt-BR')} leads em disparo` : undefined}
-          icon={Megaphone}
-          tone="purple"
-          onClick={() => navigate('/campanhas')}
-          loading={overviewLoading && !overviewData}
-        />
       </div>
 
       {/* ══ Funil de vendas ═════════════════════════════════════════════ */}
       <SectionLabel icon={BarChart2}>Funil de vendas</SectionLabel>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-7">
+      <div className="mb-7">
         <LeadFunnelWidget
           data={overviewData}
           loading={overviewLoading}
           error={overviewError}
           onNavigate={() => navigate('/leads')}
-        />
-        <CompactCampaignFunnel
-          data={overviewData}
-          loading={overviewLoading}
-          onNavigate={() => navigate('/campanhas')}
         />
       </div>
 
@@ -1486,7 +1153,6 @@ export function DashboardPage() {
           error={overviewError}
           onNavigateTasks={() => navigate('/tarefas')}
           onNavigateLeads={() => navigate('/leads')}
-          onNavigateCampaigns={() => navigate('/campanhas')}
         />
         {/* LeadAlertsWidget já retorna null quando vazio — envolve em fragmento sem mb */}
         <div className="[&>div]:mb-0">
@@ -1507,7 +1173,7 @@ export function DashboardPage() {
         {showSecondary ? (
           <><ChevronUp size={14} /> Ocultar detalhes</>
         ) : (
-          <><ChevronDown size={14} /> Mais detalhes: vendas, tarefas, aniversários, campanhas</>
+          <><ChevronDown size={14} /> Mais detalhes: vendas, tarefas, aniversários</>
         )}
       </button>
 
@@ -1529,9 +1195,6 @@ export function DashboardPage() {
             properties={properties}
             onNavigate={() => navigate('/tarefas')}
           />
-
-          {/* Leads congelados em campanhas (lista completa) */}
-          <FrozenLeadsWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
 
           {/* Números do período */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -1658,9 +1321,6 @@ export function DashboardPage() {
 
           {/* Potencial de recompra */}
           <RepurchaseWidget onNavigate={() => navigate('/contatos')} />
-
-          {/* Detalhamento por campanha */}
-          <CampaignFunnelWidget onNavigate={id => navigate(`/campanhas?id=${id}`)} />
         </div>
       )}
 
