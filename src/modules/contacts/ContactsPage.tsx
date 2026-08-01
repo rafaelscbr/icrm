@@ -126,7 +126,7 @@ export function ContactsPage() {
             className={`
               flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
               ${onlyWithTasks
-                ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
+                ? 'bg-warning-bg border-warning-line text-warning'
                 : 'bg-s3/50 border-line text-t3 hover:text-t2'
               }
             `}
@@ -173,7 +173,7 @@ export function ContactsPage() {
                   <Badge key={tag} variant={TAG_VARIANTS[tag]}>{TAG_LABELS[tag]}</Badge>
                 ))}
                 {leads.some(l => l.contactId === c.id && !l.discardReason) && (
-                  <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">
+                  <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/25">
                     Em Funil
                   </span>
                 )}

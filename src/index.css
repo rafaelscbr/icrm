@@ -1,5 +1,18 @@
-/* v2 — design system atualizado */
-@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Hanken+Grotesk:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/* v3 — tipografia Sora + Inter
+ *
+ * DESVIO CONSCIENTE DO BRAND GUIDE (decisão do Rafael, 01/08/2026).
+ * O guia especifica Schibsted Grotesk / Hanken Grotesk / Space Grotesk.
+ * A troca foi pedida diretamente por ele; o Brand Guide precisa ser
+ * atualizado para refletir isto.
+ *
+ *   Sora   700–800  → display, títulos, números de destaque
+ *   Inter  300–700  → corpo operacional e labels (maiúsculo + tracking)
+ *
+ * Labels deixaram de ter família própria: a distinção agora é peso, caixa e
+ * tracking — o que é tipografia mais limpa do que uma terceira família só
+ * para rótulo.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -11,60 +24,105 @@
    Light mode = html.light
    ══════════════════════════════════════════════════════════════════════════════ */
 
+/* ── Tema ESCURO — Marinho & Carvão (Brand Guide) ────────────────────────────
+   O Brand Guide é explícito: "Fundos escuros: Marinho #0F1730 ou Carvão
+   #070B1A" e "preservando Marinho e Carvão para navegação, contraste e dark
+   mode". O marinho é cor ESTRUTURAL da marca — o que cansava não era o
+   marinho existir, era ele dominar a área de conteúdo. Isso se resolve com o
+   tema claro sendo o padrão (ver html.light), não eliminando o marinho. */
 :root {
-  /* Brand — Areia (dourado Souza) */
+  /* Brand — Areia */
   --brand:         #E4B23C;
   --brand-dark:    #C2922A;
   --brand-tint:    rgba(228, 178, 60, 0.14);
   --brand-text:    #F0CC78;
   --brand-shadow:  rgba(228, 178, 60, 0.30);
-  --brand-btn-text:#0F1730;
+  --brand-btn-text:#0F1730;   /* Marinho sobre Areia — 6.5:1 */
 
-  /* Surfaces — Carvão premium (menos saturação de azul) */
-  --page-bg:   #0B0F1C;
-  --surface:   #131829;
-  --surface-2: #191F30;
-  --surface-3: #1F2840;
+  /* Surfaces — Carvão → Marinho → Marinho Claro */
+  --page-bg:   #070B1A;
+  --surface:   #0F1730;
+  --surface-2: #18224A;
+  --surface-3: #1F2A55;
 
-  /* Navigation — sempre Marinho */
-  --nav-bg:          #090D1A;
+  /* Navigation — Carvão */
+  --nav-bg:          #070B1A;
   --nav-text:        rgba(246, 243, 236, 0.78);
-  --nav-muted:       rgba(246, 243, 236, 0.38);
+  --nav-muted:       rgba(246, 243, 236, 0.40);
   --nav-active-text: #F6F3EC;
   --nav-active-bg:   rgba(228, 178, 60, 0.16);
   --nav-hover-bg:    rgba(255, 255, 255, 0.05);
-  --nav-line:        rgba(255, 255, 255, 0.07);
+  --nav-line:        rgba(255, 255, 255, 0.08);
+  --nav-logo:        #F6F3EC;   /* wordmark — acompanha o tema */
 
-  /* Text */
+  /* Text — Papel sobre Marinho */
   --t1: #F6F3EC;
   --t2: #CFC9BC;
-  --t3: #8A90A6;
+  --t3: #8A90A6;   /* secundário oficial em fundo escuro */
   --t4: #7A829B;   /* ≥4.5:1 sobre surface — pode ser usado em texto pequeno */
   --t5: #5F6880;   /* apenas decorativo (separadores, ícones inativos) — nunca texto informativo */
 
   /* Lines / borders */
-  --line:        rgba(255, 255, 255, 0.12);   /* era 0.08 — bordas mais visíveis */
-  --line-strong: rgba(255, 255, 255, 0.20);   /* era 0.15 */
-  --line-input:  rgba(255, 255, 255, 0.16);   /* era 0.12 */
+  --line:        rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --line-input:  rgba(255, 255, 255, 0.14);
 
-  /* Status */
-  --success:      #4ADE80;
-  --success-bg:   rgba(74, 222, 128, 0.10);
-  --success-line: rgba(74, 222, 128, 0.28);
-  --warning:      #FBBF24;
-  --warning-bg:   rgba(251, 191, 36, 0.10);
-  --warning-line: rgba(251, 191, 36, 0.28);
-  --error:        #F87171;
-  --error-bg:     rgba(248, 113, 113, 0.10);
-  --error-line:   rgba(248, 113, 113, 0.28);
-  --info:         #93C5FD;
-  --info-bg:      rgba(147, 197, 253, 0.10);
-  --info-line:    rgba(147, 197, 253, 0.28);
+  /* Status — verde avanço, âmbar atenção, vermelho risco, petróleo informação */
+  --success:      #34C88A;
+  --success-bg:   rgba(52, 200, 138, 0.10);
+  --success-line: rgba(52, 200, 138, 0.28);
+  --warning:      #E0A030;
+  --warning-bg:   rgba(224, 160, 48, 0.10);
+  --warning-line: rgba(224, 160, 48, 0.28);
+  --error:        #E5717A;
+  --error-bg:     rgba(229, 113, 122, 0.10);
+  --error-line:   rgba(229, 113, 122, 0.28);
+  --info:         #5FB3BA;
+  --info-bg:      rgba(95, 179, 186, 0.10);
+  --info-line:    rgba(95, 179, 186, 0.28);
 
   /* Shadows */
   --shadow-card:    0 1px 3px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.45);
   --shadow-modal:   0 25px 50px rgba(0,0,0,0.80), 0 10px 20px rgba(0,0,0,0.55);
   --shadow-dropdown:0 10px 30px rgba(0,0,0,0.65), 0 4px 10px rgba(0,0,0,0.50);
+
+  /* ── Textura ──────────────────────────────────────────────────────────────
+     Grão fractal em SVG inline (data URI): sem requisição de rede, sem imagem
+     no bundle, ~300 bytes. Serve para tirar o aspecto de "plástico chapado"
+     das superfícies grandes sem introduzir cor nenhuma.
+     A opacidade é embutida no próprio <rect> porque background-image não
+     aceita opacity — por isso existe uma variante por tema. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E");
+
+  /* ── Etapas do funil ──────────────────────────────────────────────────────
+     A cor da etapa é SEMÂNTICA, não decorativa: representa a temperatura
+     comercial do lead, não uma paleta. Conforme o Brand Guide, as etapas
+     iniciais são NEUTRAS (Marinho progressivo) e o dourado só entra quando a
+     oportunidade amadurece:
+       lead / followup / atendimento → neutro
+       visita   → Areia suave
+       proposta → Areia viva
+       venda    → verde de sucesso
+     Roxo, teal e laranja saíram — não significavam nada.
+     Fonte única: lib/stageTheme.ts consome estes tokens. */
+  --stage-lead:              #6C7591;
+  --stage-lead-bg:           rgba(108, 117, 145, 0.14);
+  --stage-lead-line:         rgba(108, 117, 145, 0.32);
+  --stage-followup:          #8A90A6;
+  --stage-followup-bg:       rgba(138, 144, 166, 0.14);
+  --stage-followup-line:     rgba(138, 144, 166, 0.32);
+  --stage-atendimento:       #AEB4C6;
+  --stage-atendimento-bg:    rgba(174, 180, 198, 0.14);
+  --stage-atendimento-line:  rgba(174, 180, 198, 0.32);
+  --stage-visita:            #E5CE96;
+  --stage-visita-bg:         rgba(229, 206, 150, 0.10);
+  --stage-visita-line:       rgba(229, 206, 150, 0.30);
+  --stage-proposta:          #E4B23C;
+  --stage-proposta-bg:       rgba(228, 178, 60, 0.12);
+  --stage-proposta-line:     rgba(228, 178, 60, 0.32);
+  --stage-venda:             #34C88A;
+  --stage-venda-bg:          rgba(52, 200, 138, 0.10);
+  --stage-venda-line:        rgba(52, 200, 138, 0.28);
 }
 
 /* ── MODO ESCURO MÁXIMO (Carvão) ── quando html.dark for usado explicitamente */
@@ -75,60 +133,96 @@ html.dark {
   --surface-3: #191F30;
 }
 
+/* ── Tema CLARO — Papel (PRINCIPAL) ──────────────────────────────────────────
+   Brand Guide: "usar Papel #F6F3EC como tema principal claro, preservando
+   Marinho e Carvão para navegação, contraste e dark mode".
+   Conteúdo em Papel + navegação em Marinho: é isso que tira o peso da tela
+   sem abrir mão da cor estrutural da marca. */
 html.light {
-  /* Brand — Areia mais escura para contraste em fundo claro */
-  --brand:         #B8841E;
-  --brand-dark:    #9A6E16;
-  --brand-tint:    rgba(228, 178, 60, 0.12);
+  /* Brand — Areia escurecida para leitura sobre Papel.
+     Botão primário usa este fundo com --brand-btn-text por cima. */
+  --brand:         #A8791A;
+  --brand-dark:    #8A6210;
+  --brand-tint:    rgba(228, 178, 60, 0.16);
   --brand-text:    #8A6210;
-  --brand-shadow:  rgba(228, 178, 60, 0.25);
+  --brand-shadow:  rgba(168, 121, 26, 0.22);
   --brand-btn-text:#FFFFFF;
 
-  /* Surfaces — Papel */
+  /* Surfaces — Papel, com Marinho entrando só como tinta muito diluída.
+     Papel 2 puro (#ECE7DA) é bege demais e "amarela" a tela; 4% de Marinho
+     por cima esfria o creme e amarra a superfície com a marca. */
   --page-bg:   #F6F3EC;
   --surface:   #FFFFFF;
-  --surface-2: #ECE7DA;
-  --surface-3: #E0D9CE;
+  --surface-2: #F1EEE6;
+  --surface-3: #E6E2D8;
 
-  /* Navigation — sempre Marinho mesmo no modo claro */
-  --nav-bg:          #0F1730;
-  --nav-text:        rgba(246, 243, 236, 0.78);
-  --nav-muted:       rgba(246, 243, 236, 0.40);
-  --nav-active-text: #F6F3EC;
-  --nav-active-bg:   rgba(228, 178, 60, 0.18);
-  --nav-hover-bg:    rgba(255, 255, 255, 0.06);
-  --nav-line:        rgba(255, 255, 255, 0.07);
+  /* ── Navegação — Marinho estilizado ────────────────────────────────────
+     O Marinho NÃO é mais uma placa sólida de 240px. Aqui ele age como
+     TINTA: a barra é clara, e o Marinho aparece na tipografia, no estado
+     ativo e nas linhas. A marca continua estruturando a navegação sem
+     pesar a tela — que era exatamente o problema do marinho dominante. */
+  --nav-bg:          #FBF9F3;
+  --nav-text:        #2A3660;                  /* Marinho médio */
+  --nav-muted:       #5A6480;
+  --nav-active-text: #0F1730;                  /* Marinho puro no item ativo */
+  --nav-active-bg:   rgba(15, 23, 48, 0.055);  /* tinta de Marinho, não ouro */
+  --nav-hover-bg:    rgba(15, 23, 48, 0.035);
+  --nav-line:        rgba(15, 23, 48, 0.10);
+  --nav-logo:        #0F1730;
 
-  /* Text */
+  /* Text — Marinho sobre Papel */
   --t1: #0F1730;
   --t2: #2A3660;
-  --t3: #4A5573;
-  --t4: #6B7490;   /* ≥4.5:1 sobre branco — pode ser usado em texto pequeno */
-  --t5: #9C9C9A;   /* apenas decorativo — nunca texto informativo */
+  --t3: #4A5573;   /* secundário oficial em fundo claro */
+  --t4: #5A6480;   /* ≥4.5:1 sobre Papel — pode ser usado em texto pequeno */
+  --t5: #9AA0AE;   /* apenas decorativo — nunca texto informativo */
 
-  /* Lines */
-  --line:        #D8D2C5;
-  --line-strong: #C0B8A8;
-  --line-input:  #C8C2B4;
+  /* Lines — Marinho diluído no lugar de bege, para não puxar a tela p/ amarelo */
+  --line:        rgba(15, 23, 48, 0.10);
+  --line-strong: rgba(15, 23, 48, 0.18);
+  --line-input:  rgba(15, 23, 48, 0.15);
 
   /* Status */
-  --success:      #166534;
-  --success-bg:   #DCFCE7;
-  --success-line: #86EFAC;
-  --warning:      #92400E;
-  --warning-bg:   #FEF3C7;
-  --warning-line: #FCD34D;
-  --error:        #991B1B;
-  --error-bg:     #FEE2E2;
-  --error-line:   #FCA5A5;
-  --info:         #1E40AF;
-  --info-bg:      #DBEAFE;
-  --info-line:    #93C5FD;
+  --success:      #1F8A62;
+  --success-bg:   #E7F5ED;
+  --success-line: #A8DCC4;
+  --warning:      #BD7A12;
+  --warning-bg:   #FBF0DC;
+  --warning-line: #E8C88A;
+  --error:        #C7474F;
+  --error-bg:     #FBEAEB;
+  --error-line:   #EFB3B7;
+  --info:         #236B73;
+  --info-bg:      #E7F2F2;
+  --info-line:    #A9CFD2;
 
   /* Shadows */
   --shadow-card:    0 1px 4px rgba(15,23,48,0.08), 0 1px 2px rgba(15,23,48,0.05);
   --shadow-modal:   0 25px 50px rgba(15,23,48,0.18), 0 10px 20px rgba(15,23,48,0.10);
   --shadow-dropdown:0 10px 30px rgba(15,23,48,0.12), 0 4px 10px rgba(15,23,48,0.08);
+
+  /* Grão mais fraco no papel: sobre fundo claro o ruído aparece muito mais. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.035'/%3E%3C/svg%3E");
+
+  /* Etapas do funil — versões escurecidas para atingir ≥4.5:1 sobre papel */
+  --stage-lead:              #7D87A0;
+  --stage-lead-bg:           rgba(125, 135, 160, 0.14);
+  --stage-lead-line:         rgba(125, 135, 160, 0.34);
+  --stage-followup:          #4A5573;
+  --stage-followup-bg:       rgba(74, 85, 115, 0.11);
+  --stage-followup-line:     rgba(74, 85, 115, 0.32);
+  --stage-atendimento:       #2A3660;
+  --stage-atendimento-bg:    rgba(42, 54, 96, 0.10);
+  --stage-atendimento-line:  rgba(42, 54, 96, 0.30);
+  --stage-visita:            #A8842C;
+  --stage-visita-bg:         rgba(168, 132, 44, 0.10);
+  --stage-visita-line:       rgba(168, 132, 44, 0.30);
+  --stage-proposta:          #7A5408;
+  --stage-proposta-bg:       rgba(122, 84, 8, 0.11);
+  --stage-proposta-line:     rgba(122, 84, 8, 0.34);
+  --stage-venda:             #1F8A62;
+  --stage-venda-bg:          rgba(31, 138, 98, 0.10);
+  --stage-venda-line:        rgba(31, 138, 98, 0.32);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -147,7 +241,7 @@ html.light {
   }
 
   body {
-    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     font-weight: 400;
     line-height: 1.6;
     background-color: var(--page-bg);
@@ -155,17 +249,21 @@ html.light {
     transition: background-color 200ms, color 200ms;
   }
 
-  /* Títulos — Schibsted Grotesk pesado */
+  /* Títulos — Sora. Tracking mais fechado que o da Schibsted porque a Sora
+     é naturalmente mais aberta; sem isso os títulos ficam frouxos. */
   h1, h2, h3 {
-    font-family: 'Schibsted Grotesk', system-ui, sans-serif;
-    font-weight: 800;
-    letter-spacing: -0.025em;
+    font-family: 'Sora', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
   }
   h4, h5, h6 {
-    font-family: 'Schibsted Grotesk', system-ui, sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.015em;
+    font-family: 'Sora', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
+
+  /* Números financeiros sempre alinhados — exigência do Brand Guide. */
+  .tabular-nums { font-variant-numeric: tabular-nums; }
 
   /* Seleção de texto — Areia com texto Marinho */
   ::selection {
@@ -210,7 +308,7 @@ html.light {
   input,
   textarea,
   select {
-    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     color-scheme: dark;
     background-color: var(--surface-2);
     color: var(--t1);
@@ -260,7 +358,7 @@ html.light {
    SEMANTIC SURFACE CLASSES
    ══════════════════════════════════════════════════════════════════════════════ */
 
-.page-bg      { background-color: var(--page-bg); }
+.page-bg      { background-color: var(--page-bg); background-image: var(--grain); }
 .nav-bg       { background-color: var(--nav-bg); }
 .nav-bg-blur  {
   background-color: var(--nav-bg);
@@ -274,7 +372,75 @@ html.light {
 }
 .modal-surface {
   background-color: var(--surface);
+  background-image: var(--grain);
   border: 1px solid var(--line);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TEXTURA E PROFUNDIDADE — "Souza Command Center"
+
+   Três camadas, com papéis separados de propósito:
+
+     .texture-grain    grão incolor. Pode ir em qualquer lugar — não compete
+                       com dado nenhum porque não tem cor.
+     .surface-premium  grão + gradiente diagonal. Dá volume ao card sem cor.
+     .gold-edge        filete dourado no topo. USO RESTRITO.
+     .gold-glow-tl     luz dourada no canto. USO RESTRITO.
+
+   Regra do dourado: ele marca dinheiro, meta e marca. Se todo card tiver
+   filete dourado, nenhum card tem destaque — e a tela vira o "dashboard
+   gamer" que a identidade da Souza evita. Na prática isso significa: hero de
+   VGV, cards de receita e painel de marca do login. Card de operação e card
+   de alerta NÃO recebem dourado.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.texture-grain {
+  background-image: var(--grain);
+}
+
+.surface-premium {
+  background-color: var(--surface);
+  background-image: var(--grain), linear-gradient(158deg, var(--surface-2) 0%, var(--surface) 62%);
+}
+
+/* Filete dourado no topo — precisa de position:relative no elemento host. */
+.gold-edge::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--brand), transparent);
+  opacity: 0.55;
+}
+/* Em card pequeno o filete inteiro é demais — concentra no início da borda. */
+.gold-edge-short::before {
+  background: linear-gradient(90deg, var(--brand) 0%, transparent 60%);
+  opacity: 0.45;
+}
+
+/*
+ * Luz dourada difusa vinda do canto superior esquerdo.
+ *
+ * `isolation: isolate` + `z-index: -1` são obrigatórios juntos: o isolate cria
+ * um contexto de empilhamento no próprio card, e dentro dele o -1 posiciona o
+ * brilho acima do fundo e ABAIXO do conteúdo. Sem o isolate, o -1 escaparia
+ * para o contexto ancestral e o brilho sumiria atrás do card; sem o -1, o
+ * pseudo-elemento pintaria por cima do texto e lavaria a leitura.
+ */
+.gold-glow-tl {
+  isolation: isolate;
+}
+.gold-glow-tl::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(70% 60% at 6% -10%, rgba(228, 178, 60, 0.13), transparent 60%);
+}
+html.light .gold-glow-tl::after {
+  background: radial-gradient(70% 60% at 6% -10%, rgba(228, 178, 60, 0.16), transparent 60%);
 }
 
 /*

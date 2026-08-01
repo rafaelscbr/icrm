@@ -23,6 +23,8 @@ interface TaskFormProps {
   onClose: () => void
   task?: Task
   defaultContactId?: string
+  /** Vincula a tarefa ao lead de origem (tasks.lead_id, migração 058). */
+  defaultLeadId?: string
 }
 
 const CATEGORY_OPTIONS: { value: TaskCategory; label: string; icon: typeof FileText }[] = [
@@ -57,7 +59,7 @@ function fmtDate(iso: string) {
 
 const STEP_LABELS = ['O que?', 'Quando?', 'Detalhes']
 
-export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormProps) {
+export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadId }: TaskFormProps) {
   const { add, update }                              = useTasksStore()
   const { getById: getContact, mergeLocal }          = useContactsStore()
   const { properties }                               = usePropertiesStore()
@@ -183,6 +185,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
       status:      markDone ? ('done' as const) : (task?.status ?? ('pending' as const)),
       completedAt: markDone ? `${completedDate}T12:00:00.000Z` : undefined,
       contactId:   contactId  || undefined,
+      leadId:      task?.leadId ?? defaultLeadId ?? undefined,
       propertyId:  propertyId || undefined,
       checklist:   checklist.length > 0 ? checklist : undefined,
       assignedToId:  assignedToId || undefined,
@@ -500,7 +503,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
       {assignableProfiles.length > 0 && (
         <div className="flex flex-col gap-2.5">
           <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
-            <UserCheck size={12} className={assignedToId ? 'text-violet-400' : ''} />
+            <UserCheck size={12} className={assignedToId ? 'text-brand-text' : ''} />
             {isAdmin ? 'Atribuir para corretor' : 'Delegar para admin'}
             <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
           </label>
@@ -518,11 +521,11 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
               <button key={p.id} type="button" onClick={() => setAssignedToId(assignedToId === p.id ? '' : p.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
                   ${assignedToId === p.id
-                    ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
+                    ? 'bg-brand-tint border-brand/25 text-brand-text'
                     : 'border-line text-t3 hover:text-t1 hover:border-line-strong'
                   }`}
               >
-                <div className="w-4 h-4 rounded-full bg-violet-500/30 flex items-center justify-center text-[11px] font-bold text-violet-300 flex-shrink-0">
+                <div className="w-4 h-4 rounded-full bg-brand-tint flex items-center justify-center text-[11px] font-bold text-brand-text flex-shrink-0">
                   {p.name[0].toUpperCase()}
                 </div>
                 {p.name}
@@ -536,7 +539,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
       {shareableProfiles.length > 0 && (
         <div className="flex flex-col gap-2.5">
           <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
-            <Users size={12} className={participantIds.length > 0 ? 'text-cyan-400' : ''} />
+            <Users size={12} className={participantIds.length > 0 ? 'text-info' : ''} />
             Compartilhar com
             <span className="font-normal normal-case tracking-normal text-t5">(opcional · todos podem ver e editar)</span>
           </label>
@@ -547,12 +550,12 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
                 <button key={p.id} type="button" onClick={() => toggleParticipant(p.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
                     ${active
-                      ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                      ? 'bg-info-bg border-info-line text-info'
                       : 'border-line text-t3 hover:text-t1 hover:border-line-strong'
                     }`}
                 >
                   <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0
-                    ${active ? 'bg-cyan-500/30 text-cyan-300' : 'bg-s3/50 text-t3'}`}>
+                    ${active ? 'bg-info-bg text-info' : 'bg-s3/50 text-t3'}`}>
                     {p.name[0].toUpperCase()}
                   </div>
                   {p.name}
@@ -561,7 +564,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             })}
           </div>
           {participantIds.length > 0 && (
-            <p className="text-[11px] text-cyan-400/70 flex items-center gap-1">
+            <p className="text-[11px] text-info flex items-center gap-1">
               <Users size={9} />
               {participantIds.length} participante{participantIds.length !== 1 ? 's' : ''} · todos recebem as atualizações em tempo real
             </p>

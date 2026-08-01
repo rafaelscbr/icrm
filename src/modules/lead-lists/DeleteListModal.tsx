@@ -192,14 +192,14 @@ export function DeleteListModal({ list, isOpen, onClose, onConfirm }: Props) {
 
             {/* Protegidos por outra lista */}
             {preview.keptInOtherLists > 0 && (
-              <div className="flex items-center gap-2.5 px-3 py-2.5 bg-s3/50 border border-blue-500/20 rounded-xl">
-                <Database size={13} className="text-blue-400 flex-shrink-0" />
+              <div className="flex items-center gap-2.5 px-3 py-2.5 bg-s3/50 border border-info-line rounded-xl">
+                <Database size={13} className="text-info flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-t3">
-                    Mantidos — <span className="font-medium text-blue-400">em outra lista</span>
+                    Mantidos — <span className="font-medium text-info">em outra lista</span>
                   </p>
                 </div>
-                <span className="text-xs font-bold text-blue-400 tabular-nums">
+                <span className="text-xs font-bold text-info tabular-nums">
                   {preview.keptInOtherLists.toLocaleString('pt-BR')}
                 </span>
               </div>

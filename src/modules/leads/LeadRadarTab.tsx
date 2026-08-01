@@ -275,10 +275,10 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
                   <p className="text-xs text-t3 truncate">{p.neighborhood} · {TYPE_LABELS[p.type] ?? p.type}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <span className="text-sm font-semibold text-violet-400">{formatCurrencyFull(p.value)}</span>
+                  <span className="text-sm font-semibold text-brand-text">{formatCurrencyFull(p.value)}</span>
                   <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
                     score >= 5 ? 'bg-green-500/20 text-green-300' :
-                    score >= 3 ? 'bg-blue-500/20 text-blue-300' :
+                    score >= 3 ? 'bg-info-bg text-info' :
                     'bg-s3/70 text-t3'
                   }`}>
                     {score}/6 critérios

@@ -37,8 +37,8 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
       <button
         onClick={() => isAdmin && setOpen(true)}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs transition-all
-          ${isAdmin ? 'hover:border-violet-500/40 hover:bg-violet-500/8 cursor-pointer' : 'cursor-default'}
-          ${list.length > 0 ? 'border-violet-500/25 bg-violet-500/8 text-violet-300' : 'border-line text-t3'}`}
+          ${isAdmin ? 'hover:border-brand/25 hover:bg-brand-tint cursor-pointer' : 'cursor-default'}
+          ${list.length > 0 ? 'border-brand/25 bg-brand-tint text-brand-text' : 'border-line text-t3'}`}
         title={isAdmin ? 'Gerenciar participantes' : 'Participantes da campanha'}
       >
         <Users size={11} />
@@ -51,7 +51,7 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line hover:border-violet-500/30 hover:bg-violet-500/8 text-t3 hover:text-violet-300 text-xs transition-all cursor-pointer"
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line hover:border-brand/25 hover:bg-brand-tint text-t3 hover:text-brand-text text-xs transition-all cursor-pointer"
       >
         <Users size={12} /> Participantes {list.length > 0 && `(${list.length})`}
       </button>
@@ -66,7 +66,7 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
                 const profile = allProfiles.find(pr => pr.id === p.brokerId)
                 return (
                   <div key={p.id} className="flex items-center gap-3 p-3 bg-s3/40 rounded-xl border border-line">
-                    <div className="w-8 h-8 rounded-xl bg-violet-500/20 flex items-center justify-center text-sm font-bold text-violet-300 flex-shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-brand-tint flex items-center justify-center text-sm font-bold text-brand-text flex-shrink-0">
                       {profile?.name?.charAt(0).toUpperCase() ?? '?'}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -98,13 +98,13 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
                 <button
                   key={b.id}
                   onClick={() => handleAdd(b.id)}
-                  className="flex items-center gap-3 p-3 bg-s3/30 hover:bg-s3/60 rounded-xl border border-line hover:border-violet-500/30 transition-all text-left cursor-pointer group"
+                  className="flex items-center gap-3 p-3 bg-s3/30 hover:bg-s3/60 rounded-xl border border-line hover:border-brand/25 transition-all text-left cursor-pointer group"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-slate-500/20 group-hover:bg-violet-500/20 flex items-center justify-center text-sm font-bold text-t3 group-hover:text-violet-300 flex-shrink-0 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-slate-500/20 group-hover:bg-brand-tint flex items-center justify-center text-sm font-bold text-t3 group-hover:text-brand-text flex-shrink-0 transition-colors">
                     {b.name.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-sm text-t3 group-hover:text-t1 transition-colors flex-1">{b.name}</span>
-                  <Plus size={13} className="text-t4 group-hover:text-violet-400 transition-colors" />
+                  <Plus size={13} className="text-t4 group-hover:text-brand-text transition-colors" />
                 </button>
               ))}
             </div>

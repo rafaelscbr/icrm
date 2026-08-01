@@ -9,16 +9,22 @@ interface BadgeProps {
   dot?: boolean
 }
 
+/*
+ * Só existem cinco significados: marca, sucesso, atenção, risco e informação.
+ * `purple`, `indigo` e `orange` continuam no tipo para não quebrar chamadas
+ * existentes, mas apontam para o tom semântico equivalente — nenhuma cor
+ * decorativa é renderizada. Em código novo, use os nomes semânticos.
+ */
 const variants: Record<BadgeVariant, string> = {
   brand:  'bg-brand-tint text-brand-text border border-brand/25',
   green:  'bg-success-bg text-success border border-success-line',
   yellow: 'bg-warning-bg text-warning border border-warning-line',
   red:    'bg-error-bg text-error border border-error-line',
-  purple: 'bg-purple-500/12 text-purple-400 border border-purple-500/25',
-  indigo: 'bg-indigo-500/12 text-indigo-400 border border-indigo-500/25',
   blue:   'bg-info-bg text-info border border-info-line',
-  orange: 'bg-orange-500/12 text-orange-400 border border-orange-500/25',
   slate:  'bg-s2 text-t3 border border-line',
+  purple: 'bg-brand-tint text-brand-text border border-brand/25',   // → marca
+  indigo: 'bg-brand-tint text-brand-text border border-brand/25',   // → marca
+  orange: 'bg-warning-bg text-warning border border-warning-line',  // → atenção
 }
 
 const dotColors: Record<BadgeVariant, string> = {
@@ -26,11 +32,11 @@ const dotColors: Record<BadgeVariant, string> = {
   green:  'bg-success',
   yellow: 'bg-warning',
   red:    'bg-error',
-  purple: 'bg-purple-400',
-  indigo: 'bg-indigo-400',
   blue:   'bg-info',
-  orange: 'bg-orange-400',
   slate:  'bg-t4',
+  purple: 'bg-brand',
+  indigo: 'bg-brand',
+  orange: 'bg-warning',
 }
 
 export function Badge({ variant = 'slate', children, size = 'sm', dot = false }: BadgeProps) {

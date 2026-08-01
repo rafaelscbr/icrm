@@ -125,12 +125,12 @@ export function SalesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-5 lg:mb-6">
         <Card accent="purple">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 bg-purple-500/15 rounded-lg flex items-center justify-center">
-              <TrendingUp size={14} className="text-purple-400" />
+            <div className="w-7 h-7 bg-brand-tint rounded-lg flex items-center justify-center">
+              <TrendingUp size={14} className="text-brand-text" />
             </div>
             <p className="text-xs font-medium text-t3 uppercase tracking-wider">VGV no período</p>
           </div>
-          <p className="text-base lg:text-2xl font-bold text-purple-300 tabular-nums">
+          <p className="text-base lg:text-2xl font-bold text-brand-text tabular-nums">
             <span className="lg:hidden">{formatCurrency(valueInPeriod)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(valueInPeriod)}</span>
           </p>
@@ -153,12 +153,12 @@ export function SalesPage() {
 
         <Card>
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 bg-violet-500/15 rounded-lg flex items-center justify-center">
-              <BadgePercent size={14} className="text-violet-400" />
+            <div className="w-7 h-7 bg-brand-tint rounded-lg flex items-center justify-center">
+              <BadgePercent size={14} className="text-brand-text" />
             </div>
             <p className="text-xs font-medium text-t3 uppercase tracking-wider">Comissão gerada</p>
           </div>
-          <p className="text-base lg:text-2xl font-bold text-violet-300 tabular-nums">
+          <p className="text-base lg:text-2xl font-bold text-brand-text tabular-nums">
             <span className="lg:hidden">{formatCurrency(periodComm)}</span>
             <span className="hidden lg:inline">{formatCurrencyFull(periodComm)}</span>
           </p>
@@ -305,7 +305,7 @@ export function SalesPage() {
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-t4">Comissão</span>
                         <div className="text-right">
-                          <p className="text-xs text-violet-400 tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
+                          <p className="text-xs text-brand-text tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
                           <p className="text-xs text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
                         </div>
                       </div>
@@ -321,7 +321,7 @@ export function SalesPage() {
                 <p className="text-sm font-bold text-slate-100 tabular-nums">
                   {formatCurrencyFull(filtered.reduce((acc, s) => acc + s.value, 0))}
                 </p>
-                <p className="text-xs text-violet-400 tabular-nums">
+                <p className="text-xs text-brand-text tabular-nums">
                   {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0))}
                 </p>
               </div>
@@ -372,7 +372,7 @@ export function SalesPage() {
                   <div className="min-w-0">
                     {hasComm ? (
                       <>
-                        <p className="text-xs text-violet-400 tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
+                        <p className="text-xs text-brand-text tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
                         <p className="text-xs text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
                       </>
                     ) : (
@@ -403,7 +403,7 @@ export function SalesPage() {
                 {formatCurrencyFull(filtered.reduce((acc, s) => acc + s.value, 0))}
               </p>
               <div>
-                <p className="text-xs font-bold text-violet-400 tabular-nums">
+                <p className="text-xs font-bold text-brand-text tabular-nums">
                   {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0))}
                 </p>
                 <p className="text-xs text-emerald-400 tabular-nums">

@@ -54,16 +54,20 @@ const METRICS: Array<{
   realized: (n: PerfNumbers) => number
   sub?: (n: PerfNumbers) => string | null
 }> = [
-  { key: 'acionamento', label: 'Disparos',     icon: Zap,        text: 'text-cyan-400',   chip: 'bg-cyan-500/12',
+  // As cores seguem a mesma semântica do funil (lib/stageTheme): atividade de
+  // topo é neutra, meio de funil é azul, compromisso é âmbar, decisão é ouro e
+  // ganho é verde. Antes eram cyan/sky/indigo — três azuis decorativos que não
+  // diferenciavam nada e brigavam com o resto do Dashboard.
+  { key: 'acionamento', label: 'Disparos',     icon: Zap,        text: 'text-t2',                       chip: 'bg-s3',
     realized: n => n.acionamentos },
-  { key: 'interacao',   label: 'Interações',   icon: Activity,   text: 'text-sky-400',    chip: 'bg-sky-500/12',
+  { key: 'interacao',   label: 'Interações',   icon: Activity,   text: 'text-[var(--stage-followup)]',  chip: 'bg-[var(--stage-followup-bg)]',
     realized: n => n.interacoes },
-  { key: 'visita',      label: 'Atendimentos', icon: Footprints, text: 'text-indigo-400', chip: 'bg-indigo-500/12',
+  { key: 'visita',      label: 'Atendimentos', icon: Footprints, text: 'text-[var(--stage-visita)]',    chip: 'bg-[var(--stage-visita-bg)]',
     realized: n => n.visitas,
     sub: n => n.visitasAgendadas > n.visitas ? `${n.visitasAgendadas} agendados` : null },
-  { key: 'proposta',    label: 'Propostas',    icon: FileText,   text: 'text-amber-400',  chip: 'bg-amber-500/12',
+  { key: 'proposta',    label: 'Propostas',    icon: FileText,   text: 'text-[var(--stage-proposta)]',  chip: 'bg-[var(--stage-proposta-bg)]',
     realized: n => n.propostas },
-  { key: 'venda',       label: 'Vendas',       icon: BadgeDollarSign, text: 'text-green-400', chip: 'bg-green-500/12',
+  { key: 'venda',       label: 'Vendas',       icon: BadgeDollarSign, text: 'text-[var(--stage-venda)]', chip: 'bg-[var(--stage-venda-bg)]',
     realized: n => n.vendas,
     sub: n => n.vgv > 0 ? formatCurrency(n.vgv) : null },
 ]

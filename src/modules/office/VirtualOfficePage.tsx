@@ -834,10 +834,10 @@ export function VirtualOfficePage() {
   }
 
   const ROOM_META: Record<RoomId, { label: string; color: string; dot: string }> = {
-    admin:    { label: 'Sala do Rafael',       color: 'bg-purple-500/20 border-purple-500/30 text-purple-300', dot: 'bg-purple-400' },
+    admin:    { label: 'Sala do Rafael',       color: 'bg-brand-tint border-brand/25 text-brand-text', dot: 'bg-brand-tint' },
     campaign: { label: 'Sala de Campanhas',    color: 'bg-green-500/20  border-green-500/30  text-green-300',  dot: 'bg-green-400'  },
     tasks:    { label: 'Sala de Tarefas',      color: 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300', dot: 'bg-indigo-400' },
-    break:    { label: 'Copa & Café',          color: 'bg-orange-500/20 border-orange-500/30 text-orange-300', dot: 'bg-orange-400' },
+    break:    { label: 'Copa & Café',          color: 'bg-warning-bg border-warning-line text-warning', dot: 'bg-warning-bg' },
   }
 
   return (

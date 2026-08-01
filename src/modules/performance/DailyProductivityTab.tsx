@@ -154,7 +154,7 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: 'Novos leads', value: newLeads,   set: setNewLeads,   color: 'text-brand' },
-            { label: 'Contatos com Propr.', value: ownerCalls, set: setOwnerCalls, color: 'text-cyan-400' },
+            { label: 'Contatos com Propr.', value: ownerCalls, set: setOwnerCalls, color: 'text-info' },
           ].map(({ label, value, set, color }) => (
             <div key={label} className="bg-s3/50 rounded-xl p-3 flex flex-col items-center gap-2">
               <span className="text-xs text-t3">{label}</span>
@@ -354,12 +354,12 @@ export function DailyProductivityTab() {
         />
         <Counter
           label="Contatos com Proprietários"
-          icon={<Phone size={15} className="text-cyan-400" />}
+          icon={<Phone size={15} className="text-info" />}
           value={today.ownerCalls}
           target={DAILY_TARGETS.ownerCalls}
           disabled={locked}
-          accent="bg-cyan-500/15"
-          barColor="bg-cyan-500"
+          accent="bg-info-bg"
+          barColor="bg-info"
           onChange={v => updateToday({ ownerCalls: v })}
         />
       </div>
@@ -417,7 +417,7 @@ export function DailyProductivityTab() {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Leads esta semana',       value: weekLeads,      sub: `meta ${WEEK_TARGET_LEADS} (7 dias)`,   color: 'text-brand' },
-          { label: 'Contatos com Propr. esta semana', value: weekCalls, sub: `meta ${WEEK_TARGET_CALLS} (seg–sex)`, color: 'text-cyan-400' },
+          { label: 'Contatos com Propr. esta semana', value: weekCalls, sub: `meta ${WEEK_TARGET_CALLS} (seg–sex)`, color: 'text-info' },
           { label: 'Dias de funil',            value: weekFunnel,     sub: `meta ${WEEK_TARGET_FUNNEL} (seg–sáb)`,color: 'text-green-400'  },
           { label: 'Dias fechados na semana',  value: weekDayClosed,  sub: 'de 5 dias úteis',                    color: 'text-amber-400'  },
         ].map(s => (

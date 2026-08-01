@@ -3,18 +3,20 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
-  ExternalLink, Tv2, Sun, Moon, UserPlus, ChevronRight, Calculator,
+  ExternalLink, Tv2, Sun, Moon, UserPlus, Calculator,
   Bell, ShieldCheck, LogOut, ScrollText, Target, Database,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useSidebarStore } from '../../store/useSidebarStore'
 import { useUnreadCount } from '../../store/useNotificationsStore'
 import { useSearchStore } from '../../store/useSearchStore'
 import { NotificationsPopover } from './NotificationsPopover'
 
 const navSections = [
   {
-    label: 'Principal',
+    label: 'Operação',
     items: [
       { key: 'dashboard',   to: '/',           icon: LayoutDashboard, label: 'Dashboard',          end: true  },
       { key: 'tarefas',     to: '/tarefas',    icon: CheckSquare,     label: 'Tarefas',             end: false },
@@ -35,7 +37,7 @@ const navSections = [
     ],
   },
   {
-    label: 'Análise',
+    label: 'Inteligência',
     items: [
       { key: 'performance', to: '/performance', icon: BarChart3, label: 'Análise', end: false },
     ],
@@ -49,11 +51,71 @@ const tools = [
   { label: 'Eemovel',     href: 'https://brokers.eemovel.com.br/login', icon: Building2 },
 ]
 
+// ── Item de navegação ────────────────────────────────────────────────────────
+// Um só componente para rota interna. Antes, cada NavLink repetia ~18 linhas de
+// style inline — três cópias idênticas só na área de administração.
+function NavItem({ to, end, icon: Icon, label, collapsed }: {
+  to: string
+  end: boolean
+  icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>
+  label: string
+  collapsed: boolean
+}) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      title={collapsed ? label : undefined}
+      className={({ isActive }) =>
+        `group relative flex items-center rounded-lg text-sm font-medium transition-colors duration-150
+         ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2'}
+         ${isActive ? 'sf-nav-active' : 'sf-nav-item hover:bg-nav-hover'}`
+      }
+      style={({ isActive }) => ({
+        background: isActive ? 'var(--nav-active-bg)' : undefined,
+        color: isActive ? 'var(--nav-active-text)' : 'var(--nav-text)',
+        // A barra dourada some quando recolhido: com 72px de largura ela vira
+        // ruído e o fundo ativo já resolve a leitura.
+        borderLeft: collapsed ? undefined : `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
+        paddingLeft: collapsed ? undefined : 'calc(0.75rem - 3px)',
+      })}
+    >
+      {({ isActive }) => (
+        <>
+          <Icon
+            size={17}
+            style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }}
+            className="flex-shrink-0 transition-colors"
+          />
+          {!collapsed && <span className="flex-1 truncate">{label}</span>}
+          {collapsed && <span className="sr-only">{label}</span>}
+        </>
+      )}
+    </NavLink>
+  )
+}
+
+/** Rótulo de grupo — vira um filete quando a barra está recolhida. */
+function SectionLabel({ children, collapsed }: { children: string; collapsed: boolean }) {
+  if (collapsed) {
+    return <div className="mx-3 mb-2 h-px" style={{ background: 'var(--nav-line)' }} aria-hidden />
+  }
+  return (
+    <p
+      className="px-3 mb-1.5 font-label text-[11px] font-bold uppercase tracking-[0.14em] select-none"
+      style={{ color: 'var(--nav-muted)' }}
+    >
+      {children}
+    </p>
+  )
+}
+
 export function Sidebar() {
-  const [toolsOpen,    setToolsOpen]    = useState(false)
-  const [notifOpen,    setNotifOpen]    = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const bellRef = useRef<HTMLButtonElement>(null)
   const { theme, toggle } = useThemeStore()
+  const { collapsed, toggle: toggleCollapsed } = useSidebarStore()
   const { profile, isAdmin, logout, allProfiles, viewAsBrokerId, setViewAsBroker } = useAuthStore()
   const setSearchOpen = useSearchStore(s => s.setOpen)
   const unreadCount = useUnreadCount()
@@ -76,290 +138,191 @@ export function Sidebar() {
     }))
     .filter(section => section.items.length > 0)
 
+  // Visões do admin — Global, o próprio perfil e cada corretor.
+  const views = isAdmin
+    ? [
+        { id: null as string | null, initial: 'G', label: 'Visão Global' },
+        ...(profile ? [{ id: profile.id, initial: profile.name.charAt(0).toUpperCase(), label: 'Meu Desempenho' }] : []),
+        ...allProfiles
+          .filter(p => p.role === 'broker' && p.id !== profile?.id)
+          .map(p => ({ id: p.id, initial: p.name.charAt(0).toUpperCase(), label: p.name })),
+      ]
+    : []
+
   return (
     <aside
-      className="hidden lg:flex w-64 flex-shrink-0 flex-col h-screen sticky top-0"
+      className={`hidden lg:flex flex-shrink-0 flex-col h-screen sticky top-0 transition-[width] duration-200 texture-grain
+        ${collapsed ? 'w-[4.5rem]' : 'w-60'}`}
       style={{
         backgroundColor: 'var(--nav-bg)',
         borderRight: '1px solid var(--nav-line)',
       }}
+      aria-label="Navegação principal"
     >
-      {/* ── Logo Souza Imobiliária ───────────────────────────────── */}
-      <div className="px-4 border-b flex items-center gap-3" style={{ borderColor: 'var(--nav-line)', paddingTop: 'calc(1.1rem + env(safe-area-inset-top, 0px))', paddingBottom: '1.1rem' }}>
-        {/* Símbolo: S dentro de quadrado arredondado Areia */}
+      {/* ── Logo ─────────────────────────────────────────────────── */}
+      <div
+        className={`flex items-center border-b ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'}`}
+        style={{ borderColor: 'var(--nav-line)', paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))', paddingBottom: '1rem' }}
+      >
         <div
-          className="flex-shrink-0 flex items-center justify-center rounded-[22%] shadow-sm"
-          style={{ width: 36, height: 36, background: '#E4B23C' }}
+          className="flex-shrink-0 flex items-center justify-center rounded-[22%]"
+          style={{ width: 34, height: 34, background: '#E4B23C' }}
         >
           <span
             style={{
-              fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
-              fontWeight: 900,
-              fontSize: 20,
-              color: '#0F1730',
-              lineHeight: 1,
-              letterSpacing: '-0.04em',
-              userSelect: 'none',
+              fontFamily: "'Sora', system-ui, sans-serif",
+              // Grafite fixo: o quadrado é sempre dourado vivo, então o "S" não
+              // pode seguir o token de tema (no claro ele viraria branco sobre
+              // ouro — 1.9:1, ilegível).
+              fontWeight: 900, fontSize: 19, color: '#0F1730',
+              lineHeight: 1, letterSpacing: '-0.04em', userSelect: 'none',
             }}
           >S</span>
         </div>
-        {/* Nome */}
-        <div className="flex flex-col leading-none select-none">
-          <span style={{
-            fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
-            fontWeight: 800,
-            fontSize: 15,
-            color: '#F6F3EC',
-            letterSpacing: '-0.01em',
-          }}>SOUZA</span>
-          <span style={{
-            fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
-            fontWeight: 600,
-            fontSize: 9.5,
-            color: 'rgba(246,243,236,0.55)',
-            letterSpacing: '0.14em',
-          }}>
-            IMOBILIÁRIA
-            <span style={{ color: '#E4B23C' }}>.</span>
-          </span>
-        </div>
+        {!collapsed && (
+          <div className="flex flex-col leading-none select-none min-w-0">
+            <span style={{
+              fontFamily: "'Sora', system-ui, sans-serif",
+              fontWeight: 800, fontSize: 15, color: 'var(--nav-logo)', letterSpacing: '-0.01em',
+            }}>SOUZA</span>
+            <span style={{
+              fontFamily: "'Sora', system-ui, sans-serif",
+              fontWeight: 600, fontSize: 9.5, color: 'var(--nav-muted)', letterSpacing: '0.14em',
+            }}>
+              {/* Ponto final em Areia — exigência do lockup no Brand Guide. */}
+              IMOBILIÁRIA<span style={{ color: 'var(--brand)' }}>.</span>
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ── Search pill — abre a busca global (mesmo que ⌘K) ────── */}
-      <div className="px-3 py-3">
+      {/* ── Busca global ─────────────────────────────────────────── */}
+      <div className={`py-3 ${collapsed ? 'px-3' : 'px-3'}`}>
         <button
           onClick={() => setSearchOpen(true)}
           aria-label="Abrir busca global"
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none transition-all text-left"
-          style={{
-            background: 'var(--nav-hover-bg)',
-            border: '1px solid var(--nav-line)',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(228,178,60,0.35)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--nav-line)' }}
+          title={collapsed ? 'Buscar (⌘K)' : undefined}
+          className={`w-full flex items-center rounded-lg cursor-pointer select-none transition-colors text-left
+            ${collapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2'}`}
+          style={{ background: 'var(--nav-hover-bg)', border: '1px solid var(--nav-line)' }}
         >
-          <Search size={13} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
-          <span className="flex-1 text-xs" style={{ color: 'var(--nav-muted)' }}>Buscar…</span>
-          <kbd
-            className="text-[11px] font-mono px-1.5 py-0.5 rounded leading-4 flex-shrink-0"
-            style={{
-              color: 'var(--nav-muted)',
-              background: 'var(--nav-hover-bg)',
-              border: '1px solid var(--nav-line)',
-            }}
-          >⌘K</kbd>
+          <Search size={15} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
+          {!collapsed && (
+            <>
+              <span className="flex-1 text-xs" style={{ color: 'var(--nav-muted)' }}>Buscar…</span>
+              <kbd
+                className="text-[11px] font-mono px-1.5 py-0.5 rounded leading-4 flex-shrink-0"
+                style={{ color: 'var(--nav-muted)', background: 'var(--nav-hover-bg)', border: '1px solid var(--nav-line)' }}
+              >⌘K</kbd>
+            </>
+          )}
         </button>
       </div>
 
-      {/* ── Nav ──────────────────────────────────────────────────── */}
-      <nav className="flex-1 px-3 overflow-y-auto flex flex-col gap-5 py-2">
+      {/* ── Navegação ────────────────────────────────────────────── */}
+      <nav className="flex-1 px-3 overflow-y-auto overflow-x-hidden flex flex-col gap-4 py-1">
         {visibleSections.map(section => (
           <div key={section.label}>
-            {/* Section label */}
-            <p
-              className="px-3 mb-1.5 text-xs font-bold uppercase tracking-widest select-none"
-              style={{ color: 'var(--nav-muted)' }}
-            >
-              {section.label}
-            </p>
+            <SectionLabel collapsed={collapsed}>{section.label}</SectionLabel>
             <div className="flex flex-col gap-0.5">
-              {section.items.map(({ to, icon: Icon, label, end }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={end}
-                  className={({ isActive }) =>
-                    `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                      isActive ? 'sf-nav-active' : 'sf-nav-item'
-                    }`
-                  }
-                  style={({ isActive }) =>
-                    isActive
-                      ? {
-                          background: 'var(--nav-active-bg)',
-                          color: 'var(--nav-active-text)',
-                          borderLeft: '3px solid var(--brand)',
-                          paddingLeft: 'calc(0.75rem - 3px)',
-                        }
-                      : {
-                          color: 'var(--nav-text)',
-                          borderLeft: '3px solid transparent',
-                          paddingLeft: 'calc(0.75rem - 3px)',
-                        }
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <Icon
-                        size={16}
-                        style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }}
-                        className="flex-shrink-0 transition-colors"
-                      />
-                      <span className="flex-1 truncate">{label}</span>
-                      {isActive && (
-                        <ChevronRight size={12} style={{ color: 'var(--brand-text)' }} className="flex-shrink-0" />
-                      )}
-                    </>
-                  )}
-                </NavLink>
+              {section.items.map(({ to, icon, label, end }) => (
+                <NavItem key={to} to={to} end={end} icon={icon} label={label} collapsed={collapsed} />
               ))}
             </div>
           </div>
         ))}
 
-        {/* ── Admin ───────────────────────────────────────────────── */}
+        {/* ── Administração ──────────────────────────────────────── */}
         {isAdmin && (
           <div>
-            <p
-              className="px-3 mb-1.5 text-xs font-bold uppercase tracking-widest select-none"
-              style={{ color: 'var(--nav-muted)' }}
-            >
-              Administração
-            </p>
-            <NavLink
-              to="/admin"
-              end
-              className={({ isActive }) =>
-                `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive ? 'sf-nav-active' : 'sf-nav-item'}`
-              }
-              style={({ isActive }) =>
-                isActive
-                  ? { background: 'var(--nav-active-bg)', color: 'var(--nav-active-text)', borderLeft: '3px solid var(--brand)', paddingLeft: 'calc(0.75rem - 3px)' }
-                  : { color: 'var(--nav-text)', borderLeft: '3px solid transparent', paddingLeft: 'calc(0.75rem - 3px)' }
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <ShieldCheck size={16} style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }} className="flex-shrink-0" />
-                  <span className="flex-1 truncate">Corretores</span>
-                  {isActive && <ChevronRight size={12} style={{ color: 'var(--brand-text)' }} className="flex-shrink-0" />}
-                </>
-              )}
-            </NavLink>
-            <NavLink
-              to="/admin/logs"
-              end
-              className={({ isActive }) =>
-                `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive ? 'sf-nav-active' : 'sf-nav-item'}`
-              }
-              style={({ isActive }) =>
-                isActive
-                  ? { background: 'var(--nav-active-bg)', color: 'var(--nav-active-text)', borderLeft: '3px solid var(--brand)', paddingLeft: 'calc(0.75rem - 3px)' }
-                  : { color: 'var(--nav-text)', borderLeft: '3px solid transparent', paddingLeft: 'calc(0.75rem - 3px)' }
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <ScrollText size={16} style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }} className="flex-shrink-0" />
-                  <span className="flex-1 truncate">Logs</span>
-                  {isActive && <ChevronRight size={12} style={{ color: 'var(--brand-text)' }} className="flex-shrink-0" />}
-                </>
-              )}
-            </NavLink>
+            <SectionLabel collapsed={collapsed}>Administração</SectionLabel>
+            <div className="flex flex-col gap-0.5">
+              <NavItem to="/admin"      end icon={ShieldCheck} label="Corretores" collapsed={collapsed} />
+              <NavItem to="/admin/logs" end icon={ScrollText}  label="Logs"       collapsed={collapsed} />
+            </div>
 
             {/* Seletor de visão — Global / Meu Desempenho / Corretor X */}
-            <div className="mt-2 px-3">
-              <p className="text-[11px] font-bold uppercase tracking-widest mb-1.5 select-none" style={{ color: 'var(--nav-muted)' }}>
-                Visão
-              </p>
-              <div className="flex flex-col gap-0.5">
-                {/* Visão Global */}
-                <button
-                  onClick={() => setViewAsBroker(null)}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer w-full text-left"
-                  style={{
-                    background: viewAsBrokerId === null ? 'var(--nav-active-bg)' : 'transparent',
-                    color: viewAsBrokerId === null ? 'var(--brand-text)' : 'var(--nav-muted)',
-                  }}
-                >
-                  <div className="w-4 h-4 rounded-full bg-slate-500/30 flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ color: 'var(--nav-muted)' }}>G</div>
-                  Visão Global
-                </button>
-                {/* Meu Desempenho (admin como corretor) */}
-                {profile && (
-                  <button
-                    onClick={() => setViewAsBroker(profile.id)}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer w-full text-left"
-                    style={{
-                      background: viewAsBrokerId === profile.id ? 'var(--nav-active-bg)' : 'transparent',
-                      color: viewAsBrokerId === profile.id ? 'var(--brand-text)' : 'var(--nav-muted)',
-                    }}
-                  >
-                    <div className="w-4 h-4 rounded-full bg-emerald-500/30 flex items-center justify-center text-[10px] font-bold text-emerald-400 flex-shrink-0">
-                      {profile.name.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="truncate">Meu Desempenho</span>
-                  </button>
-                )}
-                {/* Corretores */}
-                {allProfiles.filter(p => p.role === 'broker' && p.id !== profile?.id).map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => setViewAsBroker(p.id)}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer w-full text-left"
-                    style={{
-                      background: viewAsBrokerId === p.id ? 'var(--nav-active-bg)' : 'transparent',
-                      color: viewAsBrokerId === p.id ? 'var(--brand-text)' : 'var(--nav-muted)',
-                    }}
-                  >
-                    <div className="w-4 h-4 rounded-full bg-brand/30 flex items-center justify-center text-[10px] font-bold text-brand flex-shrink-0">
-                      {p.name.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="truncate">{p.name}</span>
-                  </button>
-                ))}
+            <div className={`mt-3 ${collapsed ? '' : 'px-3'}`}>
+              {!collapsed && (
+                <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] mb-1.5 select-none" style={{ color: 'var(--nav-muted)' }}>
+                  Visão
+                </p>
+              )}
+              <div className={`flex flex-col gap-0.5 ${collapsed ? 'items-center' : ''}`}>
+                {views.map(v => {
+                  const active = viewAsBrokerId === v.id
+                  return (
+                    <button
+                      key={v.id ?? 'global'}
+                      onClick={() => setViewAsBroker(v.id)}
+                      title={collapsed ? v.label : undefined}
+                      aria-pressed={active}
+                      className={`flex items-center rounded-lg text-xs font-medium transition-colors cursor-pointer text-left
+                        ${collapsed ? 'justify-center w-9 h-9' : 'gap-2 px-2 py-1.5 w-full'}`}
+                      style={{
+                        background: active ? 'var(--nav-active-bg)' : 'transparent',
+                        color: active ? 'var(--brand-text)' : 'var(--nav-muted)',
+                      }}
+                    >
+                      <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                        style={{
+                          background: active ? 'rgba(228,178,60,0.25)' : 'var(--nav-hover-bg)',
+                          color: active ? 'var(--brand-text)' : 'var(--nav-muted)',
+                        }}
+                        aria-hidden
+                      >
+                        {v.initial}
+                      </span>
+                      {!collapsed && <span className="truncate">{v.label}</span>}
+                      {collapsed && <span className="sr-only">{v.label}</span>}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Ferramentas ─────────────────────────────────────────── */}
+        {/* ── Ferramentas externas ───────────────────────────────── */}
         <div>
-          <p
-            className="px-3 mb-1.5 text-xs font-bold uppercase tracking-widest select-none"
-            style={{ color: 'var(--nav-muted)' }}
-          >
-            Ferramentas
-          </p>
+          <SectionLabel collapsed={collapsed}>Ferramentas</SectionLabel>
           <button
-            onClick={() => setToolsOpen(v => !v)}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer hover:bg-nav-hover"
-            style={{
-              color: 'var(--nav-text)',
-              borderLeft: '3px solid transparent',
-              paddingLeft: 'calc(0.75rem - 3px)',
+            onClick={() => {
+              // Recolhido, o submenu não caberia: expande a barra e já abre.
+              if (collapsed) { toggleCollapsed(); setToolsOpen(true); return }
+              setToolsOpen(v => !v)
             }}
+            aria-expanded={collapsed ? false : toolsOpen}
+            title={collapsed ? 'Ferramentas externas' : undefined}
+            className={`w-full flex items-center rounded-lg text-sm font-medium transition-colors duration-150 cursor-pointer hover:bg-nav-hover
+              ${collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2'}`}
+            style={{ color: 'var(--nav-text)' }}
           >
-            <Wrench size={16} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
-            <span className="flex-1 text-left">Externas</span>
-            <ChevronDown
-              size={12}
-              style={{ color: 'var(--nav-muted)' }}
-              className={`transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}
-            />
+            <Wrench size={17} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left">Externas</span>
+                <ChevronDown
+                  size={12}
+                  style={{ color: 'var(--nav-muted)' }}
+                  className={`transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}
+                />
+              </>
+            )}
+            {collapsed && <span className="sr-only">Ferramentas externas</span>}
           </button>
 
-          {toolsOpen && (
-            <div
-              className="mt-1 ml-5 flex flex-col gap-0.5 pl-3"
-              style={{ borderLeft: '1px solid var(--nav-line)' }}
-            >
+          {toolsOpen && !collapsed && (
+            <div className="mt-1 ml-5 flex flex-col gap-0.5 pl-3" style={{ borderLeft: '1px solid var(--nav-line)' }}>
               {tools.map(({ label, href, icon: Icon }) => (
                 <a
                   key={href}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-150"
+                  className="group flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-colors duration-150 hover:bg-nav-hover"
                   style={{ color: 'var(--nav-muted)' }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'var(--nav-hover-bg)'
-                    e.currentTarget.style.color = 'var(--nav-text)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = ''
-                    e.currentTarget.style.color = 'var(--nav-muted)'
-                  }}
                 >
                   <Icon size={13} className="flex-shrink-0" />
                   <span className="flex-1 truncate">{label}</span>
@@ -371,9 +334,9 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {/* ── Footer ───────────────────────────────────────────────── */}
+      {/* ── Rodapé ───────────────────────────────────────────────── */}
       <div className="px-3 py-3 flex flex-col gap-1" style={{ borderTop: '1px solid var(--nav-line)' }}>
-        {/* Notificações — mesmo padrão visual dos itens de navegação */}
+        {/* Notificações */}
         <button
           ref={bellRef}
           onClick={() => setNotifOpen(v => !v)}
@@ -382,32 +345,34 @@ export function Sidebar() {
           aria-label={unreadCount > 0
             ? `Notificações — ${unreadCount} não lida${unreadCount !== 1 ? 's' : ''}`
             : 'Notificações'}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
+          title={collapsed ? 'Notificações' : undefined}
+          className={`w-full flex items-center rounded-lg text-sm font-medium transition-colors duration-150 cursor-pointer hover:bg-nav-hover
+            ${collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2'}`}
           style={{
             color: notifOpen ? 'var(--nav-active-text)' : 'var(--nav-text)',
-            background: notifOpen ? 'var(--nav-active-bg)' : '',
-            borderLeft: notifOpen ? '3px solid var(--brand)' : '3px solid transparent',
-            paddingLeft: 'calc(0.75rem - 3px)',
+            background: notifOpen ? 'var(--nav-active-bg)' : undefined,
           }}
-          onMouseEnter={e => { if (!notifOpen) e.currentTarget.style.background = 'var(--nav-hover-bg)' }}
-          onMouseLeave={e => { if (!notifOpen) e.currentTarget.style.background = '' }}
         >
           <span className="relative flex-shrink-0" aria-hidden="true">
             <Bell
-              size={16}
+              size={17}
               style={{ color: notifOpen || unreadCount > 0 ? 'var(--brand)' : 'var(--nav-muted)' }}
               className="transition-colors"
             />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand animate-pulse ring-2"
+            {unreadCount > 0 && collapsed && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand ring-2"
                 style={{ ['--tw-ring-color' as string]: 'var(--nav-bg)' }} />
             )}
           </span>
-          <span className="flex-1 text-left truncate">Notificações</span>
-          {unreadCount > 0 && (
-            <span className="min-w-[18px] h-[18px] rounded-full bg-brand text-[#0F1730] text-[11px] font-bold flex items-center justify-center px-1 tabular-nums flex-shrink-0">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
+          {!collapsed && (
+            <>
+              <span className="flex-1 text-left truncate">Notificações</span>
+              {unreadCount > 0 && (
+                <span className="min-w-[18px] h-[18px] rounded-full bg-brand text-[var(--brand-btn-text)] text-[11px] font-bold flex items-center justify-center px-1 tabular-nums flex-shrink-0">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </>
           )}
         </button>
 
@@ -417,64 +382,104 @@ export function Sidebar() {
           anchorEl={bellRef.current}
         />
 
-        {/* Tema toggle */}
+        {/* Tema */}
         <button
           onClick={toggle}
           role="switch"
           aria-checked={theme === 'light'}
           aria-label="Alternar tema claro e escuro"
           title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer"
+          className={`w-full flex items-center rounded-lg transition-colors cursor-pointer hover:bg-nav-hover
+            ${collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2'}`}
           style={{ color: 'var(--nav-text)' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover-bg)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = '' }}
         >
           {theme === 'dark'
-            ? <Sun size={14} style={{ color: 'var(--nav-muted)' }} />
-            : <Moon size={14} style={{ color: 'var(--nav-muted)' }} />
+            ? <Sun size={16} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
+            : <Moon size={16} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
           }
-          <span className="flex-1 text-left text-xs">
-            {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
-          </span>
-          <div
-            className="relative w-8 h-4 rounded-full transition-all flex-shrink-0"
-            style={{ background: theme === 'light' ? 'var(--brand)' : 'var(--nav-line)' }}
-          >
-            <span
-              className="absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all"
-              style={{ left: theme === 'light' ? '1rem' : '2px' }}
-            />
-          </div>
+          {!collapsed && (
+            <>
+              <span className="flex-1 text-left text-xs">
+                {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+              </span>
+              <span
+                className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0"
+                style={{ background: theme === 'light' ? 'var(--brand)' : 'var(--nav-line)' }}
+                aria-hidden
+              >
+                <span
+                  className="absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all"
+                  style={{ left: theme === 'light' ? '1rem' : '2px' }}
+                />
+              </span>
+            </>
+          )}
         </button>
 
-        {/* User */}
+        {/* Recolher / expandir */}
+        <button
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expandir navegação' : 'Recolher navegação'}
+          aria-pressed={collapsed}
+          title={collapsed ? 'Expandir navegação' : 'Recolher navegação'}
+          className={`w-full flex items-center rounded-lg transition-colors cursor-pointer hover:bg-nav-hover
+            ${collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2'}`}
+          style={{ color: 'var(--nav-text)' }}
+        >
+          {collapsed
+            ? <PanelLeftOpen  size={16} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
+            : <PanelLeftClose size={16} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
+          }
+          {!collapsed && <span className="flex-1 text-left text-xs">Recolher menu</span>}
+        </button>
+
+        {/* Usuário */}
         <div
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg mt-0.5"
+          className={`flex items-center rounded-lg mt-0.5 ${collapsed ? 'justify-center py-2' : 'gap-3 px-3 py-2.5'}`}
           style={{ background: 'var(--nav-hover-bg)', border: '1px solid var(--nav-line)' }}
         >
-          <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm">
+          <div
+            className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-xs font-bold flex-shrink-0"
+            style={{ color: 'var(--brand-btn-text)' }}
+            title={collapsed ? `${profile?.name ?? 'Usuário'} — ${isAdmin ? 'Admin · Corretor' : 'Corretor'}` : undefined}
+          >
             {initial}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold truncate leading-none" style={{ color: 'var(--nav-active-text)' }}>
-              {profile?.name ?? 'Usuário'}
-            </p>
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--nav-muted)' }}>
-              {isAdmin ? 'Admin · Corretor' : 'Corretor'}
-            </p>
-          </div>
+          {!collapsed && (
+            <>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold truncate leading-none" style={{ color: 'var(--nav-active-text)' }}>
+                  {profile?.name ?? 'Usuário'}
+                </p>
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--nav-muted)' }}>
+                  {isAdmin ? 'Admin · Corretor' : 'Corretor'}
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sair"
+                aria-label="Sair da conta"
+                className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer flex-shrink-0 hover:bg-error-bg hover:text-error"
+                style={{ color: 'var(--nav-muted)' }}
+              >
+                <LogOut size={14} />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Recolhido: sair vira botão próprio para não sumir da interface */}
+        {collapsed && (
           <button
             onClick={handleLogout}
-            title="Sair"
+            title="Sair da conta"
             aria-label="Sair da conta"
-            className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer flex-shrink-0"
+            className="w-full flex items-center justify-center py-2.5 rounded-lg transition-colors cursor-pointer hover:bg-error-bg hover:text-error"
             style={{ color: 'var(--nav-muted)' }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--nav-muted)'; e.currentTarget.style.background = '' }}
           >
-            <LogOut size={13} />
+            <LogOut size={16} />
           </button>
-        </div>
+        )}
       </div>
     </aside>
   )

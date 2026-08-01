@@ -20,8 +20,8 @@ interface ActivityLog {
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   page_visit:   { label: 'Página visitada', color: 'text-t3'           },
-  lead_created: { label: 'Lead criado',      color: 'text-blue-400'    },
-  lead_moved:   { label: 'Lead movido',      color: 'text-violet-400'  },
+  lead_created: { label: 'Lead criado',      color: 'text-info'    },
+  lead_moved:   { label: 'Lead movido',      color: 'text-brand-text'  },
   sale_created: { label: 'Venda registrada', color: 'text-green-400'   },
   sale_deleted: { label: 'Venda removida',   color: 'text-red-400'     },
   campaign_msg: { label: 'Mensagem enviada', color: 'text-amber-400'   },

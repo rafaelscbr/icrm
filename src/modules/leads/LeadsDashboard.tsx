@@ -251,14 +251,14 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
           label="VGV no Pipeline"
           value={vgvPipeline > 0 ? formatCurrency(vgvPipeline) : '—'}
           sub={`${active.filter(l => l.averageTicket).length} de ${active.length} leads com ticket`}
-          color="text-violet-300" bg="bg-violet-500/10" border="border-violet-500/20"
+          color="text-brand-text" bg="bg-brand-tint" border="border-brand/25"
         />
         <NorthStar
           icon={<Flame size={15} />}
           label="VGV Quente"
           value={vgvQuente > 0 ? formatCurrency(vgvQuente) : '—'}
           sub="visita + proposta — fechamento próximo"
-          color="text-orange-300" bg="bg-orange-500/10" border="border-orange-500/20"
+          color="text-warning" bg="bg-warning-bg" border="border-warning-line"
           highlight
         />
         <NorthStar
@@ -317,8 +317,8 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                 )}
                 {item.discardedHere > 0 && (
                   <div className="flex items-center gap-1 mt-0.5">
-                    <XCircle size={9} className="text-rose-400 flex-shrink-0" />
-                    <span className="text-[11px] text-rose-400">{item.discardedHere} saíram aqui</span>
+                    <XCircle size={9} className="text-brand-text flex-shrink-0" />
+                    <span className="text-[11px] text-brand-text">{item.discardedHere} saíram aqui</span>
                   </div>
                 )}
               </div>
@@ -336,7 +336,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       {/* ── BLOCO 5 — Radar de Temperatura do Pipeline ─────────────────────── */}
       <div className="bg-page border border-line rounded-xl p-5">
         <div className="flex items-center gap-2 mb-1">
-          <Thermometer size={13} className="text-orange-400" />
+          <Thermometer size={13} className="text-warning" />
           <p className="text-sm font-semibold text-t1">Radar de Temperatura do Pipeline</p>
           {!allLoaded && <span className="ml-2 text-[11px] text-t4 animate-pulse">carregando interações…</span>}
           <span className="ml-auto text-xs text-t4">sem interação nos últimos 3 dias</span>
@@ -404,7 +404,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                       )}
                     </td>
                     <td className="text-right py-2.5 pl-4">
-                      <span className={`text-xs font-semibold ${row.vgvAtRisk > 0 ? 'text-orange-300' : 'text-t5'}`}>
+                      <span className={`text-xs font-semibold ${row.vgvAtRisk > 0 ? 'text-warning' : 'text-t5'}`}>
                         {row.vgvAtRisk > 0 ? formatCurrency(row.vgvAtRisk) : '—'}
                       </span>
                     </td>
@@ -416,7 +416,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
               <tfoot>
                 <tr className="border-t border-line">
                   <td colSpan={4} className="pt-2.5 text-[11px] text-t4">Total VGV em risco</td>
-                  <td className="pt-2.5 text-right text-xs font-bold text-orange-300">
+                  <td className="pt-2.5 text-right text-xs font-bold text-warning">
                     {formatCurrency(radarData.reduce((s, r) => s + r.vgvAtRisk, 0))}
                   </td>
                 </tr>
@@ -467,7 +467,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
 
                     {/* Heat indicator */}
                     <div className={`w-1 h-8 rounded-full flex-shrink-0 ${
-                      heat === 'hot'  ? 'bg-orange-500' :
+                      heat === 'hot'  ? 'bg-warning' :
                       heat === 'warm' ? 'bg-amber-500'  : 'bg-slate-600'
                     }`} />
 
@@ -486,7 +486,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
 
                     {/* Ticket */}
                     {lead.averageTicket ? (
-                      <span className="text-xs font-semibold text-violet-300 flex-shrink-0">
+                      <span className="text-xs font-semibold text-brand-text flex-shrink-0">
                         {formatCurrency(lead.averageTicket)}
                       </span>
                     ) : (
@@ -556,7 +556,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                   {c.vgv > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-line flex items-center justify-between">
                       <span className="text-[11px] text-t4">VGV ativo</span>
-                      <span className="text-xs font-semibold text-violet-300">{formatCurrency(c.vgv)}</span>
+                      <span className="text-xs font-semibold text-brand-text">{formatCurrency(c.vgv)}</span>
                     </div>
                   )}
                 </div>
@@ -689,7 +689,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       {/* ── BLOCO 6 — Pulso Comercial ───────────────────────────────────────── */}
       <div className="bg-page border border-line rounded-xl p-5">
         <div className="flex items-center gap-2 mb-1">
-          <BarChart2 size={13} className="text-violet-400" />
+          <BarChart2 size={13} className="text-brand-text" />
           <p className="text-sm font-semibold text-t1">Pulso Comercial</p>
           {!allLoaded && <span className="ml-2 text-[11px] text-t4 animate-pulse">carregando…</span>}
           <span className="ml-auto text-xs text-t4">interações registradas nos últimos 14 dias</span>
@@ -710,20 +710,20 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
               return (
                 <div key={day.dateStr} className="flex flex-col items-center gap-1 flex-1 min-w-[28px]">
                   {/* count label on top */}
-                  <span className={`text-[11px] font-semibold leading-none ${day.count > 0 ? (isToday ? 'text-violet-300' : 'text-t3') : 'text-transparent'}`}>
+                  <span className={`text-[11px] font-semibold leading-none ${day.count > 0 ? (isToday ? 'text-brand-text' : 'text-t3') : 'text-transparent'}`}>
                     {day.count}
                   </span>
                   {/* bar */}
                   <div className="w-full flex items-end" style={{ height: '56px' }}>
                     <div
                       className={`w-full rounded-t-sm transition-all duration-700 ${
-                        isToday ? 'bg-violet-500/60' : day.count > 0 ? 'bg-slate-500/40' : 'bg-s2/60'
+                        isToday ? 'bg-brand-tint' : day.count > 0 ? 'bg-slate-500/40' : 'bg-s2/60'
                       }`}
                       style={{ height: `${Math.max(4, barH)}%` }}
                     />
                   </div>
                   {/* date label */}
-                  <span className={`text-[10px] leading-none truncate w-full text-center ${isToday ? 'text-violet-400 font-semibold' : 'text-t5'}`}>
+                  <span className={`text-[10px] leading-none truncate w-full text-center ${isToday ? 'text-brand-text font-semibold' : 'text-t5'}`}>
                     {day.label}
                   </span>
                 </div>
@@ -769,7 +769,7 @@ interface NorthStarProps {
 
 function NorthStar({ icon, label, value, sub, color, bg, border, highlight }: NorthStarProps) {
   return (
-    <div className={`${bg} border ${border} rounded-xl p-5 ${highlight ? 'ring-1 ring-orange-500/25 shadow-lg shadow-orange-500/8' : ''} relative overflow-hidden`}>
+    <div className={`${bg} border ${border} rounded-xl p-5 ${highlight ? 'ring-1 ring-warning-line shadow-card' : ''} relative overflow-hidden`}>
       <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 ${bg} opacity-40 blur-xl`} />
       <div className={`w-8 h-8 rounded-xl ${bg} border ${border} flex items-center justify-center mb-4 ${color} relative`}>
         {icon}

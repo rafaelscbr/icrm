@@ -47,13 +47,13 @@ const CONFLICT_CONFIG: Record<ConflictType, {
   filterLabel: string
 }> = {
   other_list: {
-    icon: Database, color: 'text-blue-400', bg: 'bg-s3/60',
-    border: 'border-blue-500/20', dot: 'bg-blue-400',
+    icon: Database, color: 'text-info', bg: 'bg-s3/60',
+    border: 'border-info-line', dot: 'bg-info-bg',
     label: 'Outra lista', filterLabel: 'Em listas',
   },
   campaign: {
-    icon: Megaphone, color: 'text-violet-400', bg: 'bg-violet-500/10',
-    border: 'border-violet-500/20', dot: 'bg-violet-400',
+    icon: Megaphone, color: 'text-brand-text', bg: 'bg-brand-tint',
+    border: 'border-brand/25', dot: 'bg-brand-tint',
     label: 'Em campanha', filterLabel: 'Em campanhas',
   },
   funnel: {
@@ -366,8 +366,8 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
       {step === 'preview' && (
         <div className="flex flex-col gap-5">
           {/* Header do arquivo */}
-          <div className="flex items-center gap-3 p-4 bg-s3/50 border border-blue-500/20 rounded-xl">
-            <div className="w-9 h-9 rounded-xl bg-s3/70 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-3 p-4 bg-s3/50 border border-info-line rounded-xl">
+            <div className="w-9 h-9 rounded-xl bg-s3/70 border border-info-line flex items-center justify-center flex-shrink-0">
               <FileSpreadsheet size={18} className="text-t2" />
             </div>
             <div>
@@ -379,7 +379,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
           {/* Contadores */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Leads válidos',     value: parsed.length,      color: 'text-blue-400',   icon: <Users size={14} /> },
+              { label: 'Leads válidos',     value: parsed.length,      color: 'text-info',   icon: <Users size={14} /> },
               { label: 'Duplicatas',        value: dupFile,            color: 'text-amber-400',  icon: <RefreshCw size={14} /> },
               { label: 'Números inválidos', value: invalidPh,          color: 'text-red-400',    icon: <XCircle size={14} /> },
               { label: 'Avisos de parse',   value: parseErrors.length, color: 'text-t3',  icon: <AlertTriangle size={14} /> },
@@ -652,7 +652,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Novos contatos criados',    value: stats.newContacts,      color: 'text-green-400',  bg: 'bg-green-500/8 border-green-500/20'   },
-              { label: 'Já existiam no sistema',    value: stats.existingContacts, color: 'text-blue-400',   bg: 'bg-s3/50 border-blue-500/20'     },
+              { label: 'Já existiam no sistema',    value: stats.existingContacts, color: 'text-info',   bg: 'bg-s3/50 border-info-line'     },
               { label: 'Adicionados à lista',       value: stats.linkedToList,     color: 'text-brand',      bg: 'bg-brand/8 border-brand/20'           },
               { label: 'Já estavam nesta lista',    value: stats.alreadyInList,    color: 'text-t3',  bg: 'bg-s2/50 border-line'                 },
               { label: 'Pulados por sua escolha',   value: stats.skippedByUser,    color: 'text-amber-400',  bg: 'bg-amber-500/8 border-amber-500/20'   },

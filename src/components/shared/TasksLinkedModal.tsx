@@ -12,12 +12,12 @@ import { Task, TaskCategory } from '../../types'
 // ─── config ───────────────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; label: string }> = {
-  visita:             { icon: Home,       color: 'text-cyan-400',    label: 'Visita'                },
+  visita:             { icon: Home,       color: 'text-info',    label: 'Visita'                },
   agenciamento:       { icon: Building2,  color: 'text-indigo-400',  label: 'Agenciamento'          },
   proposta:           { icon: FileText,   color: 'text-amber-400',   label: 'Proposta'              },
-  busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel'       },
+  busca_imovel:       { icon: TrendingUp, color: 'text-brand-text',  label: 'Busca de Imóvel'       },
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis' },
-  campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas'             },
+  campanhas:          { icon: Zap,        color: 'text-brand-text',    label: 'Campanhas'             },
   administrativo:     { icon: FileText,   color: 'text-t2',   label: 'Administrativo'        },
   souza_financeiro:   { icon: Zap,        color: 'text-green-400',   label: 'Souza Financeiro'      },
   outro:              { icon: Zap,        color: 'text-t3',   label: 'Outro'                 },

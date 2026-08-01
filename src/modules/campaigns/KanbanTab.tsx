@@ -301,7 +301,7 @@ function LeadCard({
               </button>
             )}
             <button onClick={() => setShowTask(true)}
-              className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-cyan-400 transition-colors"
+              className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-info transition-colors"
               title="Criar tarefa">
               <Plus size={11} />
             </button>
@@ -691,10 +691,10 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
       {migrateSuggest && !showTransfer && (
         <Modal isOpen onClose={() => { confirmMoveOnly() }} title="Lead pronto para visita" size="sm">
           <div className="flex flex-col gap-4">
-            <div className="flex items-start gap-3 p-3.5 bg-violet-500/8 border border-violet-500/25 rounded-xl">
-              <GitMerge size={18} className="text-violet-400 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-3.5 bg-brand-tint border border-brand/25 rounded-xl">
+              <GitMerge size={18} className="text-brand-text flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-violet-200">Migrar para o funil principal?</p>
+                <p className="text-sm font-semibold text-brand-text">Migrar para o funil principal?</p>
                 <p className="text-xs text-t3 mt-1 leading-relaxed">
                   <span className="font-medium text-t2">{migrateSuggest.lead.name}</span> agendou apresentação —
                   este é o momento ideal para entrar no funil comercial com todo o histórico preservado.
@@ -706,7 +706,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
                 Só mover na campanha
               </Button>
               <Button
-                className="flex-1 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500"
+                className="flex-1 flex items-center justify-center gap-2 bg-brand hover:bg-brand"
                 onClick={openTransferFromSuggest}
               >
                 <ArrowRight size={14} />

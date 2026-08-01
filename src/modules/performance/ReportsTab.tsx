@@ -407,7 +407,7 @@ export function ReportsTab() {
                   <div className="border-t border-line pt-3 mt-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-t3">Planta</span>
-                      <span className="text-xs font-semibold text-purple-400">{formatCurrency(salesByType[1]?.value ?? 0)}</span>
+                      <span className="text-xs font-semibold text-brand-text">{formatCurrency(salesByType[1]?.value ?? 0)}</span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-t3">Pronto</span>

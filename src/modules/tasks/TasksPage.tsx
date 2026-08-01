@@ -33,12 +33,12 @@ const PRIORITY_DOT: Record<TaskPriority, string> = {
 }
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; label: string; motto: string }> = {
-  visita:             { icon: Home,       color: 'text-cyan-400',    label: 'Visita',                motto: 'bora fechar negócio!'                },
+  visita:             { icon: Home,       color: 'text-info',    label: 'Visita',                motto: 'bora fechar negócio!'                },
   agenciamento:       { icon: Building2,  color: 'text-brand',  label: 'Agenciamento',          motto: 'hora de ampliar o portfólio!'        },
   proposta:           { icon: FileText,   color: 'text-amber-400',   label: 'Proposta',              motto: 'proposta enviada é venda garantida!'  },
-  busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  label: 'Busca de Imóvel',       motto: 'encontre o imóvel certo para o lead!' },
+  busca_imovel:       { icon: TrendingUp, color: 'text-brand-text',  label: 'Busca de Imóvel',       motto: 'encontre o imóvel certo para o lead!' },
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', label: 'Prospecção de Imóveis', motto: 'novos imóveis no portfólio!'          },
-  campanhas:          { icon: Zap,        color: 'text-pink-400',    label: 'Campanhas',             motto: 'marketing em ação!'                   },
+  campanhas:          { icon: Zap,        color: 'text-brand-text',    label: 'Campanhas',             motto: 'marketing em ação!'                   },
   administrativo:     { icon: FileText,   color: 'text-t2',   label: 'Administrativo',        motto: 'mantendo a casa em ordem!'            },
   souza_financeiro:   { icon: Zap,        color: 'text-green-400',   label: 'Souza Financeiro',      motto: 'financeiro em dia!'                   },
   outro:              { icon: Zap,        color: 'text-t3',   label: 'Outro',                 motto: ''                                        },
@@ -113,11 +113,11 @@ function SmartBanner({ tasks, firstName }: { tasks: Task[]; firstName: string })
   } else if (total === 0 && overdue.length > 0) {
     headline = `${greeting}, ${firstName}!`
     sub = `Nada para hoje, mas você tem ${overdue.length} tarefa${overdue.length > 1 ? 's' : ''} em atraso. Hora de colocar em dia!`
-    accent = 'from-red-500/15 to-orange-500/5'
+    accent = 'bg-error-bg'
   } else {
     headline = `${greeting}, ${firstName}! Temos ${total} tarefa${total > 1 ? 's' : ''} para hoje.`
     sub = lines.length > 0 ? lines.join(' · ') : 'Foco no que importa — cada tarefa concluída é um passo à frente!'
-    accent = total >= 5 ? 'from-amber-500/20 to-orange-500/10' : 'from-blue-500/10 to-blue-600/5'
+    accent = total >= 5 ? 'bg-warning-bg' : 'bg-info-bg'
   }
 
   return (
@@ -250,7 +250,7 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
           {property && (
             <button
               onClick={() => navigate('/imoveis')}
-              className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs text-info hover:text-info hover:underline transition-colors cursor-pointer"
             >
               <Building2 size={11} /> {property.name}
             </button>
@@ -258,26 +258,26 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
 
           {/* Delegação: recebida de outro usuário */}
           {isAssignedToMe && delegatedByName && (
-            <span className="flex items-center gap-1 text-xs font-medium text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-md">
+            <span className="flex items-center gap-1 text-xs font-medium text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-0.5 rounded-md">
               <UserCheck size={10} /> De: {delegatedByName}
             </span>
           )}
           {/* Delegação: enviada para outro usuário */}
           {isDelegatedByMe && assignedToName && (
-            <span className="flex items-center gap-1 text-xs font-medium text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-md">
+            <span className="flex items-center gap-1 text-xs font-medium text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-0.5 rounded-md">
               <UserCheck size={10} /> Para: {assignedToName}
             </span>
           )}
 
           {/* Compartilhamento: você é o criador e compartilhou com outros */}
           {t.participants && t.participants.length > 0 && t.brokerId === currentUserId && (
-            <span className="flex items-center gap-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-md">
+            <span className="flex items-center gap-1 text-xs font-medium text-info bg-info-bg border border-info-line px-1.5 py-0.5 rounded-md">
               <Users size={10} /> Compartilhada · {t.participants.length}
             </span>
           )}
           {/* Compartilhamento: você é participante (não é o criador) */}
           {t.participants?.includes(currentUserId ?? '') && t.brokerId !== currentUserId && (
-            <span className="flex items-center gap-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-md">
+            <span className="flex items-center gap-1 text-xs font-medium text-info bg-info-bg border border-info-line px-1.5 py-0.5 rounded-md">
               <Users size={10} /> De: {allProfiles.find(p => p.id === t.brokerId)?.name ?? 'Criador'}
             </span>
           )}
@@ -424,12 +424,12 @@ function CalendarView({
   }
 
   const CAT_DOT: Record<string, string> = {
-    visita:             'bg-cyan-400',
+    visita:             'bg-info-bg',
     agenciamento:       'bg-brand',
     proposta:           'bg-amber-400',
-    busca_imovel:       'bg-violet-400',
+    busca_imovel:       'bg-brand-tint',
     prospeccao_imoveis: 'bg-emerald-400',
-    campanhas:          'bg-pink-400',
+    campanhas:          'bg-brand-tint',
     administrativo:     'bg-slate-400',
     souza_financeiro:   'bg-green-400',
     outro:              'bg-slate-500',
@@ -639,7 +639,7 @@ export function TasksPage() {
     { key: 'overdue',  title: 'Atrasadas',     tasks: overdue,   icon: <AlertTriangle size={12} />, color: 'text-red-400',    defaultOpen: true  },
     { key: 'today',    title: 'Hoje',           tasks: todayT,    icon: <Flame size={12} />,         color: 'text-brand', defaultOpen: true  },
     { key: 'tomorrow', title: 'Amanhã',         tasks: tomorrowT, icon: <CalendarClock size={12} />, color: 'text-amber-400',  defaultOpen: true  },
-    { key: 'week',     title: 'Esta semana',    tasks: thisWeek,  icon: <TrendingUp size={12} />,    color: 'text-cyan-400',   defaultOpen: true  },
+    { key: 'week',     title: 'Esta semana',    tasks: thisWeek,  icon: <TrendingUp size={12} />,    color: 'text-info',   defaultOpen: true  },
     { key: 'later',    title: 'Próximos dias',  tasks: later,     icon: <CheckCheck size={12} />,    color: 'text-t3',  defaultOpen: false },
     { key: 'nodate',   title: 'Sem data',       tasks: noDate,    icon: <ListTodo size={12} />,      color: 'text-t3',  defaultOpen: false },
   ]
@@ -695,7 +695,7 @@ export function TasksPage() {
           {[
             { label: 'Hoje',       value: todayCount,    color: 'text-brand', bg: 'bg-indigo-500/10', icon: <Flame size={13} />         },
             { label: 'Em atraso',  value: overdueCount,  color: 'text-red-400',    bg: 'bg-red-500/10',    icon: <AlertTriangle size={13} /> },
-            { label: 'Próximas',   value: upcomingCount, color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   icon: <TrendingUp size={13} />    },
+            { label: 'Próximas',   value: upcomingCount, color: 'text-info',   bg: 'bg-info-bg',   icon: <TrendingUp size={13} />    },
             { label: 'Concluídas', value: doneCount,     color: 'text-green-400',  bg: 'bg-green-500/10',  icon: <CheckCheck size={13} />    },
           ].map(s => (
             <div key={s.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl ${s.bg} border border-line`}>

@@ -12,7 +12,8 @@ interface ThemeStore {
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
-      theme: 'dark',
+      // Souza OS: o tema CLARO é o principal. O escuro continua disponível.
+      theme: 'light',
       toggle: () => {
         const next = get().theme === 'dark' ? 'light' : 'dark'
         set({ theme: next })

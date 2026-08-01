@@ -188,8 +188,8 @@ export function DeleteLeadFromListModal({
                   <Database size={9} /> Em outras listas ({status.otherLists.length})
                 </p>
                 {status.otherLists.map(l => (
-                  <div key={l.id} className="flex items-center gap-2 px-3 py-2 bg-s3/50 border border-blue-500/20 rounded-xl">
-                    <Database size={11} className="text-blue-400 flex-shrink-0" />
+                  <div key={l.id} className="flex items-center gap-2 px-3 py-2 bg-s3/50 border border-info-line rounded-xl">
+                    <Database size={11} className="text-info flex-shrink-0" />
                     <p className="text-xs text-t2 truncate">{l.name}</p>
                   </div>
                 ))}
@@ -203,8 +203,8 @@ export function DeleteLeadFromListModal({
                   <Megaphone size={9} /> Em campanhas ({status.campaigns.length})
                 </p>
                 {status.campaigns.map(c => (
-                  <div key={c.id} className="flex items-center gap-2 px-3 py-2 bg-violet-500/8 border border-violet-500/20 rounded-xl">
-                    <Megaphone size={11} className="text-violet-400 flex-shrink-0" />
+                  <div key={c.id} className="flex items-center gap-2 px-3 py-2 bg-brand-tint border border-brand/25 rounded-xl">
+                    <Megaphone size={11} className="text-brand-text flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-t2 truncate">{c.name}</p>
                       <p className="text-xs text-t4">Etapa: {c.stage}</p>

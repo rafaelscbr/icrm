@@ -19,12 +19,12 @@ import { Home, FileText, TrendingUp, Zap } from 'lucide-react'
 // ─── config ───────────────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; bar: string; label: string }> = {
-  visita:             { icon: Home,       color: 'text-cyan-400',    bar: '#22d3ee', label: 'Atendimento'           },
+  visita:             { icon: Home,       color: 'text-info',    bar: '#22d3ee', label: 'Atendimento'           },
   agenciamento:       { icon: Building2,  color: 'text-brand',  bar: '#818cf8', label: 'Agenciamento'          },
   proposta:           { icon: FileText,   color: 'text-amber-400',   bar: '#fbbf24', label: 'Proposta'              },
-  busca_imovel:       { icon: TrendingUp, color: 'text-violet-400',  bar: '#a78bfa', label: 'Busca de Imóvel'       },
+  busca_imovel:       { icon: TrendingUp, color: 'text-brand-text',  bar: '#a78bfa', label: 'Busca de Imóvel'       },
   prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', bar: '#34d399', label: 'Prospecção de Imóveis' },
-  campanhas:          { icon: Zap,        color: 'text-pink-400',    bar: '#f472b6', label: 'Campanhas'             },
+  campanhas:          { icon: Zap,        color: 'text-brand-text',    bar: '#f472b6', label: 'Campanhas'             },
   administrativo:     { icon: FileText,   color: 'text-t2',   bar: '#94a3b8', label: 'Administrativo'        },
   souza_financeiro:   { icon: Zap,        color: 'text-green-400',   bar: '#4ade80', label: 'Souza Financeiro'      },
   outro:              { icon: Zap,        color: 'text-t3',   bar: '#64748b', label: 'Outro'                 },
@@ -108,7 +108,7 @@ function TaskDayRow({ task, isLast }: { task: Task; isLast: boolean }) {
           {property && (
             <button
               onClick={() => navigate('/imoveis')}
-              className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs text-info hover:text-info hover:underline transition-colors cursor-pointer"
             >
               <Building2 size={10} /> {property.name}
             </button>

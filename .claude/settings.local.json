@@ -162,7 +162,13 @@
       "Bash(sed -n '/from .lucide-react/{=;p;}' pages/NotificationsPage.tsx)",
       "Bash(sed -n '218,235p' src/types/index.ts)",
       "Bash(sed -n '9,46p' src/modules/leads/LeadConversionTab.tsx)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(vercel ls *)",
+      "Bash(vercel whoami *)",
+      "Bash(vercel project *)",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__list_organizations",
+      "mcp__9e6b3570-5ccf-48de-b6f8-3ce3c9164d30__get_organization",
+      "Bash(ls ~/.supabase/ 2>/dev/null; test -f ~/.supabase/access-token && echo \"TOKEN CLI: presente\"; which supabase; echo '--- .env keys \\(só nomes\\) ---'; grep -o '^[A-Z_]*' .env)"
     ]
   }
 }

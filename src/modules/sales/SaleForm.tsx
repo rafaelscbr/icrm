@@ -208,10 +208,10 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
           </div>
 
           {/* ── Seção de comissão ── */}
-          <div className="flex flex-col gap-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/15">
+          <div className="flex flex-col gap-3 p-4 rounded-xl bg-info-bg border border-info-line">
             <div className="flex items-center gap-2 mb-1">
-              <BadgePercent size={13} className="text-violet-400" />
-              <p className="text-xs font-semibold text-violet-300 uppercase tracking-wider">Comissão negociada</p>
+              <BadgePercent size={13} className="text-brand-text" />
+              <p className="text-xs font-semibold text-brand-text uppercase tracking-wider">Comissão negociada</p>
             </div>
 
             {/* Modo: % ou valor fixo */}
@@ -223,7 +223,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   onClick={() => setCommMode(mode)}
                   className={`flex-1 text-xs py-2 rounded-xl border transition-all cursor-pointer ${
                     commMode === mode
-                      ? 'bg-violet-500/20 border-violet-500/40 text-violet-300 font-semibold'
+                      ? 'bg-brand-tint border-brand/25 text-brand-text font-semibold'
                       : 'bg-s3/50 border-line text-t3 hover:text-t2'
                   }`}
                 >
@@ -244,7 +244,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                       step="0.1"
                       value={commPct}
                       onChange={e => setCommPct(e.target.value)}
-                      className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                      className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand/30"
                       placeholder="5"
                     />
                   </div>
@@ -259,7 +259,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                       onClick={() => setCommPct(p)}
                       className={`flex-1 text-xs py-1.5 rounded-lg border transition-all cursor-pointer ${
                         commPct === p
-                          ? 'bg-violet-500/25 border-violet-500/50 text-violet-300 font-semibold'
+                          ? 'bg-brand-tint border-brand/25 text-brand-text font-semibold'
                           : 'bg-s3/30 border-line text-t4 hover:text-t2 hover:border-slate-500'
                       }`}
                     >{p}%</button>
@@ -274,13 +274,13 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   onChange={e => setCommFixed(e.target.value)}
                   inputMode="numeric"
                   placeholder="30.000"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                  className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30"
                 />
               </div>
             )}
 
             {/* Split — presets rápidos */}
-            <div className="flex flex-col gap-2 pt-1 border-t border-violet-500/10">
+            <div className="flex flex-col gap-2 pt-1 border-t border-brand/25">
               <p className="text-[11px] font-medium text-t3 uppercase tracking-wider">Divisão da comissão</p>
               <div className="flex gap-1.5">
                 {([['100', 'Autônomo', '100%'], ['50', 'Parceria', '50/50'], ['40', 'Com imob.', '40%']] as const).map(([val, label, sub]) => (
@@ -317,7 +317,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
             {/* Preview calculado */}
             {preview && preview.totalComm > 0 && (
-              <div className="pt-1 border-t border-violet-500/15">
+              <div className="pt-1 border-t border-brand/25">
                 {parseFloat(brokerPct) === 100 ? (
                   /* Modo autônomo: exibe só um valor */
                   <div className="bg-s2/50 rounded-xl px-4 py-3 flex items-center justify-between">
@@ -332,7 +332,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
                       <p className="text-[11px] text-t3 mb-0.5">Comissão total</p>
-                      <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
+                      <p className="text-sm font-bold text-brand-text tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
                     </div>
                     <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
                       <p className="text-[11px] text-t3 mb-0.5">Sua parte ({brokerPct}%)</p>

@@ -36,8 +36,8 @@ const KIND_CONFIG: Record<EventKind, {
   bg:     string
   border: string
 }> = {
-  list:     { icon: Database,    color: 'text-blue-400',   bg: 'bg-s3/60',   border: 'border-blue-500/20'   },
-  campaign: { icon: Megaphone,   color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+  list:     { icon: Database,    color: 'text-info',   bg: 'bg-s3/60',   border: 'border-info-line'   },
+  campaign: { icon: Megaphone,   color: 'text-brand-text', bg: 'bg-brand-tint', border: 'border-brand/25' },
   dispatch: { icon: MessageSquare,color:'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
   funnel:   { icon: TrendingUp,  color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
   sale:     { icon: ShoppingBag, color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20'  },
@@ -308,7 +308,7 @@ export function ContactCampaignHistory({ contactId }: Props) {
                         <span className={`text-[11px] px-1.5 py-0.5 rounded-full border flex-shrink-0
                           ${event.kind === 'sale'
                             ? 'bg-green-500/15 border-green-500/25 text-green-400'
-                            : 'bg-violet-500/15 border-violet-500/25 text-violet-400'
+                            : 'bg-brand-tint border-brand/25 text-brand-text'
                           }`}
                         >
                           {event.badge}

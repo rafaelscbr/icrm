@@ -182,9 +182,9 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           )}
 
           {filteredProperties.length > 0 && (
-            <Section icon={<Building2 size={12} className="text-cyan-400" />} label="Imóveis">
+            <Section icon={<Building2 size={12} className="text-info" />} label="Imóveis">
               {filteredProperties.map((p, i) => (
-                <ResultRow key={p.id} icon={<Building2 size={13} className="text-cyan-400" />}
+                <ResultRow key={p.id} icon={<Building2 size={13} className="text-info" />}
                   title={p.name} subtitle={p.neighborhood} tag="Ver imóvel"
                   active={activeIndex === offProperties + i} onHover={() => setActiveIndex(offProperties + i)}
                   onClick={() => goWithModal('/imoveis', p.id)} />
@@ -204,9 +204,9 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           )}
 
           {filteredCampLeads.length > 0 && (
-            <Section icon={<Megaphone size={12} className="text-violet-400" />} label="Leads de campanha">
+            <Section icon={<Megaphone size={12} className="text-brand-text" />} label="Leads de campanha">
               {filteredCampLeads.map((l, i) => (
-                <ResultRow key={l.id} icon={<Megaphone size={13} className="text-violet-400" />}
+                <ResultRow key={l.id} icon={<Megaphone size={13} className="text-brand-text" />}
                   title={l.name} subtitle={`${formatPhone(l.phone)} · ${getCampaignName(l.campaignId)}`} tag="Ver campanha"
                   active={activeIndex === offCamp + i} onHover={() => setActiveIndex(offCamp + i)}
                   onClick={() => go(`/campanhas?id=${l.campaignId}`)} />

@@ -130,28 +130,28 @@ export function CampaignPerformanceTab({ leads }: Props) {
       {/* ── Metas de disparo (automático) ─────────────────────────────────── */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-1.5 h-4 rounded-full bg-violet-500" />
+          <div className="w-1.5 h-4 rounded-full bg-brand" />
           <p className="text-xs font-bold text-t3 uppercase tracking-wider">Metas de disparo — lista fria</p>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <MetaCard label="Hoje"       value={disparosHoje}   target={DAILY_TARGET}   color="bg-violet-500" />
-          <MetaCard label="Esta semana" value={disparosSemana} target={WEEKLY_TARGET}  color="bg-violet-500" />
-          <MetaCard label="Este mês"   value={disparosMes}    target={MONTHLY_TARGET} color="bg-violet-500" />
+          <MetaCard label="Hoje"       value={disparosHoje}   target={DAILY_TARGET}   color="bg-brand" />
+          <MetaCard label="Esta semana" value={disparosSemana} target={WEEKLY_TARGET}  color="bg-brand" />
+          <MetaCard label="Este mês"   value={disparosMes}    target={MONTHLY_TARGET} color="bg-brand" />
         </div>
       </div>
 
       {/* ── KPIs desta campanha ───────────────────────────────────────────── */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-1.5 h-4 rounded-full bg-blue-500" />
+          <div className="w-1.5 h-4 rounded-full bg-info" />
           <p className="text-xs font-bold text-t3 uppercase tracking-wider">Desempenho desta campanha</p>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { label: 'Total de leads',     value: total.toLocaleString('pt-BR'),                   color: 'text-t1'  },
-            { label: 'Acionados',          value: `${contacted} (${pct(contacted, total)}%)`,       color: 'text-blue-400'   },
-            { label: 'Taxa de resposta',   value: `${responseRate}%`,                               color: 'text-cyan-400'   },
-            { label: 'Transferidos',       value: `${transferred} (${pct(transferred, total)}%)`,   color: 'text-violet-400' },
+            { label: 'Acionados',          value: `${contacted} (${pct(contacted, total)}%)`,       color: 'text-info'   },
+            { label: 'Taxa de resposta',   value: `${responseRate}%`,                               color: 'text-info'   },
+            { label: 'Transferidos',       value: `${transferred} (${pct(transferred, total)}%)`,   color: 'text-brand-text' },
           ].map(kpi => (
             <div key={kpi.label} className="bg-s2/50 border border-line rounded-xl p-3">
               <p className="text-[11px] text-t3 mb-1">{kpi.label}</p>
@@ -168,7 +168,7 @@ export function CampaignPerformanceTab({ leads }: Props) {
           <div>
             <p className="text-xs font-bold text-amber-400 uppercase tracking-wide">Melhor dia</p>
             <p className="text-sm font-semibold text-t1 mt-0.5">
-              {bestDay.label} — <span className="text-amber-300">{bestDay.Interessados} interessado{bestDay.Interessados !== 1 ? 's'  : ''}</span> com <span className="text-violet-300">{bestDay.Disparos} disparo{bestDay.Disparos !== 1 ? 's' : ''}</span>
+              {bestDay.label} — <span className="text-amber-300">{bestDay.Interessados} interessado{bestDay.Interessados !== 1 ? 's'  : ''}</span> com <span className="text-brand-text">{bestDay.Disparos} disparo{bestDay.Disparos !== 1 ? 's' : ''}</span>
             </p>
           </div>
         </div>
@@ -204,9 +204,9 @@ export function CampaignPerformanceTab({ leads }: Props) {
         <div className="flex flex-col gap-2">
           {[
             { label: 'Leads importados',      value: total,        color: 'bg-slate-500',  text: 'text-t2'  },
-            { label: 'Acionados (1º msg)',    value: contacted,    color: 'bg-blue-500',   text: 'text-blue-300'   },
-            { label: 'Demonstraram interesse',value: interested,   color: 'bg-cyan-500',   text: 'text-cyan-300'   },
-            { label: 'Agendaram apresentação',value: scheduled,    color: 'bg-violet-500', text: 'text-violet-300' },
+            { label: 'Acionados (1º msg)',    value: contacted,    color: 'bg-info',   text: 'text-info'   },
+            { label: 'Demonstraram interesse',value: interested,   color: 'bg-info',   text: 'text-info'   },
+            { label: 'Agendaram apresentação',value: scheduled,    color: 'bg-brand', text: 'text-brand-text' },
             { label: 'Transferidos ao funil', value: transferred,  color: 'bg-indigo-500', text: 'text-indigo-300' },
           ].map((row, i, arr) => {
             const prev    = arr[i - 1]?.value ?? row.value
@@ -228,7 +228,7 @@ export function CampaignPerformanceTab({ leads }: Props) {
         </div>
         {avgDaysToInterest !== null && (
           <p className="text-xs text-t4 mt-4 pt-3 border-t border-line">
-            ⏱ Tempo médio até demonstrar interesse: <span className="text-cyan-400 font-semibold">{avgDaysToInterest} dias</span> após o primeiro contato
+            ⏱ Tempo médio até demonstrar interesse: <span className="text-info font-semibold">{avgDaysToInterest} dias</span> após o primeiro contato
           </p>
         )}
       </Card>

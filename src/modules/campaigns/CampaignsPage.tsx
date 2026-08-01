@@ -128,8 +128,8 @@ export function CampaignsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Campanhas ativas',   value: totalActive,    color: 'text-brand'  },
-            { label: 'Leads na base',      value: totalLeads,     color: 'text-blue-400'    },
-            { label: 'Leads acionados',    value: totalContacted, color: 'text-cyan-400'    },
+            { label: 'Leads na base',      value: totalLeads,     color: 'text-info'    },
+            { label: 'Leads acionados',    value: totalContacted, color: 'text-info'    },
             { label: 'Convertidos (venda)',value: totalSales,     color: 'text-green-400'   },
           ].map(s => (
             <Card key={s.label} className="!py-4">
@@ -187,7 +187,7 @@ export function CampaignsPage() {
                           {statusCfg.label}
                         </span>
                         {isAdmin && brokerName && (
-                          <span className="flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                          <span className="flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-brand-tint text-brand-text border border-brand/25">
                             <UserCircle2 size={9} /> {brokerName}
                           </span>
                         )}
@@ -202,7 +202,7 @@ export function CampaignsPage() {
                     </button>
                     {isAdmin && (
                       <button onClick={() => { setTransferCampaign(c); setTransferBrokerId(c.brokerId ?? '') }}
-                        className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-violet-400 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-brand-text transition-colors cursor-pointer"
                         title="Transferir campanha">
                         <ArrowLeftRight size={13} />
                       </button>
@@ -224,9 +224,9 @@ export function CampaignsPage() {
                     <div className="flex gap-1">
                       {([
                         { label: 'Pendentes',  value: nPending,    color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20',  icon: <Clock         size={10} /> },
-                        { label: 'Abordados',  value: nApproached, color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   icon: <MessageCircle size={10} /> },
-                        { label: 'Interesse',  value: nInterested, color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20',   icon: <Flame         size={10} /> },
-                        { label: 'Agendados',  value: nScheduled,  color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20', icon: <CalendarCheck size={10} /> },
+                        { label: 'Abordados',  value: nApproached, color: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line',   icon: <MessageCircle size={10} /> },
+                        { label: 'Interesse',  value: nInterested, color: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line',   icon: <Flame         size={10} /> },
+                        { label: 'Agendados',  value: nScheduled,  color: 'text-brand-text', bg: 'bg-brand-tint', border: 'border-brand/25', icon: <CalendarCheck size={10} /> },
                         { label: 'Transf.',    value: nTransferred,color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20',  icon: <ArrowUpRight  size={10} /> },
                       ] as const).map(chip => (
                         <div

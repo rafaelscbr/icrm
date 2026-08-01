@@ -1,38 +1,49 @@
 import { useEffect, useMemo, useState, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Users, Building2, TrendingUp, DollarSign, Cake,
-  ArrowRight, Gift, MessageCircle, Sparkles, Circle, CheckCircle2,
-  AlertTriangle, Clock, CalendarCheck, Siren, ClipboardCheck,
-  ListTodo, Snowflake, RefreshCw, Megaphone,
-  ChevronDown, ChevronUp, BarChart2, Target, Flame,
-  Home, Settings, ClipboardList, Monitor,
+  Users, TrendingUp, DollarSign, ArrowRight, Sparkles, CheckCircle2,
+  AlertTriangle, CalendarCheck, Siren, RefreshCw,
+  ChevronDown, ChevronUp, FileText, Flame, Info, BarChart3, Wallet, ArrowDown,
 } from 'lucide-react'
-import { Task, Contact, Property, Lead, calcSaleCommissions } from '../../types'
+import { Task, Lead, calcSaleCommissions } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
-import { PerformanceGoalsWidget } from './PerformanceGoalsWidget'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadModal } from '../leads/LeadModal'
 import { PageLayout } from '../../components/layout/PageLayout'
-import { Card } from '../../components/ui/Card'
-import { StatCard } from '../../components/shared/StatCard'
-import { Avatar } from '../../components/ui/Avatar'
-import { PeriodSelector } from '../../components/shared/PeriodSelector'
-import { useContactsStore } from '../../store/useContactsStore'
-import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
-import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
-import { useAuthStore } from '../../store/useAuthStore'
 import { useAdminView } from '../../hooks/useAdminView'
-import { usePresenceStore, pageLabel } from '../../store/usePresenceStore'
-import { formatCurrency, formatCurrencyFull, formatDate, getBirthdayDay, whatsappUrl } from '../../lib/formatters'
+import { useAuthStore } from '../../store/useAuthStore'
+import { formatCurrency, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
-// ─── Tipos da RPC dashboard_overview ─────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════
+   SOUZA COMMAND CENTER
+   Inteligência comercial para transformar meta em vendas.
+
+   Hierarquia da tela, de cima para baixo:
+     1. Hero        — Meta de VGV × Previsão de VGV (o coração da tela)
+     2. Indicadores — receita em protagonismo, operação discreta, alerta urgente
+     3. Prioridades — o que exige ação agora, com nome e link para resolver
+     4. Funil       — receita por etapa, com gargalo explícito
+     5. Evolução    — VGV realizado por semana contra a meta acumulada
+
+   Regra do produto: a PREVISÃO é visita + proposta, nunca o funil inteiro.
+   Etapas de topo não são previsão de receita — são volume. Misturar as duas
+   coisas produz um número bonito e inútil.
+
+   Procedência dos números: contagens e VGL vêm da RPC `dashboard_overview`
+   (fonte de verdade, escopada por p_broker_id). VGV, tempo médio e leads
+   parados por etapa vêm do store de leads — mesma origem dos totais das
+   colunas do Kanban, então os números batem entre as duas telas. O único
+   valor derivado é a meta acumulada do gráfico (ritmo linear), rotulada
+   como tal.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// ─── Tipos das RPCs ───────────────────────────────────────────────────────────
 
 interface OverviewData {
   vgl: {
@@ -43,18 +54,24 @@ interface OverviewData {
   leadFunnel: Array<{ stage: string; count: number }>
   leadsAtivos: number
   leadsSemInteracao: number
-  // A RPC ainda devolve `campaignFunnel` e `alertas.leadsCongelados`, mas o
-  // Dashboard não exibe mais nada de campanhas (o módulo será refatorado à
-  // parte). Ficam fora do tipo para o contrato refletir só o que a tela usa.
   alertas: { tarefasEmAtraso: number; slaEstourado: number }
 }
 
-// ─── Tipos da RPC dashboard_extras ───────────────────────────────────────────
-//
-// Substitui dois fetchAll que rodavam em TODA abertura do app (o Dashboard é a
-// rota "/"): contacts (7,7 MB / 12.543 linhas, para usar ~40) e
-// lead_interactions (1,5 MB / 4.517 linhas, para extrair uma data por lead).
-// Os três widgets pedem agregação, não a tabela. Payload: ~6 kB.
+/**
+ * Coorte do funil (RPC `lead_funnel_analytics`).
+ *
+ * `reached` = quantos leads já ALCANÇARAM cada etapa, por profundidade máxima.
+ * É monotônico e é a única base válida para calcular conversão.
+ *
+ * A contagem de ocupação (`leadFunnel` do overview) NÃO serve para isso: ela diz
+ * quantos leads estão parados em cada etapa AGORA. Com 2 em "Lead" e 77 em
+ * "Followup", dividir um pelo outro dava "3850% de conversão" — número sem
+ * significado, porque não são a mesma coorte.
+ */
+interface FunnelAnalytics {
+  totalLeads: number
+  funnel: Array<{ stage: string; reached: number; avgDays: number | null }>
+}
 
 interface ExtrasData {
   aniversariantes: Array<{
@@ -66,53 +83,22 @@ interface ExtrasData {
     totalVendas: number; ultimaVenda: string; diasDesde: number
   }>
   recompraTotal: number
-  /** leads ativos sem contato real há mais de 2 dias — cruzado com o store de leads */
   leadsSemContato: Array<{ leadId: string; dias: number }>
 }
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
+/** Comissão estimada sobre pipeline — mesma convenção do Kanban (2%). */
+const PIPELINE_COMMISSION_RATE = 0.02
 
+/** Teto de leads frios na lista de prioridades — o excedente é anunciado na tela. */
+const COLD_LIMIT = 10
 
-const STAGE_LABELS = STAGE_THEME
+// ─── Primitivas ───────────────────────────────────────────────────────────────
 
-// ─── Primitivas de UI compartilhadas ──────────────────────────────────────────
-
-/** Rótulo de faixa — separa visualmente os blocos da página (escaneabilidade). */
-function SectionLabel({ icon: Icon, children, hint }: {
-  icon: React.ComponentType<{ size?: number; className?: string }>
-  children: ReactNode
-  hint?: string
-}) {
+function SectionLabel({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
-    <div className="flex items-center gap-2 mb-3 mt-1 px-1">
-      <span className="w-1 h-4 rounded-full bg-brand" aria-hidden />
-      <Icon size={13} className="text-t3" aria-hidden />
-      <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t3">{children}</h2>
-      {hint && <span className="text-[11px] text-t4 ml-auto">{hint}</span>}
-    </div>
-  )
-}
-
-/** Cabeçalho padrão de card — chip de ícone + eyebrow + título. */
-function CardHeader({ icon: Icon, tone, eyebrow, title, right }: {
-  icon: React.ComponentType<{ size?: number; className?: string }>
-  tone: { chip: string; icon: string }
-  eyebrow: string
-  title: ReactNode
-  right?: ReactNode
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 border-b border-line">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tone.chip}`}>
-          <Icon size={15} className={tone.icon} />
-        </div>
-        <div className="min-w-0">
-          <p className="font-label text-[11px] font-bold tracking-[0.12em] text-t4 uppercase truncate">{eyebrow}</p>
-          <h3 className="text-sm font-bold text-t1 leading-none mt-0.5 truncate">{title}</h3>
-        </div>
-      </div>
-      {right}
+    <div className="flex items-baseline gap-3 mb-3.5 px-0.5">
+      <h2 className="font-heading text-[15px] font-extrabold text-t1 tracking-[-0.02em]">{children}</h2>
+      {hint && <span className="text-[11px] text-t4 truncate">{hint}</span>}
     </div>
   )
 }
@@ -121,262 +107,344 @@ function ShimmerBlock({ className = '' }: { className?: string }) {
   return <div className={`shimmer rounded-lg ${className}`} aria-hidden />
 }
 
-// ─── Gauge radial (semicírculo) ───────────────────────────────────────────────
+/** Tooltip acessível: o gatilho é focável e o texto aparece no foco também. */
+function InfoHint({ text }: { text: string }) {
+  return (
+    <span className="relative inline-flex group/hint align-middle">
+      <button
+        type="button"
+        aria-label={text}
+        className="w-4 h-4 flex items-center justify-center rounded-full text-t4 hover:text-t2 cursor-help"
+      >
+        <Info size={12} aria-hidden />
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-60 z-30
+          opacity-0 group-hover/hint:opacity-100 group-focus-within/hint:opacity-100 transition-opacity
+          text-[11px] leading-relaxed text-t2 bg-s3 border border-line rounded-lg px-2.5 py-2 shadow-dropdown"
+      >
+        {text}
+      </span>
+    </span>
+  )
+}
 
-const PACE_TONE = {
-  done:    { text: 'text-brand',     chip: 'text-brand bg-brand-tint border-brand/30',           label: 'Meta batida' },
-  onTrack: { text: 'text-green-400', chip: 'text-green-400 bg-green-500/10 border-green-500/25',  label: 'No ritmo'    },
-  warning: { text: 'text-amber-400', chip: 'text-amber-400 bg-amber-500/10 border-amber-500/25',  label: 'Atenção'     },
-  behind:  { text: 'text-red-400',   chip: 'text-red-400 bg-red-500/10 border-red-500/25',        label: 'Atrasado'    },
-} as const
-type PaceKey = keyof typeof PACE_TONE
+// ─── 1. HERO — Meta × Previsão ────────────────────────────────────────────────
 
-const GAUGE_STOPS = {
-  brand:    [['0%', 'var(--brand-dark)'], ['60%', 'var(--brand)'], ['100%', 'var(--brand-text)']],
-  pipeline: [['0%', '#0e7490'], ['60%', '#06b6d4'], ['100%', '#67e8f9']],
-} as const
-
-function RadialGauge({ pct, expectedPct = -1, centerTop, centerMain, tone = 'brand' }: {
-  pct: number
-  expectedPct?: number
-  centerTop: string
-  centerMain: string
-  tone?: keyof typeof GAUGE_STOPS
-}) {
-  const gid = `vglGauge-${tone}`
-  const size = 188, stroke = 15
-  const cx = size / 2, cy = size / 2
-  const r  = (size - stroke) / 2 - 2
-  const len = Math.PI * r
-  const fill = Math.min(Math.max(pct, 0), 100)
-  const dash = (fill / 100) * len
-
-  // marcador do ritmo esperado (posição ao longo do arco superior)
-  const a = Math.PI - (Math.min(Math.max(expectedPct, 0), 100) / 100) * Math.PI
-  const inner = r - stroke / 2 - 2
-  const outer = r + stroke / 2 + 2
-  const mx1 = cx + inner * Math.cos(a), my1 = cy - inner * Math.sin(a)
-  const mx2 = cx + outer * Math.cos(a), my2 = cy - outer * Math.sin(a)
-
+/**
+ * Curva de valorização — assinatura visual do hero. Decorativa, não é dado.
+ *
+ * Fica confinada à faixa inferior e bem apagada: numa primeira versão ela
+ * atravessava a caixa de insight do painel direito e parecia um traço solto
+ * cortando o texto. Ambiente é o objetivo; competir com o conteúdo, não.
+ */
+function HorizonCurve() {
   return (
     <svg
-      viewBox={`0 0 ${size} ${cy + 16}`}
-      className="w-full max-w-[260px] mx-auto"
-      role="img"
-      aria-label={`${Math.round(pct)} por cento da meta de VGL atingidos`}
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-20 w-full opacity-70"
+      viewBox="0 0 800 80" preserveAspectRatio="none" aria-hidden
     >
       <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="0">
-          {GAUGE_STOPS[tone].map(([off, col]) => <stop key={off} offset={off} stopColor={col} />)}
+        <linearGradient id="hzFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="var(--brand)" stopOpacity="0.10" />
+          <stop offset="100%" stopColor="var(--brand)" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="hzLine" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="var(--brand)" stopOpacity="0" />
+          <stop offset="60%"  stopColor="var(--brand)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="var(--brand)" stopOpacity="0.40" />
         </linearGradient>
       </defs>
-
-      {/* trilho */}
-      <path
-        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-        fill="none" stroke="var(--surface-3)" strokeWidth={stroke} strokeLinecap="round"
-      />
-      {/* preenchimento */}
-      <path
-        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-        fill="none" stroke={`url(#${gid})`} strokeWidth={stroke} strokeLinecap="round"
-        strokeDasharray={`${dash} ${len}`}
-        style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.16,1,0.3,1)' }}
-      />
-      {/* marcador "ritmo esperado" */}
-      {expectedPct > 1 && expectedPct < 99 && (
-        <line
-          x1={mx1} y1={my1} x2={mx2} y2={my2}
-          stroke="var(--t2)" strokeWidth={2} strokeLinecap="round" opacity={0.55}
-        />
-      )}
-
-      {/* texto central */}
-      <text x={cx} y={cy - 34} textAnchor="middle" className="fill-t4 font-label"
-        fontSize={11} fontWeight={700} letterSpacing="1.5">{centerTop}</text>
-      <text x={cx} y={cy - 4} textAnchor="middle" className="fill-t1"
-        fontSize={34} fontWeight={800} fontFamily="inherit">{centerMain}</text>
+      <path d="M0,70 C160,66 250,58 380,46 C500,34 620,24 800,12 L800,80 L0,80 Z" fill="url(#hzFill)" />
+      <path d="M0,70 C160,66 250,58 380,46 C500,34 620,24 800,12" fill="none" stroke="url(#hzLine)" strokeWidth="1.25" />
     </svg>
   )
 }
 
-// ─── Shell compartilhado dos gauges de VGL ───────────────────────────────────
+type Health = { label: string; cls: string; dot: string }
 
-function GaugeHeroShell({
-  accentBar, glow, icon: Icon, iconTone, eyebrow, title, loading, error, hasData, onRetry, children,
-}: {
-  accentBar: string; glow: string
-  icon: React.ComponentType<{ size?: number; className?: string }>
-  iconTone: { chip: string; icon: string }
-  eyebrow: string; title: string
-  loading: boolean; error: string | null; hasData: boolean
-  onRetry: () => void; children: ReactNode
+function healthOf(coverage: number): Health {
+  if (coverage >= 1)   return { label: 'Meta coberta',          cls: 'text-success bg-success-bg border-success-line', dot: 'bg-success' }
+  if (coverage >= 0.6) return { label: 'Em construção',         cls: 'text-brand-text bg-brand-tint border-brand/30',  dot: 'bg-brand'   }
+  return                      { label: 'Pipeline insuficiente', cls: 'text-error bg-error-bg border-error-line',       dot: 'bg-error'   }
+}
+
+function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNavigateLeads }: {
+  data: OverviewData | null
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+  onNavigateVendas: () => void
+  onNavigateLeads: () => void
 }) {
+  const now = new Date()
+  const monthLabel  = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const monthTitle  = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const dayOfMonth  = now.getDate()
+  const paceFrac    = dayOfMonth / daysInMonth
+
+  const target    = data?.vgl.target ?? 0
+  const realizado = data?.vgl.realizadoMes ?? 0
+  const vendasMes = data?.vgl.vendasMes ?? 0
+  const visita    = data?.vgl.expectativaVisita ?? 0
+  const proposta  = data?.vgl.expectativaProposta ?? 0
+  const previsao  = data?.vgl.expectativa ?? 0
+
+  const pct      = target > 0 ? realizado / target : 0
+  const falta    = Math.max(target - realizado, 0)
+  const coverage = target > 0 ? previsao / target : 0
+  const gapPrev  = Math.max(falta - previsao, 0)
+  const health   = healthOf(coverage)
+  const noRitmo  = pct >= paceFrac
+
+  // Ticket médio só existe se houve venda no mês — sem venda, não estimamos.
+  const ticketMedio    = vendasMes > 0 ? realizado / vendasMes : null
+  const vendasParaMeta = ticketMedio && falta > 0 ? Math.ceil(falta / ticketMedio) : null
+
+  const insight = coverage >= 1
+    ? `A previsão cobre ${Math.round(coverage * 100)}% da meta. O pipeline maduro já é suficiente — o foco agora é fechar o que está em negociação.`
+    : `A previsão cobre ${Math.round(coverage * 100)}% da meta. Para fechar o gap, a operação precisa converter ${formatCurrency(gapPrev)} em novas visitas ou propostas.`
+
+  if (error && !data) {
+    return (
+      <div className="rounded-[20px] border border-error-line bg-error-bg px-6 py-6 flex items-center gap-3">
+        <AlertTriangle size={20} className="text-error flex-shrink-0" aria-hidden />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-t1">Não foi possível carregar a meta</p>
+          <p className="text-xs text-error mt-0.5" role="alert">{error}</p>
+        </div>
+        <button onClick={onRetry} className="text-xs font-semibold text-error border border-error-line hover:bg-error-bg px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex-shrink-0">
+          Tentar de novo
+        </button>
+      </div>
+    )
+  }
+
+  if (loading && !data) {
+    return (
+      <div className="rounded-[20px] border border-line bg-surface p-8 grid lg:grid-cols-2 gap-10">
+        <div className="flex flex-col gap-4">
+          <ShimmerBlock className="w-40 h-3" /><ShimmerBlock className="w-64 h-12" />
+          <ShimmerBlock className="w-full h-3" /><ShimmerBlock className="w-52 h-4" />
+        </div>
+        <div className="flex flex-col gap-4">
+          <ShimmerBlock className="w-40 h-3" /><ShimmerBlock className="w-56 h-12" />
+          <ShimmerBlock className="w-full h-16" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!data) return null
+
   return (
-    <div className="h-full rounded-xl border border-line bg-surface overflow-hidden flex flex-col relative" style={{ boxShadow: 'var(--shadow-card)' }}>
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 opacity-60" style={{ background: `radial-gradient(120% 80% at 50% -20%, ${glow}, transparent 70%)` }} aria-hidden />
-      <div className={`absolute top-0 left-0 right-0 h-[3px] ${accentBar}`} aria-hidden />
+    <div
+      className="relative overflow-hidden rounded-[20px] border border-line surface-premium gold-glow-tl gold-edge"
+      style={{ boxShadow: 'var(--shadow-card)' }}
+    >
+      <HorizonCurve />
 
-      <CardHeader
-        icon={Icon}
-        tone={iconTone}
-        eyebrow={eyebrow}
-        title={title}
-        right={
-          <button onClick={onRetry} disabled={loading} className="p-2 rounded-lg text-t4 hover:text-t2 hover:bg-s2/60 transition-colors cursor-pointer disabled:opacity-50" aria-label="Atualizar dados de VGL">
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          </button>
-        }
-      />
+      <div className="relative grid lg:grid-cols-2">
 
-      {error && !hasData && (
-        <div className="flex items-center gap-2 px-5 py-4 bg-error-bg flex-1">
-          <AlertTriangle size={15} className="text-error flex-shrink-0" />
-          <p className="text-xs text-error flex-1 min-w-0 truncate" role="alert">{error}</p>
-          <button onClick={onRetry} className="text-xs text-error border border-error-line hover:bg-error-bg px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex-shrink-0">Tentar</button>
-        </div>
-      )}
+        {/* ── Meta de VGV ──────────────────────────────────────────────── */}
+        <section className="p-6 lg:p-8" aria-label="Meta de VGV do mês">
+          <div className="flex items-center gap-2 mb-5">
+            <span className="w-1 h-3.5 rounded-full bg-brand" aria-hidden />
+            <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.16em] text-t3">
+              Meta de VGV — {monthTitle}
+            </h3>
+            <button
+              onClick={onRetry}
+              disabled={loading}
+              className="ml-auto p-1.5 rounded-lg text-t4 hover:text-t2 hover:bg-s3 transition-colors cursor-pointer disabled:opacity-50"
+              aria-label="Atualizar dados"
+            >
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
 
-      {loading && !hasData && !error && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8 px-5">
-          <ShimmerBlock className="w-44 h-24 rounded-full" />
-          <ShimmerBlock className="w-40 h-5" />
-          <ShimmerBlock className="w-28 h-4" />
-        </div>
-      )}
+          <p
+            className="font-heading text-[clamp(2.5rem,5vw,3.4rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.035em]"
+            style={{ textShadow: '0 1px 24px rgba(228,178,60,0.10)' }}
+          >
+            {formatCurrencyFull(target)}
+          </p>
 
-      {hasData && children}
+          <div className="flex items-baseline gap-2.5 mt-3 flex-wrap">
+            <span className="text-lg font-bold text-brand tabular-nums">{formatCurrency(realizado)}</span>
+            <span className="text-sm text-t3">realizado</span>
+            <span
+              className={`font-label text-[11px] font-bold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border tabular-nums
+                ${noRitmo ? 'text-success bg-success-bg border-success-line' : 'text-warning bg-warning-bg border-warning-line'}`}
+            >
+              {Math.round(pct * 100)}% da meta
+            </span>
+          </div>
+
+          {/* Progresso com marcador de ritmo esperado */}
+          <div className="mt-5">
+            <div
+              className="relative h-2.5 rounded-full overflow-hidden bg-s3"
+              role="progressbar"
+              aria-valuenow={Math.round(pct * 100)} aria-valuemin={0} aria-valuemax={100}
+              aria-label={`VGV realizado: ${Math.round(pct * 100)} por cento da meta`}
+            >
+              <div
+                className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000"
+                style={{
+                  width: `${Math.min(pct, 1) * 100}%`,
+                  background: 'linear-gradient(90deg, var(--brand-dark), var(--brand) 70%, var(--brand-text))',
+                  boxShadow: '0 0 16px rgba(228,178,60,0.35)',
+                }}
+                aria-hidden
+              />
+              {paceFrac < 1 && (
+                <div className="absolute inset-y-0 w-0.5 bg-t1/70" style={{ left: `${paceFrac * 100}%` }} aria-hidden />
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
+              <span className="text-[11px] text-t4 tabular-nums">
+                Dia {dayOfMonth} de {daysInMonth} · ritmo esperado {Math.round(paceFrac * 100)}%
+              </span>
+              <span className={`text-[11px] font-semibold ${noRitmo ? 'text-success' : 'text-warning'}`}>
+                {noRitmo ? 'No ritmo do mês' : 'Abaixo do ritmo'}
+              </span>
+            </div>
+          </div>
+
+          {/* Desdobramento */}
+          <div className="mt-6 flex flex-wrap items-stretch gap-x-8 gap-y-4">
+            <button onClick={onNavigateVendas} className="text-left cursor-pointer group">
+              <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t4 block">Falta</span>
+              <span className="text-xl font-bold text-t1 tabular-nums block mt-0.5 group-hover:text-brand transition-colors">
+                {falta > 0 ? formatCurrency(falta) : 'Meta batida'}
+              </span>
+            </button>
+            <div className="w-px self-stretch bg-line" aria-hidden />
+            <button onClick={onNavigateVendas} className="text-left cursor-pointer group">
+              <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t4 block">Vendas no mês</span>
+              <span className="text-xl font-bold text-t1 tabular-nums block mt-0.5 group-hover:text-brand transition-colors">
+                {vendasMes}
+              </span>
+            </button>
+            {vendasParaMeta !== null && (
+              <>
+                <div className="w-px self-stretch bg-line" aria-hidden />
+                <div className="text-left">
+                  <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t4 flex items-center gap-1">
+                    Faltam ~
+                    <InfoHint text={`Estimativa pelo ticket médio das vendas deste mês (${formatCurrency(ticketMedio!)}). Só aparece quando já houve venda no período.`} />
+                  </span>
+                  <span className="text-xl font-bold text-t1 tabular-nums block mt-0.5">
+                    {vendasParaMeta} venda{vendasParaMeta !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* ── Previsão de VGV ──────────────────────────────────────────── */}
+        <section
+          className="relative p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-line"
+          aria-label="Previsão de VGV"
+        >
+          <div className="flex items-center gap-2 mb-5 flex-wrap">
+            <span className={`w-1 h-3.5 rounded-full ${health.dot}`} aria-hidden />
+            <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.16em] text-t3">Previsão de VGV</h3>
+            <InfoHint text="Previsão = VGV somado apenas das etapas Visita e Proposta. Etapas de topo (Lead, Follow-up, Atendimento) não entram: são volume, não oportunidade madura." />
+            <span className={`ml-auto flex items-center gap-1.5 font-label text-[11px] font-bold uppercase tracking-[0.08em] px-2.5 py-1 rounded-full border ${health.cls}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`} aria-hidden />
+              {health.label}
+            </span>
+          </div>
+
+          <p className="font-heading text-[clamp(2.1rem,4.2vw,2.9rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.035em]">
+            {formatCurrency(previsao)}
+          </p>
+          <p className="text-sm text-t3 mt-2.5">
+            cobre <span className="font-bold text-t1 tabular-nums">{Math.round(coverage * 100)}%</span> da meta do mês
+          </p>
+
+          {/* Composição: visita × proposta */}
+          <div className="mt-5 flex flex-col gap-3">
+            {[
+              { label: 'Visita',   value: visita,   leads: data.vgl.leadsVisita,   varName: 'var(--stage-visita)'   },
+              { label: 'Proposta', value: proposta, leads: data.vgl.leadsProposta, varName: 'var(--stage-proposta)' },
+            ].map(row => (
+              <button key={row.label} onClick={onNavigateLeads} className="group flex items-center gap-3 text-left cursor-pointer">
+                <span className="w-20 flex-shrink-0 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: row.varName }} aria-hidden />
+                  <span className="text-xs font-semibold text-t2">{row.label}</span>
+                </span>
+                <span className="flex-1 h-1.5 rounded-full bg-s3 overflow-hidden min-w-0">
+                  <span
+                    className="block h-full rounded-full transition-all duration-700"
+                    style={{ width: `${previsao > 0 ? (row.value / previsao) * 100 : 0}%`, background: row.varName }}
+                  />
+                </span>
+                <span className="text-sm font-bold text-t1 tabular-nums w-20 text-right flex-shrink-0 group-hover:text-brand transition-colors">
+                  {formatCurrency(row.value)}
+                </span>
+                <span className="text-[11px] text-t4 tabular-nums w-14 text-right flex-shrink-0 hidden sm:block">
+                  {row.leads} lead{row.leads !== 1 ? 's' : ''}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Insight analítico */}
+          <div className="mt-6 flex items-start gap-2.5 rounded-[12px] border border-line bg-s2/60 px-3.5 py-3">
+            <Sparkles size={14} className="text-brand flex-shrink-0 mt-0.5" aria-hidden />
+            <p className="text-[13px] text-t2 leading-relaxed">{insight}</p>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }
 
-// ─── VGL Realizado × Meta ─────────────────────────────────────────────────────
+// ─── 2. Indicadores ───────────────────────────────────────────────────────────
 
-function VGLHero({ data, loading, error, onRetry, onNavigate }: {
-  data: OverviewData | null; loading: boolean; error: string | null; onRetry: () => void; onNavigate: () => void
-}) {
-  const now = new Date()
-  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-  const monthTitle = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const expectedPct = Math.round((now.getDate() / daysInMonth) * 100)
-  const pct = data && data.vgl.target > 0 ? Math.round(data.vgl.realizadoMes / data.vgl.target * 100) : 0
-  const falta = data ? Math.max(data.vgl.target - data.vgl.realizadoMes, 0) : 0
-  const pace: PaceKey = !data ? 'behind' : pct >= 100 ? 'done' : pct >= expectedPct ? 'onTrack' : pct >= expectedPct * 0.7 ? 'warning' : 'behind'
-  const tone = PACE_TONE[pace]
+type KpiTone = 'revenue' | 'brand' | 'success' | 'neutral' | 'alert'
 
-  return (
-    <GaugeHeroShell
-      accentBar="bg-brand" glow="var(--brand-tint)"
-      icon={DollarSign} iconTone={{ chip: 'bg-brand-tint', icon: 'text-brand' }}
-      eyebrow="Realizado · VGL da imobiliária" title={monthTitle}
-      loading={loading} error={error} hasData={!!data} onRetry={onRetry}
-    >
-      {data && (
-        <div className="flex-1 flex flex-col px-5 pt-4 pb-5 gap-3 relative">
-          <RadialGauge pct={pct} expectedPct={expectedPct} tone="brand" centerTop="DA META" centerMain={`${Math.min(pct, 999)}%`} />
-          <div className="text-center -mt-2">
-            <p className="text-2xl font-black text-t1 tabular-nums leading-none">{formatCurrency(data.vgl.realizadoMes)}</p>
-            <p className="text-xs text-t3 mt-1">de <span className="text-t2 font-semibold">{formatCurrencyFull(data.vgl.target)}</span></p>
-          </div>
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${tone.chip}`}>{tone.label}</span>
-            <span className="text-[11px] text-t4 tabular-nums">ritmo do mês: {expectedPct}%</span>
-          </div>
-          <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-line">
-            <button onClick={onNavigate} className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left">
-              <span className="text-[11px] text-t4 uppercase tracking-wide">Faltam</span>
-              <span className={`text-sm font-bold tabular-nums ${pct >= 100 ? 'text-brand' : 'text-t1'}`}>{pct >= 100 ? 'Meta batida' : formatCurrency(falta)}</span>
-            </button>
-            <button onClick={onNavigate} className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left">
-              <span className="text-[11px] text-t4 uppercase tracking-wide">Vendas no mês</span>
-              <span className="text-sm font-bold text-t1 tabular-nums">{data.vgl.vendasMes} venda{data.vgl.vendasMes !== 1 ? 's' : ''}</span>
-            </button>
-          </div>
-        </div>
-      )}
-    </GaugeHeroShell>
-  )
+/*
+ * `gold` marca os cards da linha de receita — dinheiro e meta. Operação e
+ * alerta ficam sem filete de propósito: se todos tiverem, nenhum destaca.
+ */
+const KPI_TONE: Record<KpiTone, { value: string; chip: string; icon: string; card: string; gold: boolean }> = {
+  revenue: { value: 'text-t1',      chip: 'bg-brand-tint', icon: 'text-brand',   card: 'border-line',       gold: true  },
+  brand:   { value: 'text-t1',      chip: 'bg-brand-tint', icon: 'text-brand',   card: 'border-line',       gold: true  },
+  success: { value: 'text-success', chip: 'bg-success-bg', icon: 'text-success', card: 'border-line',       gold: true  },
+  neutral: { value: 'text-t1',      chip: 'bg-s3',         icon: 'text-t3',      card: 'border-line',       gold: false },
+  alert:   { value: 'text-error',   chip: 'bg-error-bg',   icon: 'text-error',   card: 'border-error-line', gold: false },
 }
 
-// ─── VGL Previsão (pipeline visita + proposta) × Meta ─────────────────────────
-
-function VGLPrevisaoHero({ data, loading, error, onRetry, onNavigate }: {
-  data: OverviewData | null; loading: boolean; error: string | null; onRetry: () => void; onNavigate: () => void
-}) {
-  const exp      = data?.vgl.expectativa ?? 0
-  const target   = data?.vgl.target ?? 0
-  const pct      = data && target > 0 ? Math.round(exp / target * 100) : 0
-  const projecao = data ? data.vgl.realizadoMes + exp : 0
-  const projPct  = data && target > 0 ? Math.round(projecao / target * 100) : 0
-
-  return (
-    <GaugeHeroShell
-      accentBar="bg-cyan-500" glow="rgba(6,182,212,0.16)"
-      icon={TrendingUp} iconTone={{ chip: 'bg-cyan-500/15', icon: 'text-cyan-400' }}
-      eyebrow="Previsão · VGL em pipeline" title="Visita + Proposta"
-      loading={loading} error={error} hasData={!!data} onRetry={onRetry}
-    >
-      {data && (
-        <div className="flex-1 flex flex-col px-5 pt-4 pb-5 gap-3 relative">
-          <RadialGauge pct={pct} tone="pipeline" centerTop="DA META" centerMain={`${Math.min(pct, 999)}%`} />
-          <div className="text-center -mt-2">
-            <p className="text-2xl font-black text-t1 tabular-nums leading-none">{formatCurrency(exp)}</p>
-            <p className="text-xs text-t3 mt-1">em pipeline · meta <span className="text-t2 font-semibold">{formatCurrency(target)}</span></p>
-          </div>
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full border text-cyan-300 bg-cyan-500/10 border-cyan-500/25">
-              Projeção {formatCurrency(projecao)}
-            </span>
-            <span className="text-[11px] text-t4 tabular-nums">{projPct}% da meta com o realizado</span>
-          </div>
-          <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-line">
-            <button onClick={onNavigate} className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left">
-              <span className="text-[11px] text-t4 uppercase tracking-wide">Em visita</span>
-              <span className="text-sm font-bold text-t1 tabular-nums">{formatCurrency(data.vgl.expectativaVisita)}</span>
-              <span className="text-[11px] text-t4">{data.vgl.leadsVisita} lead{data.vgl.leadsVisita !== 1 ? 's' : ''}</span>
-            </button>
-            <button onClick={onNavigate} className="flex flex-col items-start gap-0.5 rounded-lg p-2 -m-0.5 hover:bg-s2/50 transition-colors cursor-pointer text-left">
-              <span className="text-[11px] text-t4 uppercase tracking-wide">Em proposta</span>
-              <span className="text-sm font-bold text-t1 tabular-nums">{formatCurrency(data.vgl.expectativaProposta)}</span>
-              <span className="text-[11px] text-t4">{data.vgl.leadsProposta} lead{data.vgl.leadsProposta !== 1 ? 's' : ''}</span>
-            </button>
-          </div>
-        </div>
-      )}
-    </GaugeHeroShell>
-  )
-}
-
-// ─── KPI tile (clicável, acessível) ───────────────────────────────────────────
-
-const KPI_TONES = {
-  teal:   { bar: 'bg-teal-400',   chip: 'bg-teal-500/12',   icon: 'text-teal-400'   },
-  green:  { bar: 'bg-success',    chip: 'bg-success-bg',    icon: 'text-success'    },
-  amber:  { bar: 'bg-warning',    chip: 'bg-warning-bg',    icon: 'text-warning'    },
-  purple: { bar: 'bg-purple-500', chip: 'bg-purple-500/12', icon: 'text-purple-400' },
-} as const
-
-function OverviewKPICard({
-  title, value, sub, icon: Icon, tone, onClick, alert, loading,
-}: {
+/**
+ * Card de indicador com dois portes. `lead` é usado para receita e conversão —
+ * número grande, respiro maior. `compact` fica para operação e alerta.
+ * A variação é intencional: oito cards idênticos não têm hierarquia nenhuma.
+ */
+function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClick, loading }: {
   title: string
   value: string | number
   sub?: string
   icon: React.ComponentType<{ size?: number; className?: string }>
-  tone: keyof typeof KPI_TONES
+  tone: KpiTone
+  size?: 'lead' | 'compact'
   onClick?: () => void
-  alert?: boolean
   loading?: boolean
 }) {
-  const t = KPI_TONES[tone]
-  const isAlert = alert && Number(value) > 0
+  const t = KPI_TONE[tone]
+  const isLead = size === 'lead'
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-line bg-surface p-4 flex flex-col gap-3" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <div className={`rounded-[14px] border border-line surface-premium flex flex-col gap-3 ${isLead ? 'p-5' : 'p-4'}`}>
         <ShimmerBlock className="w-24 h-3" />
-        <ShimmerBlock className="w-14 h-7" />
+        <ShimmerBlock className={isLead ? 'w-32 h-8' : 'w-16 h-6'} />
         <ShimmerBlock className="w-20 h-3" />
       </div>
     )
@@ -387,221 +455,468 @@ function OverviewKPICard({
       type="button"
       onClick={onClick}
       aria-label={`${title}: ${value}${sub ? `. ${sub}` : ''}`}
-      className={`group relative text-left rounded-xl border bg-surface overflow-hidden p-4 flex flex-col gap-2
-        transition-all duration-200 cursor-pointer
-        hover:-translate-y-0.5 hover:border-line-strong hover:shadow-modal
-        ${isAlert ? 'border-warning-line' : 'border-line'}`}
+      className={`group relative overflow-hidden text-left rounded-[14px] border surface-premium transition-all duration-200 cursor-pointer
+        hover:-translate-y-0.5 hover:shadow-dropdown hover:border-line-strong
+        ${t.gold ? 'gold-edge gold-edge-short' : ''}
+        ${t.card} ${isLead ? 'p-5' : 'p-4'}`}
       style={{ boxShadow: 'var(--shadow-card)' }}
     >
-      <div className={`absolute top-0 left-0 right-0 h-[3px] ${isAlert ? 'bg-warning' : t.bar}`} aria-hidden />
       <div className="flex items-center justify-between gap-2">
-        <p className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t4 truncate">{title}</p>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isAlert ? 'bg-warning-bg' : t.chip}`}>
-          <Icon size={13} className={isAlert ? 'text-warning' : t.icon} />
-        </div>
+        <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3 truncate">{title}</span>
+        <span className={`rounded-lg flex items-center justify-center flex-shrink-0 ${t.chip} ${isLead ? 'w-8 h-8' : 'w-7 h-7'}`}>
+          <Icon size={isLead ? 15 : 13} className={t.icon} />
+        </span>
       </div>
-      <p className={`text-[28px] font-black tabular-nums leading-none ${isAlert ? 'text-warning' : 'text-t1'}`}>
+      <p className={`font-heading font-black tabular-nums leading-none tracking-[-0.02em] ${t.value} ${isLead ? 'text-[30px] mt-3.5' : 'text-[22px] mt-2.5'}`}>
         {value}
       </p>
-      <div className="flex items-center justify-between gap-1 min-h-[16px]">
-        {sub && <p className="text-[11px] text-t4 truncate">{sub}</p>}
-        <ArrowRight size={12} className="text-t5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ml-auto flex-shrink-0" aria-hidden />
-      </div>
+      {sub && (
+        <p className="flex items-center gap-1 text-[11px] text-t4 mt-2">
+          <span className="truncate">{sub}</span>
+          <ArrowRight size={11} className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-auto" aria-hidden />
+        </p>
+      )}
     </button>
   )
 }
 
-// ─── Funil de leads (barras horizontais) ──────────────────────────────────────
+// ─── 3. Prioridades de hoje ───────────────────────────────────────────────────
 
-// ─── Funil de vendas desenhado (SVG, forma fixa) ──────────────────────────────
+type Severity = 'critical' | 'attention' | 'opportunity'
 
-const LEAD_FUNNEL_HEX: Record<string, string> = {
-  lead: '#64748b', followup: '#2dd4bf', atendimento: '#8b5cf6',
-  visita: '#f59e0b', proposta: '#fb923c', venda: '#22c55e',
-}
-function hexToRgb(hex: string) {
-  return { r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) }
-}
-function shade(hex: string, f: number) {
-  const { r, g, b } = hexToRgb(hex)
-  return `rgb(${Math.round(r * f)}, ${Math.round(g * f)}, ${Math.round(b * f)})`
-}
-// Texto legível sobre a faixa — claro/escuro pela luminância da cor
-function readableText(hex: string) {
-  const { r, g, b } = hexToRgb(hex)
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#16203a' : '#ffffff'
+interface PriorityItem {
+  id: string
+  severity: Severity
+  title: string       // nome do lead ou da tarefa
+  reason: string      // por que está aqui
+  time: string        // há quanto tempo / para quando
+  actionLabel: string
+  onAction: () => void
+  onOpen: () => void
 }
 
-/**
- * Funil de vendas com forma FIXA: o topo é sempre o mais largo e afunila etapa a
- * etapa até a base. Só os números e a % de conversão mudam — o desenho é constante.
- */
-function FunnelChart({ idPrefix, stages }: {
-  idPrefix: string
-  stages: Array<{ label: string; count: number; color: string }>
-}) {
-  const n = stages.length
-  const VW = 460, cx = VW / 2
-  const topHalf = 210, botHalf = 80          // 420 no topo → 160 na base (forma fixa)
-  const bandH = 54, gap = 5
-  const H = n * bandH + (n - 1) * gap
-  const halfAt = (k: number) => topHalf - (topHalf - botHalf) * (k / n)
-  const ariaLabel = 'Funil: ' + stages.map(s => `${s.label} ${s.count}`).join(', ')
-
-  return (
-    <svg viewBox={`0 0 ${VW} ${H}`} className="w-full" role="img" aria-label={ariaLabel}>
-      <defs>
-        {stages.map((s, i) => (
-          <linearGradient key={i} id={`fn-${idPrefix}-${i}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor={s.color} />
-            <stop offset="100%" stopColor={shade(s.color, 0.72)} />
-          </linearGradient>
-        ))}
-      </defs>
-      {stages.map((s, i) => {
-        const yTop = i * (bandH + gap)
-        const wT   = halfAt(i)
-        const wB   = halfAt(i + 1)
-        const txt  = readableText(s.color)
-        const conv = i > 0 && stages[i - 1].count > 0 ? Math.round(s.count / stages[i - 1].count * 100) : null
-        return (
-          <g key={i}>
-            <polygon
-              points={`${cx - wT},${yTop} ${cx + wT},${yTop} ${cx + wB},${yTop + bandH} ${cx - wB},${yTop + bandH}`}
-              fill={`url(#fn-${idPrefix}-${i})`}
-            />
-            <text x={cx} y={yTop + bandH / 2 - 3} textAnchor="middle" fill={txt} fillOpacity={0.85}
-              fontSize={10.5} fontWeight={700} letterSpacing="0.6" fontFamily="inherit">{s.label.toUpperCase()}</text>
-            <text x={cx} y={yTop + bandH / 2 + 15} textAnchor="middle" fill={txt}
-              fontSize={18} fontWeight={800} fontFamily="inherit">{s.count.toLocaleString('pt-BR')}</text>
-            {conv !== null && (
-              <text x={VW - 6} y={yTop + bandH / 2 + 4} textAnchor="end" className="fill-t4"
-                fontSize={11} fontWeight={700} fontFamily="inherit">↓ {conv}%</text>
-            )}
-          </g>
-        )
-      })}
-    </svg>
-  )
+const SEVERITY: Record<Severity, { label: string; text: string; bg: string; bar: string }> = {
+  critical:    { label: 'Crítico',      text: 'text-error',   bg: 'bg-error-bg',   bar: 'bg-error'   },
+  attention:   { label: 'Atenção',      text: 'text-warning', bg: 'bg-warning-bg', bar: 'bg-warning' },
+  opportunity: { label: 'Oportunidade', text: 'text-info',    bg: 'bg-info-bg',    bar: 'bg-info'    },
 }
 
-// ─── Funil de leads (funil principal) ─────────────────────────────────────────
-
-function LeadFunnelWidget({ data, loading, error, onNavigate }: {
-  data: OverviewData | null
+function PriorityFeed({ items, loading, onSeeAll, coldOverflow = 0 }: {
+  items: PriorityItem[]
   loading: boolean
-  error: string | null
-  onNavigate: () => void
+  onSeeAll: () => void
+  /** Leads frios que não couberam na lista — anunciados, nunca omitidos em silêncio. */
+  coldOverflow?: number
 }) {
-  const total = data?.leadFunnel.reduce((a, s) => a + s.count, 0) ?? 0
+  const [expanded, setExpanded] = useState(false)
+  const LIMIT = 6
+  const shown = expanded ? items : items.slice(0, LIMIT)
+
+  if (loading) {
+    return (
+      <div className="rounded-[16px] border border-line bg-surface divide-y divide-line">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-5 py-4">
+            <ShimmerBlock className="w-16 h-5" />
+            <div className="flex-1 flex flex-col gap-2">
+              <ShimmerBlock className="w-40 h-4" /><ShimmerBlock className="w-56 h-3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="rounded-[16px] border border-success-line bg-success-bg px-6 py-7 flex items-center gap-4">
+        <span className="w-11 h-11 rounded-full bg-success/15 flex items-center justify-center flex-shrink-0">
+          <CheckCircle2 size={20} className="text-success" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-t1">Nada exige ação agora</p>
+          <p className="text-xs text-t3 mt-1">
+            Sem SLA vencido, tarefa atrasada ou lead esquecido. Bom momento para prospectar e alimentar o topo do funil.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="rounded-xl border border-line bg-surface overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
-      <CardHeader
-        icon={BarChart2}
-        tone={{ chip: 'bg-teal-500/15', icon: 'text-teal-400' }}
-        eyebrow="Funil de Leads"
-        title={loading && !data ? 'Carregando…' : `${total.toLocaleString('pt-BR')} leads ativos`}
-        right={
-          <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0">
-            Ver funil <ArrowRight size={12} />
+    <div className="rounded-[16px] border border-line surface-premium overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <ul className="divide-y divide-line">
+        {shown.map(item => {
+          const s = SEVERITY[item.severity]
+          return (
+            <li key={item.id} className="relative">
+              <span className={`absolute left-0 inset-y-0 w-[3px] ${s.bar}`} aria-hidden />
+              <div className="flex items-center gap-3 sm:gap-4 pl-5 pr-4 py-3.5 hover:bg-s2/50 transition-colors">
+                <button
+                  onClick={item.onOpen}
+                  className="flex-1 min-w-0 text-left cursor-pointer"
+                  aria-label={`Abrir ${item.title}. ${item.reason}, ${item.time}`}
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`font-label text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded ${s.text} ${s.bg}`}>
+                      {s.label}
+                    </span>
+                    <span className="text-sm font-bold text-t1 truncate">{item.title}</span>
+                  </div>
+                  <p className="text-xs text-t3 mt-1 truncate">
+                    {item.reason} <span className="text-t4">· {item.time}</span>
+                  </p>
+                </button>
+                <button
+                  onClick={item.onAction}
+                  className="flex-shrink-0 flex items-center gap-1.5 font-heading text-xs font-bold px-3 py-2 rounded-[10px]
+                    text-[var(--brand-btn-text)] bg-brand hover:bg-brand-dark transition-colors cursor-pointer active:scale-[0.98]"
+                >
+                  {item.actionLabel}
+                </button>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+
+      <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-t border-line bg-s2/30">
+        {items.length > LIMIT ? (
+          <button
+            onClick={() => setExpanded(v => !v)}
+            aria-expanded={expanded}
+            className="text-xs font-semibold text-t3 hover:text-t1 transition-colors cursor-pointer flex items-center gap-1"
+          >
+            {expanded
+              ? <><ChevronUp size={13} /> Mostrar menos</>
+              : <><ChevronDown size={13} /> Ver mais {items.length - LIMIT}</>}
           </button>
-        }
-      />
-
-      {error && !data && <p className="px-5 py-4 text-xs text-error" role="alert">{error}</p>}
-
-      {loading && !data && !error && (
-        <div className="flex flex-col gap-3 px-5 py-4">
-          {Array.from({ length: 6 }).map((_, i) => <ShimmerBlock key={i} className="w-full h-5" />)}
-        </div>
-      )}
-
-      {data && (
-        <div className="px-5 pt-3 pb-4">
-          <FunnelChart
-            idPrefix="lead"
-            stages={FUNNEL_STAGES.map(stage => ({
-              label: STAGE_THEME[stage].label,
-              count: data.leadFunnel.find(s => s.stage === stage)?.count ?? 0,
-              color: LEAD_FUNNEL_HEX[stage],
-            }))}
-          />
-        </div>
-      )}
+        ) : <span />}
+        <span className="flex items-center gap-3">
+          {coldOverflow > 0 && (
+            <span className="text-[11px] text-t4 hidden sm:inline">
+              +{coldOverflow} lead{coldOverflow !== 1 ? 's' : ''} frio{coldOverflow !== 1 ? 's' : ''} fora da lista
+            </span>
+          )}
+          <button onClick={onSeeAll} className="text-xs font-semibold text-brand hover:text-brand-text transition-colors cursor-pointer flex items-center gap-1">
+            Abrir funil <ArrowRight size={12} />
+          </button>
+        </span>
+      </div>
     </div>
   )
 }
 
-// ─── Painel de ação imediata ──────────────────────────────────────────────────
+// ─── 4. Funil de receita ──────────────────────────────────────────────────────
 
-function AlertsPanel({ alertas, loading, error, onNavigateTasks, onNavigateLeads }: {
-  alertas: OverviewData['alertas'] | undefined
+interface StageDetail { vgv: number; parados: number }
+
+/**
+ * Funil de receita — duas leituras na mesma tabela, cada uma com a sua base:
+ *
+ *   COORTE (RPC lead_funnel_analytics): quantos leads já alcançaram a etapa,
+ *   a conversão entre etapas e o tempo médio até avançar. Monotônico.
+ *
+ *   AGORA (overview + store de leads): quantos estão parados na etapa neste
+ *   momento, quanto de VGV está ali e quantos passaram de 7 dias sem sair.
+ *
+ * Misturar as duas produz absurdos — dividir a ocupação de "Followup" pela de
+ * "Lead" chega a dar mais de 100%. Por isso a barra e a conversão usam a
+ * coorte, e o VGV/parados aparecem em colunas separadas, rotuladas.
+ */
+function RevenueFunnel({ data, analytics, detail, loading, error, onNavigate }: {
+  data: OverviewData | null
+  analytics: FunnelAnalytics | null
+  detail: Record<string, StageDetail>
   loading: boolean
   error: string | null
-  onNavigateTasks: () => void
-  onNavigateLeads: () => void
+  onNavigate: () => void
 }) {
-  const total = alertas
-    ? alertas.tarefasEmAtraso + alertas.slaEstourado
-    : 0
+  const rows = useMemo(() => {
+    if (!data) return []
+    const stages = FUNNEL_STAGES.map(stage => ({
+      stage,
+      theme: STAGE_THEME[stage],
+      agora:   data.leadFunnel.find(s => s.stage === stage)?.count ?? 0,
+      reached: analytics?.funnel.find(f => f.stage === stage)?.reached ?? null,
+      avgDays: analytics?.funnel.find(f => f.stage === stage)?.avgDays ?? null,
+    }))
+    // A barra usa a coorte quando disponível; sem ela, cai para a ocupação
+    // escalada pelo MAIOR valor (nunca pelo primeiro — o topo pode estar vazio).
+    const maxAgora = Math.max(...stages.map(s => s.agora), 1)
+    const topReached = stages[0]?.reached ?? 0
+    return stages.map((s, i) => {
+      const prev = i > 0 ? stages[i - 1].reached : null
+      const base = s.reached !== null && topReached > 0 ? s.reached / topReached : s.agora / maxAgora
+      return {
+        ...s,
+        widthPct: Math.min(Math.max(base * 100, (s.reached ?? s.agora) > 0 ? 3 : 0), 100),
+        conv: s.reached !== null && prev !== null && prev > 0
+          ? Math.round((s.reached / prev) * 100)
+          : null,
+      }
+    })
+  }, [data, analytics])
 
-  // "Leads congelados" saiu com o resto de campanhas — volta no módulo novo.
-  const rows = alertas ? [
-    { key: 'atraso',   label: 'Tarefas em atraso',  hint: 'Atenção imediata necessária', count: alertas.tarefasEmAtraso, icon: Siren,     tone: 'text-red-400',    chip: 'bg-red-500/15',    onClick: onNavigateTasks },
-    { key: 'sla',      label: 'SLA estourado',      hint: 'Leads sem 1º contato no prazo',count: alertas.slaEstourado,    icon: Clock,     tone: 'text-orange-400', chip: 'bg-orange-500/15', onClick: onNavigateLeads },
-  ] : []
+  // Gargalo = pior conversão de coorte entre duas etapas. Só ele é destacado.
+  const bottleneckIdx = useMemo(() => {
+    let idx = -1, worst = Infinity
+    rows.forEach((r, i) => { if (r.conv !== null && r.conv < worst) { worst = r.conv; idx = i } })
+    return worst < 100 ? idx : -1
+  }, [rows])
+
+  const total = data?.leadFunnel.reduce((a, s) => a + s.count, 0) ?? 0
+  const hasDetail = Object.keys(detail).length > 0
+  const hasCohort = !!analytics
+
+  if (error && !data) {
+    return <p className="rounded-[16px] border border-line bg-surface px-5 py-4 text-xs text-error" role="alert">{error}</p>
+  }
+
+  if (loading && !data) {
+    return (
+      <div className="rounded-[16px] border border-line bg-surface p-5 flex flex-col gap-3">
+        {Array.from({ length: 6 }).map((_, i) => <ShimmerBlock key={i} className="w-full h-9" />)}
+      </div>
+    )
+  }
+
+  if (data && total === 0) {
+    return (
+      <div className="rounded-[16px] border border-line bg-surface flex flex-col items-center py-12 gap-2">
+        <Users size={26} className="text-t4" aria-hidden />
+        <p className="text-sm text-t3">Nenhum lead no funil ainda</p>
+        <button onClick={onNavigate} className="text-xs font-semibold text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">
+          Cadastrar o primeiro lead →
+        </button>
+      </div>
+    )
+  }
+
+  const bottleneck = bottleneckIdx > 0 ? rows[bottleneckIdx] : null
 
   return (
-    <div className="rounded-xl border border-line bg-surface overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
-      <CardHeader
-        icon={AlertTriangle}
-        tone={{ chip: 'bg-red-500/15', icon: 'text-red-400' }}
-        eyebrow="Ação Imediata"
-        title={!alertas
-          ? (loading ? 'Carregando…' : 'Alertas')
-          : total === 0 ? 'Tudo em dia' : `${total} item${total !== 1 ? 's' : ''} pendente${total !== 1 ? 's' : ''}`}
-      />
-
-      {error && !alertas && <p className="px-5 py-4 text-xs text-error" role="alert">{error}</p>}
-
-      {loading && !alertas && !error && (
-        <div className="flex flex-col gap-2 px-5 py-4">
-          {Array.from({ length: 3 }).map((_, i) => <ShimmerBlock key={i} className="w-full h-14" />)}
+    <div className="rounded-[16px] border border-line surface-premium overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
+      {/* Leitura do gargalo — a decisão que a tela quer provocar */}
+      {bottleneck && (
+        <div className="flex items-start gap-2.5 px-5 py-3 border-b border-line bg-warning-bg/40">
+          <AlertTriangle size={14} className="text-warning flex-shrink-0 mt-0.5" aria-hidden />
+          <p className="text-[13px] text-t2 leading-relaxed">
+            Maior gargalo entre <span className="font-semibold text-t1">{rows[bottleneckIdx - 1].theme.label}</span> e{' '}
+            <span className="font-semibold text-t1">{bottleneck.theme.label}</span>: apenas{' '}
+            <span className="font-bold text-warning tabular-nums">{bottleneck.conv}%</span> dos leads avançam.
+          </p>
         </div>
       )}
 
-      {alertas && total === 0 && (
-        <div className="flex flex-col items-center py-10 gap-2">
-          <CheckCircle2 size={26} className="text-success/60" />
-          <p className="text-sm text-t3">Nenhum alerta pendente</p>
-        </div>
-      )}
+      {/* Cabeçalho de colunas */}
+      <div className="hidden md:flex items-center gap-3 px-5 pt-3.5 pb-1.5">
+        <span className="w-28 flex-shrink-0" />
+        <span className="flex-1" />
+        {hasCohort && (
+          <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-20 text-right flex-shrink-0" title="Leads que já alcançaram esta etapa">
+            Alcançaram
+          </span>
+        )}
+        <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-16 text-right flex-shrink-0" title="Leads parados nesta etapa agora">Agora</span>
+        {hasDetail && (
+          <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-20 text-right flex-shrink-0">VGV</span>
+        )}
+        {hasCohort && (
+          <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-14 text-right flex-shrink-0" title="Tempo médio até avançar">Médio</span>
+        )}
+        {hasDetail && (
+          <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-16 text-right flex-shrink-0" title="Parados há mais de 7 dias">Parados</span>
+        )}
+      </div>
 
-      {alertas && total > 0 && (
-        <div className="flex flex-col divide-y divide-line">
-          {rows.map(r => (
-            <button
-              key={r.key}
-              onClick={r.onClick}
-              aria-label={`${r.label}: ${r.count}. ${r.hint}`}
-              className="flex items-center gap-4 px-5 py-4 hover:bg-s2/40 transition-colors text-left cursor-pointer w-full"
-            >
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${r.chip}`}>
-                <r.icon size={15} className={r.tone} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-t1">{r.label}</p>
-                <p className="text-xs text-t4">{r.hint}</p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-xl font-black tabular-nums ${r.count > 0 ? r.tone : 'text-t4'}`}>{r.count}</span>
-                <ArrowRight size={13} className="text-t4" aria-hidden />
-              </div>
-            </button>
+      <div className="px-5 pb-5">
+        {rows.map((r, i) => {
+          const d = detail[r.stage]
+          const isBottleneck = i === bottleneckIdx
+          return (
+            <div key={r.stage}>
+              {r.conv !== null && (
+                <div className="flex items-center gap-2 pl-[7.5rem] py-1">
+                  <ArrowDown size={11} className={isBottleneck ? 'text-warning' : 'text-t5'} aria-hidden />
+                  <span className={`text-[11px] font-bold tabular-nums ${isBottleneck ? 'text-warning' : 'text-t4'}`}>
+                    {r.conv}%
+                  </span>
+                  {isBottleneck && (
+                    <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-warning bg-warning-bg border border-warning-line px-1.5 py-px rounded-full">
+                      gargalo
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={onNavigate}
+                className="w-full flex items-center gap-3 py-1.5 text-left cursor-pointer group"
+                aria-label={
+                  `${r.theme.label}: ${r.reached !== null ? `${r.reached} alcançaram, ` : ''}${r.agora} em aberto agora` +
+                  `${d ? `, ${formatCurrency(d.vgv)} em VGV, ${d.parados} parados` : ''}`
+                }
+              >
+                <span className="flex items-center gap-2 w-28 flex-shrink-0 min-w-0">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.theme.dot}`} aria-hidden />
+                  <span className="text-sm font-semibold text-t2 truncate group-hover:text-t1 transition-colors">{r.theme.label}</span>
+                </span>
+
+                <span className="flex-1 h-8 rounded-[8px] bg-s3/40 overflow-hidden min-w-0">
+                  <span
+                    className={`block h-full rounded-[8px] ${r.theme.dot} opacity-85 transition-all duration-700`}
+                    style={{ width: `${r.widthPct}%` }}
+                  />
+                </span>
+
+                {hasCohort && (
+                  <span className="text-sm font-bold text-t1 tabular-nums w-20 text-right flex-shrink-0 hidden md:block">
+                    {r.reached !== null ? r.reached.toLocaleString('pt-BR') : '—'}
+                  </span>
+                )}
+
+                <span className="text-sm font-semibold text-t2 tabular-nums w-16 text-right flex-shrink-0">
+                  {r.agora.toLocaleString('pt-BR')}
+                </span>
+
+                {hasDetail && (
+                  <span className="text-xs text-t2 tabular-nums w-20 text-right flex-shrink-0 hidden md:block">
+                    {d && d.vgv > 0 ? formatCurrency(d.vgv) : '—'}
+                  </span>
+                )}
+                {hasCohort && (
+                  <span className="text-xs text-t4 tabular-nums w-14 text-right flex-shrink-0 hidden md:block">
+                    {r.avgDays !== null && r.avgDays > 0 ? `${Math.round(r.avgDays)}d` : '—'}
+                  </span>
+                )}
+                {hasDetail && (
+                  <span
+                    className={`text-xs tabular-nums w-16 text-right flex-shrink-0 hidden md:block ${d && d.parados > 0 ? 'text-warning font-semibold' : 'text-t4'}`}
+                    title={d && d.parados > 0 ? `${d.parados} lead(s) há mais de 7 dias parados nesta etapa` : undefined}
+                  >
+                    {d && d.parados > 0 ? d.parados : '—'}
+                  </span>
+                )}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+
+      <p className="px-5 pb-4 text-[11px] text-t4 leading-relaxed">
+        <span className="font-semibold text-t3">Alcançaram</span> e <span className="font-semibold text-t3">conversão</span> usam a
+        coorte (profundidade máxima já atingida pelo lead). <span className="font-semibold text-t3">Agora</span>, VGV e parados
+        descrevem quem está na etapa neste momento.
+      </p>
+    </div>
+  )
+}
+
+// ─── 5. Evolução de receita ───────────────────────────────────────────────────
+
+interface WeekPoint { label: string; realizado: number; acumulado: number; metaAcum: number }
+
+/**
+ * VGV por semana × meta acumulada.
+ *
+ * Desenhado à mão em SVG de propósito: o Dashboard é a rota "/" e importar
+ * recharts aqui traria ~110 kB gzip para a abertura do app — exatamente a
+ * regressão que a otimização de carga do Dashboard resolveu. O gráfico é
+ * simples o bastante para não justificar a biblioteca.
+ *
+ * Semana = domingo → sábado (convenção do sistema).
+ */
+function RevenueTrend({ points, target, loading }: {
+  points: WeekPoint[]
+  target: number
+  loading: boolean
+}) {
+  if (loading) {
+    return <div className="rounded-[16px] border border-line bg-surface p-5"><ShimmerBlock className="w-full h-48" /></div>
+  }
+
+  const totalRealizado = points.reduce((a, p) => a + p.realizado, 0)
+  if (points.length === 0 || (totalRealizado === 0 && target === 0)) {
+    return (
+      <div className="rounded-[16px] border border-line bg-surface flex flex-col items-center py-12 gap-2">
+        <BarChart3 size={26} className="text-t4" aria-hidden />
+        <p className="text-sm text-t3">Sem vendas registradas neste mês ainda</p>
+      </div>
+    )
+  }
+
+  const W = 720, H = 200, padL = 8, padR = 8, padT = 16, padB = 28
+  const innerW = W - padL - padR
+  const innerH = H - padT - padB
+  const scaleMax = Math.max(target, ...points.map(p => Math.max(p.acumulado, p.metaAcum)), 1)
+  const bandW = innerW / points.length
+  const barW  = Math.min(bandW * 0.42, 46)
+
+  const y  = (v: number) => padT + innerH - (v / scaleMax) * innerH
+  const cx = (i: number) => padL + bandW * i + bandW / 2
+
+  const metaPath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${cx(i)},${y(p.metaAcum)}`).join(' ')
+  const acumPath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${cx(i)},${y(p.acumulado)}`).join(' ')
+
+  return (
+    <div className="rounded-[16px] border border-line surface-premium overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <div className="flex items-center gap-4 px-5 pt-4 pb-1 flex-wrap">
+        <span className="flex items-center gap-1.5 text-[11px] text-t3">
+          <span className="w-2.5 h-2.5 rounded-sm bg-brand flex-shrink-0" aria-hidden /> VGV da semana
+        </span>
+        <span className="flex items-center gap-1.5 text-[11px] text-t3">
+          <span className="w-4 h-0.5 rounded bg-success flex-shrink-0" aria-hidden /> Acumulado
+        </span>
+        <span className="flex items-center gap-1.5 text-[11px] text-t3">
+          <span className="w-4 h-0.5 rounded flex-shrink-0" style={{ background: 'var(--t3)' }} aria-hidden /> Meta acumulada
+        </span>
+        <span className="ml-auto text-[11px] text-t4">Ritmo linear · semana de domingo a sábado</span>
+      </div>
+
+      <div className="px-3 pb-4">
+        <svg
+          viewBox={`0 0 ${W} ${H}`} className="w-full" role="img"
+          aria-label={
+            'Evolução do VGV por semana. ' +
+            points.map(p => `${p.label}: ${formatCurrency(p.realizado)}, acumulado ${formatCurrency(p.acumulado)}`).join('. ')
+          }
+        >
+          <defs>
+            <linearGradient id="rtBar" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="var(--brand)"      stopOpacity="0.95" />
+              <stop offset="100%" stopColor="var(--brand-dark)" stopOpacity="0.55" />
+            </linearGradient>
+          </defs>
+
+          {[0.25, 0.5, 0.75, 1].map(f => (
+            <line key={f} x1={padL} x2={W - padR} y1={y(scaleMax * f)} y2={y(scaleMax * f)}
+              stroke="var(--line)" strokeWidth="1" strokeDasharray="3 5" />
           ))}
-        </div>
-      )}
+
+          {points.map((p, i) => {
+            const h = p.realizado > 0 ? Math.max(innerH - (y(p.realizado) - padT), 3) : 0
+            return h > 0 ? (
+              <rect key={p.label} x={cx(i) - barW / 2} y={padT + innerH - h}
+                width={barW} height={h} rx="4" fill="url(#rtBar)" />
+            ) : null
+          })}
+
+          <path d={metaPath} fill="none" stroke="var(--t3)" strokeWidth="1.5" strokeDasharray="5 4" />
+          <path d={acumPath} fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          {points.map((p, i) => (
+            <circle key={p.label} cx={cx(i)} cy={y(p.acumulado)} r="3.5"
+              fill="var(--success)" stroke="var(--surface)" strokeWidth="2" />
+          ))}
+
+          {points.map((p, i) => (
+            <text key={p.label} x={cx(i)} y={H - 8} textAnchor="middle"
+              className="fill-t4" fontSize="11" fontWeight="600" fontFamily="inherit">
+              {p.label}
+            </text>
+          ))}
+        </svg>
+      </div>
     </div>
   )
 }
@@ -612,410 +927,38 @@ function daysOverdue(dueDate: string): number {
   const today = new Date(); today.setHours(0, 0, 0, 0)
   return Math.floor((today.getTime() - new Date(dueDate + 'T00:00:00').getTime()) / 86_400_000)
 }
-function dueDateLabel(dueDate?: string): { text: string; color: string } {
-  if (!dueDate) return { text: 'Sem prazo', color: 'text-t4' }
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((new Date(dueDate + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
-  if (diffDays === 0) return { text: 'Hoje!', color: 'text-amber-400' }
-  if (diffDays === 1) return { text: 'Amanhã', color: 'text-yellow-400' }
-  if (diffDays <= 7)  return { text: `Em ${diffDays} dias`, color: 'text-t2' }
-  return { text: dueDate.split('-').reverse().join('/'), color: 'text-t3' }
+
+/** Semana começa no domingo — convenção do sistema (ver GoalsPage). */
+function startOfWeek(d: Date): Date {
+  const x = new Date(d); x.setHours(0, 0, 0, 0)
+  x.setDate(x.getDate() - x.getDay())
+  return x
 }
 
-// ─── Alertas de leads (sem interação) ─────────────────────────────────────────
-
-function LeadAlertsWidget({
-  extras, onOpenLead, onNavigate, brokerNames = {},
-}: {
-  extras: ExtrasData | null
-  onOpenLead: (lead: Lead) => void
-  onNavigate: () => void
-  brokerNames?: Record<string, string>
-}) {
-  const { leads, advanceFollowup } = useLeadsStore()
-  const { add: addInteraction } = useLeadInteractionsStore()
-
-  async function handleWhatsApp(e: React.MouseEvent, lead: Lead) {
-    e.stopPropagation()
-    window.open(whatsappUrl(lead.phone), '_blank')
-    try {
-      await advanceFollowup(lead.id)
-      await addInteraction({
-        leadId: lead.id,
-        type: 'whatsapp',
-        description: 'Interagiu via WhatsApp',
-        interactedAt: new Date().toISOString(),
-      })
-      toast.success('Contato registrado')
-    } catch { /* erro já toastado pela camada db */ }
-  }
-
-  // A lista (lead + dias sem contato) vem agregada da RPC; o objeto Lead sai do
-  // store, que já está carregado e é onde estão nome, telefone e etapa. Antes,
-  // descobrir "dias desde o último contato" custava baixar as 4.517 interações.
-  // O escopo da visão é aplicado no banco, via p_broker_id.
-  const alertLeads = useMemo(() => {
-    if (!extras) return []
-    const porId = new Map(leads.map(l => [l.id, l]))
-    return extras.leadsSemContato
-      .map(({ leadId, dias }) => ({ lead: porId.get(leadId), days: dias }))
-      .filter((x): x is { lead: Lead; days: number } => x.lead !== undefined)
-  }, [extras, leads])
-
-  if (alertLeads.length === 0) return null
-
-  return (
-    <div className="rounded-xl border border-info-line bg-info-bg overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-info-line/50">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-info/15 rounded-xl flex items-center justify-center">
-            <Snowflake size={15} className="text-info" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-t1 leading-none">Leads sem contato</h2>
-            <p className="text-xs text-t3 mt-0.5">Precisam de atenção agora</p>
-          </div>
-          <span className="ml-1 bg-info/20 text-info text-xs font-bold px-2.5 py-1 rounded-xl border border-info-line tabular-nums">
-            {alertLeads.length}
-          </span>
-        </div>
-        <button onClick={onNavigate} className="text-xs text-info hover:text-t2 flex items-center gap-1 transition-colors cursor-pointer">
-          Ver funil <ArrowRight size={12} />
-        </button>
-      </div>
-      <div className="flex flex-col divide-y divide-line">
-        {alertLeads.slice(0, 7).map(({ lead, days }) => {
-          const stageConf = STAGE_LABELS[lead.funnelStage]
-          const daysInt   = Math.floor(days)
-          const daysBadge = daysInt > 7
-            ? 'text-red-400 bg-red-500/10 border-red-500/20'
-            : daysInt > 4
-              ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-              : 'text-info bg-info-bg border-info-line'
-          return (
-            <div
-              key={lead.id}
-              onClick={() => onOpenLead(lead)}
-              className="flex items-center gap-3 px-5 py-3 hover:bg-info/5 transition-colors cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-lg bg-s3/50 border border-line flex items-center justify-center text-sm font-bold text-t2 flex-shrink-0">
-                {lead.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-t1 truncate">{lead.name}</p>
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-[11px] ${stageConf?.color ?? 'text-t3'}`}>{stageConf?.label ?? lead.funnelStage}</span>
-                  {lead.brokerId && brokerNames[lead.brokerId] && (
-                    <span className="text-[11px] text-violet-400/70 bg-violet-500/8 px-1.5 py-px rounded-full border border-violet-500/15">
-                      {brokerNames[lead.brokerId]}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded border tabular-nums ${daysBadge}`}>{daysInt}d</span>
-                <button
-                  onClick={e => handleWhatsApp(e, lead)}
-                  title="Registrar contato e abrir WhatsApp"
-                  aria-label={`Registrar contato e abrir WhatsApp de ${lead.name}`}
-                  className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors"
-                >
-                  <MessageCircle size={12} />
-                </button>
-              </div>
-            </div>
-          )
-        })}
-        {alertLeads.length > 7 && (
-          <div className="px-5 py-2.5 text-center">
-            <button onClick={onNavigate} className="text-xs text-t4 hover:text-info transition-colors cursor-pointer">
-              +{alertLeads.length - 7} leads mais precisam de contato →
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+function localISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-// ─── Tarefas em atraso ────────────────────────────────────────────────────────
-
-function OverdueCard({
-  tasks, contacts, properties, onNavigate,
-}: { tasks: Task[]; contacts: Contact[]; properties: Property[]; onNavigate: () => void }) {
-  if (tasks.length === 0) return null
-  return (
-    <div className="relative rounded-xl border border-red-500/40 bg-red-500/5 ring-1 ring-red-500/20 overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-red-500/20">
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-8 h-8 bg-red-500/20 rounded-xl flex items-center justify-center">
-            <Siren size={15} className="text-red-400" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-red-300 leading-none">Tarefas em atraso</h2>
-            <p className="text-xs text-red-500/70 mt-0.5">Atenção imediata necessária</p>
-          </div>
-          <span className="ml-1 bg-red-500/25 text-red-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-red-500/30 tabular-nums animate-pulse">{tasks.length}</span>
-        </div>
-        <button onClick={onNavigate} className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors cursor-pointer">
-          Resolver <ArrowRight size={12} />
-        </button>
-      </div>
-      <div className="flex flex-col divide-y divide-red-500/10">
-        {tasks.map(t => {
-          const days     = daysOverdue(t.dueDate!)
-          const contact  = contacts.find(c => c.id === t.contactId)
-          const property = properties.find(p => p.id === t.propertyId)
-          return (
-            <button type="button" key={t.id} onClick={onNavigate} className="w-full text-left flex items-center gap-3 px-5 py-3 hover:bg-red-500/8 transition-colors cursor-pointer">
-              <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center">
-                <AlertTriangle size={13} className="text-red-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-t1 truncate">{t.title}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {contact  && <span className="text-xs text-t3 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
-                  {property && <span className="text-xs text-t3 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
-                  {t.brokerId && (
-                    <span className="text-[11px] text-violet-400/70 bg-violet-500/10 px-1.5 py-0.5 rounded-full border border-violet-500/20">
-                      {(contacts as unknown as {id: string; name: string}[]).find(c => c.id === t.brokerId)?.name ?? 'Corretor'}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <span className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-lg border border-red-500/20">
-                <Clock size={10} /> {days === 1 ? '1 dia' : `${days} dias`} atraso
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ─── Próximas tarefas ─────────────────────────────────────────────────────────
-
-function UpcomingCard({
-  tasks, contacts, properties, onNavigate,
-}: { tasks: Task[]; contacts: Contact[]; properties: Property[]; onNavigate: () => void }) {
-  const shown = tasks.slice(0, 6)
-  return (
-    <div className="relative rounded-xl border border-line bg-surface overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-brand/15 rounded-lg flex items-center justify-center">
-            <CalendarCheck size={15} className="text-brand" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold tracking-widest text-t4 uppercase">Próximas Tarefas</p>
-            <h2 className="text-sm font-bold text-t1 leading-none mt-0.5">
-              {tasks.length > 0 ? `${tasks.length} agendada${tasks.length !== 1 ? 's' : ''}` : 'Agenda livre'}
-            </h2>
-          </div>
-        </div>
-        <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer">
-          Ver todas <ArrowRight size={12} />
-        </button>
-      </div>
-      {tasks.length === 0 ? (
-        <div className="flex flex-col items-center py-8 gap-2">
-          <CheckCircle2 size={30} className="text-green-500/40" />
-          <p className="text-sm text-t3">Nenhuma tarefa futura por enquanto</p>
-          <button onClick={onNavigate} className="text-xs text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">+ Criar tarefa →</button>
-        </div>
-      ) : (
-        <div className="flex flex-col divide-y divide-line">
-          {shown.map(t => {
-            const due      = dueDateLabel(t.dueDate)
-            const contact  = contacts.find(c => c.id === t.contactId)
-            const property = properties.find(p => p.id === t.propertyId)
-            return (
-              <button type="button" key={t.id} onClick={onNavigate} className="w-full text-left flex items-center gap-3 px-5 py-3 hover:bg-s2/60 transition-colors cursor-pointer">
-                <Circle size={16} className="text-t4 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-t1 truncate">{t.title}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {contact  && <span className="text-xs text-t4 flex items-center gap-0.5"><Users size={9} /> {contact.name}</span>}
-                    {property && <span className="text-xs text-t4 flex items-center gap-0.5"><Building2 size={9} /> {property.name}</span>}
-                  </div>
-                </div>
-                {t.dueDate && (
-                  <span className={`flex-shrink-0 flex items-center gap-1 text-xs font-medium tabular-nums ${due.color}`}>
-                    <Clock size={10} /> {due.text}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-          {tasks.length > 6 && (
-            <div className="px-5 py-2.5 text-center">
-              <button onClick={onNavigate} className="text-xs text-t4 hover:text-brand transition-colors cursor-pointer">
-                +{tasks.length - 6} mais tarefas →
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Potencial de recompra ────────────────────────────────────────────────────
-
-// Candidatos vêm agregados da RPC (contato + última venda + dias). Cruzar 12.543
-// contatos com as vendas no cliente exigia baixar a tabela de contatos inteira
-// para encontrar 17 linhas. O escopo da visão é aplicado no banco.
-function RepurchaseWidget({ extras, onNavigate }: {
-  extras:     ExtrasData | null
-  onNavigate: () => void
-}) {
-  const candidates = extras?.recompra ?? []
-  if (candidates.length === 0) return null
-
-  return (
-    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 overflow-hidden mb-6 animate-slide-up">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-emerald-500/15">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-emerald-500/15 rounded-xl flex items-center justify-center">
-            <RefreshCw size={15} className="text-emerald-400" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-t1 leading-none">Potencial de recompra</h2>
-            <p className="text-xs text-t3 mt-0.5">Clientes que compraram há +6 meses</p>
-          </div>
-          <span className="ml-1 bg-emerald-500/15 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-xl border border-emerald-500/20 tabular-nums">{candidates.length}</span>
-        </div>
-        <button onClick={onNavigate} className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer">
-          Ver contatos <ArrowRight size={12} />
-        </button>
-      </div>
-      <div className="flex flex-col divide-y divide-emerald-500/8">
-        {candidates.slice(0, 5).map(c => (
-          <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-emerald-500/5 transition-colors">
-            <Avatar name={c.nome} photoUrl={c.photoUrl ?? undefined} size="sm" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-t1 truncate">{c.nome}</p>
-              <p className="text-[11px] text-t3">{c.totalVendas} compra{c.totalVendas !== 1 ? 's' : ''} · última: {formatDate(c.ultimaVenda)}</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-[11px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">{c.diasDesde}d sem compra</span>
-              <a href={whatsappUrl(c.telefone)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors">
-                <MessageCircle size={12} />
-              </a>
-            </div>
-          </div>
-        ))}
-        {candidates.length > 5 && (
-          <div className="px-5 py-2 text-center">
-            <button onClick={onNavigate} className="text-xs text-t4 hover:text-emerald-400 transition-colors cursor-pointer">+{candidates.length - 5} outros candidatos →</button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Corretores online (admin only) ──────────────────────────────────────────
-
-const PAGE_ICONS: Record<string, typeof Target> = {
-  '/':            BarChart2,
-  '/leads':       Target,
-  '/contatos':    Users,
-  '/imoveis':     Home,
-  '/vendas':      DollarSign,
-  '/campanhas':   Megaphone,
-  '/tarefas':     CheckCircle2,
-  '/performance': TrendingUp,
-  '/permuta':     RefreshCw,
-  '/metas':       Target,
-  '/admin':       Settings,
-  '/admin/logs':  ClipboardList,
-}
-
-function OnlineBrokersPanel() {
-  const { onlineBrokers } = usePresenceStore()
-  const brokers = onlineBrokers.filter(b => b.role === 'broker')
-
-  if (brokers.length === 0) {
-    return (
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-line bg-s2/30">
-        <span className="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0" />
-        <p className="text-sm text-t3">Nenhum corretor online por enquanto.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {brokers.map(b => {
-        const hasLocation  = b.lat != null && b.lng != null
-        const mapsUrl      = hasLocation ? `https://www.google.com/maps?q=${b.lat},${b.lng}` : undefined
-        const locationText = [b.city, b.region, b.country].filter(Boolean).join(', ')
-        return (
-          <div key={b.userId} className="flex items-center gap-3 px-4 py-3 bg-s2/50 rounded-xl border border-line">
-            <div className="relative flex-shrink-0">
-              <div className="w-9 h-9 rounded-full bg-brand/20 flex items-center justify-center text-sm font-bold text-brand">
-                {b.name.charAt(0).toUpperCase()}
-              </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-s1 animate-pulse" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-t1 truncate">{b.name}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {(() => { const PageIcon = PAGE_ICONS[b.currentPage] ?? Monitor; return <PageIcon size={12} className="text-t4 flex-shrink-0" /> })()}
-                <span className="text-xs text-t3">{pageLabel(b.currentPage)}</span>
-                {locationText && (
-                  <>
-                    <span className="text-t4">·</span>
-                    <span className="text-xs text-t4 truncate">{locationText}</span>
-                    <span className="text-[11px] text-t4 uppercase tracking-wide">
-                      {b.locationSource === 'gps' ? 'GPS' : 'IP'}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-            {mapsUrl && (
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-                className="flex-shrink-0 text-[11px] text-brand/70 hover:text-brand border border-brand/20 hover:border-brand/50 px-2 py-1 rounded-lg transition-colors"
-              >
-                Ver mapa
-              </a>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ─── Dashboard principal ──────────────────────────────────────────────────────
+// ═══ Dashboard ════════════════════════════════════════════════════════════════
 
 export function DashboardPage() {
   const navigate = useNavigate()
   const [taskFormOpen,    setTaskFormOpen]    = useState(false)
   const [selectedLead,    setSelectedLead]    = useState<Lead | null>(null)
-  const [showSecondary,   setShowSecondary]   = useState(false)
   const [overviewData,    setOverviewData]    = useState<OverviewData | null>(null)
+  const [analytics,       setAnalytics]       = useState<FunnelAnalytics | null>(null)
   const [extras,          setExtras]          = useState<ExtrasData | null>(null)
   const [overviewLoading, setOverviewLoading] = useState(true)
   const [overviewError,   setOverviewError]   = useState<string | null>(null)
 
-  const { isAdmin, profile, allProfiles } = useAuthStore()
+  const { profile } = useAuthStore()
   const { effectiveBrokerId, isGlobalView } = useAdminView()
   const firstName = profile?.name?.split(' ')[0] ?? 'Corretor'
-  const brokerNames = useMemo(() =>
-    Object.fromEntries(allProfiles.map(p => [p.id, p.name])),
-    [allProfiles]
-  )
 
-  const { contacts, loadByIds: loadContactsByIds } = useContactsStore()
-  const { properties, load: loadProperties }   = usePropertiesStore()
-  const { sales, load: loadSales, getByPeriod } = useSalesStore()
-  const { tasks, load: loadTasks, getUpcoming, getOverdue }        = useTasksStore()
-  const { load: loadMyLeads }     = useLeadsStore()
-  const { startDate, endDate, getLabel } = usePeriodStore()
+  const { sales, load: loadSales }                    = useSalesStore()
+  const { tasks, load: loadTasks }                    = useTasksStore()
+  const { leads, load: loadMyLeads, advanceFollowup } = useLeadsStore()
+  const { add: addInteraction }                       = useLeadInteractionsStore()
 
   async function loadOverview() {
     setOverviewLoading(true)
@@ -1035,64 +978,233 @@ export function DashboardPage() {
   async function loadExtras() {
     const { data, error } = await supabase.rpc('dashboard_extras', { p_broker_id: effectiveBrokerId })
     if (error) {
-      // Não derruba a tela: os widgets que dependem disso simplesmente não
-      // renderizam, como já acontecia quando não havia candidatos.
+      // Não derruba a tela: os widgets que dependem disso não renderizam.
       console.error('[dashboard] extras:', error)
       return
     }
     setExtras(data as ExtrasData)
   }
 
-  // Stores carregam uma vez; as RPCs refazem fetch ao trocar a visão.
-  //
-  // `loadContacts()` e `loadInteractions()` saíram daqui: baixavam 7,7 MB
-  // (12.543 contatos) e 1,5 MB (4.517 interações) em toda abertura do app para
-  // alimentar três widgets que só precisam de agregação — agora vinda da RPC
-  // dashboard_extras (~6 kB). Os poucos contatos exibidos por nome em tarefas e
-  // vendas são buscados por id logo abaixo.
+  // Coorte do funil — base correta para conversão e tempo médio por etapa.
+  // Mesma RPC da aba Conversão em Leads, sem filtro de período (funil inteiro).
+  async function loadAnalytics() {
+    const { data, error } = await supabase.rpc('lead_funnel_analytics', {
+      p_broker_id: effectiveBrokerId, p_start: null, p_end: null,
+    })
+    if (error) {
+      // O funil degrada para a leitura de ocupação — sem conversão inventada.
+      console.error('[dashboard] funnel analytics:', error)
+      setAnalytics(null)
+      return
+    }
+    setAnalytics(data as FunnelAnalytics)
+  }
+
   useEffect(() => {
-    loadProperties(); loadSales(); loadTasks(); loadMyLeads()
+    loadSales(); loadTasks(); loadMyLeads()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     loadOverview()
     loadExtras()
+    loadAnalytics()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveBrokerId])
 
-  // Nomes dos contatos citados por tarefas e vendas — dezenas de linhas, não
-  // 12.543. Roda de novo quando tarefas ou vendas mudam (realtime inclusive).
-  useEffect(() => {
-    const ids = [
-      ...tasks.map(t => t.contactId),
-      ...sales.map(s => s.clientId),
-    ].filter((id): id is string => !!id)
-    if (ids.length > 0) loadContactsByIds(ids)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks, sales])
-
-  // Escopo da visão para os widgets que leem stores no client (seção secundária).
-  // Para corretor comum o store já vem filtrado pela RLS; isto cobre o admin
-  // quando ele escolhe "Meu Desempenho" ou um corretor específico.
-  const inView      = <T extends { brokerId?: string | null }>(arr: T[]) =>
+  // Escopo da visão para o que é lido de stores no cliente.
+  const inView = <T extends { brokerId?: string | null }>(arr: T[]) =>
     isGlobalView ? arr : arr.filter(x => x.brokerId === effectiveBrokerId)
   const inViewTasks = (arr: Task[]) =>
     isGlobalView ? arr : arr.filter(t => (t.assignedToId ?? t.brokerId) === effectiveBrokerId)
 
-  const periodLabel   = getLabel()
-  const salesInPeriod = inView(getByPeriod(startDate, endDate))
-  const valueInPeriod = salesInPeriod.reduce((a, s) => a + s.value, 0)
-  const accumulatedSales      = inView(sales.filter(s => s.date <= endDate))
-  const totalAccumulated      = accumulatedSales.reduce((acc, s) => acc + s.value, 0)
-  const totalAccumulatedCount = accumulatedSales.length
-  const recentSales   = salesInPeriod.slice(0, 5)
-  const upcomingTasks = inViewTasks(getUpcoming())
-  const overdueTasks  = inViewTasks(getOverdue())
-  const birthdays     = extras?.aniversariantes ?? []
-  const periodComm    = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
-  const periodBroker  = salesInPeriod.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
-  const tasksDoneInPeriod    = inViewTasks(tasks.filter(t => t.status === 'done' && t.completedAt && matchesPeriod(t.completedAt.split('T')[0], startDate, endDate))).length
-  const tasksPendingInPeriod = inViewTasks(tasks.filter(t => t.status !== 'done' && t.dueDate && matchesPeriod(t.dueDate, startDate, endDate))).length
+  const todayStr = localISO(new Date())
+
+  const activeLeads = useMemo(
+    () => inView(leads.filter(l => !l.discardReason && !l.closedAt)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [leads, effectiveBrokerId, isGlobalView]
+  )
+
+  // ── Ocupação por etapa: VGV parado e leads envelhecendo ────────────────────
+  // O tempo médio NÃO sai daqui — "há quanto tempo os que ficaram estão presos"
+  // não é a mesma coisa que "quanto tempo leva para avançar". O segundo vem da
+  // coorte (analytics.avgDays); usar o primeiro no lugar dele inflaria o número
+  // com justamente os leads que nunca avançaram.
+  const funnelDetail = useMemo(() => {
+    const STALE_DAYS = 7
+    const acc: Record<string, StageDetail> = {}
+    activeLeads.forEach(l => {
+      const d = acc[l.funnelStage] ?? { vgv: 0, parados: 0 }
+      d.vgv += l.averageTicket ?? 0
+      const ref = l.stageChangedAt ?? l.createdAt
+      if (ref && (Date.now() - new Date(ref).getTime()) / 86_400_000 > STALE_DAYS) d.parados += 1
+      acc[l.funnelStage] = d
+    })
+    return acc
+  }, [activeLeads])
+
+  // ── Prioridades de hoje ────────────────────────────────────────────────────
+  async function registrarContato(lead: Lead) {
+    window.open(whatsappUrl(lead.phone), '_blank')
+    try {
+      await advanceFollowup(lead.id)
+      await addInteraction({
+        leadId: lead.id,
+        type: 'whatsapp',
+        description: 'Interagiu via WhatsApp',
+        interactedAt: new Date().toISOString(),
+      })
+      toast.success('Contato registrado')
+    } catch { /* erro já toastado pela camada db */ }
+  }
+
+  const priorityItems = useMemo<PriorityItem[]>(() => {
+    const out: PriorityItem[] = []
+    const nowMs = Date.now()
+    const byId = new Map(leads.map(l => [l.id, l]))
+
+    // 1. SLA de 1º contato — estourado ou vencendo
+    activeLeads
+      .filter(l => l.slaDueAt && !l.firstContactAt)
+      .forEach(l => {
+        const diffMin = Math.round((new Date(l.slaDueAt!).getTime() - nowMs) / 60_000)
+        if (diffMin < 0) {
+          const atraso = Math.abs(diffMin)
+          out.push({
+            id: `sla-${l.id}`, severity: 'critical', title: l.name,
+            reason: 'SLA de primeiro contato estourado',
+            time: atraso >= 60 ? `${Math.round(atraso / 60)}h em atraso` : `${atraso} min em atraso`,
+            actionLabel: 'WhatsApp', onAction: () => registrarContato(l), onOpen: () => setSelectedLead(l),
+          })
+        } else if (diffMin <= 120) {
+          out.push({
+            id: `sla-${l.id}`, severity: 'attention', title: l.name,
+            reason: 'SLA de primeiro contato vencendo',
+            time: `vence em ${diffMin} min`,
+            actionLabel: 'WhatsApp', onAction: () => registrarContato(l), onOpen: () => setSelectedLead(l),
+          })
+        }
+      })
+
+    // 2. Tarefas vencidas
+    inViewTasks(tasks.filter(t => t.status !== 'done' && t.dueDate && t.dueDate < todayStr))
+      .forEach(t => {
+        const d = daysOverdue(t.dueDate!)
+        out.push({
+          id: `task-${t.id}`, severity: 'critical', title: t.title,
+          reason: 'Tarefa vencida',
+          time: d === 1 ? '1 dia de atraso' : `${d} dias de atraso`,
+          actionLabel: 'Resolver', onAction: () => navigate('/tarefas'), onOpen: () => navigate('/tarefas'),
+        })
+      })
+
+    // 3. Visitas e tarefas de hoje
+    inViewTasks(tasks.filter(t => t.status !== 'done' && t.dueDate === todayStr))
+      .forEach(t => {
+        out.push({
+          id: `today-${t.id}`, severity: 'attention', title: t.title,
+          reason: t.category === 'visita' ? 'Visita agendada para hoje' : 'Tarefa com prazo hoje',
+          time: t.dueTime ? `hoje às ${t.dueTime}` : 'hoje',
+          actionLabel: 'Abrir', onAction: () => navigate('/tarefas'), onOpen: () => navigate('/tarefas'),
+        })
+      })
+
+    // 4. Proposta parada — oportunidade madura esfriando
+    activeLeads
+      .filter(l => l.funnelStage === 'proposta' && l.stageChangedAt)
+      .forEach(l => {
+        const dias = Math.floor((nowMs - new Date(l.stageChangedAt!).getTime()) / 86_400_000)
+        if (dias >= 5) {
+          out.push({
+            id: `prop-${l.id}`, severity: 'attention', title: l.name,
+            reason: 'Proposta sem retorno',
+            time: `${dias} dias na etapa`,
+            actionLabel: 'WhatsApp', onAction: () => registrarContato(l), onOpen: () => setSelectedLead(l),
+          })
+        }
+      })
+
+    // 5. Leads esquecidos — lista agregada pela RPC, cruzada com o store.
+    //
+    // Limitado aos mais frios: a base tem dezenas de leads sem contato há meses
+    // e despejar todos aqui transformaria a lista de prioridades num relatório.
+    // O corte é explícito na tela (COLD_LIMIT + link para o funil), nunca uma
+    // truncagem silenciosa.
+    const jaListados = new Set(out.map(o => o.id.split('-').slice(1).join('-')))
+    const frios = (extras?.leadsSemContato ?? [])
+      .filter(({ leadId }) => byId.has(leadId) && !jaListados.has(leadId))
+      .sort((a, b) => b.dias - a.dias)
+      .slice(0, COLD_LIMIT)
+
+    frios.forEach(({ leadId, dias }) => {
+      const l = byId.get(leadId)!
+      out.push({
+        id: `cold-${l.id}`, severity: 'opportunity', title: l.name,
+        reason: `Sem contato · etapa ${STAGE_THEME[l.funnelStage]?.label ?? l.funnelStage}`,
+        time: `${Math.floor(dias)} dias sem interação`,
+        actionLabel: 'WhatsApp', onAction: () => registrarContato(l), onOpen: () => setSelectedLead(l),
+      })
+    })
+
+    const rank: Record<Severity, number> = { critical: 0, attention: 1, opportunity: 2 }
+    return out.sort((a, b) => rank[a.severity] - rank[b.severity])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLeads, tasks, extras, leads, todayStr, effectiveBrokerId, isGlobalView])
+
+  // Quantos leads frios ficaram de fora da lista de prioridades.
+  const coldOverflow = Math.max(
+    (extras?.leadsSemContato?.length ?? 0) - COLD_LIMIT, 0
+  )
+
+  // ── Evolução semanal de VGV ────────────────────────────────────────────────
+  const weeklyTrend = useMemo<WeekPoint[]>(() => {
+    const target = overviewData?.vgl.target ?? 0
+    const now = new Date()
+    const monthStartD = new Date(now.getFullYear(), now.getMonth(), 1)
+    const monthEndD   = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const daysInMonth = monthEndD.getDate()
+
+    // Semanas do mês, ancoradas em domingo (convenção do sistema).
+    const weeks: Array<{ start: Date; end: Date }> = []
+    let cursor = startOfWeek(monthStartD)
+    while (cursor <= monthEndD) {
+      const end = new Date(cursor); end.setDate(end.getDate() + 6)
+      weeks.push({ start: new Date(cursor), end })
+      cursor = new Date(cursor); cursor.setDate(cursor.getDate() + 7)
+    }
+
+    const monthSales = inView(
+      sales.filter(s => s.date >= localISO(monthStartD) && s.date <= localISO(monthEndD))
+    )
+
+    let acumulado = 0
+    return weeks.map((w, i) => {
+      const wStart = localISO(w.start), wEnd = localISO(w.end)
+      const realizado = monthSales
+        .filter(s => s.date >= wStart && s.date <= wEnd)
+        .reduce((a, s) => a + s.value, 0)
+      acumulado += realizado
+      // Meta acumulada = ritmo linear até o último dia da semana que cai no mês.
+      const lastDayInMonth = w.end > monthEndD ? daysInMonth : w.end.getDate()
+      return {
+        label: `S${i + 1}`,
+        realizado,
+        acumulado,
+        metaAcum: target * (lastDayInMonth / daysInMonth),
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sales, overviewData, effectiveBrokerId, isGlobalView])
+
+  // ── Indicadores ────────────────────────────────────────────────────────────
+  const nowMonth   = new Date()
+  const monthStart = localISO(new Date(nowMonth.getFullYear(), nowMonth.getMonth(), 1))
+  const monthEndS  = localISO(new Date(nowMonth.getFullYear(), nowMonth.getMonth() + 1, 0))
+  const salesMonth = inView(sales.filter(s => s.date >= monthStart && s.date <= monthEndS))
+  const comissaoRealizada = salesMonth.reduce((a, s) => a + calcSaleCommissions(s).totalCommission, 0)
+  const comissaoPrevista  = (overviewData?.vgl.expectativa ?? 0) * PIPELINE_COMMISSION_RATE
+  const visitasAgendadas  = inViewTasks(tasks.filter(t => t.category === 'visita' && t.status !== 'done')).length
 
   const greeting = () => {
     const h = new Date().getHours()
@@ -1101,6 +1213,7 @@ export function DashboardPage() {
     return 'Boa noite'
   }
   const todayFormatted = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+  const kpiLoading = overviewLoading && !overviewData
 
   return (
     <PageLayout
@@ -1109,255 +1222,98 @@ export function DashboardPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}
     >
-
-      {/* ══ Visão geral — centro de comando ══════════════════════════════ */}
-      <SectionLabel icon={Target} hint="Atualizado em tempo real">Visão geral</SectionLabel>
-
-      {/* Indicadores principais — VGL Previsão × Realizado */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-        <VGLPrevisaoHero
+      {/* ══ 1. Hero executivo ═══════════════════════════════════════════ */}
+      <div className="mb-8">
+        <CommandHero
           data={overviewData}
           loading={overviewLoading}
           error={overviewError}
           onRetry={loadOverview}
-          onNavigate={() => navigate('/leads')}
-        />
-        <VGLHero
-          data={overviewData}
-          loading={overviewLoading}
-          error={overviewError}
-          onRetry={loadOverview}
-          onNavigate={() => navigate('/vendas')}
-        />
-      </div>
-
-      {/* KPIs secundários */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
-        <OverviewKPICard
-          title="Leads ativos"
-          value={overviewData?.leadsAtivos ?? '—'}
-          sub="em aberto no funil"
-          icon={Users}
-          tone="teal"
-          onClick={() => navigate('/leads')}
-          loading={overviewLoading && !overviewData}
-        />
-        <OverviewKPICard
-          title="Vendas no mês"
-          value={overviewData?.vgl.vendasMes ?? '—'}
-          sub={overviewData ? formatCurrency(overviewData.vgl.realizadoMes) : undefined}
-          icon={TrendingUp}
-          tone="green"
-          onClick={() => navigate('/vendas')}
-          loading={overviewLoading && !overviewData}
-        />
-        <OverviewKPICard
-          title="Sem interação"
-          value={overviewData?.leadsSemInteracao ?? '—'}
-          sub="leads há +48h sem contato"
-          icon={Flame}
-          tone="amber"
-          alert
-          onClick={() => navigate('/leads')}
-          loading={overviewLoading && !overviewData}
-        />
-      </div>
-
-      {/* ══ Funil de vendas ═════════════════════════════════════════════ */}
-      <SectionLabel icon={BarChart2}>Funil de vendas</SectionLabel>
-      <div className="mb-7">
-        <LeadFunnelWidget
-          data={overviewData}
-          loading={overviewLoading}
-          error={overviewError}
-          onNavigate={() => navigate('/leads')}
-        />
-      </div>
-
-      {/* ══ Desempenho ══════════════════════════════════════════════════ */}
-      <SectionLabel icon={TrendingUp}>Desempenho</SectionLabel>
-      <PerformanceGoalsWidget />
-
-      {/* ══ Precisa de ação ═════════════════════════════════════════════ */}
-      <SectionLabel icon={AlertTriangle}>Precisa de ação</SectionLabel>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start mb-7">
-        <AlertsPanel
-          alertas={overviewData?.alertas}
-          loading={overviewLoading}
-          error={overviewError}
-          onNavigateTasks={() => navigate('/tarefas')}
+          onNavigateVendas={() => navigate('/vendas')}
           onNavigateLeads={() => navigate('/leads')}
         />
-        {/* LeadAlertsWidget já retorna null quando vazio — envolve em fragmento sem mb */}
-        <div className="[&>div]:mb-0">
-          <LeadAlertsWidget
-            extras={extras}
-            onOpenLead={setSelectedLead}
-            onNavigate={() => navigate('/leads')}
-            brokerNames={brokerNames}
-          />
-        </div>
       </div>
 
-      {/* ══ Seção secundária (expansível) ═══════════════════════════════ */}
-      <button
-        onClick={() => setShowSecondary(s => !s)}
-        aria-expanded={showSecondary}
-        className="w-full flex items-center justify-center gap-2 py-3 mb-6 rounded-xl border border-line bg-surface text-xs font-semibold text-t3 hover:text-t2 hover:border-line-strong transition-colors cursor-pointer"
-      >
-        {showSecondary ? (
-          <><ChevronUp size={14} /> Ocultar detalhes</>
-        ) : (
-          <><ChevronDown size={14} /> Mais detalhes: vendas, tarefas, aniversários</>
-        )}
-      </button>
+      {/* ══ 2. Indicadores ══════════════════════════════════════════════ */}
+      <SectionLabel hint="Mês corrente">Indicadores</SectionLabel>
 
-      {showSecondary && (
-        <div className="animate-slide-up">
-          {/* Seletor de período */}
-          <div className="flex items-center justify-between mb-6 px-1">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-4 rounded-full bg-brand" />
-              <p className="text-xs text-t3">Período: <span className="text-t1 font-semibold">{periodLabel}</span></p>
-            </div>
-            <PeriodSelector />
-          </div>
+      {/* Receita — protagonismo */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+        <KpiCard
+          title="Vendas no mês" size="lead" tone="success" icon={TrendingUp}
+          value={overviewData?.vgl.vendasMes ?? '—'}
+          sub={overviewData ? formatCurrency(overviewData.vgl.realizadoMes) : undefined}
+          onClick={() => navigate('/vendas')} loading={kpiLoading}
+        />
+        <KpiCard
+          title="Comissão realizada" size="lead" tone="success" icon={Wallet}
+          value={formatCurrency(comissaoRealizada)}
+          sub={`${salesMonth.length} venda${salesMonth.length !== 1 ? 's' : ''} no mês`}
+          onClick={() => navigate('/vendas')} loading={kpiLoading}
+        />
+        <KpiCard
+          title="Comissão prevista" size="lead" tone="revenue" icon={DollarSign}
+          value={formatCurrency(comissaoPrevista)}
+          sub="estimada em 2% do pipeline"
+          onClick={() => navigate('/leads')} loading={kpiLoading}
+        />
+        <KpiCard
+          title="Propostas abertas" size="lead" tone="brand" icon={FileText}
+          value={overviewData?.vgl.leadsProposta ?? '—'}
+          sub={overviewData ? formatCurrency(overviewData.vgl.expectativaProposta) : undefined}
+          onClick={() => navigate('/leads')} loading={kpiLoading}
+        />
+      </div>
 
-          {/* Tarefas em atraso (lista completa) */}
-          <OverdueCard
-            tasks={overdueTasks}
-            contacts={contacts}
-            properties={properties}
-            onNavigate={() => navigate('/tarefas')}
-          />
+      {/* Operação e alerta — discretos ou urgentes */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        <KpiCard
+          title="Leads ativos" tone="neutral" icon={Users}
+          value={overviewData?.leadsAtivos ?? '—'} sub="em aberto no funil"
+          onClick={() => navigate('/leads')} loading={kpiLoading}
+        />
+        <KpiCard
+          title="Visitas agendadas" tone="neutral" icon={CalendarCheck}
+          value={visitasAgendadas} sub="tarefas de visita em aberto"
+          onClick={() => navigate('/tarefas')} loading={kpiLoading}
+        />
+        <KpiCard
+          title="SLA estourado" icon={Flame}
+          tone={overviewData && overviewData.alertas.slaEstourado > 0 ? 'alert' : 'neutral'}
+          value={overviewData?.alertas.slaEstourado ?? '—'} sub="sem 1º contato no prazo"
+          onClick={() => navigate('/leads')} loading={kpiLoading}
+        />
+        <KpiCard
+          title="Tarefas vencidas" icon={Siren}
+          tone={overviewData && overviewData.alertas.tarefasEmAtraso > 0 ? 'alert' : 'neutral'}
+          value={overviewData?.alertas.tarefasEmAtraso ?? '—'} sub="passaram do prazo"
+          onClick={() => navigate('/tarefas')} loading={kpiLoading}
+        />
+      </div>
 
-          {/* Números do período */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <div className="relative bg-surface border border-line rounded-xl overflow-hidden hover:-translate-y-0.5 transition-all hover:border-line-strong hover:shadow-2xl hover:shadow-black/40">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-violet-500" />
-              <div className="p-5">
-                <p className="text-xs font-semibold text-t3 uppercase tracking-widest mb-3">Tarefas — {periodLabel}</p>
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="flex-1">
-                    <p className="text-3xl font-black text-t1 tabular-nums leading-none">{tasksDoneInPeriod}</p>
-                    <p className="text-[11px] text-t4 mt-1 flex items-center gap-1"><ClipboardCheck size={9} className="text-green-500" /> realizadas</p>
-                  </div>
-                  <div className="w-px h-8 bg-line flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-3xl font-black text-violet-300 tabular-nums leading-none">{tasksPendingInPeriod}</p>
-                    <p className="text-[11px] text-t4 mt-1 flex items-center gap-1"><ListTodo size={9} className="text-violet-500" /> pendentes</p>
-                  </div>
-                </div>
-                <div className="h-1 bg-s3/50 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full bg-green-500 transition-all duration-700" style={{ width: `${tasksDoneInPeriod + tasksPendingInPeriod > 0 ? Math.round(tasksDoneInPeriod / (tasksDoneInPeriod + tasksPendingInPeriod) * 100) : 0}%` }} />
-                </div>
-              </div>
-            </div>
-            <StatCard label="Imóveis ativos" value={properties.length} sub={`${properties.filter(p => p.status === 'opportunity').length} oportunidades`} icon={<Building2 size={16} />} accent="blue" />
-            <StatCard label="Volume acumulado" value={formatCurrency(totalAccumulated)} sub={`${totalAccumulatedCount} venda${totalAccumulatedCount !== 1 ? 's' : ''} até ${periodLabel}`} icon={<DollarSign size={16} />} accent="green" />
-            <StatCard label={`Vendas — ${periodLabel}`} value={formatCurrency(valueInPeriod)} sub={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} no período`} icon={<TrendingUp size={16} />} accent="purple" />
-          </div>
+      {/* ══ 3. Prioridades de hoje ══════════════════════════════════════ */}
+      <SectionLabel hint={priorityItems.length > 0 ? `${priorityItems.length} item${priorityItems.length !== 1 ? 's' : ''} exigindo ação` : undefined}>
+        Prioridades de hoje
+      </SectionLabel>
+      <div className="mb-8">
+        <PriorityFeed items={priorityItems} loading={kpiLoading} coldOverflow={coldOverflow} onSeeAll={() => navigate('/leads')} />
+      </div>
 
-          {salesInPeriod.length > 0 && (
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <StatCard label={`Comissão gerada — ${periodLabel}`} value={formatCurrencyFull(periodComm)} sub="soma das comissões negociadas" icon={<DollarSign size={18} />} accent="purple" />
-              <StatCard label={`Sua comissão — ${periodLabel}`} value={formatCurrencyFull(periodBroker)} sub="sua parte no período" icon={<TrendingUp size={18} />} accent="green" />
-            </div>
-          )}
+      {/* ══ 4. Funil de receita ═════════════════════════════════════════ */}
+      <SectionLabel hint="Volume, receita e tempo por etapa">Funil de receita</SectionLabel>
+      <div className="mb-8">
+        <RevenueFunnel
+          data={overviewData} analytics={analytics} detail={funnelDetail}
+          loading={overviewLoading} error={overviewError}
+          onNavigate={() => navigate('/leads')}
+        />
+      </div>
 
-          {/* Corretores online (admin) */}
-          {isAdmin && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <h2 className="text-xs font-bold uppercase tracking-wider text-t3">Corretores Online</h2>
-              </div>
-              <OnlineBrokersPanel />
-            </div>
-          )}
-
-          {/* Aniversários + Últimas vendas */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <Card accent="yellow" className="animate-slide-up">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 bg-yellow-500/15 rounded-lg flex items-center justify-center"><Cake size={14} className="text-yellow-400" /></div>
-                <h2 className="text-sm font-semibold text-t1">Aniversários do mês</h2>
-                {birthdays.length > 0 && (
-                  <span className="ml-auto bg-yellow-500/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-yellow-500/30">{birthdays.length}</span>
-                )}
-              </div>
-              {birthdays.length === 0 ? (
-                <div className="flex flex-col items-center py-6 gap-2">
-                  <Gift size={28} className="text-t4" />
-                  <p className="text-xs text-t4 text-center">Nenhum aniversário este mês</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {birthdays.slice(0, 5).map(c => (
-                    <div key={c.id} className="flex items-center gap-3 group">
-                      <Avatar name={c.nome} photoUrl={c.photoUrl ?? undefined} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-t1 truncate font-medium">{c.nome}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-yellow-400 tabular-nums">{getBirthdayDay(c.birthdate).replace(/^0/, '')}/{c.birthdate.split('-')[1]}</span>
-                        <a href={whatsappUrl(c.telefone)} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 p-1 rounded-lg bg-green-500/10 text-green-400 transition-all">
-                          <MessageCircle size={12} />
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                  {birthdays.length > 5 && <p className="text-xs text-t4 text-center pt-1">+{birthdays.length - 5} mais</p>}
-                </div>
-              )}
-            </Card>
-
-            <Card className="lg:col-span-2 animate-slide-up">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-green-500/15 rounded-lg flex items-center justify-center"><TrendingUp size={14} className="text-green-400" /></div>
-                  <h2 className="text-sm font-semibold text-t1">Últimas vendas</h2>
-                </div>
-                <button onClick={() => navigate('/vendas')} className="text-xs text-brand hover:text-brand-text flex items-center gap-1 transition-colors cursor-pointer hover:gap-2">
-                  Ver todas <ArrowRight size={12} />
-                </button>
-              </div>
-              {recentSales.length === 0 ? (
-                <div className="flex flex-col items-center py-8 gap-2">
-                  <div className="w-12 h-12 bg-s3/50 rounded-xl flex items-center justify-center"><Sparkles size={20} className="text-t4" /></div>
-                  <p className="text-sm text-t3">Nenhuma venda registrada ainda</p>
-                  <button onClick={() => navigate('/vendas?new=1')} className="text-xs text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">Registrar primeira venda →</button>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {recentSales.map(s => {
-                    const client = contacts.find(c => c.id === s.clientId)
-                    return (
-                      <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-s2/60 transition-colors -mx-3">
-                        <Avatar name={client?.name ?? s.propertyName} size="sm" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-t1 truncate">{client?.name ?? '—'}</p>
-                          <p className="text-xs text-t3 truncate">{s.propertyName}</p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-bold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</p>
-                          <p className="text-xs text-t4">{formatDate(s.date)}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </Card>
-          </div>
-
-          {/* Próximas tarefas */}
-          <UpcomingCard tasks={upcomingTasks} contacts={contacts} properties={properties} onNavigate={() => navigate('/tarefas')} />
-
-          {/* Potencial de recompra */}
-          <RepurchaseWidget extras={extras} onNavigate={() => navigate('/contatos')} />
-        </div>
-      )}
+      {/* ══ 5. Evolução de receita ══════════════════════════════════════ */}
+      <SectionLabel hint="VGV por semana contra a meta acumulada">Evolução de receita</SectionLabel>
+      <div className="mb-8">
+        <RevenueTrend points={weeklyTrend} target={overviewData?.vgl.target ?? 0} loading={kpiLoading} />
+      </div>
 
       {/* Modais */}
       <TaskForm isOpen={taskFormOpen} onClose={() => setTaskFormOpen(false)} />

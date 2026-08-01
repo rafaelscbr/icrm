@@ -190,7 +190,7 @@ export function SalesTab() {
         {byBroker.length > 0 && (
           <Card>
             <div className="flex items-center gap-2 mb-4">
-              <Users size={14} className="text-violet-400" />
+              <Users size={14} className="text-brand-text" />
               <h2 className="text-sm font-medium text-t1">Vendas por corretor — {periodLabel}</h2>
             </div>
             <div className="flex flex-col gap-3">

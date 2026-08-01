@@ -128,8 +128,8 @@ export function LeadListsPage() {
               onClick={() => setSortByScore(s => !s)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-xl transition-all ${
                 sortByScore
-                  ? 'bg-violet-500/15 border-violet-500/30 text-violet-400'
-                  : 'bg-s2/50 border-line text-t3 hover:text-violet-400 hover:border-violet-500/25 hover:bg-violet-500/8'
+                  ? 'bg-brand-tint border-brand/25 text-brand-text'
+                  : 'bg-s2/50 border-line text-t3 hover:text-brand-text hover:border-brand/25 hover:bg-brand-tint'
               }`}
               title="Ordenar por score de qualidade"
             >
@@ -151,8 +151,8 @@ export function LeadListsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {[
             { label: 'Listas ativas',     value: totalLists,                  color: 'text-brand'      },
-            { label: 'Leads na base',     value: totalLeads.toLocaleString(), color: 'text-blue-400'   },
-            { label: 'Maior lista',       value: biggestList ? `${biggestList.totalCount.toLocaleString()} leads` : '—', color: 'text-cyan-400' },
+            { label: 'Leads na base',     value: totalLeads.toLocaleString(), color: 'text-info'   },
+            { label: 'Maior lista',       value: biggestList ? `${biggestList.totalCount.toLocaleString()} leads` : '—', color: 'text-info' },
           ].map(s => (
             <Card key={s.label} className="!py-4">
               <p className="text-xs text-t3 mb-1">{s.label}</p>
@@ -241,7 +241,7 @@ export function LeadListsPage() {
                         <p className="text-[11px] text-t4 mt-0.5">Sem perfil definido</p>
                       )}
                       {isAdmin && list.brokerId && (
-                        <p className="text-[11px] text-violet-400/70 mt-0.5">
+                        <p className="text-[11px] text-brand-text mt-0.5">
                           {allProfiles.find(p => p.id === list.brokerId)?.name ?? 'Corretor'}
                         </p>
                       )}

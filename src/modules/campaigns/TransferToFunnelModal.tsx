@@ -95,7 +95,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
 
         {/* Lead info */}
         <div className="flex items-center gap-3 p-3.5 bg-s2/60 border border-line rounded-xl">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center text-sm font-bold text-violet-200 flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-brand-tint border border-brand/25 flex items-center justify-center text-sm font-bold text-brand-text flex-shrink-0">
             {lead.name[0].toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -112,11 +112,11 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
 
         {/* Já transferido anteriormente */}
         {lead.transferredAt && (
-          <div className="flex items-start gap-2.5 p-3.5 bg-violet-500/8 border border-violet-500/25 rounded-xl">
-            <ExternalLink size={14} className="text-violet-400 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2.5 p-3.5 bg-brand-tint border border-brand/25 rounded-xl">
+            <ExternalLink size={14} className="text-brand-text flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-semibold text-violet-300">Já migrado para o funil principal</p>
-              <p className="text-xs text-violet-400/70 mt-0.5">
+              <p className="text-xs font-semibold text-brand-text">Já migrado para o funil principal</p>
+              <p className="text-xs text-brand-text mt-0.5">
                 Transferido em {new Date(lead.transferredAt).toLocaleDateString('pt-BR')}.
                 Migrar novamente criará uma segunda entrada no funil.
               </p>
@@ -140,10 +140,10 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
         {/* Etapa de entrada */}
         {isScheduledHandoff ? (
           /* Handoff de 'scheduled' → trava em Visita */
-          <div className="flex items-center gap-3 p-3.5 bg-cyan-500/8 border border-cyan-500/25 rounded-xl">
-            <Lock size={14} className="text-cyan-400 flex-shrink-0" />
+          <div className="flex items-center gap-3 p-3.5 bg-info-bg border border-info-line rounded-xl">
+            <Lock size={14} className="text-info flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-xs font-semibold text-cyan-200">Entrará diretamente em Visita</p>
+              <p className="text-xs font-semibold text-info">Entrará diretamente em Visita</p>
               <p className="text-xs text-t3 mt-0.5">
                 Lead agendado → etapa mapeada automaticamente para o funil comercial.
               </p>
@@ -198,7 +198,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
               value={ticket ? Number(ticket.replace(/\D/g, '')).toLocaleString('pt-BR') : ''}
               onChange={e => setTicket(e.target.value.replace(/\D/g, ''))}
               placeholder="0"
-              className="w-full bg-s3/50 border border-line rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+              className="w-full bg-s3/50 border border-line rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30"
             />
           </div>
         </div>
@@ -213,20 +213,20 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             onChange={e => setNotes(e.target.value)}
             rows={2}
             placeholder="Observações que vão para o lead no funil..."
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30 resize-none"
           />
         </div>
 
         {/* Flow preview */}
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-violet-500/5 border border-violet-500/15 rounded-xl">
-          <GitMerge size={13} className="text-violet-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 px-3 py-2.5 bg-brand-tint border border-brand/25 rounded-xl">
+          <GitMerge size={13} className="text-brand-text flex-shrink-0" />
           <span className="text-xs text-t3">Campanha</span>
           <ArrowRight size={11} className="text-t5 flex-shrink-0" />
           <span className={`text-xs font-semibold ${stageConf.color}`}>{stageConf.label}</span>
           {isScheduledHandoff && (
             <>
               <ArrowRight size={11} className="text-t5 flex-shrink-0" />
-              <span className="text-xs text-cyan-400 font-semibold">Tarefa de visita</span>
+              <span className="text-xs text-info font-semibold">Tarefa de visita</span>
             </>
           )}
           <span className="ml-auto text-[11px] text-t4">origem: campanha</span>
@@ -244,7 +244,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             Cancelar
           </Button>
           <Button
-            className="flex-1 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500"
+            className="flex-1 flex items-center justify-center gap-2 bg-brand hover:bg-brand"
             onClick={handleTransfer}
           >
             <ArrowRight size={14} />

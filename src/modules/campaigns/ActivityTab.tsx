@@ -14,10 +14,10 @@ const ACTION_CONFIG: Record<CampaignActivity['actionType'], {
   icon: React.ReactNode; label: string; color: string; bg: string; border: string
 }> = {
   dispatch:     { icon: <MessageCircle size={13} />, label: 'Disparo',        color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20'  },
-  stage_change: { icon: <ArrowRight    size={13} />, label: 'Mudança de etapa',color: 'text-blue-400',   bg: 'bg-s3/60',   border: 'border-blue-500/20'   },
-  transfer:     { icon: <GitMerge      size={13} />, label: 'Migração ao funil',color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+  stage_change: { icon: <ArrowRight    size={13} />, label: 'Mudança de etapa',color: 'text-info',   bg: 'bg-s3/60',   border: 'border-info-line'   },
+  transfer:     { icon: <GitMerge      size={13} />, label: 'Migração ao funil',color: 'text-brand-text', bg: 'bg-brand-tint', border: 'border-brand/25' },
   assignment:   { icon: <UserCheck     size={13} />, label: 'Delegação',      color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
-  parecer:      { icon: <ClipboardList size={13} />, label: 'Parecer',        color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20'   },
+  parecer:      { icon: <ClipboardList size={13} />, label: 'Parecer',        color: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line'   },
 }
 
 // ─── Períodos de filtro ───────────────────────────────────────────────────────
@@ -277,9 +277,9 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Disparos',     count: counts.dispatch,     color: 'text-green-400',  bg: 'bg-green-500/8'  },
-            { label: 'Mudanças',     count: counts.stage_change, color: 'text-blue-400',   bg: 'bg-s3/50'   },
-            { label: 'Migrações',    count: counts.transfer,     color: 'text-violet-400', bg: 'bg-violet-500/8' },
-            { label: 'Pareceres',    count: counts.parecer,      color: 'text-cyan-400',   bg: 'bg-cyan-500/8'   },
+            { label: 'Mudanças',     count: counts.stage_change, color: 'text-info',   bg: 'bg-s3/50'   },
+            { label: 'Migrações',    count: counts.transfer,     color: 'text-brand-text', bg: 'bg-brand-tint' },
+            { label: 'Pareceres',    count: counts.parecer,      color: 'text-info',   bg: 'bg-info-bg'   },
           ].map(s => (
             <div key={s.label} className={`rounded-xl ${s.bg} border border-line px-3 py-2.5 text-center`}>
               <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.count}</p>
@@ -366,7 +366,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
                       <p className="text-xs text-t4 mt-0.5">
                         <span className="text-t3">{String(meta.from ?? '—')}</span>
                         {' → '}
-                        <span className="text-blue-400 font-medium">{String(meta.to ?? '—')}</span>
+                        <span className="text-info font-medium">{String(meta.to ?? '—')}</span>
                       </p>
                     )}
                     {activity.actionType === 'transfer' && (

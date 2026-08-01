@@ -12,14 +12,20 @@ interface StatCardProps {
   onClick?: () => void
 }
 
+/*
+ * O accent colore apenas o chip do ícone — a barra de 3px no topo saiu.
+ * Com quatro StatCards lado a lado, quatro barras coloridas competiam entre si
+ * e com o número, que é o que interessa. `indigo` e `purple` viraram apelidos
+ * de `brand` para não quebrar as chamadas existentes.
+ */
 const accentConfig = {
-  brand:  { bar: 'bg-brand',       icon: 'text-brand',       iconBg: 'bg-brand-tint',      value: 'text-brand-text'  },
-  indigo: { bar: 'bg-brand',       icon: 'text-brand',       iconBg: 'bg-brand-tint',      value: 'text-brand-text'  },
-  green:  { bar: 'bg-success',     icon: 'text-success',     iconBg: 'bg-success-bg',      value: 'text-success'     },
-  blue:   { bar: 'bg-info',        icon: 'text-info',        iconBg: 'bg-info-bg',         value: 'text-info'        },
-  purple: { bar: 'bg-purple-500',  icon: 'text-purple-400',  iconBg: 'bg-purple-500/12',   value: 'text-purple-400'  },
-  yellow: { bar: 'bg-warning',     icon: 'text-warning',     iconBg: 'bg-warning-bg',      value: 'text-warning'     },
-  red:    { bar: 'bg-error',       icon: 'text-error',       iconBg: 'bg-error-bg',        value: 'text-error'       },
+  brand:  { icon: 'text-brand',   iconBg: 'bg-brand-tint' },
+  indigo: { icon: 'text-brand',   iconBg: 'bg-brand-tint' },
+  purple: { icon: 'text-brand',   iconBg: 'bg-brand-tint' },
+  green:  { icon: 'text-success', iconBg: 'bg-success-bg' },
+  blue:   { icon: 'text-info',    iconBg: 'bg-info-bg'    },
+  yellow: { icon: 'text-warning', iconBg: 'bg-warning-bg' },
+  red:    { icon: 'text-error',   iconBg: 'bg-error-bg'   },
 }
 
 export function StatCard({ label, value, sub, icon, accent = 'brand', trend, trendLabel, onClick }: StatCardProps) {
@@ -39,20 +45,17 @@ export function StatCard({ label, value, sub, icon, accent = 'brand', trend, tre
   return (
     <div
       className={`
-        relative bg-surface border border-line rounded-xl overflow-hidden
+        relative bg-surface border border-line rounded-[14px] overflow-hidden
         transition-all duration-200
-        ${onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:border-line-strong hover:shadow-modal' : ''}
+        ${onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:border-line-strong hover:shadow-dropdown' : ''}
       `}
       style={{ boxShadow: 'var(--shadow-card)' }}
       onClick={onClick}
     >
-      {/* Accent bar top */}
-      <div className={`absolute top-0 left-0 right-0 h-[3px] ${cfg.bar}`} />
-
-      <div className="p-5 pt-6">
+      <div className="p-5">
         {/* Header row */}
         <div className="flex items-start justify-between mb-4">
-          <p className="text-xs font-semibold text-t3 uppercase tracking-widest leading-tight pr-2">
+          <p className="font-label text-[11px] font-bold text-t3 uppercase tracking-[0.1em] leading-tight pr-2">
             {label}
           </p>
           <div className={`w-9 h-9 ${cfg.iconBg} rounded-lg flex items-center justify-center ${cfg.icon} flex-shrink-0`}>

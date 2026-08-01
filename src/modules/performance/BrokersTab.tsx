@@ -202,11 +202,11 @@ export function BrokersTab() {
   }
 
   const METRICS = (s: BrokerStats, prev: Partial<BrokerStats>) => [
-    { label: 'Novos Disparos',     icon: Zap,            color: 'text-violet-400', bg: 'bg-violet-500/10', value: s.disparosNew,      prevVal: prev.disparosNew },
+    { label: 'Novos Disparos',     icon: Zap,            color: 'text-brand-text', bg: 'bg-brand-tint', value: s.disparosNew,      prevVal: prev.disparosNew },
     { label: 'Follow-ups',         icon: BarChart2,      color: 'text-indigo-400', bg: 'bg-indigo-500/10', value: s.disparosFollowup, prevVal: prev.disparosFollowup },
     { label: 'Interações leads',   icon: MessageCircle,  color: 'text-green-400',  bg: 'bg-green-500/10',  value: s.interactions,     prevVal: prev.interactions },
     { label: 'Avanços no funil',   icon: ArrowRight,     color: 'text-brand',      bg: 'bg-brand/10',      value: s.advances,         prevVal: prev.advances },
-    { label: 'Leads novos',        icon: UserPlus,       color: 'text-sky-400',    bg: 'bg-sky-500/10',    value: s.newLeads,         prevVal: undefined },
+    { label: 'Leads novos',        icon: UserPlus,       color: 'text-info',    bg: 'bg-info-bg',    value: s.newLeads,         prevVal: undefined },
     { label: 'Descartes',          icon: XCircle,        color: 'text-error',      bg: 'bg-error-bg',      value: s.discards,         prevVal: prev.discards },
     { label: 'Vendas',             icon: TrendingUp,     color: 'text-success',    bg: 'bg-success-bg',    value: s.sales,            prevVal: undefined },
     { label: 'Receita',            icon: DollarSign,     color: 'text-success',    bg: 'bg-success-bg',    value: null, revenue: s.revenue, prevVal: undefined },
@@ -317,7 +317,7 @@ export function BrokersTab() {
       {/* Pulso de atividade — últimos 14 dias (agregado) */}
       <Card>
         <div className="flex items-center gap-2 mb-4">
-          <BarChart2 size={14} className="text-violet-400" />
+          <BarChart2 size={14} className="text-brand-text" />
           <h2 className="text-sm font-semibold text-t1">Pulso de atividade — últimos 14 dias</h2>
           <span className="ml-auto text-xs text-t4">WhatsApp + ligações + emails + visitas</span>
         </div>
@@ -356,7 +356,7 @@ export function BrokersTab() {
                         )}
                         <div className="w-full flex items-end" style={{ height: 36 }}>
                           <div
-                            className={`w-full rounded-t-sm transition-all ${di === 13 ? 'bg-brand/70' : d.count > 0 ? 'bg-violet-500/50' : 'bg-s3/40'}`}
+                            className={`w-full rounded-t-sm transition-all ${di === 13 ? 'bg-brand/70' : d.count > 0 ? 'bg-brand-tint' : 'bg-s3/40'}`}
                             style={{ height: `${Math.max((d.count / max) * 100, d.count > 0 ? 8 : 2)}%` }}
                           />
                         </div>

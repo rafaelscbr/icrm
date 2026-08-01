@@ -790,9 +790,9 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         <div className="flex items-center gap-3 text-xs text-t3 flex-shrink-0">
           <span><span className="text-t1 font-bold tabular-nums">{queueLeads.length}</span> na fila</span>
           <span className="text-line">|</span>
-          <span><span className="text-cyan-400 font-bold tabular-nums">{contactedLeads.length}</span> acionados</span>
+          <span><span className="text-info font-bold tabular-nums">{contactedLeads.length}</span> acionados</span>
           <span className="text-line">|</span>
-          <span><span className="text-violet-400 font-bold tabular-nums">{leads.filter(l => l.funnelStage === 'scheduled').length}</span> agendados</span>
+          <span><span className="text-brand-text font-bold tabular-nums">{leads.filter(l => l.funnelStage === 'scheduled').length}</span> agendados</span>
         </div>
       </div>
 
@@ -940,10 +940,10 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               className="flex items-center gap-3 w-full mb-3 group"
             >
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                <span className="w-2 h-2 rounded-full bg-info-bg" />
                 <h3 className="text-sm font-bold text-t3 group-hover:text-t1 transition-colors">Já acionados</h3>
               </div>
-              <span className="text-xs bg-s3/70 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+              <span className="text-xs bg-s3/70 text-info border border-info-line px-2.5 py-0.5 rounded-full font-bold tabular-nums">
                 {contactedLeads.length}
               </span>
               <div className="flex-1 h-px bg-s2/60" />
@@ -979,7 +979,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         <div className="min-w-0">
                           <p className="text-sm text-t2 truncate">{lead.name}</p>
                           {lead.lastSentByName && (
-                            <p className="text-[11px] text-violet-400/70 truncate flex items-center gap-1">
+                            <p className="text-[11px] text-brand-text truncate flex items-center gap-1">
                               <MessageCircle size={10} className="flex-shrink-0" /> {lead.lastSentByName}{lead.lastSentAt ? ` · ${new Date(lead.lastSentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(lead.lastSentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
                               {lead.messageIndex !== undefined ? ` · Msg ${lead.messageIndex + 1}` : ''}
                             </p>
@@ -1002,8 +1002,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                           <button onClick={() => handleInterested(lead)}
                             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                               ['attended','scheduled'].includes(lead.funnelStage)
-                                ? 'text-cyan-500/30 cursor-default'
-                                : 'hover:bg-cyan-500/10 text-t4 hover:text-cyan-400'
+                                ? 'text-info cursor-default'
+                                : 'hover:bg-info-bg text-t4 hover:text-info'
                             }`}
                             title="Marcar como interessado">
                             <ThumbsUp size={13} />

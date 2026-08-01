@@ -3,7 +3,7 @@ import {
   X, MessageCircle, UserCheck, Building2,
   Trash2, RotateCcw, Edit2, AlertTriangle, CheckCircle2,
   ClipboardList, Star, Search, Check, Zap,
-  ChevronDown, History, Target, StickyNote, PhoneCall,
+  ChevronDown, History, StickyNote, PhoneCall,
   Database, ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
   Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight, Timer,
 } from 'lucide-react'
@@ -24,7 +24,6 @@ import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
 import { useSlaInfo } from './SlaBadge'
-import { LeadRadarTab } from './LeadRadarTab'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import toast from 'react-hot-toast'
 
@@ -123,7 +122,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showEdit,          setShowEdit]          = useState(false)
   const [showTaskForm,      setShowTaskForm]      = useState(false)
   const [showHistory,       setShowHistory]       = useState(false)
-  const [showRadar,         setShowRadar]         = useState(false)
   const [showBaseCamp,      setShowBaseCamp]      = useState(false)
   const [showAddToList,     setShowAddToList]     = useState(false)
   const [selectedListId,    setSelectedListId]    = useState('')
@@ -301,15 +299,23 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   return (
     <>
-      {/* ── Modal principal ──────────────────────────────────────────────────── */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={onClose} />
+      {/* ── Painel lateral do lead ───────────────────────────────────────────
+          Deixou de ser modal centralizado: o briefing pede que o corretor
+          continue vendo o Kanban enquanto trabalha o lead. Em desktop entra
+          pela direita e preserva a coluna atrás; em telas pequenas ocupa a
+          tela inteira, onde dividir espaço não faz sentido.
+          O overlay é bem mais leve que o do modal (25% vs 65%) justamente
+          para o quadro continuar legível ao lado. */}
+      <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="absolute inset-0 bg-black/25 sm:bg-black/25" onClick={onClose} aria-hidden />
 
         <div
           role="dialog"
           aria-modal="true"
           aria-label={`Lead ${lead.name}`}
-          className="relative w-full max-w-xl modal-surface rounded-[18px] shadow-modal overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col max-h-[90vh]"
+          className="relative w-full sm:max-w-[38rem] h-full modal-surface shadow-modal overflow-hidden
+            sm:rounded-l-[20px] border-l border-line
+            animate-in fade-in slide-in-from-right-4 duration-200 flex flex-col"
         >
 
           {/* ── Cabeçalho ──────────────────────────────────────────────────── */}
@@ -758,55 +764,55 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               )}
             </div>
 
-            {/* Seções expansíveis: Radar e Permuta */}
+            {/*
+              REMOVIDO em 01/08/2026, com aprovação do Rafael:
+                · "Radar de interesse" (LeadRadarTab)
+                · "Permuta"
+              Nenhum dos dois levava a uma decisão sobre o lead, e ambos já
+              nasciam colapsados — ocupavam espaço sem serem usados. O
+              componente LeadRadarTab continua no repositório (sem import), caso
+              se queira reaproveitar a lógica de casamento imóvel↔lead numa aba
+              própria de Imóveis no futuro.
+            */}
             <div className="space-y-2">
-              <button
-                onClick={() => setShowRadar(v => !v)}
-                aria-expanded={showRadar}
-                className="flex items-center justify-between w-full px-3 py-2.5 rounded-[14px] bg-s2 hover:bg-s3 border border-line transition-all duration-150"
-              >
-                <div className="flex items-center gap-2 text-xs font-medium text-t2">
-                  <Target size={12} strokeWidth={1.6} className="text-t4" /> Radar de interesse
-                </div>
-                <ChevronDown size={12} strokeWidth={1.6} aria-hidden="true" className={`text-t4 transition-transform duration-200 ${showRadar ? 'rotate-180' : ''}`} />
-              </button>
-              {showRadar && (
-                <div className="px-1">
-                  <LeadRadarTab lead={lead} properties={properties} />
-                </div>
-              )}
-
               {/* ── Listas & Campanhas ─────────────────────────────────────── */}
+              {/*
+                Os dois controles são IRMÃOS, não aninhados. Antes o botão
+                "Adicionar à lista" ficava dentro do botão que expande a seção —
+                HTML inválido (<button> dentro de <button>), que o React
+                reclamava em runtime e que quebra a navegação por teclado:
+                o botão interno não recebia foco próprio.
+              */}
               <div className="rounded-[14px] border border-line bg-s2 overflow-hidden">
-                <button
-                  onClick={() => {
-                    setShowBaseCamp(v => !v)
-                    if (activeLists.length === 0) loadLists()
-                  }}
-                  aria-expanded={showBaseCamp}
-                  className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-s3 transition-all duration-150"
-                >
-                  <div className="flex items-center gap-2 text-xs font-medium text-t2">
-                    <Database size={12} strokeWidth={1.6} className="text-t4" />
-                    Listas &amp; Campanhas
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {lead.contactId && (
-                      <button
-                        onClick={e => {
-                          e.stopPropagation()
-                          if (activeLists.length === 0) loadLists()
-                          setShowAddToList(v => !v)
-                        }}
-                        className="flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.06em] text-brand-text bg-brand-tint border border-brand/25 px-2 py-1 rounded-full transition-all duration-150 hover:border-brand/40"
-                        title="Adicionar a uma lista"
-                      >
-                        <ListPlus size={10} strokeWidth={1.6} /> Adicionar à lista
-                      </button>
-                    )}
+                <div className="flex items-center gap-2 pr-3">
+                  <button
+                    onClick={() => {
+                      setShowBaseCamp(v => !v)
+                      if (activeLists.length === 0) loadLists()
+                    }}
+                    aria-expanded={showBaseCamp}
+                    className="flex items-center justify-between flex-1 min-w-0 px-3 py-2.5 hover:bg-s3 transition-all duration-150"
+                  >
+                    <span className="flex items-center gap-2 text-xs font-medium text-t2">
+                      <Database size={12} strokeWidth={1.6} className="text-t4" />
+                      Listas &amp; Campanhas
+                    </span>
                     <ChevronDown size={12} strokeWidth={1.6} aria-hidden="true" className={`text-t4 transition-transform duration-200 ${showBaseCamp ? 'rotate-180' : ''}`} />
-                  </div>
-                </button>
+                  </button>
+                  {lead.contactId && (
+                    <button
+                      onClick={() => {
+                        if (activeLists.length === 0) loadLists()
+                        setShowAddToList(v => !v)
+                      }}
+                      aria-expanded={showAddToList}
+                      className="flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.06em] text-brand-text bg-brand-tint border border-brand/25 px-2 py-1 rounded-full transition-all duration-150 hover:border-brand/40 flex-shrink-0"
+                      title="Adicionar a uma lista"
+                    >
+                      <ListPlus size={10} strokeWidth={1.6} /> Adicionar à lista
+                    </button>
+                  )}
+                </div>
 
                 {/* Seletor de lista — "Adicionar à lista" */}
                 {showAddToList && lead.contactId && (
@@ -1037,7 +1043,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
       {/* ── Edit + Task forms ───────────────────────────────────────────────── */}
       {showEdit     && <LeadForm isOpen lead={lead} onClose={() => setShowEdit(false)} />}
-      {showTaskForm && <TaskForm isOpen={showTaskForm} onClose={() => setShowTaskForm(false)} defaultContactId={lead.contactId} />}
+      {showTaskForm && <TaskForm isOpen={showTaskForm} onClose={() => setShowTaskForm(false)} defaultContactId={lead.contactId} defaultLeadId={lead.id} />}
     </>
   )
 }

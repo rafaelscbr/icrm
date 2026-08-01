@@ -384,8 +384,8 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
         {step === 2 && (
           <div className="flex flex-col gap-4">
             <div className="text-center mb-2">
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-2">
-                <Users size={22} className="text-purple-400" />
+              <div className="w-12 h-12 rounded-2xl bg-brand-tint flex items-center justify-center mx-auto mb-2">
+                <Users size={22} className="text-brand-text" />
               </div>
               <h2 className="text-base font-semibold text-t1">Selecionar audiência</h2>
               <p className="text-xs text-t4 mt-0.5">Escolha uma ou mais listas da Base de Leads</p>

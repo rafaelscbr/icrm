@@ -91,16 +91,16 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
             value: formatCurrencyFull(commission),
             sub: '10% do 5% do VGV',
             icon: <BadgePercent size={15} />,
-            color: 'text-violet-400',
-            bg: 'bg-violet-500/10',
+            color: 'text-brand-text',
+            bg: 'bg-brand-tint',
           },
           {
             label: 'Ticket médio',
             value: formatCurrencyFull(avgTicket),
             sub: 'por imóvel',
             icon: <TrendingUp size={15} />,
-            color: 'text-cyan-400',
-            bg: 'bg-cyan-500/10',
+            color: 'text-info',
+            bg: 'bg-info-bg',
           },
         ].map(kpi => (
           <Card key={kpi.label} className="!py-4">
@@ -255,7 +255,7 @@ export function PropertiesPage() {
             className={`
               flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
               ${onlyWithTasks
-                ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
+                ? 'bg-warning-bg border-warning-line text-warning'
                 : 'bg-s3/50 border-line text-t3 hover:text-t2'
               }
             `}
@@ -331,7 +331,7 @@ export function PropertiesPage() {
                         Cond: <span className="text-t3">{formatCurrencyFull(p.condoFee)}/mês</span>
                       </p>
                     )}
-                    <p className="text-xs text-violet-400 mt-0.5 flex items-center gap-1">
+                    <p className="text-xs text-brand-text mt-0.5 flex items-center gap-1">
                       <BadgePercent size={10} />
                       Comissão: <span className="font-semibold">{formatCurrencyFull(commission)}</span>
                     </p>

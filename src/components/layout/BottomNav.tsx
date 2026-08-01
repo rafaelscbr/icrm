@@ -59,7 +59,7 @@ export function BottomNav() {
       {/* ── FAB nova tarefa ──────────────────────────────────────── */}
       <button
         onClick={() => setTaskFormOpen(true)}
-        className="lg:hidden fixed right-4 z-50 w-12 h-12 rounded-full bg-brand hover:bg-brand-dark active:scale-95 flex items-center justify-center shadow-brand text-[#0F1730] transition-all duration-150"
+        className="lg:hidden fixed right-4 z-50 w-12 h-12 rounded-full bg-brand hover:bg-brand-dark active:scale-95 flex items-center justify-center shadow-brand text-[var(--brand-btn-text)] transition-all duration-150"
         style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
         title="Nova tarefa"
       >
@@ -131,7 +131,7 @@ export function BottomNav() {
                   />
                   {unreadCount > 0 && (
                     <span
-                      className="absolute -top-0.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-brand text-[#0F1730] text-[11px] font-bold flex items-center justify-center tabular-nums leading-none"
+                      className="absolute -top-0.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-brand text-[var(--brand-btn-text)] text-[11px] font-bold flex items-center justify-center tabular-nums leading-none"
                       aria-hidden="true"
                     >
                       {unreadCount > 9 ? '9+' : unreadCount}

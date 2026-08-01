@@ -25,6 +25,25 @@
 
     <!-- Descrição para compartilhamento -->
     <meta name="description" content="CRM imobiliário para gestão de contatos, vendas e performance" />
+
+    <!--
+      Aplica o tema ANTES da primeira pintura.
+      Sem isto o app pisca no tema errado: os tokens de :root são o tema escuro
+      e a classe .light só entra depois que o React monta. Como o tema principal
+      do Souza OS é o claro, o flash apareceria em toda abertura.
+      Lê a mesma chave do zustand/persist (useThemeStore) — default: claro.
+    -->
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('icrm-theme')
+          var theme = raw ? (JSON.parse(raw).state || {}).theme : 'light'
+          if (theme !== 'dark') document.documentElement.classList.add('light')
+        } catch (e) {
+          document.documentElement.classList.add('light')
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

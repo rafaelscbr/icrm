@@ -46,9 +46,9 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
       <div className="flex flex-col gap-5">
 
         {/* Lead info */}
-        <div className="flex items-center gap-3 p-3 bg-cyan-500/8 border border-cyan-500/20 rounded-xl">
-          <div className="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-            <Home size={16} className="text-cyan-400" />
+        <div className="flex items-center gap-3 p-3 bg-info-bg border border-info-line rounded-xl">
+          <div className="w-9 h-9 rounded-xl bg-info-bg flex items-center justify-center flex-shrink-0">
+            <Home size={16} className="text-info" />
           </div>
           <div>
             <p className="text-sm font-semibold text-t1">{lead.name}</p>
@@ -66,7 +66,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-info-line"
           />
         </div>
 
@@ -80,7 +80,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
             type="time"
             value={time}
             onChange={e => setTime(e.target.value)}
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-info-line"
           />
         </div>
 
@@ -94,7 +94,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
             onChange={e => setNotes(e.target.value)}
             rows={2}
             placeholder="Endereço, imóvel a visitar, ponto de encontro..."
-            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none"
+            className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-info-line resize-none"
           />
         </div>
 
@@ -103,7 +103,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
             Pular por agora
           </Button>
           <Button
-            className="flex-1 flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500"
+            className="flex-1 flex items-center justify-center gap-2 bg-info hover:bg-info"
             onClick={handleCreate}
           >
             <CheckCircle2 size={14} />

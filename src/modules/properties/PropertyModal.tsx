@@ -175,7 +175,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
               {property.condoFee && (
                 <p className="text-xs text-t3">Cond: {formatCurrencyFull(property.condoFee)}/mês</p>
               )}
-              <div className="flex items-center gap-1.5 text-xs text-violet-400">
+              <div className="flex items-center gap-1.5 text-xs text-brand-text">
                 <BadgePercent size={11} />
                 <span>Comissão: {formatCurrencyFull(commission)}</span>
               </div>
@@ -236,7 +236,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
                     <div className="text-right">
                       <p className="text-xs font-bold text-green-400">{formatCurrencyFull(sale.value)}</p>
                       {brokerCommission > 0 && (
-                        <p className="text-[11px] text-violet-400">{formatCurrencyFull(brokerCommission)}</p>
+                        <p className="text-[11px] text-brand-text">{formatCurrencyFull(brokerCommission)}</p>
                       )}
                       <p className="text-[11px] text-t4">{formatDate(sale.date)}</p>
                     </div>

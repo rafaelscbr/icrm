@@ -18,18 +18,18 @@ import toast from 'react-hot-toast'
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const ORIGINS: { value: LeadOrigin; label: string; icon: typeof Sparkles; grad: string; ring: string }[] = [
-  { value: 'felicita',  label: 'Felicità',  icon: Sparkles,   grad: 'from-rose-500 to-pink-600',    ring: 'ring-rose-500/50'   },
-  { value: 'meta_ads',  label: 'Meta ADS',  icon: Smartphone, grad: 'from-blue-500 to-indigo-600',  ring: 'ring-blue-500/50'   },
-  { value: 'portal',    label: 'Portal',    icon: Globe,      grad: 'from-cyan-500 to-sky-600',     ring: 'ring-cyan-500/50'   },
-  { value: 'offline',   label: 'Offline',   icon: Handshake,  grad: 'from-amber-500 to-orange-600', ring: 'ring-amber-500/50'  },
+  { value: 'felicita',  label: 'Felicità',  icon: Sparkles,   grad: 'bg-brand',   ring: 'ring-brand/30'   },
+  { value: 'meta_ads',  label: 'Meta ADS',  icon: Smartphone, grad: 'from-blue-500 to-indigo-600',  ring: 'ring-info-line'   },
+  { value: 'portal',    label: 'Portal',    icon: Globe,      grad: 'bg-info',    ring: 'ring-info-line'   },
+  { value: 'offline',   label: 'Offline',   icon: Handshake,  grad: 'bg-warning', ring: 'ring-warning-line'  },
 ]
 
 const STAGES: { value: LeadFunnelStage; label: string; icon: typeof Sparkles; color: string; active: string }[] = [
   { value: 'lead',        label: 'Lead',        icon: Target,        color: 'text-t3',  active: 'bg-slate-500/25 border-slate-400/50 text-t1' },
-  { value: 'followup',    label: 'Followup',    icon: MessageCircle, color: 'text-blue-400',   active: 'bg-blue-500/25 border-blue-400/50 text-blue-200'    },
-  { value: 'atendimento', label: 'Atendimento', icon: PhoneCall,     color: 'text-violet-400', active: 'bg-violet-500/25 border-violet-400/50 text-violet-200'},
+  { value: 'followup',    label: 'Followup',    icon: MessageCircle, color: 'text-info',   active: 'bg-info-bg border-info-line text-info'    },
+  { value: 'atendimento', label: 'Atendimento', icon: PhoneCall,     color: 'text-brand-text', active: 'bg-brand-tint border-brand/25 text-brand-text'},
   { value: 'visita',      label: 'Visita',      icon: Home,          color: 'text-amber-400',  active: 'bg-amber-500/25 border-amber-400/50 text-amber-200'  },
-  { value: 'proposta',    label: 'Proposta',    icon: FileText,      color: 'text-orange-400', active: 'bg-orange-500/25 border-orange-400/50 text-orange-200'},
+  { value: 'proposta',    label: 'Proposta',    icon: FileText,      color: 'text-warning', active: 'bg-warning-bg border-warning-line text-warning'},
   { value: 'venda',       label: 'Venda',       icon: Trophy,        color: 'text-green-400',  active: 'bg-green-500/25 border-green-400/50 text-green-200'  },
 ]
 
@@ -275,14 +275,14 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
         animate-in fade-in zoom-in-95 duration-200">
 
         {/* Gradient top border */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-500" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-brand" />
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center
-              bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20`}>
-              <Sparkles size={16} className="text-blue-300" />
+              bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-info-line`}>
+              <Sparkles size={16} className="text-info" />
             </div>
             <div>
               <h2 className="text-base font-bold text-t1">
@@ -307,7 +307,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
         {!isEdit && (
           <div className="flex gap-1.5 px-6 pb-4 flex-shrink-0">
             <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600" />
-            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-gradient-to-r from-blue-400 to-cyan-500' : 'bg-s3'}`} />
+            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-brand' : 'bg-s3'}`} />
           </div>
         )}
 
@@ -324,7 +324,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   onClick={() => { setContactMode('search'); clearContact() }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     contactMode === 'search'
-                      ? 'bg-gradient-to-br bg-blue-600/30 text-blue-100 shadow-sm border border-blue-500/30'
+                      ? 'bg-gradient-to-br bg-info-bg text-info shadow-sm border border-info-line'
                       : 'text-t3 hover:text-t2'
                   }`}
                 >
@@ -334,7 +334,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   onClick={() => { setContactMode('create'); setSelectedContactId(undefined) }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     contactMode === 'create'
-                      ? 'bg-gradient-to-br from-emerald-600/40 to-teal-600/30 text-emerald-200 shadow-sm border border-emerald-500/30'
+                      ? 'bg-success-bg text-success border border-success-line'
                       : 'text-t3 hover:text-t2'
                   }`}
                 >
@@ -346,9 +346,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
               {contactMode === 'search' && (
                 <div className="space-y-2">
                   {selectedContact ? (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-500/10 to-blue-600/5 border border-blue-500/25 rounded-xl
+                    <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-500/10 to-blue-600/5 border border-info-line rounded-xl
                       animate-in fade-in zoom-in-95 duration-200">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br bg-blue-600/30 text-blue-100 border border-blue-500/30">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br bg-info-bg text-info border border-info-line">
                         {selectedContact.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -356,10 +356,10 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                         <p className="text-xs text-t2">{formatPhone(selectedContact.phone)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 size={16} className="text-violet-400" />
+                        <CheckCircle2 size={16} className="text-brand-text" />
                         <button
                           onClick={clearContact}
-                          className="text-xs text-t3 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-s3/60 transition-all"
+                          className="text-xs text-t3 hover:text-info px-2 py-1 rounded-lg hover:bg-s3/60 transition-all"
                         >
                           Trocar
                         </button>
@@ -404,16 +404,16 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                                   <button
                                     key={c.id}
                                     onClick={() => selectContact(c.id)}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-violet-500/12 text-left transition-all group border-t border-line first:border-0"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-tint text-left transition-all group border-t border-line first:border-0"
                                   >
-                                    <div className="w-8 h-8 rounded-full bg-s3 group-hover:bg-blue-500/20 flex items-center justify-center text-xs font-bold text-t2 group-hover:text-blue-200 transition-all flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-s3 group-hover:bg-info-bg flex items-center justify-center text-xs font-bold text-t2 group-hover:text-info transition-all flex-shrink-0">
                                       {c.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="text-sm font-medium text-t1 group-hover:text-t1 truncate">{c.name}</p>
                                       <p className="text-xs text-t3">{formatPhone(c.phone)}</p>
                                     </div>
-                                    <ChevronRight size={13} className="text-t4 group-hover:text-blue-400 flex-shrink-0 transition-colors" />
+                                    <ChevronRight size={13} className="text-t4 group-hover:text-info flex-shrink-0 transition-colors" />
                                   </button>
                                 ))}
                               </div>
@@ -503,11 +503,11 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Campaign alert */}
               {campaignHit && (
-                <div className="flex items-start gap-2.5 px-3 py-2.5 bg-orange-500/10 border border-orange-500/30 rounded-xl animate-in fade-in duration-200">
-                  <AlertTriangle size={14} className="text-orange-400 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2.5 px-3 py-2.5 bg-warning-bg border border-warning-line rounded-xl animate-in fade-in duration-200">
+                  <AlertTriangle size={14} className="text-warning flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-orange-300">Já está em campanha</p>
-                    <p className="text-xs text-orange-400/70 mt-0.5">Este número está em uma campanha de mensagens ativa.</p>
+                    <p className="text-xs font-semibold text-warning">Já está em campanha</p>
+                    <p className="text-xs text-warning mt-0.5">Este número está em uma campanha de mensagens ativa.</p>
                   </div>
                 </div>
               )}
@@ -524,23 +524,23 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 if (!c) return null
                 return (
                   <div className="flex items-center gap-2.5 px-3 py-2.5 bg-s2/60 border border-line rounded-xl">
-                    <div className="w-7 h-7 rounded-full bg-violet-500/25 flex items-center justify-center text-xs font-bold text-blue-200 flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-brand-tint flex items-center justify-center text-xs font-bold text-info flex-shrink-0">
                       {c.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-t3">Contato</p>
                       <p className="text-sm font-semibold text-t1 truncate">{c.name}</p>
                     </div>
-                    <CheckCircle2 size={14} className="text-blue-400 flex-shrink-0" />
+                    <CheckCircle2 size={14} className="text-info flex-shrink-0" />
                   </div>
                 )
               })()}
 
               {/* Campaign alert */}
               {campaignHit && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/25 rounded-xl">
-                  <AlertTriangle size={12} className="text-orange-400 flex-shrink-0" />
-                  <p className="text-xs text-orange-300">Este contato está em uma campanha ativa.</p>
+                <div className="flex items-center gap-2 px-3 py-2 bg-warning-bg border border-warning-line rounded-xl">
+                  <AlertTriangle size={12} className="text-warning flex-shrink-0" />
+                  <p className="text-xs text-warning">Este contato está em uma campanha ativa.</p>
                 </div>
               )}
 
@@ -573,15 +573,15 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 <label className="text-xs font-semibold text-t2 mb-2 block uppercase tracking-wider">Produto / Imóvel</label>
 
                 {propertyMode === 'selected' && (
-                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-xl animate-in fade-in zoom-in-95 duration-150">
-                    <Building2 size={14} className="text-blue-400 flex-shrink-0" />
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-info-line rounded-xl animate-in fade-in zoom-in-95 duration-150">
+                    <Building2 size={14} className="text-info flex-shrink-0" />
                     <p className="flex-1 text-sm font-medium text-t1 truncate">{propertySearch}</p>
                     <button onClick={clearProperty} className="text-xs text-t3 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
                   </div>
                 )}
 
                 {propertyMode === 'free' && (
-                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-amber-500/10 to-orange-500/8 border border-amber-500/25 rounded-xl animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-warning-bg border border-warning-line rounded-xl animate-in fade-in zoom-in-95 duration-150">
                     <PenLine size={14} className="text-amber-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] text-amber-400/70">Nome livre (não cadastrado)</p>
@@ -617,7 +617,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                                   <p className="text-sm font-medium text-t1 group-hover:text-t1">{p.name}</p>
                                   <p className="text-xs text-t3">{p.neighborhood} · {p.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</p>
                                 </div>
-                                <span className="text-xs font-bold text-blue-400 ml-3 flex-shrink-0">{formatCurrencyFull(p.value)}</span>
+                                <span className="text-xs font-bold text-info ml-3 flex-shrink-0">{formatCurrencyFull(p.value)}</span>
                               </button>
                             ))}
                             <button
@@ -645,7 +645,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 )}
 
                 {(propertyMode === 'selected' && propertyId) && (
-                  <p className="text-xs text-blue-400 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-info mt-1 flex items-center gap-1">
                     <MapPin size={9} /> Ticket preenchido automaticamente
                   </p>
                 )}
@@ -702,7 +702,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   <Calendar size={11} />
                   Data de entrada
                   {isRetroactive && (
-                    <span className="ml-1 text-[11px] font-bold px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/25">
+                    <span className="ml-1 text-[11px] font-bold px-1.5 py-0.5 bg-info-bg text-info rounded-full border border-info-line">
                       Retroativo
                     </span>
                   )}
@@ -716,7 +716,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   className="w-full bg-s3/50 border border-line-input rounded-xl px-4 py-3 text-sm text-t1 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/25 transition-all"
                 />
                 {isRetroactive && (
-                  <p className="text-xs text-blue-400 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-info mt-1 flex items-center gap-1">
                     <Calendar size={10} /> Este lead será registrado com a data retroativa selecionada
                   </p>
                 )}
@@ -751,7 +751,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
             <button
               onClick={goNext}
               disabled={!canAdvanceStep1()}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-gradient-to-r bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-lg shadow-blue-600/30 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-gradient-to-r bg-info hover:bg-info text-white rounded-xl transition-all shadow-lg shadow-blue-600/30 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
             >
               Próximo <ChevronRight size={15} />
             </button>
@@ -762,8 +762,8 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                 stage === 'venda'
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-500/30'
                   : stage === 'visita'
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-amber-500/30'
-                  : 'bg-gradient-to-r bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30'
+                  ? 'bg-brand hover:bg-brand-dark text-[var(--brand-btn-text)]'
+                  : 'bg-gradient-to-r bg-info hover:bg-info text-white shadow-blue-600/30'
               }`}
             >
               {lead ? 'Salvar alterações' : isRetroactive ? 'Registrar lead' : 'Criar Lead'}

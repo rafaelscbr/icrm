@@ -562,7 +562,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                           )}
                           className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
                             permutaRegions.includes(region)
-                              ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
+                              ? 'bg-brand-tint border-brand/25 text-brand-text'
                               : 'bg-s3/50 border-line text-t3 hover:text-t2 hover:border-line-strong'
                           }`}
                         >

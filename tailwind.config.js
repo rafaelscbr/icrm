@@ -52,9 +52,12 @@ export default {
         'info-line':     'var(--info-line)',
       },
       fontFamily: {
-        sans:     ['Hanken Grotesk', 'system-ui', 'sans-serif'],
-        heading:  ['Schibsted Grotesk', 'system-ui', 'sans-serif'],
-        label:    ['Space Grotesk', 'system-ui', 'sans-serif'],
+        // Ver nota de desvio do Brand Guide no topo de src/index.css.
+        sans:     ['Inter', 'system-ui', 'sans-serif'],
+        heading:  ['Sora', 'system-ui', 'sans-serif'],
+        // `label` continua existindo como intenção semântica (rótulo/dado),
+        // mas usa a mesma família do corpo — a diferença é caixa e tracking.
+        label:    ['Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         card:    'var(--shadow-card)',

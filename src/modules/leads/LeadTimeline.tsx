@@ -15,25 +15,25 @@ const TYPE_CONFIG: Record<LeadInteractionType, {
   bg: string
   border: string
 }> = {
-  ligacao:      { label: 'Ligação',     Icon: Phone,         color: 'text-blue-400',   bg: 'bg-s3/60',   border: 'border-blue-500/25'   },
+  ligacao:      { label: 'Ligação',     Icon: Phone,         color: 'text-info',   bg: 'bg-s3/60',   border: 'border-info-line'   },
   whatsapp:     { label: 'WhatsApp',    Icon: MessageCircle, color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25'  },
-  email:        { label: 'Email',       Icon: Mail,          color: 'text-sky-400',    bg: 'bg-sky-500/10',    border: 'border-sky-500/25'    },
+  email:        { label: 'Email',       Icon: Mail,          color: 'text-info',    bg: 'bg-info-bg',    border: 'border-info-line'    },
   visita:       { label: 'Visita',      Icon: Home,          color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25'  },
   reuniao:      { label: 'Reunião',     Icon: Users,         color: 'text-brand', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25' },
   nota:         { label: 'Nota',        Icon: FileText,      color: 'text-t2',         bg: 'bg-slate-500/10',  border: 'border-slate-500/25'  },
-  stage_change: { label: 'Etapa',       Icon: ArrowRight,    color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/25' },
-  discard:      { label: 'Descartado',  Icon: XCircle,       color: 'text-rose-400',   bg: 'bg-rose-500/10',   border: 'border-rose-500/25'   },
+  stage_change: { label: 'Etapa',       Icon: ArrowRight,    color: 'text-brand-text', bg: 'bg-brand-tint', border: 'border-brand/25' },
+  discard:      { label: 'Descartado',  Icon: XCircle,       color: 'text-brand-text',   bg: 'bg-brand-tint',   border: 'border-brand/25'   },
   tarefa:       { label: 'Tarefa',      Icon: CheckCircle2,  color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/25' },
 }
 
 const OUTCOME_CONFIG: Record<LeadInteractionOutcome, { label: string; color: string; bg: string; border: string }> = {
   interessado:      { label: 'Interessado',      color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/25' },
   nao_interessado:  { label: 'Não interessado',  color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/25'     },
-  agendado:         { label: 'Agendado',         color: 'text-blue-400',    bg: 'bg-s3/60',    border: 'border-blue-500/25'    },
+  agendado:         { label: 'Agendado',         color: 'text-info',    bg: 'bg-s3/60',    border: 'border-info-line'    },
   sem_resposta:     { label: 'Sem resposta',     color: 'text-t3',   bg: 'bg-slate-500/10',   border: 'border-slate-500/25'   },
   proposta_enviada: { label: 'Proposta enviada', color: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/25'   },
   fechado:          { label: 'Fechado',          color: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' },
-  reagendado:       { label: 'Reagendado',       color: 'text-violet-400',  bg: 'bg-violet-500/10',  border: 'border-violet-500/25'  },
+  reagendado:       { label: 'Reagendado',       color: 'text-brand-text',  bg: 'bg-brand-tint',  border: 'border-brand/25'  },
 }
 
 const TYPES: LeadInteractionType[] = ['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota']
@@ -135,7 +135,7 @@ export function LeadTimeline({ leadId }: Props) {
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="w-full flex items-center justify-center gap-2.5 py-3 text-sm font-medium text-blue-400 hover:text-blue-300 hover:bg-s3/60 border border-blue-500/20 hover:border-blue-500/35 border-dashed rounded-xl transition-all duration-200"
+          className="w-full flex items-center justify-center gap-2.5 py-3 text-sm font-medium text-info hover:text-info hover:bg-s3/60 border border-info-line hover:border-info-line border-dashed rounded-xl transition-all duration-200"
         >
           <Plus size={15} />
           Registrar nova interação
@@ -192,7 +192,7 @@ export function LeadTimeline({ leadId }: Props) {
                   type="datetime-local"
                   value={datetime}
                   onChange={e => setDatetime(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 bg-s3/50 border border-line rounded-xl text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-all [color-scheme:dark]"
+                  className="w-full pl-10 pr-3 py-2.5 bg-s3/50 border border-line rounded-xl text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-info-line focus:border-info-line transition-all [color-scheme:dark]"
                 />
               </div>
             </div>
@@ -235,7 +235,7 @@ export function LeadTimeline({ leadId }: Props) {
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
                 placeholder={`Detalhes sobre a ${selectedType.label.toLowerCase()}…`}
-                className="w-full bg-s3/50 border border-line rounded-xl px-3.5 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 resize-none transition-all leading-relaxed"
+                className="w-full bg-s3/50 border border-line rounded-xl px-3.5 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-info-line focus:border-info-line resize-none transition-all leading-relaxed"
               />
             </div>
 
@@ -243,7 +243,7 @@ export function LeadTimeline({ leadId }: Props) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-[0.99]"
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-white bg-info hover:bg-info disabled:opacity-50 rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-[0.99]"
             >
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
               Registrar interação

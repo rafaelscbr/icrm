@@ -223,7 +223,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
             )}
             {contact.isMarried && (
               <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                <Heart size={13} className="text-pink-400 flex-shrink-0" />
+                <Heart size={13} className="text-brand-text flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[11px] text-t3">Cônjuge</p>
                   <p className="text-xs text-t1 font-medium truncate">{contact.spouseName ?? 'Sim'}</p>
@@ -232,7 +232,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
             )}
             {contact.hasChildren && (
               <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                <Baby size={13} className="text-cyan-400 flex-shrink-0" />
+                <Baby size={13} className="text-info flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[11px] text-t3">Filhos</p>
                   <p className="text-xs text-t1 font-medium truncate">{contact.childrenNames ?? 'Sim'}</p>
@@ -310,13 +310,13 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
               <p className="text-[11px] text-t3">Vendas</p>
               <p className="text-lg font-bold text-green-400 tabular-nums">{linkedSales.length}</p>
             </div>
-            <div className="flex flex-col gap-1 px-3 py-2.5 bg-s3/50 rounded-xl border border-blue-500/20">
+            <div className="flex flex-col gap-1 px-3 py-2.5 bg-s3/50 rounded-xl border border-info-line">
               <p className="text-[11px] text-t3">VGV gerado</p>
-              <p className="text-sm font-bold text-blue-400 tabular-nums">{formatCurrencyFull(totalSalesValue)}</p>
+              <p className="text-sm font-bold text-info tabular-nums">{formatCurrencyFull(totalSalesValue)}</p>
             </div>
-            <div className="flex flex-col gap-1 px-3 py-2.5 bg-violet-500/8 rounded-xl border border-violet-500/20">
+            <div className="flex flex-col gap-1 px-3 py-2.5 bg-brand-tint rounded-xl border border-brand/25">
               <p className="text-[11px] text-t3">Sua comissão</p>
-              <p className="text-sm font-bold text-violet-400 tabular-nums">{formatCurrencyFull(totalCommission)}</p>
+              <p className="text-sm font-bold text-brand-text tabular-nums">{formatCurrencyFull(totalCommission)}</p>
             </div>
           </div>
         )}
@@ -341,7 +341,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                     <div className="text-right flex-shrink-0">
                       <p className="text-xs font-bold text-green-400">{formatCurrencyFull(sale.value)}</p>
                       {brokerCommission > 0 && (
-                        <p className="text-[11px] text-violet-400">Comissão: {formatCurrencyFull(brokerCommission)}</p>
+                        <p className="text-[11px] text-brand-text">Comissão: {formatCurrencyFull(brokerCommission)}</p>
                       )}
                       <p className="text-[11px] text-t4">{formatDate(sale.date)}</p>
                     </div>
@@ -356,9 +356,9 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
         {activeLeads.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <UserPlus size={13} className="text-violet-400" />
+              <UserPlus size={13} className="text-brand-text" />
               <h3 className="text-sm font-semibold text-t2">Leads no Funil</h3>
-              <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 font-medium">
+              <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/25 font-medium">
                 {activeLeads.length} ativo{activeLeads.length > 1 ? 's' : ''}
               </span>
             </div>
@@ -383,7 +383,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
                         <p className="text-[11px] text-t3 mt-0.5 truncate flex items-center gap-1"><Home size={10} className="flex-shrink-0" /> {prop.name}</p>
                       )}
                       {lead.averageTicket && !prop && (
-                        <p className="text-[11px] text-violet-400 mt-0.5">{formatCurrencyFull(lead.averageTicket)}</p>
+                        <p className="text-[11px] text-brand-text mt-0.5">{formatCurrencyFull(lead.averageTicket)}</p>
                       )}
                     </div>
                     <p className="text-[11px] text-t4 flex-shrink-0">{formatDate(lead.createdAt)}</p>

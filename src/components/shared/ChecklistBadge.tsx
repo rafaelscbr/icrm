@@ -66,12 +66,12 @@ export function ChecklistBadge({ checklist, size = 'md' }: ChecklistBadgeProps) 
                 :                 '#64748b'   // slate
 
   const textCls = allDone       ? 'text-green-400'
-                : pct >= 0.66   ? 'text-violet-400'
+                : pct >= 0.66   ? 'text-brand-text'
                 : pct >= 0.33   ? 'text-indigo-400'
                 :                 'text-t3'
 
   const bgCls   = allDone       ? 'bg-success-bg  border-success-line'
-                : pct >= 0.66   ? 'bg-purple-500/10 border-purple-500/25'
+                : pct >= 0.66   ? 'bg-brand-tint border-brand/25'
                 : pct >= 0.33   ? 'bg-brand-tint border-brand/20'
                 :                 'bg-s2 border-line'
 

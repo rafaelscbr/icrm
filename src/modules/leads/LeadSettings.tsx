@@ -33,23 +33,23 @@ insert into lead_config (id, type, slug, label, emoji, display_order) values
   ('sr-5','discard_reason','telefone_invalido','Telefone inválido','❌',5)
 on conflict (type, slug) do nothing;
 insert into lead_config (id, type, slug, label, emoji, color, display_order) values
-  ('or-1','origin','felicita','Felicità','✨','text-rose-400',1),
-  ('or-2','origin','meta_ads','Meta ADS','📱','text-blue-400',2),
-  ('or-3','origin','portal','Portal','🌐','text-cyan-400',3),
+  ('or-1','origin','felicita','Felicità','✨','text-brand-text',1),
+  ('or-2','origin','meta_ads','Meta ADS','📱','text-info',2),
+  ('or-3','origin','portal','Portal','🌐','text-info',3),
   ('or-4','origin','offline','Offline','🤝','text-amber-400',4),
-  ('or-5','origin','campanha','Campanha','📣','text-violet-400',5)
+  ('or-5','origin','campanha','Campanha','📣','text-brand-text',5)
 on conflict (type, slug) do nothing;`
 
 // ── Color palette para origens ────────────────────────────────────────────────
 
 const COLORS = [
-  { label: 'Rosa',    value: 'text-rose-400',   dot: 'bg-rose-400'   },
-  { label: 'Azul',    value: 'text-blue-400',   dot: 'bg-blue-400'   },
-  { label: 'Ciano',   value: 'text-cyan-400',   dot: 'bg-cyan-400'   },
+  { label: 'Rosa',    value: 'text-brand-text',   dot: 'bg-brand-tint'   },
+  { label: 'Azul',    value: 'text-info',   dot: 'bg-info-bg'   },
+  { label: 'Ciano',   value: 'text-info',   dot: 'bg-info-bg'   },
   { label: 'Âmbar',   value: 'text-amber-400',  dot: 'bg-amber-400'  },
-  { label: 'Violeta', value: 'text-violet-400', dot: 'bg-violet-400' },
+  { label: 'Violeta', value: 'text-brand-text', dot: 'bg-brand-tint' },
   { label: 'Verde',   value: 'text-green-400',  dot: 'bg-green-400'  },
-  { label: 'Laranja', value: 'text-orange-400', dot: 'bg-orange-400' },
+  { label: 'Laranja', value: 'text-warning', dot: 'bg-warning-bg' },
   { label: 'Índigo',  value: 'text-indigo-400', dot: 'bg-indigo-400' },
 ]
 
@@ -65,7 +65,7 @@ interface EditFormProps {
 function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
   const [label, setLabel] = useState(initial?.label ?? '')
   const [emoji, setEmoji] = useState(initial?.emoji ?? '')
-  const [color, setColor] = useState(initial?.color ?? 'text-blue-400')
+  const [color, setColor] = useState(initial?.color ?? 'text-info')
   const [slug,  setSlug]  = useState(initial?.slug  ?? '')
   const isEdit = !!initial
 
@@ -87,9 +87,9 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
   }
 
   return (
-    <div className="bg-page border border-blue-500/30 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-s3/50 border-b border-blue-500/20">
-        <span className="text-xs font-semibold text-blue-300">{isEdit ? 'Editar item' : 'Novo item'}</span>
+    <div className="bg-page border border-info-line rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 bg-s3/50 border-b border-info-line">
+        <span className="text-xs font-semibold text-info">{isEdit ? 'Editar item' : 'Novo item'}</span>
         <button onClick={onCancel} className="text-t3 hover:text-t2 transition-colors">
           <X size={14} />
         </button>
@@ -103,7 +103,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
               onChange={e => setEmoji(e.target.value)}
               placeholder="💸"
               maxLength={2}
-              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2.5 text-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
+              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2.5 text-lg text-center focus:outline-none focus:ring-2 focus:ring-info-line focus:border-info-line"
             />
           </div>
           <div className="flex-1">
@@ -112,7 +112,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
               value={label}
               onChange={e => handleLabel(e.target.value)}
               placeholder={type === 'origin' ? 'Ex: Google Ads' : 'Ex: Sem retorno'}
-              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
+              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-info-line focus:border-info-line"
             />
           </div>
         </div>
@@ -126,7 +126,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
               value={slug}
               onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               placeholder="sem_retorno"
-              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2 text-sm text-t2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
+              className="w-full bg-s3/50 border border-line rounded-lg px-3 py-2 text-sm text-t2 font-mono focus:outline-none focus:ring-2 focus:ring-info-line focus:border-info-line"
             />
             <p className="text-[11px] text-t4 mt-1">Gerado automaticamente · só letras, números e _</p>
           </div>
@@ -163,7 +163,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-600/20"
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-info hover:bg-info rounded-xl transition-all shadow-lg shadow-blue-600/20"
           >
             {isEdit ? 'Salvar' : 'Adicionar'}
           </button>
@@ -225,7 +225,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
           <h3 className="text-sm font-semibold text-t1 truncate">{title}</h3>
           <p className="text-xs text-t4 mt-0.5 truncate">{subtitle}</p>
         </div>
-        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-s3/70 text-blue-400 border border-blue-500/20 flex-shrink-0">
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-s3/70 text-info border border-info-line flex-shrink-0">
           {active.length} {active.length === 1 ? 'ativo' : 'ativos'}
         </span>
         <button
@@ -233,7 +233,7 @@ function ConfigSection({ type, title, subtitle, items, dbAvailable }: ConfigSect
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all flex-shrink-0 ${
             showAdd
               ? 'bg-s3 border-line-strong text-t2'
-              : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20'
+              : 'bg-info border-info-line text-white hover:bg-info shadow-lg shadow-blue-600/20'
           }`}
         >
           {showAdd ? <X size={13} /> : <Plus size={13} />}

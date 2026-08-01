@@ -188,8 +188,8 @@ export function LeadListDetail({ list, onBack }: Props) {
         {/* Stat + ação importar */}
         <div className="flex flex-col gap-3 lg:w-56">
           <Card className="!py-4 text-center">
-            <Users size={18} className="mx-auto text-blue-400 mb-1.5" />
-            <p className="text-2xl font-bold tabular-nums text-blue-400">{currentList.totalCount.toLocaleString()}</p>
+            <Users size={18} className="mx-auto text-info mb-1.5" />
+            <p className="text-2xl font-bold tabular-nums text-info">{currentList.totalCount.toLocaleString()}</p>
             <p className="text-xs text-t4">Total de leads</p>
           </Card>
           <Button className="w-full gap-2" onClick={() => setImportOpen(true)}>

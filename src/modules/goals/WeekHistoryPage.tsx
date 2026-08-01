@@ -24,7 +24,7 @@ const CATEGORY_ICON: Record<GoalCategory, typeof Target> = {
 }
 
 const CATEGORY_COLOR: Record<GoalCategory, { text: string; bar: string }> = {
-  acionamento: { text: 'text-cyan-400', bar: 'bg-cyan-500'   },
+  acionamento: { text: 'text-info', bar: 'bg-info'   },
   visita:   { text: 'text-brand',       bar: 'bg-indigo-500' },
   proposta: { text: 'text-amber-400',   bar: 'bg-amber-500'  },
   venda:    { text: 'text-green-400',   bar: 'bg-green-500'  },

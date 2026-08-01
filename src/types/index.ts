@@ -100,6 +100,8 @@ export interface Task {
   category?: TaskCategory   // categoriza a tarefa para avançar metas
   completedAt?: string      // data em que foi marcada como done
   contactId?: string
+  /** Vínculo direto com o lead (migração 058). Antes era inferido por contactId. */
+  leadId?: string
   propertyId?: string
   googleEventId?: string
   checklist?: ChecklistItem[]   // stored in tasks.checklist (JSONB)

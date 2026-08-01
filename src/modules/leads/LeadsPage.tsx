@@ -28,11 +28,11 @@ import { LeadSettings } from './LeadSettings'
 import { FilterDropdown, FilterOption } from '../../components/shared/FilterDropdown'
 
 const ORIGIN_CONFIG: Record<string, { label: string; icon: typeof Sparkles; color: string; bg: string; border: string }> = {
-  felicita: { label: 'Felicità', icon: Sparkles,   color: 'text-rose-400',   bg: 'bg-rose-500/15',   border: 'border-rose-500/25'   },
-  meta_ads: { label: 'Meta ADS', icon: Smartphone, color: 'text-blue-400',   bg: 'bg-s3/70',         border: 'border-blue-500/25'   },
-  portal:   { label: 'Portal',   icon: Globe,      color: 'text-cyan-400',   bg: 'bg-cyan-500/15',   border: 'border-cyan-500/25'   },
+  felicita: { label: 'Felicità', icon: Sparkles,   color: 'text-brand-text',   bg: 'bg-brand-tint',   border: 'border-brand/25'   },
+  meta_ads: { label: 'Meta ADS', icon: Smartphone, color: 'text-info',   bg: 'bg-s3/70',         border: 'border-info-line'   },
+  portal:   { label: 'Portal',   icon: Globe,      color: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line'   },
   offline:  { label: 'Offline',  icon: Handshake,  color: 'text-amber-400',  bg: 'bg-amber-500/15',  border: 'border-amber-500/25'  },
-  campanha: { label: 'Campanha', icon: Megaphone,  color: 'text-violet-400', bg: 'bg-violet-500/15', border: 'border-violet-500/25' },
+  campanha: { label: 'Campanha', icon: Megaphone,  color: 'text-brand-text', bg: 'bg-brand-tint', border: 'border-brand/25' },
 }
 
 const ORIGINS: LeadOrigin[] = ['felicita', 'meta_ads', 'portal', 'offline', 'campanha']
@@ -108,7 +108,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
             </span>
           )}
           {lead.contactId && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20 flex-shrink-0">
+            <span className="inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/25 flex-shrink-0">
               <UserCheck size={8} /> No CRM
             </span>
           )}
@@ -122,7 +122,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         ) : lead.propertyName ? (
           <p className="text-xs text-amber-400/80 truncate flex items-center justify-end gap-1"><Home size={10} className="flex-shrink-0" /> {lead.propertyName}</p>
         ) : lead.averageTicket ? (
-          <p className="text-xs font-semibold text-violet-400">{formatCurrency(lead.averageTicket)}</p>
+          <p className="text-xs font-semibold text-brand-text">{formatCurrency(lead.averageTicket)}</p>
         ) : (
           <p className="text-xs text-t4">—</p>
         )}
@@ -176,8 +176,16 @@ export function LeadsPage() {
   // Escopo da lista/kanban: funil ativo, descartados ou ganhos (vendas encerradas)
   const [listView,      setListView]      = useState<'active' | 'discarded' | 'won'>('active')
   const [showForm,      setShowForm]      = useState(false)
-  const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
   const [searchParams,  setSearchParams]  = useSearchParams()
+
+  // Painel do lead — derivado da URL, não de estado local (ver comentário abaixo).
+  const openLeadId = searchParams.get('lead')
+  const setSelectedLead = (l: Lead | null) => {
+    const next = new URLSearchParams(searchParams)
+    if (l) next.set('lead', l.id)
+    else   next.delete('lead')
+    setSearchParams(next, { replace: !l })
+  }
 
   useEffect(() => { load(); loadProps(); loadConfig() }, [])
 
@@ -188,17 +196,27 @@ export function LeadsPage() {
     if (ids.length > 0) loadContactsByIds(ids)
   }, [leads]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Deep-link da busca global: /leads?open=<id> abre o modal do lead
+  /*
+   * A URL é a fonte de verdade do painel: `/leads?lead=<id>`.
+   *
+   * Antes o deep-link `?open=` era consumido e apagado assim que abria — o
+   * painel ficava aberto com a URL limpa, então não dava para compartilhar o
+   * lead nem usar o voltar do navegador. Agora o parâmetro permanece enquanto
+   * o painel estiver aberto, e fechar é só removê-lo.
+   *
+   * `?open=` continua aceito para não quebrar links já enviados por aí.
+   */
   useEffect(() => {
-    const openId = searchParams.get('open')
-    if (!openId || allLeads.length === 0) return
-    const target = allLeads.find(l => l.id === openId)
-    if (target) {
-      setSelectedLead(target)
-      searchParams.delete('open')
-      setSearchParams(searchParams, { replace: true })
-    }
-  }, [searchParams, allLeads]) // eslint-disable-line react-hooks/exhaustive-deps
+    const legacy = searchParams.get('open')
+    if (!legacy) return
+    const next = new URLSearchParams(searchParams)
+    next.delete('open')
+    next.set('lead', legacy)
+    setSearchParams(next, { replace: true })
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lead do painel — resolvido a partir do id na URL contra a base carregada.
+  const selectedLead = openLeadId ? allLeads.find(l => l.id === openLeadId) ?? null : null
 
   // Funil ativo = aberto (nem descartado nem ganho/encerrado) — foto real do agora
   const active    = leads.filter(l => !l.discardReason && !l.closedAt)

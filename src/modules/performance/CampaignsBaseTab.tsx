@@ -75,8 +75,8 @@ export function CampaignsBaseTab() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Listas ativas',    value: activeLists.length,           color: 'text-brand',      icon: <Database size={16}/>,  sub: 'base de leads fria'      },
-          { label: 'Total de leads',   value: totalLeads.toLocaleString('pt-BR'), color: 'text-sky-400', icon: <Users size={16}/>,    sub: 'contatos disponíveis'    },
-          { label: 'Disparos — mês',   value: disparosMes,                  color: 'text-violet-400', icon: <Zap size={16}/>,       sub: `${disparosSemana} esta semana · ${disparosHoje} hoje` },
+          { label: 'Total de leads',   value: totalLeads.toLocaleString('pt-BR'), color: 'text-info', icon: <Users size={16}/>,    sub: 'contatos disponíveis'    },
+          { label: 'Disparos — mês',   value: disparosMes,                  color: 'text-brand-text', icon: <Zap size={16}/>,       sub: `${disparosSemana} esta semana · ${disparosHoje} hoje` },
           { label: 'Campanhas ativas', value: activeCampaigns.length,       color: 'text-green-400',  icon: <TrendingUp size={16}/>, sub: `${totalCampLeads} leads na fila` },
         ].map(k => (
           <div key={k.label} className="relative bg-surface border border-line rounded-xl overflow-hidden p-5">
@@ -94,7 +94,7 @@ export function CampaignsBaseTab() {
       {/* Ritmo de disparos — 14 dias */}
       <Card>
         <div className="flex items-center gap-2 mb-4">
-          <BarChart2 size={14} className="text-violet-400" />
+          <BarChart2 size={14} className="text-brand-text" />
           <h2 className="text-sm font-semibold text-t1">Ritmo de disparos — últimos 14 dias</h2>
           <span className="ml-auto text-xs text-t4">
             Total: <span className="text-t2 font-semibold">{hist14.reduce((a, d) => a + d.count, 0)}</span>
@@ -113,11 +113,11 @@ export function CampaignsBaseTab() {
                 )}
                 <div className="w-full flex items-end" style={{ height: 60 }}>
                   <div
-                    className={`w-full rounded-t transition-all ${isToday ? 'bg-violet-500' : d.count > 0 ? 'bg-violet-500/45' : 'bg-s3/40'}`}
+                    className={`w-full rounded-t transition-all ${isToday ? 'bg-brand' : d.count > 0 ? 'bg-brand-tint' : 'bg-s3/40'}`}
                     style={{ height: `${Math.max(pct, d.count > 0 ? 6 : 1)}%` }}
                   />
                 </div>
-                <span className={`text-[10px] truncate w-full text-center ${isToday ? 'text-violet-400 font-semibold' : 'text-t5'}`}>{d.label}</span>
+                <span className={`text-[10px] truncate w-full text-center ${isToday ? 'text-brand-text font-semibold' : 'text-t5'}`}>{d.label}</span>
               </div>
             )
           })}
@@ -137,8 +137,8 @@ export function CampaignsBaseTab() {
           <div className="grid grid-cols-3 gap-4 mb-4 text-center">
             {[
               { label: 'Total de leads', value: totalCampLeads, color: 'text-t1' },
-              { label: 'Engajados',      value: engajados,      color: 'text-cyan-400' },
-              { label: 'Migrados p/ funil', value: migrados,   color: 'text-violet-400' },
+              { label: 'Engajados',      value: engajados,      color: 'text-info' },
+              { label: 'Migrados p/ funil', value: migrados,   color: 'text-brand-text' },
             ].map(k => (
               <div key={k.label} className="p-3 rounded-xl bg-s2/50 border border-line">
                 <p className={`text-2xl font-black tabular-nums ${k.color}`}>{k.value}</p>
@@ -158,9 +158,9 @@ export function CampaignsBaseTab() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="w-20 h-1.5 bg-s3/60 rounded-full overflow-hidden">
-                    <div className="h-full bg-cyan-500/70 rounded-full" style={{ width: `${rate}%` }} />
+                    <div className="h-full bg-info-bg rounded-full" style={{ width: `${rate}%` }} />
                   </div>
-                  <span className="text-xs font-bold text-cyan-400 w-8 text-right">{rate}%</span>
+                  <span className="text-xs font-bold text-info w-8 text-right">{rate}%</span>
                 </div>
               </div>
             )
@@ -208,7 +208,7 @@ export function CampaignsBaseTab() {
         <div className="flex flex-col gap-4">
           <Card>
             <div className="flex items-center gap-2 mb-3">
-              <Database size={13} className="text-sky-400" />
+              <Database size={13} className="text-info" />
               <h2 className="text-sm font-semibold text-t1">Por tipo de produto</h2>
             </div>
             <div className="flex flex-col gap-2">
@@ -218,7 +218,7 @@ export function CampaignsBaseTab() {
                   <div key={type} className="flex items-center gap-2">
                     <span className="text-xs text-t3 w-28 truncate flex-shrink-0">{type}</span>
                     <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
-                      <div className="h-full bg-sky-500/60 rounded-full" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-info-bg rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-xs font-semibold text-t2 w-16 text-right tabular-nums">{count.toLocaleString('pt-BR')}</span>
                     <span className="text-[11px] text-t4 w-8 text-right">{pct.toFixed(0)}%</span>
@@ -231,7 +231,7 @@ export function CampaignsBaseTab() {
           {byRegion.some(([r]) => r !== 'Sem região') && (
             <Card>
               <div className="flex items-center gap-2 mb-3">
-                <Database size={13} className="text-teal-400" />
+                <Database size={13} className="text-info" />
                 <h2 className="text-sm font-semibold text-t1">Por região</h2>
               </div>
               <div className="flex flex-col gap-2">
@@ -241,7 +241,7 @@ export function CampaignsBaseTab() {
                     <div key={region} className="flex items-center gap-2">
                       <span className="text-xs text-t3 w-28 truncate flex-shrink-0">{region}</span>
                       <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
-                        <div className="h-full bg-teal-500/60 rounded-full" style={{ width: `${pct}%` }} />
+                        <div className="h-full bg-info-bg rounded-full" style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-xs font-semibold text-t2 w-16 text-right tabular-nums">{count.toLocaleString('pt-BR')}</span>
                     </div>

@@ -91,7 +91,7 @@ const STATUS_CONFIG: Record<KpiStatus, {
   done:   { bar: 'bg-green-500',    num: 'text-green-400',  bg: 'bg-green-500/8',   border: 'border-green-500/30',  badge: 'bg-green-500/20 text-green-400',  label: 'Meta atingida!'  },
   good:   { bar: 'bg-indigo-500',   num: 'text-t1',         bg: 'bg-indigo-500/8',  border: 'border-indigo-500/25', badge: 'bg-indigo-500/15 text-indigo-300', label: 'No caminho'     },
   warn:   { bar: 'bg-amber-500',    num: 'text-t1',         bg: 'bg-amber-500/8',   border: 'border-amber-500/25',  badge: 'bg-amber-500/15 text-amber-400',  label: 'Acelerar'       },
-  behind: { bar: 'bg-rose-500/80',  num: 'text-t3',         bg: 'bg-rose-500/5',    border: 'border-rose-500/20',   badge: 'bg-rose-500/10 text-rose-400',    label: 'Atenção'        },
+  behind: { bar: 'bg-brand-tint',  num: 'text-t3',         bg: 'bg-brand-tint',    border: 'border-brand/25',   badge: 'bg-brand-tint text-brand-text',    label: 'Atenção'        },
 }
 
 function KpiCard({ label, value, target, icon, note }: {
@@ -249,7 +249,7 @@ function GoalRing({ value, target, hex }: { value: number; target: number; hex: 
 }
 
 const CAT_CFG: Record<GoalCategory, { icon: typeof Target; text: string; bg: string; border: string; hex: string; label: string }> = {
-  acionamento: { icon: Zap,          text: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/25',   hex: '#06b6d4', label: 'Acionamento' },
+  acionamento: { icon: Zap,          text: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line',   hex: '#06b6d4', label: 'Acionamento' },
   visita:   { icon: Footprints,      text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25', hex: '#6366f1', label: 'Atendimento' },
   proposta: { icon: FileText,        text: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25',  hex: '#f59e0b', label: 'Proposta' },
   venda:    { icon: BadgeDollarSign, text: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/25',  hex: '#22c55e', label: 'Venda'    },
@@ -442,7 +442,7 @@ function PerformanceHero({ tasks, period, brokerId }: { tasks: Task[]; period: P
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
             {kpis.map(k => {
               const s = getStatus(k.value, k.target)
-              const color = s === 'done' ? 'text-green-400' : s === 'good' ? 'text-indigo-400' : s === 'warn' ? 'text-amber-400' : 'text-rose-400'
+              const color = s === 'done' ? 'text-green-400' : s === 'good' ? 'text-indigo-400' : s === 'warn' ? 'text-amber-400' : 'text-brand-text'
               return (
                 <span key={k.label} className="flex items-center gap-1 text-xs">
                   <span className={`font-bold tabular-nums ${color}`}>{k.value}</span>

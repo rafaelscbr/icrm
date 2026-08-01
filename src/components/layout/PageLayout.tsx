@@ -13,7 +13,7 @@ interface PageLayoutProps {
 
 export function PageLayout({ title, subtitle, ctaLabel, onCta, actions, children }: PageLayoutProps) {
   return (
-    <div className="flex-1 min-h-screen bg-page">
+    <div className="flex-1 min-h-screen bg-page texture-grain">
       {/* ── Sticky page header ──────────────────────────────────── */}
       <div
         className="sticky top-0 z-10 nav-bg-blur pt-safe"

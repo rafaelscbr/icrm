@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   DndContext, DragOverlay, closestCenter,
   DragEndEvent, DragOverEvent, DragStartEvent,
@@ -12,10 +13,10 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import {
   MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake,
-  Home, Users, Mail, StickyNote, Sparkles, Smartphone, Globe, Handshake,
-  Megaphone, Loader2, Wifi, WifiOff, CheckCircle2, Trophy,
+  Sparkles, Smartphone, Globe, Handshake, Megaphone, Loader2,
+  Wifi, WifiOff, Trophy, Rows2, Rows3, DollarSign,
 } from 'lucide-react'
-import { Lead, LeadFunnelStage, LeadInteractionType } from '../../types'
+import { Lead, LeadFunnelStage } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -23,10 +24,12 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
+import { useTasksStore } from '../../store/useTasksStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
+import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
+import { useKanbanPrefs, SORT_LABEL, KanbanSort } from '../../store/useKanbanPrefs'
 import { LeadModal } from './LeadModal'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
-import { SlaBadge } from './SlaBadge'
 import toast from 'react-hot-toast'
 
 // Re-export da fonte única — consumido por LeadsPage, LeadsDashboard,
@@ -43,11 +46,6 @@ const ORIGIN_META: Record<string, { icon: typeof Sparkles; label: string }> = {
   campanha: { icon: Megaphone,  label: 'Campanha' },
 }
 
-const INTERACTION_ICON: Record<string, typeof Phone> = {
-  ligacao: Phone, whatsapp: MessageCircle, visita: Home,
-  reuniao: Users, email: Mail, tarefa: CheckCircle2,
-}
-
 const COOLING_DAYS = 2
 
 function daysWithoutInteraction(lastInteractionAt?: string, createdAt?: string): number {
@@ -58,28 +56,6 @@ function daysWithoutInteraction(lastInteractionAt?: string, createdAt?: string):
 function daysInStage(stageChangedAt?: string, createdAt?: string): number {
   const ref = stageChangedAt ?? createdAt ?? new Date().toISOString()
   return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
-}
-
-// Semântica única de cor: vermelho = precisa de ação, âmbar = atenção, neutro = ok.
-// Lead contatado recentemente nunca aparece vermelho, mesmo parado na etapa.
-function stageDaysColor(days: number, recentContact: boolean): string {
-  if (days <= 3 || recentContact) return 'text-t4 bg-s2 border-line'
-  if (days <= 7)  return 'text-warning bg-warning-bg border-warning-line'
-  return 'text-error bg-error-bg border-error-line'
-}
-
-function contactLabel(days: number, hasInteraction: boolean): { text: string; cls: string } {
-  const d = Math.floor(days)
-  if (!hasInteraction) {
-    if (d <= COOLING_DAYS) return { text: 'Sem contato registrado', cls: 'text-t4' }
-    if (d <= 7)  return { text: `${d}d sem contato`, cls: 'text-warning' }
-    return { text: `${d}d sem contato`, cls: 'text-error' }
-  }
-  if (d <= 0)  return { text: 'Contato hoje',  cls: 'text-success' }
-  if (d === 1) return { text: 'Contato ontem', cls: 'text-success' }
-  if (d <= COOLING_DAYS) return { text: `${d}d sem contato`, cls: 'text-t4' }
-  if (d <= 7)  return { text: `${d}d sem contato`, cls: 'text-warning' }
-  return { text: `${d}d sem contato`, cls: 'text-error' }
 }
 
 function effectiveOrder(lead: Lead): number {
@@ -95,14 +71,20 @@ function orderBetween(above: Lead | null, below: Lead | null): number {
 // ─── Card sortável ────────────────────────────────────────────────────────────
 
 function LeadCard({
-  lead, onClick, isOverlay = false, isSaving = false,
+  lead, onClick, isOverlay = false, isSaving = false, dense = false, financeMode = false,
 }: {
-  lead: Lead; onClick: () => void; isOverlay?: boolean; isSaving?: boolean
+  lead: Lead; onClick: () => void
+  isOverlay?: boolean; isSaving?: boolean
+  /** Densidade compacta — esconde o contexto comercial e aperta o espaçamento. */
+  dense?: boolean
+  /** Modo financeiro — mostra comissão em todas as etapas, não só nas finais. */
+  financeMode?: boolean
 }) {
   const { advanceFollowup, toggleFlag, update } = useLeadsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
+  const { tasks } = useTasksStore()
   const { add: addInteraction, getForLead } = useLeadInteractionsStore()
   const [showConclude, setShowConclude] = useState(false)
 
@@ -127,12 +109,8 @@ function LeadCard({
   const displayPhone = contact?.phone ?? lead.phone
   const interactions = getForLead(lead.id)
   const lastInteraction = interactions[0] ?? null
-  const noContactDays = isOverlay ? 0 : daysWithoutInteraction(lastInteraction?.interactedAt, lead.createdAt)
   const stageDays = isOverlay ? 0 : daysInStage(lead.stageChangedAt, lead.createdAt)
-  const stageDaysClass = stageDaysColor(stageDays, noContactDays <= COOLING_DAYS)
-  const contactInfo = !isOverlay ? contactLabel(noContactDays, !!lastInteraction) : null
   const originMeta = ORIGIN_META[lead.origin]
-  const LastIcon = lastInteraction ? (INTERACTION_ICON[lastInteraction.type as LeadInteractionType] ?? StickyNote) : StickyNote
 
   // Registra no banco e só então confirma — sem otimismo
   async function handleWhatsApp(e: React.MouseEvent) {
@@ -158,13 +136,27 @@ function LeadCard({
 
   const isLinked = !!lead.contactId
 
+  // ── Próxima ação — o dado de decisão do card ──────────────────────────────
+  // Vínculo direto (tasks.lead_id, migração 058). O casamento por contactId
+  // continua como fallback para tarefas antigas que o backfill não conseguiu
+  // desambiguar — dois leads do mesmo contato ficaram sem lead_id de propósito.
+  const leadTasks = tasks.filter(t =>
+    t.leadId === lead.id || (!t.leadId && !!lead.contactId && t.contactId === lead.contactId)
+  )
+  const next = isOverlay ? null : computeNextAction(lead, leadTasks, lastInteraction)
+  const nextStyle = next ? URGENCY_STYLE[next.urgency] : null
+
+  // Comissão só onde ajuda a priorizar: etapas finais ou modo financeiro.
+  const showCommission = financeMode || lead.funnelStage === 'proposta' || lead.funnelStage === 'venda'
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={`group relative border rounded-[14px] p-3 cursor-pointer kanban-card shadow-card
+      className={`group relative border rounded-[14px] cursor-pointer kanban-card shadow-card
         transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
+        ${dense ? 'p-2.5' : 'p-3'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? 'shadow-modal border-brand/40' : ''}
         ${isSaving ? 'opacity-60 pointer-events-none' : ''}
@@ -205,32 +197,25 @@ function LeadCard({
         </div>
       </div>
 
-      {/* SLA Meta Ads — registrar 1º contato no prazo ou o lead transfere */}
-      {!isOverlay && (
-        <div className="empty:hidden mb-2">
-          <SlaBadge lead={lead} />
-        </div>
-      )}
-
-      {/* Nome + telefone + origem */}
-      <div className="flex items-start gap-2.5 pr-12 mb-2">
+      {/* ── NÍVEL 1 — Identidade ─────────────────────────────────────────── */}
+      <div className="flex items-start gap-2.5 pr-12">
         <div className="w-8 h-8 rounded-[10px] bg-s2 border border-line flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
           {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.01em]">
+          <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
             {displayName}
           </p>
-          <div className="flex items-center gap-1.5 mt-1">
-            {originMeta && (
-              <originMeta.icon size={11} strokeWidth={1.6} className="text-t4 flex-shrink-0" aria-label={originMeta.label} />
+          {/* Só o que qualifica a identidade: prioridade e responsável.
+              Origem, produto e telefone desceram para o nível 3. */}
+          <div className="flex items-center gap-1.5 mt-1 min-w-0">
+            {lead.flagged && (
+              <span className="font-label text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-text flex-shrink-0">
+                Prioridade
+              </span>
             )}
-            <span className="font-label text-[11px] text-t4 tabular-nums tracking-wide">{formatPhone(displayPhone)}</span>
             {brokerName && (
-              <span
-                title={`Corretor responsável: ${brokerName}`}
-                className="font-label text-[11px] font-medium uppercase tracking-[0.08em] text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-px rounded-full truncate max-w-[80px] flex-shrink-0"
-              >
+              <span className="font-label text-[11px] text-t4 truncate" title={`Corretor responsável: ${brokerName}`}>
                 {brokerName.split(' ')[0]}
               </span>
             )}
@@ -238,35 +223,34 @@ function LeadCard({
         </div>
       </div>
 
-      {/* Recência de contato — a informação de ação do corretor */}
-      {contactInfo && (
-        <div className="flex items-center gap-1.5 mb-2 min-w-0">
-          <span className={`text-xs font-semibold flex-shrink-0 ${contactInfo.cls}`}>{contactInfo.text}</span>
-          {lastInteraction && (
-            <span className="flex items-center gap-1 text-[11px] text-t4 truncate min-w-0">
-              <span className="flex-shrink-0">·</span>
-              <LastIcon size={10} strokeWidth={1.6} className="flex-shrink-0" />
-              <span className="truncate">{lastInteraction.description ?? lastInteraction.type}</span>
-            </span>
-          )}
+      {/* ── NÍVEL 2 — Decisão ────────────────────────────────────────────── */}
+      {/* A linha mais importante do card. Risco chama atenção pela FRASE,
+          não só pela cor — o ponto colorido é reforço, nunca o único sinal. */}
+      {next && (
+        <div className="flex items-start gap-2 mt-2.5" title={next.hint}>
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[5px] ${nextStyle!.dot}`} aria-hidden />
+          <p className={`text-xs font-semibold leading-snug min-w-0 ${nextStyle!.text}`}>
+            {next.text}
+          </p>
           {!isOverlay && (
             <span
+              className="ml-auto flex-shrink-0 font-label text-[11px] text-t4 tabular-nums"
               title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}
-              className={`ml-auto flex-shrink-0 font-label text-[11px] font-medium uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums ${stageDaysClass}`}
             >
-              {stageDays}d na etapa
+              {stageDays}d
             </span>
           )}
         </div>
       )}
 
-      {/* Tentativas de followup */}
-      {lead.funnelStage === 'followup' && (
-        <div className="mb-2">
-          <div className="flex items-center gap-1 mb-1">
+      {/* Tentativas de followup — só onde a cadência existe */}
+      {lead.funnelStage === 'followup' && !dense && (
+        <div className="mt-2.5">
+          <div className="flex items-center gap-1" role="group" aria-label={`${lead.followupStep} de 5 tentativas`}>
             {[1, 2, 3, 4, 5].map(step => (
-              <div
+              <button
                 key={step}
+                type="button"
                 onClick={async e => {
                   e.stopPropagation()
                   const next = lead.followupStep === step ? step - 1 : step
@@ -276,85 +260,86 @@ function LeadCard({
                   } catch { /* erro já toastado */ }
                 }}
                 title={`Marcar ${step}ª tentativa`}
-                className={`flex-1 h-2 rounded-full transition-all duration-150 cursor-pointer active:scale-95
-                  ${step <= lead.followupStep
-                    ? 'bg-info hover:opacity-80'
-                    : 'bg-s3 hover:bg-info-bg'
-                  }`}
+                aria-label={`Marcar ${step}ª tentativa`}
+                className={`flex-1 h-1.5 rounded-full transition-all duration-150 cursor-pointer active:scale-95
+                  ${step <= lead.followupStep ? 'bg-brand hover:opacity-80' : 'bg-s3 hover:bg-brand-tint'}`}
               />
             ))}
           </div>
-          <p className="font-label text-[11px] uppercase tracking-[0.08em] text-t4">
-            {lead.followupStep === 0 ? 'Marcar tentativas' : `${lead.followupStep}ª de 5 tentativas`}
-          </p>
         </div>
       )}
 
-      {/* Imóvel de interesse */}
-      {(property || lead.propertyName) && (
-        <p className="flex items-center gap-1.5 text-xs text-t3 mb-2 min-w-0">
-          <Home size={11} strokeWidth={1.6} className="text-brand flex-shrink-0" />
-          <span className="truncate">{property ? property.name : lead.propertyName}</span>
-        </p>
-      )}
-
-      {/* Ticket + comissão */}
-      {lead.averageTicket && (
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <span className="font-label text-xs font-semibold text-t1 tabular-nums">
-            {formatCurrency(lead.averageTicket)}
-          </span>
-          <span className="font-label text-[11px] uppercase tracking-[0.08em] text-success bg-success-bg border border-success-line px-2 py-0.5 rounded-full tabular-nums">
-            Com. {formatCurrency(lead.averageTicket * 0.02)}
-          </span>
-        </div>
-      )}
-
-      {isLinked && (
-        <span className="inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] text-t3 px-2 py-0.5 rounded-full border border-line mb-1">
-          <UserCheck size={9} strokeWidth={1.6} /> No CRM
-        </span>
-      )}
-
-      {/* Concluir venda — só na etapa Venda e enquanto não encerrado; tira o lead do funil e cria a venda */}
-      {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt && (
-        <button
-          onClick={e => { e.stopPropagation(); setShowConclude(true) }}
-          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-[#0F1730] bg-brand hover:bg-brand-dark rounded-[10px] transition-all duration-150 active:scale-[0.98]"
-          title="Concluir a venda e registrar no faturamento"
-        >
-          <Trophy size={12} strokeWidth={1.8} />
-          Concluir venda
-        </button>
-      )}
-
-      {/* Ações */}
-      <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5">
-        <button
-          onClick={handleWhatsApp}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
-          title="Registrar contato e abrir WhatsApp"
-        >
-          <MessageCircle size={12} strokeWidth={1.6} />
-          Registrar contato
-          {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
-            <span className="opacity-60">· {lead.followupStep}ª</span>
+      {/* ── NÍVEL 3 — Contexto comercial ─────────────────────────────────── */}
+      {/* Uma linha discreta, não um empilhamento de badges. Some no modo compacto. */}
+      {!dense && (
+        <div className="flex items-center gap-1.5 mt-2.5 min-w-0 text-[11px] text-t4">
+          {originMeta && (
+            <originMeta.icon size={11} strokeWidth={1.6} className="flex-shrink-0" aria-label={originMeta.label} />
           )}
-        </button>
+          {(property || lead.propertyName) && (
+            <span className="truncate">{property ? property.name : lead.propertyName}</span>
+          )}
+          {lead.averageTicket && (
+            <>
+              <span className="flex-shrink-0" aria-hidden>·</span>
+              <span className="font-semibold text-t2 tabular-nums flex-shrink-0">
+                {formatCurrency(lead.averageTicket)}
+              </span>
+            </>
+          )}
+          {/* Comissão só nas etapas finais ou no modo financeiro */}
+          {lead.averageTicket && showCommission && (
+            <span className="ml-auto flex-shrink-0 text-success tabular-nums" title="Comissão estimada (2%)">
+              {formatCurrency(lead.averageTicket * 0.02)}
+            </span>
+          )}
+          {isLinked && !lead.averageTicket && (
+            <span className="ml-auto flex-shrink-0 inline-flex items-center gap-1" title="Lead vinculado a um contato do CRM">
+              <UserCheck size={10} strokeWidth={1.6} /> CRM
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* ── NÍVEL 4 — Ações ──────────────────────────────────────────────── */}
+      {/* Etapa Venda troca o CTA: lá o que avança o negócio é concluir a venda. */}
+      <div className="mt-2.5 pt-2.5 border-t border-line flex items-center gap-1.5">
+        {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
+          <button
+            onClick={e => { e.stopPropagation(); setShowConclude(true) }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-[var(--brand-btn-text)] bg-brand hover:bg-brand-dark rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+            title="Concluir a venda e registrar no faturamento"
+          >
+            <Trophy size={12} strokeWidth={1.8} />
+            Concluir venda
+          </button>
+        ) : (
+          <button
+            onClick={handleWhatsApp}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+            title="Abrir WhatsApp e registrar o contato na timeline"
+          >
+            <MessageCircle size={12} strokeWidth={1.6} />
+            {STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}
+            {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
+              <span className="opacity-60">· {lead.followupStep}ª</span>
+            )}
+          </button>
+        )}
         <button
           onClick={handleWhatsAppOpen}
-          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-success bg-s2 hover:bg-success-bg border border-line hover:border-success-line rounded-[10px] transition-all duration-150"
-          title="Só abrir WhatsApp"
-          aria-label="Abrir WhatsApp sem registrar"
+          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-success bg-s2 hover:bg-success-bg border border-line hover:border-success-line rounded-[10px] transition-all duration-150 flex-shrink-0"
+          title="Só abrir WhatsApp, sem registrar"
+          aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
         >
           <MessageCircle size={12} strokeWidth={1.6} />
         </button>
         <a
           href={`tel:${displayPhone}`}
           onClick={e => e.stopPropagation()}
-          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150"
-          title="Ligar"
-          aria-label={`Ligar para ${displayName}`}
+          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150 flex-shrink-0"
+          title={`Ligar — ${formatPhone(displayPhone)}`}
+          aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
         >
           <Phone size={12} strokeWidth={1.6} />
         </a>
@@ -372,13 +357,15 @@ function LeadCard({
 // ─── Coluna do kanban ─────────────────────────────────────────────────────────
 
 function KanbanColumn({
-  stage, leads, onCardClick, isActiveDragTarget, savingId,
+  stage, leads, onCardClick, isActiveDragTarget, savingId, dense, financeMode,
 }: {
   stage: LeadFunnelStage
   leads: Lead[]
   onCardClick: (lead: Lead) => void
   isActiveDragTarget: boolean
   savingId: string | null
+  dense: boolean
+  financeMode: boolean
 }) {
   const conf = STAGE_CONFIG[stage]
   const { isOver, setNodeRef } = useDroppable({ id: stage })
@@ -387,42 +374,59 @@ function KanbanColumn({
 
   const totalPipeline   = leads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
   const totalCommission = totalPipeline * 0.02
+  // Risco da coluna: leads sem contato além da janela de esfriamento.
   const coldCount = leads.filter(l => {
     const last = (byLead[l.id] ?? [])[0]
     return daysWithoutInteraction(last?.interactedAt, l.createdAt) > COOLING_DAYS
   }).length
+  const riskPct = leads.length > 0 ? Math.round((coldCount / leads.length) * 100) : 0
 
   return (
     <div className="flex flex-col w-[19rem] flex-shrink-0">
-      {/* Painel único preenchido — sem bordas, header integrado */}
       <div className={`flex flex-col flex-1 rounded-[18px] kanban-col transition-shadow duration-200
         ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-brand/40' : ''}
       `}>
-        <div className="flex flex-col px-4 pt-3.5 pb-2.5">
+        {/* Cabeçalho fixo — acompanha a rolagem vertical da coluna */}
+        <div className="sticky top-0 z-10 flex flex-col px-4 pt-3.5 pb-2.5 rounded-t-[18px] kanban-col">
           <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${conf.dot}`} />
-            <span className="font-label text-xs font-medium uppercase tracking-[0.12em] text-t2">
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${conf.dot}`} aria-hidden />
+            <h3 className="font-label text-xs font-semibold uppercase tracking-[0.12em] text-t2">
               {conf.columnLabel}
-            </span>
-            {coldCount > 0 && (
-              <span
-                className="flex items-center gap-0.5 font-label text-[11px] text-info bg-info-bg px-1.5 py-px rounded-full tabular-nums"
-                title={`${coldCount} ${coldCount === 1 ? 'lead' : 'leads'} sem contato há mais de ${COOLING_DAYS} dias`}
-              >
-                <Snowflake size={9} strokeWidth={1.6} /> {coldCount}
-              </span>
-            )}
-            <span className="ml-auto font-label text-xs font-semibold text-t3 tabular-nums">
+            </h3>
+            <span className="ml-auto font-label text-xs font-bold text-t1 tabular-nums">
               {leads.length}
             </span>
           </div>
+
+          {/* VGV + comissão da etapa */}
           {totalPipeline > 0 && (
-            <div className="flex items-center gap-1.5 mt-1 pl-4">
-              <span className="font-label text-[11px] text-t3 font-medium tabular-nums">{formatCurrency(totalPipeline)}</span>
-              <span className="text-[11px] text-t5">·</span>
-              <span className="font-label text-[11px] text-success tabular-nums" title="Comissão estimada (2%)">
-                {formatCurrency(totalCommission)}
-              </span>
+            <div className="flex items-center gap-1.5 mt-1.5 pl-4">
+              <span className="font-label text-[11px] text-t2 font-semibold tabular-nums">{formatCurrency(totalPipeline)}</span>
+              {financeMode && (
+                <>
+                  <span className="text-[11px] text-t5" aria-hidden>·</span>
+                  <span className="font-label text-[11px] text-success tabular-nums" title="Comissão estimada (2%)">
+                    {formatCurrency(totalCommission)}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Indicador de risco — texto + proporção, nunca só cor */}
+          {coldCount > 0 && (
+            <div className="mt-2 pl-4">
+              <p className="flex items-center gap-1 font-label text-[11px] text-warning tabular-nums">
+                <Snowflake size={10} strokeWidth={1.6} aria-hidden />
+                {coldCount} sem contato há +{COOLING_DAYS}d
+              </p>
+              <div
+                className="mt-1 h-1 rounded-full bg-s3 overflow-hidden"
+                role="progressbar" aria-valuenow={riskPct} aria-valuemin={0} aria-valuemax={100}
+                aria-label={`${riskPct}% dos leads desta etapa estão sem contato`}
+              >
+                <div className="h-full rounded-full bg-warning" style={{ width: `${riskPct}%` }} />
+              </div>
             </div>
           )}
         </div>
@@ -430,17 +434,26 @@ function KanbanColumn({
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div
             ref={setNodeRef}
-            className={`flex-1 min-h-[420px] rounded-b-[18px] px-2.5 pb-2.5 flex flex-col gap-2.5 transition-colors duration-200
-              ${isOver || isActiveDragTarget ? 'bg-[rgba(228,178,60,0.05)]' : ''}
+            className={`flex-1 min-h-[420px] rounded-b-[18px] px-2.5 pb-2.5 flex flex-col transition-colors duration-200
+              ${dense ? 'gap-1.5' : 'gap-2.5'}
+              ${isOver || isActiveDragTarget ? 'bg-brand-tint' : ''}
             `}
           >
             {leads.length === 0 && (
               <div className="flex-1 flex items-center justify-center rounded-[14px] border border-dashed border-line m-0.5">
-                <p className="text-xs text-t4 text-center">Arraste cards aqui</p>
+                <p className="text-xs text-t4 text-center px-3">
+                  Nenhum lead em {conf.label.toLowerCase()}.<br />
+                  <span className="text-t5">Arraste um card para cá.</span>
+                </p>
               </div>
             )}
             {leads.map(lead => (
-              <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} isSaving={savingId === lead.id} />
+              <LeadCard
+                key={lead.id} lead={lead}
+                onClick={() => onCardClick(lead)}
+                isSaving={savingId === lead.id}
+                dense={dense} financeMode={financeMode}
+              />
             ))}
           </div>
         </SortableContext>
@@ -461,8 +474,19 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
   const connected = useRealtimeStatusStore(s => s.connected)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<LeadFunnelStage | null>(null)
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  // Painel do lead vem da URL (?lead=<id>), igual à aba de lista — assim o
+  // link é compartilhável e o voltar do navegador fecha o painel.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openLeadId = searchParams.get('lead')
+  const selectedLead = openLeadId ? leads.find(l => l.id === openLeadId) ?? null : null
+  const setSelectedLead = (l: Lead | null) => {
+    const next = new URLSearchParams(searchParams)
+    if (l) next.set('lead', l.id)
+    else   next.delete('lead')
+    setSearchParams(next, { replace: !l })
+  }
   const [savingId, setSavingId] = useState<string | null>(null)
+  const { dense, financeMode, sort, setDense, setFinanceMode, setSort } = useKanbanPrefs()
 
   useEffect(() => { loadAllInteractions() }, [])
 
@@ -472,14 +496,35 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  // Ordena cada coluna por kanbanOrder desc (ou updatedAt como fallback)
   const sortedByStage = useMemo(() => {
+    // `manual` preserva a ordenação arrastada (kanbanOrder). Os demais critérios
+    // são visualizações — arrastar continua gravando a ordem manual no banco,
+    // ela só volta a aparecer quando a ordenação retorna para "manual".
+    const comparators: Record<KanbanSort, (a: Lead, b: Lead) => number> = {
+      manual:    (a, b) => effectiveOrder(b) - effectiveOrder(a),
+      prioridade:(a, b) => Number(!!b.flagged) - Number(!!a.flagged) || effectiveOrder(b) - effectiveOrder(a),
+      valor:     (a, b) => (b.averageTicket ?? 0) - (a.averageTicket ?? 0),
+      etapa:     (a, b) => new Date(a.stageChangedAt ?? a.createdAt).getTime()
+                         - new Date(b.stageChangedAt ?? b.createdAt).getTime(),
+      criacao:   (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    }
+    const cmp = comparators[sort] ?? comparators.manual
     return STAGES.reduce((acc, stage) => {
-      acc[stage] = leads
-        .filter(l => l.funnelStage === stage)
-        .sort((a, b) => effectiveOrder(b) - effectiveOrder(a))
+      acc[stage] = leads.filter(l => l.funnelStage === stage).sort(cmp)
       return acc
     }, {} as Record<LeadFunnelStage, Lead[]>)
+  }, [leads, sort])
+
+  // Resumo do funil — compacto e derivado do que já está em tela.
+  const resumo = useMemo(() => {
+    const ativos = leads.filter(l => l.funnelStage !== 'venda')
+    return {
+      ativos: ativos.length,
+      vgv: ativos.reduce((s, l) => s + (l.averageTicket ?? 0), 0),
+      visitas: leads.filter(l => l.funnelStage === 'visita').length,
+      propostas: leads.filter(l => l.funnelStage === 'proposta').length,
+      vendas: leads.filter(l => l.funnelStage === 'venda').length,
+    }
   }, [leads])
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null
@@ -569,19 +614,74 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
 
   return (
     <>
-      {/* Status da conexão realtime */}
-      <div className="flex items-center justify-end gap-1.5 px-1 pb-2">
-        {connected ? (
-          <>
-            <Wifi size={11} strokeWidth={1.6} className="text-success" />
-            <span className="font-label text-[11px] uppercase tracking-[0.12em] text-t4">Tempo real ativo</span>
-          </>
-        ) : (
-          <>
-            <WifiOff size={11} strokeWidth={1.6} className="text-warning" />
-            <span className="font-label text-[11px] uppercase tracking-[0.12em] text-warning">Reconectando…</span>
-          </>
-        )}
+      {/* ── Resumo do funil + controles de visualização ────────────────────
+          Compacto de propósito: é uma régua para decidir, não um segundo
+          dashboard. Os números saem dos mesmos leads já renderizados. */}
+      <div className="flex items-center gap-x-5 gap-y-2 flex-wrap px-1 pb-3">
+        <span className="flex items-baseline gap-1.5">
+          <span className="font-heading text-sm font-bold text-t1 tabular-nums">{resumo.ativos}</span>
+          <span className="text-[11px] text-t4">ativos</span>
+        </span>
+        <span className="flex items-baseline gap-1.5">
+          <span className="font-heading text-sm font-bold text-t1 tabular-nums">{formatCurrency(resumo.vgv)}</span>
+          <span className="text-[11px] text-t4">em pipeline</span>
+        </span>
+        <span className="flex items-baseline gap-1.5">
+          <span className="font-heading text-sm font-bold text-t2 tabular-nums">{resumo.visitas}</span>
+          <span className="text-[11px] text-t4">visitas</span>
+        </span>
+        <span className="flex items-baseline gap-1.5">
+          <span className="font-heading text-sm font-bold text-t2 tabular-nums">{resumo.propostas}</span>
+          <span className="text-[11px] text-t4">propostas</span>
+        </span>
+
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
+          {/* Ordenação */}
+          <label className="flex items-center gap-1.5">
+            <span className="sr-only">Ordenar cards por</span>
+            <select
+              value={sort}
+              onChange={e => setSort(e.target.value as KanbanSort)}
+              className="text-[11px] text-t2 bg-s2 border border-line rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:border-brand"
+              title="Ordenar os cards de cada coluna"
+            >
+              {(Object.keys(SORT_LABEL) as KanbanSort[]).map(k => (
+                <option key={k} value={k}>{SORT_LABEL[k]}</option>
+              ))}
+            </select>
+          </label>
+
+          {/* Densidade */}
+          <button
+            onClick={() => setDense(!dense)}
+            aria-pressed={dense}
+            title={dense ? 'Mostrar contexto comercial nos cards' : 'Compactar cards'}
+            className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-lg border transition-colors cursor-pointer
+              ${dense ? 'text-t1 bg-s3 border-line-strong' : 'text-t3 bg-s2 border-line hover:text-t1'}`}
+          >
+            {dense ? <Rows2 size={12} strokeWidth={1.6} /> : <Rows3 size={12} strokeWidth={1.6} />}
+            {dense ? 'Compacto' : 'Completo'}
+          </button>
+
+          {/* Modo financeiro */}
+          <button
+            onClick={() => setFinanceMode(!financeMode)}
+            aria-pressed={financeMode}
+            title="Exibir comissão estimada em todos os cards e colunas"
+            className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-lg border transition-colors cursor-pointer
+              ${financeMode ? 'text-success bg-success-bg border-success-line' : 'text-t3 bg-s2 border-line hover:text-t1'}`}
+          >
+            <DollarSign size={12} strokeWidth={1.6} />
+            Comissão
+          </button>
+
+          {/* Sincronização — discreto, como pede o briefing */}
+          <span className="flex items-center gap-1.5" title={connected ? 'Sincronizado em tempo real' : 'Reconectando ao servidor'}>
+            {connected
+              ? <Wifi size={12} strokeWidth={1.6} className="text-success" aria-label="Tempo real ativo" />
+              : <WifiOff size={12} strokeWidth={1.6} className="text-warning" aria-label="Reconectando" />}
+          </span>
+        </div>
       </div>
 
       <DndContext
@@ -598,6 +698,7 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
               stage={stage}
               leads={sortedByStage[stage]}
               onCardClick={setSelectedLead}
+              dense={dense} financeMode={financeMode}
               isActiveDragTarget={overStage === stage && !!activeId}
               savingId={savingId}
             />
@@ -605,7 +706,7 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
         </div>
 
         <DragOverlay>
-          {activeLead ? <LeadCard lead={activeLead} onClick={() => {}} isOverlay /> : null}
+          {activeLead ? <LeadCard lead={activeLead} onClick={() => {}} isOverlay dense={dense} /> : null}
         </DragOverlay>
       </DndContext>
 
