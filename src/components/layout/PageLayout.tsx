@@ -13,7 +13,13 @@ interface PageLayoutProps {
 
 export function PageLayout({ title, subtitle, ctaLabel, onCta, actions, children }: PageLayoutProps) {
   return (
-    <div className="flex-1 min-h-screen bg-page texture-grain">
+    <div className="flex-1 min-h-screen bg-page texture-grain aurora-host">
+      {/*
+        Brilho dourado que respira no fundo do sistema. Fica aqui, no layout
+        compartilhado, para valer em todas as páginas sem cada tela precisar
+        saber que existe. `aurora-host` empurra o conteúdo para z-index 1.
+      */}
+      <div className="aurora" aria-hidden />
       {/* ── Sticky page header ──────────────────────────────────── */}
       <div
         className="sticky top-0 z-10 nav-bg-blur pt-safe"

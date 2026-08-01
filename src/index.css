@@ -98,6 +98,10 @@
      No escuro precisa ser mais forte: sobre Marinho um degradê sutil some. */
   --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0) 58%);
 
+  /* Aurora — focos de luz Areia no fundo da tela (ver .aurora) */
+  --aurora-a: rgba(228, 178, 60, 0.14);
+  --aurora-b: rgba(228, 178, 60, 0.09);
+
   /* ── Etapas do funil ──────────────────────────────────────────────────────
      A cor da etapa é SEMÂNTICA, não decorativa: representa a temperatura
      comercial do lead, não uma paleta. Conforme o Brand Guide, as etapas
@@ -204,6 +208,10 @@ html.light {
   --shadow-card:    0 1px 4px rgba(15,23,48,0.08), 0 1px 2px rgba(15,23,48,0.05);
   --shadow-modal:   0 25px 50px rgba(15,23,48,0.18), 0 10px 20px rgba(15,23,48,0.10);
   --shadow-dropdown:0 10px 30px rgba(15,23,48,0.12), 0 4px 10px rgba(15,23,48,0.08);
+
+  /* Sobre papel o mesmo ouro mancharia a tela — cai para cerca de um terço. */
+  --aurora-a: rgba(228, 178, 60, 0.055);
+  --aurora-b: rgba(196, 146, 42, 0.035);
 
   /* No papel o degradê inverte: em vez de luz branca (invisível sobre branco),
      é uma sombra fria de Marinho muito diluída subindo do rodapé do card. */
@@ -415,6 +423,66 @@ html.light {
 .texture-grain {
   background-image: var(--grain);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   AURORA — brilho dourado que se move devagar no fundo do sistema
+
+   Dois focos de luz Areia, muito difusos, com deriva independente. A intenção
+   é que a tela pareça viva sem que ninguém repare no movimento: os ciclos são
+   de 48s e 67s (propositalmente não múltiplos, para o padrão não se repetir de
+   forma perceptível) e o deslocamento é pequeno.
+
+   Anima só `transform` — o compositor resolve na GPU, sem recalcular layout
+   nem repintar. Animar `background-position` aqui custaria repaint de tela
+   cheia a cada frame, com o app inteiro por cima.
+
+   `prefers-reduced-motion` é respeitado pela regra global no fim do arquivo,
+   que congela a animação. O brilho continua lá, apenas parado.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.aurora {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.aurora::before,
+.aurora::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  /* Raio grande + blur pesado = mancha de luz, não bolha visível */
+  filter: blur(90px);
+  will-change: transform;
+}
+.aurora::before {
+  width: 46vw; height: 46vw;
+  top: -14vw; left: -8vw;
+  background: radial-gradient(circle, var(--aurora-a) 0%, transparent 70%);
+  animation: auroraA 48s ease-in-out infinite alternate;
+}
+.aurora::after {
+  width: 38vw; height: 38vw;
+  bottom: -12vw; right: -6vw;
+  background: radial-gradient(circle, var(--aurora-b) 0%, transparent 70%);
+  animation: auroraB 67s ease-in-out infinite alternate;
+}
+
+@keyframes auroraA {
+  0%   { transform: translate3d(0, 0, 0)            scale(1);    }
+  50%  { transform: translate3d(12vw, 6vh, 0)       scale(1.18); }
+  100% { transform: translate3d(4vw, 14vh, 0)       scale(1.05); }
+}
+@keyframes auroraB {
+  0%   { transform: translate3d(0, 0, 0)            scale(1.1);  }
+  50%  { transform: translate3d(-14vw, -8vh, 0)     scale(1);    }
+  100% { transform: translate3d(-5vw, -16vh, 0)     scale(1.22); }
+}
+
+/* O conteúdo da página precisa ficar acima da aurora. */
+.aurora-host { position: relative; }
+.aurora-host > *:not(.aurora) { position: relative; z-index: 1; }
 
 .surface-premium {
   background-color: var(--surface);

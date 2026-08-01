@@ -37,16 +37,15 @@
       (function () {
         try {
           var raw = localStorage.getItem('icrm-theme')
-          if (!raw) { document.documentElement.classList.add('light'); return }
+          // Padrão da casa é o Marinho escuro, que já é o valor de :root —
+          // sem nada gravado, não precisa fazer nada.
+          if (!raw) return
           var saved = JSON.parse(raw)
-          // Espelha a migração v0→v1 do useThemeStore: quem tinha "dark" gravado
-          // de antes do Souza OS vai para o claro. Sem isto a tela pisca escura
-          // antes do React montar e corrigir.
-          var theme = (saved.version || 0) < 1 ? 'light' : (saved.state || {}).theme
+          // Espelha a migração do useThemeStore (v2 = volta ao escuro). Sem
+          // isto a tela pisca no tema errado antes do React montar.
+          var theme = (saved.version || 0) < 2 ? 'dark' : (saved.state || {}).theme
           if (theme !== 'dark') document.documentElement.classList.add('light')
-        } catch (e) {
-          document.documentElement.classList.add('light')
-        }
+        } catch (e) { /* mantém o escuro de :root */ }
       })()
     </script>
   </head>
