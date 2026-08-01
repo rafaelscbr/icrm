@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
   ExternalLink, Tv2, Sun, Moon, UserPlus, Calculator,
-  Bell, ShieldCheck, LogOut, ScrollText, Target, Database,
+  Bell, ShieldCheck, LogOut, Target, Database,
   PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
@@ -238,7 +238,6 @@ export function Sidebar() {
             <SectionLabel collapsed={collapsed}>Administração</SectionLabel>
             <div className="flex flex-col gap-0.5">
               <NavItem to="/admin"      end icon={ShieldCheck} label="Corretores" collapsed={collapsed} />
-              <NavItem to="/admin/logs" end icon={ScrollText}  label="Logs"       collapsed={collapsed} />
             </div>
 
             {/* Seletor de visão — Global / Meu Desempenho / Corretor X */}

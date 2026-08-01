@@ -5,7 +5,6 @@ import { useThemeStore, applyTheme } from './store/useThemeStore'
 import { useAuthStore } from './store/useAuthStore'
 import { usePresenceStore } from './store/usePresenceStore'
 import { getUserLocation } from './lib/geolocation'
-import { logActivity } from './lib/activityLogger'
 import { Sidebar } from './components/layout/Sidebar'
 import { BottomNav } from './components/layout/BottomNav'
 import { GlobalSearch } from './components/shared/GlobalSearch'
@@ -37,7 +36,6 @@ const LeadsPage         = lazy(() => import('./modules/leads/LeadsPage').then(m 
 const SimuladorPage     = lazy(() => import('./modules/simulador/SimuladorPage').then(m => ({ default: m.SimuladorPage })))
 const LoginPage         = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 const AdminPage         = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })))
-const ActivityLogsPage  = lazy(() => import('./pages/ActivityLogsPage').then(m => ({ default: m.ActivityLogsPage })))
 const GoalsPage         = lazy(() => import('./modules/goals/GoalsPage').then(m => ({ default: m.GoalsPage })))
 const WeekHistoryPage   = lazy(() => import('./modules/goals/WeekHistoryPage').then(m => ({ default: m.WeekHistoryPage })))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
@@ -84,7 +82,6 @@ function PresenceTracker() {
   useEffect(() => {
     if (!user) return
     updatePage(location.pathname)
-    logActivity('page_visit', { path: location.pathname }, location.pathname)
   }, [location.pathname])
 
   return null
@@ -229,7 +226,6 @@ function AppRoutes() {
             <Route path="/escritorio"  element={<PageWrapper><VirtualOfficePage /></PageWrapper>} />
             <Route path="/base-leads" element={<PageWrapper><LeadListsPage /></PageWrapper>} />
             {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
-            {isAdmin && <Route path="/admin/logs" element={<PageWrapper><ActivityLogsPage /></PageWrapper>} />}
           </Routes>
           </Suspense>
         </main>
