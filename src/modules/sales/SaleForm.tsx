@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button'
 import { Sale, SaleType } from '../../types'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useContactsStore } from '../../store/useContactsStore'
+import { useContactSearch } from '../../hooks/useContactSearch'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { ContactForm } from '../contacts/ContactForm'
 import { formatCurrencyFull } from '../../lib/formatters'
@@ -20,14 +21,14 @@ interface SaleFormProps {
 
 export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
   const { add, update } = useSalesStore()
-  const { contacts } = useContactsStore()
+  const { getById: getContact, mergeLocal } = useContactsStore()
   const { properties } = usePropertiesStore()
 
   const isEditing = Boolean(sale)
   const today = new Date().toISOString().split('T')[0]
 
   const [clientId,      setClientId]      = useState(sale?.clientId ?? '')
-  const [clientSearch,  setClientSearch]  = useState(sale ? (contacts.find(c => c.id === sale.clientId)?.name ?? '') : '')
+  const [clientSearch,  setClientSearch]  = useState(sale ? (getContact(sale.clientId)?.name ?? '') : '')
   const [showClientDrop, setShowClientDrop] = useState(false)
 
   const [propertyId,   setPropertyId]   = useState(sale?.propertyId ?? '')
@@ -48,9 +49,12 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
   const [newContactOpen, setNewContactOpen] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Busca no servidor (debounce) — evita carregar 12.543 contatos só para o combobox
+  const { resultados: contactResults } = useContactSearch(clientSearch, 8)
+
   const filteredClients = clientSearch.trim()
-    ? contacts.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
-    : contacts.slice(0, 5)
+    ? contactResults
+    : []
 
   const filteredProps = propertyName.trim()
     ? properties.filter(p => p.name.toLowerCase().includes(propertyName.toLowerCase()))
@@ -135,7 +139,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
                 {filteredClients.map(c => (
                   <button key={c.id} type="button"
-                    onMouseDown={() => { setClientId(c.id); setClientSearch(c.name); setShowClientDrop(false) }}
+                    onMouseDown={() => { mergeLocal([c]); setClientId(c.id); setClientSearch(c.name); setShowClientDrop(false) }}
                     className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
                   >{c.name}</button>
                 ))}

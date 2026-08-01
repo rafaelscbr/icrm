@@ -154,7 +154,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
 
 export function PropertiesPage() {
   const { properties, load, remove, search, filterByStatus, backfillThumbnails } = usePropertiesStore()
-  const { load: loadContacts, getById } = useContactsStore()
+  const { loadByIds: loadContactsByIds, getById } = useContactsStore()
   const { tasks } = useTasksStore()
   const { isAdmin, profile } = useAuthStore()
   const canEdit   = (p: Property) => isAdmin || p.createdById === profile?.id
@@ -169,7 +169,14 @@ export function PropertiesPage() {
   const [tasksProperty, setTasksProperty] = useState<Property | undefined>()
   const [viewProperty, setViewProperty] = useState<Property | undefined>()
 
-  useEffect(() => { load(); loadContacts() }, [load, loadContacts])
+  useEffect(() => { load() }, [load])
+
+  // Só os contatos proprietários dos imóveis — antes era o fetchAll de 12.543 linhas
+  // (~7,7 MB) para exibir algumas dezenas de nomes.
+  useEffect(() => {
+    const ids = properties.map(p => p.ownerId).filter((id): id is string => !!id)
+    if (ids.length > 0) loadContactsByIds(ids)
+  }, [properties]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Migração one-shot: imóveis anteriores à coluna thumbnail ganham miniatura
   // gerada aqui no navegador (apenas admin — RLS de UPDATE). Sem candidatos,

@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button'
 import { CampaignLead } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
+import { db } from '../../lib/db'
 import toast from 'react-hot-toast'
 
 interface LeadEditModalProps {
@@ -16,7 +17,7 @@ interface LeadEditModalProps {
 
 export function LeadEditModal({ isOpen, onClose, lead }: LeadEditModalProps) {
   const { update } = useCampaignLeadsStore()
-  const { contacts, add: addContact } = useContactsStore()
+  const { add: addContact } = useContactsStore()
 
   const [name,   setName]   = useState(lead?.name  ?? '')
   const [phone,  setPhone]  = useState(lead?.phone  ?? '')
@@ -47,11 +48,12 @@ export function LeadEditModal({ isOpen, onClose, lead }: LeadEditModalProps) {
     onClose()
   }
 
-  function handleConvertToContact() {
+  // Dedupe consultando o banco: o array local não tem mais a tabela inteira, e
+  // perguntar ao banco também enxerga o contato que outro corretor acabou de criar.
+  async function handleConvertToContact() {
     if (!lead) return
-    const digits = phone.replace(/\D/g, '')
-    const exists = contacts.some(c => c.phone.replace(/\D/g, '') === digits)
-    if (exists) { toast.error('Já existe um contato com esse telefone.'); return }
+    const jaExiste = await db.contacts.findByPhone(phone)
+    if (jaExiste) { toast.error('Já existe um contato com esse telefone.'); return }
     addContact({ name: name.trim() || lead.name, phone: phone.trim() || lead.phone, tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
     toast.success(`${name || lead.name} adicionado aos contatos!`)
     onClose()

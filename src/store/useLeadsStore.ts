@@ -194,10 +194,12 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
     const lead: Lead = { ...rest, brokerId, id: generateId(), createdAt: customCreatedAt ?? now, updatedAt: now, stageChangedAt: customCreatedAt ?? now }
 
-    // Auto-link or create contact
-    const { contacts, add: addContact } = useContactsStore.getState()
-    const phone = lead.phone.replace(/\D/g, '')
-    const existing = contacts.find(c => c.phone.replace(/\D/g, '') === phone)
+    // Auto-link or create contact.
+    // O dedupe pergunta ao BANCO, não ao array local: a tela que cria o lead
+    // não precisa mais ter os 12.543 contatos carregados, e a checagem passa a
+    // enxergar o contato que outro corretor acabou de cadastrar.
+    const { add: addContact } = useContactsStore.getState()
+    const existing = await db.contacts.findByPhone(lead.phone)
 
     if (existing) {
       lead.contactId = existing.id
@@ -339,9 +341,9 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     // Garante um contato (clientId obrigatório na venda) — reaproveita o contato do lead
     let contactId = lead.contactId
     if (!contactId) {
-      const { contacts, add: addContact } = useContactsStore.getState()
-      const phone = lead.phone.replace(/\D/g, '')
-      const existing = contacts.find(c => c.phone.replace(/\D/g, '') === phone)
+      // Dedupe no banco — ver comentário em add()
+      const { add: addContact } = useContactsStore.getState()
+      const existing = await db.contacts.findByPhone(lead.phone)
       if (existing) {
         contactId = existing.id
       } else {

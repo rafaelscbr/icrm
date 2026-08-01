@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { localDateStr } from '../../store/useDailyLogsStore'
 import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
 import { PeriodSelector } from '../../components/shared/PeriodSelector'
@@ -9,7 +9,7 @@ import {
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
 import { useSalesStore } from '../../store/useSalesStore'
-import { useContactsStore } from '../../store/useContactsStore'
+import { db } from '../../lib/db'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useDailyLogsStore } from '../../store/useDailyLogsStore'
 import { formatCurrency } from '../../lib/formatters'
@@ -134,14 +134,17 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
 
 export function ReportsTab() {
   const { sales,      load: loadSales      } = useSalesStore()
-  const { contacts,   load: loadContacts   } = useContactsStore()
+  // Só as CONTAGENS de contatos — não a tabela. Eram 12.543 linhas (~7,7 MB)
+  // baixadas para exibir dois números.
+  const [contactStats, setContactStats] = useState({ total: 0, investidores: 0 })
   const { properties, load: loadProperties } = usePropertiesStore()
   const { logs,       load: loadLogs       } = useDailyLogsStore()
   const { preset, startDate, endDate, getLabel } = usePeriodStore()
 
   useEffect(() => {
-    loadSales(); loadContacts(); loadProperties(); loadLogs()
-  }, [loadSales, loadContacts, loadProperties, loadLogs])
+    loadSales(); loadProperties(); loadLogs()
+    db.contacts.stats().then(setContactStats).catch(() => {})
+  }, [loadSales, loadProperties, loadLogs])
 
   // ── Sales charts — adapta automaticamente ao intervalo do período ────────
   const monthlySales = useMemo(() => {
@@ -320,8 +323,8 @@ export function ReportsTab() {
           />
           <StatCard
             label="Total contatos"
-            value={contacts.length}
-            sub={`${contacts.filter(c => c.tags.includes('investor')).length} investidores`}
+            value={contactStats.total}
+            sub={`${contactStats.investidores} investidores`}
             icon={<Users size={18} />}
             accent="purple"
           />

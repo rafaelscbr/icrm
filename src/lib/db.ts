@@ -826,6 +826,37 @@ export const db = {
       }
       return out
     },
+    /**
+     * Dedupe de contato por telefone — PERGUNTA AO BANCO, não ao array local.
+     *
+     * Antes isso era `contacts.find(c => c.phone === ...)`, o que obrigava toda
+     * tela que cria lead ou venda a carregar os 12.543 contatos. E era frágil:
+     * o array reflete o último sync, então dois corretores cadastrando o mesmo
+     * telefone ao mesmo tempo criavam duplicata mesmo com a tabela em memória.
+     */
+    findByPhone: async (phone: string): Promise<Contact | null> => {
+      const digitos = phone.replace(/\D/g, '')
+      if (!digitos) return null
+      const { data, error } = await supabase.rpc('contact_by_phone', { p_phone: digitos })
+      if (error) { toast.error(`Erro ao verificar contato: ${error.message}`); throw error }
+      const linhas = data as ContactRow[] | null
+      return linhas && linhas.length > 0 ? toContact(linhas[0]) : null
+    },
+    /** Busca por nome, empresa ou telefone — usada pela busca global (⌘K). */
+    search: async (q: string, limite = 20): Promise<Contact[]> => {
+      if (!q.trim()) return []
+      const { data, error } = await supabase.rpc('search_contacts', { p_q: q, p_limit: limite })
+      if (error) { console.error('[contacts] search:', error); return [] }
+      return (data as ContactRow[]).map(toContact)
+    },
+    /** Contagens para relatórios — evita baixar a tabela só para contar. */
+    stats: async (): Promise<{ total: number; investidores: number }> => {
+      const [t, i] = await Promise.all([
+        supabase.from('contacts').select('id', { count: 'exact', head: true }),
+        supabase.from('contacts').select('id', { count: 'exact', head: true }).contains('tags', ['investor']),
+      ])
+      return { total: t.count ?? 0, investidores: i.count ?? 0 }
+    },
     fetchSince: (sinceIso: string) => fetchSince<ContactRow, Contact>('contacts', sinceIso, toContact),
     fetchDeletedSince: (sinceIso: string) => fetchDeletedSince('contacts', sinceIso),
     upsert:     (c: Contact)  => upsertOne('contacts', fromContact(c)),

@@ -10,6 +10,7 @@ import { Task, TaskCategory, TaskPriority, ChecklistItem } from '../../types'
 import { generateId } from '../../lib/formatters'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
+import { useContactSearch } from '../../hooks/useContactSearch'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
@@ -58,7 +59,7 @@ const STEP_LABELS = ['O que?', 'Quando?', 'Detalhes']
 
 export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormProps) {
   const { add, update }                              = useTasksStore()
-  const { contacts }                                 = useContactsStore()
+  const { getById: getContact, mergeLocal }          = useContactsStore()
   const { properties }                               = usePropertiesStore()
   const { isAdmin, profile, allProfiles, fetchAllProfiles } = useAuthStore()
   const isEditing = Boolean(task)
@@ -85,8 +86,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
 
   const [showContactDrop,  setShowContactDrop]  = useState(false)
   const [contactSearch,    setContactSearch]    = useState(
-    task?.contactId ? (contacts.find(c => c.id === task.contactId)?.name ?? '')
-    : defaultContactId ? (contacts.find(c => c.id === defaultContactId)?.name ?? '')
+    task?.contactId ? (getContact(task.contactId)?.name ?? '')
+    : defaultContactId ? (getContact(defaultContactId)?.name ?? '')
     : ''
   )
   const [showPropertyDrop, setShowPropertyDrop] = useState(false)
@@ -134,7 +135,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
     const resolvedContactId = task?.contactId ?? defaultContactId ?? ''
     setContactId(resolvedContactId)
     setPropertyId(task?.propertyId ?? '')
-    setContactSearch(resolvedContactId ? (contacts.find(c => c.id === resolvedContactId)?.name ?? '') : '')
+    setContactSearch(resolvedContactId ? (getContact(resolvedContactId)?.name ?? '') : '')
     setPropertySearch(task?.propertyId ? (properties.find(p => p.id === task.propertyId)?.name ?? '') : '')
     setAssignedToId(task?.assignedToId ?? '')
     setParticipantIds(task?.participants ?? [])
@@ -194,9 +195,12 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
+  // Busca no servidor (debounce) — ver useContactSearch
+  const { resultados: contactResults } = useContactSearch(contactSearch, 8)
+
   const filteredContacts = contactSearch.trim()
-    ? contacts.filter(c => c.name.toLowerCase().includes(contactSearch.toLowerCase()))
-    : contacts.slice(0, 6)
+    ? contactResults
+    : []
 
   const filteredProperties = propertySearch.trim()
     ? properties.filter(p => p.name.toLowerCase().includes(propertySearch.toLowerCase()))
@@ -204,14 +208,14 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
 
   const calendarUrl = useMemo(() => {
     if (!title.trim() || !dueDate) return null
-    const contact  = contacts.find(c => c.id === contactId)
+    const contact  = contactId ? getContact(contactId) : undefined
     const property = properties.find(p => p.id === propertyId)
     const parts: string[] = []
     if (description.trim()) parts.push(description.trim())
     if (contact)  parts.push(`Lead: ${contact.name}`)
     if (property) parts.push(`Imóvel: ${property.name}`)
     return buildGoogleCalendarUrl({ title: title.trim(), description: parts.join('\n') || undefined, date: dueDate, time: dueTime || undefined })
-  }, [title, dueDate, dueTime, description, contactId, propertyId, contacts, properties])
+  }, [title, dueDate, dueTime, description, contactId, propertyId, properties])
 
   // Quick-date options
   const DATE_SHORTCUTS = [
@@ -435,7 +439,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId }: TaskFormPr
             <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
               {filteredContacts.map(c => (
                 <button key={c.id} type="button"
-                  onMouseDown={() => { setContactId(c.id); setContactSearch(c.name); setShowContactDrop(false) }}
+                  onMouseDown={() => { mergeLocal([c]); setContactId(c.id); setContactSearch(c.name); setShowContactDrop(false) }}
                   className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer flex items-center gap-2"
                 >
                   <div className="w-6 h-6 bg-brand-tint rounded-full flex items-center justify-center text-[11px] font-bold text-brand-text flex-shrink-0">

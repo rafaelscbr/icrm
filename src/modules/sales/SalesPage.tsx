@@ -34,7 +34,7 @@ export function SalesPage() {
   const { sales: allSales, load, remove } = useSalesStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const sales = isAdmin && viewAsBrokerId ? allSales.filter(s => s.brokerId === viewAsBrokerId) : allSales
-  const { contacts, load: loadContacts } = useContactsStore()
+  const { contacts, loadByIds: loadContactsByIds } = useContactsStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<SaleType | null>(null)
@@ -43,13 +43,20 @@ export function SalesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Sale | undefined>()
 
   useEffect(() => {
-    load(); loadContacts()
+    load()
     const params = new URLSearchParams(window.location.search)
     if (params.get('new') === '1') {
       setFormOpen(true)
       window.history.replaceState({}, '', window.location.pathname)
     }
-  }, [load, loadContacts])
+  }, [load])
+
+  // Só os contatos citados nesta tela — antes era o fetchAll de 12.543 linhas
+  // (~7,7 MB) para exibir algumas dezenas de nomes.
+  useEffect(() => {
+    const ids = sales.map(s => s.clientId).filter(Boolean)
+    if (ids.length > 0) loadContactsByIds(ids)
+  }, [sales]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = sales.filter(s => {
     const client = contacts.find(c => c.id === s.clientId)

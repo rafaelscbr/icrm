@@ -316,8 +316,8 @@ function LeadCard({
         </span>
       )}
 
-      {/* Concluir venda — só na etapa Venda; tira o lead do funil e cria a venda */}
-      {!isOverlay && lead.funnelStage === 'venda' && (
+      {/* Concluir venda — só na etapa Venda e enquanto não encerrado; tira o lead do funil e cria a venda */}
+      {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt && (
         <button
           onClick={e => { e.stopPropagation(); setShowConclude(true) }}
           className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-[#0F1730] bg-brand hover:bg-brand-dark rounded-[10px] transition-all duration-150 active:scale-[0.98]"

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Users, Building2, Megaphone, CheckSquare, X, UserPlus } from 'lucide-react'
-import { useContactsStore } from '../../store/useContactsStore'
+import { useContactSearch } from '../../hooks/useContactSearch'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -23,7 +23,8 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
   const navigate   = useNavigate()
 
-  const contacts    = useContactsStore(s => s.contacts)
+  // Contatos são buscados NO SERVIDOR: o store não tem mais a tabela inteira
+  // (eram 12.543 linhas / ~7,7 MB carregadas só para filtrar em memória).
   const properties  = usePropertiesStore(s => s.properties)
   const campLeads   = useCampaignLeadsStore(s => s.leads)
   const funnelLeads = useLeadsStore(s => s.leads)
@@ -55,9 +56,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
   const q = query.trim().toLowerCase()
 
-  const filteredContacts   = q ? contacts.filter(c =>
-    c.name.toLowerCase().includes(q) || c.phone.includes(q) || (c.company ?? '').toLowerCase().includes(q)
-  ).slice(0, MAX_PER_SECTION) : []
+  const { resultados: filteredContacts } = useContactSearch(query.trim(), MAX_PER_SECTION)
 
   const filteredProperties = q ? properties.filter(p =>
     p.name.toLowerCase().includes(q) || p.neighborhood.toLowerCase().includes(q) || (p.developmentName ?? '').toLowerCase().includes(q)

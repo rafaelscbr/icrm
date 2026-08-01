@@ -532,7 +532,7 @@ function CalendarView({
 
 export function TasksPage() {
   const { tasks: allTasks, load, remove, toggleDone } = useTasksStore()
-  const { contacts, load: loadContacts }              = useContactsStore()
+  const { contacts, loadByIds: loadContactsByIds }    = useContactsStore()
   const { properties, load: loadProperties }          = usePropertiesStore()
   const { isAdmin, viewAsBrokerId, profile, allProfiles } = useAuthStore()
 
@@ -552,7 +552,14 @@ export function TasksPage() {
   const [showDone,     setShowDone]     = useState(false)
   const [activeTab,    setActiveTab]    = useState<'tasks' | 'calendar' | 'history'>('tasks')
 
-  useEffect(() => { load(); loadContacts(); loadProperties() }, [load, loadContacts, loadProperties])
+  useEffect(() => { load(); loadProperties() }, [load, loadProperties])
+
+  // Só os contatos citados nesta tela — antes era o fetchAll de 12.543 linhas
+  // (~7,7 MB) para exibir algumas dezenas de nomes.
+  useEffect(() => {
+    const ids = tasks.map(t => t.contactId).filter((id): id is string => !!id)
+    if (ids.length > 0) loadContactsByIds(ids)
+  }, [tasks]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recarrega tarefas ao voltar para a aba/janela (sincroniza com iPhone ou outra sessão)
   useEffect(() => {

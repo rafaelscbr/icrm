@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button'
 import { Property, PropertyStatus, PropertyType, PropertyKind } from '../../types'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
+import { useContactSearch } from '../../hooks/useContactSearch'
 import { ContactForm } from '../contacts/ContactForm'
 import { compressImageFile, makeThumbnail } from '../../lib/image'
 import toast from 'react-hot-toast'
@@ -34,7 +35,7 @@ const TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
 
 export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
   const { add, update, loadImages } = usePropertiesStore()
-  const { contacts, getById } = useContactsStore()
+  const { getById, mergeLocal } = useContactsStore()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const isEditing = Boolean(property)
@@ -108,9 +109,12 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     setErrors({})
   }, [isOpen, property])
 
+  // Busca no servidor (debounce) — ver useContactSearch
+  const { resultados: contactResults } = useContactSearch(ownerSearch, 8)
+
   const filteredContacts = ownerSearch.trim()
-    ? contacts.filter(c => c.name.toLowerCase().includes(ownerSearch.toLowerCase()))
-    : contacts.slice(0, 5)
+    ? contactResults
+    : []
 
   function handleImages(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -472,7 +476,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                     <button
                       key={c.id}
                       type="button"
-                      onMouseDown={() => { setOwnerId(c.id); setOwnerSearch(c.name); setShowOwnerDropdown(false) }}
+                      onMouseDown={() => { mergeLocal([c]); setOwnerId(c.id); setOwnerSearch(c.name); setShowOwnerDropdown(false) }}
                       className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
                     >
                       {c.name}

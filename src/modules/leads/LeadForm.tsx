@@ -9,6 +9,7 @@ import {
 import { Lead, LeadOrigin, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
+import { useContactSearch, useContactByPhone } from '../../hooks/useContactSearch'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { formatPhone, formatCurrencyFull, localDateStr } from '../../lib/formatters'
@@ -50,7 +51,7 @@ interface LeadFormProps {
 
 export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
   const { add, update } = useLeadsStore()
-  const { contacts, add: addContact, getById } = useContactsStore()
+  const { add: addContact, getById, mergeLocal } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { leads: campaignLeads } = useCampaignLeadsStore()
 
@@ -124,19 +125,14 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
   }, [isOpen, lead])
 
   // ─── Derived ──────────────────────────────────────────────────────────────────
-  const contactResults = contactQuery.length >= 1
-    ? contacts.filter(c =>
-        c.name.toLowerCase().includes(contactQuery.toLowerCase()) ||
-        c.phone.replace(/\D/g, '').includes(contactQuery.replace(/\D/g, ''))
-      ).slice(0, 8)
-    : []
+  // Busca e dedupe vão ao BANCO. Antes varriam o array local, o que obrigava a
+  // LeadsPage a baixar os 12.543 contatos (~7,7 MB) antes de abrir o formulário.
+  const { resultados: contactResults } = useContactSearch(contactQuery, 8)
 
   const selectedContact = selectedContactId ? getById(selectedContactId) : undefined
 
-  const newPhoneDigits = newPhone.replace(/\D/g, '')
-  const duplicateContact = newPhoneDigits.length >= 10
-    ? contacts.find(c => c.phone.replace(/\D/g, '') === newPhoneDigits)
-    : undefined
+  const newPhoneDigits   = newPhone.replace(/\D/g, '')
+  const duplicateContact = useContactByPhone(newPhone) ?? undefined
 
   const phoneToCheck = contactMode === 'search'
     ? selectedContact?.phone?.replace(/\D/g, '')
@@ -155,7 +151,10 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
   // ─── Handlers ────────────────────────────────────────────────────────────────
   function selectContact(id: string) {
     setSelectedContactId(id)
-    const c = contacts.find(c => c.id === id)
+    const c = contactResults.find(c => c.id === id)
+    // O contato veio da busca no servidor e pode não estar no store — sem
+    // isto, getById() devolveria undefined logo abaixo.
+    if (c) mergeLocal([c])
     setContactQuery(c?.name ?? '')
   }
 
@@ -424,7 +423,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                       )}
                       {contactQuery.length === 0 && (
                         <p className="text-xs text-t4 text-center py-2">
-                          {contacts.length} contatos disponíveis — comece a digitar
+                          Digite ao menos 2 letras para buscar
                         </p>
                       )}
                     </div>

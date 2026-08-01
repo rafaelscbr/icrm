@@ -4,7 +4,7 @@ import {
   Plus, LayoutGrid, List, Search, BarChart3,
   MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2,
   Sparkles, Smartphone, Globe, Handshake, Megaphone, Percent,
-  GitBranch, Filter, User, Home, X,
+  GitBranch, Filter, User, Home, X, Trophy,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Button } from '../../components/ui/Button'
@@ -161,7 +161,7 @@ export function LeadsPage() {
   const visitaSuggestLead = visitaSuggestLeadId ? allLeads.find(l => l.id === visitaSuggestLeadId) : undefined
   const leads = isAdmin && viewAsBrokerId ? allLeads.filter(l => l.brokerId === viewAsBrokerId) : allLeads
   const { load: loadProps, properties } = usePropertiesStore()
-  const { load: loadContacts } = useContactsStore()
+  const { loadByIds: loadContactsByIds } = useContactsStore()
   const { load: loadConfig }   = useLeadConfigStore()
 
   // Filtro por corretor só faz sentido na visão admin global (sem corretor fixado)
@@ -173,12 +173,20 @@ export function LeadsPage() {
   const [filterOrigin,  setFilterOrigin]  = useState<LeadOrigin | null>(null)
   const [filterBroker,  setFilterBroker]  = useState<string | null>(null)
   const [filterProduct, setFilterProduct] = useState<string | null>(null)
-  const [showDiscarded, setShowDiscarded] = useState(false)
+  // Escopo da lista/kanban: funil ativo, descartados ou ganhos (vendas encerradas)
+  const [listView,      setListView]      = useState<'active' | 'discarded' | 'won'>('active')
   const [showForm,      setShowForm]      = useState(false)
   const [selectedLead,  setSelectedLead]  = useState<Lead | null>(null)
   const [searchParams,  setSearchParams]  = useSearchParams()
 
-  useEffect(() => { load(); loadProps(); loadContacts(); loadConfig() }, [])
+  useEffect(() => { load(); loadProps(); loadConfig() }, [])
+
+  // Só os contatos vinculados aos leads — antes era o fetchAll de 12.543 linhas
+  // (~7,7 MB) para exibir algumas dezenas de nomes.
+  useEffect(() => {
+    const ids = leads.map(l => l.contactId).filter((id): id is string => !!id)
+    if (ids.length > 0) loadContactsByIds(ids)
+  }, [leads]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Deep-link da busca global: /leads?open=<id> abre o modal do lead
   useEffect(() => {
@@ -195,12 +203,14 @@ export function LeadsPage() {
   // Funil ativo = aberto (nem descartado nem ganho/encerrado) — foto real do agora
   const active    = leads.filter(l => !l.discardReason && !l.closedAt)
   const discarded = leads.filter(l => !!l.discardReason)
+  const won       = leads.filter(l => !!l.closedAt)
 
-  // Conjunto base: respeita apenas o escopo de descartados (contagens estáveis)
-  const scoped = useMemo(
-    () => leads.filter(l => showDiscarded ? !!l.discardReason : (!l.discardReason && !l.closedAt)),
-    [leads, showDiscarded],
-  )
+  // Conjunto base: respeita o escopo da view (contagens estáveis)
+  const scoped = useMemo(() => {
+    if (listView === 'discarded') return leads.filter(l => !!l.discardReason)
+    if (listView === 'won')       return leads.filter(l => !!l.closedAt)
+    return leads.filter(l => !l.discardReason && !l.closedAt)
+  }, [leads, listView])
 
   const filtered = useMemo(() => {
     let result = scoped
@@ -436,16 +446,27 @@ export function LeadsPage() {
               </button>
             )}
 
-            {/* Descartados */}
-            <button
-              onClick={() => setShowDiscarded(v => !v)}
-              className={`ml-auto flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all
-                ${showDiscarded ? 'bg-error-bg border-error-line text-error' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
-            >
-              <Trash2 size={13} strokeWidth={1.6} />
-              <span className="hidden sm:inline">{showDiscarded ? 'Descartados' : 'Ver descartados'}</span>
-              {discarded.length > 0 && <span className="font-bold tabular-nums">{discarded.length}</span>}
-            </button>
+            {/* Ganhos (vendas encerradas) + Descartados */}
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={() => setListView(v => v === 'won' ? 'active' : 'won')}
+                className={`flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all
+                  ${listView === 'won' ? 'bg-success-bg border-success-line text-success' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
+              >
+                <Trophy size={13} strokeWidth={1.6} />
+                <span className="hidden sm:inline">{listView === 'won' ? 'Ganhos' : 'Ver ganhos'}</span>
+                {won.length > 0 && <span className="font-bold tabular-nums">{won.length}</span>}
+              </button>
+              <button
+                onClick={() => setListView(v => v === 'discarded' ? 'active' : 'discarded')}
+                className={`flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all
+                  ${listView === 'discarded' ? 'bg-error-bg border-error-line text-error' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
+              >
+                <Trash2 size={13} strokeWidth={1.6} />
+                <span className="hidden sm:inline">{listView === 'discarded' ? 'Descartados' : 'Ver descartados'}</span>
+                {discarded.length > 0 && <span className="font-bold tabular-nums">{discarded.length}</span>}
+              </button>
+            </div>
           </div>
 
           {/* Conteúdo */}
@@ -464,13 +485,15 @@ export function LeadsPage() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-medium text-t2">
-                    {showDiscarded ? 'Nenhum lead descartado' : 'Nenhum lead encontrado'}
+                    {listView === 'discarded' ? 'Nenhum lead descartado'
+                      : listView === 'won' ? 'Nenhuma venda ganha ainda'
+                      : 'Nenhum lead encontrado'}
                   </p>
                   <p className="text-xs text-t4 mt-1">
                     {search || activeFilterCount > 0 ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
                   </p>
                 </div>
-                {!search && activeFilterCount === 0 && !showDiscarded && (
+                {!search && activeFilterCount === 0 && listView === 'active' && (
                   <Button onClick={() => setShowForm(true)} size="md">
                     <Plus size={14} /> Criar primeiro lead
                   </Button>

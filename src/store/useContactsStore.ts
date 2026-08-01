@@ -12,6 +12,8 @@ interface ContactsStore {
   load: () => Promise<void>
   /** Carrega só os contatos indicados (merge). Não avança a marca d'água do sync. */
   loadByIds: (ids: string[]) => Promise<void>
+  /** Insere contatos já obtidos (busca no servidor) sem nova ida ao banco. */
+  mergeLocal: (novos: Contact[]) => void
   /** Assina realtime de contacts — eventos disparam sync incremental */
   subscribe: () => () => void
   add: (data: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>) => Contact
@@ -114,6 +116,18 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
       }
     })()
     return inflightLoad
+  },
+
+  // Insere contatos já obtidos (ex.: resultado de busca no servidor) no store,
+  // sem ir ao banco de novo. Necessário para que getById() enxergue um contato
+  // escolhido num combobox que consultou o servidor.
+  mergeLocal: (novos) => {
+    if (novos.length === 0) return
+    set(s => {
+      const existentes = new Set(s.contacts.map(c => c.id))
+      const faltantes  = novos.filter(c => !existentes.has(c.id))
+      return faltantes.length > 0 ? { contacts: [...s.contacts, ...faltantes] } : s
+    })
   },
 
   // Carrega SÓ os contatos indicados, mesclando com o que já existe.
