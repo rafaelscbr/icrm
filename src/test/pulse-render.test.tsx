@@ -7,6 +7,7 @@ import { BrokerRadar } from '../modules/pulse/components/BrokerRadar'
 import { DayChart } from '../modules/pulse/components/DayChart'
 import { ClimateGauge } from '../modules/pulse/components/ClimateGauge'
 import { ActionPanel } from '../modules/pulse/components/ActionPanel'
+import { ResponseTimePanel } from '../modules/pulse/components/ResponseTimePanel'
 import { calcClimate } from '../modules/pulse/climate'
 import type { PulseEvent, PulseHoje, PulseGargalos, PulseBroker } from '../modules/pulse/types'
 
@@ -118,6 +119,29 @@ describe('painéis do Pulse renderizam com dados', () => {
     })
     render(<ClimateGauge clima={clima} />)
     expect(screen.getByText('PEGANDO FOGO')).toBeInTheDocument()
+  })
+
+  it('ResponseTimePanel mostra média, mediana e cumprimento do SLA', () => {
+    render(<ResponseTimePanel tempos={{
+      primeiroContato:  { mediaMin: 91, medianaMin: 33, amostra: 176, pctDentroSla: 36 },
+      segundaTentativa: { mediaMin: 2484, medianaMin: 1497, amostra: 153 },
+    }} />)
+    expect(screen.getByText('1h31')).toBeInTheDocument()
+    expect(screen.getByText('mediana 33 min')).toBeInTheDocument()
+    expect(screen.getByText('4,6 d')).toBeInTheDocument()
+    expect(screen.getByText('mediana 2,8 d')).toBeInTheDocument()
+    expect(screen.getByText('36%')).toBeInTheDocument()
+    expect(screen.getByText('176 leads')).toBeInTheDocument()
+  })
+
+  it('ResponseTimePanel sem amostra não inventa número nem barra de SLA', () => {
+    render(<ResponseTimePanel tempos={{
+      primeiroContato:  { mediaMin: 0, medianaMin: 0, amostra: 0, pctDentroSla: 0 },
+      segundaTentativa: { mediaMin: 0, medianaMin: 0, amostra: 0 },
+    }} />)
+    expect(screen.getAllByText('—')).toHaveLength(2)
+    expect(screen.getAllByText('sem dados')).toHaveLength(2)
+    expect(screen.queryByText(/dentro do SLA/)).not.toBeInTheDocument()
   })
 
   it('ActionPanel só alarma o atraso do dia depois das 14h', () => {

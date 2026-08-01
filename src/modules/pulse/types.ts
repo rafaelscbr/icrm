@@ -60,6 +60,28 @@ export interface PulseGargalos {
   tarefasAtrasadas:   number
 }
 
+/**
+ * Tempos de resposta — janela móvel de 30 dias, em MINUTOS ÚTEIS.
+ *
+ * Média E mediana: nesta base a média fica ~3x a mediana porque uns poucos
+ * leads esquecidos por um dia inteiro puxam tudo para cima. Mostrar só a média
+ * esconderia que a experiência típica é bem melhor que o número feio.
+ */
+export interface PulseTempos {
+  primeiroContato: {
+    mediaMin:     number
+    medianaMin:   number
+    amostra:      number
+    /** % de leads atendidos dentro dos 5 minutos úteis de SLA */
+    pctDentroSla: number
+  }
+  segundaTentativa: {
+    mediaMin:   number
+    medianaMin: number
+    amostra:    number
+  }
+}
+
 export interface PulseSnapshot {
   agora:      string
   hoje:       PulseHoje
@@ -68,6 +90,7 @@ export interface PulseSnapshot {
   gargalos:   PulseGargalos
   corretores: PulseBroker[]
   timeline:   PulseEvent[]
+  tempos:     PulseTempos
   porHora:    number[]
 }
 

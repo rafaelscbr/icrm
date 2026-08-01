@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { supabase } from '../../lib/supabase'
 import { localDateStr } from '../../lib/formatters'
 import type {
-  PulseSnapshot, PulseEvent, PulseBroker, PulseHoje, PulseGargalos, PulseConnection,
+  PulseSnapshot, PulseEvent, PulseBroker, PulseHoje, PulseGargalos, PulseConnection, PulseTempos,
 } from './types'
 import { isEventoRuido } from './pulseEvents'
 
@@ -36,6 +36,11 @@ const GARGALOS_ZERO: PulseGargalos = {
   semAtendimentoHoje: 0, aguardando48h: 0, slaEstourado: 0, tarefasAtrasadas: 0,
 }
 
+const TEMPOS_ZERO: PulseTempos = {
+  primeiroContato:  { mediaMin: 0, medianaMin: 0, amostra: 0, pctDentroSla: 0 },
+  segundaTentativa: { mediaMin: 0, medianaMin: 0, amostra: 0 },
+}
+
 interface PulseStore {
   connection:        PulseConnection
   erro:              string | null
@@ -50,6 +55,8 @@ interface PulseStore {
   funil:           Record<string, number>
   negociacaoValor: number
   gargalos:        PulseGargalos
+  /** janela móvel de 30 dias — só muda a cada snapshot, não a cada evento */
+  tempos:          PulseTempos
   corretores:      PulseBroker[]
   brokerNames:     Record<string, string>
   feed:            PulseEvent[]
@@ -88,6 +95,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   funil:           {},
   negociacaoValor: 0,
   gargalos:        GARGALOS_ZERO,
+  tempos:          TEMPOS_ZERO,
   corretores:      [],
   brokerNames:     {},
   feed:            [],
@@ -132,6 +140,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         funil:             funilToMap(snap.funil ?? []),
         negociacaoValor:   snap.negociacao?.valor ?? 0,
         gargalos:          snap.gargalos ?? GARGALOS_ZERO,
+        tempos:            snap.tempos ?? TEMPOS_ZERO,
         corretores:        snap.corretores ?? [],
         brokerNames,
         feed:              timeline.slice(0, FEED_MAX),

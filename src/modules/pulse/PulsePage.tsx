@@ -13,6 +13,7 @@ import { BrokerRadar } from './components/BrokerRadar'
 import { DayChart } from './components/DayChart'
 import { ClimateGauge } from './components/ClimateGauge'
 import { ActionPanel } from './components/ActionPanel'
+import { ResponseTimePanel } from './components/ResponseTimePanel'
 
 /**
  * iCRM Pulse — o coração da imobiliária em tempo real.
@@ -97,7 +98,7 @@ export function PulsePage() {
 
   const {
     connection, erro, desconectadoDesde,
-    hoje, funil, negociacaoValor, gargalos, corretores, brokerNames, feed, porHora, recent,
+    hoje, funil, negociacaoValor, gargalos, tempos, corretores, brokerNames, feed, porHora, recent,
     bootstrap, subscribe, podar, comissaoPrevista,
   } = usePulseStore()
 
@@ -229,6 +230,7 @@ export function PulsePage() {
 
         <div className="flex flex-col gap-3 min-h-0">
           <ClimateGauge clima={clima} />
+          <ResponseTimePanel tempos={tempos} />
           <BrokerRadar
             corretores={corretores}
             online={online}
