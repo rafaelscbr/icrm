@@ -126,9 +126,9 @@ function paceStatus(realized: number, target: number, fraction: number): PaceSta
 
 const STATUS_CFG: Record<PaceStatus, { chip: string; label: string; bar: string; pct: string }> = {
   done:    { chip: 'text-brand bg-brand-tint border-brand/30',           label: 'Meta batida', bar: 'bg-brand',     pct: 'text-brand'     },
-  onTrack: { chip: 'text-green-400 bg-green-500/10 border-green-500/25', label: 'No ritmo',    bar: 'bg-green-500', pct: 'text-green-400' },
-  warning: { chip: 'text-amber-400 bg-amber-500/10 border-amber-500/25', label: 'Atenção',     bar: 'bg-amber-500', pct: 'text-amber-400' },
-  behind:  { chip: 'text-red-400 bg-red-500/10 border-red-500/25',       label: 'Atrasado',    bar: 'bg-red-500',   pct: 'text-red-400'   },
+  onTrack: { chip: 'text-success bg-success-bg border-success-line', label: 'No ritmo',  bar: 'bg-success', pct: 'text-success' },
+  warning: { chip: 'text-warning bg-warning-bg border-warning-line', label: 'Atenção',   bar: 'bg-warning', pct: 'text-warning' },
+  behind:  { chip: 'text-error bg-error-bg border-error-line',       label: 'Atrasado',  bar: 'bg-error',   pct: 'text-error'   },
 }
 
 // ─── Score do corretor (média de atingimento das metas do período) ────────────
@@ -148,7 +148,7 @@ function ScoreRing({ score }: { score: number }) {
   const sz = 66, stroke = 6, r = (sz - stroke) / 2 - 1
   const circ = 2 * Math.PI * r
   const dash = (Math.min(score, 100) / 100) * circ
-  const color = score >= 100 ? 'var(--brand)' : score >= 75 ? '#22c55e' : score >= 45 ? '#f59e0b' : '#ef4444'
+  const color = score >= 100 ? 'var(--brand)' : score >= 75 ? 'var(--success)' : score >= 45 ? 'var(--warning)' : 'var(--error)'
   return (
     <svg
       width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`} className="flex-shrink-0"

@@ -19,7 +19,7 @@ const ORIGIN_LABEL: Record<string, string> = {
   felicita: 'Felicità', meta_ads: 'Meta ADS', portal: 'Portal', offline: 'Offline', campanha: 'Campanha',
 }
 const ORIGIN_COLOR: Record<string, string> = {
-  felicita: '#f43f5e', meta_ads: '#3b82f6', portal: '#06b6d4', offline: '#f59e0b', campanha: '#a855f7',
+  felicita: '#f43f5e', meta_ads: 'var(--info)', portal: 'var(--info)', offline: 'var(--warning)', campanha: 'var(--brand)',
 }
 const ORIGIN_ICON: Record<string, typeof Sparkles> = {
   felicita: Sparkles, meta_ads: Smartphone, portal: Globe, offline: Handshake, campanha: Megaphone,
@@ -143,7 +143,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         origin,
         label:    ORIGIN_LABEL[origin] ?? origin,
         icon:     ORIGIN_ICON[origin] ?? Sparkles,
-        color:    ORIGIN_COLOR[origin] ?? '#64748b',
+        color:    ORIGIN_COLOR[origin] ?? 'var(--t4)',
         total:    all.length,
         active:   act.length,
         discarded: disc.length,

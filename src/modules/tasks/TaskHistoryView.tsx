@@ -19,15 +19,15 @@ import { Home, FileText, TrendingUp, Zap } from 'lucide-react'
 // ─── config ───────────────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; bar: string; label: string }> = {
-  visita:             { icon: Home,       color: 'text-info',    bar: '#22d3ee', label: 'Atendimento'           },
-  agenciamento:       { icon: Building2,  color: 'text-brand',  bar: '#818cf8', label: 'Agenciamento'          },
-  proposta:           { icon: FileText,   color: 'text-amber-400',   bar: '#fbbf24', label: 'Proposta'              },
-  busca_imovel:       { icon: TrendingUp, color: 'text-brand-text',  bar: '#a78bfa', label: 'Busca de Imóvel'       },
-  prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', bar: '#34d399', label: 'Prospecção de Imóveis' },
+  visita:             { icon: Home,       color: 'text-info',    bar: 'var(--info)', label: 'Atendimento'           },
+  agenciamento:       { icon: Building2,  color: 'text-brand',  bar: 'var(--brand)', label: 'Agenciamento'          },
+  proposta:           { icon: FileText,   color: 'text-amber-400',   bar: 'var(--warning)', label: 'Proposta'              },
+  busca_imovel:       { icon: TrendingUp, color: 'text-brand-text',  bar: 'var(--brand)', label: 'Busca de Imóvel'       },
+  prospeccao_imoveis: { icon: TrendingUp, color: 'text-emerald-400', bar: 'var(--success)', label: 'Prospecção de Imóveis' },
   campanhas:          { icon: Zap,        color: 'text-brand-text',    bar: '#f472b6', label: 'Campanhas'             },
-  administrativo:     { icon: FileText,   color: 'text-t2',   bar: '#94a3b8', label: 'Administrativo'        },
-  souza_financeiro:   { icon: Zap,        color: 'text-green-400',   bar: '#4ade80', label: 'Souza Financeiro'      },
-  outro:              { icon: Zap,        color: 'text-t3',   bar: '#64748b', label: 'Outro'                 },
+  administrativo:     { icon: FileText,   color: 'text-t2',   bar: 'var(--t3)', label: 'Administrativo'        },
+  souza_financeiro:   { icon: Zap,        color: 'text-green-400',   bar: 'var(--success)', label: 'Souza Financeiro'      },
+  outro:              { icon: Zap,        color: 'text-t3',   bar: 'var(--t4)', label: 'Outro'                 },
 }
 const CATEGORY_ORDER: TaskCategory[] = ['visita', 'agenciamento', 'proposta', 'busca_imovel', 'prospeccao_imoveis', 'campanhas', 'administrativo', 'souza_financeiro', 'outro']
 
@@ -290,9 +290,9 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
               </p>
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }} barSize={22}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--t4)' }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--t4)' }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
                   <Bar dataKey="done" name="done" stackId="a" radius={[0, 0, 0, 0]}>
                     {chartData.map((entry, i) => (

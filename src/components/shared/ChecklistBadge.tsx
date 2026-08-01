@@ -60,10 +60,10 @@ export function ChecklistBadge({ checklist, size = 'md' }: ChecklistBadgeProps) 
   const allDone = pct === 1
 
   // Cor dinâmica conforme progresso
-  const ringHex = allDone       ? '#22c55e'   // verde
-                : pct >= 0.66   ? '#a855f7'   // violeta
-                : pct >= 0.33   ? '#6366f1'   // índigo
-                :                 '#64748b'   // slate
+  const ringHex = allDone       ? 'var(--success)'   // verde
+                : pct >= 0.66   ? 'var(--brand)'   // violeta
+                : pct >= 0.33   ? 'var(--brand)'   // índigo
+                :                 'var(--t4)'   // slate
 
   const textCls = allDone       ? 'text-green-400'
                 : pct >= 0.66   ? 'text-brand-text'

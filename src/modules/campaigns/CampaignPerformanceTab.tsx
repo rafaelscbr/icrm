@@ -16,7 +16,7 @@ const DAILY_TARGET   = DAILY_LIMIT          // 50
 const WEEKLY_TARGET  = 250                  // 50 × 5 dias úteis
 const MONTHLY_TARGET = 1000                 // 50 × 20 dias úteis
 
-const axisStyle = { fill: '#475569', fontSize: 11 }
+const axisStyle = { fill: 'var(--t4)', fontSize: 11 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -186,13 +186,13 @@ export function CampaignPerformanceTab({ leads }: Props) {
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={2}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
               <XAxis dataKey="label" tick={axisStyle} axisLine={false} tickLine={false} interval={4} />
               <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8', paddingTop: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 11, color: 'var(--t3)', paddingTop: 12 }} />
               <Bar dataKey="Disparos"     fill="#7c3aed" radius={[3, 3, 0, 0]} maxBarSize={20} />
-              <Bar dataKey="Interessados" fill="#06b6d4" radius={[3, 3, 0, 0]} maxBarSize={20} />
+              <Bar dataKey="Interessados" fill="var(--info)" radius={[3, 3, 0, 0]} maxBarSize={20} />
             </BarChart>
           </ResponsiveContainer>
         )}

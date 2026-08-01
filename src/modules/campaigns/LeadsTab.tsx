@@ -659,7 +659,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
             Enviar mesmo assim →
           </button>
         </span>
-      ), { duration: 8000, style: { background: '#1e1a0e', border: '1px solid #92400e' } })
+      ), { duration: 8000, style: { background: '#1e1a0e', border: '1px solid var(--warning)' } })
       return
     }
     if (dailyCount >= DAILY_LIMIT) {

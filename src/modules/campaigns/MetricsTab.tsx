@@ -12,7 +12,7 @@ interface MetricsTabProps {
   campaign: Campaign
 }
 
-const axisStyle = { fill: '#475569', fontSize: 11 }
+const axisStyle = { fill: 'var(--t4)', fontSize: 11 }
 
 // Funil da campanha vai só até 'scheduled' — a partir daí passa para o funil principal
 const CAMPAIGN_FUNNEL_STAGES = FUNNEL_STAGES.filter(
@@ -129,15 +129,15 @@ function SalesFunnel({ leads }: { leads: CampaignLead[] }) {
                   cx={W / 2 + stage.barW / 2 + BADGE_R + 6}
                   cy={stage.y}
                   r={BADGE_R}
-                  fill={conv >= 50 ? '#22c55e22' : conv >= 20 ? '#f59e0b22' : '#ef444422'}
-                  stroke={conv >= 50 ? '#22c55e80' : conv >= 20 ? '#f59e0b80' : '#ef444480'}
+                  fill={conv >= 50 ? 'var(--success)22' : conv >= 20 ? 'var(--warning)22' : 'var(--error)22'}
+                  stroke={conv >= 50 ? 'var(--success)80' : conv >= 20 ? 'var(--warning)80' : 'var(--error)80'}
                   strokeWidth={1}
                 />
                 <text
                   x={W / 2 + stage.barW / 2 + BADGE_R + 6}
                   y={stage.y + 4}
                   textAnchor="middle"
-                  fill={conv >= 50 ? '#4ade80' : conv >= 20 ? '#fbbf24' : '#f87171'}
+                  fill={conv >= 50 ? 'var(--success)' : conv >= 20 ? 'var(--warning)' : 'var(--error)'}
                   fontSize={9} fontWeight="700"
                 >
                   {conv}%
@@ -483,21 +483,21 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
           <AreaChart data={dailyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="camGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}    />
+                <stop offset="5%"  stopColor="var(--info)" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="var(--info)" stopOpacity={0}    />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
             <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} interval={2} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
             <Tooltip
-              contentStyle={{ background: '#0D1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
-              labelStyle={{ color: '#94a3b8', fontSize: 11 }}
+              contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12 }}
+              labelStyle={{ color: 'var(--t3)', fontSize: 11 }}
               itemStyle={{ color: '#93c5fd' }}
               formatter={(v: number) => [v, 'Acionados']}
             />
-            <Area type="monotone" dataKey="acionados" stroke="#3b82f6" strokeWidth={2}
-              fill="url(#camGrad)" dot={{ fill: '#3b82f6', r: 3 }} activeDot={{ r: 5 }} name="Acionados" />
+            <Area type="monotone" dataKey="acionados" stroke="var(--info)" strokeWidth={2}
+              fill="url(#camGrad)" dot={{ fill: 'var(--info)', r: 3 }} activeDot={{ r: 5 }} name="Acionados" />
           </AreaChart>
         </ResponsiveContainer>
       </Card>

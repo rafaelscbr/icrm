@@ -19,9 +19,9 @@ import { TrendingUp, DollarSign, Users, Building2, UserPlus, Phone, MessageSquar
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 const PIE_COLORS = {
-  opportunity:  '#22C55E',
+  opportunity:  'var(--success)',
   market_price: '#EAB308',
-  above_market: '#EF4444',
+  above_market: 'var(--error)',
 }
 
 function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
@@ -50,7 +50,7 @@ function ActivityTooltip({ active, payload, label }: { active?: boolean; payload
   )
 }
 
-const axisStyle = { fill: '#475569', fontSize: 11 }
+const axisStyle = { fill: 'var(--t4)', fontSize: 11 }
 
 const MONTH_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
@@ -184,8 +184,8 @@ export function ReportsTab() {
   )
 
   const salesByType = useMemo(() => [
-    { name: 'Pronto', value: periodSales.filter(s => s.type === 'ready').reduce((a, s) => a + s.value, 0),    color: '#6366F1' },
-    { name: 'Planta', value: periodSales.filter(s => s.type === 'off_plan').reduce((a, s) => a + s.value, 0), color: '#A855F7' },
+    { name: 'Pronto', value: periodSales.filter(s => s.type === 'ready').reduce((a, s) => a + s.value, 0),    color: 'var(--brand)' },
+    { name: 'Planta', value: periodSales.filter(s => s.type === 'off_plan').reduce((a, s) => a + s.value, 0), color: 'var(--brand)' },
   ], [periodSales])
 
   const avgTicket = periodSales.length > 0 ? periodSales.reduce((a, s) => a + s.value, 0) / periodSales.length : 0
@@ -287,15 +287,15 @@ export function ReportsTab() {
           </h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={activityChart} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
               <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} interval={1} />
               <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<ActivityTooltip />} />
               <Legend
-                wrapperStyle={{ fontSize: 11, color: '#64748b', paddingTop: 12 }}
+                wrapperStyle={{ fontSize: 11, color: 'var(--t4)', paddingTop: 12 }}
               />
-              <Bar dataKey="Leads"    fill="#6366F1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Ligações" fill="#06B6D4" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Leads"    fill="var(--brand)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Ligações" fill="var(--info)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -345,16 +345,16 @@ export function ReportsTab() {
             <AreaChart data={monthlySales} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#6366F1" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#6366F1" stopOpacity={0}    />
+                  <stop offset="5%"  stopColor="var(--brand)" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="var(--brand)" stopOpacity={0}    />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
               <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
               <YAxis tickFormatter={v => formatCurrency(v)} tick={axisStyle} axisLine={false} tickLine={false} width={70} />
               <Tooltip content={<SalesTooltip />} />
-              <Area type="monotone" dataKey="valor" stroke="#6366F1" strokeWidth={2}
-                fill="url(#areaGrad)" dot={{ fill: '#6366F1', r: 3 }} activeDot={{ r: 5 }} />
+              <Area type="monotone" dataKey="valor" stroke="var(--brand)" strokeWidth={2}
+                fill="url(#areaGrad)" dot={{ fill: 'var(--brand)', r: 3 }} activeDot={{ r: 5 }} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -368,15 +368,15 @@ export function ReportsTab() {
             </h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={monthlySales} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
                 <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ background: '#0D1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }}
-                  labelStyle={{ color: '#94a3b8', fontSize: 11 }}
+                  contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12 }}
+                  labelStyle={{ color: 'var(--t3)', fontSize: 11 }}
                   itemStyle={{ color: '#a5b4fc' }}
                 />
-                <Bar dataKey="qtd" fill="#6366F1" radius={[6, 6, 0, 0]} name="Vendas" />
+                <Bar dataKey="qtd" fill="var(--brand)" radius={[6, 6, 0, 0]} name="Vendas" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
