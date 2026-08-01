@@ -94,6 +94,10 @@
      aceita opacity — por isso existe uma variante por tema. */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E");
 
+  /* Brilho diagonal das superfícies — o "gradiente dos cards".
+     No escuro precisa ser mais forte: sobre Marinho um degradê sutil some. */
+  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0) 58%);
+
   /* ── Etapas do funil ──────────────────────────────────────────────────────
      A cor da etapa é SEMÂNTICA, não decorativa: representa a temperatura
      comercial do lead, não uma paleta. Conforme o Brand Guide, as etapas
@@ -200,6 +204,10 @@ html.light {
   --shadow-card:    0 1px 4px rgba(15,23,48,0.08), 0 1px 2px rgba(15,23,48,0.05);
   --shadow-modal:   0 25px 50px rgba(15,23,48,0.18), 0 10px 20px rgba(15,23,48,0.10);
   --shadow-dropdown:0 10px 30px rgba(15,23,48,0.12), 0 4px 10px rgba(15,23,48,0.08);
+
+  /* No papel o degradê inverte: em vez de luz branca (invisível sobre branco),
+     é uma sombra fria de Marinho muito diluída subindo do rodapé do card. */
+  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0) 45%, rgba(15,23,48,0.030) 100%);
 
   /* Grão mais fraco no papel: sobre fundo claro o ruído aparece muito mais. */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.035'/%3E%3C/svg%3E");
@@ -365,14 +373,24 @@ html.light {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
+/*
+ * SUPERFÍCIES — todas usam o mesmo tratamento do hero da Dashboard:
+ * grão + gradiente diagonal sutil. É o que tira o aspecto de "caixa chapada"
+ * e dá volume sem precisar de borda escura em tudo.
+ *
+ * Está aplicado aqui, nas classes-base, de propósito: mudar estas quatro
+ * regras muda card, lista, modal e kanban do sistema inteiro. Não replicar
+ * gradiente componente a componente.
+ */
 .card-surface {
   background-color: var(--surface);
+  background-image: var(--grain), var(--surface-sheen);
   border-color: var(--line);
   box-shadow: var(--shadow-card);
 }
 .modal-surface {
   background-color: var(--surface);
-  background-image: var(--grain);
+  background-image: var(--grain), var(--surface-sheen);
   border: 1px solid var(--line);
 }
 
@@ -402,6 +420,9 @@ html.light {
   background-color: var(--surface);
   background-image: var(--grain), linear-gradient(158deg, var(--surface-2) 0%, var(--surface) 62%);
 }
+/* Card padrão do sistema — Card, ListContainer e Modal já herdam via classes
+   -surface acima. Esta é para uso pontual em superfície solta. */
+.surface-sheen { background-image: var(--grain), var(--surface-sheen); }
 
 /* Filete dourado no topo — precisa de position:relative no elemento host. */
 .gold-edge::before {
@@ -451,10 +472,12 @@ html.light .gold-glow-tl::after {
  */
 .list-surface {
   background-color: var(--surface-2);
+  background-image: var(--grain), var(--surface-sheen);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), var(--shadow-card);
 }
 html.light .list-surface {
   background-color: var(--surface);
+  background-image: var(--grain), var(--surface-sheen);
   box-shadow: var(--shadow-card);
 }
 
@@ -471,10 +494,12 @@ html.light .kanban-col {
 }
 .kanban-card {
   background-color: var(--surface-3);
+  background-image: var(--grain), var(--surface-sheen);
   border-color: var(--line);
 }
 html.light .kanban-card {
   background-color: var(--surface);
+  background-image: var(--grain), var(--surface-sheen);
   border-color: var(--line);
 }
 

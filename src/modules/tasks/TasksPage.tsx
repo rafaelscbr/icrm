@@ -5,7 +5,6 @@ import {
   Building2, AlertTriangle, CheckCheck, ListTodo, CalendarClock,
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
   BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users,
-  Briefcase,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { ListContainer } from '../../components/ui/ListContainer'
@@ -44,13 +43,6 @@ const CATEGORY_CONFIG: Record<TaskCategory, { icon: typeof Home; color: string; 
   outro:              { icon: Zap,        color: 'text-t3',   label: 'Outro',                 motto: ''                                        },
 }
 
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Bom dia'
-  if (h < 18) return 'Boa tarde'
-  return 'Boa noite'
-}
-
 function todayStr() { return localDateStr() }
 
 function sortKey(t: Task): string {
@@ -70,77 +62,6 @@ function formatDateLabel(date?: string, time?: string): { label: string; isToday
 }
 
 // ─── SmartBanner ─────────────────────────────────────────────────────────────
-
-function SmartBanner({ tasks, firstName }: { tasks: Task[]; firstName: string }) {
-  const today   = todayStr()
-  const pending = tasks.filter(t => t.status !== 'done' && t.dueDate === today)
-  const overdue = tasks.filter(t => t.status !== 'done' && t.dueDate && t.dueDate < today)
-  const total   = pending.length
-
-  const counts: Partial<Record<TaskCategory, number>> = {}
-  pending.forEach(t => {
-    if (t.category) counts[t.category] = (counts[t.category] ?? 0) + 1
-  })
-
-  const lines: string[] = []
-  if ((counts.visita ?? 0) > 0) {
-    const n = counts.visita!
-    lines.push(`${n} visita${n > 1 ? 's' : ''} agendada${n > 1 ? 's' : ''} — ${CATEGORY_CONFIG.visita.motto}`)
-  }
-  if ((counts.agenciamento ?? 0) > 0) {
-    const n = counts.agenciamento!
-    lines.push(`${n} agenciamento${n > 1 ? 's' : ''} para hoje — ${CATEGORY_CONFIG.agenciamento.motto}`)
-  }
-  if ((counts.proposta ?? 0) > 0) {
-    const n = counts.proposta!
-    lines.push(`${n} proposta${n > 1 ? 's' : ''} para apresentar — ${CATEGORY_CONFIG.proposta.motto}`)
-  }
-  if ((counts.busca_imovel ?? 0) > 0) {
-    const n = counts.busca_imovel!
-    lines.push(`${n} busca${n > 1 ? 's' : ''} de imóvel — ${CATEGORY_CONFIG.busca_imovel.motto}`)
-  }
-
-  const greeting = getGreeting()
-
-  let headline = ''
-  let sub = ''
-  let accent = 'from-blue-500/10 to-blue-600/5'
-
-  if (total === 0 && overdue.length === 0) {
-    headline = `${greeting}, ${firstName}!`
-    sub = 'Agenda limpa hoje. Aproveite para prospectar ou adiantar tarefas futuras.'
-    accent = 'from-green-500/15 to-emerald-500/5'
-  } else if (total === 0 && overdue.length > 0) {
-    headline = `${greeting}, ${firstName}!`
-    sub = `Nada para hoje, mas você tem ${overdue.length} tarefa${overdue.length > 1 ? 's' : ''} em atraso. Hora de colocar em dia!`
-    accent = 'bg-error-bg'
-  } else {
-    headline = `${greeting}, ${firstName}! Temos ${total} tarefa${total > 1 ? 's' : ''} para hoje.`
-    sub = lines.length > 0 ? lines.join(' · ') : 'Foco no que importa — cada tarefa concluída é um passo à frente!'
-    accent = total >= 5 ? 'bg-warning-bg' : 'bg-info-bg'
-  }
-
-  return (
-    <div className={`border border-line rounded-xl bg-gradient-to-r ${accent} px-6 py-5 mb-6`}>
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 bg-s3/70 rounded-xl flex items-center justify-center flex-shrink-0 text-brand">
-          {total === 0 && overdue.length === 0
-            ? <CheckCircle2 size={22} className="text-green-400" />
-            : total >= 5 ? <Flame size={22} /> : <Briefcase size={22} />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-base font-semibold text-slate-100 mb-0.5">{headline}</p>
-          <p className="text-sm text-t3 leading-relaxed">{sub}</p>
-          {overdue.length > 0 && total > 0 && (
-            <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
-              <AlertTriangle size={11} /> {overdue.length} tarefa{overdue.length > 1 ? 's' : ''} em atraso — não deixe acumular!
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ─── TaskRow ─────────────────────────────────────────────────────────────────
 
@@ -550,6 +471,8 @@ export function TasksPage() {
   const [editing,      setEditing]      = useState<Task | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Task | undefined>()
   const [showDone,     setShowDone]     = useState(false)
+  /** Recorte ativo da lista — null = tudo. */
+  const [focus,        setFocus]        = useState<'overdue' | 'today' | 'upcoming' | null>(null)
   const [activeTab,    setActiveTab]    = useState<'tasks' | 'calendar' | 'history'>('tasks')
 
   useEffect(() => { load(); loadProperties() }, [load, loadProperties])
@@ -634,8 +557,13 @@ export function TasksPage() {
     onCalendar: openCalendar,
   }
 
-  // Blocos temporais a renderizar
-  const timeBlocks = [
+  // Blocos temporais a renderizar — o filtro de foco recorta quais aparecem.
+  const FOCUS_BLOCKS: Record<string, string[]> = {
+    overdue:  ['overdue'],
+    today:    ['today'],
+    upcoming: ['tomorrow', 'week', 'later', 'nodate'],
+  }
+  const allBlocks = [
     { key: 'overdue',  title: 'Atrasadas',     tasks: overdue,   icon: <AlertTriangle size={12} />, color: 'text-red-400',    defaultOpen: true  },
     { key: 'today',    title: 'Hoje',           tasks: todayT,    icon: <Flame size={12} />,         color: 'text-brand', defaultOpen: true  },
     { key: 'tomorrow', title: 'Amanhã',         tasks: tomorrowT, icon: <CalendarClock size={12} />, color: 'text-amber-400',  defaultOpen: true  },
@@ -643,6 +571,9 @@ export function TasksPage() {
     { key: 'later',    title: 'Próximos dias',  tasks: later,     icon: <CheckCheck size={12} />,    color: 'text-t3',  defaultOpen: false },
     { key: 'nodate',   title: 'Sem data',       tasks: noDate,    icon: <ListTodo size={12} />,      color: 'text-t3',  defaultOpen: false },
   ]
+  const timeBlocks = focus
+    ? allBlocks.filter(b => FOCUS_BLOCKS[focus].includes(b.key))
+    : allBlocks
 
   return (
     <PageLayout
@@ -663,7 +594,7 @@ export function TasksPage() {
             onClick={() => setActiveTab(tab.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all cursor-pointer border-b-2 -mb-px
               ${activeTab === tab.key
-                ? 'text-brand-text border-indigo-400'
+                ? 'text-brand-text border-brand'
                 : 'text-t3 border-transparent hover:text-t2'
               }`}
           >
@@ -686,26 +617,38 @@ export function TasksPage() {
       {/* ── Aba Tarefas ── */}
       {activeTab === 'tasks' && <>
 
-      {/* Smart greeting banner */}
-      {!isEmpty && <SmartBanner tasks={tasks} firstName={profile?.name?.split(' ')[0] ?? 'Corretor'} />}
-
-      {/* Stats strip */}
+      {/* ── Foco — a faixa de números virou filtro ──────────────────────────
+          Antes eram quatro caixas que só exibiam contagem, repetindo o que o
+          banner motivacional acima já dizia. Agora cada uma recorta a lista:
+          o número deixa de ser enfeite e vira o controle da tela. */}
       {!isEmpty && (
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'Hoje',       value: todayCount,    color: 'text-brand', bg: 'bg-indigo-500/10', icon: <Flame size={13} />         },
-            { label: 'Em atraso',  value: overdueCount,  color: 'text-red-400',    bg: 'bg-red-500/10',    icon: <AlertTriangle size={13} /> },
-            { label: 'Próximas',   value: upcomingCount, color: 'text-info',   bg: 'bg-info-bg',   icon: <TrendingUp size={13} />    },
-            { label: 'Concluídas', value: doneCount,     color: 'text-green-400',  bg: 'bg-green-500/10',  icon: <CheckCheck size={13} />    },
-          ].map(s => (
-            <div key={s.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl ${s.bg} border border-line`}>
-              <span className={s.color}>{s.icon}</span>
-              <div>
-                <p className={`text-xl font-bold tabular-nums leading-none ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-t4 mt-0.5">{s.label}</p>
-              </div>
-            </div>
-          ))}
+        <div className="flex items-center gap-2 mb-6 flex-wrap" role="group" aria-label="Filtrar tarefas">
+          {([
+            { key: null,       label: 'Tudo',       value: pendingCount,  tone: 'text-t1'      },
+            { key: 'overdue',  label: 'Em atraso',  value: overdueCount,  tone: 'text-error'   },
+            { key: 'today',    label: 'Hoje',       value: todayCount,    tone: 'text-warning' },
+            { key: 'upcoming', label: 'Próximas',   value: upcomingCount, tone: 'text-t2'      },
+          ] as const).map(f => {
+            const active = focus === f.key
+            return (
+              <button
+                key={f.label}
+                onClick={() => setFocus(f.key)}
+                aria-pressed={active}
+                disabled={f.value === 0 && f.key !== null}
+                className={`flex items-baseline gap-2 px-3.5 py-2 rounded-full border transition-all duration-150 cursor-pointer
+                  disabled:opacity-40 disabled:cursor-not-allowed
+                  ${active
+                    ? 'border-brand/40 bg-brand-tint shadow-card'
+                    : 'border-line bg-surface hover:border-line-strong'}`}
+              >
+                <span className={`font-heading text-sm font-bold tabular-nums ${active ? 'text-brand-text' : f.tone}`}>
+                  {f.value}
+                </span>
+                <span className={`text-xs ${active ? 'text-t1 font-semibold' : 'text-t3'}`}>{f.label}</span>
+              </button>
+            )
+          })}
         </div>
       )}
 
