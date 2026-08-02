@@ -226,8 +226,13 @@ export interface PaymentPlan {
   installmentsPct?: number
   installment?: number   // valor de cada parcela
   months?: number
-  /** Reforço (balão) — comum nas tabelas daqui, some se não usado. */
+  /**
+   * Reforço (balão). `Pct` é o TOTAL da série, `reinforcements` é quantos são
+   * e `reinforcement` é o valor de CADA um — mesma lógica das mensais.
+   * O Porto Velas tem 9 reforços semestrais; o San Pellegrino, um só.
+   */
   reinforcementPct?: number
+  reinforcements?: number
   reinforcement?: number
   /** Saldo financiado na entrega. */
   financingPct?: number
@@ -242,14 +247,16 @@ export interface PaymentPlan {
 export function resolvePaymentPlan(plan: PaymentPlan, price?: number): PaymentPlan {
   if (price == null) return plan
   const pct = (p?: number) => (p == null ? undefined : (price * p) / 100)
-  const total = pct(plan.installmentsPct)
+  const totalParcelas = pct(plan.installmentsPct)
+  const totalReforcos = pct(plan.reinforcementPct)
   return {
     ...plan,
-    downPayment:   plan.downPayment   ?? pct(plan.downPaymentPct),
-    reinforcement: plan.reinforcement ?? pct(plan.reinforcementPct),
-    financing:     plan.financing     ?? pct(plan.financingPct),
-    installment:   plan.installment   ??
-      (total != null && plan.months ? total / plan.months : undefined),
+    downPayment: plan.downPayment ?? pct(plan.downPaymentPct),
+    financing:   plan.financing   ?? pct(plan.financingPct),
+    installment: plan.installment ??
+      (totalParcelas != null && plan.months ? totalParcelas / plan.months : undefined),
+    reinforcement: plan.reinforcement ??
+      (totalReforcos != null ? totalReforcos / (plan.reinforcements ?? 1) : undefined),
   }
 }
 
