@@ -1,4 +1,4 @@
--- 061: process_meta_lead passa a gravar form_answers e a barrar lead de teste
+-- 061: process_meta_lead passa a gravar form_answers estruturado
 --
 -- Dois furos no caminho de entrada dos leads do Meta:
 --
@@ -8,17 +8,21 @@
 --    form_answers NULL — as respostas existem só como texto solto em `notes`,
 --    que serve para ler e não serve para decidir.
 --
--- 2. Os leads de TESTE do Meta viravam lead de verdade: consumiam a vez de um
---    corretor no rodízio, disparavam notificação e criavam prazo de SLA. Dez
---    casos até agora, todos apagados na mão depois.
+-- 2. (revertido) Chegou a existir aqui um bloqueio dos leads de TESTE do Meta.
+--    Foi removido a pedido: o disparo de teste no gerenciador é justamente como
+--    se confere que a integração está de pé — se o lead não aparece no funil,
+--    não há como validar que o webhook funciona. O teste volta a entrar como
+--    lead normal, e quem testa apaga depois.
+--    O status 'test' segue permitido em meta_webhook_events (ninguém grava),
+--    para não precisar mexer no CHECK de novo se a decisão mudar.
 --
 -- Esta migração é ADITIVA e defensiva. Nenhum caminho existente muda de
 -- comportamento: o lead que entrava continua entrando, com o mesmo roteamento,
--- o mesmo SLA e o mesmo `notes`. O que há de novo é uma coluna a mais no INSERT
--- e uma saída antecipada para o payload de teste.
+-- o mesmo SLA e o mesmo `notes`. O que há de novo é uma coluna a mais no INSERT.
 
 -- ── 1. status 'test' nos eventos ────────────────────────────────────────────
--- Sem isso, marcar o evento como teste violaria o CHECK e derrubaria a função.
+-- Fica permitido mas ninguém grava (ver nota 2 acima). Manter o valor no CHECK
+-- custa nada e evita mexer na constraint de novo se a decisão for revista.
 alter table public.meta_webhook_events
   drop constraint if exists meta_webhook_events_status_check;
 
@@ -103,26 +107,6 @@ BEGIN
     (SELECT f->'values'->>0 FROM jsonb_array_elements(v_field_data) f WHERE f->>'name' = 'email'),
     ''
   )), '');
-
-  -- ══ NOVO: lead de teste do Meta ═══════════════════════════════════════════
-  -- O próprio Meta marca o payload de teste — nome e telefone vêm como
-  -- '<test lead: dummy data for ...>' e o e-mail como 'test@meta.com'. É
-  -- marcador do sistema, não texto digitado: não há risco de barrar um cliente
-  -- de verdade que por acaso se chame "Teste".
-  --
-  -- Sai ANTES de qualquer efeito colateral: não consome a vez do rodízio, não
-  -- cria contato, não notifica corretor e não abre prazo de SLA. O evento fica
-  -- registrado para auditoria.
-  IF v_name  ILIKE '<test lead%'
-     OR v_phone ILIKE '<test lead%'
-     OR lower(COALESCE(v_email, '')) = 'test@meta.com'
-  THEN
-    UPDATE meta_webhook_events
-    SET status = 'test', processed_at = v_now,
-        error_detail = 'Lead de teste do Meta — ignorado, não entrou no funil'
-    WHERE id = p_event_id;
-    RETURN NULL;
-  END IF;
 
   -- Texto livre para `notes` — inalterado, a UI continua lendo daqui.
   SELECT string_agg(
