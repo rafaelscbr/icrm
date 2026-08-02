@@ -333,9 +333,10 @@ function fromDevelopment(d: import('../types').Development): DevelopmentRow {
     income_min: d.incomeMin ?? null, income_ideal: d.incomeIdeal ?? null,
     down_payment_min: d.downPaymentMin ?? null,
     down_payment_ideal: d.downPaymentIdeal ?? null,
-    // FGTS só é critério em associativo. Gravar false em pós-chaves evita que
-    // uma troca de regime deixe um critério fantasma ligado.
-    fgts_composes: d.regime === 'associativo' ? (d.fgtsComposes ?? false) : false,
+    // Independe do regime: no Belíssimo o financiamento é imediato na Caixa e o
+    // FGTS compõe a entrada sem a obra ser associativa. Zerar aqui apagaria a
+    // configuração no primeiro save feito pela tela.
+    fgts_composes: d.fgtsComposes ?? false,
     accepts_resident: d.acceptsResident ?? true,
     accepts_investor: d.acceptsInvestor ?? true,
     unit_types: d.unitTypes ?? [],

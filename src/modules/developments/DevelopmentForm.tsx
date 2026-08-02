@@ -131,7 +131,7 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
       valueMin, valueMax,
       incomeMin, incomeIdeal,
       downPaymentMin: downMin, downPaymentIdeal: downIdeal,
-      fgtsComposes: regime === 'associativo' ? fgtsComposes : false,
+      fgtsComposes,
       acceptsResident: resident,
       acceptsInvestor: investor,
       unitTypes,
@@ -251,8 +251,10 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
             })}
           </div>
 
-          {regime === 'associativo' && (
-            <label className="flex items-start gap-2.5 p-3 rounded-xl bg-s2 border border-line cursor-pointer">
+          {/* Vale para qualquer regime: o que importa é se o saldo abate a
+              entrada, não como a obra é financiada. No Belíssimo o
+              financiamento é imediato e o FGTS entra sem ser associativo. */}
+          <label className="flex items-start gap-2.5 p-3 rounded-xl bg-s2 border border-line cursor-pointer">
               <input
                 type="checkbox"
                 checked={fgtsComposes}
@@ -269,12 +271,12 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
             </label>
           )}
 
-          {regime === 'pos_chaves' && (
+          {!fgtsComposes && (
             <div className="flex items-start gap-2 p-3 rounded-xl bg-info-bg border border-info-line">
               <Info size={13} className="text-info flex-shrink-0 mt-0.5" />
               <p className="text-xs text-info">
-                Em pós-chaves o sistema ignora o FGTS por completo — não pergunta, não cobra
-                e não marca o lead como incompleto por não ter respondido.
+                Com o FGTS fora da conta, o sistema o ignora por completo — não pergunta,
+                não cobra e não marca o lead como incompleto por não ter respondido.
               </p>
             </div>
           )}

@@ -90,13 +90,18 @@ export function combineFits(fits: Fit[]): Fit {
 // ─── Régua do produto ────────────────────────────────────────────────────────
 
 /**
- * FGTS só é critério em obra associativa. Em pós-chaves o saldo só aparece no
- * financiamento lá na frente — perguntar é ruído, e marcar o lead como
- * "faltando dado" por isso seria penalizá-lo por uma pergunta que não deveria
- * nem existir. É por isso que Porto Velas e San Pelegrino não perguntam.
+ * O FGTS é critério quando o produto diz que ele compõe a entrada — e só isso.
+ *
+ * Antes isto exigia `regime === 'associativo'`, e o Belíssimo mostrou o erro:
+ * o financiamento dele é IMEDIATO na Caixa, então o saldo entra na conta hoje,
+ * sem a obra ser associativa. Regime e FGTS descrevem coisas diferentes —
+ * um diz como a obra é financiada, o outro se o saldo abate a entrada.
+ *
+ * Onde não compõe (Porto Velas, San Pellegrino), o sistema ignora por completo:
+ * não pergunta e não marca o lead como incompleto por não ter respondido.
  */
 export function fgtsIsCriterion(d: Development): boolean {
-  return d.regime === 'associativo' && d.fgtsComposes
+  return d.fgtsComposes
 }
 
 /** A régua está utilizável? Sem isso, nada pode classificar lead. */
