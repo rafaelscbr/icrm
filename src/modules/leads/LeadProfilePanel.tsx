@@ -5,7 +5,7 @@ import {
   Pencil, Plus, UserCheck, MapPin, Home,
 } from 'lucide-react'
 import { LeadProfileEditor } from './LeadProfileEditor'
-import { LeadPreferencesEditor } from './LeadPreferencesEditor'
+import { LeadPreferencesEditor, RegionItem } from './LeadPreferencesEditor'
 import { db } from '../../lib/db'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import {
@@ -298,14 +298,15 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
               { key: 'tipologias' as const, Icon: Home,   label: 'Tipologias', vazio: 'Quantos dormitórios?' },
             ]).map(({ key, Icon, label, vazio }) => {
               const vals = data.profile[key] as unknown as
-                { values?: string[]; labels?: string[] } | undefined
+                { values?: string[]; labels?: string[]; items?: RegionItem[] } | undefined
               const itens = vals?.labels ?? vals?.values ?? []
 
               if (editPref === key) {
                 return (
                   <div key={key} className="py-1.5">
                     <LeadPreferencesEditor
-                      leadId={leadId} field={key} atuais={vals?.values}
+                      leadId={leadId} field={key}
+                      atuais={vals?.values} atuaisRegioes={vals?.items}
                       onSaved={aposSalvar} onCancel={() => setEditPref(null)}
                     />
                   </div>
