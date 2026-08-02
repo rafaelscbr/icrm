@@ -229,11 +229,17 @@ export interface PaymentPlan {
   /**
    * Reforço (balão). `Pct` é o TOTAL da série, `reinforcements` é quantos são
    * e `reinforcement` é o valor de CADA um — mesma lógica das mensais.
-   * O Porto Velas tem 9 reforços semestrais; o San Pellegrino, um só.
+   *
+   * `reinforcementPeriod` NÃO é detalhe: 9 reforços semestrais cabem em 4 anos
+   * e meio, os mesmos 9 anuais se espalham por 9. Muda o esforço mensal
+   * equivalente do comprador e, portanto, a renda necessária. Sem o campo, a
+   * informação vivia solta na observação e nenhuma conta conseguia usá-la.
+   * `undefined` = a tabela não informou; não presumir.
    */
   reinforcementPct?: number
   reinforcements?: number
   reinforcement?: number
+  reinforcementPeriod?: 'mensal' | 'bimestral' | 'trimestral' | 'semestral' | 'anual'
   /** Saldo financiado na entrega. */
   financingPct?: number
   financing?: number
@@ -258,6 +264,25 @@ export function resolvePaymentPlan(plan: PaymentPlan, price?: number): PaymentPl
     reinforcement: plan.reinforcement ??
       (totalReforcos != null ? totalReforcos / (plan.reinforcements ?? 1) : undefined),
   }
+}
+
+/** Meses entre um reforço e o seguinte. */
+export const REINFORCEMENT_MONTHS: Record<NonNullable<PaymentPlan['reinforcementPeriod']>, number> = {
+  mensal: 1, bimestral: 2, trimestral: 3, semestral: 6, anual: 12,
+}
+
+/**
+ * Esforço mensal equivalente até a entrega: a mensal somada ao reforço diluído
+ * no intervalo dele. É o número que se compara com a renda — quem paga
+ * R$ 2.199 por mês e R$ 7.781 a cada semestre desembolsa, na média, R$ 3.496.
+ * Sem diluir o reforço, a parcela parece 36% menor do que é.
+ */
+export function monthlyEffort(plan: PaymentPlan): number | null {
+  const mensal = plan.installment ?? 0
+  if (!plan.reinforcement || !plan.reinforcementPeriod) {
+    return mensal || null
+  }
+  return mensal + plan.reinforcement / REINFORCEMENT_MONTHS[plan.reinforcementPeriod]
 }
 
 /** Soma dos percentuais — deve fechar em 100%, senão falta ou sobra parcela. */
