@@ -198,7 +198,14 @@ function OptionRow({
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--s2)' }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
     >
-      {dot && <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />}
+      {/* Aceita classe utilitária ('bg-brand') ou valor CSS ('var(--brand)').
+          Os tokens de cor do sistema são var() puro, e nem todo estado tem
+          classe Tailwind equivalente. */}
+      {dot && (
+        dot.startsWith('var(') || dot.startsWith('#') || dot.startsWith('rgb')
+          ? <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} />
+          : <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+      )}
       {Icon && <Icon size={13} strokeWidth={1.6} style={{ color: active ? 'var(--brand)' : 'var(--t3)' }} className="flex-shrink-0" />}
       <span className="flex-1 min-w-0 truncate text-sm font-medium">{label}</span>
       {count != null && (

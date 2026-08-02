@@ -1,13 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { TemperatureDot, FitBadge } from '../../components/shared/IntelBadges'
-import { fitDeserveBadge } from '../../lib/intelligence'
+import {
+  fitDeserveBadge, Temperature, Fit,
+  TEMPERATURE_LABEL, TEMPERATURE_COLOR, FIT_LABEL, FIT_COLOR,
+} from '../../lib/intelligence'
 import { useSearchParams } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
   MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2,
   Sparkles, Smartphone, Globe, Handshake, Megaphone, Percent,
-  GitBranch, Filter, User, Home, X, Trophy,
+  GitBranch, Filter, User, Home, X, Trophy, Flame, Target,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Button } from '../../components/ui/Button'
@@ -173,7 +176,7 @@ export function LeadsPage() {
   const { load: loadProps, properties } = usePropertiesStore()
   const { loadByIds: loadContactsByIds } = useContactsStore()
   const { load: loadConfig }   = useLeadConfigStore()
-  const { load: loadIntel }    = useIntelligenceStore()
+  const { load: loadIntel, intel } = useIntelligenceStore()
 
   // Filtro por corretor só faz sentido na visão admin global (sem corretor fixado)
   const showBrokerFilter = isAdmin && !viewAsBrokerId
@@ -184,6 +187,8 @@ export function LeadsPage() {
   const [filterOrigin,  setFilterOrigin]  = useState<LeadOrigin | null>(null)
   const [filterBroker,  setFilterBroker]  = useState<string | null>(null)
   const [filterProduct, setFilterProduct] = useState<string | null>(null)
+  const [filterTemp,    setFilterTemp]    = useState<Temperature | null>(null)
+  const [filterFit,     setFilterFit]     = useState<Fit | null>(null)
   // Escopo da lista/kanban: funil ativo, descartados ou ganhos (vendas encerradas)
   const [listView,      setListView]      = useState<'active' | 'discarded' | 'won'>('active')
   const [showForm,      setShowForm]      = useState(false)
@@ -255,8 +260,10 @@ export function LeadsPage() {
     if (filterOrigin)  result = result.filter(l => l.origin === filterOrigin)
     if (filterBroker)  result = result.filter(l => (l.brokerId ?? '') === filterBroker)
     if (filterProduct) result = result.filter(l => productKeyOf(l) === filterProduct)
+    if (filterTemp)    result = result.filter(l => intel[l.id]?.temperature === filterTemp)
+    if (filterFit)     result = result.filter(l => (intel[l.id]?.fitOrigin?.fit ?? 'sem_dados') === filterFit)
     return result
-  }, [scoped, search, filterStage, filterOrigin, filterBroker, filterProduct])
+  }, [scoped, search, filterStage, filterOrigin, filterBroker, filterProduct, filterTemp, filterFit, intel])
 
   // ── Opções dos filtros (com contagem) ────────────────────────────────────────
   const stageOptions: FilterOption[] = useMemo(
@@ -268,6 +275,30 @@ export function LeadsPage() {
     })),
     [scoped],
   )
+
+  const tempOptions: FilterOption[] = useMemo(() => {
+    const ordem: Temperature[] = ['quente', 'reaquecendo', 'morno', 'novo', 'frio']
+    return ordem
+      .map(t => ({
+        value: t,
+        label: TEMPERATURE_LABEL[t],
+        count: scoped.filter(l => intel[l.id]?.temperature === t).length,
+        dot:   TEMPERATURE_COLOR[t],
+      }))
+      .filter(o => o.count > 0)
+  }, [scoped, intel])
+
+  const fitOptions: FilterOption[] = useMemo(() => {
+    const ordem: Fit[] = ['ideal', 'possivel', 'dificil', 'sem_dados']
+    return ordem
+      .map(f => ({
+        value: f,
+        label: FIT_LABEL[f],
+        count: scoped.filter(l => (intel[l.id]?.fitOrigin?.fit ?? 'sem_dados') === f).length,
+        dot:   FIT_COLOR[f],
+      }))
+      .filter(o => o.count > 0)
+  }, [scoped, intel])
 
   const originOptions: FilterOption[] = useMemo(
     () => ORIGINS.map(o => ({
@@ -313,7 +344,7 @@ export function LeadsPage() {
   }, [scoped, properties])
 
   const activeFilterCount =
-    (filterStage ? 1 : 0) + (filterOrigin ? 1 : 0) +
+    (filterStage ? 1 : 0) + (filterOrigin ? 1 : 0) + (filterTemp ? 1 : 0) + (filterFit ? 1 : 0) +
     (filterBroker != null ? 1 : 0) + (filterProduct ? 1 : 0)
 
   function clearAllFilters() {
@@ -443,6 +474,26 @@ export function LeadsPage() {
               onChange={v => setFilterOrigin(v as LeadOrigin | null)}
               allLabel="Todas as origens"
             />
+            {tempOptions.length > 0 && (
+              <FilterDropdown
+                label="Temperatura"
+                icon={Flame}
+                options={tempOptions}
+                value={filterTemp}
+                onChange={v => setFilterTemp(v as Temperature | null)}
+                allLabel="Todas as temperaturas"
+              />
+            )}
+            {fitOptions.length > 0 && (
+              <FilterDropdown
+                label="Encaixe"
+                icon={Target}
+                options={fitOptions}
+                value={filterFit}
+                onChange={v => setFilterFit(v as Fit | null)}
+                allLabel="Todos os encaixes"
+              />
+            )}
             {showBrokerFilter && (
               <FilterDropdown
                 label="Corretor"

@@ -727,7 +727,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               precisa saber com quem está falando antes de ler o que já foi
               feito. Carrega sozinho, numa chamada só (RPC lead_profile).
             */}
-            <LeadIntelPanel leadId={lead.id} />
+            <LeadIntelPanel lead={lead} />
 
             <LeadProfilePanel leadId={lead.id} />
 

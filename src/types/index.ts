@@ -135,6 +135,12 @@ export interface LeadProfileValue {
   rank?: number
   /** "Ainda preciso me planejar": ausência de plano, NÃO ausência de dinheiro. */
   unplanned?: boolean
+  /**
+   * De onde veio o valor. 'formulario' é o que a pessoa declarou no Meta;
+   * 'corretor' é o que foi apurado na conversa e sobrepõe o declarado —
+   * o original continua no histórico, nunca é apagado.
+   */
+  source?: 'formulario' | 'corretor'
   question?: string
   formName?: string
   at?: string

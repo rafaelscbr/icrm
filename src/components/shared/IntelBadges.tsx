@@ -74,14 +74,33 @@ export function IntelPair({
   if (!temp) return null
   return (
     <span className="inline-flex items-center gap-1.5">
-      <TemperatureDot temp={temp} />
-      {fitDeserveBadge(fit) && (
+      {/*
+        Ponto + palavra, não ponto sozinho. Cor sem legenda obriga a decorar o
+        código ("azul era o quê mesmo?") e quem usa o funil de vez em quando
+        nunca decora. Com o texto, a primeira leitura já entende — e a cor
+        continua fazendo o trabalho de varrer a coluna.
+      */}
+      <span
+        className={`inline-flex items-center gap-1 font-label text-[10px] font-semibold
+                    uppercase tracking-[0.08em] ${TEMPERATURE_TEXT[temp]}`}
+      >
         <span
-          className={`font-label text-[10px] uppercase tracking-[0.08em] ${FIT_TEXT[fit!]}`}
-          title={produto ? `${produto}: ${FIT_LABEL[fit!]}` : FIT_LABEL[fit!]}
-        >
-          {FIT_LABEL[fit!]}
-        </span>
+          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+          style={{ background: TEMPERATURE_COLOR[temp] }}
+          aria-hidden
+        />
+        {TEMPERATURE_LABEL[temp]}
+      </span>
+      {fitDeserveBadge(fit) && (
+        <>
+          <span className="text-t5 text-[10px]" aria-hidden>·</span>
+          <span
+            className={`font-label text-[10px] font-semibold uppercase tracking-[0.08em] ${FIT_TEXT[fit!]}`}
+            title={produto ? `${produto}: ${FIT_LABEL[fit!]}` : FIT_LABEL[fit!]}
+          >
+            {FIT_LABEL[fit!]}
+          </span>
+        </>
       )}
     </span>
   )

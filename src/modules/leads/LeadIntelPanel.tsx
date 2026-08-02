@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
-import { Gauge, ChevronRight } from 'lucide-react'
+import { Gauge, Lightbulb } from 'lucide-react'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { TemperatureBadge, FitBadge } from '../../components/shared/IntelBadges'
 import {
-  FIT_COLOR, FIT_LABEL, FIT_TEXT, TEMPERATURE_LABEL, priority,
+  FIT_COLOR, FIT_LABEL, FIT_TEXT, priority,
 } from '../../lib/intelligence'
+import { computeNextPlay } from './nextPlay'
+import { Lead } from '../../types'
 
 /**
  * Inteligência do lead no painel: temperatura, encaixe por produto e o porquê
@@ -14,7 +16,8 @@ import {
  * ver exatamente em cima de que ela foi feita — e é assim que a régua vai sendo
  * corrigida com a realidade.
  */
-export function LeadIntelPanel({ leadId }: { leadId: string }) {
+export function LeadIntelPanel({ lead }: { lead: Lead }) {
+  const leadId = lead.id
   const intel = useIntelligenceStore(s => s.intel[leadId])
   const load  = useIntelligenceStore(s => s.load)
 
@@ -25,6 +28,7 @@ export function LeadIntelPanel({ leadId }: { leadId: string }) {
 
   const p = priority(intel.temperature, intel.fitOrigin?.fit)
   const outros = intel.fits.filter(f => !f.isOrigin)
+  const play = computeNextPlay(lead, intel)
 
   return (
     <div>
@@ -119,15 +123,31 @@ export function LeadIntelPanel({ leadId }: { leadId: string }) {
         )}
 
         {/* ── A jogada ────────────────────────────────────────────── */}
-        {intel.fitOrigin?.fit === 'dificil' && intel.fitBest && (
-          <div className="flex items-start gap-2 p-3 rounded-[14px] bg-info-bg border border-info-line">
-            <ChevronRight size={13} className="text-info flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-info leading-relaxed">
-              {TEMPERATURE_LABEL[intel.temperature]} e com trava no{' '}
-              <span className="font-medium">{intel.fitOrigin.name}</span> — mas o{' '}
-              <span className="font-medium">{intel.fitBest.name}</span> cabe no perfil.
-              Vale apresentar.
-            </p>
+        {/* Responde "o quê", não "quando" — a urgência já é trabalho do
+            NextStepSuggestion logo acima. E cita sempre o motivo específico:
+            "faça follow-up" o corretor pula, "a trava é a entrada de R$ 20 mil"
+            ele usa. */}
+        {play && (
+          <div
+            className={`flex items-start gap-2.5 p-3 rounded-[14px] border ${
+              play.tone === 'urgent'      ? 'bg-warning-bg border-warning-line'
+              : play.tone === 'opportunity' ? 'bg-info-bg border-info-line'
+              : 'bg-s2/50 border-line'}`}
+          >
+            <Lightbulb
+              size={13}
+              className={`flex-shrink-0 mt-0.5 ${
+                play.tone === 'urgent' ? 'text-warning'
+                : play.tone === 'opportunity' ? 'text-info' : 'text-t3'}`}
+            />
+            <div className="min-w-0">
+              <p className={`text-xs font-semibold ${
+                play.tone === 'urgent' ? 'text-warning'
+                : play.tone === 'opportunity' ? 'text-info' : 'text-t1'}`}>
+                {play.title}
+              </p>
+              <p className="text-xs text-t2 leading-relaxed mt-0.5">{play.detail}</p>
+            </div>
           </div>
         )}
       </div>

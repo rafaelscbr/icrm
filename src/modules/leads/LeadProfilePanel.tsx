@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import {
   Target, Wallet, Banknote, Landmark, Clock, BedDouble,
   Database, ChevronDown, HelpCircle, Loader2, FileText, CheckCircle2,
+  Pencil, Plus, UserCheck,
 } from 'lucide-react'
+import { LeadProfileEditor } from './LeadProfileEditor'
 import { db } from '../../lib/db'
+import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import {
   LeadProfile, LeadProfileField, LeadProfileValue, LeadKnownList,
 } from '../../types'
@@ -21,6 +24,9 @@ const CAMPO: Record<LeadProfileField, { label: string; Icon: typeof Target }> = 
   capacidade:       { label: 'Capacidade', Icon: CheckCircle2 },
   interesse_visita: { label: 'Visita',    Icon: Target },
 }
+
+/** O corretor pode apurar estes; os demais só existem se o formulário perguntou. */
+const EDITAVEIS: LeadProfileField[] = ['objetivo', 'renda', 'entrada', 'fgts', 'prazo', 'tipologia']
 
 /** Ordem de leitura: o que decide a conversa primeiro. */
 const ORDEM: LeadProfileField[] = [
@@ -65,12 +71,15 @@ function Urgencia({ rank }: { rank: number }) {
 
 /* ── Uma linha do perfil ─────────────────────────────────────────────────── */
 
-function LinhaPerfil({ campo, valor }: { campo: LeadProfileField; valor: LeadProfileValue }) {
+function LinhaPerfil({
+  campo, valor, onEdit,
+}: { campo: LeadProfileField; valor: LeadProfileValue; onEdit?: () => void }) {
   const { label, Icon } = CAMPO[campo]
   const faixa = faixaTexto(valor)
+  const apurado = valor.source === 'corretor'
 
   return (
-    <div className="flex items-start gap-2.5 py-1.5">
+    <div className="group/linha flex items-start gap-2.5 py-1.5">
       <Icon size={12} strokeWidth={1.6} className="text-t4 flex-shrink-0 mt-[3px]" />
       <span className="font-label text-[11px] uppercase tracking-[0.1em] text-t4 w-[68px] flex-shrink-0 mt-[2px]">
         {label}
@@ -87,12 +96,33 @@ function LinhaPerfil({ campo, valor }: { campo: LeadProfileField; valor: LeadPro
               sem plano
             </span>
           )}
+          {/* Distingue "a pessoa respondeu isso" de "alguém daqui apurou isso" —
+              são coisas de confiança bem diferente. */}
+          {apurado && (
+            <span
+              className="inline-flex items-center gap-1 font-label text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full text-brand-text border border-brand/30"
+              title="Apurado pelo corretor — sobrepõe o que foi declarado no formulário"
+            >
+              <UserCheck size={8} strokeWidth={2} /> apurado
+            </span>
+          )}
         </div>
         {/* O texto exato que a pessoa marcou, quando a faixa já ocupou a linha */}
-        {faixa && valor.label && (
+        {faixa && valor.label && !apurado && (
           <p className="text-[11px] text-t4 leading-tight mt-0.5 truncate">{valor.label}</p>
         )}
       </div>
+      {onEdit && (
+        <button
+          onClick={onEdit}
+          aria-label={`Editar ${label.toLowerCase()}`}
+          className="w-6 h-6 flex items-center justify-center rounded text-t5 flex-shrink-0
+                     opacity-0 group-hover/linha:opacity-100 focus-visible:opacity-100
+                     [@media(hover:none)]:opacity-100 hover:text-brand-text transition-all"
+        >
+          <Pencil size={11} strokeWidth={1.6} />
+        </button>
+      )}
     </div>
   )
 }
@@ -131,6 +161,16 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
   const [erro, setErro]       = useState(false)
   const [aberto, setAberto]   = useState(true)
   const [verFormularios, setVerFormularios] = useState(false)
+  const [editando, setEditando] = useState<LeadProfileField | null>(null)
+  const recarregar = useIntelligenceStore(s => s.load)
+
+  function carregar() {
+    setLoading(true); setErro(false)
+    db.leads.profile(leadId)
+      .then(r => setData(r))
+      .catch(() => setErro(true))
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
     let vivo = true
@@ -141,6 +181,14 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
       .finally(() => { if (vivo) setLoading(false) })
     return () => { vivo = false }
   }, [leadId])
+
+  // Mudou o perfil? A compatibilidade muda junto — sem isso o corretor
+  // corrigiria a renda e continuaria vendo o encaixe antigo.
+  function aposSalvar() {
+    setEditando(null)
+    carregar()
+    recarregar(true)
+  }
 
   if (loading) {
     return (
@@ -209,7 +257,21 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
           {/* ── Campos ─────────────────────────────────────────────── */}
           {campos.length > 0 && (
             <div className="rounded-[14px] bg-s2/50 border border-line px-3 py-1.5">
-              {campos.map(c => <LinhaPerfil key={c} campo={c} valor={data.profile[c]!} />)}
+              {campos.map(c => (
+                editando === c ? (
+                  <div key={c} className="py-2">
+                    <LeadProfileEditor
+                      leadId={leadId} field={c} atual={data.profile[c]}
+                      onSaved={aposSalvar} onCancel={() => setEditando(null)}
+                    />
+                  </div>
+                ) : (
+                  <LinhaPerfil
+                    key={c} campo={c} valor={data.profile[c]!}
+                    onEdit={EDITAVEIS.includes(c) ? () => setEditando(c) : undefined}
+                  />
+                )
+              ))}
               {ultimoForm && (
                 <p className="text-[11px] text-t4 pt-1.5 pb-1 border-t border-line mt-1">
                   {ultimoForm.formName} · {formatDateShort(ultimoForm.at)}
@@ -226,16 +288,29 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
                 <p className="font-label text-[11px] uppercase tracking-[0.1em] text-t4 mb-1">
                   Falta descobrir
                 </p>
+                {/* Cada pendência é um botão: apontar o que falta sem oferecer
+                    onde preencher seria só cobrança. */}
                 <div className="flex flex-wrap gap-1.5">
                   {data.missing.map(m => (
-                    <span
+                    <button
                       key={m}
-                      className="font-label text-[11px] px-2 py-0.5 rounded-full text-t3 border border-dashed border-line"
+                      onClick={() => setEditando(m)}
+                      className="inline-flex items-center gap-1 font-label text-[11px] px-2 py-0.5 rounded-full
+                                 text-t3 border border-dashed border-line
+                                 hover:text-brand-text hover:border-brand/40 transition-colors cursor-pointer"
                     >
-                      {CAMPO[m]?.label ?? m}
-                    </span>
+                      <Plus size={9} strokeWidth={2} /> {CAMPO[m]?.label ?? m}
+                    </button>
                   ))}
                 </div>
+                {editando && data.missing.includes(editando) && (
+                  <div className="mt-2">
+                    <LeadProfileEditor
+                      leadId={leadId} field={editando}
+                      onSaved={aposSalvar} onCancel={() => setEditando(null)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
