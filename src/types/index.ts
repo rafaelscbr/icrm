@@ -122,6 +122,13 @@ export interface Task {
 export type LeadProfileField =
   | 'objetivo' | 'renda' | 'entrada' | 'fgts' | 'prazo' | 'tipologia'
   | 'capacidade' | 'interesse_visita'
+  /**
+   * Preferências MÚLTIPLAS de busca, sempre preenchíveis pelo corretor.
+   * Nenhum formulário pergunta região, e o Porto Velas nem pergunta tipologia —
+   * mas todo lead tem essas duas informações. São o que cruza o perfil com os
+   * lançamentos. Guardadas como { values: string[], labels: string[] }.
+   */
+  | 'regioes' | 'tipologias'
 
 export interface LeadProfileValue {
   /** Valor canônico: 'morar' | 'investir' | 'sim' | 'imediato' | '2'… */
@@ -595,4 +602,71 @@ export interface AppNotification {
   resourceType?: string // 'task'
   read: boolean
   createdAt: string
+}
+
+// ─── Tipologias e matching reverso ───────────────────────────────────────────
+
+export interface DevelopmentUnit {
+  id: string
+  developmentId: string
+  name: string
+  bedrooms?: number
+  suites?: number
+  parking?: number
+  areaSqm?: number
+  price?: number
+  priceMin?: number
+  priceMax?: number
+  /** Régua própria. Ausente = herda a do empreendimento. */
+  incomeMin?: number
+  incomeIdeal?: number
+  downPaymentMin?: number
+  downPaymentIdeal?: number
+  paymentPlans: PaymentPlan[]
+  available: boolean
+  unitsAvailable?: number
+  notes?: string
+  displayOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** A unidade concreta que o sistema sugere para um lead. */
+export interface SuggestedUnit {
+  unitId: string
+  name: string
+  bedrooms?: number
+  price?: number
+  areaSqm?: number
+  fit: string
+  reasons: { field: string; fit: string; text: string }[]
+  /** Bate com a tipologia que a pessoa declarou preferir. */
+  matchesPreference: boolean
+}
+
+export interface DevelopmentMatch {
+  leadId: string
+  name: string
+  phone: string
+  email?: string
+  stage: string
+  brokerId?: string
+  discarded?: string
+  fit: 'ideal' | 'possivel' | 'dificil' | 'sem_dados'
+  unit?: SuggestedUnit
+  renda?: string
+  entrada?: string
+  objetivo?: string
+  urgencia?: number
+  /** Já veio deste produto — não é descoberta, é o óbvio. */
+  isOrigin: boolean
+  createdAt: string
+}
+
+export interface DevelopmentMatches {
+  developmentId: string
+  total: number
+  novos: number
+  byFit: { ideal: number; possivel: number; dificil: number; sem_dados: number }
+  leads: DevelopmentMatch[]
 }

@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import {
   Target, Wallet, Banknote, Landmark, Clock, BedDouble,
   Database, ChevronDown, HelpCircle, Loader2, FileText, CheckCircle2,
-  Pencil, Plus, UserCheck,
+  Pencil, Plus, UserCheck, MapPin, Home,
 } from 'lucide-react'
 import { LeadProfileEditor } from './LeadProfileEditor'
+import { LeadPreferencesEditor } from './LeadPreferencesEditor'
 import { db } from '../../lib/db'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import {
@@ -23,6 +24,9 @@ const CAMPO: Record<LeadProfileField, { label: string; Icon: typeof Target }> = 
   tipologia:        { label: 'Tipologia', Icon: BedDouble },
   capacidade:       { label: 'Capacidade', Icon: CheckCircle2 },
   interesse_visita: { label: 'Visita',    Icon: Target },
+  // Preferências múltiplas — renderizadas em bloco próprio, não como LinhaPerfil
+  regioes:          { label: 'Regiões',   Icon: MapPin },
+  tipologias:       { label: 'Tipologias',Icon: Home },
 }
 
 /** O corretor pode apurar estes; os demais só existem se o formulário perguntou. */
@@ -162,6 +166,7 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
   const [aberto, setAberto]   = useState(true)
   const [verFormularios, setVerFormularios] = useState(false)
   const [editando, setEditando] = useState<LeadProfileField | null>(null)
+  const [editPref, setEditPref] = useState<'regioes' | 'tipologias' | null>(null)
   const recarregar = useIntelligenceStore(s => s.load)
 
   function carregar() {
@@ -186,6 +191,7 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
   // corrigiria a renda e continuaria vendo o encaixe antigo.
   function aposSalvar() {
     setEditando(null)
+    setEditPref(null)
     carregar()
     recarregar(true)
   }
@@ -279,6 +285,62 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
               )}
             </div>
           )}
+
+          {/* ── Preferências de busca ─────────────────────────────── */}
+          {/* Sempre visíveis, mesmo vazias: nenhum formulário pergunta região e
+              o Porto Velas nem pergunta tipologia, mas todo lead tem as duas.
+              Sem um lugar para anotar, o que o corretor ouve na conversa morre
+              no WhatsApp — e é justamente isso que cruza o lead com os
+              lançamentos. */}
+          <div className="rounded-[14px] bg-s2/50 border border-line px-3 py-2 space-y-1">
+            {([
+              { key: 'regioes'    as const, Icon: MapPin, label: 'Regiões',    vazio: 'Onde ele procura?' },
+              { key: 'tipologias' as const, Icon: Home,   label: 'Tipologias', vazio: 'Quantos dormitórios?' },
+            ]).map(({ key, Icon, label, vazio }) => {
+              const vals = data.profile[key] as unknown as
+                { values?: string[]; labels?: string[] } | undefined
+              const itens = vals?.labels ?? vals?.values ?? []
+
+              if (editPref === key) {
+                return (
+                  <div key={key} className="py-1.5">
+                    <LeadPreferencesEditor
+                      leadId={leadId} field={key} atuais={vals?.values}
+                      onSaved={aposSalvar} onCancel={() => setEditPref(null)}
+                    />
+                  </div>
+                )
+              }
+              return (
+                <button
+                  key={key}
+                  onClick={() => setEditPref(key)}
+                  className="group/pref w-full flex items-start gap-2.5 py-1.5 text-left"
+                >
+                  <Icon size={12} strokeWidth={1.6} className="text-t4 flex-shrink-0 mt-[3px]" />
+                  <span className="font-label text-[11px] uppercase tracking-[0.1em] text-t4 w-[68px] flex-shrink-0 mt-[2px]">
+                    {label}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    {itens.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {itens.map(i => (
+                          <span key={i} className="text-xs px-1.5 py-0.5 rounded-md bg-s3 text-t2">{i}</span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-t4 italic">{vazio}</span>
+                    )}
+                  </span>
+                  <span className="w-6 h-6 flex items-center justify-center rounded text-t5 flex-shrink-0
+                                   opacity-0 group-hover/pref:opacity-100 [@media(hover:none)]:opacity-100
+                                   hover:text-brand-text transition-all">
+                    {itens.length > 0 ? <Pencil size={11} strokeWidth={1.6} /> : <Plus size={11} strokeWidth={2} />}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
 
           {/* ── O que falta descobrir ──────────────────────────────── */}
           {data.missing.length > 0 && (

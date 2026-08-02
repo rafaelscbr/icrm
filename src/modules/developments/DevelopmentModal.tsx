@@ -8,6 +8,7 @@ import { SidePanel } from '../../components/ui/SidePanel'
 import { Button } from '../../components/ui/Button'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { QualificationScale } from './QualificationScale'
+import { DevelopmentMatches } from './DevelopmentMatches'
 import { pendenciasDaRegua, fgtsIsCriterion } from './qualification'
 import {
   Development, DEVELOPMENT_STATUS_LABEL, DEVELOPMENT_REGIME_LABEL,
@@ -253,6 +254,9 @@ export function DevelopmentModal({
             </div>
           )}
         </section>
+
+        {/* Matching reverso — quem da base cabe aqui */}
+        {d.confirmed && <DevelopmentMatches development={d} />}
 
         {/* Observações */}
         {d.notes && (
