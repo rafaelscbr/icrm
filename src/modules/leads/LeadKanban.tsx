@@ -27,6 +27,9 @@ import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
+import { useIntelligenceStore } from '../../store/useIntelligenceStore'
+import { IntelPair } from '../../components/shared/IntelBadges'
+import { TEMPERATURE_COLOR } from '../../lib/intelligence'
 import { useKanbanPrefs, SORT_LABEL, KanbanSort } from '../../store/useKanbanPrefs'
 import { LeadModal } from './LeadModal'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
@@ -149,6 +152,8 @@ function LeadCard({
   // Comissão só onde ajuda a priorizar: etapas finais ou modo financeiro.
   const showCommission = financeMode || lead.funnelStage === 'proposta' || lead.funnelStage === 'venda'
 
+  const intel = useIntelligenceStore(s => s.intel[lead.id])
+
   return (
     <div
       ref={setNodeRef}
@@ -156,6 +161,7 @@ function LeadCard({
       onClick={onClick}
       className={`group relative border rounded-[14px] cursor-pointer kanban-card shadow-card
         transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
+        overflow-hidden
         ${dense ? 'p-2.5' : 'p-3'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? 'shadow-modal border-brand/40' : ''}
@@ -163,6 +169,19 @@ function LeadCard({
         ${lead.flagged ? 'border-brand/40' : ''}
       `}
     >
+      {/*
+        Temperatura como filete na borda esquerda, não como badge.
+        É a mesma linguagem do Salesforce e do Pipedrive: o olho lê a coluna
+        inteira de uma vez, sem ler texto nenhum. Badge em todo card obrigaria
+        a processar 113 etiquetas para achar as duas que importam.
+      */}
+      {intel && (
+        <span
+          className="absolute left-0 top-0 bottom-0 w-[3px]"
+          style={{ background: TEMPERATURE_COLOR[intel.temperature] }}
+          aria-hidden
+        />
+      )}
       {isSaving && (
         <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[14px] bg-black/20" role="status" aria-label="Salvando">
           <Loader2 size={16} className="animate-spin text-brand" strokeWidth={1.6} />
@@ -209,6 +228,12 @@ function LeadCard({
           {/* Só o que qualifica a identidade: prioridade e responsável.
               Origem, produto e telefone desceram para o nível 3. */}
           <div className="flex items-center gap-1.5 mt-1 min-w-0">
+            {/* Encaixe só aparece quando é Ideal ou Difícil — ver IntelPair */}
+            <IntelPair
+              temp={intel?.temperature}
+              fit={intel?.fitOrigin?.fit}
+              produto={intel?.fitOrigin?.name}
+            />
             {lead.flagged && (
               <span className="font-label text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-text flex-shrink-0">
                 Prioridade

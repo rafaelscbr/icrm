@@ -24,6 +24,7 @@ import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
 import { LeadProfilePanel } from './LeadProfilePanel'
+import { LeadIntelPanel } from './LeadIntelPanel'
 import { useSlaInfo } from './SlaBadge'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import toast from 'react-hot-toast'
@@ -726,6 +727,8 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               precisa saber com quem está falando antes de ler o que já foi
               feito. Carrega sozinho, numa chamada só (RPC lead_profile).
             */}
+            <LeadIntelPanel leadId={lead.id} />
+
             <LeadProfilePanel leadId={lead.id} />
 
             {/* Histórico de interações inline */}

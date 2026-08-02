@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useIntelligenceStore } from '../../store/useIntelligenceStore'
+import { TemperatureDot, FitBadge } from '../../components/shared/IntelBadges'
+import { fitDeserveBadge } from '../../lib/intelligence'
 import { useSearchParams } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
@@ -68,6 +71,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const conf         = STAGE_CONFIG[lead.funnelStage]
   const originConf   = ORIGIN_CONFIG[lead.origin]
   const isDiscarded  = !!lead.discardReason
+  const intel        = useIntelligenceStore(s => s.intel[lead.id])
 
   // Mesmo comportamento do Kanban: registra a interação no banco (dispara o
   // trigger de 1º contato do SLA Meta Ads) e avança o followup.
@@ -97,7 +101,13 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Ponto de temperatura antes do nome: na lista o olho desce pela
+              coluna da esquerda, e é ali que a leitura em massa acontece. */}
+          {intel && <TemperatureDot temp={intel.temperature} />}
           <span className="text-sm font-medium text-t1 truncate">{displayName}</span>
+          {intel && fitDeserveBadge(intel.fitOrigin?.fit) && (
+            <FitBadge fit={intel.fitOrigin!.fit} produto={intel.fitOrigin!.name} compact />
+          )}
           <SlaBadge lead={lead} />
           {brokerName && (
             <span
@@ -163,6 +173,7 @@ export function LeadsPage() {
   const { load: loadProps, properties } = usePropertiesStore()
   const { loadByIds: loadContactsByIds } = useContactsStore()
   const { load: loadConfig }   = useLeadConfigStore()
+  const { load: loadIntel }    = useIntelligenceStore()
 
   // Filtro por corretor só faz sentido na visão admin global (sem corretor fixado)
   const showBrokerFilter = isAdmin && !viewAsBrokerId
@@ -187,7 +198,7 @@ export function LeadsPage() {
     setSearchParams(next, { replace: !l })
   }
 
-  useEffect(() => { load(); loadProps(); loadConfig() }, [])
+  useEffect(() => { load(); loadProps(); loadConfig(); loadIntel() }, [])
 
   // Só os contatos vinculados aos leads — antes era o fetchAll de 12.543 linhas
   // (~7,7 MB) para exibir algumas dezenas de nomes.
