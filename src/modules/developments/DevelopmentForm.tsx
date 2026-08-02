@@ -264,12 +264,12 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
               <span className="min-w-0">
                 <span className="block text-sm text-t1 font-medium">O FGTS compõe a entrada</span>
                 <span className="block text-xs text-t3 mt-0.5">
-                  Marcado, o saldo entra na conta da entrada do lead. Desmarcado, o FGTS
-                  aparece no perfil mas não muda a qualificação.
+                  Marcado, o saldo entra na conta da entrada do lead e o sistema passa a
+                  perguntar por ele. Desmarcado, o FGTS aparece no perfil mas não muda a
+                  qualificação.
                 </span>
               </span>
             </label>
-          )}
 
           {!fgtsComposes && (
             <div className="flex items-start gap-2 p-3 rounded-xl bg-info-bg border border-info-line">
