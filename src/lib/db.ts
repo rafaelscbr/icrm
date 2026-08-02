@@ -1097,6 +1097,23 @@ export const db = {
     fetchAll: () => fetchAll<LeadRow, Lead>('leads', toLead),
     upsert:   (l: Lead) => upsertOne('leads', fromLead(l)),
     delete:   (id: string) => deleteOne('leads', id),
+    /**
+     * Perfil declarado + histórico de formulários + listas internas em que o
+     * telefone já aparecia. Uma chamada só, montada no banco.
+     *
+     * A alternativa seria o front baixar eventos, contatos e as 16 mil linhas
+     * de lead_list_members para cruzar no navegador — exatamente o padrão que
+     * já custou um incidente de egress neste projeto.
+     */
+    profile: async (leadId: string): Promise<import('../types').LeadProfile | null> => {
+      const { data, error } = await supabase.rpc('lead_profile', { p_lead_id: leadId })
+      if (error) {
+        console.error('[leads] profile:', error)
+        toast.error(`Erro ao carregar o perfil do lead: ${error.message}`)
+        throw error
+      }
+      return (data as import('../types').LeadProfile | null) ?? null
+    },
     // Transferência manual — RPC SECURITY DEFINER valida dono/admin e grava
     // auditoria (lead_assignments), interação e notificação numa transação
     transfer: async (leadId: string, toBrokerId: string): Promise<void> => {

@@ -23,6 +23,7 @@ import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
+import { LeadProfilePanel } from './LeadProfilePanel'
 import { useSlaInfo } from './SlaBadge'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import toast from 'react-hot-toast'
@@ -122,6 +123,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showEdit,          setShowEdit]          = useState(false)
   const [showTaskForm,      setShowTaskForm]      = useState(false)
   const [showHistory,       setShowHistory]       = useState(false)
+  const [showRawNotes,      setShowRawNotes]      = useState(false)
   const [showBaseCamp,      setShowBaseCamp]      = useState(false)
   const [showAddToList,     setShowAddToList]     = useState(false)
   const [selectedListId,    setSelectedListId]    = useState('')
@@ -719,6 +721,13 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               </div>
             )}
 
+            {/*
+              Perfil declarado — vem ANTES do histórico de propósito: o corretor
+              precisa saber com quem está falando antes de ler o que já foi
+              feito. Carrega sozinho, numa chamada só (RPC lead_profile).
+            */}
+            <LeadProfilePanel leadId={lead.id} />
+
             {/* Histórico de interações inline */}
             <div>
               <button
@@ -884,12 +893,43 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               </div>
             </div>
 
-            {/* Notas salvas */}
+            {/*
+              Notas salvas.
+
+              Quando o texto é o bloco automático do Meta ("Meta Ads — …
+              Respostas do formulário: …"), ele repete linha por linha o que o
+              Perfil declarado já mostra logo acima — ocupando meia tela com a
+              mesma informação em pior formato. Nesse caso entra recolhido, com
+              o original a um clique. Nota escrita por gente aparece inteira,
+              sempre.
+            */}
             {lead.notes && (
-              <div className="bg-s2 border border-line rounded-[14px] p-3">
-                <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 mb-1.5">Observações</p>
-                <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap">{lead.notes}</p>
-              </div>
+              (() => {
+                const soDoMeta = /^Meta Ads —/.test(lead.notes.trim())
+                return (
+                  <div className="bg-s2 border border-line rounded-[14px] p-3">
+                    <button
+                      onClick={() => soDoMeta && setShowRawNotes(v => !v)}
+                      disabled={!soDoMeta}
+                      aria-expanded={soDoMeta ? showRawNotes : undefined}
+                      className={`flex items-center justify-between w-full group ${soDoMeta ? 'cursor-pointer' : 'cursor-default'}`}
+                    >
+                      <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 group-hover:text-t2 transition-colors">
+                        {soDoMeta ? 'Texto original do formulário' : 'Observações'}
+                      </span>
+                      {soDoMeta && (
+                        <ChevronDown
+                          size={12} strokeWidth={1.6} aria-hidden
+                          className={`text-t4 transition-transform duration-200 ${showRawNotes ? 'rotate-180' : ''}`}
+                        />
+                      )}
+                    </button>
+                    {(!soDoMeta || showRawNotes) && (
+                      <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap mt-1.5">{lead.notes}</p>
+                    )}
+                  </div>
+                )
+              })()
             )}
 
             {/* Descarte info */}

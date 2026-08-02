@@ -112,6 +112,72 @@ export interface Task {
   updatedAt: string
 }
 
+// ─── Perfil declarado do lead ────────────────────────────────────────────────
+// O que a pessoa respondeu nos formulários do Meta, normalizado: as três
+// campanhas perguntam a mesma coisa com nomes diferentes ("qual sua renda
+// familiar?", "qual é a renda familiar bruta?"), e sem normalizar o perfil
+// nunca acumularia. Montado pela RPC `lead_profile`.
+
+/** Campo canônico — o mesmo dado, venha do formulário que vier. */
+export type LeadProfileField =
+  | 'objetivo' | 'renda' | 'entrada' | 'fgts' | 'prazo' | 'tipologia'
+  | 'capacidade' | 'interesse_visita'
+
+export interface LeadProfileValue {
+  /** Valor canônico: 'morar' | 'investir' | 'sim' | 'imediato' | '2'… */
+  value?: string
+  /** Texto que a pessoa marcou, como ela viu no formulário. */
+  label?: string
+  /** Faixa em reais — só em renda e entrada. `max` nulo = aberta para cima. */
+  min?: number
+  max?: number
+  /** Urgência de 1 (só pesquisando) a 4 (imediato) — só em prazo. */
+  rank?: number
+  /** "Ainda preciso me planejar": ausência de plano, NÃO ausência de dinheiro. */
+  unplanned?: boolean
+  question?: string
+  formName?: string
+  at?: string
+}
+
+export interface LeadFormAnswer {
+  question: string
+  field: LeadProfileField | null
+  raw: string
+  norm: LeadProfileValue | null
+}
+
+export interface LeadFormSubmission {
+  eventId: string
+  formId?: string
+  formName: string
+  product?: string
+  at: string
+  answers: LeadFormAnswer[]
+}
+
+/** Lista interna em que o telefone do lead já aparecia. */
+export interface LeadKnownList {
+  listId: string
+  name: string
+  profile?: { region?: string; bedrooms?: number; type?: string; valueMin?: number; valueMax?: number; source?: string }
+  at: string
+}
+
+export interface LeadProfile {
+  leadId: string
+  phone: string
+  /** Por campo, vale a resposta mais recente — campo a campo, não o último formulário inteiro. */
+  profile: Partial<Record<LeadProfileField, LeadProfileValue>>
+  forms: LeadFormSubmission[]
+  lists: LeadKnownList[]
+  /** O que ainda falta perguntar. FGTS só entra quando o produto é associativo. */
+  missing: LeadProfileField[]
+  formCount: number
+  /** Já aparecia na base interna antes de virar lead do Meta. */
+  isKnown: boolean
+}
+
 // ─── Lançamentos ─────────────────────────────────────────────────────────────
 // Um lançamento não é uma unidade — é o empreendimento inteiro, com a régua
 // comercial que decide para quem ele serve. `Property` continua sendo a

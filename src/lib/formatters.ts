@@ -50,7 +50,12 @@ export function formatDate(iso: string): string {
 }
 
 export function formatDateShort(iso: string): string {
-  const date = new Date(iso + 'T00:00:00')
+  // Aceita 'YYYY-MM-DD' e timestamp ISO completo. O 'T00:00:00' existe para
+  // ancorar a data-pura no fuso local (sem ele, 'YYYY-MM-DD' é lido como UTC e
+  // volta um dia atrás); num ISO que já tem hora, concatenar produzia
+  // "…+00:00T00:00:00" e Invalid Date.
+  const date = new Date(iso.includes('T') ? iso : iso + 'T00:00:00')
+  if (Number.isNaN(date.getTime())) return iso
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
