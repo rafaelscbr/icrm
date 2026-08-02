@@ -205,12 +205,59 @@ export type DevelopmentStatus = 'lancamento' | 'em_obra' | 'pronto'
  */
 export type DevelopmentRegime = 'associativo' | 'pos_chaves'
 
+/**
+ * Fluxo de pagamento.
+ *
+ * As construtoras montam a tabela em PERCENTUAL do valor da unidade ("10% de
+ * entrada, 16x somando 10%, 10% de reforço, 70% financiado"), e o mesmo fluxo
+ * vale para a unidade de R$ 595 mil e para a de R$ 729 mil. Guardar só o valor
+ * fixo obrigaria a cadastrar um fluxo por unidade.
+ *
+ * Por isso os dois convivem: o percentual gera o valor, e o valor pode ser
+ * sobrescrito — negociação real quase nunca fecha no número redondo da tabela.
+ * Valor preenchido à mão manda sobre o percentual.
+ */
 export interface PaymentPlan {
   name: string
-  downPayment?: number   // entrada deste fluxo
-  installment?: number   // parcela mensal
-  months?: number        // quantidade de parcelas
+  /** Entrada. `Pct` gera o valor; o valor pode ser editado por cima. */
+  downPaymentPct?: number
+  downPayment?: number
+  /** Parcelas até a entrega: o percentual é o TOTAL das `months` parcelas. */
+  installmentsPct?: number
+  installment?: number   // valor de cada parcela
+  months?: number
+  /** Reforço (balão) — comum nas tabelas daqui, some se não usado. */
+  reinforcementPct?: number
+  reinforcement?: number
+  /** Saldo financiado na entrega. */
+  financingPct?: number
+  financing?: number
   notes?: string
+}
+
+/**
+ * Resolve um fluxo para um preço: aplica os percentuais e deixa passar o que
+ * foi digitado à mão. Valor explícito sempre vence o percentual.
+ */
+export function resolvePaymentPlan(plan: PaymentPlan, price?: number): PaymentPlan {
+  if (price == null) return plan
+  const pct = (p?: number) => (p == null ? undefined : (price * p) / 100)
+  const total = pct(plan.installmentsPct)
+  return {
+    ...plan,
+    downPayment:   plan.downPayment   ?? pct(plan.downPaymentPct),
+    reinforcement: plan.reinforcement ?? pct(plan.reinforcementPct),
+    financing:     plan.financing     ?? pct(plan.financingPct),
+    installment:   plan.installment   ??
+      (total != null && plan.months ? total / plan.months : undefined),
+  }
+}
+
+/** Soma dos percentuais — deve fechar em 100%, senão falta ou sobra parcela. */
+export function paymentPlanTotalPct(plan: PaymentPlan): number | null {
+  const partes = [plan.downPaymentPct, plan.installmentsPct, plan.reinforcementPct, plan.financingPct]
+  if (partes.every(p => p == null)) return null
+  return partes.reduce<number>((s, p) => s + (p ?? 0), 0)
 }
 
 export interface Development {
