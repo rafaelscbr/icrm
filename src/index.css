@@ -941,6 +941,36 @@ html.light .shimmer {
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 
+  /*
+    Painel lateral — a entrada que o `slide-in-from-right-4` prometia e nunca
+    entregou: essa classe não existe no projeto (não há tailwindcss-animate),
+    então o painel do lead caía na animação genérica de modal, com scale.
+    Painel que desliza precisa deslizar; scale num elemento colado na borda lê
+    como "piscou", não como "entrou".
+  */
+  .animate-panel-right {
+    animation: panelRight 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes panelRight {
+    from { opacity: 0; transform: translateX(2rem); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Mobile: o painel ocupa a tela toda e entra de baixo, como folha. */
+  .animate-panel-up {
+    animation: panelUp 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes panelUp {
+    from { opacity: 0; transform: translateY(1.5rem); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-overlay { animation: overlayIn 220ms ease-out; }
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
   .animate-slide-up {
     animation: slideUp 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }

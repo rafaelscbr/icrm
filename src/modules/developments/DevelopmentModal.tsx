@@ -4,7 +4,7 @@ import {
   Megaphone, CalendarClock, Info, Building2, Trash2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Modal } from '../../components/ui/Modal'
+import { SidePanel } from '../../components/ui/SidePanel'
 import { Button } from '../../components/ui/Button'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { QualificationScale } from './QualificationScale'
@@ -76,7 +76,7 @@ export function DevelopmentModal({
       : 'Não informada'
 
   return (
-    <Modal
+    <SidePanel
       isOpen={isOpen}
       onClose={onClose}
       title={d.name}
@@ -275,6 +275,6 @@ export function DevelopmentModal({
           </p>
         )}
       </div>
-    </Modal>
+    </SidePanel>
   )
 }

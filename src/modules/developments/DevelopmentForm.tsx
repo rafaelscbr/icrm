@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, Trash2, Info, CheckCircle2, Building2, Ruler, Wallet, CalendarClock, Link2 } from 'lucide-react'
-import { Modal } from '../../components/ui/Modal'
+import { SidePanel } from '../../components/ui/SidePanel'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
@@ -160,12 +160,12 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
   }
 
   return (
-    <Modal
+    <SidePanel
       isOpen={isOpen}
       onClose={onClose}
       title={editando ? `Editar ${development.name}` : 'Novo lançamento'}
       subtitle="A régua daqui é o que qualifica o lead depois"
-      size="xl"
+      size="lg"
       footer={
         <div className="flex items-center justify-between gap-3 w-full">
           <p className="text-xs text-t4 hidden sm:block">
@@ -483,6 +483,6 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
           </span>
         </label>
       </div>
-    </Modal>
+    </SidePanel>
   )
 }
