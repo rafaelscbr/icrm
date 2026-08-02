@@ -983,6 +983,42 @@ export const db = {
     delete:   (id: string)  => deleteOne('properties', id),
   },
 
+  developmentUnits: {
+    /** Tipologias de um lançamento, na ordem de exibição. */
+    byDevelopment: async (devId: string): Promise<import('../types').DevelopmentUnit[]> => {
+      const { data, error } = await supabase
+        .from('development_units')
+        .select('*')
+        .eq('development_id', devId)
+        .order('display_order')
+        .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
+      if (error) { toast.error(`Erro ao carregar tipologias: ${error.message}`); throw error }
+      return (data as Record<string, unknown>[]).map(r => ({
+        id: r.id as string,
+        developmentId: r.development_id as string,
+        name: r.name as string,
+        bedrooms: (r.bedrooms as number) ?? undefined,
+        suites: (r.suites as number) ?? undefined,
+        parking: (r.parking as number) ?? undefined,
+        areaSqm: (r.area_sqm as number) ?? undefined,
+        price: (r.price as number) ?? undefined,
+        priceMin: (r.price_min as number) ?? undefined,
+        priceMax: (r.price_max as number) ?? undefined,
+        incomeMin: (r.income_min as number) ?? undefined,
+        incomeIdeal: (r.income_ideal as number) ?? undefined,
+        downPaymentMin: (r.down_payment_min as number) ?? undefined,
+        downPaymentIdeal: (r.down_payment_ideal as number) ?? undefined,
+        paymentPlans: (r.payment_plans as import('../types').PaymentPlan[]) ?? [],
+        available: (r.available as boolean) ?? true,
+        unitsAvailable: (r.units_available as number) ?? undefined,
+        notes: (r.notes as string) ?? undefined,
+        displayOrder: (r.display_order as number) ?? 0,
+        createdAt: r.created_at as string,
+        updatedAt: r.updated_at as string,
+      }))
+    },
+  },
+
   developments: {
     fetchAll: () => fetchAll<DevelopmentRow, import('../types').Development>(
       'developments', toDevelopment

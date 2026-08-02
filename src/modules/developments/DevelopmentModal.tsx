@@ -9,11 +9,13 @@ import { Button } from '../../components/ui/Button'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { QualificationScale } from './QualificationScale'
 import { DevelopmentMatches } from './DevelopmentMatches'
+import { DevelopmentUnits } from './DevelopmentUnits'
 import { pendenciasDaRegua, fgtsIsCriterion } from './qualification'
 import {
   Development, DEVELOPMENT_STATUS_LABEL, DEVELOPMENT_REGIME_LABEL,
 } from '../../types'
 import { formatCurrencyRound, formatDate, formatMonthYear } from '../../lib/formatters'
+import { resolvePaymentPlan } from '../../types'
 
 interface DevelopmentModalProps {
   isOpen: boolean
@@ -212,13 +214,25 @@ export function DevelopmentModal({
                     do banco traz `months: null`, e um teste só por `undefined`
                     deixava passar um "+ nullx" na tela.
                   */}
-                  <p className="text-xs text-t3 mt-1 tabular-nums">
-                    {[
-                      p.downPayment != null ? `${formatCurrencyRound(p.downPayment)} de entrada` : null,
-                      p.installment != null ? `${formatCurrencyRound(p.installment)}/mês` : null,
-                      p.months != null ? `${p.months}x` : null,
-                    ].filter(Boolean).join(' + ') || 'Sem valores definidos'}
-                  </p>
+                  {/* Resolve o percentual sobre o menor valor do produto: o
+                      fluxo é guardado em % (vale para qualquer unidade) e aqui
+                      vira dinheiro, que é como se fala com o cliente. */}
+                  {(() => {
+                    const r = resolvePaymentPlan(p, d.valueMin)
+                    return (
+                      <p className="text-xs text-t3 mt-1 tabular-nums">
+                        {[
+                          r.downPayment != null ? `${formatCurrencyRound(r.downPayment)} de entrada` : null,
+                          r.installment != null && r.months != null
+                            ? `${r.months}× ${formatCurrencyRound(r.installment)}` : null,
+                          r.reinforcement != null
+                            ? `${r.reinforcements ?? 1}× ${formatCurrencyRound(r.reinforcement)}`
+                              + (r.reinforcementPeriod ? ` ${r.reinforcementPeriod}` : '') : null,
+                          r.financing != null ? `${formatCurrencyRound(r.financing)} financiado` : null,
+                        ].filter(Boolean).join(' + ') || 'Sem valores definidos'}
+                      </p>
+                    )
+                  })()}
                   {p.notes && <p className="text-xs text-t4 mt-1">{p.notes}</p>}
                 </div>
               ))}
@@ -254,6 +268,9 @@ export function DevelopmentModal({
             </div>
           )}
         </section>
+
+        {/* Tipologias com o fluxo em reais */}
+        <DevelopmentUnits development={d} />
 
         {/* Matching reverso — quem da base cabe aqui */}
         {d.confirmed && <DevelopmentMatches development={d} />}
