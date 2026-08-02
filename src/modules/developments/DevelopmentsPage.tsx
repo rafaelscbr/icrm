@@ -46,7 +46,8 @@ function DevelopmentCard({ development: d, onOpen, onEdit, canEdit }: {
         âmbar = ainda é palpite meu, verde = alguém conferiu.
       */}
       <div
-        className={`h-1 w-full flex-shrink-0 ${d.confirmed ? 'bg-success/70' : 'bg-warning/70'}`}
+        className="h-1 w-full flex-shrink-0"
+        style={{ background: d.confirmed ? 'var(--success)' : 'var(--warning)' }}
         aria-hidden
       />
 
@@ -116,9 +117,10 @@ function DevelopmentCard({ development: d, onOpen, onEdit, canEdit }: {
         ) : (
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-warning min-w-0">
             <AlertTriangle size={12} className="flex-shrink-0" />
-            <span className="truncate">
-              Falta {pendencias.slice(0, 2).join(', ')}
-              {pendencias.length > 2 && ` +${pendencias.length - 2}`}
+            <span className="truncate" title={`Falta: ${pendencias.join(', ')}`}>
+              {pendencias.length === 1
+                ? `Falta ${pendencias[0]}`
+                : `Faltam ${pendencias.length} itens`}
             </span>
           </span>
         )}

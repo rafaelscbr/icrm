@@ -12,6 +12,27 @@ export function formatCurrencyFull(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+/**
+ * Real sem centavos — "R$ 530.000" em vez de "R$ 530.000,00".
+ *
+ * Para valores de imóvel, régua de renda e entrada, os dois decimais são sempre
+ * ",00" e só roubam espaço: numa faixa ("R$ 517.000,00 a R$ 681.000,00") o
+ * texto estoura a linha e o número fica mais difícil de comparar.
+ */
+export function formatCurrencyRound(value: number): string {
+  return value.toLocaleString('pt-BR', {
+    style: 'currency', currency: 'BRL', maximumFractionDigits: 0,
+  })
+}
+
+/** 'YYYY-MM' → 'março de 2031'. Devolve a entrada crua se não casar. */
+export function formatMonthYear(value: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(value)
+  if (!m) return value
+  const data = new Date(Number(m[1]), Number(m[2]) - 1, 1)
+  return data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+}
+
 export function formatPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '')
   if (digits.length === 11) {

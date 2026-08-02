@@ -303,7 +303,16 @@ function toDevelopment(r: DevelopmentRow): import('../types').Development {
     acceptsResident: r.accepts_resident ?? true,
     acceptsInvestor: r.accepts_investor ?? true,
     unitTypes: r.unit_types ?? [],
-    paymentPlans: r.payment_plans ?? [],
+    // payment_plans é jsonb: os campos internos NÃO passam por coluna, então
+    // chegam como `null` cru. Normaliza aqui para o resto do app poder confiar
+    // no tipo (`number | undefined`) em vez de se defender em cada uso.
+    paymentPlans: (r.payment_plans ?? []).map(p => ({
+      name: p.name ?? '',
+      downPayment: p.downPayment ?? undefined,
+      installment: p.installment ?? undefined,
+      months:      p.months ?? undefined,
+      notes:       p.notes ?? undefined,
+    })),
     validFrom: r.valid_from, validUntil: r.valid_until ?? undefined,
     conditionHistory: r.condition_history ?? [],
     metaFormIds: r.meta_form_ids ?? [],

@@ -1,15 +1,18 @@
+import { useState } from 'react'
 import {
   Pencil, AlertTriangle, CheckCircle2, Wallet, Layers, MapPin,
-  Megaphone, CalendarClock, Info, Building2,
+  Megaphone, CalendarClock, Info, Building2, Trash2,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
+import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { QualificationScale } from './QualificationScale'
 import { pendenciasDaRegua, fgtsIsCriterion } from './qualification'
 import {
   Development, DEVELOPMENT_STATUS_LABEL, DEVELOPMENT_REGIME_LABEL,
 } from '../../types'
-import { formatCurrencyFull, formatDate } from '../../lib/formatters'
+import { formatCurrencyRound, formatDate, formatMonthYear } from '../../lib/formatters'
 
 interface DevelopmentModalProps {
   isOpen: boolean
@@ -32,8 +35,33 @@ function Fact({ label, value }: { label: string; value: string }) {
 export function DevelopmentModal({
   isOpen, onClose, development: d, onEdit, canEdit,
 }: DevelopmentModalProps) {
+  const { update } = useDevelopmentsStore()
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
+
   const pendencias = pendenciasDaRegua(d)
   const fgtsConta = fgtsIsCriterion(d)
+
+  /*
+   * Excluir aqui é ARQUIVAR (active = false), não apagar a linha.
+   *
+   * A régua de um lançamento é o que qualificou os leads que entraram por ele.
+   * Apagar de vez deixaria esses leads apontando para uma condição que não
+   * existe mais, e o histórico passaria a mentir. Arquivado, o produto some da
+   * operação e o passado continua explicável.
+   */
+  async function handleExcluir() {
+    setExcluindo(true)
+    try {
+      await update(d.id, { active: false })
+      toast.success(`${d.name} foi excluído`)
+      onClose()
+    } catch {
+      // O store já avisou e manteve a tela como estava.
+    } finally {
+      setExcluindo(false)
+    }
+  }
 
   const publico = [
     d.acceptsResident ? 'quem vai morar' : null,
@@ -41,10 +69,10 @@ export function DevelopmentModal({
   ].filter(Boolean).join(' e ')
 
   const faixaValor =
-    d.valueMin !== undefined && d.valueMax !== undefined
-      ? `${formatCurrencyFull(d.valueMin)} a ${formatCurrencyFull(d.valueMax)}`
-      : d.valueMin !== undefined ? `a partir de ${formatCurrencyFull(d.valueMin)}`
-      : d.valueMax !== undefined ? `até ${formatCurrencyFull(d.valueMax)}`
+    d.valueMin != null && d.valueMax != null
+      ? `${formatCurrencyRound(d.valueMin)} a ${formatCurrencyRound(d.valueMax)}`
+      : d.valueMin != null ? `a partir de ${formatCurrencyRound(d.valueMin)}`
+      : d.valueMax != null ? `até ${formatCurrencyRound(d.valueMax)}`
       : 'Não informada'
 
   return (
@@ -61,6 +89,17 @@ export function DevelopmentModal({
             {d.confirmed ? 'Régua confirmada' : 'Régua a confirmar'}
           </span>
           <div className="flex gap-2">
+            {canEdit && (
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmandoExclusao(true)}
+                aria-label={`Excluir ${d.name}`}
+                className="!text-t4 hover:!text-error hover:!bg-error-bg"
+              >
+                <Trash2 size={13} />
+                <span className="hidden sm:inline">Excluir</span>
+              </Button>
+            )}
             <Button variant="secondary" onClick={onClose}>Fechar</Button>
             {canEdit && (
               <Button onClick={onEdit}>
@@ -72,6 +111,35 @@ export function DevelopmentModal({
       }
     >
       <div className="flex flex-col gap-6">
+
+        {/* Confirmação de exclusão — inline, não abre modal em cima de modal */}
+        {confirmandoExclusao && (
+          <div className="flex flex-col gap-3 p-4 rounded-xl border border-error-line bg-error-bg">
+            <div className="flex items-start gap-3">
+              <Trash2 size={15} className="text-error flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-error">Excluir {d.name}?</p>
+                <p className="text-xs text-t2 mt-1 leading-relaxed">
+                  Sai da lista de lançamentos e deixa de qualificar lead.
+                  {d.metaFormIds.length > 0 && (
+                    <> Os {d.metaFormIds.length} formulário(s) do Meta ligados a ele continuam
+                    trazendo lead — só que sem produto associado.</>
+                  )}
+                  {' '}O histórico é preservado: leads que entraram por este produto continuam
+                  com a referência intacta.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" size="sm" onClick={() => setConfirmandoExclusao(false)} disabled={excluindo}>
+                Cancelar
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleExcluir} disabled={excluindo}>
+                {excluindo ? 'Excluindo…' : 'Excluir'}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Aviso de régua não confirmada — o mais importante da tela */}
         {!d.confirmed && (
@@ -92,7 +160,7 @@ export function DevelopmentModal({
         <section className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <Fact label="Fase" value={DEVELOPMENT_STATUS_LABEL[d.status]} />
           <Fact label="Regime" value={DEVELOPMENT_REGIME_LABEL[d.regime]} />
-          <Fact label="Entrega" value={d.deliveryEstimate ?? 'Não informada'} />
+          <Fact label="Entrega" value={d.deliveryEstimate ? formatMonthYear(d.deliveryEstimate) : 'Não informada'} />
           <Fact label="Valor das unidades" value={faixaValor} />
           <Fact label="Aceita" value={publico || 'Não definido'} />
           <Fact
@@ -138,11 +206,16 @@ export function DevelopmentModal({
               {d.paymentPlans.map((p, i) => (
                 <div key={i} className="p-3 rounded-xl border border-line bg-surface">
                   <p className="text-sm font-semibold text-t1">{p.name}</p>
+                  {/*
+                    `!= null` cobre null E undefined de propósito: o JSON vindo
+                    do banco traz `months: null`, e um teste só por `undefined`
+                    deixava passar um "+ nullx" na tela.
+                  */}
                   <p className="text-xs text-t3 mt-1 tabular-nums">
                     {[
-                      p.downPayment !== undefined ? `${formatCurrencyFull(p.downPayment)} de entrada` : null,
-                      p.installment !== undefined ? `${formatCurrencyFull(p.installment)}/mês` : null,
-                      p.months !== undefined ? `${p.months}x` : null,
+                      p.downPayment != null ? `${formatCurrencyRound(p.downPayment)} de entrada` : null,
+                      p.installment != null ? `${formatCurrencyRound(p.installment)}/mês` : null,
+                      p.months != null ? `${p.months}x` : null,
                     ].filter(Boolean).join(' + ') || 'Sem valores definidos'}
                   </p>
                   {p.notes && <p className="text-xs text-t4 mt-1">{p.notes}</p>}

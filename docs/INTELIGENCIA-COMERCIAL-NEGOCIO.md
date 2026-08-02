@@ -370,6 +370,61 @@ Quatro estados, por empreendimento (não do lead sozinho):
 
 ---
 
+## 12-B. Investidor: a renda significa outra coisa
+
+Você perguntou se, para investidor, renda maior ser sempre melhor impacta em algo.
+**Impacta, e é um furo no que eu tinha desenhado.** Eu tratei renda como uma coisa
+só, e ela é duas.
+
+### Para quem vai morar, a renda satura
+
+Renda ali é **capacidade de pagar a parcela do financiamento**. Tem um mínimo real
+(abaixo disso o banco não aprova) e tem um **teto de utilidade**: num produto de
+R$ 550 mil, quem ganha R$ 30 mil não é melhor comprador que quem ganha R$ 15 mil.
+Os dois financiam com folga. Passou do ideal, o número para de dizer algo.
+
+### Para investidor, a renda não satura
+
+Renda ali não paga moradia — é **capacidade de aportar e de carregar o fluxo até a
+entrega**. Quem ganha R$ 50 mil é genuinamente melhor prospect que quem ganha R$ 15
+mil: aguenta o fluxo sem apertar, compra mais de uma unidade e volta a comprar.
+
+### E tem uma segunda diferença, talvez maior que a primeira
+
+**Para investidor, a entrada pesa mais que a renda.** Investidor compra com capital
+disponível, não com salário. Alguém com renda de R$ 8 mil e R$ 200 mil em caixa é
+melhor investidor que alguém com renda de R$ 25 mil e R$ 20 mil em caixa.
+
+Para quem vai morar é o contrário: a renda é que sustenta trinta anos de parcela, e
+a entrada é só a porta de entrada.
+
+### Como resolver sem criar campo novo
+
+A saída elegante é que **a regra não vive no produto — vive na resposta do lead**.
+O formulário já pergunta "morar ou investir". Então:
+
+| O lead disse | Renda | Entrada |
+|---|---|---|
+| **Morar** | Critério principal · satura no ideal | Trava de entrada |
+| **Investir** | Reforço · nunca satura | Critério principal |
+
+Nenhum campo a mais na tela de Lançamentos. O mesmo produto, com a mesma régua,
+é lido de dois jeitos conforme quem está do outro lado.
+
+**O mínimo continua valendo para os dois** — investidor também financia, e o produto
+tem o piso que tem. O que muda é o teto e o peso.
+
+### O caso que isso já explicaria
+
+O **Anderson** declarou renda de R$ 2 a 5 mil e comprou um Porto Velas de R$ 680 mil.
+Se ele fosse investidor com capital, a régua de morador nunca ia enxergá-lo — e é
+exatamente esse tipo de lead que a regra acima recupera.
+
+**Fica para a fase 6**, quando a qualificação for ligada. Criar o campo agora seria
+um controle que não faz nada.
+
+---
+
 ## 13. Prioridade
 
 | | **Quente / Reaquecendo** | **Morno** | **Frio** |

@@ -2,7 +2,12 @@ import { useId } from 'react'
 
 interface MoneyInputProps {
   label?: string
-  value: number | undefined
+  /**
+   * Aceita `null` além de `undefined` de propósito: valores que vêm de colunas
+   * jsonb (fluxos de pagamento, por exemplo) chegam como `null` sem passar por
+   * mapper, e um `null.toLocaleString()` derrubaria o formulário inteiro.
+   */
+  value: number | null | undefined
   onChange: (value: number | undefined) => void
   placeholder?: string
   hint?: string
@@ -32,7 +37,7 @@ export function MoneyInput({
   const hintId = hint ? `${inputId}-hint` : undefined
   const errorId = error ? `${inputId}-error` : undefined
 
-  const texto = value === undefined || Number.isNaN(value)
+  const texto = value == null || Number.isNaN(value)
     ? ''
     : value.toLocaleString('pt-BR')
 
