@@ -112,6 +112,78 @@ export interface Task {
   updatedAt: string
 }
 
+// ─── Lançamentos ─────────────────────────────────────────────────────────────
+// Um lançamento não é uma unidade — é o empreendimento inteiro, com a régua
+// comercial que decide para quem ele serve. `Property` continua sendo a
+// unidade pronta; aqui mora a condição que qualifica lead.
+
+export type DevelopmentStatus = 'lancamento' | 'em_obra' | 'pronto'
+
+/**
+ * Regime da obra — o campo que liga ou desliga o FGTS na qualificação.
+ * Em associativo o saldo compõe e a pergunta importa; em pós-chaves o FGTS só
+ * aparece no financiamento lá na frente, e cobrar isso do lead é ruído.
+ */
+export type DevelopmentRegime = 'associativo' | 'pos_chaves'
+
+export interface PaymentPlan {
+  name: string
+  downPayment?: number   // entrada deste fluxo
+  installment?: number   // parcela mensal
+  months?: number        // quantidade de parcelas
+  notes?: string
+}
+
+export interface Development {
+  id: string
+  name: string
+  builder?: string          // construtora
+  region?: string           // bairro
+  city: string
+  status: DevelopmentStatus
+  regime: DevelopmentRegime
+  deliveryEstimate?: string // 'YYYY-MM'
+  // Faixa de valor das unidades
+  valueMin?: number
+  valueMax?: number
+  // Régua de qualificação — entre min e ideal fica a zona de "Possível"
+  incomeMin?: number
+  incomeIdeal?: number
+  downPaymentMin?: number
+  downPaymentIdeal?: number
+  fgtsComposes: boolean     // só significa algo quando regime === 'associativo'
+  acceptsResident: boolean
+  acceptsInvestor: boolean
+  unitTypes: string[]       // tipologias: '1' | '2' | '3' | '4' dormitórios
+  paymentPlans: PaymentPlan[]
+  // Vigência — a qualificação usa a condição da data de entrada do lead
+  validFrom: string
+  validUntil?: string
+  /** Snapshots da régua anterior a cada edição — auditoria da condição. */
+  conditionHistory?: unknown[]
+  /** Formulários do Meta que trazem lead para este produto. */
+  metaFormIds: string[]
+  /** Régua conferida por gente. Nada classifica lead enquanto for false. */
+  confirmed: boolean
+  active: boolean
+  notes?: string
+  thumbnail?: string
+  createdById?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export const DEVELOPMENT_STATUS_LABEL: Record<DevelopmentStatus, string> = {
+  lancamento: 'Lançamento',
+  em_obra:    'Em obra',
+  pronto:     'Pronto',
+}
+
+export const DEVELOPMENT_REGIME_LABEL: Record<DevelopmentRegime, string> = {
+  associativo: 'Associativo',
+  pos_chaves:  'Pós-chaves',
+}
+
 export type SaleType = 'off_plan' | 'ready'
 
 export interface Sale {

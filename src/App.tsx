@@ -28,6 +28,7 @@ import { syncPushSubscription } from './lib/push'
 const DashboardPage     = lazy(() => import('./modules/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const ContactsPage      = lazy(() => import('./modules/contacts/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const PropertiesPage    = lazy(() => import('./modules/properties/PropertiesPage').then(m => ({ default: m.PropertiesPage })))
+const DevelopmentsPage  = lazy(() => import('./modules/developments/DevelopmentsPage').then(m => ({ default: m.DevelopmentsPage })))
 const SalesPage         = lazy(() => import('./modules/sales/SalesPage').then(m => ({ default: m.SalesPage })))
 const PerformancePage   = lazy(() => import('./modules/performance/PerformancePage').then(m => ({ default: m.PerformancePage })))
 const TasksPage         = lazy(() => import('./modules/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
@@ -214,6 +215,7 @@ function AppRoutes() {
             <Route path="/" element={<PageWrapper><DashboardPage /></PageWrapper>} />
             <Route path="/contatos" element={<PageWrapper><ContactsPage /></PageWrapper>} />
             <Route path="/imoveis" element={<PageWrapper><PropertiesPage /></PageWrapper>} />
+            <Route path="/lancamentos" element={<PageWrapper><DevelopmentsPage /></PageWrapper>} />
             <Route path="/vendas" element={<PageWrapper><SalesPage /></PageWrapper>} />
             <Route path="/tarefas" element={<PageWrapper><TasksPage /></PageWrapper>} />
             <Route path="/campanhas" element={<PageWrapper><CampaignsPage /></PageWrapper>} />

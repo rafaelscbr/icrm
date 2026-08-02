@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
   ExternalLink, Tv2, Sun, Moon, UserPlus, Calculator,
-  Bell, ShieldCheck, LogOut, Target, Database,
+  Bell, ShieldCheck, LogOut, Target, Database, Package, Rocket,
   PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
@@ -14,7 +14,37 @@ import { useUnreadCount } from '../../store/useNotificationsStore'
 import { useSearchStore } from '../../store/useSearchStore'
 import { NotificationsPopover } from './NotificationsPopover'
 
-const navSections = [
+type NavIcon = React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>
+
+interface NavLeaf {
+  key: string
+  to: string
+  icon: NavIcon
+  label: string
+  end: boolean
+}
+
+interface NavGroupDef {
+  key: string
+  icon: NavIcon
+  label: string
+  children: NavLeaf[]
+}
+
+type NavEntry = NavLeaf | NavGroupDef
+
+function isGroup(e: NavEntry): e is NavGroupDef {
+  return 'children' in e
+}
+
+/*
+ * "Imóveis" virou "Produtos", com duas naturezas debaixo do mesmo guarda-chuva:
+ * o que está PRONTO (a unidade avulsa, `properties.kind = 'ready'`) e o
+ * LANÇAMENTO (o empreendimento na planta, com régua comercial). São coisas
+ * diferentes o suficiente para não caberem na mesma tela, e próximas o
+ * suficiente para não merecerem dois itens soltos no menu.
+ */
+const navSections: Array<{ label: string; items: NavEntry[] }> = [
   {
     label: 'Operação',
     items: [
@@ -30,7 +60,13 @@ const navSections = [
       { key: 'leads',       to: '/leads',        icon: UserPlus,       label: 'Leads',         end: false },
       { key: 'contatos',    to: '/contatos',     icon: Users,          label: 'Contatos',      end: false },
       { key: 'base-leads',  to: '/base-leads',   icon: Database,       label: 'Base de Leads', end: false },
-      { key: 'imoveis',     to: '/imoveis',      icon: Building2,      label: 'Imóveis',       end: false },
+      {
+        key: 'produtos', icon: Package, label: 'Produtos',
+        children: [
+          { key: 'imoveis',     to: '/imoveis',     icon: Building2, label: 'Prontos',     end: false },
+          { key: 'lancamentos', to: '/lancamentos', icon: Rocket,    label: 'Lançamentos', end: false },
+        ],
+      },
       { key: 'vendas',      to: '/vendas',       icon: TrendingUp,     label: 'Vendas',        end: false },
       { key: 'campanhas',   to: '/campanhas',    icon: Megaphone,      label: 'Disparo',       end: false },
       { key: 'simulador',   to: '/simulador',    icon: Calculator,     label: 'Simulador',     end: false },
@@ -95,6 +131,94 @@ function NavItem({ to, end, icon: Icon, label, collapsed }: {
   )
 }
 
+/**
+ * Grupo com filhos — "Produtos" hoje.
+ *
+ * Expandido: pai clicável que abre/fecha, filhos indentados com o filete de
+ * hierarquia. Abre sozinho quando a rota atual é de um filho, então quem está
+ * em Lançamentos nunca vê o próprio item escondido.
+ *
+ * Recolhido: os filhos aparecem como ícones soltos, sem o pai. Esconder rota
+ * primária atrás de "expandir a barra e depois clicar" custaria dois cliques
+ * para chegar onde antes bastava um.
+ */
+function NavGroup({ group, collapsed }: { group: NavGroupDef; collapsed: boolean }) {
+  const { pathname } = useLocation()
+  const algumFilhoAtivo = group.children.some(c => pathname.startsWith(c.to))
+  const [open, setOpen] = useState(algumFilhoAtivo)
+
+  if (collapsed) {
+    return (
+      <>
+        {group.children.map(c => (
+          <NavItem key={c.to} to={c.to} end={c.end} icon={c.icon} label={c.label} collapsed />
+        ))}
+      </>
+    )
+  }
+
+  const aberto = open || algumFilhoAtivo
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(v => !v)}
+        aria-expanded={aberto}
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                   transition-colors duration-150 cursor-pointer hover:bg-nav-hover"
+        style={{
+          color: algumFilhoAtivo ? 'var(--nav-active-text)' : 'var(--nav-text)',
+          borderLeft: '3px solid transparent',
+          paddingLeft: 'calc(0.75rem - 3px)',
+        }}
+      >
+        <group.icon
+          size={17}
+          style={{ color: algumFilhoAtivo ? 'var(--brand)' : 'var(--nav-muted)' }}
+          className="flex-shrink-0 transition-colors"
+        />
+        <span className="flex-1 text-left truncate">{group.label}</span>
+        <ChevronDown
+          size={12}
+          style={{ color: 'var(--nav-muted)' }}
+          className={`transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {aberto && (
+        <div className="mt-0.5 ml-5 flex flex-col gap-0.5 pl-2" style={{ borderLeft: '1px solid var(--nav-line)' }}>
+          {group.children.map(c => (
+            <NavLink
+              key={c.to}
+              to={c.to}
+              end={c.end}
+              className={({ isActive }) =>
+                `group flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] font-medium
+                 transition-colors duration-150 ${isActive ? 'sf-nav-active' : 'hover:bg-nav-hover'}`
+              }
+              style={({ isActive }) => ({
+                background: isActive ? 'var(--nav-active-bg)' : undefined,
+                color: isActive ? 'var(--nav-active-text)' : 'var(--nav-muted)',
+              })}
+            >
+              {({ isActive }) => (
+                <>
+                  <c.icon
+                    size={14}
+                    style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }}
+                    className="flex-shrink-0 transition-colors"
+                  />
+                  <span className="flex-1 truncate">{c.label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** Rótulo de grupo — vira um filete quando a barra está recolhida. */
 function SectionLabel({ children, collapsed }: { children: string; collapsed: boolean }) {
   if (collapsed) {
@@ -129,12 +253,19 @@ export function Sidebar() {
   const initial = (profile?.name ?? 'U').charAt(0).toUpperCase()
 
   const allowedMenus = profile?.allowedMenus ?? null
+  const podeVer = (key: string) =>
+    isAdmin || allowedMenus === null || allowedMenus.includes(key)
+
+  // Num grupo, a permissão é por filho: quem só tem 'imoveis' liberado vê
+  // Produtos com um item só, em vez de perder o menu inteiro.
   const visibleSections = navSections
     .map(section => ({
       ...section,
-      items: section.items.filter(item =>
-        isAdmin || allowedMenus === null || allowedMenus.includes(item.key)
-      ),
+      items: section.items.flatMap<NavEntry>(item => {
+        if (!isGroup(item)) return podeVer(item.key) ? [item] : []
+        const filhos = item.children.filter(c => podeVer(c.key))
+        return filhos.length > 0 ? [{ ...item, children: filhos }] : []
+      }),
     }))
     .filter(section => section.items.length > 0)
 
@@ -225,9 +356,11 @@ export function Sidebar() {
           <div key={section.label}>
             <SectionLabel collapsed={collapsed}>{section.label}</SectionLabel>
             <div className="flex flex-col gap-0.5">
-              {section.items.map(({ to, icon, label, end }) => (
-                <NavItem key={to} to={to} end={end} icon={icon} label={label} collapsed={collapsed} />
-              ))}
+              {section.items.map(item =>
+                isGroup(item)
+                  ? <NavGroup key={item.key} group={item} collapsed={collapsed} />
+                  : <NavItem key={item.to} to={item.to} end={item.end} icon={item.icon} label={item.label} collapsed={collapsed} />
+              )}
             </div>
           </div>
         ))}

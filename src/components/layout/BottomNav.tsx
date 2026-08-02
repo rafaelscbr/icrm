@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
   Building2, Megaphone, BarChart3, X, Bell,
   Search, Home, Tv2, ExternalLink, Plus, UserPlus,
-  LogOut, ShieldCheck, Target, Database,
+  LogOut, ShieldCheck, Target, Database, Rocket,
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -18,9 +18,12 @@ const mainNav = [
   { to: '/tarefas',  icon: CheckSquare,     label: 'Tarefas',  end: false },
 ]
 
-// Nomes idênticos aos da Sidebar — desktop e mobile nunca divergem
+// Nomes idênticos aos da Sidebar — desktop e mobile nunca divergem.
+// "Produtos" não vira submenu aqui: numa gaveta já rolável, dois itens rasos
+// custam menos toque que um acordeão.
 const moreNav = [
-  { to: '/imoveis',     icon: Building2,      label: 'Imóveis'       },
+  { to: '/imoveis',     icon: Building2,      label: 'Produtos · Prontos'     },
+  { to: '/lancamentos', icon: Rocket,         label: 'Produtos · Lançamentos' },
   { to: '/leads',       icon: UserPlus,       label: 'Leads'         },
   { to: '/base-leads',  icon: Database,       label: 'Base de Leads' },
   { to: '/metas',       icon: Target,         label: 'Metas'         },

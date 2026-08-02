@@ -114,6 +114,26 @@ interface PropertyRow {
   created_at: string; updated_at: string
 }
 
+interface DevelopmentRow {
+  id: string; name: string; builder: string | null; region: string | null
+  city: string; status: string; regime: string
+  delivery_estimate: string | null
+  value_min: number | null; value_max: number | null
+  income_min: number | null; income_ideal: number | null
+  down_payment_min: number | null; down_payment_ideal: number | null
+  fgts_composes: boolean
+  accepts_resident: boolean; accepts_investor: boolean
+  unit_types: string[]
+  payment_plans: import('../types').PaymentPlan[]
+  valid_from: string; valid_until: string | null
+  condition_history: unknown[]
+  meta_form_ids: string[]
+  confirmed: boolean; active: boolean
+  notes: string | null; thumbnail: string | null
+  created_by_id: string | null
+  created_at: string; updated_at: string
+}
+
 interface SaleRow {
   id: string; client_id: string; property_id: string | null
   property_name: string; date: string; value: number; type: string
@@ -264,6 +284,60 @@ function toProperty(r: PropertyRow): Property {
     permutaRegions: r.permuta_regions ?? [],
     createdById: r.created_by_id ?? undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
+  }
+}
+
+function toDevelopment(r: DevelopmentRow): import('../types').Development {
+  return {
+    id: r.id, name: r.name,
+    builder: r.builder ?? undefined, region: r.region ?? undefined,
+    city: r.city,
+    status: r.status as import('../types').DevelopmentStatus,
+    regime: r.regime as import('../types').DevelopmentRegime,
+    deliveryEstimate: r.delivery_estimate ?? undefined,
+    valueMin: r.value_min ?? undefined, valueMax: r.value_max ?? undefined,
+    incomeMin: r.income_min ?? undefined, incomeIdeal: r.income_ideal ?? undefined,
+    downPaymentMin: r.down_payment_min ?? undefined,
+    downPaymentIdeal: r.down_payment_ideal ?? undefined,
+    fgtsComposes: r.fgts_composes ?? false,
+    acceptsResident: r.accepts_resident ?? true,
+    acceptsInvestor: r.accepts_investor ?? true,
+    unitTypes: r.unit_types ?? [],
+    paymentPlans: r.payment_plans ?? [],
+    validFrom: r.valid_from, validUntil: r.valid_until ?? undefined,
+    conditionHistory: r.condition_history ?? [],
+    metaFormIds: r.meta_form_ids ?? [],
+    confirmed: r.confirmed ?? false, active: r.active ?? true,
+    notes: r.notes ?? undefined, thumbnail: r.thumbnail ?? undefined,
+    createdById: r.created_by_id ?? undefined,
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  }
+}
+
+function fromDevelopment(d: import('../types').Development): DevelopmentRow {
+  return {
+    id: d.id, name: d.name,
+    builder: d.builder ?? null, region: d.region ?? null,
+    city: d.city, status: d.status, regime: d.regime,
+    delivery_estimate: d.deliveryEstimate ?? null,
+    value_min: d.valueMin ?? null, value_max: d.valueMax ?? null,
+    income_min: d.incomeMin ?? null, income_ideal: d.incomeIdeal ?? null,
+    down_payment_min: d.downPaymentMin ?? null,
+    down_payment_ideal: d.downPaymentIdeal ?? null,
+    // FGTS só é critério em associativo. Gravar false em pós-chaves evita que
+    // uma troca de regime deixe um critério fantasma ligado.
+    fgts_composes: d.regime === 'associativo' ? (d.fgtsComposes ?? false) : false,
+    accepts_resident: d.acceptsResident ?? true,
+    accepts_investor: d.acceptsInvestor ?? true,
+    unit_types: d.unitTypes ?? [],
+    payment_plans: d.paymentPlans ?? [],
+    valid_from: d.validFrom, valid_until: d.validUntil ?? null,
+    condition_history: d.conditionHistory ?? [],
+    meta_form_ids: d.metaFormIds ?? [],
+    confirmed: d.confirmed ?? false, active: d.active ?? true,
+    notes: d.notes ?? null, thumbnail: d.thumbnail ?? null,
+    created_by_id: d.createdById ?? getCurrentUserId(),
+    created_at: d.createdAt, updated_at: d.updatedAt,
   }
 }
 
@@ -898,6 +972,15 @@ export const db = {
     },
     upsert:   (p: Property) => upsertOne('properties', fromProperty(p)),
     delete:   (id: string)  => deleteOne('properties', id),
+  },
+
+  developments: {
+    fetchAll: () => fetchAll<DevelopmentRow, import('../types').Development>(
+      'developments', toDevelopment
+    ),
+    upsert: (d: import('../types').Development) =>
+      upsertOne('developments', fromDevelopment(d)),
+    delete: (id: string) => deleteOne('developments', id),
   },
 
   sales: {
