@@ -222,7 +222,9 @@ export function DevelopmentModal({
                     return (
                       <p className="text-xs text-t3 mt-1 tabular-nums">
                         {[
-                          r.downPayment != null ? `${formatCurrencyRound(r.downPayment)} de entrada` : null,
+                          r.downPayment != null
+                            ? `${(r.downPayments ?? 1) > 1 ? `${r.downPayments}× ` : ''}${formatCurrencyRound(r.downPayment)} de entrada`
+                            : null,
                           r.installment != null && r.months != null
                             ? `${r.months}× ${formatCurrencyRound(r.installment)}` : null,
                           r.reinforcement != null

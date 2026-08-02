@@ -219,8 +219,16 @@ export type DevelopmentRegime = 'associativo' | 'pos_chaves'
  */
 export interface PaymentPlan {
   name: string
-  /** Entrada. `Pct` gera o valor; o valor pode ser editado por cima. */
+  /**
+   * Entrada. `Pct` é o TOTAL; `downPayments` é em quantas parcelas ela cai
+   * (1 = à vista) e `downPayment` é o valor de CADA uma.
+   *
+   * Não é detalhe: no Saint Malo a entrada de R$ 70.386 vem em 4× R$ 17.596.
+   * Quem tem R$ 20 mil no bolso consegue começar, embora o total esteja bem
+   * acima disso. Guardar só o total esconderia esse produto de quem cabe nele.
+   */
   downPaymentPct?: number
+  downPayments?: number
   downPayment?: number
   /** Parcelas até a entrega: o percentual é o TOTAL das `months` parcelas. */
   installmentsPct?: number
@@ -257,7 +265,10 @@ export function resolvePaymentPlan(plan: PaymentPlan, price?: number): PaymentPl
   const totalReforcos = pct(plan.reinforcementPct)
   return {
     ...plan,
-    downPayment: plan.downPayment ?? pct(plan.downPaymentPct),
+    downPayment: plan.downPayment ??
+      (pct(plan.downPaymentPct) != null
+        ? pct(plan.downPaymentPct)! / (plan.downPayments ?? 1)
+        : undefined),
     financing:   plan.financing   ?? pct(plan.financingPct),
     installment: plan.installment ??
       (totalParcelas != null && plan.months ? totalParcelas / plan.months : undefined),

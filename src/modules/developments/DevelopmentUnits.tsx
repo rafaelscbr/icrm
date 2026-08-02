@@ -79,7 +79,9 @@ function Tipologia({ u }: { u: DevelopmentUnit }) {
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[11px] tabular-nums">
             {r.downPayment != null && (
               <span className="text-t2">
-                <span className="text-t4">entrada</span> {formatCurrencyRound(r.downPayment)}
+                <span className="text-t4">entrada</span>{' '}
+                {(r.downPayments ?? 1) > 1 && `${r.downPayments}× `}
+                {formatCurrencyRound(r.downPayment)}
               </span>
             )}
             {r.installment != null && r.months != null && (
