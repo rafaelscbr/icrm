@@ -99,7 +99,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ user: null, profile: null, isAdmin: false, allProfiles: [], viewAsBrokerId: null })
 
     // 2. Remove canais realtime em background
-    try { supabase.getChannels().forEach(c => supabase.removeChannel(c)) } catch (_) {}
+    // canal já derrubado pelo servidor não impede o logout local
+    try { supabase.getChannels().forEach(c => supabase.removeChannel(c)) } catch { /* ignorado */ }
 
     // 3. Dispara signOut no servidor em background — não bloqueia a UI
     supabase.auth.signOut({ scope: 'local' }).catch(() => {})

@@ -399,7 +399,7 @@ test.describe('DIAGNÓSTICO — Segundo disparo trava para Dionata', () => {
 
     if (!dionataSession) throw new Error('dionataSession não disponível')
 
-    const tempLeadId = `diag-temp-lead-${Date.now()}`
+    const _tempLeadId = `diag-temp-lead-${Date.now()}`
     const ctx = await playwrightRequest.newContext({
       extraHTTPHeaders: {
         'apikey':        SUPABASE_ANON,
@@ -488,7 +488,7 @@ test.describe('DIAGNÓSTICO — Segundo disparo trava para Dionata', () => {
   // ══════════════════════════════════════════════════════════════════════════
   test('TESTE-5 · Pressão de polling: N load() simulados antes do 2º disparo', async ({ page }) => {
     const logs = collectDisparoLogs(page)
-    const networkLogs: string[] = []
+    const _networkLogs: string[] = []
     let requestCount = 0
 
     page.on('request', req => {

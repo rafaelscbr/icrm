@@ -125,7 +125,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
         </div>
 
         {/* ── Lista ─────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto max-h-[55vh]" role="list" aria-label="Notificações recentes">
+        <div className="flex-1 overflow-y-auto max-h-[55vh]">
           {/* "Tudo em dia" só pode ser dito quando a leitura completou. Se
               falhou, o silêncio da lista não é ausência de notificação. */}
           {erro ? (
@@ -156,10 +156,13 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
               </div>
             </div>
           ) : (
-            recent.map((n, i) => (
+            // `role="listitem"` no <button> substituía o papel de botão: o
+            // leitor anunciava "item de lista" e o botão sumia. Lista de
+            // verdade, com o botão dentro.
+            <ul aria-label="Notificações recentes" className="list-none m-0 p-0">
+            {recent.map((n, i) => (
+              <li key={n.id}>
               <button
-                key={n.id}
-                role="listitem"
                 onClick={() => handleClick(n)}
                 className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors duration-150 cursor-pointer hover:bg-s2
                   ${i < recent.length - 1 ? 'border-b border-line' : ''}
@@ -194,7 +197,9 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
                   </span>
                 </span>
               </button>
-            ))
+              </li>
+            ))}
+            </ul>
           )}
         </div>
 

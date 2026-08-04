@@ -289,6 +289,9 @@ function ResultRow({ indice, icon, title, subtitle, tag, active, onHover, onClic
       id={`busca-opcao-${indice}`}
       role="option"
       aria-selected={active}
+      // no padrão activedescendant o foco não vem para cá, mas a opção precisa
+      // ser focável para a árvore de acessibilidade tratá-la como tal
+      tabIndex={-1}
       onClick={onClick}
       onMouseEnter={onHover}
       className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer"

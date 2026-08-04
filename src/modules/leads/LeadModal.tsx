@@ -291,7 +291,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       toast.success(`Adicionado à lista "${list?.name ?? 'Lista'}"`)
       setShowAddToList(false)
       setSelectedListId('')
-    } catch (err) {
+    } catch {
       toast.error('Erro ao adicionar à lista')
     } finally {
       setAddingToList(false)

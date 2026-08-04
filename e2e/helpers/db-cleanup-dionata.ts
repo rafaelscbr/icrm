@@ -31,7 +31,7 @@ export async function cleanupDionataTestData(
     },
   })
 
-  const leadIdFilter = DIONATA_LEAD_IDS.map(id => `lead_id=eq.${id}`).join(',')
+  const _leadIdFilter = DIONATA_LEAD_IDS.map(id => `lead_id=eq.${id}`).join(',')
 
   try {
     // 1. Remove TODOS os disparo_logs do Dionata criados APÓS testStartTime

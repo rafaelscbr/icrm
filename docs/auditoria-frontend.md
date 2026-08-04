@@ -471,6 +471,50 @@ End vai a "Este mês" e Home volta a "Hoje".
 
 ---
 
+### P2-2 · O lint volta a rodar — corrigido em 04/08
+
+O projeto tinha `eslint`, `typescript-eslint` e os plugins no `package.json`,
+mas **nenhum arquivo de configuração no formato flat** desde a subida para o
+ESLint 9. `npm run lint` não checava nada. Toda a régua de acessibilidade
+dependia de alguém ler o código na mão — que é exatamente como os defeitos do
+P1-2 sobreviveram tanto tempo.
+
+`eslint.config.js` novo, com `jsx-a11y` em dois níveis:
+
+- **Erro** para o que já está limpo e não pode voltar: `role-supports-aria-props`,
+  `aria-props`, `aria-role`, `aria-unsupported-elements`, `no-redundant-roles`.
+  São a família de defeitos do P1-2.
+- **Aviso** para dívida conhecida (`click-events-have-key-events`,
+  `no-static-element-interactions`, `label-has-associated-control`): a correção
+  é composição de tela, não uma linha. Assim o lint entra em CI hoje sem virar
+  bloqueio, e sem esconder a dívida.
+
+`no-autofocus` ficou como **aviso**, não erro: as 18 ocorrências são o primeiro
+campo de um formulário dentro de `Modal`/`SidePanel` — que é o que o padrão de
+diálogo do WAI-ARIA manda fazer. A regra não distingue esse caso do autofocus em
+página inteira.
+
+Nove erros reais apareceram na primeira execução e foram corrigidos:
+
+- `NotificationsPopover` tinha `role="listitem"` num `<button>`. O papel
+  **substitui** o de botão: o leitor de tela anunciava "item de lista" e o botão
+  sumia. Virou `<ul>/<li>` de verdade, com o botão dentro.
+- `GlobalSearch`: `role="option"` sem `tabIndex`.
+- Dois ternários usados como comando (`next.has(id) ? … : …`), um `catch`
+  vazio, um `catch (err)` sem uso e três variáveis mortas em testes e2e.
+
+Sobra **0 erro e 174 avisos**, todos rastreados. O lint também varria
+`.claude/worktrees/` — cópias inteiras do repo deixadas por sessões anteriores,
+que sozinhas respondiam por 850 dos 877 problemas iniciais.
+
+**Evidência (04/08, navegador).** A lista de notificações precisava de dado para
+ser conferida, e a conta de teste não tinha nenhum. Inseri **uma** linha para
+`e2e_test_dispatch`, confirmei `ul[aria-label="Notificações recentes"]` com
+1 `<li>`, 1 `li > button` e zero `[role=listitem]` restante, e **apaguei a linha
+em seguida**.
+
+---
+
 ## PARTE 6 — Plano proposto
 
 Na ordem que você definiu, um bloco coerente por vez, cada um com verificação:
@@ -483,7 +527,7 @@ Na ordem que você definiu, um bloco coerente por vez, cada um com verificação
    três overlays. Headless: a aparência não muda.
 4. **P2-2 — `eslint.config.js`** ← próximo com `jsx-a11y`, para a régua parar de depender
    de inspeção manual.
-5. **P1-3 — `xlsx`** para import dinâmico.
+5. **P1-3 — `xlsx`** para import dinâmico. ← próximo
 6. **Admin e Notificações** — as duas telas fora do padrão.
 7. **Motion**, se aprovado, e só então o acabamento de movimento.
 
