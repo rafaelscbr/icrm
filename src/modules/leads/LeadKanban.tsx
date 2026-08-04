@@ -418,7 +418,10 @@ function KanbanColumn({
             <h3 className="font-label text-xs font-semibold uppercase tracking-[0.12em] text-t2">
               {conf.columnLabel}
             </h3>
-            <span className="ml-auto font-label text-xs font-bold text-t1 tabular-nums">
+            {/* A contagem herda a cor da etapa: é o número que se lê primeiro ao
+                varrer o funil, e em cinza ele some no meio do cabeçalho. */}
+            <span className={`ml-auto font-heading text-[17px] font-extrabold tabular-nums
+                              leading-none ${conf.color}`}>
               {leads.length}
             </span>
           </div>

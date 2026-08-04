@@ -3,7 +3,7 @@ import {
   Flame, DollarSign, TrendingDown, Activity,
   AlertTriangle, Clock, Crown, ChevronRight,
   MessageCircle, XCircle, Zap, Thermometer, BarChart2, Timer,
-  Sparkles, Smartphone, Globe, Handshake, Megaphone, CheckCircle2,
+  Sparkles, Smartphone, Globe, Handshake, Megaphone, CheckCircle2, Filter,
 } from 'lucide-react'
 import { SlaBadge, slaActive } from './SlaBadge'
 import { Lead, LeadFunnelStage } from '../../types'
@@ -278,11 +278,15 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       </div>
 
       {/* ── BLOCO 2 — Pipeline Estratégico ─────────────────────────────────── */}
-      <div className="bg-page border border-line rounded-xl p-5">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-t3 mb-0.5">Funil de Vendas</p>
-            <p className="text-base font-bold text-t1">Pipeline Estratégico</p>
+      <div className="rounded-[14px] border border-line surface-premium shadow-card p-5">
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-2.5">
+            <span className="w-1 h-8 rounded-full bg-info" aria-hidden />
+            <Filter size={16} strokeWidth={1.7} className="text-info shrink-0" aria-hidden />
+            <div>
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Funil de vendas</p>
+              <p className="font-heading text-[15px] font-extrabold text-t1 tracking-[-0.02em]">Pipeline Estratégico</p>
+            </div>
           </div>
           <span className="text-[11px] text-t4 bg-s2/50 border border-line px-2 py-1 rounded-lg inline-flex items-center gap-1"><TrendingDown size={11} /> perda · <AlertTriangle size={11} /> parado +7d</span>
         </div>
@@ -337,7 +341,12 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       <div className="bg-page border border-line rounded-xl p-5">
         <div className="flex items-center gap-2 mb-1">
           <Thermometer size={13} className="text-warning" />
-          <p className="text-sm font-semibold text-t1">Radar de Temperatura do Pipeline</p>
+          <span className="flex items-center gap-2.5">
+            <span className="w-1 h-4 rounded-full bg-warning" aria-hidden />
+            <p className="font-heading text-[15px] font-extrabold text-t1 tracking-[-0.02em]">
+              Radar de Temperatura do Pipeline
+            </p>
+          </span>
           {!allLoaded && <span className="ml-2 text-[11px] text-t4 animate-pulse">carregando interações…</span>}
           <span className="ml-auto text-xs text-t4">sem interação nos últimos 3 dias</span>
         </div>
