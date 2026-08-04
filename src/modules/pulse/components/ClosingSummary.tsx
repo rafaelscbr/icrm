@@ -1,4 +1,4 @@
-import { Trophy, Package, Clock3, MessageCircle, PhoneCall, TrendingUp } from 'lucide-react'
+import { Trophy, Package, Clock3, PhoneCall, TrendingUp } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { formatCurrency } from '../../../lib/formatters'
 import { STAGE_THEME } from '../../../lib/stageTheme'
@@ -186,28 +186,20 @@ export function ClosingSummary({ hoje, destaques, corretores, vgl }: {
             ))}
           </Bloco>
 
-          {/* A prospecção só aparece se houve — bloco de zeros é ruído */}
-          {lig && lig.total > 0 && (
-            <Bloco icon={PhoneCall} titulo="Prospecção ativa" className="shrink-0">
-              <Linha rotulo="Ligações feitas"   valor={String(lig.total)} />
-              <Linha rotulo="Falou com alguém"  valor={String(lig.falou)} />
-              <Linha rotulo="Interessados"      valor={String(lig.interessados)} />
-              <Linha rotulo="Retorno agendado"  valor={String(lig.retornos)} />
-            </Bloco>
-          )}
+          {/*
+            Prospecção aparece SEMPRE, inclusive zerada: num dia sem ligação o
+            zero é a informação — a base fria não foi tocada.
 
-          {(!lig || lig.total === 0) && (
-            <Bloco icon={MessageCircle} titulo="Faturamento do dia" className="shrink-0">
-              <Linha
-                rotulo="Valor vendido"
-                valor={hoje.vendasValor > 0 ? formatCurrency(hoje.vendasValor) : '—'}
-              />
-              <Linha
-                rotulo="Comissão gerada"
-                valor={hoje.vendasComissao > 0 ? formatCurrency(hoje.vendasComissao) : '—'}
-              />
-            </Bloco>
-          )}
+            Não existe bloco de "faturamento do dia": em imobiliária o
+            faturamento é mensal, e o VGL do mês já está no rodapé. Um valor
+            diário aqui sugeriria uma meta diária que não existe.
+          */}
+          <Bloco icon={PhoneCall} titulo="Prospecção ativa" className="shrink-0">
+            <Linha rotulo="Ligações feitas"   valor={String(lig?.total ?? 0)} />
+            <Linha rotulo="Falou com alguém"  valor={String(lig?.falou ?? 0)} />
+            <Linha rotulo="Interessados"      valor={String(lig?.interessados ?? 0)} />
+            <Linha rotulo="Retorno agendado"  valor={String(lig?.retornos ?? 0)} />
+          </Bloco>
         </div>
       </div>
 

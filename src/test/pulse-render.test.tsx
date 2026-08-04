@@ -219,10 +219,18 @@ describe('ClosingSummary — relatório do dia fechado', () => {
     expect(screen.getByText('22')).toBeInTheDocument()
   })
 
-  it('sem ligações troca o bloco por faturamento — zeros não são informação', () => {
+  it('mostra a prospecção mesmo zerada — o zero é a informação', () => {
     render_({ destaques: { ...DESTAQUES, ligacoesDesfecho: { total: 0, falou: 0, interessados: 0, retornos: 0, semResposta: 0 } } })
-    expect(screen.queryByText('Prospecção ativa')).not.toBeInTheDocument()
-    expect(screen.getByText('Faturamento do dia')).toBeInTheDocument()
+    expect(screen.getByText('Prospecção ativa')).toBeInTheDocument()
+    expect(screen.getByText('Ligações feitas')).toBeInTheDocument()
+  })
+
+  it('não exibe faturamento diário — em imobiliária o faturamento é do mês', () => {
+    render_()
+    expect(screen.queryByText(/Faturamento do dia/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Valor vendido/)).not.toBeInTheDocument()
+    // o número do mês continua, no rodapé
+    expect(screen.getByText(/VGL do mês/)).toBeInTheDocument()
   })
 
   it('lista só quem produziu no dia', () => {
