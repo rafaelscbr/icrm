@@ -16,7 +16,7 @@ import { ResponseTimePanel } from './components/ResponseTimePanel'
 import { VglPanel } from './components/VglPanel'
 import { SaleCelebration } from './components/SaleCelebration'
 import { ClosingSummary } from './components/ClosingSummary'
-import { useCarrossel } from './useCarrossel'
+import { useCarrossel, ROTACAO_MS } from './useCarrossel'
 import { PageBanner } from './components/PageBanner'
 
 /**
@@ -131,7 +131,7 @@ export function PulsePage() {
   // Três páginas, em ordem cronológica: [0] agora · [1] o dia · [2] ontem.
   // A página 0 é SEMPRE o ao vivo — nada a substitui por horário, para o
   // painel nunca ficar preso num resumo enquanto o dia ainda está acontecendo.
-  const { pagina, irPara, onTouchStart, onTouchEnd } = useCarrossel(3)
+  const { pagina, pausado, irPara, onTouchStart, onTouchEnd } = useCarrossel(3)
 
   // O resumo de ontem só é buscado quando alguém realmente desliza até lá.
   useEffect(() => {
@@ -232,10 +232,23 @@ export function PulsePage() {
                 aria-selected={pagina === i}
                 aria-label={['Ao vivo', 'Balanço do dia', 'Ontem'][i]}
                 onClick={() => irPara(i)}
-                className={`h-1.5 rounded-full transition-all duration-[280ms] ${
-                  pagina === i ? 'w-5 bg-brand' : 'w-1.5 bg-line-strong'
+                className={`relative h-1.5 rounded-full overflow-hidden transition-all duration-[280ms] ${
+                  pagina === i ? 'w-6 bg-brand/25' : 'w-1.5 bg-line-strong'
                 }`}
-              />
+              >
+                {pagina === i && (
+                  <span
+                    // A key remonta o elemento a cada troca, reiniciando a
+                    // animação da barra do zero.
+                    key={`${pagina}-${pausado}`}
+                    className={`absolute inset-0 rounded-full bg-brand ${
+                      pausado ? '' : 'pulse-dot-progresso'
+                    }`}
+                    style={{ '--pulse-rotacao': `${ROTACAO_MS}ms` } as React.CSSProperties}
+                    aria-hidden
+                  />
+                )}
+              </button>
             ))}
           </div>
           <StatusConexao

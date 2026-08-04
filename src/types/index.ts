@@ -500,7 +500,10 @@ export interface Goal {
 
 // ─── Leads ───────────────────────────────────────────────────────────────────
 
+// 'campanha' = Prospecção · Disparo. O slug ficou por causa do histórico: são
+// centenas de leads gravados com ele. Só o rótulo mudou.
 export type LeadOrigin       = 'felicita' | 'meta_ads' | 'portal' | 'offline' | 'campanha'
+                             | 'indicacao' | 'prospeccao_ligacao'
 export type LeadFunnelStage  = 'lead' | 'followup' | 'atendimento' | 'visita' | 'proposta' | 'venda'
 export type LeadDiscardReason = string
 export type LeadInteractionType  = 'ligacao' | 'whatsapp' | 'email' | 'visita' | 'reuniao' | 'nota' | 'stage_change' | 'discard' | 'tarefa'
@@ -655,6 +658,149 @@ export interface LeadCampaignDispatch {
   channel:      string
   notes?:       string
   warmupScore:  number
+}
+
+// ─── Prospecção Ativa · Ligação WhatsApp ──────────────────────────────────────
+//
+// Módulo irmão do Disparo, com tabelas próprias (call_*). A FILA é o estado
+// (call_queue) e o LOG é o histórico (call_logs) — um registro por clique em
+// "Ligar pelo WhatsApp".
+
+export type CallCampaignStatus = 'active' | 'paused' | 'finished'
+
+/** Estados da fila. 'transferido' e 'encerrado' saem da rotação. */
+export type CallQueueStatus =
+  | 'fila'              // nunca ligado
+  | 'tentativa'         // ligou e não falou — volta pela cadência
+  | 'retorno_agendado'  // pediu para ligar depois
+  | 'interessado'       // falou e quer saber mais → pronto para o funil
+  | 'transferido'       // virou lead no funil principal
+  | 'encerrado'         // sem interesse / não perturbe / inválido / não localizado
+
+/**
+ * Desfechos de uma ligação.
+ *
+ * 'discou' é o estado inicial: nasce no clique de "Ligar pelo WhatsApp" e
+ * significa "o corretor abriu a conversa". Não existe URL que inicie chamada de
+ * WhatsApp, então este é o único evento que o sistema observa sozinho — todos
+ * os outros desfechos são declarados por quem ligou.
+ */
+export type CallOutcome =
+  | 'discou'
+  | 'nao_atendeu'
+  | 'caixa_postal'
+  | 'numero_invalido'
+  | 'pediu_retorno'
+  | 'sem_interesse'
+  | 'nao_perturbe'
+  | 'interessado'
+
+export interface CallCampaign {
+  id:             string
+  name:           string
+  description?:   string
+  status:         CallCampaignStatus
+  ownerBrokerId?: string
+  averageTicket?: number
+  productName?:   string
+  /** horas de espera até a próxima tentativa, por número da tentativa */
+  retryHours:     number[]
+  maxAttempts:    number
+  /** minutos que o lead fica reservado para quem o puxou da fila */
+  claimMinutes:   number
+  createdAt:      string
+  updatedAt:      string
+}
+
+/** Uma ligação registrada — item do histórico do contato. */
+export interface CallLogEntry {
+  id:          string
+  calledAt:    string
+  outcome:     CallOutcome
+  attempt:     number
+  notes?:      string
+  brokerId?:   string
+  brokerName?: string
+}
+
+/** O lead que o discador entregou, já reservado para o corretor. */
+export interface CallQueueLead {
+  id:            string
+  campaignId:    string
+  contactId:     string
+  listId?:       string
+  name:          string
+  phone:         string
+  status:        CallQueueStatus
+  attemptCount:  number
+  nextAttemptAt?: string
+  lastCallAt?:   string
+  lastOutcome?:  CallOutcome
+  notes?:        string
+  claimedUntil?: string
+  lastTouchAt?:  string
+  perfil?:       BaseLeadProfile
+  historico:     CallLogEntry[]
+}
+
+/** Cartão do kanban — versão enxuta, sem histórico. */
+export interface CallBoardCard {
+  id:             string
+  contactId:      string
+  name:           string
+  phone:          string
+  status:         CallQueueStatus
+  attemptCount:   number
+  nextAttemptAt?: string
+  lastCallAt?:    string
+  lastOutcome?:   CallOutcome
+  closeReason?:   string
+  notes?:         string
+  claimedBy?:     string
+  claimedUntil?:  string
+  transferredToLeadId?: string
+}
+
+export interface CallBoard {
+  contagem: Partial<Record<CallQueueStatus, number>>
+  total:    number
+  cartoes:  CallBoardCard[]
+}
+
+/**
+ * Desempenho por corretor.
+ *
+ * `ligacoes` conta cliques em "Ligar pelo WhatsApp". `falou` conta os desfechos
+ * que só existem se houve conversa. `semDesfecho` expõe quem liga e não
+ * registra — sem esse número a taxa de atendimento mentiria.
+ */
+export interface CallBrokerPerformance {
+  brokerId:     string
+  nome?:        string
+  ligacoes:     number
+  contatos:     number
+  falou:        number
+  interessados: number
+  semDesfecho:  number
+  hoje:         number
+  transferidos: number
+  vendas:       number
+  vgl:          number
+}
+
+export interface CallPerformance {
+  desde:      string
+  corretores: CallBrokerPerformance[]
+  porHora:    Array<{ hora: number; ligacoes: number; produtivas: number }>
+  porDia:     Array<{ dia: string; ligacoes: number }>
+}
+
+export interface CallCampaignParticipant {
+  id:         string
+  campaignId: string
+  brokerId:   string
+  role:       'owner' | 'collaborator'
+  addedAt:    string
 }
 
 // ─── Eventos de Contato (histórico persistente) ───────────────────────────────

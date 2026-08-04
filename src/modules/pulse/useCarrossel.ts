@@ -1,43 +1,57 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
- * Navegação por deslize entre as páginas do Pulse.
+ * Carrossel das páginas do Pulse — rotação automática com respeito ao toque.
  *
- * O iPad é um quiosque: ninguém fica com a mão nele. Duas decisões vêm daí:
+ * O iPad é um quiosque: ninguém fica com a mão nele, então a tela precisa
+ * passear sozinha pelas páginas. Mas quando alguém DECIDE olhar uma página,
+ * trocar embaixo do nariz é pior do que não rodar.
  *
- *   • RETORNO AUTOMÁTICO — se alguém desliza para o resumo de ontem e se
- *     distrai, a tela ficaria parada no passado o dia inteiro, que é o oposto
- *     do que o painel serve. Depois de VOLTA_AUTOMATICA_MS sem toque ela
- *     retorna sozinha para o ao vivo.
+ * Daí as duas regras:
  *
- *   • O gesto só conta como horizontal quando o deslocamento em X domina o
- *     em Y. Sem isso, rolar o feed com o dedo mudaria de página sem querer.
+ *   • ROTAÇÃO — troca de página a cada ROTACAO_MS.
+ *   • PAUSA AO TOQUE — qualquer deslize ou clique congela o ciclo por
+ *     PAUSA_MS. Depois disso ele retoma de onde estiver, sem pular de volta
+ *     para o começo (voltar sozinho seria outro jeito de tirar a tela da mão
+ *     de quem está lendo).
+ *
+ * O gesto só conta como horizontal quando X domina Y — sem isso, rolar o feed
+ * com o dedo trocaria de página sem querer.
  */
 
 const DISTANCIA_MINIMA_PX = 60
 /** X precisa dominar Y nesta proporção para o gesto virar troca de página. */
 const DOMINANCIA_HORIZONTAL = 1.5
-const VOLTA_AUTOMATICA_MS = 45_000
+
+export const ROTACAO_MS = 30_000
+const PAUSA_MS = 60_000
 
 export function useCarrossel(totalPaginas: number) {
-  const [pagina, setPagina] = useState(0)
-  const inicio = useRef<{ x: number; y: number } | null>(null)
-  const timerVolta = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [pagina, setPagina]   = useState(0)
+  const [pausado, setPausado] = useState(false)
 
-  const agendarVolta = useCallback(() => {
-    if (timerVolta.current) clearTimeout(timerVolta.current)
-    timerVolta.current = setTimeout(() => setPagina(0), VOLTA_AUTOMATICA_MS)
+  const inicio      = useRef<{ x: number; y: number } | null>(null)
+  const timerPausa  = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /** Marca interação humana: congela o ciclo e agenda a retomada. */
+  const pausar = useCallback(() => {
+    setPausado(true)
+    if (timerPausa.current) clearTimeout(timerPausa.current)
+    timerPausa.current = setTimeout(() => setPausado(false), PAUSA_MS)
   }, [])
 
   const irPara = useCallback((n: number) => {
-    const alvo = Math.max(0, Math.min(totalPaginas - 1, n))
-    setPagina(alvo)
-    if (alvo === 0) {
-      if (timerVolta.current) clearTimeout(timerVolta.current)
-    } else {
-      agendarVolta()
-    }
-  }, [totalPaginas, agendarVolta])
+    setPagina(Math.max(0, Math.min(totalPaginas - 1, n)))
+    pausar()
+  }, [totalPaginas, pausar])
+
+  // Rotação automática. Não roda enquanto pausado, e o timer é recriado a cada
+  // troca de página — assim a página nova sempre ganha os 30s inteiros.
+  useEffect(() => {
+    if (pausado || totalPaginas < 2) return
+    const t = setTimeout(() => setPagina(p => (p + 1) % totalPaginas), ROTACAO_MS)
+    return () => clearTimeout(t)
+  }, [pagina, pausado, totalPaginas])
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     const t = e.touches[0]
@@ -54,13 +68,9 @@ export function useCarrossel(totalPaginas: number) {
     if (Math.abs(dx) < DISTANCIA_MINIMA_PX) return
     if (Math.abs(dx) < Math.abs(dy) * DOMINANCIA_HORIZONTAL) return   // era rolagem
 
-    setPagina(p => {
-      const alvo = Math.max(0, Math.min(totalPaginas - 1, dx < 0 ? p + 1 : p - 1))
-      if (alvo !== 0) agendarVolta()
-      else if (timerVolta.current) clearTimeout(timerVolta.current)
-      return alvo
-    })
-  }, [totalPaginas, agendarVolta])
+    setPagina(p => Math.max(0, Math.min(totalPaginas - 1, dx < 0 ? p + 1 : p - 1)))
+    pausar()
+  }, [totalPaginas, pausar])
 
   // Setas do teclado — acessibilidade e teste sem touch.
   useEffect(() => {
@@ -72,7 +82,7 @@ export function useCarrossel(totalPaginas: number) {
     return () => window.removeEventListener('keydown', onKey)
   }, [pagina, irPara])
 
-  useEffect(() => () => { if (timerVolta.current) clearTimeout(timerVolta.current) }, [])
+  useEffect(() => () => { if (timerPausa.current) clearTimeout(timerPausa.current) }, [])
 
-  return { pagina, irPara, onTouchStart, onTouchEnd }
+  return { pagina, pausado, irPara, onTouchStart, onTouchEnd }
 }

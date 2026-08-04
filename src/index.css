@@ -356,6 +356,23 @@ html.light {
    * mata o efeito elástico do iOS ao arrastar.
    */
   /*
+   * Indicador de página com contagem visual.
+   *
+   * A tela troca sozinha a cada 30s. Sem mostrar que a troca vem, o movimento
+   * pega o olho de surpresa e parece falha. A barra preenchendo o ponto ativo
+   * avisa — e some quando o ciclo está pausado por toque, o que também informa
+   * que a rotação foi interrompida.
+   */
+  @keyframes pulse-dot-progresso {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  .pulse-dot-progresso {
+    transform-origin: left;
+    animation: pulse-dot-progresso var(--pulse-rotacao, 30s) linear forwards;
+  }
+
+  /*
    * Faixas de identidade das páginas do Pulse.
    *
    * A diferença entre "estou vendo agora" e "estou vendo ontem" é cromática de
