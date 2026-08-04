@@ -41,11 +41,14 @@ function Numero({ valor, rotulo, destaque = false }: {
   )
 }
 
-export function ClosingSummary({ hoje, corretores, vgl, agora }: {
+export function ClosingSummary({ hoje, corretores, vgl, data, rotulo }: {
   hoje:       PulseHoje
   corretores: PulseBroker[]
   vgl:        PulseVgl | null
-  agora:      Date
+  /** dia a que o balanço se refere */
+  data:       Date
+  /** "Balanço de…" por padrão; a página de ontem usa "Ontem —" */
+  rotulo?:    string
 }) {
   // Só quem fez algo aparece no balanço — lista de zeros não é balanço.
   const ranking = [...corretores]
@@ -63,7 +66,8 @@ export function ClosingSummary({ hoje, corretores, vgl, agora }: {
       <div className="flex items-center gap-3">
         <MoonStar size={20} strokeWidth={1.6} className="text-t4" aria-hidden />
         <span className="font-label text-[12px] uppercase tracking-[0.3em] text-t3">
-          Balanço de {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+          {rotulo ?? 'Balanço de'}{' '}
+          {data.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
         </span>
       </div>
 

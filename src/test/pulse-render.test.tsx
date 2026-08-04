@@ -194,12 +194,25 @@ describe('ClosingSummary — balanço da noite', () => {
           { brokerId: 'b3', nome: 'Parado Silva', interacoesHoje: 0, leadsHoje: 0, visitasHoje: 0, vendasHoje: 0, ultimaAtividadeAt: null },
         ]}
         vgl={VGL}
-        agora={new Date('2026-08-03T20:30:00')}
+        data={new Date('2026-08-03T20:30:00')}
       />
     )
     expect(screen.getByText('Rafael')).toBeInTheDocument()
     expect(screen.getByText('Dionata')).toBeInTheDocument()
     expect(screen.queryByText('Parado')).not.toBeInTheDocument()
+  })
+
+  it('a página de ontem usa o próprio rótulo', () => {
+    render(
+      <ClosingSummary
+        hoje={HOJE}
+        corretores={CORRETORES}
+        vgl={VGL}
+        data={new Date('2026-08-02T12:00:00')}
+        rotulo="Ontem —"
+      />
+    )
+    expect(screen.getByText(/Ontem —\s+domingo, 02 de agosto/)).toBeInTheDocument()
   })
 })
 

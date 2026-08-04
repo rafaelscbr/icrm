@@ -16,6 +16,7 @@ import { ResponseTimePanel } from './components/ResponseTimePanel'
 import { VglPanel } from './components/VglPanel'
 import { SaleCelebration } from './components/SaleCelebration'
 import { ClosingSummary, estaEmFechamento } from './components/ClosingSummary'
+import { useCarrossel } from './useCarrossel'
 
 /**
  * iCRM Pulse — o coração da imobiliária em tempo real.
@@ -100,8 +101,9 @@ export function PulsePage() {
 
   const {
     connection, erro, desconectadoDesde,
-    hoje, funil, negociacaoValor, gargalos, tempos, vgl, celebracao, corretores, brokerNames, feed, porHora, recent,
-    bootstrap, subscribe, podar, comissaoPrevista, encerrarCelebracao,
+    hoje, funil, negociacaoValor, gargalos, tempos, vgl, celebracao, resumoOntem,
+    corretores, brokerNames, feed, porHora, recent,
+    bootstrap, subscribe, podar, comissaoPrevista, encerrarCelebracao, carregarResumoOntem,
   } = usePulseStore()
 
   const online = usePulsePresence()
@@ -125,8 +127,19 @@ export function PulsePage() {
   useKiosk({ onViradaDoDia })
   const desloc = useAntiBurnIn()
 
-  // Depois do expediente a tela vira o balanço do dia — ver ClosingSummary.
+  // Depois do expediente a página "hoje" vira o balanço do dia corrente.
   const emFechamento = estaEmFechamento(new Date(agora))
+
+  // Duas páginas: [0] hoje (ao vivo ou balanço) e [1] resumo de ontem.
+  const { pagina, irPara, onTouchStart, onTouchEnd } = useCarrossel(2)
+
+  // O resumo de ontem só é buscado quando alguém realmente desliza até lá.
+  useEffect(() => {
+    if (pagina === 1) carregarResumoOntem()
+  }, [pagina, carregarResumoOntem])
+
+  const ontem = new Date(agora)
+  ontem.setDate(ontem.getDate() - 1)
 
   // Trava a rolagem do documento enquanto o Pulse está montado. O container já
   // é `position: fixed`, mas sem isto o Safari ainda permite arrastar o body e
@@ -208,7 +221,23 @@ export function PulsePage() {
         <div className="w-px h-6 bg-line" aria-hidden />
         <Relogio />
 
-        <div className="ml-auto">
+        {/* Sem indicador ninguém descobre que existe uma 2ª página num
+            quiosque que ninguém toca. */}
+        <div className="ml-auto flex items-center gap-4">
+          <div className="flex items-center gap-1.5" role="tablist" aria-label="Páginas do painel">
+            {[0, 1].map(i => (
+              <button
+                key={i}
+                role="tab"
+                aria-selected={pagina === i}
+                aria-label={i === 0 ? 'Hoje' : 'Ontem'}
+                onClick={() => irPara(i)}
+                className={`h-1.5 rounded-full transition-all duration-[280ms] ${
+                  pagina === i ? 'w-5 bg-brand' : 'w-1.5 bg-line-strong'
+                }`}
+              />
+            ))}
+          </div>
           <StatusConexao
             connection={connection}
             desconectadoDesde={desconectadoDesde}
@@ -217,44 +246,84 @@ export function PulsePage() {
         </div>
       </header>
 
-      {emFechamento ? (
-        <ClosingSummary hoje={hoje} corretores={corretores} vgl={vgl} agora={new Date(agora)} />
-      ) : (
-        <>
-          <KpiRail
-            hoje={hoje}
-            corretoresOnline={online.length}
-            negociacaoValor={negociacaoValor}
-            comissaoPrevista={comissaoPrevista()}
-          />
-
-          <FunnelStrip funil={funil} />
-
-          {/* ── Corpo ─────────────────────────────────────────────────────── */}
-          <div className="flex-1 min-h-0 grid grid-cols-[1.35fr_1fr] gap-3">
-            <div className="flex flex-col gap-3 min-h-0">
-              <LiveFeed feed={feed} brokerNames={brokerNames} className="flex-1 min-h-0" />
-              {/* Gráfico e tempo de resposta dividem a faixa de baixo para o
-                  feed continuar sendo o maior elemento da tela. */}
-              <div className="shrink-0 grid grid-cols-2 gap-3 h-[clamp(130px,25%,175px)]">
-                <DayChart porHora={porHora} horaAtual={new Date(agora).getHours()} />
-                <ResponseTimePanel tempos={tempos} />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 min-h-0">
-              <ClimateGauge clima={clima} />
-              <VglPanel vgl={vgl} />
-              <BrokerRadar
+      {/* ── Carrossel: [0] hoje · [1] ontem ─────────────────────────────────
+          O deslize horizontal só conta quando X domina Y — ver useCarrossel —,
+          senão rolar o feed trocaria de página sem querer. */}
+      <div
+        className="flex-1 min-h-0 overflow-hidden"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        <div
+          className="flex h-full w-full transition-transform duration-[420ms] ease-out"
+          style={{ transform: `translateX(-${pagina * 100}%)` }}
+        >
+          {/* Página 0 — hoje */}
+          <div className="w-full shrink-0 h-full flex flex-col gap-3 min-h-0">
+            {emFechamento ? (
+              <ClosingSummary
+                hoje={hoje}
                 corretores={corretores}
-                online={online}
-                agora={agora}
-                className="flex-1 min-h-0"
+                vgl={vgl}
+                data={new Date(agora)}
               />
-            </div>
+            ) : (
+              <>
+                <KpiRail
+                  hoje={hoje}
+                  corretoresOnline={online.length}
+                  negociacaoValor={negociacaoValor}
+                  comissaoPrevista={comissaoPrevista()}
+                />
+
+                <FunnelStrip funil={funil} />
+
+                <div className="flex-1 min-h-0 grid grid-cols-[1.35fr_1fr] gap-3">
+                  <div className="flex flex-col gap-3 min-h-0">
+                    <LiveFeed feed={feed} brokerNames={brokerNames} className="flex-1 min-h-0" />
+                    {/* Gráfico e tempo de resposta dividem a faixa de baixo para o
+                        feed continuar sendo o maior elemento da tela. */}
+                    <div className="shrink-0 grid grid-cols-2 gap-3 h-[clamp(130px,25%,175px)]">
+                      <DayChart porHora={porHora} horaAtual={new Date(agora).getHours()} />
+                      <ResponseTimePanel tempos={tempos} />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 min-h-0">
+                    <ClimateGauge clima={clima} />
+                    <VglPanel vgl={vgl} />
+                    <BrokerRadar
+                      corretores={corretores}
+                      online={online}
+                      agora={agora}
+                      className="flex-1 min-h-0"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        </>
-      )}
+
+          {/* Página 1 — ontem */}
+          <div className="w-full shrink-0 h-full flex flex-col min-h-0">
+            {resumoOntem ? (
+              <ClosingSummary
+                hoje={resumoOntem.hoje}
+                corretores={resumoOntem.corretores}
+                vgl={vgl}
+                data={ontem}
+                rotulo="Ontem —"
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <span className="font-label text-[11px] uppercase tracking-[0.2em] text-t4">
+                  Carregando o resumo de ontem
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <SaleCelebration venda={celebracao} onFim={encerrarCelebracao} />
     </div>

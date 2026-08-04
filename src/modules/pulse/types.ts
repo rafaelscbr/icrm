@@ -98,6 +98,13 @@ export interface PulseVgl {
   faltaParaMeta:      number
 }
 
+/** Balanço de um dia fechado — RPC pulse_resumo_dia, carregada sob demanda. */
+export interface PulseResumoDia {
+  data:       string
+  hoje:       PulseHoje
+  corretores: PulseBroker[]
+}
+
 export interface PulseSnapshot {
   agora:      string
   hoje:       PulseHoje

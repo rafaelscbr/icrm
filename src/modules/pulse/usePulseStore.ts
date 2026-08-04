@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { localDateStr } from '../../lib/formatters'
 import type {
   PulseSnapshot, PulseEvent, PulseBroker, PulseHoje, PulseGargalos, PulseConnection, PulseTempos,
-  PulseVgl,
+  PulseVgl, PulseResumoDia,
 } from './types'
 import { isEventoRuido } from './pulseEvents'
 
@@ -67,6 +67,9 @@ interface PulseStore {
   /** venda recém-chegada que dispara a comemoração; limpa sozinha */
   celebracao:      PulseEvent | null
   encerrarCelebracao: () => void
+  /** balanço de ontem — 2ª página do carrossel, carregada no 1º deslize */
+  resumoOntem:     PulseResumoDia | null
+  carregarResumoOntem: () => Promise<void>
   corretores:      PulseBroker[]
   brokerNames:     Record<string, string>
   /** id -> {nome, produto} dos leads; alimentado pelo snapshot e por leads novos */
@@ -110,6 +113,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   tempos:          TEMPOS_ZERO,
   vgl:             null,
   celebracao:      null,
+  resumoOntem:     null,
   corretores:      [],
   brokerNames:     {},
   leadsInfo:       {},
@@ -120,6 +124,27 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   comissaoPrevista: () => get().negociacaoValor * TAXA_COMISSAO,
 
   encerrarCelebracao: () => set({ celebracao: null }),
+
+  // Sob demanda: quem nunca desliza para a 2ª página não paga a requisição.
+  // Fica em memória até a virada do dia, que zera junto com o resto.
+  carregarResumoOntem: async () => {
+    const { resumoOntem, dataReferencia } = get()
+    const ontem = new Date()
+    ontem.setDate(ontem.getDate() - 1)
+    const alvo = localDateStr(ontem)
+
+    // Já carregado e ainda é o mesmo "ontem" — não repete a chamada.
+    if (resumoOntem?.data === alvo) return
+    // Sem snapshot ainda: o dia de referência pode estar errado.
+    if (!dataReferencia) return
+
+    const { data, error } = await supabase.rpc('pulse_resumo_dia', { p_data: alvo })
+    if (error) {
+      console.error('[pulse] resumo de ontem:', error)
+      return
+    }
+    set({ resumoOntem: data as PulseResumoDia })
+  },
 
   // ── Bootstrap: a ÚNICA leitura que esta tela faz no banco ──────────────────
   // Uma chamada, agregação inteira no servidor, retorno de poucos KB. Acontece
@@ -178,6 +203,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         corretores:        snap.corretores ?? [],
         brokerNames,
         leadsInfo,
+        // O 'ontem' de ontem virou anteontem — recarrega no próximo deslize.
+        resumoOntem:       null,
         feed:              timeline.slice(0, FEED_MAX),
         porHora:           (snap.porHora ?? []).length === 24 ? snap.porHora : Array(24).fill(0),
         recent:            timeline
