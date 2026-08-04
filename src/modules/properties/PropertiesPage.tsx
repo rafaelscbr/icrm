@@ -215,6 +215,8 @@ export function PropertiesPage() {
 
   return (
     <PageLayout
+      icon={Building2}
+      iconTom="neutro"
       title="Imóveis"
       subtitle={`${properties.length} imóveis cadastrados`}
       ctaLabel="Novo Imóvel"

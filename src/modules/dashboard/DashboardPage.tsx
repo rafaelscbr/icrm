@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Users, TrendingUp, DollarSign, ArrowRight, Sparkles, CheckCircle2,
   AlertTriangle, CalendarCheck, Siren, RefreshCw,
-  ChevronDown, ChevronUp, FileText, Flame, Info, BarChart3, Wallet, ArrowDown,
-} from 'lucide-react'
+  ChevronDown, ChevronUp, FileText, Flame, Info, BarChart3, Wallet, ArrowDown, LayoutDashboard,} from 'lucide-react'
 import { Task, Lead, calcSaleCommissions } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { TaskForm } from '../tasks/TaskForm'
@@ -1217,6 +1216,8 @@ export function DashboardPage() {
 
   return (
     <PageLayout
+      icon={LayoutDashboard}
+      iconTom="marca"
       title={`${greeting()}, ${firstName}`}
       subtitle={todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1)}
       ctaLabel="Nova Tarefa"

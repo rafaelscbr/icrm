@@ -110,6 +110,8 @@ export function LeadListDetail({ list, onBack }: Props) {
 
   return (
     <PageLayout
+      icon={Database}
+      iconTom="info"
       title={currentList.name}
       subtitle={`${currentList.totalCount.toLocaleString()} leads · Base de Leads`}
     >

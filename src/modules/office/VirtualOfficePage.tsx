@@ -2,6 +2,7 @@
 // Pixel art top-down office — mostra onde cada corretor está em tempo real
 
 import { useEffect, useMemo } from 'react'
+import { Tv2 } from 'lucide-react'
 import { usePresenceStore } from '../../store/usePresenceStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { PageLayout } from '../../components/layout/PageLayout'
@@ -842,6 +843,8 @@ export function VirtualOfficePage() {
 
   return (
     <PageLayout
+      icon={Tv2}
+      iconTom="neutro"
       title="Escritório Virtual"
       subtitle="Souza Imobiliária — ao vivo"
     >

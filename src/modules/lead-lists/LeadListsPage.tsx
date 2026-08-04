@@ -117,6 +117,8 @@ export function LeadListsPage() {
 
   return (
     <PageLayout
+      icon={Database}
+      iconTom="info"
       title="Base de Leads"
       subtitle="Gerencie suas listas de leads frios e conecte-as a campanhas"
       ctaLabel="Nova Lista"

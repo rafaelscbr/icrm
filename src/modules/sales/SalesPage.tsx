@@ -110,6 +110,8 @@ export function SalesPage() {
 
   return (
     <PageLayout
+      icon={TrendingUp}
+      iconTom="sucesso"
       title="Vendas"
       subtitle={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} · ${periodLabel}`}
       ctaLabel="Nova Venda"

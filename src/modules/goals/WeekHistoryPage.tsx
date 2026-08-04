@@ -124,6 +124,8 @@ export function WeekHistoryPage() {
 
   return (
     <PageLayout
+      icon={History}
+      iconTom="info"
       title="Histórico Semanal"
       subtitle={`${snapshots.length} semana${snapshots.length !== 1 ? 's' : ''} registrada${snapshots.length !== 1 ? 's' : ''}`}
     >

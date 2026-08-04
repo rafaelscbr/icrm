@@ -6,8 +6,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
 }
 
+/*
+ * O primário usa o degradê da marca (.grad-brand), não uma cor chapada: o par
+ * fundo+texto viaja junto na classe e vale nos dois temas — no papel o ouro
+ * escurece e o texto fica branco. Ver --grad-brand no index.css.
+ */
 const variants = {
-  primary:   'bg-brand hover:bg-brand-dark text-[var(--brand-btn-text)] shadow-brand active:opacity-90 font-semibold',
+  primary:   'grad-brand hover:brightness-110 shadow-brand active:opacity-95 font-bold font-heading',
   secondary: 'bg-surface border border-line hover:bg-s2 text-t2 hover:text-t1 hover:border-line-strong',
   ghost:     'hover:bg-s2 text-t3 hover:text-t1',
   danger:    'bg-error-bg hover:bg-error/20 text-error border border-error-line hover:border-error/50',
@@ -38,6 +43,7 @@ export function Button({
       className={`
         inline-flex items-center justify-center font-semibold rounded-lg
         transition-all duration-150 active:scale-[0.98] cursor-pointer
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
         disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
         ${variants[variant]} ${sizes[size]} ${className}
       `}

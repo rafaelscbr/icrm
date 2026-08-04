@@ -89,6 +89,8 @@ export function ContactsPage() {
 
   return (
     <PageLayout
+      icon={Users}
+      iconTom="info"
       title="Contatos"
       subtitle={`${contacts.length} contatos cadastrados`}
       ctaLabel="Novo Contato"

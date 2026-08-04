@@ -537,6 +537,8 @@ export function GoalsPage() {
 
   return (
     <PageLayout
+      icon={Target}
+      iconTom="marca"
       title="Metas"
       subtitle={`${active.length} meta${active.length !== 1 ? 's' : ''} ativa${active.length !== 1 ? 's' : ''}`}
       ctaLabel="Nova Meta"

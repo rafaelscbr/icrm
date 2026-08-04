@@ -75,6 +75,8 @@ export function CampaignsPage() {
 
   return (
     <PageLayout
+      icon={Megaphone}
+      iconTom="marca"
       title="Campanhas"
       subtitle="Prospecção ativa — listas frias e funil de conversão"
       ctaLabel="Nova Campanha"

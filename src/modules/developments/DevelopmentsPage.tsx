@@ -174,6 +174,8 @@ export function DevelopmentsPage() {
 
   return (
     <PageLayout
+      icon={Rocket}
+      iconTom="marca"
       title="Lançamentos"
       subtitle="Empreendimentos na planta e a condição comercial que qualifica o lead"
       ctaLabel={isAdmin ? 'Novo lançamento' : undefined}

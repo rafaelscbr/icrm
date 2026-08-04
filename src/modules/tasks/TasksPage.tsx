@@ -4,8 +4,7 @@ import {
   CheckCircle2, Circle, Clock, Trash2, Pencil, User,
   Building2, AlertTriangle, CheckCheck, ListTodo, CalendarClock,
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
-  BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users,
-} from 'lucide-react'
+  BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users, CheckSquare,} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
@@ -577,6 +576,8 @@ export function TasksPage() {
 
   return (
     <PageLayout
+      icon={CheckSquare}
+      iconTom="info"
       title="Tarefas"
       subtitle={`${pendingCount} pendente${pendingCount !== 1 ? 's' : ''} · ${doneCount} concluída${doneCount !== 1 ? 's' : ''}`}
       ctaLabel="Nova Tarefa"
