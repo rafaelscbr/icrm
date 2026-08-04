@@ -356,6 +356,25 @@ html.light {
    * mata o efeito elástico do iOS ao arrastar.
    */
   /*
+   * "AO VIVO" pulsando em neon.
+   *
+   * A identidade Souza evita glow — aqui é exceção pedida: numa tela de parede
+   * que ninguém toca, o brilho pulsante é o que prova, de relance e de longe,
+   * que o painel está vivo e não é uma foto congelada. Fica restrito a este
+   * indicador. Respeita prefers-reduced-motion pela regra global do arquivo.
+   */
+  @keyframes pulse-live-glow {
+    0%, 100% { opacity: 1;   text-shadow: 0 0 6px var(--success), 0 0 16px rgba(74, 222, 128, 0.45); }
+    50%      { opacity: .78; text-shadow: 0 0 2px var(--success), 0 0 7px  rgba(74, 222, 128, 0.18); }
+  }
+  @keyframes pulse-live-dot {
+    0%, 100% { opacity: 1;   box-shadow: 0 0 7px var(--success), 0 0 16px rgba(74, 222, 128, 0.55); transform: scale(1); }
+    50%      { opacity: .65; box-shadow: 0 0 3px var(--success), 0 0 7px  rgba(74, 222, 128, 0.22); transform: scale(0.86); }
+  }
+  .pulse-live     { animation: pulse-live-glow 1.8s ease-in-out infinite; }
+  .pulse-live-dot { animation: pulse-live-dot  1.8s ease-in-out infinite; }
+
+  /*
    * Barra de rolagem discreta para os painéis do Pulse. O iPad rola por
    * toque, mas sem indicador visível ninguém descobre que dá para rolar.
    */

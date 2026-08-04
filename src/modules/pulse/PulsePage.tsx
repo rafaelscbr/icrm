@@ -12,7 +12,6 @@ import { LiveFeed } from './components/LiveFeed'
 import { BrokerRadar } from './components/BrokerRadar'
 import { DayChart } from './components/DayChart'
 import { ClimateGauge } from './components/ClimateGauge'
-import { ActionPanel } from './components/ActionPanel'
 import { ResponseTimePanel } from './components/ResponseTimePanel'
 
 /**
@@ -46,7 +45,7 @@ function Relogio() {
   return (
     <div className="flex items-baseline gap-3">
       <span className="font-heading font-extrabold text-[28px] leading-none text-t1 tabular-nums tracking-tight">
-        {agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        {agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </span>
       <span className="font-label text-[11px] uppercase tracking-[0.14em] text-t4">
         {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' })}
@@ -73,8 +72,8 @@ function StatusConexao({ connection, desconectadoDesde, agora }: {
   if (connection === 'live') {
     return (
       <div className="flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-success animate-pulse" aria-hidden />
-        <span className="font-label text-[11px] uppercase tracking-[0.16em] text-success">Ao vivo</span>
+        <span className="w-2 h-2 rounded-full bg-success pulse-live-dot" aria-hidden />
+        <span className="font-label text-[11px] uppercase tracking-[0.16em] text-success pulse-live">Ao vivo</span>
       </div>
     )
   }
@@ -238,11 +237,6 @@ export function PulsePage() {
             online={online}
             agora={agora}
             className="flex-1 min-h-0"
-          />
-          <ActionPanel
-            gargalos={gargalos}
-            funilTotal={Object.values(funil).reduce((a, b) => a + b, 0)}
-            hora={new Date(agora).getHours()}
           />
         </div>
       </div>

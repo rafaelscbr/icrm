@@ -6,10 +6,9 @@ import { LiveFeed } from '../modules/pulse/components/LiveFeed'
 import { BrokerRadar } from '../modules/pulse/components/BrokerRadar'
 import { DayChart } from '../modules/pulse/components/DayChart'
 import { ClimateGauge } from '../modules/pulse/components/ClimateGauge'
-import { ActionPanel } from '../modules/pulse/components/ActionPanel'
 import { ResponseTimePanel } from '../modules/pulse/components/ResponseTimePanel'
 import { calcClimate } from '../modules/pulse/climate'
-import type { PulseEvent, PulseHoje, PulseGargalos, PulseBroker } from '../modules/pulse/types'
+import type { PulseEvent, PulseHoje, PulseBroker } from '../modules/pulse/types'
 
 /**
  * Smoke test de renderização.
@@ -28,10 +27,6 @@ const HOJE: PulseHoje = {
 const HOJE_ZERO: PulseHoje = {
   leadsNovos: 0, interacoes: 0, visitasMarcadas: 0, mudancasEtapa: 0,
   vendasQtd: 0, vendasValor: 0, vendasComissao: 0,
-}
-
-const GARGALOS: PulseGargalos = {
-  semAtendimentoHoje: 92, aguardando48h: 57, slaEstourado: 2, tarefasAtrasadas: 1,
 }
 
 const CORRETORES: PulseBroker[] = [
@@ -145,15 +140,6 @@ describe('painéis do Pulse renderizam com dados', () => {
     expect(screen.queryByText(/dentro do SLA/)).not.toBeInTheDocument()
   })
 
-  it('ActionPanel só alarma o atraso do dia depois das 14h', () => {
-    const { unmount } = render(<ActionPanel gargalos={GARGALOS} funilTotal={95} hora={9} />)
-    // De manhã o número aparece, mas sem cor de alarme
-    expect(screen.getByText('92')).toBeInTheDocument()
-    unmount()
-
-    render(<ActionPanel gargalos={GARGALOS} funilTotal={95} hora={16} />)
-    expect(screen.getByText('92')).toBeInTheDocument()
-  })
 })
 
 describe('painéis do Pulse renderizam vazios — é assim que a tela abre às 8h', () => {
@@ -166,11 +152,6 @@ describe('painéis do Pulse renderizam vazios — é assim que a tela abre às 8
           <LiveFeed feed={[]} brokerNames={{}} />
           <BrokerRadar corretores={[]} online={[]} agora={Date.now()} />
           <DayChart porHora={Array(24).fill(0)} horaAtual={8} />
-          <ActionPanel
-            gargalos={{ semAtendimentoHoje: 0, aguardando48h: 0, slaEstourado: 0, tarefasAtrasadas: 0 }}
-            funilTotal={0}
-            hora={8}
-          />
         </>
       )
     }).not.toThrow()
