@@ -1,14 +1,34 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, Filter } from 'lucide-react'
+import {
+  Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushPermission } from '../lib/push'
 import { PageLayout } from '../components/layout/PageLayout'
-import { ListContainer } from '../components/ui/ListContainer'
+import { Abas } from '../components/shared/Abas'
+import { EstadoTela } from '../components/shared/EstadoTela'
+import { IconeTom, Rotulo, Chip } from '../components/shared/visual'
 import { Button } from '../components/ui/Button'
 import { useNotificationsStore } from '../store/useNotificationsStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { AppNotification } from '../types'
+
+/**
+ * Notificações.
+ *
+ * A tela estava fora da linguagem do sistema por um motivo concreto, não de
+ * gosto: usava `slate-*` cravado no lugar dos tokens de tema. Medido no
+ * navegador, **23 textos ficavam abaixo de 4,5:1 no tema escuro** — "3min
+ * atrás" e a data em 2,03:1, os separadores em 1,48:1. No claro, `text-brand`
+ * puro sobre branco dava 1,96:1 no "Abrir lead". Cor fixa não tem como servir
+ * aos dois temas; é o mesmo defeito de "claro não é escuro invertido".
+ *
+ * O outro problema era de leitura: lida e não lida tinham o mesmo peso. Todas
+ * as linhas vinham com fundo azulado, então nada saltava. Agora a não lida
+ * carrega superfície, filete e ouro; a lida recolhe para linha rasa. É o que a
+ * tela existe para responder — o que ainda me espera.
+ */
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -22,6 +42,13 @@ function timeAgo(iso: string): string {
   if (hours < 24) return `${hours}h atrás`
   if (days  <  7) return `${days}d atrás`
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: days > 365 ? 'numeric' : undefined })
+}
+
+/** data por extenso — vai no `title`, não ocupa espaço na linha */
+function dataCompleta(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
 }
 
 function dateLabel(iso: string): string {
@@ -51,77 +78,72 @@ function groupNotifications(notifications: AppNotification[]) {
   return GROUP_ORDER.filter(g => groups[g]).map(g => ({ label: g, items: groups[g] }))
 }
 
-// ─── NotificationItem ─────────────────────────────────────────────────────────
+/** o que a notificação é, em ícone e tom — cada tipo tem o seu lugar */
+function aparencia(n: AppNotification) {
+  if (n.type === 'lead_assigned')   return { icon: UserPlus,      tom: 'marca'   as const, acao: 'Abrir lead'   }
+  if (n.type === 'lead_recaptured') return { icon: RefreshCw,     tom: 'info'    as const, acao: 'Abrir lead'   }
+  return                                   { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
+}
+
+// ─── Linha ───────────────────────────────────────────────────────────────────
 
 function NotificationItem({
   n, onRead,
 }: { n: AppNotification; onRead: (id: string) => void }) {
   const navigate = useNavigate()
-
-  const isLeadType = n.type === 'lead_assigned' || n.type === 'lead_recaptured'
+  const { icon, tom, acao } = aparencia(n)
+  const naoLida = !n.read
+  const temDestino = n.resourceType === 'task' || n.resourceType === 'lead'
 
   function handleClick() {
-    if (!n.read) onRead(n.id)
+    if (naoLida) onRead(n.id)
     if (n.resourceType === 'task') navigate('/tarefas')
     if (n.resourceType === 'lead') navigate('/leads')
-  }
-
-  function NotifIcon() {
-    const cls = !n.read ? 'text-brand' : 'text-slate-500'
-    if (n.type === 'lead_assigned')   return <UserPlus  size={16} className={cls} />
-    if (n.type === 'lead_recaptured') return <RefreshCw size={16} className={cls} />
-    return <ClipboardList size={16} className={cls} />
   }
 
   return (
     <button
       onClick={handleClick}
-      className={`w-full text-left flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s2/50 cursor-pointer group
-        ${!n.read ? 'bg-indigo-500/4' : ''}`}
+      className={`group relative w-full text-left flex items-start gap-4 rounded-[14px] px-4 py-4 min-h-[44px]
+                  border transition-all cursor-pointer overflow-hidden
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+        ${naoLida
+          ? 'surface-premium border-line shadow-card hover:brightness-105'
+          : 'bg-transparent border-transparent hover:bg-s2/60'}`}
     >
-      {/* Ícone */}
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
-        ${!n.read ? 'bg-indigo-500/20' : 'bg-s3/50'}`}>
-        <NotifIcon />
-      </div>
+      {/* Filete: o sinal de "ainda te espera". Barato de ver de canto de olho. */}
+      {naoLida && <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full grad-brand" aria-hidden />}
 
-      {/* Conteúdo */}
+      <IconeTom icon={icon} tom={naoLida ? tom : 'neutro'} tamanho="md" />
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className={`text-sm font-medium ${!n.read ? 'text-slate-100' : 'text-slate-400'}`}>
+          <p className={`text-sm leading-snug ${naoLida ? 'font-bold text-t1' : 'font-medium text-t3'}`}>
             {n.title}
           </p>
-          {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />}
+          {naoLida && (
+            <span className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" aria-label="Não lida" />
+          )}
         </div>
+
         {n.body && (
-          <p className="text-xs text-slate-500 mt-0.5 truncate flex items-center gap-1">
-            {!isLeadType && <ClipboardList size={11} className="flex-shrink-0" />}
-            <span className="truncate">{n.body}</span>
+          <p className={`text-[13px] mt-0.5 truncate ${naoLida ? 'text-t2' : 'text-t4'}`}>
+            {n.body}
           </p>
         )}
-        <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-xs text-slate-600">{timeAgo(n.createdAt)}</span>
-          <span className="text-slate-700">·</span>
-          <span className="text-xs text-slate-600">
-            {new Date(n.createdAt).toLocaleDateString('pt-BR', {
-              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-            })}
+
+        <div className="flex items-center gap-2 mt-2">
+          {/* A data por extenso saiu da linha e foi para o `title`: aparecia
+              duas vezes (relativa e absoluta) e roubava a atenção do que
+              importa, que é o assunto. */}
+          <span className="font-label text-[11px] text-t4 tabular-nums" title={dataCompleta(n.createdAt)}>
+            {timeAgo(n.createdAt)}
           </span>
-          {n.resourceType === 'task' && (
-            <>
-              <span className="text-slate-700">·</span>
-              <span className="text-xs text-brand group-hover:text-brand-text transition-colors">
-                Abrir tarefa →
-              </span>
-            </>
-          )}
-          {n.resourceType === 'lead' && (
-            <>
-              <span className="text-slate-700">·</span>
-              <span className="text-xs text-brand group-hover:text-brand-text transition-colors">
-                Abrir lead →
-              </span>
-            </>
+          {temDestino && (
+            <span className={`flex items-center gap-1 font-label text-[11px] font-bold uppercase tracking-[0.08em]
+                              transition-colors ${naoLida ? 'text-brand-text' : 'text-t4'} group-hover:text-brand-text`}>
+              {acao} <ArrowRight size={11} strokeWidth={2} aria-hidden />
+            </span>
           )}
         </div>
       </div>
@@ -129,14 +151,14 @@ function NotificationItem({
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Página ──────────────────────────────────────────────────────────────────
 
-type Filter = 'all' | 'unread'
+type Filtro = 'all' | 'unread'
 
 export function NotificationsPage() {
-  const { user }                           = useAuthStore()
-  const { notifications, markRead, markAllRead } = useNotificationsStore()
-  const [filter, setFilter]                = useState<Filter>('all')
+  const { user } = useAuthStore()
+  const { notifications, loading, erro, load, markRead, markAllRead } = useNotificationsStore()
+  const [filtro, setFiltro] = useState<Filtro>('all')
   const [pushState, setPushState] = useState<NotificationPermission | 'unsupported'>(pushPermission())
   const [enabling,  setEnabling]  = useState(false)
 
@@ -152,11 +174,7 @@ export function NotificationsPage() {
   }
 
   const unreadCount = notifications.filter(n => !n.read).length
-
-  const filtered = filter === 'unread'
-    ? notifications.filter(n => !n.read)
-    : notifications
-
+  const filtered = filtro === 'unread' ? notifications.filter(n => !n.read) : notifications
   const groups = groupNotifications(filtered)
 
   function handleMarkAll() {
@@ -165,100 +183,102 @@ export function NotificationsPage() {
 
   return (
     <PageLayout
+      icon={Bell}
+      iconTom={unreadCount > 0 ? 'marca' : 'neutro'}
       title="Notificações"
-      subtitle={unreadCount > 0
-        ? `${unreadCount} não lida${unreadCount !== 1 ? 's' : ''}`
-        : 'Tudo em dia'
+      subtitle={erro
+        ? 'não foi possível ler as notificações'
+        : unreadCount > 0
+          ? `${unreadCount} esperando você`
+          : 'tudo lido'}
+      band={
+        <Abas
+          abas={[
+            { value: 'all'    as Filtro, label: 'Todas',     badge: erro ? undefined : notifications.length },
+            { value: 'unread' as Filtro, label: 'Não lidas', badge: erro ? undefined : unreadCount },
+          ]}
+          valor={filtro}
+          onChange={setFiltro}
+          rotulo="Filtro de notificações"
+          fim={
+            unreadCount > 0 ? (
+              <Button variant="secondary" onClick={handleMarkAll} className="gap-2 !text-xs">
+                <CheckCheck size={13} /> Marcar tudo como lido
+              </Button>
+            ) : undefined
+          }
+        />
       }
     >
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        {/* Filtros */}
-        <div className="flex gap-1 border border-line rounded-xl p-1 bg-s2/50">
-          {([
-            { key: 'all',    label: 'Todas' },
-            { key: 'unread', label: `Não lidas${unreadCount > 0 ? ` (${unreadCount})` : ''}` },
-          ] as const).map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer
-                ${filter === f.key
-                  ? 'bg-s3/70 text-slate-100'
-                  : 'text-slate-500 hover:text-slate-300'
-                }`}
-            >
-              <Filter size={10} />
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Ações */}
-        <div className="flex items-center gap-2">
-          {pushState === 'default' && (
-            <Button onClick={handleEnablePush} disabled={enabling} className="flex items-center gap-2 !text-xs">
-              <BellRing size={13} />
-              {enabling ? 'Ativando…' : 'Ativar notificações no dispositivo'}
+      {/* Estado do push no dispositivo — informação de configuração, não a
+          matéria da tela. Fica em faixa discreta: o ouro é para o que exige
+          ação, e ativar push não é o trabalho do dia. */}
+      <div className="mb-5">
+        {pushState === 'default' && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-line bg-s2/50 px-4 py-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <IconeTom icon={BellRing} tom="info" tamanho="sm" />
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-t2">Avisos neste dispositivo estão desligados</p>
+                <p className="text-xs text-t4">Sem isso, você só vê o que aconteceu ao abrir o sistema.</p>
+              </div>
+            </div>
+            <Button variant="secondary" onClick={handleEnablePush} disabled={enabling} className="gap-2 !text-xs">
+              <BellRing size={13} /> {enabling ? 'Ativando…' : 'Ativar'}
             </Button>
-          )}
-          {pushState === 'granted' && (
-            <span className="flex items-center gap-1.5 text-xs text-success px-3 py-1.5 rounded-xl bg-success-bg border border-success-line">
-              <BellRing size={12} /> Push ativo neste dispositivo
-            </span>
-          )}
-          {pushState === 'denied' && (
-            <span
-              className="flex items-center gap-1.5 text-xs text-warning px-3 py-1.5 rounded-xl bg-warning-bg border border-warning-line"
-              title="Permissão bloqueada — habilite as notificações nas configurações do site no navegador"
-            >
-              <BellRing size={12} /> Push bloqueado pelo navegador
-            </span>
-          )}
-          {unreadCount > 0 && (
-            <Button variant="secondary" onClick={handleMarkAll} className="flex items-center gap-2 !text-xs">
-              <CheckCheck size={13} /> Marcar tudo como lido
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
+        {pushState === 'granted' && (
+          <Chip icon={BellRing} tom="sucesso">Avisos ativos neste dispositivo</Chip>
+        )}
+        {pushState === 'denied' && (
+          <div className="flex items-center gap-3 rounded-[14px] border border-warning-line bg-warning-bg px-4 py-3">
+            <IconeTom icon={BellOff} tom="atencao" tamanho="sm" />
+            <div>
+              <p className="text-[13px] font-semibold text-warning">Avisos bloqueados pelo navegador</p>
+              <p className="text-xs text-t3">
+                O bloqueio é do navegador, não do sistema — libere nas configurações do site para voltar a receber.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Lista de grupos */}
-      {groups.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-s3/50 flex items-center justify-center">
-            <Bell size={28} className="text-slate-600" />
-          </div>
-          <div className="text-center">
-            <p className="text-base font-semibold text-slate-300">
-              {filter === 'unread' ? 'Nenhuma notificação não lida' : 'Nenhuma notificação ainda'}
-            </p>
-            <p className="text-sm text-slate-600 mt-1">
-              {filter === 'unread'
-                ? 'Você está em dia com tudo!'
-                : 'As notificações de tarefas delegadas aparecem aqui.'
-              }
-            </p>
-          </div>
+      <EstadoTela
+        carregando={loading && notifications.length === 0}
+        erro={erro}
+        vazio={groups.length === 0}
+        onTentarDeNovo={() => { if (user) void load(user.id) }}
+        icone={Bell}
+        titulo={filtro === 'unread' ? 'Nada esperando você' : 'Nenhuma notificação ainda'}
+        descricao={filtro === 'unread'
+          ? 'Tudo que chegou já foi lido.'
+          : 'Tarefas delegadas, leads atribuídos e reentradas no funil aparecem aqui.'}
+      >
+        <div className="flex flex-col gap-6">
+          {groups.map(group => {
+            const naoLidasNoGrupo = group.items.filter(n => !n.read).length
+            return (
+              <section key={group.label}>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <Rotulo>{group.label}</Rotulo>
+                  <span className="h-px flex-1 bg-line" aria-hidden />
+                  {naoLidasNoGrupo > 0 && (
+                    <span className="font-label text-[11px] font-bold text-brand-text tabular-nums">
+                      {naoLidasNoGrupo} não {naoLidasNoGrupo === 1 ? 'lida' : 'lidas'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {group.items.map(n => (
+                    <NotificationItem key={n.id} n={n} onRead={markRead} />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
         </div>
-      ) : (
-        <div className="flex flex-col gap-5">
-          {groups.map(group => (
-            <div key={group.label}>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
-                {group.label}
-              </p>
-              <ListContainer>
-                {group.items.map((n, i) => (
-                  <div key={n.id} className={i < group.items.length - 1 ? 'border-b border-line' : ''}>
-                    <NotificationItem n={n} onRead={markRead} />
-                  </div>
-                ))}
-              </ListContainer>
-            </div>
-          ))}
-        </div>
-      )}
+      </EstadoTela>
     </PageLayout>
   )
 }

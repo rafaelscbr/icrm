@@ -138,7 +138,14 @@ export function PeriodSelector({ className = '' }: PeriodSelectorProps) {
                   // O clique de ponteiro chega aqui, no rótulo. Seta do teclado
                   // dispara `change` e não `click`, então navegar não fecha —
                   // que é justamente o que queremos.
-                  onClick={() => confirmar(value)}
+                  //
+                  // A seleção é aplicada AQUI e não só no `change` do radio: o
+                  // navegador dispara `change` como ação padrão do clique, ou
+                  // seja, depois dos listeners. Como este handler fecha o
+                  // painel e o React 19 aplica eventos discretos de forma
+                  // síncrona, o input já estaria desmontado — o `change` cairia
+                  // num nó solto e o período nunca mudaria.
+                  onClick={() => { handlePreset(value); confirmar(value) }}
                 >
                   <input
                     type="radio"

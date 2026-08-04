@@ -95,10 +95,15 @@ export function FilterDropdown({
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
-      {/* O invólucro carrega a moldura para que o "x" seja irmão do gatilho, e
-          não um botão dentro de outro. */}
+      {/* O invólucro carrega só a moldura, para que o "x" seja irmão do gatilho
+          e não um botão dentro de outro.
+
+          A geometria (altura e recuos) fica no BOTÃO, não aqui. Quando ela
+          estava no invólucro, o botão encolhia para o tamanho do texto: a
+          pílula media 95×36 e a área clicável só 75×16 — 65% do controle era
+          zona morta, e clicar na borda não fazia nada. */}
       <div
-        className="inline-flex items-center gap-1.5 h-9 pl-2.5 pr-2 rounded-[12px] transition-all duration-150"
+        className="inline-flex items-center rounded-[12px] transition-all duration-150"
         style={{
           background: isActive ? 'var(--brand-tint)' : open ? 'var(--s2)' : 'var(--surface)',
           border: `1px solid ${isActive ? 'rgba(228,178,60,0.4)' : open ? 'var(--line-strong)' : 'var(--line-input)'}`,
@@ -108,8 +113,10 @@ export function FilterDropdown({
         <Popover.Trigger asChild>
           <button
             type="button"
-            className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer bg-transparent
-                       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded-md"
+            className={`flex items-center gap-1.5 h-11 sm:h-9 pl-2.5 text-xs font-semibold cursor-pointer
+                        bg-transparent rounded-[11px]
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+                        ${isActive ? 'pr-1' : 'pr-2.5'}`}
             style={{ color: 'inherit' }}
           >
             {Icon && <Icon size={13} strokeWidth={1.6} style={{ color: isActive ? 'var(--brand)' : 'var(--t3)' }} />}
@@ -131,7 +138,7 @@ export function FilterDropdown({
             type="button"
             aria-label={`Remover filtro ${label}`}
             onClick={() => onChange(null)}
-            className="ml-0.5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-brand/20
+            className="w-9 h-11 sm:h-9 flex items-center justify-center rounded-[11px] hover:bg-brand/20
                        transition-colors cursor-pointer bg-transparent border-0
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
           >
@@ -206,6 +213,19 @@ export function FilterDropdown({
   )
 }
 
+/**
+ * Por que a seleção é aplicada AQUI, no clique, e não só no `change` do radio.
+ *
+ * O navegador marca o radio e dispara `change` como *ação padrão* do clique —
+ * ou seja, depois que os listeners do clique já rodaram. Como este `onClick`
+ * fecha o popover, e o React 19 aplica atualizações de eventos discretos de
+ * forma síncrona, o input já foi desmontado quando a ação padrão chega: o
+ * `change` acontece num nó solto e o React nunca o enxerga.
+ *
+ * O sintoma era exatamente este: o painel fechava e o filtro não era aplicado.
+ * Chamar a seleção explicitamente antes de fechar resolve. Se o `change`
+ * também chegar (quando nada desmonta), ele repete o mesmo valor — inofensivo.
+ */
 function OptionRow({
   grupo, active, onSelect, onConfirm, label, count, icon: Icon, dot,
 }: {
@@ -229,7 +249,7 @@ function OptionRow({
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--s2)' }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
       // clique de ponteiro chega no rótulo; seta do teclado dispara só `change`
-      onClick={onConfirm}
+      onClick={() => { onSelect(); onConfirm() }}
     >
       <input
         type="radio"
