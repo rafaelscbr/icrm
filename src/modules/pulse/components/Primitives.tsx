@@ -13,7 +13,10 @@ import type { LucideIcon } from 'lucide-react'
 export function Painel({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <section
-      className={`rounded-[14px] border border-line bg-surface shadow-card overflow-hidden flex flex-col ${className}`}
+      // surface-premium = grão + gradiente diagonal, o mesmo tratamento dos
+      // cards do sistema. Fica na classe-base para não replicar gradiente
+      // painel a painel (ver o bloco SUPERFÍCIES no index.css).
+      className={`rounded-[14px] border border-line surface-premium shadow-card overflow-hidden flex flex-col ${className}`}
     >
       {children}
     </section>

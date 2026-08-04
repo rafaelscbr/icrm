@@ -356,6 +356,46 @@ html.light {
    * mata o efeito elástico do iOS ao arrastar.
    */
   /*
+   * Entrada de evento novo no feed.
+   *
+   * A animação roda na MONTAGEM do <li>. Como a key é o id do evento, o React
+   * só monta o que é novo — os itens já existentes não re-animam quando a
+   * lista re-renderiza. Slide curto + fade, sem bounce (identidade Souza).
+   */
+  @keyframes pulse-item-in {
+    from { opacity: 0; transform: translateY(-6px); background-color: var(--brand-tint); }
+    to   { opacity: 1; transform: translateY(0);    background-color: transparent; }
+  }
+  .pulse-item-in { animation: pulse-item-in 380ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+  /*
+   * Comemoração de venda — cobre a tela por alguns segundos.
+   * O verde vem por trás do conteúdo, sem lavar a leitura dos números.
+   */
+  @keyframes pulse-celebracao-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .pulse-celebracao {
+    animation: pulse-celebracao-in 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    background:
+      radial-gradient(60% 55% at 50% 45%, rgba(74, 222, 128, 0.20), transparent 70%),
+      linear-gradient(158deg, var(--surface-2) 0%, var(--page-bg) 62%);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  /*
+   * Proteção contra burn-in.
+   *
+   * A tela fica 12h/dia com cabeçalho e rótulos nos mesmos pixels. Em painel
+   * OLED (iPad Pro) isso marca de forma permanente em alguns meses. O deslize
+   * de 1–2px a cada 15 min é imperceptível para quem olha e suficiente para
+   * não fixar a imagem. A transição longa evita que o salto chame atenção.
+   */
+  .pulse-antiburn { transition: transform 2s linear; }
+
+  /*
    * "AO VIVO" pulsando em neon.
    *
    * A identidade Souza evita glow — aqui é exceção pedida: numa tela de parede

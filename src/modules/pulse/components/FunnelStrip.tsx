@@ -11,7 +11,7 @@ export function FunnelStrip({ funil }: { funil: Record<string, number> }) {
   const total = FUNNEL_STAGES.reduce((acc, s) => acc + (funil[s] ?? 0), 0)
 
   return (
-    <div className="shrink-0 rounded-[14px] border border-line bg-surface shadow-card px-4 py-2.5 flex items-center gap-3">
+    <div className="shrink-0 rounded-[14px] border border-line surface-premium shadow-card px-4 py-2.5 flex items-center gap-3">
       <span className="font-label text-[10px] uppercase tracking-[0.14em] text-t4 shrink-0">
         Funil ativo
       </span>

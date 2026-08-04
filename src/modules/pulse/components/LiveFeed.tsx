@@ -58,7 +58,7 @@ export function LiveFeed({ feed, brokerNames, className = '' }: Props) {
               return (
                 <li
                   key={ev.id}
-                  className="flex items-center gap-3 py-[7px] border-b border-line/60 last:border-0"
+                  className="flex items-center gap-3 py-[7px] px-1 -mx-1 rounded border-b border-line/60 last:border-0 pulse-item-in"
                 >
                   <span className="font-label text-[11px] tabular-nums text-t4 shrink-0 w-11">
                     {horaCurta(ev.at)}

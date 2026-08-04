@@ -86,6 +86,18 @@ export interface PulseTempos {
   }
 }
 
+/** Meta do mês e seca de vendas — RPC pulse_vgl, separada do snapshot. */
+export interface PulseVgl {
+  metaMes:            number
+  realizadoMes:       number
+  vendasMes:          number
+  ultimaVenda:        string | null
+  /** null quando nunca houve venda */
+  diasSemVenda:       number | null
+  diasUteisRestantes: number
+  faltaParaMeta:      number
+}
+
 export interface PulseSnapshot {
   agora:      string
   hoje:       PulseHoje

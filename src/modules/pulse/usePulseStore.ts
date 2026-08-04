@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { localDateStr } from '../../lib/formatters'
 import type {
   PulseSnapshot, PulseEvent, PulseBroker, PulseHoje, PulseGargalos, PulseConnection, PulseTempos,
+  PulseVgl,
 } from './types'
 import { isEventoRuido } from './pulseEvents'
 
@@ -61,6 +62,11 @@ interface PulseStore {
   gargalos:        PulseGargalos
   /** janela móvel de 30 dias — só muda a cada snapshot, não a cada evento */
   tempos:          PulseTempos
+  /** meta do mês e dias sem venda (RPC própria, ver migração 058) */
+  vgl:             PulseVgl | null
+  /** venda recém-chegada que dispara a comemoração; limpa sozinha */
+  celebracao:      PulseEvent | null
+  encerrarCelebracao: () => void
   corretores:      PulseBroker[]
   brokerNames:     Record<string, string>
   /** id -> {nome, produto} dos leads; alimentado pelo snapshot e por leads novos */
@@ -102,6 +108,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   negociacaoValor: 0,
   gargalos:        GARGALOS_ZERO,
   tempos:          TEMPOS_ZERO,
+  vgl:             null,
+  celebracao:      null,
   corretores:      [],
   brokerNames:     {},
   leadsInfo:       {},
@@ -110,6 +118,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   recent:          [],
 
   comissaoPrevista: () => get().negociacaoValor * TAXA_COMISSAO,
+
+  encerrarCelebracao: () => set({ celebracao: null }),
 
   // ── Bootstrap: a ÚNICA leitura que esta tela faz no banco ──────────────────
   // Uma chamada, agregação inteira no servidor, retorno de poucos KB. Acontece
@@ -124,7 +134,12 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     }
 
     try {
-      const { data, error } = await supabase.rpc('pulse_snapshot')
+      // As duas RPCs em paralelo — juntas somam ~32 kB, uma vez por sessão.
+      const [snapRes, vglRes] = await Promise.all([
+        supabase.rpc('pulse_snapshot'),
+        supabase.rpc('pulse_vgl'),
+      ])
+      const { data, error } = snapRes
       if (error) throw error
 
       const snap = data as PulseSnapshot
@@ -158,6 +173,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         negociacaoValor:   snap.negociacao?.valor ?? 0,
         gargalos:          snap.gargalos ?? GARGALOS_ZERO,
         tempos:            snap.tempos ?? TEMPOS_ZERO,
+        // Falha só do VGL não derruba o painel — o bloco some, o resto fica.
+        vgl:               vglRes.error ? get().vgl : (vglRes.data as PulseVgl),
         corretores:        snap.corretores ?? [],
         brokerNames,
         leadsInfo,
@@ -228,6 +245,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
 
         const hoje = { ...s.hoje }
         const funil = { ...s.funil }
+        // Venda é o único evento que interrompe a tela — ver SaleCelebration.
+        let celebrar: PulseEvent | null = null
 
         switch (ev.kind) {
           case 'lead_novo':
@@ -243,6 +262,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
             if (ev.toStage)   funil[ev.toStage]   = (funil[ev.toStage] ?? 0) + 1
             break
           case 'venda':
+            celebrar = ev
             hoje.vendasQtd     += 1
             hoje.vendasValor   += ev.valor ?? 0
             hoje.vendasComissao += (ev.valor ?? 0) * TAXA_COMISSAO
@@ -267,6 +287,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
           : s.corretores
 
         return {
+          celebracao: celebrar ?? s.celebracao,
           feed:    [ev, ...s.feed].slice(0, FEED_MAX),
           recent:  [Date.now(), ...s.recent].slice(0, RECENT_MAX),
           porHora, hoje, funil, corretores,

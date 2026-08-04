@@ -7,8 +7,16 @@ import { BrokerRadar } from '../modules/pulse/components/BrokerRadar'
 import { DayChart } from '../modules/pulse/components/DayChart'
 import { ClimateGauge } from '../modules/pulse/components/ClimateGauge'
 import { ResponseTimePanel } from '../modules/pulse/components/ResponseTimePanel'
+import { VglPanel } from '../modules/pulse/components/VglPanel'
+import { ClosingSummary, estaEmFechamento } from '../modules/pulse/components/ClosingSummary'
 import { calcClimate } from '../modules/pulse/climate'
-import type { PulseEvent, PulseHoje, PulseBroker } from '../modules/pulse/types'
+import type { PulseEvent, PulseHoje, PulseBroker, PulseVgl } from '../modules/pulse/types'
+
+const VGL: PulseVgl = {
+  metaMes: 1_000_000, realizadoMes: 250_000, vendasMes: 1,
+  ultimaVenda: '2026-07-13', diasSemVenda: 21,
+  diasUteisRestantes: 25, faltaParaMeta: 750_000,
+}
 
 /**
  * Smoke test de renderização.
@@ -140,6 +148,59 @@ describe('painéis do Pulse renderizam com dados', () => {
     expect(screen.queryByText(/dentro do SLA/)).not.toBeInTheDocument()
   })
 
+})
+
+describe('VglPanel — meta do mês e seca de vendas', () => {
+  it('mostra realizado, ritmo necessário e dias sem venda', () => {
+    render(<VglPanel vgl={VGL} />)
+    expect(screen.getByText('R$ 250k')).toBeInTheDocument()
+    expect(screen.getByText('25% da meta')).toBeInTheDocument()
+    // faltam 750k em 25 dias úteis = 30k/dia
+    expect(screen.getByText(/faltam R\$ 750k · R\$ 30k por dia útil/)).toBeInTheDocument()
+    expect(screen.getByText('21')).toBeInTheDocument()
+    expect(screen.getByText(/dias.*sem venda/s)).toBeInTheDocument()
+  })
+
+  it('sem nenhuma venda registrada não inventa contador', () => {
+    render(<VglPanel vgl={{ ...VGL, ultimaVenda: null, diasSemVenda: null }} />)
+    expect(screen.getByText('nenhuma venda registrada')).toBeInTheDocument()
+  })
+
+  it('meta batida não pede ritmo diário', () => {
+    render(<VglPanel vgl={{ ...VGL, realizadoMes: 1_200_000, faltaParaMeta: 0 }} />)
+    expect(screen.getByText('100% da meta')).toBeInTheDocument()
+    expect(screen.queryByText(/por dia útil/)).not.toBeInTheDocument()
+  })
+
+  it('não renderiza sem dados', () => {
+    const { container } = render(<VglPanel vgl={null} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+})
+
+describe('ClosingSummary — balanço da noite', () => {
+  it('entra a partir das 20h', () => {
+    expect(estaEmFechamento(new Date('2026-08-03T19:30:00'))).toBe(false)
+    expect(estaEmFechamento(new Date('2026-08-03T20:00:00'))).toBe(true)
+    expect(estaEmFechamento(new Date('2026-08-03T23:59:00'))).toBe(true)
+  })
+
+  it('lista só quem produziu no dia', () => {
+    render(
+      <ClosingSummary
+        hoje={HOJE}
+        corretores={[
+          ...CORRETORES,
+          { brokerId: 'b3', nome: 'Parado Silva', interacoesHoje: 0, leadsHoje: 0, visitasHoje: 0, vendasHoje: 0, ultimaAtividadeAt: null },
+        ]}
+        vgl={VGL}
+        agora={new Date('2026-08-03T20:30:00')}
+      />
+    )
+    expect(screen.getByText('Rafael')).toBeInTheDocument()
+    expect(screen.getByText('Dionata')).toBeInTheDocument()
+    expect(screen.queryByText('Parado')).not.toBeInTheDocument()
+  })
 })
 
 describe('painéis do Pulse renderizam vazios — é assim que a tela abre às 8h', () => {

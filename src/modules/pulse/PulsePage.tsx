@@ -4,7 +4,7 @@ import { Activity, WifiOff, AlertTriangle } from 'lucide-react'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePulseStore } from './usePulseStore'
 import { usePulsePresence } from './usePulsePresence'
-import { useKiosk, useRelogio, useTickLento } from './useKiosk'
+import { useKiosk, useRelogio, useTickLento, useAntiBurnIn } from './useKiosk'
 import { calcClimate } from './climate'
 import { KpiRail } from './components/KpiRail'
 import { FunnelStrip } from './components/FunnelStrip'
@@ -13,6 +13,9 @@ import { BrokerRadar } from './components/BrokerRadar'
 import { DayChart } from './components/DayChart'
 import { ClimateGauge } from './components/ClimateGauge'
 import { ResponseTimePanel } from './components/ResponseTimePanel'
+import { VglPanel } from './components/VglPanel'
+import { SaleCelebration } from './components/SaleCelebration'
+import { ClosingSummary, estaEmFechamento } from './components/ClosingSummary'
 
 /**
  * iCRM Pulse — o coração da imobiliária em tempo real.
@@ -97,8 +100,8 @@ export function PulsePage() {
 
   const {
     connection, erro, desconectadoDesde,
-    hoje, funil, negociacaoValor, gargalos, tempos, corretores, brokerNames, feed, porHora, recent,
-    bootstrap, subscribe, podar, comissaoPrevista,
+    hoje, funil, negociacaoValor, gargalos, tempos, vgl, celebracao, corretores, brokerNames, feed, porHora, recent,
+    bootstrap, subscribe, podar, comissaoPrevista, encerrarCelebracao,
   } = usePulseStore()
 
   const online = usePulsePresence()
@@ -120,6 +123,10 @@ export function PulsePage() {
   }, [bootstrap])
 
   useKiosk({ onViradaDoDia })
+  const desloc = useAntiBurnIn()
+
+  // Depois do expediente a tela vira o balanço do dia — ver ClosingSummary.
+  const emFechamento = estaEmFechamento(new Date(agora))
 
   // Trava a rolagem do documento enquanto o Pulse está montado. O container já
   // é `position: fixed`, mas sem isto o Safari ainda permite arrastar o body e
@@ -183,8 +190,11 @@ export function PulsePage() {
 
   return (
     <div
-      className="pulse-viewport flex flex-col gap-3 select-none"
-      style={{ background: 'var(--page-bg)' }}
+      className="pulse-viewport pulse-antiburn flex flex-col gap-3 select-none"
+      style={{
+        background: 'var(--page-bg)',
+        transform: `translate(${desloc.x}px, ${desloc.y}px)`,
+      }}
     >
       {/* ── Cabeçalho ───────────────────────────────────────────────────────── */}
       <header className="shrink-0 flex items-center gap-4 px-2">
@@ -207,39 +217,46 @@ export function PulsePage() {
         </div>
       </header>
 
-      <KpiRail
-        hoje={hoje}
-        corretoresOnline={online.length}
-        negociacaoValor={negociacaoValor}
-        comissaoPrevista={comissaoPrevista()}
-      />
-
-      <FunnelStrip funil={funil} />
-
-      {/* ── Corpo ───────────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 grid grid-cols-[1.35fr_1fr] gap-3">
-        <div className="flex flex-col gap-3 min-h-0">
-          <LiveFeed feed={feed} brokerNames={brokerNames} className="flex-1 min-h-0" />
-          {/* Altura proporcional: num iPad mais baixo (barra do Safari + tab bar)
-              o gráfico encolhe em vez de espremer o feed, que é o que importa. */}
-          <DayChart
-            porHora={porHora}
-            horaAtual={new Date(agora).getHours()}
-            className="shrink-0 h-[clamp(120px,29%,180px)]"
+      {emFechamento ? (
+        <ClosingSummary hoje={hoje} corretores={corretores} vgl={vgl} agora={new Date(agora)} />
+      ) : (
+        <>
+          <KpiRail
+            hoje={hoje}
+            corretoresOnline={online.length}
+            negociacaoValor={negociacaoValor}
+            comissaoPrevista={comissaoPrevista()}
           />
-        </div>
 
-        <div className="flex flex-col gap-3 min-h-0">
-          <ClimateGauge clima={clima} />
-          <ResponseTimePanel tempos={tempos} />
-          <BrokerRadar
-            corretores={corretores}
-            online={online}
-            agora={agora}
-            className="flex-1 min-h-0"
-          />
-        </div>
-      </div>
+          <FunnelStrip funil={funil} />
+
+          {/* ── Corpo ─────────────────────────────────────────────────────── */}
+          <div className="flex-1 min-h-0 grid grid-cols-[1.35fr_1fr] gap-3">
+            <div className="flex flex-col gap-3 min-h-0">
+              <LiveFeed feed={feed} brokerNames={brokerNames} className="flex-1 min-h-0" />
+              {/* Gráfico e tempo de resposta dividem a faixa de baixo para o
+                  feed continuar sendo o maior elemento da tela. */}
+              <div className="shrink-0 grid grid-cols-2 gap-3 h-[clamp(130px,25%,175px)]">
+                <DayChart porHora={porHora} horaAtual={new Date(agora).getHours()} />
+                <ResponseTimePanel tempos={tempos} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 min-h-0">
+              <ClimateGauge clima={clima} />
+              <VglPanel vgl={vgl} />
+              <BrokerRadar
+                corretores={corretores}
+                online={online}
+                agora={agora}
+                className="flex-1 min-h-0"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      <SaleCelebration venda={celebracao} onFim={encerrarCelebracao} />
     </div>
   )
 }

@@ -61,7 +61,7 @@ export function KpiRail({ hoje, corretoresOnline, negociacaoValor, comissaoPrevi
   const n = (v: number) => String(v).padStart(2, '0')
 
   return (
-    <div className="shrink-0 rounded-[14px] border border-line bg-surface shadow-card flex items-stretch py-3">
+    <div className="shrink-0 rounded-[14px] border border-line surface-premium shadow-card flex items-stretch py-3">
       <Kpi icon={Users}            valor={n(corretoresOnline)}      rotulo="Online no iCRM" />
       <Divisor />
       <Kpi icon={MessageSquare}    valor={n(hoje.interacoes)}       rotulo="Atendimentos" />

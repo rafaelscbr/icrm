@@ -120,3 +120,35 @@ export function useTickLento(onTick: () => void) {
     return () => clearInterval(t)
   }, [onTick])
 }
+
+/**
+ * Proteção contra burn-in.
+ *
+ * A tela passa 12h/dia com cabeçalho, rótulos e o relógio exatamente nos
+ * mesmos pixels. Em painel OLED (iPad Pro) isso marca de forma permanente em
+ * alguns meses; em LCD o risco é menor, mas o custo de evitar é zero.
+ *
+ * Percorre um ciclo de deslocamentos de 1–2px a cada 15 min. Ninguém percebe
+ * — e nenhum pixel fica com a mesma cor por mais de um quarto de hora.
+ */
+const DESLOCAMENTOS = [
+  { x: 0,  y: 0 },
+  { x: 1,  y: 1 },
+  { x: 2,  y: 0 },
+  { x: 1,  y: 2 },
+  { x: 0,  y: 1 },
+  { x: -1, y: 0 },
+  { x: -2, y: 1 },
+  { x: -1, y: 2 },
+] as const
+
+const INTERVALO_ANTIBURN_MS = 15 * 60 * 1000
+
+export function useAntiBurnIn(): { x: number; y: number } {
+  const [i, setI] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setI(v => (v + 1) % DESLOCAMENTOS.length), INTERVALO_ANTIBURN_MS)
+    return () => clearInterval(t)
+  }, [])
+  return DESLOCAMENTOS[i]
+}
