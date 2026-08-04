@@ -292,7 +292,7 @@ export function PropertiesPage() {
             const owner      = p.ownerId ? getById(p.ownerId) : undefined
             const commission = calcCommission(p.value)
             return (
-              <Card key={p.id} hover className="!p-0 overflow-hidden flex flex-col">
+              <Card key={p.id} hover className="group !p-0 overflow-hidden flex flex-col">
                 {/* Image (clicável) */}
                 <div
                   onClick={() => setViewProperty(p)}
@@ -388,14 +388,23 @@ export function PropertiesPage() {
                         <Pencil size={13} /> Editar
                       </Button>
                     )}
+                    {/* Excluir estava sempre visível, em vermelho, no mesmo
+                        peso de "Editar". Ação destrutiva e rara não disputa
+                        atenção com ação rotineira: aparece no hover e no foco,
+                        e continua alcançável por teclado e no toque. */}
                     {canDelete() && (
-                      <Button
-                        variant="danger"
-                        size="sm"
+                      <button
                         onClick={() => setDeleteTarget(p)}
+                        aria-label={`Excluir ${p.name}`}
+                        title="Excluir imóvel"
+                        className="w-9 h-9 flex items-center justify-center rounded-lg border border-line text-t4
+                                   hover:text-error hover:bg-error-bg hover:border-error-line transition-all cursor-pointer
+                                   opacity-0 group-hover:opacity-100 focus-visible:opacity-100
+                                   [@media(hover:none)]:opacity-100
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-error/40"
                       >
-                        <Trash2 size={13} />
-                      </Button>
+                        <Trash2 size={13} strokeWidth={1.7} aria-hidden />
+                      </button>
                     )}
                   </div>
                 </div>

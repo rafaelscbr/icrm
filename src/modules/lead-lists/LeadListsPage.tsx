@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
-  Database, Users, Archive, Pencil, Trash2, FolderOpen,
-  TrendingUp, Calendar, ChevronRight, BarChart3, Sparkles, AlertTriangle,
+  Database, Archive, Pencil, Trash2, FolderOpen,
+  TrendingUp, Calendar, ChevronRight, Sparkles, AlertTriangle,
   Zap, Trophy, Layers,
   Plus,
 } from 'lucide-react'
@@ -11,9 +11,10 @@ import { Card }          from '../../components/ui/Card'
 import { Modal }         from '../../components/ui/Modal'
 import { Button }        from '../../components/ui/Button'
 import { EstadoTela }    from '../../components/shared/EstadoTela'
+import { mensagemDeErro } from '../../lib/erros'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { useAuthStore } from '../../store/useAuthStore'
-import { LeadList }      from '../../types'
+import { LeadList, PROPERTY_TYPE_LABEL } from '../../types'
 import { LeadListForm }  from './LeadListForm'
 import { LeadListDetail } from './LeadListDetail'
 import { DeleteListModal } from './DeleteListModal'
@@ -35,13 +36,21 @@ export function LeadListsPage() {
   const [cleaning,      setCleaning]      = useState(false)
   const [listScores,    setListScores]    = useState<Map<string, ListScoreResult>>(new Map())
   const [sortByScore,   setSortByScore]   = useState(false)
+  const [erroScore,     setErroScore]     = useState<string | null>(null)
 
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
     if (lists.length === 0) return
     const ids = lists.filter(l => l.status === 'active').map(l => l.id)
-    batchListScores(ids).then(setListScores).catch(() => {})
+    setErroScore(null)
+    // O `.catch(() => {})` daqui era silencioso: quando o cálculo falhava, o
+    // quadro do score girava para sempre e a tela afirmava "carregando" sobre
+    // algo que nunca ia chegar.
+    batchListScores(ids).then(setListScores).catch(err => {
+      console.error('[leadLists] batchListScores:', err)
+      setErroScore(mensagemDeErro(err))
+    })
   }, [lists])
 
   if (detailId) {
@@ -239,8 +248,11 @@ export function LeadListsPage() {
                       </div>
                       {profile?.region || profile?.type ? (
                         <p className="text-[11px] text-t3 truncate mt-0.5">
-                          {[profile.type, profile.region, profile.bedrooms ? `${profile.bedrooms}q` : null]
-                            .filter(Boolean).join(' · ')}
+                          {[
+                            profile.type ? (PROPERTY_TYPE_LABEL as Record<string, string>)[profile.type] ?? profile.type : null,
+                            profile.region,
+                            profile.bedrooms ? `${profile.bedrooms}q` : null,
+                          ].filter(Boolean).join(' · ')}
                         </p>
                       ) : (
                         <p className="text-[11px] text-t4 mt-0.5">Sem perfil definido</p>
@@ -271,31 +283,41 @@ export function LeadListsPage() {
                 </div>
 
                 {/* Contagem + score */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
-                    <Users size={11} className="text-t4 mb-1" />
-                    <span className="text-sm font-bold tabular-nums text-t1">{list.totalCount.toLocaleString()}</span>
-                    <span className="text-[11px] text-t4">Leads</span>
+                {/* Eram três quadros idênticos, e "Ticket mín" vem vazio na
+                    maioria das listas. O tamanho da lista é o número que decide
+                    se ela vale uma campanha: ele domina, e o resto é apoio. */}
+                <div className="flex items-end gap-3">
+                  <div className="min-w-0">
+                    <p className="font-heading text-[26px] font-black tabular-nums text-t1 leading-none tracking-[-0.03em]">
+                      {list.totalCount.toLocaleString('pt-BR')}
+                    </p>
+                    <p className="font-label text-[11px] uppercase tracking-[0.12em] text-t4 mt-1">leads</p>
                   </div>
-                  <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
-                    <TrendingUp size={11} className="text-t4 mb-1" />
-                    <span className="text-sm font-bold tabular-nums text-t3">
-                      {profile?.valueMin ? `R$ ${(profile.valueMin / 1000).toFixed(0)}k` : '—'}
-                    </span>
-                    <span className="text-[11px] text-t4">Ticket mín</span>
+
+                  <div className="ml-auto flex items-center gap-2">
+                    {profile?.valueMin && (
+                      <span className="text-[11px] text-t4 tabular-nums" title="Ticket mínimo do perfil">
+                        a partir de R$ {(profile.valueMin / 1000).toFixed(0)}k
+                      </span>
+                    )}
+                    {listScore ? (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-[10px] border ${listScore.bg} ${listScore.border}`}
+                        title={`Score de qualidade: ${listScore.score}`}
+                      >
+                        <span className="text-[13px] leading-none">{listScore.emoji}</span>
+                        <span className={`font-heading text-[13px] font-bold tabular-nums ${listScore.color}`}>{listScore.score}</span>
+                        <span className={`text-[11px] ${listScore.color} opacity-80`}>{listScore.label}</span>
+                      </span>
+                    ) : erroScore ? (
+                      <span className="text-[11px] text-error" title={erroScore}>score indisponível</span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-[11px] text-t5">
+                        <span className="w-2.5 h-2.5 border border-t4 border-t-transparent rounded-full animate-spin" aria-hidden />
+                        calculando score
+                      </span>
+                    )}
                   </div>
-                  {listScore ? (
-                    <div className={`flex flex-col items-center py-2 rounded-xl border ${listScore.bg} ${listScore.border}`}>
-                      <span className="text-base leading-none mb-0.5">{listScore.emoji}</span>
-                      <span className={`text-sm font-bold tabular-nums ${listScore.color}`}>{listScore.score}</span>
-                      <span className={`text-[11px] ${listScore.color} opacity-70`}>{listScore.label}</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center py-2.5 bg-s2/50 rounded-xl border border-line">
-                      <div className="w-3 h-3 border border-slate-600 border-t-transparent rounded-full animate-spin mb-1" />
-                      <span className="text-[11px] text-t5">score</span>
-                    </div>
-                  )}
                 </div>
 
                 {list.description && (
@@ -310,12 +332,17 @@ export function LeadListsPage() {
                   >
                     <FolderOpen size={12} /> Ver Leads <ChevronRight size={11} />
                   </button>
+                  {/* Era um ícone de gráfico de barras que abria a EDIÇÃO da
+                      lista, sem rótulo acessível. Ícone errado e ação muda. */}
                   <button
                     onClick={() => setEditList(list)}
-                    className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium text-t3 hover:text-t2 hover:bg-s3/50 transition-all cursor-pointer"
+                    aria-label={`Editar a lista ${list.name}`}
                     title="Editar lista"
+                    className="flex items-center gap-1.5 py-2 px-3 min-h-[36px] rounded-xl text-xs font-medium text-t3
+                               hover:text-t1 hover:bg-s3/50 transition-all cursor-pointer
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
                   >
-                    <BarChart3 size={12} />
+                    <Pencil size={12} strokeWidth={1.7} aria-hidden /> Editar
                   </button>
                 </div>
 

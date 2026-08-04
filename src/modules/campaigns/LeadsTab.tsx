@@ -848,8 +848,8 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                   const inlineHist   = dispatchHistory[lead.id] ?? crossCampaignMap[lead.phone.replace(/\D/g, '')] ?? []
                   return (
                     <div key={lead.id}
-                      className={`grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-3 items-center transition-colors
-                        ${isNext ? 'bg-green-500/5' : 'hover:bg-s3/50 row-accent'}`}>
+                      className={`group grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-3 items-center transition-colors
+                        ${isNext ? 'bg-success-bg/40' : 'hover:bg-s3/50 row-accent'}`}>
 
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Avatar com indicador de cooldown comercial */}
@@ -893,7 +893,13 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                         {formatPhone(lead.phone)}
                       </span>
 
-                      {/* Botão de disparo — sempre visível */}
+                      {/* A fila tem UM próximo. Ele fica com o botão cheio; o
+                          resto vira fantasma que se enche no hover e no foco.
+
+                          Antes eram 188 botões verdes na mesma tela — e um
+                          destaque repetido em tudo deixa de destacar: o
+                          "Disparar agora" da primeira linha, que é o ponto da
+                          fila existir, se perdia no meio dos outros 187. */}
                       <div className="w-28 flex justify-center">
                         {atLim ? (
                           <span className="text-xs text-red-400/60">limite atingido</span>
@@ -911,7 +917,11 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95
                               ${isNext
                                 ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20'
-                                : 'bg-green-500/15 hover:bg-green-500/25 text-green-400 border border-green-500/25'
+                                : `bg-transparent border border-line text-t3
+                                   group-hover:text-success group-hover:bg-success-bg group-hover:border-success-line
+                                   hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)] hover:!border-success
+                                   focus-visible:text-success focus-visible:bg-success-bg focus-visible:border-success-line
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40`
                               }`}
                           >
                             <MessageCircle size={13} />

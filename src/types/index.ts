@@ -46,6 +46,23 @@ export interface Contact {
 }
 
 export type PropertyType   = 'apartment' | 'apartment_duplex' | 'penthouse_duplex' | 'house' | 'commercial' | 'land'
+
+/**
+ * Rótulo em português de cada tipo de produto.
+ *
+ * Fica junto do tipo porque o valor cru vazava para a tela: a Base de Leads
+ * mostrava "apartment" no perfil da lista. O mesmo mapa já existia copiado em
+ * LeadRadarTab e em ContactModal — estas duas cópias seguem lá e valem uma
+ * limpeza à parte.
+ */
+export const PROPERTY_TYPE_LABEL: Record<PropertyType, string> = {
+  apartment:        'Apartamento',
+  apartment_duplex: 'Apartamento duplex',
+  penthouse_duplex: 'Cobertura duplex',
+  house:            'Casa',
+  commercial:       'Comercial',
+  land:             'Terreno',
+}
 export type PropertyStatus = 'opportunity' | 'market_price' | 'above_market'
 export type PropertyKind   = 'ready' | 'off_plan'
 
