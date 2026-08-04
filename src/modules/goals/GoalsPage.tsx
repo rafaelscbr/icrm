@@ -4,14 +4,17 @@ import {
   Target, Pencil, Trash2, CheckCircle2, TrendingUp,
   Calendar, CalendarDays, Footprints, FileText,
   BadgeDollarSign, History, Zap, MessageCircle,
-  ChevronRight, Plus, Award, Phone,
+  ChevronRight, Plus, Phone, Gauge, PauseCircle, PlayCircle, Sparkles,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { DAILY_TARGETS, WEEKLY_TARGETS, MONTHLY_TARGETS } from '../../lib/metasConfig'
 import confetti from 'canvas-confetti'
 import { useAuthStore } from '../../store/useAuthStore'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
+import { Painel, Rotulo, IconeTom, Barra, Chip, SecaoTitulo, TOM } from '../../components/shared/visual'
+import type { Tom } from '../../components/shared/visual'
 import { GoalForm } from './GoalForm'
 import { useGoalsStore, calcProgress, getVisitMetrics } from '../../store/useGoalsStore'
 import { useWeekSnapshotStore } from '../../store/useWeekSnapshotStore'
@@ -22,6 +25,21 @@ import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
 import { useCallQueueStore } from '../../store/useCallQueueStore'
 import { Goal, GoalCategory, Task } from '../../types'
+
+/**
+ * Metas — o painel de esforço do corretor.
+ *
+ * A tela responde duas perguntas em ordem: "estou no ritmo?" e "o que falta
+ * fazer?". A versão anterior misturava três linguagens visuais na mesma página
+ * — anel SVG de score, cards de KPI com paleta própria em Tailwind cru, e
+ * anéis menores nos cards de meta — e nenhuma delas dizia qual número era o
+ * mais importante.
+ *
+ * Agora é uma só: superfície do sistema, tom semântico por status, número
+ * grande em tabular e barra com o mesmo desenho em todo lugar. O dourado
+ * aparece uma vez, no bloco de desempenho, porque é ele que carrega o
+ * julgamento do período.
+ */
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -44,38 +62,7 @@ function toLocalDate(iso: string) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-// ─── Score Hero ───────────────────────────────────────────────────────────────
-
-function ScoreRing({ score }: { score: number }) {
-  const r = 54; const sz = 136; const circ = 2 * Math.PI * r
-  const dash = (score / 100) * circ
-  // Semântica única: verde = ok, ouro = caminho, âmbar = atenção, vermelho = risco.
-  const color = score >= 80 ? 'var(--success)' : score >= 50 ? 'var(--brand)' : score >= 25 ? 'var(--warning)' : 'var(--error)'
-  const label = score >= 80 ? 'Excelente' : score >= 50 ? 'No caminho' : score >= 25 ? 'Atenção' : 'Começar agora'
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
-        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={10} />
-        <circle
-          cx={sz/2} cy={sz/2} r={r} fill="none"
-          stroke={color} strokeWidth={10} strokeLinecap="round"
-          strokeDasharray={`${dash} ${circ - dash}`}
-          strokeDashoffset={circ / 4}
-          style={{ transition: 'stroke-dasharray 1s cubic-bezier(0.16,1,0.3,1), stroke 0.5s' }}
-        />
-        <text x={sz/2} y={sz/2 - 6} textAnchor="middle" fill="var(--t1)" fontSize={28} fontWeight="900" fontFamily="inherit">
-          {score}
-        </text>
-        <text x={sz/2} y={sz/2 + 10} textAnchor="middle" fill="var(--t4)" fontSize={10} fontFamily="inherit">
-          pontos
-        </text>
-      </svg>
-      <span className="text-xs font-semibold" style={{ color }}>{label}</span>
-    </div>
-  )
-}
-
-// ─── KPI Individual ───────────────────────────────────────────────────────────
+// ─── Status de um indicador ───────────────────────────────────────────────────
 
 type KpiStatus = 'done' | 'good' | 'warn' | 'behind'
 
@@ -87,65 +74,50 @@ function getStatus(value: number, target: number): KpiStatus {
   return 'behind'
 }
 
-const STATUS_CONFIG: Record<KpiStatus, {
-  bar: string; num: string; bg: string; border: string; badge: string; label: string
-}> = {
-  done:   { bar: 'bg-green-500',    num: 'text-green-400',  bg: 'bg-green-500/8',   border: 'border-green-500/30',  badge: 'bg-green-500/20 text-green-400',  label: 'Meta atingida!'  },
-  good:   { bar: 'bg-indigo-500',   num: 'text-t1',         bg: 'bg-indigo-500/8',  border: 'border-indigo-500/25', badge: 'bg-indigo-500/15 text-indigo-300', label: 'No caminho'     },
-  warn:   { bar: 'bg-amber-500',    num: 'text-t1',         bg: 'bg-amber-500/8',   border: 'border-amber-500/25',  badge: 'bg-amber-500/15 text-amber-400',  label: 'Acelerar'       },
-  behind: { bar: 'bg-brand-tint',  num: 'text-t3',         bg: 'bg-brand-tint',    border: 'border-brand/25',   badge: 'bg-brand-tint text-brand-text',    label: 'Atenção'        },
+/**
+ * Semântica única de status, igual à do funil: verde = feito, ouro = no
+ * caminho, âmbar = acelerar, neutro = começou agora.
+ *
+ * O vermelho ficou de fora de propósito. Meta de esforço em andamento não é
+ * risco — usar risco aqui gastaria a cor que precisa significar "SLA estourado"
+ * e "tarefa vencida" no resto do sistema.
+ */
+const STATUS: Record<KpiStatus, { tom: Tom; label: string }> = {
+  done:   { tom: 'sucesso', label: 'Meta atingida' },
+  good:   { tom: 'marca',   label: 'No caminho'    },
+  warn:   { tom: 'atencao', label: 'Acelerar'      },
+  behind: { tom: 'neutro',  label: 'Começar'       },
 }
 
-function KpiCard({ label, value, target, icon, note }: {
-  label: string; value: number; target: number; icon: React.ReactNode; note?: string
-}) {
-  const pct    = Math.min(100, target > 0 ? Math.round(value / target * 100) : 0)
-  const status = getStatus(value, target)
-  const cfg    = STATUS_CONFIG[status]
-  const done   = status === 'done'
+// ─── Anel de score ────────────────────────────────────────────────────────────
 
+function ScoreRing({ score }: { score: number }) {
+  const r = 52; const sz = 128; const circ = 2 * Math.PI * r
+  const dash = (score / 100) * circ
+  const cor = score >= 80 ? 'var(--success)'
+            : score >= 50 ? 'var(--brand)'
+            : score >= 25 ? 'var(--warning)'
+            : 'var(--t4)'
   return (
-    <div className={`relative rounded-2xl border p-5 flex flex-col gap-3 transition-all duration-200 ${cfg.bg} ${cfg.border}`}>
-      {done && (
-        <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ boxShadow: '0 0 0 1px rgba(34,197,94,0.3), inset 0 0 20px rgba(34,197,94,0.04)' }} />
-      )}
-
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-t3 min-w-0">
-          <span className="flex-shrink-0 opacity-70">{icon}</span>
-          <span className="text-xs font-medium truncate">{label}</span>
-        </div>
-        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.badge}`}>
-          {done ? '✓' : `${pct}%`}
-        </span>
-      </div>
-
-      {/* Número */}
-      <div className="flex items-end gap-1.5">
-        <span className={`text-4xl font-black tabular-nums leading-none tracking-tight ${cfg.num}`}>{value}</span>
-        <span className="text-sm text-t4 mb-0.5 font-medium">/{target}</span>
-        {done && <CheckCircle2 size={16} className="text-green-400 mb-0.5 ml-auto flex-shrink-0" />}
-      </div>
-
-      {/* Barra de progresso */}
-      <div className="space-y-1.5">
-        <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-700 ease-out ${cfg.bar}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <div className="flex justify-between items-center">
-          <span className={`text-[11px] font-medium ${done ? 'text-green-400' : 'text-t4'}`}>{cfg.label}</span>
-          {note && <span className="text-[11px] text-t4">{note}</span>}
-        </div>
-      </div>
-    </div>
+    <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`} className="shrink-0" role="img"
+         aria-label={`Score do período: ${score} de 100 pontos`}>
+      <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={9} />
+      <circle
+        cx={sz/2} cy={sz/2} r={r} fill="none"
+        stroke={cor} strokeWidth={9} strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ - dash}`}
+        strokeDashoffset={circ / 4}
+        style={{ transition: 'stroke-dasharray 900ms cubic-bezier(0.16,1,0.3,1), stroke 500ms' }}
+      />
+      <text x={sz/2} y={sz/2 - 4} textAnchor="middle" fill="var(--t1)"
+            fontSize={30} fontWeight="900" fontFamily="inherit">{score}</text>
+      <text x={sz/2} y={sz/2 + 14} textAnchor="middle" fill="var(--t4)"
+            fontSize={10} fontFamily="inherit">de 100</text>
+    </svg>
   )
 }
 
-// ─── Métricas por período (com score) ────────────────────────────────────────
+// ─── Métricas por período ─────────────────────────────────────────────────────
 
 interface PeriodData {
   disparosHoje: number
@@ -240,44 +212,147 @@ function calcScore(kpis: Array<{ value: number; target: number }>): number {
   return Math.round(avg * 100)
 }
 
-// ─── Ring de progresso para metas personalizadas ──────────────────────────────
+// ─── Cartão de indicador ──────────────────────────────────────────────────────
 
-function GoalRing({ value, target, hex }: { value: number; target: number; hex: string }) {
-  const pct  = Math.min(100, target > 0 ? (value / target) * 100 : 0)
-  const done = value >= target
-  const r    = 34; const sz = 88; const circ = 2 * Math.PI * r
-  const dash = (pct / 100) * circ
+function KpiCard({ label, value, target, icon: Icon, note }: {
+  label: string; value: number; target: number; icon: LucideIcon; note?: string
+}) {
+  const pct    = Math.min(100, target > 0 ? Math.round(value / target * 100) : 0)
+  const status = getStatus(value, target)
+  const cfg    = STATUS[status]
+  const done   = status === 'done'
+
   return (
-    <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
-      <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={7} />
-      <circle cx={sz/2} cy={sz/2} r={r} fill="none"
-        stroke={done ? 'var(--success)' : hex} strokeWidth={7} strokeLinecap="round"
-        strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={circ / 4}
-        style={{ transition: 'stroke-dasharray 700ms cubic-bezier(0.16,1,0.3,1)' }}
-      />
-      <text x={sz/2} y={sz/2 - 4} textAnchor="middle" fill={done ? 'var(--success)' : 'var(--t1)'} fontSize={13} fontWeight="800" fontFamily="inherit">
-        {Math.round(pct)}%
-      </text>
-      <text x={sz/2} y={sz/2 + 10} textAnchor="middle" fill="var(--t4)" fontSize={9} fontFamily="inherit">
-        {value}/{target}
-      </text>
-    </svg>
+    <Painel className="px-4 py-3.5 flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <IconeTom icon={Icon} tom={cfg.tom} tamanho="sm" />
+        <Rotulo className="truncate">{label}</Rotulo>
+        <span className={`ml-auto font-heading text-[13px] font-bold tabular-nums shrink-0
+                          ${done ? 'text-success' : 'text-t3'}`}>
+          {pct}%
+        </span>
+      </div>
+
+      <div className="flex items-baseline gap-1.5">
+        <span className={`font-heading font-extrabold tabular-nums leading-none text-[30px]
+                          tracking-tight ${done ? 'text-success' : 'text-t1'}`}>
+          {value}
+        </span>
+        <span className="text-[13px] text-t4 font-medium tabular-nums">/{target}</span>
+        {done && <CheckCircle2 size={15} className="text-success ml-auto shrink-0" aria-hidden />}
+      </div>
+
+      <Barra pct={pct} tom={cfg.tom} altura={5} rotuloAcessivel={`${label}: ${value} de ${target}`} />
+
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-[11px] font-semibold ${done ? 'text-success' : 'text-t4'}`}>
+          {cfg.label}
+        </span>
+        {note && <span className="text-[11px] text-t4 truncate">{note}</span>}
+      </div>
+    </Painel>
   )
 }
 
-const CAT_CFG: Record<GoalCategory, { icon: typeof Target; text: string; bg: string; border: string; hex: string; label: string }> = {
-  acionamento: { icon: Zap,          text: 'text-t2',                       bg: 'bg-s3',                          border: 'border-line',                        hex: 'var(--t3)',              label: 'Acionamento' },
-  visita:      { icon: Footprints,   text: 'text-[var(--stage-visita)]',    bg: 'bg-[var(--stage-visita-bg)]',    border: 'border-[var(--stage-visita-line)]',   hex: 'var(--stage-visita)',    label: 'Atendimento' },
-  proposta:    { icon: FileText,     text: 'text-[var(--stage-proposta)]',  bg: 'bg-[var(--stage-proposta-bg)]',  border: 'border-[var(--stage-proposta-line)]', hex: 'var(--stage-proposta)',  label: 'Proposta'    },
-  venda:       { icon: BadgeDollarSign, text: 'text-success',               bg: 'bg-success-bg',                  border: 'border-success-line',                hex: 'var(--success)',         label: 'Venda'       },
+// ─── Bloco de desempenho do período ───────────────────────────────────────────
+
+function PerformanceHero({ tasks, period, brokerId }: {
+  tasks: Task[]; period: PeriodTab; brokerId: string | null
+}) {
+  const data = usePeriodData(tasks, brokerId)
+
+  const kpis = useMemo(() => {
+    if (period === 'hoje') return [
+      { label: 'Novos disparos',   value: data.disparosHojeNew, target: DAILY_TARGETS.disparos,   icon: Zap,            note: 'base fria'        },
+      { label: 'Ligações',         value: data.ligacoesHoje,    target: DAILY_TARGETS.ligacoes,   icon: Phone,          note: 'prospecção ativa' },
+      { label: 'Interações',       value: data.daily,           target: DAILY_TARGETS.interacoes, icon: MessageCircle,  note: 'mensagens e calls' },
+    ]
+    if (period === 'semana') return [
+      { label: 'Novos disparos',   value: data.disparosSemanaNew, target: WEEKLY_TARGETS.disparos,     icon: Zap,           note: 'base fria'        },
+      { label: 'Ligações',         value: data.ligacoesSemana,    target: WEEKLY_TARGETS.ligacoes,     icon: Phone,         note: 'prospecção ativa' },
+      { label: 'Atendimentos',     value: data.weekVisits,        target: WEEKLY_TARGETS.atendimentos, icon: Footprints,    note: 'vídeo ou presencial' },
+      { label: 'Propostas',        value: data.weekProp,          target: WEEKLY_TARGETS.propostas,    icon: FileText,      note: 'enviadas'         },
+    ]
+    return [
+      { label: 'Novos disparos',   value: data.disparosMesNew, target: MONTHLY_TARGETS.disparos,     icon: Zap,             note: 'base fria'        },
+      { label: 'Ligações',         value: data.ligacoesMes,    target: MONTHLY_TARGETS.ligacoes,     icon: Phone,           note: 'prospecção ativa' },
+      { label: 'Atendimentos',     value: data.monthVisits,    target: MONTHLY_TARGETS.atendimentos, icon: Footprints,      note: 'vídeo ou presencial' },
+      { label: 'Propostas',        value: data.monthProp,      target: MONTHLY_TARGETS.propostas,    icon: FileText,        note: 'enviadas'         },
+      { label: 'Vendas',           value: data.monthSales,     target: MONTHLY_TARGETS.vendas,       icon: BadgeDollarSign, note: 'fechadas no mês'  },
+    ]
+  }, [period, data])
+
+  const score = calcScore(kpis)
+  const faltando = kpis.filter(k => k.value < k.target).length
+
+  const veredito = score >= 80 ? 'Semana de gente que fecha negócio.'
+                 : score >= 50 ? 'No ritmo — falta pouco para fechar.'
+                 : score >= 25 ? 'Dá para virar, mas precisa acelerar hoje.'
+                 : 'O período mal começou. Comece pelo topo do funil.'
+
+  const PERIODO = {
+    hoje:   { titulo: 'Hoje',        sub: new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }) },
+    semana: { titulo: 'Esta semana', sub: (() => { const s = getWeekStart(); const e = new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} a ${e.getDate()}/${e.getMonth()+1}` })() },
+    mes:    { titulo: 'Este mês',    sub: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) },
+  }[period]
+
+  return (
+    <div className="flex flex-col gap-4 mb-7">
+      {/* Desempenho — o único bloco dourado da tela */}
+      <Painel dourado className="px-5 py-5">
+        <div className="flex items-center gap-6 flex-wrap">
+          <ScoreRing score={score} />
+
+          <div className="flex-1 min-w-[240px]">
+            <div className="flex items-center gap-2">
+              <Gauge size={13} strokeWidth={1.7} className="text-brand" aria-hidden />
+              <Rotulo>Desempenho · {PERIODO.titulo}</Rotulo>
+            </div>
+
+            <p className="font-heading text-[22px] font-extrabold text-t1 leading-tight
+                          tracking-[-0.02em] mt-1.5">
+              {veredito}
+            </p>
+            <p className="text-[13px] text-t3 mt-1">{PERIODO.sub}</p>
+
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              {faltando === 0
+                ? <Chip icon={Sparkles} tom="sucesso">todas as metas do período batidas</Chip>
+                : <Chip icon={Target} tom={score >= 50 ? 'marca' : 'atencao'}>
+                    {faltando} de {kpis.length} {faltando === 1 ? 'meta em aberto' : 'metas em aberto'}
+                  </Chip>}
+            </div>
+          </div>
+        </div>
+      </Painel>
+
+      {/* Indicadores do período */}
+      <div className={`grid gap-3 ${
+        kpis.length === 3 ? 'grid-cols-1 sm:grid-cols-3'
+        : kpis.length === 4 ? 'grid-cols-2 lg:grid-cols-4'
+        : 'grid-cols-2 lg:grid-cols-5'}`}>
+        {kpis.map(k => <KpiCard key={k.label} {...k} />)}
+      </div>
+    </div>
+  )
+}
+
+// ─── Metas personalizadas ─────────────────────────────────────────────────────
+
+const CAT_CFG: Record<GoalCategory, { icon: LucideIcon; tom: Tom; label: string }> = {
+  acionamento: { icon: Zap,             tom: 'neutro',  label: 'Acionamento' },
+  visita:      { icon: Footprints,      tom: 'atencao', label: 'Atendimento' },
+  proposta:    { icon: FileText,        tom: 'marca',   label: 'Proposta'    },
+  venda:       { icon: BadgeDollarSign, tom: 'sucesso', label: 'Venda'       },
 }
 
 function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
   goal: Goal; progress: number; onEdit: () => void; onDelete: () => void; onPause: () => void
 }) {
-  const cfg     = CAT_CFG[goal.category]
-  const Icon    = cfg.icon
-  const done    = progress >= goal.target
+  const cfg      = CAT_CFG[goal.category]
+  const done     = progress >= goal.target
+  const pct      = Math.min(100, goal.target > 0 ? Math.round(progress / goal.target * 100) : 0)
+  const tom      = done ? 'sucesso' : cfg.tom
   const firedRef = useRef(false)
 
   useEffect(() => {
@@ -288,38 +363,80 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
   }, [done])
 
   return (
-    <div className={`group relative rounded-2xl border p-5 flex flex-col gap-4 transition-all hover:shadow-lg hover:-translate-y-0.5 ${done ? 'border-green-500/30 bg-green-500/5' : cfg.border} `}
-      style={done ? {} : { background: 'var(--surface)' }}
-    >
-      {done && <div className="absolute top-3 right-3"><CheckCircle2 size={15} className="text-green-400" /></div>}
-
-      <div className="flex items-center gap-2.5">
-        <div className={`w-8 h-8 ${cfg.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
-          <Icon size={15} className={cfg.text} />
-        </div>
+    <Painel className="group px-4 py-4 flex flex-col gap-3">
+      <div className="flex items-start gap-2.5">
+        <IconeTom icon={cfg.icon} tom={tom} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-t1 truncate leading-none">{goal.name}</p>
-          <p className="text-[11px] text-t4 mt-1">{goal.period === 'weekly' ? 'Semanal' : 'Mensal'} · meta {goal.target}</p>
+          <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight">{goal.name}</p>
+          <p className="text-[11px] text-t4 mt-0.5">
+            {cfg.label} · {goal.period === 'weekly' ? 'semanal' : 'mensal'} · meta {goal.target}
+          </p>
         </div>
+        {done && <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" aria-hidden />}
       </div>
 
-      <div className="flex justify-center">
-        <GoalRing value={progress} target={goal.target} hex={cfg.hex} />
+      <div className="flex items-baseline gap-1.5">
+        <span className={`font-heading font-extrabold tabular-nums leading-none text-[32px]
+                          tracking-tight ${done ? 'text-success' : 'text-t1'}`}>
+          {progress}
+        </span>
+        <span className="text-[13px] text-t4 font-medium tabular-nums">/{goal.target}</span>
+        <span className={`ml-auto font-heading text-[13px] font-bold tabular-nums
+                          ${done ? 'text-success' : 'text-t3'}`}>
+          {pct}%
+        </span>
       </div>
 
-      {done && <p className="text-xs text-green-400 font-semibold text-center -mt-2">Meta atingida!</p>}
+      <Barra pct={pct} tom={tom} altura={5} rotuloAcessivel={`${goal.name}: ${progress} de ${goal.target}`} />
 
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={onPause} className="flex-1 text-xs text-t4 hover:text-t2 py-1.5 rounded-xl hover:bg-s3/60 transition-colors cursor-pointer">Pausar</button>
-        <button onClick={onEdit} className="p-1.5 rounded-xl hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"><Pencil size={13} /></button>
-        <button onClick={onDelete} className="p-1.5 rounded-xl hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer"><Trash2 size={13} /></button>
+      {done && (
+        <p className="text-[11px] font-semibold text-success">Meta atingida — pode subir a régua.</p>
+      )}
+
+      {/* Ações crescem no hover. Colapsar a ALTURA (e não só a opacidade) é o
+          que evita o vazio embaixo do gráfico; focus-within mantém o alcance
+          por teclado. */}
+      <div className="flex items-center gap-1 overflow-hidden max-h-0 opacity-0
+                      group-hover:max-h-12 group-hover:opacity-100 group-hover:pt-1
+                      group-hover:border-t focus-within:max-h-12 focus-within:opacity-100
+                      focus-within:pt-1 focus-within:border-t border-line
+                      transition-all duration-200">
+        <button
+          onClick={onPause}
+          className="flex items-center gap-1.5 text-[11px] text-t4 hover:text-t2 px-2 py-1.5
+                     rounded-lg hover:bg-s3/60 transition-colors cursor-pointer
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+        >
+          <PauseCircle size={12} strokeWidth={1.7} aria-hidden /> Pausar
+        </button>
+        <button
+          onClick={onEdit}
+          aria-label={`Editar meta ${goal.name}`}
+          className="ml-auto w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70
+                     text-t4 hover:text-t2 transition-colors cursor-pointer
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+        >
+          <Pencil size={13} strokeWidth={1.7} />
+        </button>
+        <button
+          onClick={onDelete}
+          aria-label={`Excluir meta ${goal.name}`}
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error-bg
+                     text-t4 hover:text-error transition-colors cursor-pointer
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
+        >
+          <Trash2 size={13} strokeWidth={1.7} />
+        </button>
       </div>
-    </div>
+    </Painel>
   )
 }
 
-// ─── Card de Visitas (unificado) ──────────────────────────────────────────────
-
+/**
+ * Atendimentos ganham card próprio porque a meta tem duas janelas (semana e
+ * mês) e um número que não é meta nenhuma: o que está AGENDADO. Espremer isso
+ * num card genérico esconderia justamente o que dá para fazer a respeito.
+ */
 function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
   tasks: Task[]; visitGoals: Goal[]
   onEdit: (g: Goal) => void; onDelete: (g: Goal) => void; onPause: (id: string) => void
@@ -329,161 +446,106 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
   const metaMes = visitGoals.find(g => g.period === 'monthly')?.target ?? 8
   const semOk = realizadasSemana >= metaSem
   const mesOk = realizadasMes    >= metaMes
+  const principal = visitGoals[0]
 
-  function Bar({ value, target, ok }: { value: number; target: number; ok: boolean }) {
-    const pct = Math.min(100, target > 0 ? Math.round(value / target * 100) : 0)
-    return (
-      <div>
-        <div className="flex justify-between mb-1">
-          <span className={`text-xs font-medium ${ok ? 'text-green-400' : 'text-t3'}`}>
-            {ok ? 'Meta atingida!' : `${value} / ${target}`}
-          </span>
-          <span className="text-[11px] text-t4">{pct}%</span>
-        </div>
-        <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all duration-500 ${ok ? 'bg-green-500' : 'bg-indigo-500'}`} style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-    )
-  }
+  const numeros = [
+    { valor: agendadasMes,     rotulo: 'agendadas\nno mês',    tom: 'info'    as Tom },
+    { valor: realizadasSemana, rotulo: 'feitas\nna semana',    tom: semOk ? 'sucesso' as Tom : 'neutro' as Tom },
+    { valor: realizadasMes,    rotulo: 'feitas\nno mês',       tom: mesOk ? 'sucesso' as Tom : 'neutro' as Tom },
+  ]
 
   return (
-    <div className="group rounded-2xl border border-indigo-500/25 p-5 flex flex-col gap-4 transition-all hover:shadow-lg hover:-translate-y-0.5" style={{ background: 'var(--surface)' }}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-indigo-500/10 rounded-xl flex items-center justify-center"><Footprints size={15} className="text-indigo-400" /></div>
-          <div>
-            <p className="text-sm font-semibold text-t1 leading-none">Atendimentos</p>
-            <p className="text-[11px] text-t4 mt-1">{metaSem}/sem · {metaMes}/mês</p>
+    <Painel className="group px-4 py-4 flex flex-col gap-3 sm:col-span-2">
+      <div className="flex items-start gap-2.5">
+        <IconeTom icon={Footprints} tom="atencao" />
+        <div className="min-w-0 flex-1">
+          <p className="font-heading text-[14px] font-bold text-t1 leading-tight">Atendimentos</p>
+          <p className="text-[11px] text-t4 mt-0.5">meta {metaSem}/semana · {metaMes}/mês</p>
+        </div>
+        {principal && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100
+                          focus-within:opacity-100 transition-opacity">
+            <button
+              onClick={() => onPause(principal.id)}
+              className="flex items-center gap-1.5 text-[11px] text-t4 hover:text-t2 px-2 py-1.5
+                         rounded-lg hover:bg-s3/60 transition-colors cursor-pointer
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+            >
+              <PauseCircle size={12} strokeWidth={1.7} aria-hidden /> Pausar
+            </button>
+            <button
+              onClick={() => onEdit(principal)}
+              aria-label="Editar meta de atendimentos"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70
+                         text-t4 hover:text-t2 transition-colors cursor-pointer
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+            >
+              <Pencil size={13} strokeWidth={1.7} />
+            </button>
           </div>
-        </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {visitGoals.slice(0,1).map(g => (
-            <button key={g.id} onClick={() => onPause(g.id)} className="text-[11px] text-t4 hover:text-t2 px-2 py-1 rounded-lg hover:bg-s3/50 transition-colors cursor-pointer">Pausar</button>
-          ))}
-          {visitGoals.slice(0,1).map(g => (
-            <button key={`e${g.id}`} onClick={() => onEdit(g)} className="p-1.5 rounded-xl hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"><Pencil size={13} /></button>
-          ))}
-        </div>
+        )}
       </div>
 
-      {/* 3 métricas em destaque */}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        {[
-          { val: agendadasMes,     label: 'Agendadas\nno mês',     ok: false, color: 'text-indigo-400' },
-          { val: realizadasSemana, label: 'Realizadas\nna semana',  ok: semOk, color: semOk ? 'text-green-400' : 'text-t1' },
-          { val: realizadasMes,    label: 'Realizadas\nno mês',     ok: mesOk, color: mesOk ? 'text-green-400' : 'text-t1' },
-        ].map(({ val, label, ok, color }) => (
-          <div key={label} className={`rounded-xl p-3 border ${ok ? 'border-green-500/20 bg-green-500/5' : 'border-line bg-s2/50'}`}>
-            <p className={`text-2xl font-black tabular-nums leading-none ${color}`}>{val}</p>
-            <p className="text-[11px] text-t4 mt-1.5 leading-tight whitespace-pre-line">{label}</p>
+      <div className="grid grid-cols-3 gap-2">
+        {numeros.map(n => (
+          <div key={n.rotulo} className={`rounded-[12px] border px-3 py-2.5 text-center
+                                          ${TOM[n.tom].borda} ${TOM[n.tom].fundo}`}>
+            <p className={`font-heading font-extrabold tabular-nums leading-none text-[26px]
+                           ${n.tom === 'neutro' ? 'text-t1' : TOM[n.tom].texto}`}>
+              {n.valor}
+            </p>
+            <p className="text-[11px] text-t4 mt-1.5 leading-tight whitespace-pre-line">{n.rotulo}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div>
-          <p className="text-[11px] text-t4 mb-1.5 flex items-center gap-1"><Calendar size={9}/> Semana — meta {metaSem}</p>
-          <Bar value={realizadasSemana} target={metaSem} ok={semOk} />
-        </div>
-        <div>
-          <p className="text-[11px] text-t4 mb-1.5 flex items-center gap-1"><CalendarDays size={9}/> Mês — meta {metaMes}</p>
-          <Bar value={realizadasMes} target={metaMes} ok={mesOk} />
-        </div>
+      <div className="flex flex-col gap-2.5">
+        {[
+          { icon: Calendar,     rotulo: 'Semana', valor: realizadasSemana, meta: metaSem, ok: semOk },
+          { icon: CalendarDays, rotulo: 'Mês',    valor: realizadasMes,    meta: metaMes, ok: mesOk },
+        ].map(b => (
+          <div key={b.rotulo}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <b.icon size={11} strokeWidth={1.7} className="text-t4" aria-hidden />
+              <Rotulo>{b.rotulo}</Rotulo>
+              <span className={`ml-auto text-[11px] font-semibold tabular-nums
+                                ${b.ok ? 'text-success' : 'text-t3'}`}>
+                {b.ok ? 'meta atingida' : `${b.valor} de ${b.meta}`}
+              </span>
+            </div>
+            <Barra
+              pct={b.meta > 0 ? (b.valor / b.meta) * 100 : 0}
+              tom={b.ok ? 'sucesso' : 'atencao'}
+              altura={5}
+              rotuloAcessivel={`Atendimentos na ${b.rotulo.toLowerCase()}: ${b.valor} de ${b.meta}`}
+            />
+          </div>
+        ))}
       </div>
 
-      <div className="flex flex-wrap gap-1.5 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex flex-wrap gap-1.5 overflow-hidden max-h-0 opacity-0
+                      group-hover:max-h-20 group-hover:opacity-100 group-hover:pt-1
+                      group-hover:border-t focus-within:max-h-20 focus-within:opacity-100
+                      focus-within:pt-1 focus-within:border-t border-line
+                      transition-all duration-200">
         {visitGoals.map(g => (
-          <button key={g.id} onClick={() => onDelete(g)} className="text-[11px] text-t4 hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer">
-            <Trash2 size={9}/> {g.period === 'weekly' ? 'Excluir meta semanal' : 'Excluir meta mensal'}
+          <button
+            key={g.id}
+            onClick={() => onDelete(g)}
+            className="flex items-center gap-1 text-[11px] text-t4 hover:text-error px-2 py-1.5
+                       rounded-lg hover:bg-error-bg transition-colors cursor-pointer
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
+          >
+            <Trash2 size={11} strokeWidth={1.7} aria-hidden />
+            excluir meta {g.period === 'weekly' ? 'semanal' : 'mensal'}
           </button>
         ))}
       </div>
-    </div>
+    </Painel>
   )
 }
 
-// ─── Bloco hero com score e KPIs de período ────────────────────────────────
-
-function PerformanceHero({ tasks, period, brokerId }: { tasks: Task[]; period: PeriodTab; brokerId: string | null }) {
-  const data = usePeriodData(tasks, brokerId)
-
-  const kpis = useMemo(() => {
-    if (period === 'hoje') return [
-      { label: 'Novos Disparos',            value: data.disparosHojeNew,      target: DAILY_TARGETS.disparos,            icon: <Zap size={14} />,           note: 'base fria'       },
-      { label: 'Ligações',                  value: data.ligacoesHoje,         target: DAILY_TARGETS.ligacoes,            icon: <Phone size={14} />,         note: 'prospecção ativa' },
-      { label: 'Interações com leads',      value: data.daily,                target: DAILY_TARGETS.interacoes,          icon: <MessageCircle size={14} />, note: 'mensagens/calls' },
-    ]
-    if (period === 'semana') return [
-      { label: 'Novos Disparos',            value: data.disparosSemanaNew,    target: WEEKLY_TARGETS.disparos,           icon: <Zap size={14} />,        note: 'base fria'      },
-      { label: 'Ligações',                  value: data.ligacoesSemana,       target: WEEKLY_TARGETS.ligacoes,           icon: <Phone size={14} />,      note: 'prospecção ativa' },
-      { label: 'Atendimentos realizados',   value: data.weekVisits,           target: WEEKLY_TARGETS.atendimentos,       icon: <Footprints size={14} />, note: 'vídeo/presencial' },
-      { label: 'Propostas enviadas',        value: data.weekProp,             target: WEEKLY_TARGETS.propostas,          icon: <FileText size={14} />,   note: 'por semana'     },
-    ]
-    return [
-      { label: 'Novos Disparos',            value: data.disparosMesNew,       target: MONTHLY_TARGETS.disparos,          icon: <Zap size={14} />,             note: 'base fria'    },
-      { label: 'Ligações',                  value: data.ligacoesMes,          target: MONTHLY_TARGETS.ligacoes,          icon: <Phone size={14} />,           note: 'prospecção ativa' },
-      { label: 'Atendimentos realizados',   value: data.monthVisits,          target: MONTHLY_TARGETS.atendimentos,      icon: <Footprints size={14} />,       note: 'vídeo/presencial' },
-      { label: 'Propostas enviadas',        value: data.monthProp,            target: MONTHLY_TARGETS.propostas,         icon: <FileText size={14} />,         note: 'por mês'      },
-      { label: 'Vendas fechadas',           value: data.monthSales,           target: MONTHLY_TARGETS.vendas,            icon: <BadgeDollarSign size={14} />,  note: 'no mês'       },
-    ]
-  }, [period, data])
-
-  const score = calcScore(kpis)
-
-  const PERIOD_INFO = {
-    hoje:   { label: 'de hoje',        sub: new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }) },
-    semana: { label: 'desta semana',   sub: (() => { const s = getWeekStart(); const e = new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} – ${e.getDate()}/${e.getMonth()+1}` })() },
-    mes:    { label: 'deste mês',      sub: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) },
-  }
-
-  return (
-    <div className="rounded-2xl border border-line overflow-hidden mb-6" style={{ background: 'var(--surface)' }}>
-      {/* Score hero */}
-      <div className="relative flex items-center gap-6 p-6 pb-5"
-        style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(6,182,212,0.03) 100%)' }}
-      >
-        {/* Gradiente sutil de fundo */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 60% 80% at 15% 50%, rgba(99,102,241,0.08) 0%, transparent 70%)' }} />
-
-        <ScoreRing score={score} />
-
-        <div className="flex-1 min-w-0 relative">
-          <p className="text-[11px] font-semibold text-t4 uppercase tracking-widest flex items-center gap-1.5 mb-1">
-            <Award size={10} className="text-indigo-400" />
-            Performance {PERIOD_INFO[period].label}
-          </p>
-          <p className="text-xl font-black text-t1 leading-tight">
-            {score >= 80 ? 'Você está arrasando!' : score >= 50 ? 'No ritmo certo' : score >= 25 ? 'Precisa acelerar' : 'Vamos começar?'}
-          </p>
-          <p className="text-xs text-t4 mt-1">{PERIOD_INFO[period].sub}</p>
-
-          {/* Miniatura dos KPIs */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
-            {kpis.map(k => {
-              const s = getStatus(k.value, k.target)
-              const color = s === 'done' ? 'text-green-400' : s === 'good' ? 'text-indigo-400' : s === 'warn' ? 'text-amber-400' : 'text-brand-text'
-              return (
-                <span key={k.label} className="flex items-center gap-1 text-xs">
-                  <span className={`font-bold tabular-nums ${color}`}>{k.value}</span>
-                  <span className="text-t4">/{k.target}</span>
-                  <span className="text-t4 opacity-60">{k.label}</span>
-                </span>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* KPIs expandidos */}
-      <div className={`grid gap-3 p-4 pt-0 ${kpis.length === 2 ? 'grid-cols-2' : kpis.length === 3 ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
-        {kpis.map(k => <KpiCard key={k.label} {...k} />)}
-      </div>
-    </div>
-  )
-}
-
-// ─── Página principal ─────────────────────────────────────────────────────────
+// ─── Página ───────────────────────────────────────────────────────────────────
 
 export function GoalsPage() {
   const { goals, load, loadForBroker, remove, update } = useGoalsStore()
@@ -530,9 +592,9 @@ export function GoalsPage() {
   const otherGoals = active.filter(g => g.category !== 'visita')
 
   const PERIOD_TABS: Array<{ id: PeriodTab; label: string; sub: string }> = [
-    { id: 'hoje',   label: 'Hoje',         sub: new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }) },
-    { id: 'semana', label: 'Esta semana',  sub: (() => { const s = getWeekStart(); const e = new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1}–${e.getDate()}/${e.getMonth()+1}` })() },
-    { id: 'mes',    label: 'Este mês',     sub: new Date().toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) },
+    { id: 'hoje',   label: 'Hoje',        sub: new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }) },
+    { id: 'semana', label: 'Esta semana', sub: (() => { const s = getWeekStart(); const e = new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} a ${e.getDate()}/${e.getMonth()+1}` })() },
+    { id: 'mes',    label: 'Este mês',    sub: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) },
   ]
 
   return (
@@ -540,62 +602,64 @@ export function GoalsPage() {
       icon={Target}
       iconTom="marca"
       title="Metas"
-      subtitle={`${active.length} meta${active.length !== 1 ? 's' : ''} ativa${active.length !== 1 ? 's' : ''}`}
-      ctaLabel="Nova Meta"
+      subtitle={`${active.length} meta${active.length !== 1 ? 's' : ''} ativa${active.length !== 1 ? 's' : ''} · esforço que vira venda`}
+      ctaLabel="Nova meta"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
+      band={
+        <div className="flex gap-1 p-1 rounded-[14px] border border-line bg-s2/50 w-full sm:w-fit"
+             role="tablist" aria-label="Período">
+          {PERIOD_TABS.map(t => {
+            const ativo = tab === t.id
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={ativo}
+                onClick={() => setTab(t.id)}
+                className={`flex-1 sm:flex-none flex flex-col items-center sm:items-start gap-0.5
+                            px-4 py-2 rounded-[10px] transition-all cursor-pointer min-h-[44px]
+                            focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30
+                            ${ativo ? 'grad-brand' : 'text-t3 hover:text-t1 hover:bg-s3/50'}`}
+              >
+                <span className="text-[13px] font-bold leading-none">{t.label}</span>
+                <span className={`text-[11px] leading-none ${ativo ? 'opacity-75' : 'text-t4'}`}>
+                  {t.sub}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      }
     >
-
-      {/* ── Seletor de período ─────────────────────────────────────────── */}
-      <div className="flex gap-1 mb-5 p-1 rounded-2xl border border-line bg-s2/40" style={{ backdropFilter: 'blur(8px)' }}>
-        {PERIOD_TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            aria-pressed={tab === t.id}
-            className={`flex-1 flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl transition-all cursor-pointer border ${
-              tab === t.id
-                ? 'bg-brand-tint border-brand/30 shadow-card'
-                : 'text-t3 hover:text-t2 hover:bg-s3/50 border-transparent'
-            }`}
-          >
-            {/* `text-indigo-200` ficava aqui e não existe no remapeamento de
-                indigo→marca do index.css: sobrava lavanda claro sobre fundo
-                dourado, ilegível no tema claro. */}
-            <span className={`text-sm font-semibold ${tab === t.id ? 'text-t1' : ''}`}>{t.label}</span>
-            <span className="text-[11px] text-t4">{t.sub}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── Hero de performance + KPIs ─────────────────────────────────── */}
+      {/* ── Desempenho do período ──────────────────────────────────────── */}
       <PerformanceHero tasks={tasks} period={tab} brokerId={effectiveBrokerId} />
 
-      {/* Histórico */}
-      {snapshots.length > 0 && (
-        <div className="flex justify-end mb-6">
-          <Link to="/metas/historico" className="flex items-center gap-1.5 text-xs text-t4 hover:text-t2 transition-colors px-3 py-1.5 rounded-xl hover:bg-s3/50">
-            <History size={12} />
-            Histórico semanal ({snapshots.length} semanas)
-            <ChevronRight size={11} />
-          </Link>
-        </div>
-      )}
+      {/* ── Metas personalizadas ───────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <SecaoTitulo icon={TrendingUp} tom="marca"
+          descricao="Acompanhamento próprio, além dos mínimos da casa">
+          Metas personalizadas
+        </SecaoTitulo>
 
-      {/* ── Metas personalizadas ──────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-bold text-t4 uppercase tracking-widest flex items-center gap-2">
-          <TrendingUp size={12} /> Metas personalizadas
-        </h2>
-        <button
-          onClick={() => { setEditing(undefined); setFormOpen(true) }}
-          className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
-        >
-          <Plus size={12} /> Nova
-        </button>
+        {snapshots.length > 0 && (
+          <Link
+            to="/metas/historico"
+            className="flex items-center gap-1.5 text-[13px] text-t3 hover:text-t1 transition-colors
+                       px-3 py-2 rounded-[10px] hover:bg-s3/50 shrink-0 min-h-[40px]
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+          >
+            <History size={13} strokeWidth={1.7} aria-hidden />
+            <span className="hidden sm:inline">Histórico semanal</span>
+            <span className="tabular-nums text-t4">({snapshots.length})</span>
+            <ChevronRight size={12} strokeWidth={1.7} aria-hidden />
+          </Link>
+        )}
       </div>
 
+      {/* items-start porque o card de Atendimentos ocupa duas colunas e é mais
+          alto: sem isso os vizinhos esticam até a altura dele e sobra vazio. */}
       {active.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8 items-start">
           {visitGoals.length > 0 && (
             <VisitasCard
               tasks={tasks} visitGoals={visitGoals}
@@ -615,46 +679,75 @@ export function GoalsPage() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center py-14 gap-4 rounded-2xl border border-dashed border-line mb-8">
-          <div className="w-14 h-14 bg-indigo-500/8 rounded-2xl flex items-center justify-center border border-indigo-500/15">
-            <Target size={24} className="text-indigo-400/60" />
+        <Painel className="flex flex-col items-center gap-4 px-6 py-12 text-center mb-8">
+          <IconeTom icon={Target} tom="marca" tamanho="lg" />
+          <div>
+            <p className="font-heading text-base font-bold text-t1">Nenhuma meta personalizada</p>
+            <p className="text-sm text-t3 mt-1 max-w-sm">
+              Os mínimos da casa já aparecem acima. Crie uma meta própria quando quiser
+              acompanhar algo além deles — visitas, propostas ou vendas.
+            </p>
           </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-t2">Nenhuma meta personalizada</p>
-            <p className="text-xs text-t4 mt-1">Crie metas para acompanhar visitas, propostas e vendas</p>
-          </div>
-          <button
-            onClick={() => { setEditing(undefined); setFormOpen(true) }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-sm font-medium hover:bg-indigo-500/25 transition-all cursor-pointer"
-          >
+          <Button onClick={() => { setEditing(undefined); setFormOpen(true) }} className="gap-2 mt-1">
             <Plus size={14} /> Criar primeira meta
-          </button>
-        </div>
+          </Button>
+        </Painel>
       )}
 
-      {/* ── Metas pausadas ────────────────────────────────────────────── */}
+      {/* ── Metas pausadas ─────────────────────────────────────────────── */}
       {inactive.length > 0 && (
         <div>
-          <h2 className="text-xs font-bold text-t4 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-t4/40 inline-block" /> Pausadas
-          </h2>
-          <div className="flex flex-col gap-1.5">
+          <SecaoTitulo icon={PauseCircle} tom="neutro"
+            descricao="Não contam para o score enquanto estiverem paradas">
+            Pausadas
+          </SecaoTitulo>
+
+          <div className="flex flex-col gap-2">
             {inactive.map(goal => {
-              const cfg  = CAT_CFG[goal.category]
-              const Icon = cfg.icon
+              const cfg = CAT_CFG[goal.category]
               return (
-                <div key={goal.id} className="group flex items-center gap-4 px-5 py-3.5 rounded-2xl border border-line bg-s2/20 hover:bg-s3/40 transition-colors">
-                  <div className={`w-8 h-8 ${cfg.bg} rounded-xl flex items-center justify-center flex-shrink-0 opacity-40`}>
-                    <Icon size={14} className={cfg.text} />
-                  </div>
+                <div
+                  key={goal.id}
+                  className="group flex items-center gap-3 rounded-[14px] border border-line
+                             bg-s2/40 px-4 py-3 hover:bg-s3/40 transition-colors"
+                >
+                  <span className="opacity-45">
+                    <IconeTom icon={cfg.icon} tom={cfg.tom} tamanho="sm" />
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-t3 truncate">{goal.name}</p>
-                    <p className="text-xs text-t4">{goal.target}× {goal.period === 'weekly' ? 'por semana' : 'por mês'}</p>
+                    <p className="text-[13px] font-semibold text-t3 truncate">{goal.name}</p>
+                    <p className="text-[11px] text-t4">
+                      {cfg.label} · {goal.target}× {goal.period === 'weekly' ? 'por semana' : 'por mês'}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => update(goal.id, { active: true })} className="text-xs text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-xl hover:bg-indigo-500/10 transition-colors cursor-pointer">Reativar</button>
-                    <button onClick={() => { setEditing(goal); setFormOpen(true) }} className="p-1.5 rounded-xl hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"><Pencil size={13} /></button>
-                    <button onClick={() => setDeleteTarget(goal)} className="p-1.5 rounded-xl hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer"><Trash2 size={13} /></button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100
+                                  focus-within:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => update(goal.id, { active: true })}
+                      className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-text
+                                 px-2.5 py-1.5 rounded-lg hover:bg-brand-tint transition-colors
+                                 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                    >
+                      <PlayCircle size={12} strokeWidth={1.8} aria-hidden /> Reativar
+                    </button>
+                    <button
+                      onClick={() => { setEditing(goal); setFormOpen(true) }}
+                      aria-label={`Editar meta ${goal.name}`}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70
+                                 text-t4 hover:text-t2 transition-colors cursor-pointer
+                                 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                    >
+                      <Pencil size={13} strokeWidth={1.7} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(goal)}
+                      aria-label={`Excluir meta ${goal.name}`}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error-bg
+                                 text-t4 hover:text-error transition-colors cursor-pointer
+                                 focus:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
+                    >
+                      <Trash2 size={13} strokeWidth={1.7} />
+                    </button>
                   </div>
                 </div>
               )
@@ -665,13 +758,22 @@ export function GoalsPage() {
 
       <GoalForm isOpen={formOpen} onClose={() => setFormOpen(false)} goal={editing} forBrokerId={effectiveBrokerId ?? undefined} />
 
+      {/* Modal central é a exceção: exclusão é curta e destrutiva. */}
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir meta" size="sm">
         <p className="text-sm text-t3 mb-6">
-          Tem certeza que deseja excluir <span className="text-t1 font-medium">"{deleteTarget?.name}"</span>?
+          Excluir <span className="font-semibold text-t1">"{deleteTarget?.name}"</span>?
+          O histórico das semanas já fechadas não muda.
         </p>
-        <div className="flex gap-3 justify-end">
-          <Button variant="ghost" onClick={() => setDeleteTarget(undefined)}>Cancelar</Button>
-          <Button variant="danger" onClick={async () => { if (deleteTarget) { await remove(deleteTarget.id); setDeleteTarget(undefined) } }}>Excluir</Button>
+        <div className="flex gap-3">
+          <Button variant="secondary" className="flex-1" onClick={() => setDeleteTarget(undefined)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="danger" className="flex-1"
+            onClick={async () => { if (deleteTarget) { await remove(deleteTarget.id); setDeleteTarget(undefined) } }}
+          >
+            Excluir
+          </Button>
         </div>
       </Modal>
     </PageLayout>
