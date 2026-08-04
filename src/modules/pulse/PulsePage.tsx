@@ -319,6 +319,7 @@ export function PulsePage() {
             {resumoOntem ? (
               <ClosingSummary
                 hoje={resumoOntem.hoje}
+                destaques={resumoOntem.destaques}
                 corretores={resumoOntem.corretores}
                 vgl={vgl}
               />

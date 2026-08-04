@@ -48,6 +48,8 @@ export interface PulseBroker {
   leadsHoje:         number
   visitasHoje:       number
   vendasHoje:        number
+  /** mudanças de etapa que o corretor provocou no dia */
+  avancosHoje?:      number
   /** ligações de prospecção ativa registradas hoje */
   ligacoesHoje:      number
   ultimaAtividadeAt: string | null
@@ -106,9 +108,31 @@ export interface PulseVgl {
 }
 
 /** Balanço de um dia fechado — RPC pulse_resumo_dia, carregada sob demanda. */
+/** Leituras que só fazem sentido sobre um dia inteiro e fechado. */
+export interface PulseDestaques {
+  /** corretor com mais atividade no dia; venda desempata */
+  campeaoId:   string | null
+  whatsapp:    number
+  avancos:     number
+  /** hora (0–23) em que o dia mais aconteceu */
+  horaPico:    number | null
+  horaPicoQtd: number | null
+  produtoTop:  { nome: string; qtd: number } | null
+  avancosPorEtapa: Array<{ etapa: string; qtd: number }>
+  ligacoesDesfecho: {
+    total:        number
+    /** ligações em que houve conversa — separa esforço de resultado */
+    falou:        number
+    interessados: number
+    retornos:     number
+    semResposta:  number
+  }
+}
+
 export interface PulseResumoDia {
   data:       string
   hoje:       PulseHoje
+  destaques:  PulseDestaques
   corretores: PulseBroker[]
 }
 

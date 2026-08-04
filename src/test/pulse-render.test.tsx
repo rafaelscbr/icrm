@@ -11,7 +11,15 @@ import { VglPanel } from '../modules/pulse/components/VglPanel'
 import { ClosingSummary } from '../modules/pulse/components/ClosingSummary'
 import { PageBanner } from '../modules/pulse/components/PageBanner'
 import { calcClimate } from '../modules/pulse/climate'
-import type { PulseEvent, PulseHoje, PulseBroker, PulseVgl } from '../modules/pulse/types'
+import type { PulseEvent, PulseHoje, PulseBroker, PulseVgl, PulseDestaques } from '../modules/pulse/types'
+
+const DESTAQUES: PulseDestaques = {
+  campeaoId: 'b2', whatsapp: 25, avancos: 18,
+  horaPico: 13, horaPicoQtd: 25,
+  produtoTop: { nome: 'Rogga', qtd: 12 },
+  avancosPorEtapa: [{ etapa: 'followup', qtd: 15 }, { etapa: 'venda', qtd: 3 }],
+  ligacoesDesfecho: { total: 40, falou: 22, interessados: 4, retornos: 6, semResposta: 18 },
+}
 
 const VGL: PulseVgl = {
   metaMes: 1_000_000, realizadoMes: 250_000, vendasMes: 1,
@@ -179,23 +187,57 @@ describe('VglPanel — meta do mês e seca de vendas', () => {
   })
 })
 
-describe('ClosingSummary — balanço de um dia', () => {
-  it('lista só quem produziu no dia', () => {
-    render(
-      <ClosingSummary
-        hoje={HOJE}
-        corretores={[
-          ...CORRETORES,
-          { brokerId: 'b3', nome: 'Parado Silva', interacoesHoje: 0, leadsHoje: 0, visitasHoje: 0, vendasHoje: 0, ligacoesHoje: 0, ultimaAtividadeAt: null },
-        ]}
-        vgl={VGL}
-      />
-    )
-    expect(screen.getByText('Rafael')).toBeInTheDocument()
-    expect(screen.getByText('Dionata')).toBeInTheDocument()
-    expect(screen.queryByText('Parado')).not.toBeInTheDocument()
+describe('ClosingSummary — relatório do dia fechado', () => {
+  const render_ = (over = {}) => render(
+    <ClosingSummary hoje={HOJE} destaques={DESTAQUES} corretores={CORRETORES} vgl={VGL} {...over} />
+  )
+
+  it('mostra os seis números do dia, incluindo avanços e ligações', () => {
+    render_()
+    expect(screen.getByText('Avanços no funil')).toBeInTheDocument()
+    expect(screen.getByText('Ligações')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()   // mudancasEtapa de HOJE
   })
 
+  it('coroa o campeão indicado pela RPC, não o primeiro da lista', () => {
+    render_()
+    // b2 = Dionata, mesmo com Rafael tendo mais interações
+    expect(screen.getByText('Dionata')).toBeInTheDocument()
+  })
+
+  it('destaca produto mais procurado, hora de pico e para onde o funil andou', () => {
+    render_()
+    expect(screen.getByText('Rogga · 12')).toBeInTheDocument()
+    expect(screen.getByText('13h · 25 ações')).toBeInTheDocument()
+    expect(screen.getByText('Avanços para Followup')).toBeInTheDocument()
+    expect(screen.getByText('Avanços para Venda')).toBeInTheDocument()
+  })
+
+  it('mostra a prospecção quando houve ligações', () => {
+    render_()
+    expect(screen.getByText('Falou com alguém')).toBeInTheDocument()
+    expect(screen.getByText('22')).toBeInTheDocument()
+  })
+
+  it('sem ligações troca o bloco por faturamento — zeros não são informação', () => {
+    render_({ destaques: { ...DESTAQUES, ligacoesDesfecho: { total: 0, falou: 0, interessados: 0, retornos: 0, semResposta: 0 } } })
+    expect(screen.queryByText('Prospecção ativa')).not.toBeInTheDocument()
+    expect(screen.getByText('Faturamento do dia')).toBeInTheDocument()
+  })
+
+  it('lista só quem produziu no dia', () => {
+    render_({ corretores: [
+      ...CORRETORES,
+      { brokerId: 'b3', nome: 'Parado Silva', interacoesHoje: 0, leadsHoje: 0, visitasHoje: 0, vendasHoje: 0, ligacoesHoje: 0, ultimaAtividadeAt: null },
+    ] })
+    expect(screen.getByText('Rafael')).toBeInTheDocument()
+    expect(screen.queryByText('Parado Silva')).not.toBeInTheDocument()
+  })
+
+  it('aguenta um dia sem destaques nenhum', () => {
+    expect(() => render_({ destaques: undefined, corretores: [] })).not.toThrow()
+    expect(screen.getByText('Nenhuma atividade registrada.')).toBeInTheDocument()
+  })
 })
 
 describe('PageBanner — identifica a página de relance', () => {
