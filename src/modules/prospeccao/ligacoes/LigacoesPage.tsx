@@ -8,6 +8,7 @@ import { PageLayout } from '../../../components/layout/PageLayout'
 import { Button } from '../../../components/ui/Button'
 import { Modal } from '../../../components/ui/Modal'
 import { EstadoTela } from '../../../components/shared/EstadoTela'
+import { Abas } from '../../../components/shared/Abas'
 import { CallCampaignForm } from './CallCampaignForm'
 import { CallCampaignDetail } from './CallCampaignDetail'
 import { CallPerformanceTab } from './CallPerformanceTab'
@@ -139,32 +140,16 @@ export function LigacoesPage() {
 
       {(!loading || campaigns.length > 0) && (
         <>
-          <div
-            className="flex items-center gap-1 mb-5 bg-s2/50 border border-line rounded-[14px] p-1 w-fit"
-            role="tablist"
-            aria-label="Seções"
-          >
-            {([
-              { value: 'campanhas',  label: 'Campanhas',  icon: PhoneCall },
-              { value: 'desempenho', label: 'Desempenho', icon: BarChart3 },
-            ] as { value: PageTab; label: string; icon: typeof PhoneCall }[]).map(t => {
-              const ativo = tab === t.value
-              return (
-                <button
-                  key={t.value}
-                  role="tab"
-                  aria-selected={ativo}
-                  onClick={() => setTab(t.value)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-semibold
-                              transition-all cursor-pointer min-h-[40px]
-                              focus:outline-none focus:ring-2 focus:ring-brand/30
-                    ${ativo ? 'grad-brand' : 'text-t3 hover:text-t1'}`}
-                >
-                  <t.icon size={13} strokeWidth={1.7} aria-hidden /> {t.label}
-                </button>
-              )
-            })}
-          </div>
+          <Abas
+            abas={[
+              { value: 'campanhas'  as PageTab, label: 'Campanhas',  icon: PhoneCall },
+              { value: 'desempenho' as PageTab, label: 'Desempenho', icon: BarChart3 },
+            ]}
+            valor={tab}
+            onChange={setTab}
+            rotulo="Seções de ligações"
+            className="mb-5"
+          />
 
           {tab === 'desempenho' && <CallPerformanceTab />}
 

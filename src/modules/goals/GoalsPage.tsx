@@ -10,6 +10,7 @@ import type { LucideIcon } from 'lucide-react'
 import { DAILY_TARGETS, WEEKLY_TARGETS, MONTHLY_TARGETS } from '../../lib/metasConfig'
 import confetti from 'canvas-confetti'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useRovingTabs } from '../../components/shared/Abas'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
@@ -596,6 +597,8 @@ export function GoalsPage() {
     { id: 'semana', label: 'Esta semana', sub: (() => { const s = getWeekStart(); const e = new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} a ${e.getDate()}/${e.getMonth()+1}` })() },
     { id: 'mes',    label: 'Este mês',    sub: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) },
   ]
+  // rótulo em duas linhas não cabe no <Abas>; só o teclado vem de lá
+  const propsDaAba = useRovingTabs(PERIOD_TABS.map(t => t.id), tab, setTab)
 
   return (
     <PageLayout
@@ -608,13 +611,12 @@ export function GoalsPage() {
       band={
         <div className="flex gap-1 p-1 rounded-[14px] border border-line bg-s2/50 w-full sm:w-fit"
              role="tablist" aria-label="Período">
-          {PERIOD_TABS.map(t => {
+          {PERIOD_TABS.map((t, i) => {
             const ativo = tab === t.id
             return (
               <button
                 key={t.id}
-                role="tab"
-                aria-selected={ativo}
+                {...propsDaAba(i)}
                 onClick={() => setTab(t.id)}
                 className={`flex-1 sm:flex-none flex flex-col items-center sm:items-start gap-0.5
                             px-4 py-2 rounded-[10px] transition-all cursor-pointer min-h-[44px]

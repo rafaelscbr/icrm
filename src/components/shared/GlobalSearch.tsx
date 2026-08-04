@@ -121,6 +121,9 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Busca global"
       className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4 bg-black/55 backdrop-blur-sm"
     >
       <div
@@ -142,6 +145,14 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             onKeyDown={handleInputKeyDown}
             placeholder="Buscar contatos, imóveis, leads, tarefas…"
             aria-label="Buscar em todo o CRM"
+            // A navegação por seta já existia, mas nada disso era anunciado:
+            // sem `combobox` + `aria-activedescendant`, quem usa leitor de tela
+            // ouvia só o que digitou, nunca o resultado que estava selecionado.
+            role="combobox"
+            aria-expanded={hasResults}
+            aria-controls="busca-resultados"
+            aria-autocomplete="list"
+            aria-activedescendant={hasResults ? `busca-opcao-${activeIndex}` : undefined}
             className="flex-1 bg-transparent text-sm text-t1 placeholder-t4 outline-none"
           />
           {query && (
@@ -160,20 +171,22 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         {/* Results */}
         <div className="max-h-[60vh] overflow-y-auto">
           {!q && (
-            <div className="px-4 py-10 text-center text-xs text-t4">
+            <div className="px-4 py-10 text-center text-xs text-t4" role="status">
               Digite para buscar em todo o CRM
             </div>
           )}
           {q && !hasResults && (
-            <div className="px-4 py-10 text-center text-xs text-t3">
+            <div className="px-4 py-10 text-center text-xs text-t3" role="status">
               Nenhum resultado para &ldquo;{query}&rdquo;
             </div>
           )}
 
+          <div id="busca-resultados" role="listbox" aria-label="Resultados da busca">
+
           {filteredContacts.length > 0 && (
             <Section icon={<Users size={12} className="text-brand" />} label="Contatos">
               {filteredContacts.map((c, i) => (
-                <ResultRow key={c.id} icon={<Users size={13} className="text-brand" />}
+                <ResultRow key={c.id} indice={i} icon={<Users size={13} className="text-brand" />}
                   title={c.name} subtitle={formatPhone(c.phone)} tag="Ver contato"
                   active={activeIndex === i} onHover={() => setActiveIndex(i)}
                   onClick={() => goWithModal('/contatos', c.id)} />
@@ -184,7 +197,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           {filteredProperties.length > 0 && (
             <Section icon={<Building2 size={12} className="text-info" />} label="Imóveis">
               {filteredProperties.map((p, i) => (
-                <ResultRow key={p.id} icon={<Building2 size={13} className="text-info" />}
+                <ResultRow key={p.id} indice={offProperties + i} icon={<Building2 size={13} className="text-info" />}
                   title={p.name} subtitle={p.neighborhood} tag="Ver imóvel"
                   active={activeIndex === offProperties + i} onHover={() => setActiveIndex(offProperties + i)}
                   onClick={() => goWithModal('/imoveis', p.id)} />
@@ -195,7 +208,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           {filteredFunnelLeads.length > 0 && (
             <Section icon={<UserPlus size={12} className="text-brand" />} label="Leads do funil">
               {filteredFunnelLeads.map((l, i) => (
-                <ResultRow key={l.id} icon={<UserPlus size={13} className="text-brand" />}
+                <ResultRow key={l.id} indice={offFunnel + i} icon={<UserPlus size={13} className="text-brand" />}
                   title={l.name} subtitle={formatPhone(l.phone)} tag="Abrir lead"
                   active={activeIndex === offFunnel + i} onHover={() => setActiveIndex(offFunnel + i)}
                   onClick={() => goWithModal('/leads', l.id)} />
@@ -206,7 +219,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           {filteredCampLeads.length > 0 && (
             <Section icon={<Megaphone size={12} className="text-brand-text" />} label="Leads de campanha">
               {filteredCampLeads.map((l, i) => (
-                <ResultRow key={l.id} icon={<Megaphone size={13} className="text-brand-text" />}
+                <ResultRow key={l.id} indice={offCamp + i} icon={<Megaphone size={13} className="text-brand-text" />}
                   title={l.name} subtitle={`${formatPhone(l.phone)} · ${getCampaignName(l.campaignId)}`} tag="Ver campanha"
                   active={activeIndex === offCamp + i} onHover={() => setActiveIndex(offCamp + i)}
                   onClick={() => go(`/campanhas?id=${l.campaignId}`)} />
@@ -217,13 +230,15 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           {filteredTasks.length > 0 && (
             <Section icon={<CheckSquare size={12} className="text-warning" />} label="Tarefas">
               {filteredTasks.map((t, i) => (
-                <ResultRow key={t.id} icon={<CheckSquare size={13} className="text-warning" />}
+                <ResultRow key={t.id} indice={offTasks + i} icon={<CheckSquare size={13} className="text-warning" />}
                   title={t.title} subtitle={t.dueDate ? `Vence em ${fmtDate(t.dueDate)}` : 'Sem prazo'} tag="Ver tarefas"
                   active={activeIndex === offTasks + i} onHover={() => setActiveIndex(offTasks + i)}
                   onClick={() => go('/tarefas')} />
               ))}
             </Section>
           )}
+
+          </div>
 
           {hasResults && <div className="h-2" />}
         </div>
@@ -244,8 +259,8 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
 function Section({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <div className="flex items-center gap-2 px-4 pt-3 pb-1.5">
+    <div role="group" aria-label={label}>
+      <div className="flex items-center gap-2 px-4 pt-3 pb-1.5" aria-hidden>
         {icon}
         <span className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">{label}</span>
       </div>
@@ -254,22 +269,29 @@ function Section({ icon, label, children }: { icon: React.ReactNode; label: stri
   )
 }
 
-function ResultRow({ icon, title, subtitle, tag, active, onHover, onClick }: {
+function ResultRow({ indice, icon, title, subtitle, tag, active, onHover, onClick }: {
+  indice: number
   icon: React.ReactNode; title: string; subtitle: string; tag?: string
   active: boolean; onHover: () => void; onClick: () => void
 }) {
-  const ref = useRef<HTMLButtonElement>(null)
+  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (active) ref.current?.scrollIntoView({ block: 'nearest' })
   }, [active])
 
+  // `option` e não `button`: no padrão de combobox o foco nunca sai do campo —
+  // é o `aria-activedescendant` que aponta para a linha ativa. Um botão aqui
+  // seria tabulável e quebraria justamente essa navegação.
   return (
-    <button
+    <div
       ref={ref}
+      id={`busca-opcao-${indice}`}
+      role="option"
+      aria-selected={active}
       onClick={onClick}
       onMouseEnter={onHover}
-      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer"
       style={{ background: active ? 'var(--surface-2)' : 'transparent' }}
     >
       <div
@@ -290,6 +312,6 @@ function ResultRow({ icon, title, subtitle, tag, active, onHover, onClick }: {
           {tag}
         </span>
       )}
-    </button>
+    </div>
   )
 }

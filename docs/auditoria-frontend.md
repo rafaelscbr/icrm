@@ -429,6 +429,48 @@ acontecendo. Bate exatamente com o P0-1.
 
 ---
 
+### P1-2 · Os três overlays e as abas — corrigido em 04/08
+
+Radix entrou como **primitiva pontual**, como decidido na PARTE 1.3: só
+`@radix-ui/react-popover`, e só onde o comportamento é caro de acertar à mão.
+Aparência inalterada — Radix é headless.
+
+| Peça | O que estava errado | O que foi feito |
+|---|---|---|
+| `PeriodSelector` | sem `role`, sem `aria-expanded`, sem Escape, sem teclado | Popover + `radiogroup` de radios nativos |
+| `FilterDropdown` | `role="listbox"` sem navegação de listbox; `role="button"` **dentro** de `<button>` | Popover + `radiogroup`; o "x" virou botão irmão |
+| `GlobalSearch` | setas já funcionavam, mas nada era anunciado | `combobox` + `aria-activedescendant` + `listbox`/`option` |
+| Abas de página | umas declaravam `role="tab"` sem roving tabindex nem setas; outras não tinham papel nenhum | `Abas` + `useRovingTabs` |
+
+Três decisões que valem registro, porque contrariam o caminho óbvio:
+
+- **Radio nativo em vez de reimplementar setas.** Escolher um período é escolher
+  um de N. Com `<input type="radio">` visualmente oculto, a navegação por seta é
+  a do navegador, não código nosso para manter.
+- **Selecionar não fecha o painel.** Como a seta muda a seleção, fechar na
+  mudança deixaria quem usa teclado andar uma casa só. Fechar virou gesto
+  explícito (clique no rótulo, Enter, Escape). De quebra, arrastar pelas setas
+  virou pré-visualização — a página refiltra na hora.
+- **`option` em vez de `button` no `GlobalSearch`.** No padrão de combobox o
+  foco nunca sai do campo; um botão ali seria tabulável e quebraria a navegação
+  que o `aria-activedescendant` descreve.
+- **Sem Radix Tabs.** As telas controlam o conteúdo com `tab === 'x' && …`;
+  `Tabs.Content` exigiria reescrever a composição de seis telas para ganhar o
+  mesmo teclado. `Abas` cobre as barras padrão, e `useRovingTabs` empresta só o
+  teclado às barras de layout próprio (Metas tem rótulo de duas linhas).
+
+**Evidência (04/08, navegador).** `PeriodSelector`: `aria-expanded` alterna,
+7 radios num grupo, Escape fecha e devolve o foco ao gatilho, clique no rótulo
+fecha, mudança sem clique mantém aberto, Enter fecha. `FilterDropdown`: zero
+elementos interativos aninhados, zero `role=listbox`/`option` falsos, "Remover
+filtro Etapa" como botão próprio. `GlobalSearch`: com "a" digitado,
+`aria-activedescendant` = `busca-opcao-0` → seta → `busca-opcao-1`, sempre igual
+ao `[aria-selected=true]`, com o foco permanecendo no campo. Abas do funil: uma
+única parada de Tab entre cinco abas, seta troca e leva o foco junto; em Metas,
+End vai a "Este mês" e Home volta a "Hoje".
+
+---
+
 ## PARTE 6 — Plano proposto
 
 Na ordem que você definiu, um bloco coerente por vez, cada um com verificação:
@@ -437,9 +479,9 @@ Na ordem que você definiu, um bloco coerente por vez, cada um com verificação
    `erro` em 11 stores + 11 telas, `EmptyState` removido, 6 testes de
    precedência, verificado no navegador. Detalhe na PARTE 4.
 2. ~~**P1-1 — `errorElement` e 404.**~~ **Feito em 04/08.** Ver PARTE 4.
-3. **P1-2 — Radix pontual** ← próximo (`Popover`, `DropdownMenu`, `Tooltip`, `Tabs`) nos
+3. ~~**P1-2 — Radix pontual**~~ **Feito em 04/08.** Ver abaixo. (`Popover`, `DropdownMenu`, `Tooltip`, `Tabs`) nos
    três overlays. Headless: a aparência não muda.
-4. **P2-2 — `eslint.config.js`** com `jsx-a11y`, para a régua parar de depender
+4. **P2-2 — `eslint.config.js`** ← próximo com `jsx-a11y`, para a régua parar de depender
    de inspeção manual.
 5. **P1-3 — `xlsx`** para import dinâmico.
 6. **Admin e Notificações** — as duas telas fora do padrão.

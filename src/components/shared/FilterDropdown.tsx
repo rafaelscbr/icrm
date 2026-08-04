@@ -1,5 +1,28 @@
 import { useState, useRef, useEffect, useMemo, type ComponentType } from 'react'
+import * as Popover from '@radix-ui/react-popover'
 import { ChevronDown, Check, Search, X } from 'lucide-react'
+
+/**
+ * Filtro de uma escolha (ou nenhuma).
+ *
+ * Três problemas foram corrigidos aqui, todos estruturais:
+ *
+ * 1. **Semântica que prometia o que não entregava.** O painel declarava
+ *    `role="listbox"` com filhos `role="option"`, mas não tinha foco no
+ *    container nem navegação por seta. Um leitor de tela anunciava "caixa de
+ *    listagem" e o teclado não fazia nada — pior que não ter papel nenhum.
+ *    Agora é um `radiogroup` de radios nativos: as setas funcionam porque são
+ *    as do navegador.
+ * 2. **Botão dentro de botão.** O "x" de limpar era um `<span role="button"
+ *    tabIndex={0}>` aninhado no `<button>` do gatilho. HTML inválido, e cada
+ *    leitor de tela resolve de um jeito. Agora são dois botões irmãos dentro de
+ *    um invólucro que carrega a moldura — visualmente idêntico.
+ * 3. **Escape e clique fora à mão.** Passaram para o Radix Popover, junto com
+ *    o retorno de foco ao gatilho, que não existia.
+ *
+ * Popover e não DropdownMenu porque o painel tem campo de busca: menu com
+ * input dentro rouba foco e typeahead.
+ */
 
 type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?: string; style?: React.CSSProperties }>
 
@@ -26,6 +49,8 @@ interface FilterDropdownProps {
   align?: 'left' | 'right'
 }
 
+let seq = 0
+
 export function FilterDropdown({
   label,
   icon: Icon,
@@ -36,28 +61,16 @@ export function FilterDropdown({
   searchable,
   align = 'left',
 }: FilterDropdownProps) {
-  const [open, setOpen]     = useState(false)
-  const [query, setQuery]   = useState('')
-  const ref       = useRef<HTMLDivElement>(null)
+  const [open, setOpen]   = useState(false)
+  const [query, setQuery] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
+  // nome do grupo de radio: precisa ser único por instância, senão dois
+  // filtros na mesma tela compartilhariam a seleção
+  const grupo = useRef(`filtro-${label}-${++seq}`).current
 
   const selected   = value != null ? options.find(o => o.value === value) ?? null : null
   const isActive   = selected != null
   const showSearch = searchable ?? options.length > 7
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', handler)
-    document.addEventListener('keydown', onEsc)
-    return () => {
-      document.removeEventListener('mousedown', handler)
-      document.removeEventListener('keydown', onEsc)
-    }
-  }, [open])
 
   useEffect(() => {
     if (open && showSearch) searchRef.current?.focus()
@@ -70,83 +83,100 @@ export function FilterDropdown({
     return options.filter(o => o.label.toLowerCase().includes(q))
   }, [options, query])
 
-  function choose(v: string | null) {
+  /** troca a seleção sem fechar — é o que a seta do teclado faz */
+  function selecionar(v: string | null) {
     onChange(v)
+  }
+
+  /** gesto explícito de confirmação: clique no rótulo ou Enter */
+  function confirmar() {
     setOpen(false)
   }
 
   return (
-    <div ref={ref} className="relative">
-      {/* Trigger */}
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className="flex items-center gap-1.5 h-9 pl-2.5 pr-2 rounded-[12px] text-xs font-semibold transition-all duration-150 cursor-pointer"
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      {/* O invólucro carrega a moldura para que o "x" seja irmão do gatilho, e
+          não um botão dentro de outro. */}
+      <div
+        className="inline-flex items-center gap-1.5 h-9 pl-2.5 pr-2 rounded-[12px] transition-all duration-150"
         style={{
           background: isActive ? 'var(--brand-tint)' : open ? 'var(--s2)' : 'var(--surface)',
           border: `1px solid ${isActive ? 'rgba(228,178,60,0.4)' : open ? 'var(--line-strong)' : 'var(--line-input)'}`,
           color: isActive ? 'var(--brand-text)' : 'var(--t2)',
         }}
       >
-        {Icon && <Icon size={13} strokeWidth={1.6} style={{ color: isActive ? 'var(--brand)' : 'var(--t3)' }} />}
-        <span className="font-label uppercase tracking-[0.06em] text-[11px] opacity-70">{label}</span>
-        {selected && (
-          <span className="max-w-[120px] truncate font-heading">{selected.label}</span>
-        )}
-        {isActive ? (
-          <span
-            role="button"
-            tabIndex={0}
-            aria-label={`Remover filtro ${label}`}
-            onClick={e => { e.stopPropagation(); choose(null) }}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); choose(null) } }}
-            className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-brand/20 transition-colors"
+        <Popover.Trigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer bg-transparent
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded-md"
+            style={{ color: 'inherit' }}
           >
-            <X size={11} strokeWidth={2} style={{ color: 'var(--brand)' }} />
-          </span>
-        ) : (
-          <ChevronDown
-            size={12}
-            style={{ color: 'var(--t4)' }}
-            className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          />
-        )}
-      </button>
+            {Icon && <Icon size={13} strokeWidth={1.6} style={{ color: isActive ? 'var(--brand)' : 'var(--t3)' }} />}
+            <span className="font-label uppercase tracking-[0.06em] text-[11px] opacity-70">{label}</span>
+            {selected && <span className="max-w-[120px] truncate font-heading">{selected.label}</span>}
+            {!isActive && (
+              <ChevronDown
+                size={12}
+                style={{ color: 'var(--t4)' }}
+                className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                aria-hidden
+              />
+            )}
+          </button>
+        </Popover.Trigger>
 
-      {/* Dropdown */}
-      {open && (
-        <div
-          className={`absolute top-full mt-1.5 z-50 w-60 rounded-[14px] overflow-hidden animate-in ${align === 'right' ? 'right-0' : 'left-0'}`}
+        {isActive && (
+          <button
+            type="button"
+            aria-label={`Remover filtro ${label}`}
+            onClick={() => onChange(null)}
+            className="ml-0.5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-brand/20
+                       transition-colors cursor-pointer bg-transparent border-0
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+          >
+            <X size={11} strokeWidth={2} style={{ color: 'var(--brand)' }} aria-hidden />
+          </button>
+        )}
+      </div>
+
+      <Popover.Portal>
+        <Popover.Content
+          align={align === 'right' ? 'end' : 'start'}
+          sideOffset={6}
+          className="z-50 w-60 rounded-[14px] overflow-hidden animate-in"
           style={{
             background: 'var(--surface)',
             border: '1px solid var(--line)',
             boxShadow: 'var(--shadow-dropdown)',
           }}
-          role="listbox"
         >
           {showSearch && (
             <div className="p-2" style={{ borderBottom: '1px solid var(--line)' }}>
               <div className="relative">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--t4)' }} />
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--t4)' }} aria-hidden />
                 <input
                   ref={searchRef}
                   value={query}
                   onChange={e => setQuery(e.target.value)}
+                  aria-label={`Buscar ${label.toLowerCase()}`}
                   placeholder={`Buscar ${label.toLowerCase()}...`}
-                  className="w-full rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none"
+                  className="w-full rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none
+                             focus-visible:ring-2 focus-visible:ring-brand/40"
                   style={{ background: 'var(--s2)', border: '1px solid var(--line-input)', color: 'var(--t1)' }}
                 />
               </div>
             </div>
           )}
 
-          <div className="p-1.5 max-h-[280px] overflow-y-auto">
-            {/* Opção "Todos" */}
+          <fieldset className="p-1.5 max-h-[280px] overflow-y-auto border-0 m-0">
+            <legend className="sr-only">{label}</legend>
+
             <OptionRow
+              grupo={grupo}
               active={value == null}
-              onClick={() => choose(null)}
+              onSelect={() => selecionar(null)}
+              onConfirm={confirmar}
               label={allLabel}
             />
 
@@ -159,52 +189,63 @@ export function FilterDropdown({
             {visible.map(opt => (
               <OptionRow
                 key={opt.value}
+                grupo={grupo}
                 active={value === opt.value}
-                onClick={() => choose(opt.value)}
+                onSelect={() => selecionar(opt.value)}
+                onConfirm={confirmar}
                 label={opt.label}
                 count={opt.count}
                 icon={opt.icon}
                 dot={opt.dot}
               />
             ))}
-          </div>
-        </div>
-      )}
-    </div>
+          </fieldset>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 
 function OptionRow({
-  active, onClick, label, count, icon: Icon, dot,
+  grupo, active, onSelect, onConfirm, label, count, icon: Icon, dot,
 }: {
+  grupo: string
   active: boolean
-  onClick: () => void
+  onSelect: () => void
+  onConfirm: () => void
   label: string
   count?: number
   icon?: IconType
   dot?: string
 }) {
   return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={active}
-      onClick={onClick}
-      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-100 cursor-pointer"
+    <label
+      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer
+                 transition-all duration-100 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/40"
       style={{
         background: active ? 'var(--brand-tint)' : 'transparent',
         color: active ? 'var(--brand-text)' : 'var(--t2)',
       }}
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--s2)' }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
+      // clique de ponteiro chega no rótulo; seta do teclado dispara só `change`
+      onClick={onConfirm}
     >
+      <input
+        type="radio"
+        name={grupo}
+        checked={active}
+        onChange={onSelect}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onConfirm() } }}
+        className="sr-only"
+      />
       {/* Aceita classe utilitária ('bg-brand') ou valor CSS ('var(--brand)').
           Os tokens de cor do sistema são var() puro, e nem todo estado tem
           classe Tailwind equivalente. */}
       {dot && (
         dot.startsWith('var(') || dot.startsWith('#') || dot.startsWith('rgb')
-          ? <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} />
-          : <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+          ? <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} aria-hidden />
+          : <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} aria-hidden />
       )}
       {Icon && <Icon size={13} strokeWidth={1.6} style={{ color: active ? 'var(--brand)' : 'var(--t3)' }} className="flex-shrink-0" />}
       <span className="flex-1 min-w-0 truncate text-sm font-medium">{label}</span>
@@ -213,7 +254,7 @@ function OptionRow({
           {count}
         </span>
       )}
-      {active && <Check size={13} strokeWidth={2.4} style={{ color: 'var(--brand)' }} className="flex-shrink-0" />}
-    </button>
+      {active && <Check size={13} strokeWidth={2.4} style={{ color: 'var(--brand)' }} className="flex-shrink-0" aria-hidden />}
+    </label>
   )
 }

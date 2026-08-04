@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { Abas } from '../../components/shared/Abas'
 import { Button } from '../../components/ui/Button'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -391,28 +392,14 @@ export function LeadsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 mt-4 border-b border-line">
-          {TABS.map(({ value, label, icon: Icon, badge }) => (
-            <button
-              key={value}
-              onClick={() => setTab(value)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 -mb-px transition-all cursor-pointer
-                ${tab === value
-                  ? 'border-brand text-t1'
-                  : 'border-transparent text-t3 hover:text-t2 hover:border-line-strong'
-                }`}
-            >
-              <Icon size={12} />
-              {label}
-              {badge !== undefined && (
-                <span className={`ml-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full
-                  ${tab === value ? 'bg-brand/15 text-brand' : 'bg-s3/50 text-t3'}`}>
-                  {badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <Abas
+          abas={TABS.map(t => ({ value: t.value, label: t.label, icon: t.icon, badge: t.badge }))}
+          valor={tab}
+          onChange={setTab}
+          rotulo="Visões do funil"
+          variante="sublinhado"
+          className="mt-4"
+        />
       </div>
 
       {/* ── Dashboard ─────────────────────────────────────────────────────────── */}

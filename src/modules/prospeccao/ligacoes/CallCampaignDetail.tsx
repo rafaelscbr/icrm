@@ -3,6 +3,7 @@ import {
   ArrowLeft, Phone, LayoutGrid, BarChart3, Pencil, Pause, Play, CheckCheck,
   ListPlus, Users, Check, Loader2, X, Database, Crown, Timer,
 } from 'lucide-react'
+import { useRovingTabs } from '../../../components/shared/Abas'
 import { SidePanel } from '../../../components/ui/SidePanel'
 import { Button } from '../../../components/ui/Button'
 import { CallQueueTab } from './CallQueueTab'
@@ -32,6 +33,8 @@ interface Props {
 export function CallCampaignDetail({ campaignId, onBack }: Props) {
   const { campaigns, setStatus } = useCallCampaignsStore()
   const [tab,        setTab]        = useState<Tab>('fila')
+  // pílula com borda própria; só o teclado das abas vem do compartilhado
+  const propsDaAba = useRovingTabs(TABS.map(t => t.value), tab, setTab)
   const [editOpen,   setEditOpen]   = useState(false)
   const [listasOpen, setListasOpen] = useState(false)
   const [equipeOpen, setEquipeOpen] = useState(false)
@@ -123,13 +126,12 @@ export function CallCampaignDetail({ campaignId, onBack }: Props) {
 
         {/* Abas com o que cada uma responde */}
         <div className="flex gap-2 mt-4 overflow-x-auto" role="tablist" aria-label="Seções da campanha">
-          {TABS.map(({ value, label, icon: Icon, dica }) => {
+          {TABS.map(({ value, label, icon: Icon, dica }, i) => {
             const ativo = tab === value
             return (
               <button
                 key={value}
-                role="tab"
-                aria-selected={ativo}
+                {...propsDaAba(i)}
                 onClick={() => setTab(value)}
                 title={dica}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-[14px] text-[13px] font-semibold
