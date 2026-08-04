@@ -7,7 +7,6 @@ import {
   DndContext, DragOverlay, useDraggable, useDroppable,
   closestCenter, DragEndEvent, PointerSensor, KeyboardSensor, useSensor, useSensors,
 } from '@dnd-kit/core'
-import * as XLSX from 'xlsx'
 import { LeadParecerModal } from './LeadParecerModal'
 import { TransferToFunnelModal } from './TransferToFunnelModal'
 import { VisitaTaskModal } from './VisitaTaskModal'
@@ -68,7 +67,10 @@ function applyDateFilter(leads: CampaignLead[], filter: DateFilter): CampaignLea
   return leads
 }
 
-function exportColumn(stageName: string, leads: CampaignLead[]) {
+// `xlsx` chega sob demanda: quem nunca exporta uma coluna não paga os 424 kB.
+// Ver o comentário em lib/xlsxParser.ts.
+async function exportColumn(stageName: string, leads: CampaignLead[]) {
+  const XLSX = await import('xlsx')
   const rows = leads.map(l => ({
     Nome:              l.name,
     Telefone:          l.phone,
@@ -493,7 +495,7 @@ function KanbanColumn({
               </span>
               {leads.length > 0 && (
                 <button
-                  onClick={() => exportColumn(stage.value, leads)}
+                  onClick={() => { void exportColumn(stage.value, leads) }}
                   className="p-1 rounded-md text-t4 hover:text-t2 transition-colors duration-150"
                   title={`Exportar ${stage.label}`}
                   aria-label={`Exportar leads da etapa ${stage.label}`}

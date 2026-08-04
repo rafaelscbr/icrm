@@ -1,5 +1,14 @@
-import * as XLSX from 'xlsx'
 import { normalizePhone } from './formatters'
+
+/**
+ * A `xlsx` são 424 kB — o maior arquivo do pacote, maior que React, roteador e
+ * Supabase somados. Importada no topo, ela entrava no carregamento inicial de
+ * todo mundo, inclusive de quem nunca abre uma planilha na vida.
+ *
+ * Aqui ela passa a ser buscada no momento em que alguém escolhe um arquivo.
+ * Nesse instante o usuário já está esperando o processamento, então o download
+ * cabe no tempo que ele espera de qualquer jeito.
+ */
 
 export interface ParsedLead {
   name:   string
@@ -31,8 +40,9 @@ function findCol(row: Record<string, unknown>, keys: string[]): string | undefin
 export function parseXlsx(file: File): Promise<ParseResult> {
   return new Promise(resolve => {
     const reader = new FileReader()
-    reader.onload = e => {
+    reader.onload = async e => {
       try {
+        const XLSX = await import('xlsx')
         const data = new Uint8Array(e.target!.result as ArrayBuffer)
         const wb   = XLSX.read(data, { type: 'array' })
         const ws   = wb.Sheets[wb.SheetNames[0]]

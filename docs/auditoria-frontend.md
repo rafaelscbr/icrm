@@ -515,6 +515,34 @@ em seguida**.
 
 ---
 
+### P1-3 · `xlsx` sai do carregamento inicial — corrigido em 04/08
+
+424 kB, o maior arquivo do pacote — maior que React, roteador e Supabase
+somados. Importada no topo de `lib/xlsxParser.ts` e de `KanbanTab`, entrava no
+carregamento de todo mundo, inclusive de quem nunca abre uma planilha.
+
+Virou `await import('xlsx')` dentro do `reader.onload` (importação) e dentro de
+`exportColumn` (exportação). Nos dois casos o usuário já está esperando um
+processamento quando o download acontece.
+
+**Um detalhe que quase anulou a correção:** o service worker precacheia todos os
+arquivos do build. Sem `globIgnores`, ele traria a `xlsx` de volta pela porta
+dos fundos — baixando os 424 kB em segundo plano para todo mundo, exatamente o
+que se queria evitar. `globIgnores: ['**/vendor-xlsx-*.js']` resolve; o precache
+caiu de **2.636 KiB para 2.290 KiB**.
+
+**Evidência (04/08).** No build: `dist/index.html` não cita o chunk nem tem
+`modulepreload` para ele; as duas únicas referências estão dentro dos chunks de
+página, na forma `await ct(()=>import("./vendor-xlsx-*.js"),[])` — dentro do
+`onload`. No navegador, abrir Base de Leads carrega `xlsxParser.ts` (o invólucro
+leve) e **nenhum** arquivo da `xlsx`. Passando uma planilha de quatro linhas
+pelo `parseXlsx` (montada na página, sem escrever no banco): 2 leads válidos,
+`duplicatePhones: 1`, `invalidPhones: 1` e o erro `Linha 5: número inválido —
+"123"`. O caminho de **exportação** foi verificado por typecheck e build, não
+exercitado no navegador — ele dispara um download de arquivo.
+
+---
+
 ## PARTE 6 — Plano proposto
 
 Na ordem que você definiu, um bloco coerente por vez, cada um com verificação:
@@ -527,8 +555,8 @@ Na ordem que você definiu, um bloco coerente por vez, cada um com verificação
    três overlays. Headless: a aparência não muda.
 4. **P2-2 — `eslint.config.js`** ← próximo com `jsx-a11y`, para a régua parar de depender
    de inspeção manual.
-5. **P1-3 — `xlsx`** para import dinâmico. ← próximo
-6. **Admin e Notificações** — as duas telas fora do padrão.
+5. ~~**P1-3 — `xlsx`** para import dinâmico.~~ **Feito em 04/08.** Ver abaixo.
+6. **Admin e Notificações** — as duas telas fora do padrão. ← próximo
 7. **Motion**, se aprovado, e só então o acabamento de movimento.
 
 O que **não** recomendo fazer: trocar a fundação de componentes. O sistema não

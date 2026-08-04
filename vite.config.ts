@@ -36,6 +36,12 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // A `xlsx` (424 kB) virou import dinâmico: só quem importa ou exporta
+        // planilha paga por ela. Precachear traria o arquivo de volta pela
+        // porta dos fundos — o service worker baixaria tudo em segundo plano
+        // para todo mundo. Fica de fora; quando o import dinâmico disparar, a
+        // rede busca na hora.
+        globIgnores: ['**/vendor-xlsx-*.js'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         // Web Push: handlers de push/notificationclick anexados ao SW gerado
         importScripts: ['push-sw.js'],
