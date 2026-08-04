@@ -15,6 +15,7 @@ import {
   MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake,
   Sparkles, Smartphone, Globe, Handshake, Megaphone, Loader2,
   Wifi, WifiOff, Trophy, Rows2, Rows3, DollarSign,
+  Inbox,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -159,9 +160,22 @@ function LeadCard({
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={`group relative border rounded-[14px] cursor-pointer kanban-card shadow-card
+      className={`group relative border rounded-[14px] cursor-pointer
         transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
         overflow-hidden
+        ${/*
+            Nem todo card merece o mesmo peso. Antes todos vinham com a mesma
+            superfície, a mesma sombra e o mesmo botão verde — o lead parado há
+            35 dias ficava visualmente igual ao contactado hoje, e a coluna
+            virava um paredão uniforme.
+
+            Agora quem pede ação carrega superfície e sombra; quem está em dia
+            recolhe para um card raso. A urgência já era calculada
+            (computeNextAction), só não estava sendo usada para dar peso.
+         */ ''}
+        ${next?.urgency === 'critical' || next?.urgency === 'attention'
+          ? 'kanban-card shadow-card'
+          : 'bg-s2/50 border-line/70 shadow-none hover:bg-s2'}
         ${dense ? 'p-2.5' : 'p-3'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? 'shadow-modal border-brand/40' : ''}
@@ -222,9 +236,18 @@ function LeadCard({
           {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
-            {displayName}
-          </p>
+          <div className="flex items-baseline gap-2">
+            <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
+              {displayName}
+            </p>
+            {/* O valor decide prioridade tanto quanto o nome. Estava em 11px
+                perdido na terceira linha, ao lado do produto. */}
+            {lead.averageTicket && (
+              <span className="ml-auto flex-shrink-0 font-heading text-[13px] font-bold text-t2 tabular-nums leading-tight">
+                {formatCurrency(lead.averageTicket)}
+              </span>
+            )}
+          </div>
           {/* Só o que qualifica a identidade: prioridade e responsável.
               Origem, produto e telefone desceram para o nível 3. */}
           <div className="flex items-center gap-1.5 mt-1 min-w-0">
@@ -304,14 +327,6 @@ function LeadCard({
           {(property || lead.propertyName) && (
             <span className="truncate">{property ? property.name : lead.propertyName}</span>
           )}
-          {lead.averageTicket && (
-            <>
-              <span className="flex-shrink-0" aria-hidden>·</span>
-              <span className="font-semibold text-t2 tabular-nums flex-shrink-0">
-                {formatCurrency(lead.averageTicket)}
-              </span>
-            </>
-          )}
           {/* Comissão só nas etapas finais ou no modo financeiro */}
           {lead.averageTicket && showCommission && (
             <span className="ml-auto flex-shrink-0 text-success tabular-nums" title="Comissão estimada (2%)">
@@ -327,8 +342,15 @@ function LeadCard({
       )}
 
       {/* ── NÍVEL 4 — Ações ──────────────────────────────────────────────── */}
-      {/* Etapa Venda troca o CTA: lá o que avança o negócio é concluir a venda. */}
-      <div className="mt-2.5 pt-2.5 border-t border-line flex items-center gap-1.5">
+      {/* Etapa Venda troca o CTA: lá o que avança o negócio é concluir a venda.
+
+          O botão principal era VERDE CHEIO em todo card. Com dez cards por
+          coluna, eram trinta retângulos verdes disputando a tela ao mesmo
+          tempo — e um destaque que se repete em tudo deixa de ser destaque.
+          Agora ele é um botão fantasma que se enche de cor ao passar o mouse
+          ou receber foco: continua visível e descobrível (esconder no hover
+          seria pior, some no toque e no teclado), só parou de gritar. */}
+      <div className="mt-2.5 pt-2.5 border-t border-line/60 flex items-center gap-1.5">
         {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
           <button
             onClick={e => { e.stopPropagation(); setShowConclude(true) }}
@@ -341,7 +363,12 @@ function LeadCard({
         ) : (
           <button
             onClick={handleWhatsApp}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 min-h-[32px] font-heading text-xs font-bold
+                       text-t3 bg-transparent border border-line rounded-[10px] transition-all duration-150 active:scale-[0.98]
+                       group-hover:text-success group-hover:bg-success-bg group-hover:border-success-line
+                       hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)] hover:!border-success
+                       focus-visible:text-success focus-visible:bg-success-bg focus-visible:border-success-line
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
             title="Abrir WhatsApp e registrar o contato na timeline"
           >
             <MessageCircle size={12} strokeWidth={1.6} />
@@ -468,10 +495,16 @@ function KanbanColumn({
             `}
           >
             {leads.length === 0 && (
-              <div className="flex-1 flex items-center justify-center rounded-[14px] border border-dashed border-line m-0.5">
-                <p className="text-xs text-t4 text-center px-3">
-                  Nenhum lead em {conf.label.toLowerCase()}.<br />
-                  <span className="text-t5">Arraste um card para cá.</span>
+              /* Ficava centralizado num flex-1 de 420px+ de altura: o texto
+                 caía abaixo da dobra e a coluna vazia lia como um vão morto.
+                 Agora a área de solta fica no topo, onde o card entraria. */
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-[14px] border border-dashed
+                              border-line-strong/60 bg-s3/20 px-3 py-7 m-0.5">
+                <Inbox size={16} strokeWidth={1.5} className="text-t4" aria-hidden />
+                <p className="text-xs text-t4 text-center leading-snug">
+                  Nada em {conf.label.toLowerCase()}
+                  <br />
+                  <span className="text-t5">Arraste um card para cá</span>
                 </p>
               </div>
             )}

@@ -114,45 +114,76 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
             <FitBadge fit={intel.fitOrigin!.fit} produto={intel.fitOrigin!.name} compact />
           )}
           <SlaBadge lead={lead} />
+        </div>
+        {/* Segunda linha: telefone, corretor e vínculo com o CRM viram TEXTO,
+            não mais pílulas.
+
+            A linha carregava sete elementos com moldura própria — temperatura,
+            encaixe, SLA, corretor, CRM, origem e etapa — todos com borda, fundo
+            e o mesmo peso visual. Quando tudo tem destaque, nada tem: o olho
+            não achava por onde entrar. Só temperatura, encaixe e SLA (o que
+            exige decisão) seguem com forma; o resto é contexto e lê como
+            contexto. */}
+        <div className="flex items-center gap-2 mt-0.5 text-xs text-t3 min-w-0">
+          <span className="tabular-nums flex-shrink-0">{formatPhone(displayPhone)}</span>
           {brokerName && (
-            <span
-              title={`Corretor responsável: ${brokerName}`}
-              className="font-label text-[11px] font-medium uppercase tracking-[0.08em] text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-px rounded-full flex-shrink-0"
-            >
-              {brokerName.split(' ')[0]}
-            </span>
+            <>
+              <span className="text-t5" aria-hidden>·</span>
+              <span className="truncate" title={`Corretor responsável: ${brokerName}`}>
+                {brokerName.split(' ')[0]}
+              </span>
+            </>
           )}
           {lead.contactId && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/25 flex-shrink-0">
-              <UserCheck size={8} /> No CRM
-            </span>
+            <>
+              <span className="text-t5" aria-hidden>·</span>
+              <span className="inline-flex items-center gap-1 text-t4 flex-shrink-0" title="Lead vinculado a um contato do CRM">
+                <UserCheck size={10} strokeWidth={1.6} aria-hidden /> no CRM
+              </span>
+            </>
           )}
         </div>
-        <p className="text-xs text-t3 mt-0.5">{formatPhone(displayPhone)}</p>
       </div>
 
-      <div className="hidden md:block text-right flex-shrink-0 max-w-[120px]">
+      {/* Produto e valor eram a MESMA célula, num encadeamento de `else`: quem
+          tinha produto nunca via o valor. São dois fatos diferentes e agora
+          ocupam colunas diferentes. */}
+      <div className="hidden md:block text-right flex-shrink-0 w-[130px] min-w-0">
         {property ? (
-          <p className="text-xs text-t2 truncate">{property.name}</p>
+          <p className="text-xs text-t3 truncate">{property.name}</p>
         ) : lead.propertyName ? (
-          <p className="text-xs text-amber-400/80 truncate flex items-center justify-end gap-1"><Home size={10} className="flex-shrink-0" /> {lead.propertyName}</p>
-        ) : lead.averageTicket ? (
-          <p className="text-xs font-semibold text-brand-text">{formatCurrency(lead.averageTicket)}</p>
+          <p className="text-xs text-t3 truncate flex items-center justify-end gap-1">
+            <Home size={10} className="flex-shrink-0" aria-hidden /> {lead.propertyName}
+          </p>
         ) : (
-          <p className="text-xs text-t4">—</p>
+          <p className="text-xs text-t5">—</p>
         )}
       </div>
 
-      <div className={`hidden sm:flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border flex-shrink-0 ${originConf.bg} ${originConf.color} ${originConf.border}`}>
-        <originConf.icon size={11} strokeWidth={1.6} /> {originConf.label}
+      <div className="hidden lg:block text-right flex-shrink-0 w-[92px]">
+        {lead.averageTicket ? (
+          <p className="font-heading text-[13px] font-bold text-t2 tabular-nums">
+            {formatCurrency(lead.averageTicket)}
+          </p>
+        ) : (
+          <p className="text-xs text-t5">—</p>
+        )}
       </div>
 
-      <span className={`inline-flex text-xs font-medium px-2 py-1 rounded-lg border flex-shrink-0 ${conf.bg} ${conf.color} ${conf.border}`}>
-        {conf.label}
-        {lead.funnelStage === 'followup' && lead.followupStep > 0 && ` · ${lead.followupStep}ª`}
-      </span>
+      {/* Origem sem moldura: é procedência, não estado. A etapa continua a
+          única pílula deste lado, porque é a que muda e a que se compara. */}
+      <div className="hidden sm:flex items-center gap-1.5 text-xs text-t4 flex-shrink-0 w-[104px]">
+        <originConf.icon size={11} strokeWidth={1.6} aria-hidden /> {originConf.label}
+      </div>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      <div className="w-[92px] flex-shrink-0">
+        <span className={`inline-flex text-xs font-medium px-2 py-1 rounded-lg border ${conf.bg} ${conf.color} ${conf.border}`}>
+          {conf.label}
+          {lead.funnelStage === 'followup' && lead.followupStep > 0 && ` · ${lead.followupStep}ª`}
+        </span>
+      </div>
+
+      <div className="w-[52px] flex-shrink-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
         {!isDiscarded && (
           <button
             onClick={handleWhatsApp}
@@ -584,13 +615,17 @@ export function LeadsPage() {
               </div>
             ) : (
               <div className="mx-4 my-4 rounded-xl border border-line overflow-hidden list-surface">
-                <div className="grid grid-cols-[40px_1fr_auto_auto_auto_auto] gap-4 px-6 py-3 border-b border-line bg-s3/30">
-                  <div />
-                  <span className="text-xs font-semibold text-t3">Nome</span>
-                  <span className="text-xs font-semibold text-t3 hidden md:block">Produto</span>
-                  <span className="text-xs font-semibold text-t3 hidden sm:block">Origem</span>
-                  <span className="text-xs font-semibold text-t3">Etapa</span>
-                  <div />
+                {/* O cabeçalho era `grid` e as linhas são `flex`: as colunas
+                    nunca alinharam de verdade — os rótulos flutuavam sobre
+                    conteúdo alinhado à direita. Agora espelha a linha. */}
+                <div className="flex items-center gap-4 px-6 py-2.5 border-b border-line bg-s3/20 select-none">
+                  <span className="w-8 flex-shrink-0" aria-hidden />
+                  <span className="flex-1 min-w-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Nome</span>
+                  <span className="hidden md:block w-[130px] flex-shrink-0 text-right font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Produto</span>
+                  <span className="hidden lg:block w-[92px] flex-shrink-0 text-right font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Valor</span>
+                  <span className="hidden sm:block w-[104px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Origem</span>
+                  <span className="w-[92px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Etapa</span>
+                  <span className="w-[52px] flex-shrink-0" aria-hidden />
                 </div>
                 {filtered.map(lead => (
                   <LeadRow key={lead.id} lead={lead} onClick={() => setSelectedLead(lead)} />
