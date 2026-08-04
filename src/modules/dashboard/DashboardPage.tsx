@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import {
   Users, TrendingUp, DollarSign, ArrowRight, Sparkles, CheckCircle2,
   AlertTriangle, CalendarCheck, Siren, RefreshCw,
-  ChevronDown, ChevronUp, FileText, Flame, Info, BarChart3, Wallet, ArrowDown, LayoutDashboard,} from 'lucide-react'
+  ChevronDown, ChevronUp, FileText, Flame, Info, BarChart3, Wallet, ArrowDown, LayoutDashboard,
+  Gauge, Filter, MessageCircle,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { TOM } from '../../components/shared/visual'
+import type { Tom } from '../../components/shared/visual'
 import { Task, Lead, calcSaleCommissions } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { TaskForm } from '../tasks/TaskForm'
@@ -93,9 +98,22 @@ const COLD_LIMIT = 10
 
 // ─── Primitivas ───────────────────────────────────────────────────────────────
 
-function SectionLabel({ children, hint }: { children: ReactNode; hint?: string }) {
+/**
+ * Marcação de seção — filete de tom, ícone e título.
+ *
+ * O filete e o ícone existem para o olho achar a divisão sem ler: numa página
+ * desta altura, quatro títulos de mesmo peso em texto puro viram uma parede.
+ */
+function SectionLabel({ children, hint, icon: Icon, tom = 'marca' }: {
+  children: ReactNode
+  hint?: string
+  icon?: LucideIcon
+  tom?: Tom
+}) {
   return (
-    <div className="flex items-baseline gap-3 mb-3.5 px-0.5">
+    <div className="flex items-center gap-2.5 mb-3.5 px-0.5">
+      <span className={`w-1 h-4 rounded-full ${TOM[tom].ponto}`} aria-hidden />
+      {Icon && <Icon size={15} strokeWidth={1.7} className={TOM[tom].texto} aria-hidden />}
       <h2 className="font-heading text-[15px] font-extrabold text-t1 tracking-[-0.02em]">{children}</h2>
       {hint && <span className="text-[11px] text-t4 truncate">{hint}</span>}
     </div>
@@ -223,7 +241,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
 
   if (loading && !data) {
     return (
-      <div className="rounded-[20px] border border-line bg-surface p-8 grid lg:grid-cols-2 gap-10">
+      <div className="rounded-[20px] border border-line surface-premium p-8 grid lg:grid-cols-2 gap-10">
         <div className="flex flex-col gap-4">
           <ShimmerBlock className="w-40 h-3" /><ShimmerBlock className="w-64 h-12" />
           <ShimmerBlock className="w-full h-3" /><ShimmerBlock className="w-52 h-4" />
@@ -494,10 +512,12 @@ interface PriorityItem {
   onOpen: () => void
 }
 
-const SEVERITY: Record<Severity, { label: string; text: string; bg: string; bar: string }> = {
-  critical:    { label: 'Crítico',      text: 'text-error',   bg: 'bg-error-bg',   bar: 'bg-error'   },
-  attention:   { label: 'Atenção',      text: 'text-warning', bg: 'bg-warning-bg', bar: 'bg-warning' },
-  opportunity: { label: 'Oportunidade', text: 'text-info',    bg: 'bg-info-bg',    bar: 'bg-info'    },
+const SEVERITY: Record<Severity, {
+  label: string; text: string; bg: string; bar: string; line: string; actionIcon: LucideIcon
+}> = {
+  critical:    { label: 'Crítico',      text: 'text-error',   bg: 'bg-error-bg',   bar: 'bg-error',   line: 'border-error-line',   actionIcon: CheckCircle2  },
+  attention:   { label: 'Atenção',      text: 'text-warning', bg: 'bg-warning-bg', bar: 'bg-warning', line: 'border-warning-line', actionIcon: CalendarCheck },
+  opportunity: { label: 'Oportunidade', text: 'text-info',    bg: 'bg-info-bg',    bar: 'bg-info',    line: 'border-info-line',    actionIcon: MessageCircle },
 }
 
 function PriorityFeed({ items, loading, onSeeAll, coldOverflow = 0 }: {
@@ -513,7 +533,7 @@ function PriorityFeed({ items, loading, onSeeAll, coldOverflow = 0 }: {
 
   if (loading) {
     return (
-      <div className="rounded-[16px] border border-line bg-surface divide-y divide-line">
+      <div className="rounded-[16px] border border-line surface-premium divide-y divide-line">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4 px-5 py-4">
             <ShimmerBlock className="w-16 h-5" />
@@ -566,11 +586,21 @@ function PriorityFeed({ items, loading, onSeeAll, coldOverflow = 0 }: {
                     {item.reason} <span className="text-t4">· {item.time}</span>
                   </p>
                 </button>
+                {/* A ação carrega o peso da severidade: só o crítico vem no
+                    degradê da marca. Seis botões dourados iguais em sequência
+                    achatariam a diferença entre "resolva agora" e "seria bom
+                    fazer" — que é a única coisa que esta lista existe para
+                    dizer. */}
                 <button
                   onClick={item.onAction}
-                  className="flex-shrink-0 flex items-center gap-1.5 font-heading text-xs font-bold px-3 py-2 rounded-[10px]
-                    text-[var(--brand-btn-text)] bg-brand hover:bg-brand-dark transition-colors cursor-pointer active:scale-[0.98]"
+                  className={`flex-shrink-0 flex items-center gap-1.5 font-heading text-xs font-bold
+                    px-3 py-2 min-h-[38px] rounded-[10px] transition-all cursor-pointer active:scale-[0.98]
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+                    ${item.severity === 'critical'
+                      ? 'grad-brand hover:brightness-110'
+                      : `${s.text} ${s.bg} border ${s.line} hover:brightness-115`}`}
                 >
+                  <s.actionIcon size={13} strokeWidth={2} aria-hidden />
                   {item.actionLabel}
                 </button>
               </div>
@@ -669,12 +699,12 @@ function RevenueFunnel({ data, analytics, detail, loading, error, onNavigate }: 
   const hasCohort = !!analytics
 
   if (error && !data) {
-    return <p className="rounded-[16px] border border-line bg-surface px-5 py-4 text-xs text-error" role="alert">{error}</p>
+    return <p className="rounded-[16px] border border-line surface-premium px-5 py-4 text-xs text-error" role="alert">{error}</p>
   }
 
   if (loading && !data) {
     return (
-      <div className="rounded-[16px] border border-line bg-surface p-5 flex flex-col gap-3">
+      <div className="rounded-[16px] border border-line surface-premium p-5 flex flex-col gap-3">
         {Array.from({ length: 6 }).map((_, i) => <ShimmerBlock key={i} className="w-full h-9" />)}
       </div>
     )
@@ -682,7 +712,7 @@ function RevenueFunnel({ data, analytics, detail, loading, error, onNavigate }: 
 
   if (data && total === 0) {
     return (
-      <div className="rounded-[16px] border border-line bg-surface flex flex-col items-center py-12 gap-2">
+      <div className="rounded-[16px] border border-line surface-premium flex flex-col items-center py-12 gap-2">
         <Users size={26} className="text-t4" aria-hidden />
         <p className="text-sm text-t3">Nenhum lead no funil ainda</p>
         <button onClick={onNavigate} className="text-xs font-semibold text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">
@@ -832,13 +862,13 @@ function RevenueTrend({ points, target, loading }: {
   loading: boolean
 }) {
   if (loading) {
-    return <div className="rounded-[16px] border border-line bg-surface p-5"><ShimmerBlock className="w-full h-48" /></div>
+    return <div className="rounded-[16px] border border-line surface-premium p-5"><ShimmerBlock className="w-full h-48" /></div>
   }
 
   const totalRealizado = points.reduce((a, p) => a + p.realizado, 0)
   if (points.length === 0 || (totalRealizado === 0 && target === 0)) {
     return (
-      <div className="rounded-[16px] border border-line bg-surface flex flex-col items-center py-12 gap-2">
+      <div className="rounded-[16px] border border-line surface-premium flex flex-col items-center py-12 gap-2">
         <BarChart3 size={26} className="text-t4" aria-hidden />
         <p className="text-sm text-t3">Sem vendas registradas neste mês ainda</p>
       </div>
@@ -1236,7 +1266,7 @@ export function DashboardPage() {
       </div>
 
       {/* ══ 2. Indicadores ══════════════════════════════════════════════ */}
-      <SectionLabel hint="Mês corrente">Indicadores</SectionLabel>
+      <SectionLabel icon={Gauge} tom="marca" hint="Mês corrente">Indicadores</SectionLabel>
 
       {/* Receita — protagonismo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
@@ -1293,7 +1323,7 @@ export function DashboardPage() {
       </div>
 
       {/* ══ 3. Prioridades de hoje ══════════════════════════════════════ */}
-      <SectionLabel hint={priorityItems.length > 0 ? `${priorityItems.length} item${priorityItems.length !== 1 ? 's' : ''} exigindo ação` : undefined}>
+      <SectionLabel icon={Flame} tom="atencao" hint={priorityItems.length > 0 ? `${priorityItems.length} item${priorityItems.length !== 1 ? 's' : ''} exigindo ação` : undefined}>
         Prioridades de hoje
       </SectionLabel>
       <div className="mb-8">
@@ -1301,7 +1331,7 @@ export function DashboardPage() {
       </div>
 
       {/* ══ 4. Funil de receita ═════════════════════════════════════════ */}
-      <SectionLabel hint="Volume, receita e tempo por etapa">Funil de receita</SectionLabel>
+      <SectionLabel icon={Filter} tom="info" hint="Volume, receita e tempo por etapa">Funil de receita</SectionLabel>
       <div className="mb-8">
         <RevenueFunnel
           data={overviewData} analytics={analytics} detail={funnelDetail}
@@ -1311,7 +1341,7 @@ export function DashboardPage() {
       </div>
 
       {/* ══ 5. Evolução de receita ══════════════════════════════════════ */}
-      <SectionLabel hint="VGV por semana contra a meta acumulada">Evolução de receita</SectionLabel>
+      <SectionLabel icon={TrendingUp} tom="sucesso" hint="VGV por semana contra a meta acumulada">Evolução de receita</SectionLabel>
       <div className="mb-8">
         <RevenueTrend points={weeklyTrend} target={overviewData?.vgl.target ?? 0} loading={kpiLoading} />
       </div>
