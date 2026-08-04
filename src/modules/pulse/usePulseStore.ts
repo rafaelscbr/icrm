@@ -18,7 +18,11 @@ import { isEventoRuido } from './pulseEvents'
 //
 // PROIBIDO neste arquivo: qualquer setInterval que toque a rede, qualquer
 // fetchAll, qualquer leitura da tabela `properties`.
-const FEED_MAX               = 60
+// O feed cobre o DIA INTEIRO, de 00:00 até agora — não as últimas horas.
+// Medido em 14 dias: 6 a 74 eventos/dia. 300 dá 4x de folga sobre o pior dia
+// observado e mantém o payload do snapshot em ~60 kB. O agrupamento de
+// disparos consecutivos reduz ainda mais as linhas efetivamente renderizadas.
+const FEED_MAX               = 300
 const RECENT_MAX             = 400
 const JANELA_CLIMA_MS        = 30 * 60 * 1000
 const RESNAPSHOT_COOLDOWN_MS = 10 * 60 * 1000
@@ -201,6 +205,19 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
 
     const push = (ev: PulseEvent) => {
       if (isEventoRuido(ev)) return
+
+      // Virada do dia: o primeiro evento já pertencente a amanhã dispara o
+      // re-snapshot na hora, em vez de esperar o tick de 30s do useKiosk. O
+      // próprio snapshot traz o evento de volta, então descartá-lo aqui não
+      // perde nada — e impede que o dia novo comece misturado com o anterior.
+      const { dataReferencia } = get()
+      const diaDoEvento = localDateStr(new Date(ev.at))
+      if (dataReferencia && diaDoEvento > dataReferencia) {
+        get().bootstrap('virada_dia')
+        return
+      }
+      // Evento atrasado do dia anterior não entra no feed de hoje.
+      if (dataReferencia && diaDoEvento < dataReferencia) return
 
       set(s => {
         if (s.feed.some(e => e.id === ev.id)) return s   // snapshot pode ter trazido

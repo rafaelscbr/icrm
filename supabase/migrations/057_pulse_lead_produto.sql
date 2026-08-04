@@ -7,6 +7,10 @@
 -- e se mantém sozinho: o INSERT em `leads` já carrega nome e produto.
 --
 -- Também expõe leadId em cada evento da timeline, para o cliente cruzar.
+--
+-- A timeline passa de 40 para 300 eventos: o feed cobre o DIA INTEIRO, das
+-- 00:00 até agora. Medido em 14 dias, o volume real é de 6 a 74 eventos/dia —
+-- o limite de 40 cortava o começo do dia em praticamente todos eles.
 
 create or replace function public.pulse_snapshot()
 returns jsonb
@@ -382,7 +386,7 @@ select jsonb_build_object(
        'valor',         valor,
        'detalhe',       detalhe
      ) order by at desc)
-     from (select * from ev order by at desc limit 40) t),
+     from (select * from ev order by at desc limit 300) t),
     '[]'::jsonb
   ),
 
