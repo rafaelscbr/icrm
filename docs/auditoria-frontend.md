@@ -1,8 +1,15 @@
 # Auditoria de front-end, UX e UI — Souza OS / iCRM
 
 Levantamento feito em 04/08/2026 sobre `main`, com o sistema rodando e as telas
-inspecionadas no navegador (Chrome, tema claro e escuro, base real de 12.578
-contatos / 847 leads / 20 listas).
+abertas no navegador (Chrome, tema claro e escuro, base real de 12.578 contatos
+/ 847 leads / 20 listas), incluindo viewport de 390 × 844 e simulação de falha
+de rede.
+
+**Telas abertas:** Pulse, Dashboard, Leads (lista, kanban, dashboard), Metas,
+Tarefas, Contatos, Vendas, Base de Leads, Lançamentos, Análise, Disparos,
+Admin, Notificações e as cinco de Ligações.
+**Telas NÃO abertas:** Login, Simulador, Escritório Virtual, Histórico semanal,
+Detalhe de lista, Produtos · Prontos. Elas não recebem nota.
 
 Este documento é diagnóstico. **Nenhuma tela foi alterada para produzi-lo.**
 
@@ -156,13 +163,27 @@ e o orçamento de uma leitura por sessão.
 
 ### P0-1 · Falha de carregamento é indistinguível de "não há dados"
 
-**Evidência:** `useContactsStore.load()` termina em
-`catch (err) { console.error('[contacts] load:', err) }` e o `finally` faz
-`set({ loading: false })`. A tela então renderiza o `EmptyState` "Nenhum contato
-encontrado". O mesmo padrão está em leads, tarefas e vendas.
+**Evidência de tela (04/08, navegador).** Interceptei `fetch` para rejeitar
+apenas `/rest/v1/contacts` e entrei em Contatos por navegação interna, com a
+store ainda vazia. Quatro requisições falharam (`window.__falhas === 4`) e a
+tela renderizou:
 
-**Impacto:** com o banco fora do ar ou RLS negando, o corretor lê **"você não
-tem contatos"** — e age com base nisso. É indução a erro grave.
+- cabeçalho: **"Contatos · 0 contatos cadastrados"**
+- corpo: **"Nenhum contato encontrado — Adicione seu primeiro contato para
+  começar a gerenciar sua rede"**
+- ação: **"Novo Contato"**
+
+A base real tem **12.578 contatos**.
+
+**Correção ao diagnóstico anterior (feito só por código):** o erro **não** é
+totalmente silencioso. `db.ts` dispara `toast.error('Erro ao carregar contacts:
+…')` antes de lançar (linha 723). O que acontece é pior de descrever e igual de
+grave: **o aviso dura alguns segundos e some; a afirmação falsa fica na tela
+para sempre.** O `catch` do store (`console.error`) é o que impede a tela de
+saber que falhou.
+
+**Impacto:** com o banco fora do ar ou RLS negando, o corretor lê "você não tem
+contatos", o toast já sumiu, e ele age com base nisso. É indução a erro grave.
 
 **Viola:** a regra da casa `feedback_db_source_of_truth` ("proibido try/catch
 silencioso"), o princípio 8 ("nunca afirmar além do observado") e a heurística
@@ -212,10 +233,114 @@ verificadas individualmente.
 
 ---
 
+## PARTE 4-B — Inspeção de design (o que um designer vê)
+
+Esta parte faltava na primeira versão. Feita olhando as telas renderizadas, não
+o código.
+
+### D-1 · Tudo é uma caixa com borda — e caixas dentro de caixas
+
+**Onde mais dói: Disparos.** A tela empilha três níveis de borda:
+
+    card da campanha (borda)
+      └ 5 mini-caixas de métrica (borda cada)
+          └ chip de status (borda)
+
+Cinco retângulos de 60 px lado a lado, cada um com borda, ícone minúsculo e
+número — parece planilha, não produto. A borda virou a única ferramenta de
+separação do sistema: onde falta hierarquia, aparece uma borda.
+
+**Regra que proponho:** borda separa o que é do MESMO nível. Para nível
+diferente, usar superfície, espaço ou peso tipográfico. Métrica dentro de card
+não precisa de caixa — precisa de rótulo pequeno e número grande.
+
+### D-2 · O degradê de superfície esticado de ponta a ponta cansa
+
+**Onde: todas as listas** (Contatos, Tarefas, Base de Leads, Admin).
+
+O `--surface-sheen` é um degradê a 158° pensado para um **card** de 300–400 px.
+Aplicado num container de 1.200 px, ele deixa de ser volume e vira **lavagem**:
+o canto superior esquerdo fica claro e o inferior direito escuro ao longo da
+tabela inteira. O resultado é que a linha 1 parece mais importante que a linha
+20 sem nenhuma razão de dado, e a leitura de uma lista longa fica cansativa.
+
+**Correção:** superfície de lista não deve usar o mesmo degradê do card. Ou o
+degradê é limitado (por exemplo, só nos primeiros 200 px e depois plano), ou a
+lista usa superfície plana e a separação vem da linha e do hover. O Pulse não
+tem esse problema porque os painéis dele são estreitos.
+
+### D-3 · Espaço morto abaixo da dobra
+
+**Onde: Admin (3 linhas e ~500 px vazios), Notificações (tela inteira vazia),
+Vendas sem vendas no período.**
+
+Nenhuma dessas telas usa o espaço para dizer o que fazer em seguida. Um estado
+vazio de produto bom ocupa o vazio com direção; aqui ele só sobra.
+
+### D-4 · A ação mora a 1.000 px do nome
+
+**Onde: Admin e Contatos (desktop largo).**
+
+Nome à esquerda, ações no extremo direito. Em 1.512 px o olho e o mouse
+atravessam a tela inteira para cada linha. Em lista longa isso é fadiga real.
+
+**Correção:** ancorar as ações a uma coluna de largura fixa próxima ao
+conteúdo, ou revelar no hover junto da linha.
+
+### D-5 · Faixas quase vazias ocupando largura total
+
+**Onde: Disparos, "Disparos hoje 0/50"** — uma faixa de 1.200 × 56 px com dois
+textos pequenos nas pontas. É um dado de uma linha ocupando o espaço de um
+painel.
+
+### D-6 · Mobile: alvos de toque abaixo do mínimo e FAB sobrepondo ação
+
+Medido em 390 × 844:
+
+- **Contatos** — as quatro ações da linha ficam com ~28 px cada. O mínimo
+  aceitável é 44 px. E o **FAB dourado cobre o botão de excluir da última
+  linha visível**.
+- **Disparos** — as cinco mini-caixas de métrica caem para ~55 px de largura;
+  os rótulos "Agendados" e "Transf." ficam espremidos.
+
+Estrutura responsiva funciona (bottom nav, cards empilham, FAB). O problema é
+densidade e sobreposição, não layout.
+
+### D-7 · Telas fora da linguagem
+
+**Notificações** e **Admin** não receberam nada do vocabulário: sem ícone de
+tom, sem número grande, sem seção com filete, superfície chapada. Ao lado de
+Metas ou Ligações, parecem de outro produto.
+
+### D-8 · Onde o sistema já está certo
+
+Para não parecer crítica em bloco: **Pulse**, **Dashboard**, **Ligações**,
+**Metas**, **Lançamentos** e o **kanban de Leads** têm ponto focal, hierarquia
+por tamanho, cor com significado e profundidade. O padrão existe — o problema
+é que ele cobre pouco mais da metade do sistema.
+
+### Prioridade de design
+
+| # | Achado | Alcance | Severidade |
+|---|---|---|---|
+| D-2 | degradê esticado nas listas | 6 telas | **P1** |
+| D-6 | toque < 44 px e FAB sobrepondo | mobile inteiro | **P1** |
+| D-1 | caixa dentro de caixa | Disparos, Base, Produtos | P2 |
+| D-4 | ação longe do conteúdo | Admin, Contatos | P2 |
+| D-7 | telas fora da linguagem | Admin, Notificações | P2 |
+| D-3 | espaço morto | 3 telas | P3 |
+| D-5 | faixa quase vazia | Disparos | P3 |
+
+---
+
 ## PARTE 5 — Scorecard (0–5)
 
-Notas do que foi observado rodando. "Vida" = personalidade visual; "Pulse" =
-aderência à gramática.
+Notas **apenas do que foi aberto no navegador**, com data. Telas não abertas
+ficam sem nota — a primeira versão deste documento atribuiu notas a cinco telas
+que eu não tinha visto, o que contraria a regra "não atribua notas sem
+evidências". Corrigido.
+
+"Vida" = personalidade visual; "Pulse" = aderência à gramática.
 
 | Tela | Clareza | Hierarquia | Ação | Estados | A11y | Vida | Pulse | Pior nota |
 |---|---|---|---|---|---|---|---|---|
@@ -230,13 +355,17 @@ aderência à gramática.
 | Vendas | 4 | 4 | 4 | 2 | 4 | 4 | 4 | **estados** |
 | Contatos | 4 | 4 | 4 | 2 | 4 | 3 | 3 | **estados** |
 | Base de Leads | 4 | 4 | 4 | 3 | 4 | 4 | 4 | estados |
-| Produtos (2) | 4 | 4 | 3 | 2 | 4 | 4 | 4 | **estados** |
+| Produtos · Lançamentos | 4 | 4 | 3 | 2 | 4 | 4 | 4 | **estados** |
 | Análise | 4 | 4 | 2 | 2 | 3 | 4 | 4 | **ação** |
-| Admin | 3 | 3 | 3 | 3 | 3 | 2 | 2 | **vida/Pulse** |
-| Notificações | 3 | 3 | 3 | 2 | 3 | 2 | 2 | **vida/Pulse** |
-| Login | 4 | 4 | 5 | 3 | 4 | 4 | 4 | estados |
-| Simulador | 4 | 4 | 4 | 3 | 3 | 4 | — | exceção |
-| Escritório Virtual | 4 | 4 | — | 2 | 3 | 5 | — | exceção |
+| Disparos (aberta 04/08) | 4 | 3 | 4 | 3 | 3 | 3 | 3 | **hierarquia** |
+| Admin (aberta 04/08) | 3 | 2 | 3 | 3 | 3 | 1 | 1 | **vida/Pulse** |
+| Notificações (aberta 04/08) | 3 | 2 | 2 | 3 | 3 | 1 | 1 | **vida/Pulse** |
+| Login | — | — | — | — | — | — | — | **não observada** |
+| Simulador | — | — | — | — | — | — | — | **não observada** |
+| Escritório Virtual | — | — | — | — | — | — | — | **não observada** |
+| Histórico semanal | — | — | — | — | — | — | — | **não observada** |
+| Detalhe de lista | — | — | — | — | — | — | — | **não observada** |
+| Produtos · Prontos | — | — | — | — | — | — | — | **não observada** |
 
 **O padrão que salta:** a coluna de **estados** é a mais fraca do sistema
 inteiro. Não é falta de beleza — é falta de honestidade sobre o que está
