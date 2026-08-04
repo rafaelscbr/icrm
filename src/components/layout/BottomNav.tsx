@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
   Building2, Megaphone, BarChart3, X, Bell,
   Search, Home, Tv2, ExternalLink, Plus, UserPlus,
-  LogOut, ShieldCheck, Target, Database, Rocket,
+  LogOut, ShieldCheck, Target, Database, Rocket, Phone,
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -27,7 +27,8 @@ const moreNav = [
   { to: '/leads',       icon: UserPlus,       label: 'Leads'         },
   { to: '/base-leads',  icon: Database,       label: 'Base de Leads' },
   { to: '/metas',       icon: Target,         label: 'Metas'         },
-  { to: '/campanhas',   icon: Megaphone,      label: 'Disparo'       },
+  { to: '/prospeccao/disparos', icon: Megaphone, label: 'Prospecção · Disparos' },
+  { to: '/prospeccao/ligacoes', icon: Phone,     label: 'Prospecção · Ligações' },
   { to: '/performance', icon: BarChart3,      label: 'Análise'       },
   { to: '/escritorio',  icon: Tv2,            label: 'Escritório'    },
 ]

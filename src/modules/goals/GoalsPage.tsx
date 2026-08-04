@@ -4,7 +4,7 @@ import {
   Target, Pencil, Trash2, CheckCircle2, TrendingUp,
   Calendar, CalendarDays, Footprints, FileText,
   BadgeDollarSign, History, Zap, MessageCircle,
-  ChevronRight, Plus, Award,
+  ChevronRight, Plus, Award, Phone,
 } from 'lucide-react'
 import { DAILY_TARGETS, WEEKLY_TARGETS, MONTHLY_TARGETS } from '../../lib/metasConfig'
 import confetti from 'canvas-confetti'
@@ -20,6 +20,7 @@ import { useSalesStore } from '../../store/useSalesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
+import { useCallQueueStore } from '../../store/useCallQueueStore'
 import { Goal, GoalCategory, Task } from '../../types'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -153,6 +154,9 @@ interface PeriodData {
   disparosHojeNew: number
   disparosSemanaNew: number
   disparosMesNew: number
+  ligacoesHoje: number
+  ligacoesSemana: number
+  ligacoesMes: number
   daily: number
   weekVisits: number
   weekProp: number
@@ -171,6 +175,15 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
     countDayNew: disparosHojeNew, countWeekNew: disparosSemanaNew, countMonthNew: disparosMesNew,
     load: loadDisparos,
   } = useDisparosStore()
+
+  // Ligações da prospecção ativa — contadas direto de call_logs, por corretor.
+  // Não vêm de lead_interactions: base fria não tem lead no funil ainda.
+  const contarLigacoes = useCallQueueStore(s => s.contarLigacoes)
+  const [ligacoes, setLigacoes] = useState({ hoje: 0, semana: 0, mes: 0 })
+
+  useEffect(() => {
+    contarLigacoes(brokerId).then(setLigacoes).catch(() => {})
+  }, [contarLigacoes, brokerId])
 
   useEffect(() => { loadDisparos() }, [loadDisparos])
   useEffect(() => { if (!allLoaded) loadAll() }, [allLoaded, loadAll])
@@ -212,6 +225,9 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
   return {
     disparosHoje, disparosSemana, disparosMes,
     disparosHojeNew, disparosSemanaNew, disparosMesNew,
+    ligacoesHoje:   ligacoes.hoje,
+    ligacoesSemana: ligacoes.semana,
+    ligacoesMes:    ligacoes.mes,
     ...metrics,
   }
 }
@@ -395,15 +411,18 @@ function PerformanceHero({ tasks, period, brokerId }: { tasks: Task[]; period: P
   const kpis = useMemo(() => {
     if (period === 'hoje') return [
       { label: 'Novos Disparos',            value: data.disparosHojeNew,      target: DAILY_TARGETS.disparos,            icon: <Zap size={14} />,           note: 'base fria'       },
+      { label: 'Ligações',                  value: data.ligacoesHoje,         target: DAILY_TARGETS.ligacoes,            icon: <Phone size={14} />,         note: 'prospecção ativa' },
       { label: 'Interações com leads',      value: data.daily,                target: DAILY_TARGETS.interacoes,          icon: <MessageCircle size={14} />, note: 'mensagens/calls' },
     ]
     if (period === 'semana') return [
       { label: 'Novos Disparos',            value: data.disparosSemanaNew,    target: WEEKLY_TARGETS.disparos,           icon: <Zap size={14} />,        note: 'base fria'      },
+      { label: 'Ligações',                  value: data.ligacoesSemana,       target: WEEKLY_TARGETS.ligacoes,           icon: <Phone size={14} />,      note: 'prospecção ativa' },
       { label: 'Atendimentos realizados',   value: data.weekVisits,           target: WEEKLY_TARGETS.atendimentos,       icon: <Footprints size={14} />, note: 'vídeo/presencial' },
       { label: 'Propostas enviadas',        value: data.weekProp,             target: WEEKLY_TARGETS.propostas,          icon: <FileText size={14} />,   note: 'por semana'     },
     ]
     return [
       { label: 'Novos Disparos',            value: data.disparosMesNew,       target: MONTHLY_TARGETS.disparos,          icon: <Zap size={14} />,             note: 'base fria'    },
+      { label: 'Ligações',                  value: data.ligacoesMes,          target: MONTHLY_TARGETS.ligacoes,          icon: <Phone size={14} />,           note: 'prospecção ativa' },
       { label: 'Atendimentos realizados',   value: data.monthVisits,          target: MONTHLY_TARGETS.atendimentos,      icon: <Footprints size={14} />,       note: 'vídeo/presencial' },
       { label: 'Propostas enviadas',        value: data.monthProp,            target: MONTHLY_TARGETS.propostas,         icon: <FileText size={14} />,         note: 'por mês'      },
       { label: 'Vendas fechadas',           value: data.monthSales,           target: MONTHLY_TARGETS.vendas,            icon: <BadgeDollarSign size={14} />,  note: 'no mês'       },

@@ -15,6 +15,10 @@ export type PulseEventKind =
   | 'venda'       // registro em sales
   | 'visita'      // tarefa de visita agendada
   | 'campanha'    // disparo, parecer, transferência
+  // Prospecção ativa por telefone. Separado de 'interacao' de propósito:
+  // atendimento é conversa com lead do funil, ligação é toque em base fria.
+  // Somar os dois faria um dia de 60 discagens parecer 60 atendimentos.
+  | 'ligacao'
 
 export interface PulseEvent {
   id:         string
@@ -44,6 +48,8 @@ export interface PulseBroker {
   leadsHoje:         number
   visitasHoje:       number
   vendasHoje:        number
+  /** ligações de prospecção ativa registradas hoje */
+  ligacoesHoje:      number
   ultimaAtividadeAt: string | null
 }
 
@@ -52,6 +58,7 @@ export interface PulseHoje {
   interacoes:      number
   visitasMarcadas: number
   mudancasEtapa:   number
+  ligacoes:        number
   vendasQtd:       number
   vendasValor:     number
   vendasComissao:  number

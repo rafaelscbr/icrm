@@ -5,7 +5,7 @@ import {
   CheckSquare, Megaphone, Wrench, Search, Home, ChevronDown,
   ExternalLink, Tv2, Sun, Moon, UserPlus, Calculator,
   Bell, ShieldCheck, LogOut, Target, Database, Package, Rocket,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, Send, Phone,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -43,6 +43,11 @@ function isGroup(e: NavEntry): e is NavGroupDef {
  * LANÇAMENTO (o empreendimento na planta, com régua comercial). São coisas
  * diferentes o suficiente para não caberem na mesma tela, e próximas o
  * suficiente para não merecerem dois itens soltos no menu.
+ *
+ * Mesma lógica em "Prospecção Ativa": disparo e ligação atacam a MESMA base
+ * fria por canais diferentes. Disparo é em lote e o corretor escolhe quem
+ * abordar; ligação é um por vez e a fila escolhe por ele. Telas separadas,
+ * guarda-chuva comum.
  */
 const navSections: Array<{ label: string; items: NavEntry[] }> = [
   {
@@ -68,7 +73,13 @@ const navSections: Array<{ label: string; items: NavEntry[] }> = [
         ],
       },
       { key: 'vendas',      to: '/vendas',       icon: TrendingUp,     label: 'Vendas',        end: false },
-      { key: 'campanhas',   to: '/campanhas',    icon: Megaphone,      label: 'Disparo',       end: false },
+      {
+        key: 'prospeccao', icon: Megaphone, label: 'Prospecção Ativa',
+        children: [
+          { key: 'disparos', to: '/prospeccao/disparos', icon: Send,  label: 'Disparos WhatsApp', end: false },
+          { key: 'ligacoes', to: '/prospeccao/ligacoes', icon: Phone, label: 'Ligações WhatsApp', end: false },
+        ],
+      },
       { key: 'simulador',   to: '/simulador',    icon: Calculator,     label: 'Simulador',     end: false },
     ],
   },

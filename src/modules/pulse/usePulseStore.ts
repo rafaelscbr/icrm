@@ -33,7 +33,7 @@ const RECONNECT_DELAY_MS     = 4000
 const TAXA_COMISSAO = 0.05
 
 const HOJE_ZERO: PulseHoje = {
-  leadsNovos: 0, interacoes: 0, visitasMarcadas: 0, mudancasEtapa: 0,
+  leadsNovos: 0, interacoes: 0, visitasMarcadas: 0, mudancasEtapa: 0, ligacoes: 0,
   vendasQtd: 0, vendasValor: 0, vendasComissao: 0,
 }
 
@@ -297,6 +297,9 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
           case 'visita':
             hoje.visitasMarcadas += 1
             break
+          case 'ligacao':
+            hoje.ligacoes += 1
+            break
           case 'campanha':
             break
         }
@@ -309,6 +312,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
               leadsHoje:      c.leadsHoje      + (ev.kind === 'lead_novo' ? 1 : 0),
               visitasHoje:    c.visitasHoje    + (ev.kind === 'visita'    ? 1 : 0),
               vendasHoje:     c.vendasHoje     + (ev.kind === 'venda'     ? 1 : 0),
+              ligacoesHoje:   c.ligacoesHoje   + (ev.kind === 'ligacao'   ? 1 : 0),
               ultimaAtividadeAt: ev.at,
             })
           : s.corretores
@@ -395,6 +399,21 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
           brokerId: ((r.assigned_to_id ?? r.broker_id) as string | null) ?? undefined,
           leadNome: r.title as string,
           detalhe:  (r.due_date as string | null) ?? undefined,
+        })
+      })
+
+      // Ligações da prospecção ativa. O INSERT acontece no clique de "Ligar
+      // pelo WhatsApp" e já traz contact_name — o feed não precisa consultar
+      // nada por evento, igual ao resto desta tela.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'call_logs' }, p => {
+        const r = p.new as Record<string, unknown>
+        push({
+          id:       `call-${r.id as string}`,
+          at:       r.called_at as string,
+          kind:     'ligacao',
+          brokerId: (r.broker_id as string | null) ?? undefined,
+          leadNome: (r.contact_name as string | null) ?? undefined,
+          subTipo:  (r.outcome as string | null) ?? 'discou',
         })
       })
 

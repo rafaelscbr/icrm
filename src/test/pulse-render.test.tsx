@@ -29,18 +29,18 @@ const VGL: PulseVgl = {
  */
 
 const HOJE: PulseHoje = {
-  leadsNovos: 7, interacoes: 38, visitasMarcadas: 8, mudancasEtapa: 12,
+  leadsNovos: 7, interacoes: 38, visitasMarcadas: 8, mudancasEtapa: 12, ligacoes: 24,
   vendasQtd: 3, vendasValor: 1_250_000, vendasComissao: 62_500,
 }
 
 const HOJE_ZERO: PulseHoje = {
-  leadsNovos: 0, interacoes: 0, visitasMarcadas: 0, mudancasEtapa: 0,
+  leadsNovos: 0, interacoes: 0, visitasMarcadas: 0, mudancasEtapa: 0, ligacoes: 0,
   vendasQtd: 0, vendasValor: 0, vendasComissao: 0,
 }
 
 const CORRETORES: PulseBroker[] = [
-  { brokerId: 'b1', nome: 'Rafael',        interacoesHoje: 12, leadsHoje: 2, visitasHoje: 1, vendasHoje: 0, ultimaAtividadeAt: new Date().toISOString() },
-  { brokerId: 'b2', nome: 'Dionata Alves', interacoesHoje: 5,  leadsHoje: 3, visitasHoje: 0, vendasHoje: 1, ultimaAtividadeAt: null },
+  { brokerId: 'b1', nome: 'Rafael',        interacoesHoje: 12, leadsHoje: 2, visitasHoje: 1, vendasHoje: 0, ligacoesHoje: 14, ultimaAtividadeAt: new Date().toISOString() },
+  { brokerId: 'b2', nome: 'Dionata Alves', interacoesHoje: 5,  leadsHoje: 3, visitasHoje: 0, vendasHoje: 1, ligacoesHoje: 10, ultimaAtividadeAt: null },
 ]
 
 const FEED: PulseEvent[] = [
@@ -186,7 +186,7 @@ describe('ClosingSummary — balanço de um dia', () => {
         hoje={HOJE}
         corretores={[
           ...CORRETORES,
-          { brokerId: 'b3', nome: 'Parado Silva', interacoesHoje: 0, leadsHoje: 0, visitasHoje: 0, vendasHoje: 0, ultimaAtividadeAt: null },
+          { brokerId: 'b3', nome: 'Parado Silva', interacoesHoje: 0, leadsHoje: 0, visitasHoje: 0, vendasHoje: 0, ligacoesHoje: 0, ultimaAtividadeAt: null },
         ]}
         vgl={VGL}
       />

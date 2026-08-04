@@ -9,6 +9,9 @@ import { Badge } from '../components/ui/Badge'
 import { useAuthStore, Profile } from '../store/useAuthStore'
 import toast from 'react-hot-toast'
 
+// As chaves TÊM que espelhar as da Sidebar. Um item que existe no menu e falta
+// aqui é silenciosamente removido da permissão do corretor na primeira edição —
+// era o caso de 'base-leads' e 'lancamentos' antes desta lista ser completada.
 const ALL_MENU_ITEMS = [
   { key: 'dashboard',   label: 'Dashboard',          section: 'Principal' },
   { key: 'tarefas',     label: 'Tarefas',            section: 'Principal' },
@@ -16,9 +19,12 @@ const ALL_MENU_ITEMS = [
   { key: 'escritorio',  label: 'Escritório Virtual', section: 'Principal' },
   { key: 'leads',       label: 'Leads',              section: 'Comercial' },
   { key: 'contatos',    label: 'Contatos',           section: 'Comercial' },
-  { key: 'imoveis',     label: 'Imóveis',            section: 'Comercial' },
+  { key: 'base-leads',  label: 'Base de Leads',      section: 'Comercial' },
+  { key: 'imoveis',     label: 'Produtos · Prontos',     section: 'Comercial' },
+  { key: 'lancamentos', label: 'Produtos · Lançamentos', section: 'Comercial' },
   { key: 'vendas',      label: 'Vendas',             section: 'Comercial' },
-  { key: 'campanhas',   label: 'Campanhas',          section: 'Comercial' },
+  { key: 'disparos',    label: 'Prospecção · Disparos WhatsApp', section: 'Comercial' },
+  { key: 'ligacoes',    label: 'Prospecção · Ligações WhatsApp', section: 'Comercial' },
   { key: 'simulador',   label: 'Simulador',          section: 'Comercial' },
   { key: 'performance', label: 'Performance',        section: 'Análise'   },
 ]

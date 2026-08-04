@@ -72,8 +72,13 @@ export function BrokerRadar({ corretores, online, agora, className = '' }: Props
                 {c.nome}
               </span>
 
+              {/* Ligação ao lado de atendimento e visita: é a terceira coisa
+                  que um corretor faz num dia de trabalho, e some do radar se
+                  não aparecer aqui. Só entra quando houve alguma — dia sem
+                  prospecção não merece um "0 lig" ocupando espaço. */}
               <span className="font-label text-[10px] uppercase tracking-[0.1em] text-t4 tabular-nums shrink-0">
                 {c.interacoesHoje} at · {c.visitasHoje} vis
+                {c.ligacoesHoje > 0 && ` · ${c.ligacoesHoje} lig`}
               </span>
 
               <span className="font-label text-[10px] uppercase tracking-[0.1em] text-t4 shrink-0 w-[74px] text-right">

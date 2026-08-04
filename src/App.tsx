@@ -33,6 +33,7 @@ const SalesPage         = lazy(() => import('./modules/sales/SalesPage').then(m 
 const PerformancePage   = lazy(() => import('./modules/performance/PerformancePage').then(m => ({ default: m.PerformancePage })))
 const TasksPage         = lazy(() => import('./modules/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
 const CampaignsPage     = lazy(() => import('./modules/campaigns/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
+const LigacoesPage      = lazy(() => import('./modules/prospeccao/ligacoes/LigacoesPage').then(m => ({ default: m.LigacoesPage })))
 const LeadsPage         = lazy(() => import('./modules/leads/LeadsPage').then(m => ({ default: m.LeadsPage })))
 const SimuladorPage     = lazy(() => import('./modules/simulador/SimuladorPage').then(m => ({ default: m.SimuladorPage })))
 const LoginPage         = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
@@ -218,7 +219,12 @@ function AppRoutes() {
             <Route path="/lancamentos" element={<PageWrapper><DevelopmentsPage /></PageWrapper>} />
             <Route path="/vendas" element={<PageWrapper><SalesPage /></PageWrapper>} />
             <Route path="/tarefas" element={<PageWrapper><TasksPage /></PageWrapper>} />
-            <Route path="/campanhas" element={<PageWrapper><CampaignsPage /></PageWrapper>} />
+            {/* Prospecção Ativa — dois canais, duas telas. /campanhas continua
+                respondendo: há links salvos, notificações e o Pulse apontando
+                para ele. */}
+            <Route path="/prospeccao/disparos" element={<PageWrapper><CampaignsPage /></PageWrapper>} />
+            <Route path="/prospeccao/ligacoes" element={<PageWrapper><LigacoesPage  /></PageWrapper>} />
+            <Route path="/campanhas" element={<Navigate to="/prospeccao/disparos" replace />} />
             <Route path="/leads" element={<PageWrapper><LeadsPage /></PageWrapper>} />
             <Route path="/performance" element={<PageWrapper><PerformancePage /></PageWrapper>} />
             <Route path="/simulador" element={<PageWrapper><SimuladorPage /></PageWrapper>} />

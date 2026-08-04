@@ -1,7 +1,7 @@
 import {
   UserPlus, MessageCircle, Phone, MapPin, FileText, Mail, Users,
   Trash2, ArrowRight, BadgeDollarSign, CalendarCheck, Send, ClipboardCheck,
-  Activity, ArrowRightLeft,
+  Activity, ArrowRightLeft, PhoneCall, PhoneMissed, PhoneOff, Flame,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { STAGE_THEME } from '../../lib/stageTheme'
@@ -18,11 +18,31 @@ export interface PulseEventView {
 }
 
 const ORIGEM_LABEL: Record<string, string> = {
-  felicita: 'Felicita',
-  meta_ads: 'Meta Ads',
-  portal:   'Portal',
-  offline:  'Offline',
-  campanha: 'Campanha',
+  felicita:  'Felicita',
+  meta_ads:  'Meta Ads',
+  portal:    'Portal',
+  offline:   'Offline',
+  campanha:  'Prospecção · Disparo',
+  indicacao: 'Indicação',
+  prospeccao_ligacao: 'Prospecção · Ligação',
+}
+
+/**
+ * Desfechos de ligação da prospecção ativa.
+ *
+ * 'discou' é o registro do clique em "Ligar pelo WhatsApp" sem desfecho ainda —
+ * no feed vira só "ligou para", sem afirmar que houve conversa. Afirmar mais do
+ * que se observou é o jeito mais rápido de um painel perder credibilidade.
+ */
+const LIGACAO: Record<string, { icon: LucideIcon; verbo: string; tone: PulseTone }> = {
+  discou:          { icon: PhoneCall,   verbo: 'ligou para',                 tone: 'neutral' },
+  nao_atendeu:     { icon: PhoneMissed, verbo: 'tentou ligar para',          tone: 'neutral' },
+  caixa_postal:    { icon: PhoneMissed, verbo: 'caiu na caixa postal de',    tone: 'neutral' },
+  pediu_retorno:   { icon: PhoneCall,   verbo: 'agendou retorno com',        tone: 'good'    },
+  interessado:     { icon: Flame,       verbo: 'despertou interesse em',     tone: 'win'     },
+  sem_interesse:   { icon: PhoneOff,    verbo: 'ouviu não de',               tone: 'warn'    },
+  nao_perturbe:    { icon: PhoneOff,    verbo: 'anotou não perturbe em',     tone: 'warn'    },
+  numero_invalido: { icon: PhoneOff,    verbo: 'marcou inválido o número de', tone: 'warn'   },
 }
 
 const INTERACAO: Record<string, { icon: LucideIcon; verbo: string; tone: PulseTone }> = {
@@ -52,10 +72,21 @@ const CAMPANHA: Record<string, { icon: LucideIcon; verbo: string; tone: PulseTon
  */
 const NOTA_VENDA_PREFIXO = 'Venda concluída'
 
+/**
+ * A transferência da prospecção copia cada ligação para lead_interactions, para
+ * que a linha do tempo do lead novo nasça com o histórico. No MESMO dia — que é
+ * o caso comum: ligou, gostou, transferiu —, essas cópias apareceriam no feed
+ * ao lado do evento de ligação original, contando duas vezes o mesmo telefonema
+ * e inflando o KPI de Atendimentos.
+ */
+const LIGACAO_COPIADA_PREFIXO = 'Prospecção ativa · '
+
 export function isEventoRuido(ev: PulseEvent): boolean {
-  return ev.kind === 'interacao'
-    && ev.subTipo === 'nota'
-    && (ev.detalhe ?? '').startsWith(NOTA_VENDA_PREFIXO)
+  if (ev.kind !== 'interacao') return false
+  const detalhe = ev.detalhe ?? ''
+  if (ev.subTipo === 'nota'    && detalhe.startsWith(NOTA_VENDA_PREFIXO))     return true
+  if (ev.subTipo === 'ligacao' && detalhe.startsWith(LIGACAO_COPIADA_PREFIXO)) return true
+  return false
 }
 
 function stageLabel(slug?: string): string {
@@ -140,29 +171,54 @@ export function describe(ev: PulseEvent, brokerNome?: string): PulseEventView {
         tone: cfg.tone,
       }
     }
+
+    case 'ligacao': {
+      const cfg = LIGACAO[ev.subTipo ?? ''] ?? LIGACAO.discou
+      const n = ev.agrupados ?? 1
+      return {
+        icon: cfg.icon,
+        texto: n > 1
+          ? `${quem} ligou para ${n} contatos`
+          : `${quem} ${cfg.verbo} ${lead}`,
+        detalhe: n > 1 ? undefined : 'prospecção ativa',
+        tone: cfg.tone,
+      }
+    }
   }
 }
 
 /**
- * Agrupa disparos consecutivos do mesmo corretor numa linha só.
+ * Agrupa disparos e ligações consecutivos do mesmo corretor numa linha só.
  *
  * Sem isto, um dia de campanha com 200 disparos empurra todo o resto para fora
  * do feed em minutos — e o painel deixa de responder "o que está acontecendo"
- * para responder "o Dionata está disparando", 200 vezes seguidas.
+ * para responder "o Dionata está disparando", 200 vezes seguidas. Ligação em
+ * volume tem exatamente o mesmo efeito.
+ *
+ * Ligação que gerou INTERESSE nunca é agrupada: é o evento raro que justifica a
+ * operação inteira e precisa de linha própria.
  */
 const JANELA_AGRUPAMENTO_MS = 10 * 60 * 1000
+
+/** Ligação rotineira — pode virar contagem. Interesse, não. */
+function ligacaoRotineira(ev: PulseEvent): boolean {
+  return ev.kind === 'ligacao' && ev.subTipo !== 'interessado' && ev.subTipo !== 'pediu_retorno'
+}
 
 export function agruparFeed(eventos: PulseEvent[]): PulseEvent[] {
   const out: PulseEvent[] = []
 
   for (const ev of eventos) {
     const anterior = out[out.length - 1]
-    const agrupavel =
-         anterior
-      && anterior.kind === 'campanha' && ev.kind === 'campanha'
-      && anterior.subTipo === 'dispatch' && ev.subTipo === 'dispatch'
-      && anterior.brokerId === ev.brokerId
+    const perto = anterior
       && Math.abs(new Date(anterior.at).getTime() - new Date(ev.at).getTime()) < JANELA_AGRUPAMENTO_MS
+      && anterior.brokerId === ev.brokerId
+
+    const agrupavel = perto && (
+         (anterior.kind === 'campanha' && ev.kind === 'campanha'
+          && anterior.subTipo === 'dispatch' && ev.subTipo === 'dispatch')
+      || (ligacaoRotineira(anterior) && ligacaoRotineira(ev))
+    )
 
     if (agrupavel) {
       out[out.length - 1] = { ...anterior, agrupados: (anterior.agrupados ?? 1) + 1 }
