@@ -15,7 +15,7 @@ import { ClimateGauge } from './components/ClimateGauge'
 import { ResponseTimePanel } from './components/ResponseTimePanel'
 import { VglPanel } from './components/VglPanel'
 import { SaleCelebration } from './components/SaleCelebration'
-import { ClosingSummary, estaEmFechamento } from './components/ClosingSummary'
+import { ClosingSummary } from './components/ClosingSummary'
 import { useCarrossel } from './useCarrossel'
 import { PageBanner } from './components/PageBanner'
 
@@ -128,15 +128,14 @@ export function PulsePage() {
   useKiosk({ onViradaDoDia })
   const desloc = useAntiBurnIn()
 
-  // Depois do expediente a página "hoje" vira o balanço do dia corrente.
-  const emFechamento = estaEmFechamento(new Date(agora))
-
-  // Duas páginas: [0] hoje (ao vivo ou balanço) e [1] resumo de ontem.
-  const { pagina, irPara, onTouchStart, onTouchEnd } = useCarrossel(2)
+  // Três páginas, em ordem cronológica: [0] agora · [1] o dia · [2] ontem.
+  // A página 0 é SEMPRE o ao vivo — nada a substitui por horário, para o
+  // painel nunca ficar preso num resumo enquanto o dia ainda está acontecendo.
+  const { pagina, irPara, onTouchStart, onTouchEnd } = useCarrossel(3)
 
   // O resumo de ontem só é buscado quando alguém realmente desliza até lá.
   useEffect(() => {
-    if (pagina === 1) carregarResumoOntem()
+    if (pagina === 2) carregarResumoOntem()
   }, [pagina, carregarResumoOntem])
 
   const ontem = new Date(agora)
@@ -226,12 +225,12 @@ export function PulsePage() {
             quiosque que ninguém toca. */}
         <div className="ml-auto flex items-center gap-4">
           <div className="flex items-center gap-1.5" role="tablist" aria-label="Páginas do painel">
-            {[0, 1].map(i => (
+            {[0, 1, 2].map(i => (
               <button
                 key={i}
                 role="tab"
                 aria-selected={pagina === i}
-                aria-label={i === 0 ? 'Hoje' : 'Ontem'}
+                aria-label={['Ao vivo', 'Balanço do dia', 'Ontem'][i]}
                 onClick={() => irPara(i)}
                 className={`h-1.5 rounded-full transition-all duration-[280ms] ${
                   pagina === i ? 'w-5 bg-brand' : 'w-1.5 bg-line-strong'
@@ -261,13 +260,8 @@ export function PulsePage() {
         >
           {/* Página 0 — hoje */}
           <div className="w-full shrink-0 h-full flex flex-col gap-3 min-h-0">
-            <PageBanner
-              tipo={emFechamento ? 'balanco' : 'ao_vivo'}
-              data={new Date(agora)}
-            />
-            {emFechamento ? (
-              <ClosingSummary hoje={hoje} corretores={corretores} vgl={vgl} />
-            ) : (
+            <PageBanner tipo="ao_vivo" data={new Date(agora)} />
+            {(
               <>
                 <KpiRail
                   hoje={hoje}
@@ -304,7 +298,13 @@ export function PulsePage() {
             )}
           </div>
 
-          {/* Página 1 — ontem */}
+          {/* Página 1 — balanço do dia corrente */}
+          <div className="w-full shrink-0 h-full flex flex-col gap-3 min-h-0">
+            <PageBanner tipo="balanco" data={new Date(agora)} aoVoltar={() => irPara(0)} />
+            <ClosingSummary hoje={hoje} corretores={corretores} vgl={vgl} />
+          </div>
+
+          {/* Página 2 — ontem */}
           <div className="w-full shrink-0 h-full flex flex-col gap-3 min-h-0">
             {/* aoVoltar garante que o ao vivo está sempre a um toque, sem
                 depender de alguém adivinhar o gesto de deslize. */}

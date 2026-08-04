@@ -2,24 +2,13 @@ import { formatCurrency } from '../../../lib/formatters'
 import type { PulseHoje, PulseBroker, PulseVgl } from '../types'
 
 /**
- * Balanço do dia — entra depois do expediente.
+ * Balanço de um dia — o que produziu, quem produziu, e como moveu a meta.
  *
- * À noite o feed ao vivo não tem o que mostrar e os painéis de ação não têm
- * o que cobrar. Em vez de uma tela parada, o Pulse vira o fechamento: o que
- * o dia produziu, quem produziu, e como isso moveu a meta do mês.
- *
- * De quebra troca a área branca da tela por poucos números grandes — menos
- * pixels acesos, menos desgaste nas 12h em que ninguém está olhando.
+ * É uma PÁGINA do carrossel, não um estado por horário. A versão anterior
+ * trocava a tela sozinha às 20h e com isso tirava o ao vivo de quem ainda
+ * estava trabalhando. Agora o balanço fica sempre a um deslize de distância,
+ * e o ao vivo nunca sai do lugar.
  */
-
-/** A partir desta hora a tela troca para o balanço. */
-export const HORA_FECHAMENTO = 20
-
-export function estaEmFechamento(d: Date): boolean {
-  const h = d.getHours()
-  // Vai das 20h até a virada; depois da meia-noite o dia novo recomeça zerado.
-  return h >= HORA_FECHAMENTO
-}
 
 function Numero({ valor, rotulo, destaque = false }: {
   valor: string; rotulo: string; destaque?: boolean

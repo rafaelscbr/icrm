@@ -8,7 +8,7 @@ import { DayChart } from '../modules/pulse/components/DayChart'
 import { ClimateGauge } from '../modules/pulse/components/ClimateGauge'
 import { ResponseTimePanel } from '../modules/pulse/components/ResponseTimePanel'
 import { VglPanel } from '../modules/pulse/components/VglPanel'
-import { ClosingSummary, estaEmFechamento } from '../modules/pulse/components/ClosingSummary'
+import { ClosingSummary } from '../modules/pulse/components/ClosingSummary'
 import { PageBanner } from '../modules/pulse/components/PageBanner'
 import { calcClimate } from '../modules/pulse/climate'
 import type { PulseEvent, PulseHoje, PulseBroker, PulseVgl } from '../modules/pulse/types'
@@ -179,13 +179,7 @@ describe('VglPanel — meta do mês e seca de vendas', () => {
   })
 })
 
-describe('ClosingSummary — balanço da noite', () => {
-  it('entra a partir das 20h', () => {
-    expect(estaEmFechamento(new Date('2026-08-03T19:30:00'))).toBe(false)
-    expect(estaEmFechamento(new Date('2026-08-03T20:00:00'))).toBe(true)
-    expect(estaEmFechamento(new Date('2026-08-03T23:59:00'))).toBe(true)
-  })
-
+describe('ClosingSummary — balanço de um dia', () => {
   it('lista só quem produziu no dia', () => {
     render(
       <ClosingSummary
