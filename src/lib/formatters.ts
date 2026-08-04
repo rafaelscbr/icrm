@@ -121,6 +121,50 @@ export function whatsappUrl(phone: string, message?: string): string {
   return message ? `${base}&text=${encodeWhatsAppText(message)}` : base
 }
 
+/**
+ * Abre a conversa no APP do WhatsApp, sem mensagem.
+ *
+ * Diferente de whatsappUrl (usada no disparo, onde o texto é o ponto): aqui o
+ * objetivo é ligar. O `https://api.whatsapp.com/...` resolve bem no celular,
+ * mas no desktop mostra uma página intermediária de "Continuar para o chat" —
+ * um clique a mais entre o corretor e a ligação, dezenas de vezes por dia.
+ *
+ * O esquema `whatsapp://` é entregue direto ao aplicativo instalado (WhatsApp
+ * Desktop ou o app do celular) e abre a conversa pronta para chamar.
+ */
+export function whatsappAppUrl(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  const withCountry = digits.startsWith('55') ? digits : `55${digits}`
+  return `whatsapp://send?phone=${withCountry}`
+}
+
+/**
+ * Tenta o app; se ele não assumir, cai para a web.
+ *
+ * Não existe API que diga "o app abriu". O sinal indireto é a aba perder o
+ * foco: quando o sistema entrega o link ao WhatsApp, o navegador vai para
+ * segundo plano. Se depois de 1,2s nada disso aconteceu, o app não está
+ * instalado — e aí a versão web é melhor que nada acontecer.
+ */
+export function abrirWhatsApp(phone: string): void {
+  let assumiu = false
+  const marcar = () => { assumiu = true }
+
+  window.addEventListener('blur', marcar, { once: true })
+  window.addEventListener('pagehide', marcar, { once: true })
+  document.addEventListener('visibilitychange', marcar, { once: true })
+
+  // location.href com esquema customizado não navega a página: o SO intercepta.
+  window.location.href = whatsappAppUrl(phone)
+
+  window.setTimeout(() => {
+    window.removeEventListener('blur', marcar)
+    window.removeEventListener('pagehide', marcar)
+    document.removeEventListener('visibilitychange', marcar)
+    if (!assumiu && !document.hidden) window.open(whatsappUrl(phone), '_blank')
+  }, 1200)
+}
+
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }

@@ -13,7 +13,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/auth'
-import { whatsappUrl } from '../lib/formatters'
+import { abrirWhatsApp } from '../lib/formatters'
 import type { CallQueueLead, CallOutcome, CallQueueStatus, CallLogEntry } from '../types'
 
 /** Contadores do corretor logado — alimentam a meta de 10 ligações/dia. */
@@ -107,9 +107,10 @@ export const useCallQueueStore = create<CallQueueState>((set, get) => ({
     }
   },
 
-  // Não existe URL que inicie chamada de WhatsApp — o wa.me abre a conversa e
-  // quem toca no telefone é o corretor. Registrar no clique é decisão de
-  // negócio: quem abriu e não ligou responde por isso.
+  // Não existe URL que inicie chamada de WhatsApp — o que dá para fazer é
+  // abrir a conversa no APP, já pronta, e o corretor tocar no telefone.
+  // Registrar no clique é decisão de negócio: quem abriu e não ligou responde
+  // por isso.
   //
   // A ordem importa: grava PRIMEIRO, abre depois. Se o banco falhar, a ligação
   // não acontece e o corretor vê o erro — em vez de ligar sem registro e a meta
@@ -146,7 +147,7 @@ export const useCallQueueStore = create<CallQueueState>((set, get) => ({
       },
     }))
 
-    window.open(whatsappUrl(atual.phone), '_blank')
+    abrirWhatsApp(atual.phone)
   },
 
   registrar: async (outcome, notes, callbackAt) => {

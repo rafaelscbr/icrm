@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowLeft, Phone, LayoutGrid, BarChart3, Pencil, Pause, Play, CheckCheck,
-  ListPlus, Users, Check, Loader2, X,
+  ListPlus, Users, Check, Loader2, X, Database, Crown, Timer,
 } from 'lucide-react'
-import { Modal } from '../../../components/ui/Modal'
+import { SidePanel } from '../../../components/ui/SidePanel'
 import { Button } from '../../../components/ui/Button'
 import { CallQueueTab } from './CallQueueTab'
 import { CallKanbanTab } from './CallKanbanTab'
 import { CallPerformanceTab } from './CallPerformanceTab'
 import { CallCampaignForm } from './CallCampaignForm'
+import { Rotulo, IconeTom, Dica, Chip, TOM } from './Primitivas'
 import { useCallCampaignsStore } from '../../../store/useCallCampaignsStore'
 import { useLeadListsStore } from '../../../store/useLeadListsStore'
 import { useAuthStore } from '../../../store/useAuthStore'
@@ -17,10 +18,10 @@ import toast from 'react-hot-toast'
 
 type Tab = 'fila' | 'quadro' | 'desempenho'
 
-const TABS: { value: Tab; label: string; icon: typeof Phone }[] = [
-  { value: 'fila',       label: 'Fila',       icon: Phone      },
-  { value: 'quadro',     label: 'Quadro',     icon: LayoutGrid },
-  { value: 'desempenho', label: 'Desempenho', icon: BarChart3  },
+const TABS: { value: Tab; label: string; icon: typeof Phone; dica: string }[] = [
+  { value: 'fila',       label: 'Fila',       icon: Phone,      dica: 'Onde o trabalho acontece' },
+  { value: 'quadro',     label: 'Quadro',     icon: LayoutGrid, dica: 'Onde a base emperrou' },
+  { value: 'desempenho', label: 'Desempenho', icon: BarChart3,  dica: 'O que a operação está gerando' },
 ]
 
 interface Props {
@@ -30,114 +31,140 @@ interface Props {
 
 export function CallCampaignDetail({ campaignId, onBack }: Props) {
   const { campaigns, setStatus } = useCallCampaignsStore()
-  const [tab,          setTab]          = useState<Tab>('fila')
-  const [editOpen,     setEditOpen]     = useState(false)
-  const [listasOpen,   setListasOpen]   = useState(false)
-  const [equipeOpen,   setEquipeOpen]   = useState(false)
+  const [tab,        setTab]        = useState<Tab>('fila')
+  const [editOpen,   setEditOpen]   = useState(false)
+  const [listasOpen, setListasOpen] = useState(false)
+  const [equipeOpen, setEquipeOpen] = useState(false)
 
   const campaign = campaigns.find(c => c.id === campaignId)
   if (!campaign) return null
 
   const statusCfg = CALL_STATUS_CONFIG[campaign.status]
+  const ativa     = campaign.status === 'active'
 
   function alternarStatus() {
     if (!campaign) return
-    setStatus(campaign.id, campaign.status === 'active' ? 'paused' : 'active')
+    setStatus(campaign.id, ativa ? 'paused' : 'active')
       .catch(() => toast.error('Falha ao alterar o status da campanha'))
   }
 
   return (
     <div className="flex flex-col min-h-screen">
-      <div className="sticky top-0 z-10 nav-bg-blur border-b border-line px-6 py-4">
+      {/* Cabeçalho */}
+      <div className="sticky top-0 z-10 nav-bg-blur border-b border-line px-5 sm:px-6 py-4">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-t3 hover:text-t1 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-t3 hover:text-t1 transition-colors
+                       cursor-pointer min-h-[40px] focus:outline-none focus:ring-2 focus:ring-brand/30 rounded-lg px-1"
           >
-            <ArrowLeft size={15} strokeWidth={1.6} /> Ligações
+            <ArrowLeft size={15} strokeWidth={1.6} aria-hidden /> Ligações
           </button>
-          <span className="text-t5">/</span>
-          <h1 className="text-sm font-semibold text-t1 truncate">{campaign.name}</h1>
-          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
-            {statusCfg.label}
-          </span>
+          <span className="text-t5" aria-hidden>/</span>
+
+          <IconeTom icon={Phone} tom="marca" tamanho="sm" />
+          <h1 className="font-heading text-[15px] font-bold text-t1 truncate">{campaign.name}</h1>
+          <Chip tom={statusCfg.tom}>{statusCfg.label}</Chip>
+          {campaign.productName && (
+            <span className="text-[13px] text-t4 truncate hidden sm:inline">{campaign.productName}</span>
+          )}
 
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => setEquipeOpen(true)}
               className="flex items-center gap-1.5 rounded-[14px] border border-line bg-s3/50 px-3 py-2
-                         text-[13px] text-t3 hover:text-t1 transition-colors cursor-pointer"
+                         text-[13px] text-t3 hover:text-t1 hover:border-line-strong transition-colors
+                         cursor-pointer min-h-[40px] focus:outline-none focus:ring-2 focus:ring-brand/30"
             >
-              <Users size={13} strokeWidth={1.6} /> Equipe
+              <Users size={14} strokeWidth={1.6} aria-hidden /> Equipe
             </button>
             <button
               onClick={() => setListasOpen(true)}
               className="flex items-center gap-1.5 rounded-[14px] border border-line bg-s3/50 px-3 py-2
-                         text-[13px] text-t3 hover:text-t1 transition-colors cursor-pointer"
+                         text-[13px] text-t3 hover:text-t1 hover:border-line-strong transition-colors
+                         cursor-pointer min-h-[40px] focus:outline-none focus:ring-2 focus:ring-brand/30"
             >
-              <ListPlus size={13} strokeWidth={1.6} /> Adicionar lista
+              <ListPlus size={14} strokeWidth={1.6} aria-hidden /> Adicionar lista
             </button>
             <button
               onClick={() => setEditOpen(true)}
-              className="p-2 rounded-[14px] hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"
+              aria-label="Editar campanha"
               title="Editar campanha"
+              className="w-10 h-10 flex items-center justify-center rounded-[14px] hover:bg-s3/70
+                         text-t4 hover:text-t2 transition-colors cursor-pointer
+                         focus:outline-none focus:ring-2 focus:ring-brand/30"
             >
-              <Pencil size={14} strokeWidth={1.6} />
+              <Pencil size={15} strokeWidth={1.6} />
             </button>
             <button
               onClick={alternarStatus}
-              className="p-2 rounded-[14px] hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"
-              title={campaign.status === 'active' ? 'Pausar' : 'Reativar'}
+              aria-label={ativa ? 'Pausar campanha' : 'Reativar campanha'}
+              title={ativa ? 'Pausar' : 'Reativar'}
+              className="w-10 h-10 flex items-center justify-center rounded-[14px] hover:bg-s3/70
+                         text-t4 hover:text-t2 transition-colors cursor-pointer
+                         focus:outline-none focus:ring-2 focus:ring-brand/30"
             >
-              {campaign.status === 'active'
-                ? <Pause size={14} strokeWidth={1.6} />
-                : <Play  size={14} strokeWidth={1.6} />}
+              {ativa ? <Pause size={15} strokeWidth={1.6} /> : <Play size={15} strokeWidth={1.6} />}
             </button>
             {campaign.status !== 'finished' && (
               <button
                 onClick={() => setStatus(campaign.id, 'finished')}
-                className="p-2 rounded-[14px] hover:bg-success-bg text-t4 hover:text-success transition-colors cursor-pointer"
+                aria-label="Finalizar campanha"
                 title="Finalizar campanha"
+                className="w-10 h-10 flex items-center justify-center rounded-[14px] hover:bg-success-bg
+                           text-t4 hover:text-success transition-colors cursor-pointer
+                           focus:outline-none focus:ring-2 focus:ring-brand/30"
               >
-                <CheckCheck size={14} strokeWidth={1.6} />
+                <CheckCheck size={15} strokeWidth={1.6} />
               </button>
             )}
           </div>
         </div>
 
-        <div className="flex gap-2 mt-4">
-          {TABS.map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              onClick={() => setTab(value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[14px] text-[13px] font-medium
-                          border transition-all cursor-pointer
-                ${tab === value
-                  ? 'bg-brand-tint border-brand/40 text-brand-text'
-                  : 'bg-s3/50 border-line text-t3 hover:text-t1'}`}
-            >
-              <Icon size={12} strokeWidth={1.6} /> {label}
-            </button>
-          ))}
+        {/* Abas com o que cada uma responde */}
+        <div className="flex gap-2 mt-4 overflow-x-auto" role="tablist" aria-label="Seções da campanha">
+          {TABS.map(({ value, label, icon: Icon, dica }) => {
+            const ativo = tab === value
+            return (
+              <button
+                key={value}
+                role="tab"
+                aria-selected={ativo}
+                onClick={() => setTab(value)}
+                title={dica}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-[14px] text-[13px] font-semibold
+                            border transition-all cursor-pointer shrink-0 min-h-[40px]
+                            focus:outline-none focus:ring-2 focus:ring-brand/30
+                  ${ativo
+                    ? 'grad-brand border-brand/40'
+                    : 'bg-s3/50 border-line text-t3 hover:text-t1 hover:border-line-strong'}`}
+              >
+                <Icon size={13} strokeWidth={1.7} aria-hidden /> {label}
+              </button>
+            )
+          })}
+          <span className="hidden lg:flex items-center text-[11px] text-t4 pl-1">
+            {TABS.find(t => t.value === tab)?.dica}
+          </span>
         </div>
       </div>
 
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-5 sm:p-6">
         {tab === 'fila'       && <CallQueueTab       campaign={campaign} />}
         {tab === 'quadro'     && <CallKanbanTab      campaign={campaign} />}
         {tab === 'desempenho' && <CallPerformanceTab campaignId={campaign.id} />}
       </div>
 
       <CallCampaignForm isOpen={editOpen} onClose={() => setEditOpen(false)} campaign={campaign} />
-      <AddListsModal isOpen={listasOpen} onClose={() => setListasOpen(false)} campaignId={campaign.id} />
-      <EquipeModal   isOpen={equipeOpen} onClose={() => setEquipeOpen(false)} campaignId={campaign.id} />
+      <AddListsPanel isOpen={listasOpen} onClose={() => setListasOpen(false)} campaignId={campaign.id} />
+      <EquipePanel   isOpen={equipeOpen} onClose={() => setEquipeOpen(false)} campaignId={campaign.id} />
     </div>
   )
 }
 
 // ─── Adicionar listas a uma campanha existente ────────────────────────────────
 
-function AddListsModal({ isOpen, onClose, campaignId }: {
+function AddListsPanel({ isOpen, onClose, campaignId }: {
   isOpen: boolean; onClose: () => void; campaignId: string
 }) {
   const { addLists, listIdsOf } = useCallCampaignsStore()
@@ -154,7 +181,8 @@ function AddListsModal({ isOpen, onClose, campaignId }: {
     listIdsOf(campaignId).then(ids => setJaNaFila(new Set(ids))).catch(() => {})
   }, [isOpen, campaignId, load, listIdsOf])
 
-  const ativas = lists.filter(l => l.status !== 'archived')
+  const ativas   = lists.filter(l => l.status !== 'archived')
+  const totalSel = ativas.filter(l => sel.has(l.id)).reduce((a, l) => a + l.totalCount, 0)
 
   async function handleAdd() {
     if (sel.size === 0) { toast.error('Selecione ao menos uma lista'); return }
@@ -174,14 +202,32 @@ function AddListsModal({ isOpen, onClose, campaignId }: {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Adicionar lista à fila" size="md">
+    <SidePanel
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Adicionar lista à fila"
+      subtitle="Base de Leads → campanha"
+      size="md"
+      footer={
+        <div className="flex gap-3">
+          <Button variant="secondary" className="flex-1" onClick={onClose} disabled={salvando}>
+            Cancelar
+          </Button>
+          <Button className="flex-1 gap-2" onClick={handleAdd} disabled={salvando || sel.size === 0}>
+            {salvando
+              ? <><Loader2 size={14} className="animate-spin" /> Importando…</>
+              : <><Database size={14} /> Adicionar</>}
+          </Button>
+        </div>
+      }
+    >
       <div className="flex flex-col gap-4">
-        <p className="text-[13px] text-t3">
-          Quem já está na fila não entra de novo, e telefones marcados como inválidos
-          ficam de fora. Adicionar a mesma lista duas vezes é seguro.
-        </p>
+        <Dica>
+          Quem já está na fila não entra de novo, e telefones marcados como inválidos ficam
+          de fora. Adicionar a mesma lista duas vezes é seguro.
+        </Dica>
 
-        <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-2">
           {ativas.map(l => {
             const selecionada = sel.has(l.id)
             const jaTem = jaNaFila.has(l.id)
@@ -189,126 +235,159 @@ function AddListsModal({ isOpen, onClose, campaignId }: {
               <button
                 key={l.id}
                 type="button"
+                aria-pressed={selecionada}
                 onClick={() => setSel(prev => {
                   const n = new Set(prev)
                   if (n.has(l.id)) n.delete(l.id); else n.add(l.id)
                   return n
                 })}
-                className={`flex items-center gap-3 rounded-[14px] border p-3 text-left transition-all cursor-pointer
-                  ${selecionada ? 'bg-brand-tint border-brand/40' : 'bg-s3/30 border-line hover:border-line-strong'}`}
+                className={`flex items-center gap-3 rounded-[14px] border p-3.5 text-left transition-all
+                            cursor-pointer min-h-[56px] focus:outline-none focus:ring-2 focus:ring-brand/30
+                  ${selecionada
+                    ? 'bg-brand-tint border-brand/40'
+                    : 'bg-s3/30 border-line hover:border-line-strong'}`}
               >
-                <span className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2
-                  ${selecionada ? 'bg-brand border-brand' : 'border-t5 bg-s3/50'}`}>
+                <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 border-2
+                  ${selecionada ? 'bg-brand border-brand' : 'border-t5 bg-s3/50'}`} aria-hidden>
                   {selecionada && <Check size={11} strokeWidth={3} className="text-[var(--brand-btn-text)]" />}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-[13px] font-medium truncate ${selecionada ? 'text-t1' : 'text-t2'}`}>
+                  <p className={`text-[13px] font-semibold truncate ${selecionada ? 'text-t1' : 'text-t2'}`}>
                     {l.name}
                   </p>
-                  {jaTem && <p className="text-[11px] text-t4">já vinculada a esta campanha</p>}
+                  {jaTem && (
+                    <span className="text-[11px] text-t4">já vinculada a esta campanha</span>
+                  )}
                 </div>
-                <span className="text-[11px] font-semibold text-t3 tabular-nums flex-shrink-0">
+                <span className="font-heading text-[13px] font-bold text-t3 tabular-nums shrink-0">
                   {l.totalCount.toLocaleString('pt-BR')}
                 </span>
               </button>
             )
           })}
+
           {ativas.length === 0 && (
-            <p className="py-6 text-center text-sm text-t3">Nenhuma lista disponível.</p>
+            <p className="py-8 text-center text-sm text-t3">Nenhuma lista disponível.</p>
           )}
         </div>
 
-        <div className="flex gap-3">
-          <Button variant="secondary" className="flex-1" onClick={onClose} disabled={salvando}>Cancelar</Button>
-          <Button className="flex-1 gap-2" onClick={handleAdd} disabled={salvando || sel.size === 0}>
-            {salvando ? <><Loader2 size={14} className="animate-spin" /> Importando…</> : 'Adicionar'}
-          </Button>
-        </div>
+        {sel.size > 0 && (
+          <div className="flex items-center gap-3 rounded-[14px] border border-brand/25 bg-brand-tint px-3.5 py-3">
+            <IconeTom icon={Users} tom="marca" tamanho="sm" />
+            <p className="text-[13px] text-t2">
+              até{' '}
+              <span className="font-heading font-extrabold text-brand-text tabular-nums text-[15px]">
+                {totalSel.toLocaleString('pt-BR')}
+              </span>{' '}
+              contatos entram na fila
+            </p>
+          </div>
+        )}
       </div>
-    </Modal>
+    </SidePanel>
   )
 }
 
 // ─── Quem trabalha a fila ─────────────────────────────────────────────────────
 
-function EquipeModal({ isOpen, onClose, campaignId }: {
+function EquipePanel({ isOpen, onClose, campaignId }: {
   isOpen: boolean; onClose: () => void; campaignId: string
 }) {
   const { campaigns, participants, addParticipant, removeParticipant } = useCallCampaignsStore()
   const { allProfiles } = useAuthStore()
 
-  const campaign = campaigns.find(c => c.id === campaignId)
+  const campaign   = campaigns.find(c => c.id === campaignId)
   const daCampanha = participants.filter(p => p.campaignId === campaignId)
-  const jaDentro = new Set(daCampanha.map(p => p.brokerId))
+  const jaDentro   = new Set(daCampanha.map(p => p.brokerId))
 
   const disponiveis = allProfiles.filter(p =>
     p.active && !jaDentro.has(p.id) && p.id !== campaign?.ownerBrokerId)
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Quem trabalha esta fila" size="sm">
-      <div className="flex flex-col gap-4">
-        <p className="text-[13px] text-t3">
-          A fila é única e compartilhada. Quem puxa um lead o reserva por
-          {' '}{campaign?.claimMinutes ?? 15} minutos, então dois corretores nunca ligam
-          para o mesmo número ao mesmo tempo.
-        </p>
+  const dono = allProfiles.find(p => p.id === campaign?.ownerBrokerId)
 
-        <div className="flex flex-col gap-2">
-          {campaign?.ownerBrokerId && (
-            <div className="flex items-center gap-2.5 rounded-[14px] border border-brand/25 bg-brand-tint px-3.5 py-2.5">
-              <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-[11px]
-                               font-bold text-[var(--brand-btn-text)] flex-shrink-0">
-                {(allProfiles.find(p => p.id === campaign.ownerBrokerId)?.name ?? '?').charAt(0).toUpperCase()}
+  return (
+    <SidePanel
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Quem trabalha esta fila"
+      subtitle="Fila única e compartilhada"
+      size="md"
+      footer={<Button variant="secondary" className="w-full" onClick={onClose}>Fechar</Button>}
+    >
+      <div className="flex flex-col gap-5">
+        <Dica tom="info">
+          Quem puxa um lead o reserva por{' '}
+          <span className="font-semibold">{campaign?.claimMinutes ?? 15} minutos</span> — é o que
+          impede dois corretores de ligarem para o mesmo número ao mesmo tempo.
+        </Dica>
+
+        <section className="flex flex-col gap-2">
+          {dono && (
+            <div className="flex items-center gap-3 rounded-[14px] border border-brand/25 bg-brand-tint px-3.5 py-3">
+              <span
+                className="w-8 h-8 rounded-full grad-brand flex items-center justify-center
+                           shrink-0 font-heading text-[13px] font-extrabold"
+                aria-hidden
+              >
+                {dono.name.charAt(0).toUpperCase()}
               </span>
-              <span className="text-[13px] text-t1 flex-1 truncate">
-                {allProfiles.find(p => p.id === campaign.ownerBrokerId)?.name ?? 'Responsável'}
-              </span>
-              <span className="font-label text-[11px] uppercase tracking-[0.14em] text-brand-text">responsável</span>
+              <span className="text-sm font-semibold text-t1 flex-1 truncate">{dono.name}</span>
+              <Chip icon={Crown} tom="marca">responsável</Chip>
             </div>
           )}
 
-          {daCampanha.map(p => (
-            <div key={p.id} className="flex items-center gap-2.5 rounded-[14px] border border-line bg-s2/50 px-3.5 py-2.5">
-              <span className="w-6 h-6 rounded-full bg-s3 flex items-center justify-center text-[11px]
-                               font-bold text-t2 flex-shrink-0">
-                {(allProfiles.find(x => x.id === p.brokerId)?.name ?? '?').charAt(0).toUpperCase()}
-              </span>
-              <span className="text-[13px] text-t1 flex-1 truncate">
-                {allProfiles.find(x => x.id === p.brokerId)?.name ?? 'Corretor'}
-              </span>
-              <button
-                onClick={() => removeParticipant(p.id).catch(() => toast.error('Falha ao remover'))}
-                className="p-1 rounded-lg text-t4 hover:text-error hover:bg-error-bg transition-colors cursor-pointer"
-                title="Remover da campanha"
-              >
-                <X size={13} strokeWidth={1.6} />
-              </button>
-            </div>
-          ))}
-        </div>
+          {daCampanha.map(p => {
+            const perfil = allProfiles.find(x => x.id === p.brokerId)
+            return (
+              <div key={p.id} className="flex items-center gap-3 rounded-[14px] border border-line bg-s2/50 px-3.5 py-3">
+                <span className="w-8 h-8 rounded-full bg-s3 flex items-center justify-center shrink-0
+                                 font-heading text-[13px] font-bold text-t2" aria-hidden>
+                  {(perfil?.name ?? '?').charAt(0).toUpperCase()}
+                </span>
+                <span className="text-sm text-t1 flex-1 truncate">{perfil?.name ?? 'Corretor'}</span>
+                <button
+                  onClick={() => removeParticipant(p.id).catch(() => toast.error('Falha ao remover'))}
+                  aria-label={`Remover ${perfil?.name ?? 'corretor'} da campanha`}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-t4 hover:text-error
+                             hover:bg-error-bg transition-colors cursor-pointer
+                             focus:outline-none focus:ring-2 focus:ring-error/30"
+                >
+                  <X size={14} strokeWidth={1.8} />
+                </button>
+              </div>
+            )
+          })}
+
+          {!dono && daCampanha.length === 0 && (
+            <p className="py-6 text-center text-[13px] text-t4">
+              Ninguém atribuído — a campanha ainda não tem quem trabalhe a fila.
+            </p>
+          )}
+        </section>
 
         {disponiveis.length > 0 && (
-          <div>
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2">
-              Adicionar
-            </p>
+          <section>
+            <div className="flex items-center gap-2 mb-2.5">
+              <span className="w-1 h-3.5 rounded-full bg-info" aria-hidden />
+              <Rotulo>Adicionar à fila</Rotulo>
+            </div>
             <div className="flex flex-wrap gap-2">
               {disponiveis.map(p => (
                 <button
                   key={p.id}
                   onClick={() => addParticipant(campaignId, p.id).catch(() => toast.error('Falha ao adicionar'))}
-                  className="rounded-[14px] border border-line bg-s3/50 px-3 py-1.5 text-[13px]
-                             text-t3 hover:text-t1 hover:border-brand/40 transition-colors cursor-pointer"
+                  className={`flex items-center gap-2 rounded-[14px] border ${TOM.neutro.borda} bg-s3/50
+                              px-3 py-2 text-[13px] text-t3 hover:text-t1 hover:border-brand/40
+                              transition-colors cursor-pointer min-h-[40px]
+                              focus:outline-none focus:ring-2 focus:ring-brand/30`}
                 >
-                  + {p.name}
+                  <Timer size={12} strokeWidth={1.6} aria-hidden /> {p.name}
                 </button>
               ))}
             </div>
-          </div>
+          </section>
         )}
-
-        <Button variant="secondary" onClick={onClose}>Fechar</Button>
       </div>
-    </Modal>
+    </SidePanel>
   )
 }
