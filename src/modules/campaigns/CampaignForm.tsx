@@ -245,7 +245,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="campaign-name" className="text-xs font-semibold text-t3 uppercase tracking-wider">Nome</label>
+              <label htmlFor="campaign-name" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Nome</label>
               <input
                 id="campaign-name"
                 autoFocus
@@ -261,7 +261,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="campaign-ticket" className="text-xs font-semibold text-t3 uppercase tracking-wider">
+              <label htmlFor="campaign-ticket" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
                 Ticket médio <span className="normal-case font-normal text-t5">(opcional)</span>
               </label>
               <div className="relative">
@@ -285,7 +285,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
 
             {isAdmin && brokers.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="campaign-owner" className="text-xs font-semibold text-t3 uppercase tracking-wider">
+                <label htmlFor="campaign-owner" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
                   Responsável <span className="normal-case font-normal text-t5">(opcional)</span>
                 </label>
                 <select
@@ -327,7 +327,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
             <div className="flex flex-col gap-3 max-h-[45vh] lg:max-h-none overflow-y-auto pr-0.5">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="campaign-message-1" className="text-xs font-semibold text-t3 uppercase tracking-wider">
+                  <label htmlFor="campaign-message-1" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
                     Mensagem 1 <span className="text-brand normal-case font-normal">(principal)</span>
                   </label>
                   <span className="text-[11px] text-t5">{allCount} template{allCount !== 1 ? 's' : ''}</span>
@@ -348,7 +348,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
               {messages.map((msg, idx) => (
                 <div key={idx} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
-                    <label htmlFor={`campaign-message-${idx + 2}`} className="text-xs font-semibold text-t3 uppercase tracking-wider">Mensagem {idx + 2}</label>
+                    <label htmlFor={`campaign-message-${idx + 2}`} className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Mensagem {idx + 2}</label>
                     <button
                       type="button"
                       onClick={() => setMessages(m => m.filter((_, i) => i !== idx))}

@@ -155,7 +155,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
         ) : (
           /* Outros casos — seletor livre */
           <div>
-            <p className="text-xs font-semibold text-t3 uppercase tracking-wider mb-2.5">
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2.5">
               Etapa de entrada no funil
             </p>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
@@ -187,7 +187,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
 
         {/* Ticket médio */}
         <div>
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             Ticket médio (opcional)
           </label>
           <div className="relative">
@@ -205,7 +205,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
 
         {/* Notas */}
         <div>
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             Notas (opcional)
           </label>
           <textarea

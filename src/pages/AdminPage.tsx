@@ -151,7 +151,7 @@ export function AdminPage() {
           {/* Admins */}
           {admins.length > 0 && (
             <div>
-              <h2 className="text-xs font-semibold text-t4 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-3 flex items-center gap-2">
                 <Shield size={12} /> Administradores
               </h2>
               <div className="flex flex-col gap-2">
@@ -164,7 +164,7 @@ export function AdminPage() {
 
           {/* Brokers */}
           <div>
-            <h2 className="text-xs font-semibold text-t4 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-3 flex items-center gap-2">
               <Users size={12} /> Corretores
             </h2>
             {brokers.length === 0 ? (
@@ -192,7 +192,7 @@ export function AdminPage() {
       <Modal isOpen={Boolean(editTarget)} onClose={() => setEditTarget(null)} title="Editar Perfil" size="sm">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Nome</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Nome</label>
             <input
               value={editName}
               onChange={e => setEditName(e.target.value)}
@@ -200,7 +200,7 @@ export function AdminPage() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Papel</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Papel</label>
             <div className="flex gap-2">
               {(['admin', 'broker'] as const).map(r => (
                 <button
@@ -226,7 +226,7 @@ export function AdminPage() {
       <Modal isOpen={newOpen} onClose={() => setNewOpen(false)} title="Adicionar Corretor" size="sm">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Nome completo</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Nome completo</label>
             <input
               value={newName}
               onChange={e => setNewName(e.target.value)}
@@ -235,7 +235,7 @@ export function AdminPage() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">E-mail</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">E-mail</label>
             <input
               type="email"
               value={newEmail}
@@ -245,7 +245,7 @@ export function AdminPage() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Senha temporária</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Senha temporária</label>
             <input
               type="text"
               value={newPassword}

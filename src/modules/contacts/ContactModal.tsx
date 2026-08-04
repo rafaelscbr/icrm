@@ -638,7 +638,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
 
         {/* ── Base de Leads & Campanhas ── */}
         <div>
-          <p className="text-xs font-bold text-t3 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-3 flex items-center gap-1.5">
             <Megaphone size={11} /> Base de Leads & Campanhas
           </p>
           <ContactCampaignHistory contactId={contact.id} />

@@ -379,7 +379,7 @@ function CalendarView({
         {/* Header dias da semana */}
         <div className="grid grid-cols-7 bg-s2/60 border-b border-line">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} className="py-2 text-center text-[11px] font-semibold text-t3 uppercase tracking-wider">{d}</div>
+            <div key={d} className="py-2 text-center font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">{d}</div>
           ))}
         </div>
 

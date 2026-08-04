@@ -86,14 +86,14 @@ export function LeadVisitaTaskModal({ lead, onClose }: Props) {
         {/* Data + horário */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
               <Calendar size={11} className="inline mr-1.5" />
               Data
             </label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
               <Clock size={11} className="inline mr-1.5" />
               Horário
             </label>
@@ -103,7 +103,7 @@ export function LeadVisitaTaskModal({ lead, onClose }: Props) {
 
         {/* Observações (pré-preenchidas) */}
         <div>
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             Observações da visita
           </label>
           <textarea

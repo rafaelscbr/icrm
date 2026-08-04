@@ -1,6 +1,6 @@
 import { useState, FormEvent, useMemo } from 'react'
 import { Plus, BadgePercent, DollarSign } from 'lucide-react'
-import { Modal } from '../../components/ui/Modal'
+import { SidePanel } from '../../components/ui/SidePanel'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { Button } from '../../components/ui/Button'
@@ -117,12 +117,12 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Venda' : 'Nova Venda'}>
+      <SidePanel size="md" isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Venda' : 'Nova Venda'}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
           {/* Cliente */}
           <div className="flex flex-col gap-1.5 relative">
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
               Cliente <span className="text-red-400">*</span>
             </p>
             <input
@@ -153,7 +153,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Empreendimento */}
           <div className="flex flex-col gap-1.5 relative">
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
               Empreendimento / Imóvel <span className="text-red-400">*</span>
             </p>
             <input
@@ -191,7 +191,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Valor da venda */}
           <div className="relative">
-            <label className="block text-xs font-medium text-t3 uppercase tracking-wider mb-1.5">
+            <label className="block font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5">
               Valor da venda <span className="text-red-400">*</span>
             </label>
             <div className="relative flex items-center">
@@ -346,7 +346,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Observações */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Observações</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Observações</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
@@ -361,7 +361,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
             <Button type="submit" className="flex-1">{isEditing ? 'Salvar alterações' : 'Registrar venda'}</Button>
           </div>
         </form>
-      </Modal>
+      </SidePanel>
 
       <ContactForm
         isOpen={newContactOpen}

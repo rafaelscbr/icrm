@@ -316,7 +316,7 @@ export function SalesPage() {
                 ...(isAdmin ? ['Corretor'] : []),
                 '',
               ].map((h, i) => (
-                <p key={i} className="text-xs font-medium text-t3 uppercase tracking-wider">{h}</p>
+                <p key={i} className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">{h}</p>
               ))}
             </div>
             {filtered.map((s, i) => {

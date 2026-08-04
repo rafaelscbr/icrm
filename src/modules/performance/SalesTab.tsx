@@ -130,7 +130,7 @@ export function SalesTab() {
 
       {/* Seletor de período */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold text-t3 uppercase tracking-wider">Performance de Vendas — {periodLabel}</h2>
+        <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Performance de Vendas — {periodLabel}</h2>
         <PeriodSelector />
       </div>
 

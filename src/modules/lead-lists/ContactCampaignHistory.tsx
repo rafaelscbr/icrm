@@ -243,7 +243,7 @@ export function ContactCampaignHistory({ contactId }: Props) {
       {currentStatus.length > 0 && (
         <div className="rounded-xl border border-line bg-s2/30 overflow-hidden">
           <div className="px-3 py-2 border-b border-line/50 bg-s2/50">
-            <p className="text-[11px] font-bold text-t4 uppercase tracking-wider">Situação atual</p>
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Situação atual</p>
           </div>
           <div className="flex flex-col divide-y divide-line/40">
             {currentStatus.map((s, i) => {
@@ -272,7 +272,7 @@ export function ContactCampaignHistory({ contactId }: Props) {
           onClick={() => setExpanded(p => !p)}
           className="flex items-center justify-between w-full py-1.5 group"
         >
-          <p className="text-[11px] font-bold text-t4 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
             <Clock size={10} />
             Linha do tempo
             <span className="normal-case font-normal text-t4/60">({timeline.length} eventos)</span>

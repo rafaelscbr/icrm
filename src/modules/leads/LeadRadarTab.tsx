@@ -161,13 +161,13 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
     : []
 
   const inputClass = 'w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25'
-  const labelClass = 'text-xs font-medium text-t3 uppercase tracking-wider'
+  const labelClass = 'font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4'
 
   return (
     <div className="space-y-4">
       {/* Perfil form */}
       <div className="bg-s2/50 border border-line rounded-xl p-3 space-y-3">
-        <p className="text-xs font-semibold text-t3 uppercase tracking-wider">Perfil de Busca</p>
+        <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Perfil de Busca</p>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
@@ -256,7 +256,7 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
 
       {/* Results */}
       <div>
-        <p className="text-xs font-semibold text-t3 uppercase tracking-wider mb-2">Imóveis compatíveis</p>
+        <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2">Imóveis compatíveis</p>
 
         {!hasCriteria ? (
           <div className="bg-s2/50 border border-line rounded-xl p-4 text-center">

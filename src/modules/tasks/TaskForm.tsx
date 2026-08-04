@@ -5,7 +5,7 @@ import {
   Clock, Flag, FileText, Zap, Users,
   Handshake, Search, Radar, Megaphone, Settings, DollarSign, MessageCircle,
 } from 'lucide-react'
-import { Modal } from '../../components/ui/Modal'
+import { SidePanel } from '../../components/ui/SidePanel'
 import { Task, TaskCategory, TaskPriority, ChecklistItem } from '../../types'
 import { generateId } from '../../lib/formatters'
 import { useTasksStore } from '../../store/useTasksStore'
@@ -250,7 +250,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
 
       {/* Categoria — pills */}
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-semibold text-t3 uppercase tracking-wider">Categoria</p>
+        <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Categoria</p>
         <div className="flex flex-wrap gap-2">
           {CATEGORY_OPTIONS.map(opt => (
             <button
@@ -307,7 +307,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
     <div key="step1" className="flex flex-col gap-5">
       {/* Data — shortcuts */}
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+        <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
           <Calendar size={12} /> Data
         </p>
         <div className="flex gap-2 flex-wrap">
@@ -354,7 +354,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
 
       {/* Horário */}
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+        <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
           <Clock size={12} /> Horário <span className="text-t5 normal-case font-normal tracking-normal">(opcional)</span>
         </p>
         <input
@@ -367,7 +367,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
 
       {/* Prioridade — cards */}
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+        <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
           <Flag size={12} /> Prioridade
         </p>
         <div className="grid grid-cols-3 gap-2">
@@ -420,7 +420,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
     <div key="step2" className="flex flex-col gap-5">
       {/* Vincular lead */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+        <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
           <User size={12} /> Lead vinculado <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
         </label>
         <div className="relative">
@@ -465,7 +465,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
 
       {/* Vincular imóvel */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+        <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
           <Building2 size={12} /> Imóvel vinculado <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
         </label>
         <div className="relative">
@@ -502,7 +502,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
       {/* Delegação */}
       {assignableProfiles.length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
             <UserCheck size={12} className={assignedToId ? 'text-brand-text' : ''} />
             {isAdmin ? 'Atribuir para corretor' : 'Delegar para admin'}
             <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
@@ -538,7 +538,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
       {/* Compartilhar com */}
       {shareableProfiles.length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider flex items-center gap-1.5">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
             <Users size={12} className={participantIds.length > 0 ? 'text-info' : ''} />
             Compartilhar com
             <span className="font-normal normal-case tracking-normal text-t5">(opcional · todos podem ver e editar)</span>
@@ -747,7 +747,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title={stepTitles[step]} size="md" footer={footer}>
+      <SidePanel isOpen={isOpen} onClose={onClose} title={stepTitles[step]} size="md" footer={footer}>
         <div className="flex flex-col gap-5">
 
           {/* Step indicator */}
@@ -796,7 +796,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
             </div>
           </div>
         </div>
-      </Modal>
+      </SidePanel>
 
       <ContactForm
         isOpen={newContactOpen}

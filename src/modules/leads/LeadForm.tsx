@@ -546,7 +546,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Origem */}
               <div>
-                <label className="text-xs font-semibold text-t2 mb-2 block uppercase tracking-wider">Origem</label>
+                <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Origem</label>
                 <div className="grid grid-cols-2 gap-2">
                   {ORIGINS.map(o => (
                     <button
@@ -570,7 +570,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Produto */}
               <div>
-                <label className="text-xs font-semibold text-t2 mb-2 block uppercase tracking-wider">Produto / Imóvel</label>
+                <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Produto / Imóvel</label>
 
                 {propertyMode === 'selected' && (
                   <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-info-line rounded-xl animate-in fade-in zoom-in-95 duration-150">
@@ -653,7 +653,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Ticket */}
               <div>
-                <label htmlFor="lead-ticket" className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider">Ticket Médio (R$)</label>
+                <label htmlFor="lead-ticket" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5 block">Ticket Médio (R$)</label>
                 <div className="relative">
                   <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                   <input
@@ -671,7 +671,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Etapa */}
               <div>
-                <label className="text-xs font-semibold text-t2 mb-2 block uppercase tracking-wider">Etapa do Funil</label>
+                <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Etapa do Funil</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {STAGES.map(s => (
                     <button
@@ -698,7 +698,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Data de entrada */}
               <div>
-                <label htmlFor="lead-entry-date" className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider flex items-center gap-1.5">
+                <label htmlFor="lead-entry-date" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5 block flex items-center gap-1.5">
                   <Calendar size={11} />
                   Data de entrada
                   {isRetroactive && (
@@ -724,7 +724,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Notas */}
               <div>
-                <label className="text-xs font-semibold text-t2 mb-1.5 block uppercase tracking-wider">Observações</label>
+                <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5 block">Observações</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}

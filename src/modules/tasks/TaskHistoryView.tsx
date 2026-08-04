@@ -285,7 +285,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
           {/* ── Gráfico por categoria ──────────────────────────────── */}
           {chartData.length > 0 && (
             <Card>
-              <p className="text-xs font-semibold text-t3 uppercase tracking-wider mb-4">
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-4">
                 Tarefas por categoria — {isToday ? 'Hoje' : fmtLabel(selectedDate)}
               </p>
               <ResponsiveContainer width="100%" height={180}>

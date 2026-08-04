@@ -816,7 +816,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
               {queueLeads.length}
             </span>
             <div className="flex-1 h-px bg-s2/60" />
-            <span className="text-[11px] text-t4 uppercase tracking-wider">não acionados · mais antigos primeiro</span>
+            <span className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">não acionados · mais antigos primeiro</span>
           </div>
 
           {queueLeads.length === 0 ? (
@@ -830,7 +830,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
           ) : (
             <ListContainer>
               {/* Header da tabela */}
-              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[11px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
+              <div className="grid grid-cols-[1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 font-semibold bg-s3/30">
                 <span>Nome</span>
                 <span>Telefone</span>
                 <span className="w-28 text-center">Ação</span>
@@ -952,7 +952,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
 
             {showContacted && (
               <ListContainer>
-                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line text-[11px] text-t4 uppercase tracking-wider font-semibold bg-s3/30">
+                <div className="grid grid-cols-[140px_1fr_160px_auto] gap-4 px-5 py-2.5 border-b border-line font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 font-semibold bg-s3/30">
                   <span>Etapa</span>
                   <span>Nome</span>
                   <span>Telefone</span>

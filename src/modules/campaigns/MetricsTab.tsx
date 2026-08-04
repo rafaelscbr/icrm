@@ -289,7 +289,7 @@ function BrokerBreakdown({ leads }: { leads: CampaignLead[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-xs text-t4 uppercase tracking-wider border-b border-line">
+            <tr className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 border-b border-line">
               <th className="text-left pb-2 font-semibold">Corretor</th>
               <th className="text-right pb-2 font-semibold">Disparos</th>
               <th className="text-right pb-2 font-semibold">Interessados</th>

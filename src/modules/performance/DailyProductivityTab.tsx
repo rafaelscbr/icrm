@@ -437,11 +437,11 @@ export function DailyProductivityTab() {
             <h2 className="text-sm font-semibold text-t2">Histórico recente</h2>
           </div>
           <div className="flex items-center gap-4 px-4 mb-2">
-            <span className="w-20 text-xs text-t4 uppercase tracking-wider">Data</span>
-            <span className="w-16 text-xs text-t4 uppercase tracking-wider">Leads</span>
-            <span className="w-16 text-xs text-t4 uppercase tracking-wider">Cont. Propr.</span>
-            <span className="w-16 text-xs text-t4 uppercase tracking-wider">Funil</span>
-            <span className="text-xs text-t4 uppercase tracking-wider">Score</span>
+            <span className="w-20 font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Data</span>
+            <span className="w-16 font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Leads</span>
+            <span className="w-16 font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Cont. Propr.</span>
+            <span className="w-16 font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Funil</span>
+            <span className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Score</span>
           </div>
           <div className="flex flex-col">
             {history.map(log => <HistoryRow key={log.id} log={log} onEdit={openEdit} />)}

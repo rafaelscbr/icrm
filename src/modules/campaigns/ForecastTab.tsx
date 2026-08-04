@@ -239,7 +239,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
         {/* Ticket médio */}
         <Card className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Ticket Médio</p>
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Ticket Médio</p>
             {!editingTicket && (
               <button onClick={() => setEditingTicket(true)} className="p-1 rounded-lg text-t4 hover:text-t2 hover:bg-s3/50 transition-colors cursor-pointer">
                 <Pencil size={12} />

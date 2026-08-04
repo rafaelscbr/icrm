@@ -58,7 +58,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
 
         {/* Data */}
         <div>
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             <Calendar size={11} className="inline mr-1.5" />
             Data da visita
           </label>
@@ -72,7 +72,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
 
         {/* Horário */}
         <div>
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             <Clock size={11} className="inline mr-1.5" />
             Horário
           </label>
@@ -86,7 +86,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
 
         {/* Observações */}
         <div>
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider block mb-2">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             Observações (opcional)
           </label>
           <textarea

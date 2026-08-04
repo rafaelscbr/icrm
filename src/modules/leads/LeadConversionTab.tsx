@@ -226,7 +226,7 @@ function ConversionTable({ title, eyebrow, icon: Icon, rows, highlightKey }: {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[11px] text-t4 uppercase tracking-wider border-b border-line">
+            <tr className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 border-b border-line">
               <th className="text-left font-semibold px-5 py-2.5">{title.includes('origem') ? 'Origem' : 'Corretor'}</th>
               <th className="text-right font-semibold px-3 py-2.5">Leads</th>
               <th className="text-right font-semibold px-3 py-2.5">→ Atend.</th>

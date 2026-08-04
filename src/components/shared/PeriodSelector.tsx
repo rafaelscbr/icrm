@@ -119,7 +119,7 @@ export function PeriodSelector({ className = '' }: PeriodSelectorProps) {
               <div className="grid grid-cols-2 gap-2">
                 {(['De', 'Até'] as const).map((lbl, i) => (
                   <div key={lbl}>
-                    <p className="text-[11px] text-t4 uppercase tracking-wider mb-1 px-0.5">{lbl}</p>
+                    <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1 px-0.5">{lbl}</p>
                     <input
                       type="date"
                       value={i === 0 ? customStart : customEnd}

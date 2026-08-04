@@ -1,6 +1,6 @@
 import { useState, useRef, FormEvent } from 'react'
 import { Camera } from 'lucide-react'
-import { Modal } from '../../components/ui/Modal'
+import { SidePanel } from '../../components/ui/SidePanel'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { Toggle } from '../../components/ui/Toggle'
@@ -95,7 +95,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Contato' : 'Novo Contato'}>
+    <SidePanel size="md" isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Contato' : 'Novo Contato'}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
         {/* Photo */}
@@ -167,7 +167,7 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
 
         {/* Tags */}
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium text-t3 uppercase tracking-wider">Tags</p>
+          <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tags</p>
           <div className="flex gap-2">
             {TAG_OPTIONS.map(opt => (
               <button
@@ -227,6 +227,6 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
           </Button>
         </div>
       </form>
-    </Modal>
+    </SidePanel>
   )
 }

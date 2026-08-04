@@ -184,7 +184,7 @@ export function DeleteLeadFromListModal({
             {/* Em outras listas */}
             {status.otherLists.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <p className="text-[11px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
+                <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1">
                   <Database size={9} /> Em outras listas ({status.otherLists.length})
                 </p>
                 {status.otherLists.map(l => (
@@ -199,7 +199,7 @@ export function DeleteLeadFromListModal({
             {/* Em campanhas */}
             {status.campaigns.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <p className="text-[11px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
+                <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1">
                   <Megaphone size={9} /> Em campanhas ({status.campaigns.length})
                 </p>
                 {status.campaigns.map(c => (
@@ -227,7 +227,7 @@ export function DeleteLeadFromListModal({
         {/* Ações */}
         {status && !loading && (
           <div className="flex flex-col gap-2 pt-1 border-t border-line">
-            <p className="text-[11px] font-semibold text-t4 uppercase tracking-wider mb-0.5">
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-0.5">
               O que deseja fazer?
             </p>
 

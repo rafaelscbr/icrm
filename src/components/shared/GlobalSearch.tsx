@@ -247,7 +247,7 @@ function Section({ icon, label, children }: { icon: React.ReactNode; label: stri
     <div>
       <div className="flex items-center gap-2 px-4 pt-3 pb-1.5">
         {icon}
-        <span className="text-[11px] font-semibold text-t3 uppercase tracking-wider">{label}</span>
+        <span className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">{label}</span>
       </div>
       <div>{children}</div>
     </div>

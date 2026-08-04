@@ -193,7 +193,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Filter size={13} className="text-t4" />
-            <span className="text-xs font-semibold text-t3 uppercase tracking-wider">Filtros</span>
+            <span className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Filtros</span>
           </div>
           <button
             onClick={handleRefresh}
@@ -207,7 +207,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
 
         {/* Período */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1">
             <Calendar size={10} /> Período
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -238,7 +238,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
         {/* Tipo de ação + corretor (admin only) */}
         <div className="flex flex-wrap gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold text-t4 uppercase tracking-wider">Tipo</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tipo</label>
             <select
               value={filterType}
               onChange={e => setFilterType(e.target.value as typeof filterType)}
@@ -254,7 +254,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
 
           {isAdmin && brokers.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-semibold text-t4 uppercase tracking-wider flex items-center gap-1">
+              <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1">
                 <User size={10} /> Corretor
               </label>
               <select

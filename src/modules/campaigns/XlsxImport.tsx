@@ -136,7 +136,7 @@ export function XlsxImport({ campaignId, onDone }: XlsxImportProps) {
 
           {/* Table preview */}
           <div className="bg-s2/50 rounded-xl border border-line overflow-hidden">
-            <div className="grid grid-cols-3 gap-0 px-4 py-2 border-b border-line text-xs text-t4 uppercase tracking-wider font-medium">
+            <div className="grid grid-cols-3 gap-0 px-4 py-2 border-b border-line font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 font-medium">
               <span>Nome</span><span>Telefone</span><span>E-mail</span>
             </div>
             <div className="max-h-48 overflow-y-auto">

@@ -244,7 +244,7 @@ export function ReportsTab() {
       {/* ── Productivity this month ─────────────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold text-t3 uppercase tracking-wider">
+          <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
             Produtividade — {periodLabel}
           </h2>
           <PeriodSelector />
@@ -303,7 +303,7 @@ export function ReportsTab() {
 
       {/* ── Sales performance ───────────────────────────────────────────── */}
       <section>
-        <h2 className="text-xs font-semibold text-t3 uppercase tracking-wider mb-4">
+        <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-4">
           Performance de Vendas
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

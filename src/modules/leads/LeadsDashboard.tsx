@@ -348,7 +348,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-[11px] text-t4 uppercase tracking-wider border-b border-line">
+              <tr className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 border-b border-line">
                 <th className="text-left pb-2 pr-4">Etapa</th>
                 <th className="text-center pb-2 px-4">Total</th>
                 <th className="text-center pb-2 px-4">Frios +3d</th>

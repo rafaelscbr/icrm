@@ -303,7 +303,7 @@ export function CampaignsPage() {
           Defina o responsável por <span className="text-t1 font-medium">"{transferCampaign?.name}"</span>:
         </p>
         <div className="flex flex-col gap-1.5 mb-6">
-          <label className="text-xs font-semibold text-t3 uppercase tracking-wider">Responsável</label>
+          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Responsável</label>
           <select
             value={transferBrokerId}
             onChange={e => setTransferBrokerId(e.target.value)}

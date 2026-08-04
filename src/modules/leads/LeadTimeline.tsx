@@ -147,7 +147,7 @@ export function LeadTimeline({ leadId }: Props) {
 
           {/* Form header */}
           <div className="px-4 py-3 bg-s2/50 border-b border-line flex items-center justify-between">
-            <span className="text-xs font-semibold text-t2 uppercase tracking-wider">Nova Interação</span>
+            <span className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Nova Interação</span>
             <button
               onClick={() => setShowForm(false)}
               className="text-xs text-t3 hover:text-t2 transition-colors"

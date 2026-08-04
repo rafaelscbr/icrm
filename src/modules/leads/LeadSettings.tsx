@@ -97,7 +97,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
       <div className="p-4 space-y-4">
         <div className="flex gap-3">
           <div className="w-20 flex-shrink-0">
-            <label className="text-[11px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">Emoji</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">Emoji</label>
             <input
               value={emoji}
               onChange={e => setEmoji(e.target.value)}
@@ -107,7 +107,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
             />
           </div>
           <div className="flex-1">
-            <label className="text-[11px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">Nome</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">Nome</label>
             <input
               value={label}
               onChange={e => handleLabel(e.target.value)}
@@ -119,7 +119,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
 
         {!isEdit && (
           <div>
-            <label className="text-[11px] font-semibold text-t3 uppercase tracking-wider block mb-1.5">
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">
               Identificador interno
             </label>
             <input
@@ -134,7 +134,7 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
 
         {type === 'origin' && (
           <div>
-            <label className="text-[11px] font-semibold text-t3 uppercase tracking-wider block mb-2">Cor</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">Cor</label>
             <div className="flex flex-wrap gap-2">
               {COLORS.map(c => (
                 <button

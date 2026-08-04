@@ -273,7 +273,7 @@ export function BrokersTab() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[11px] text-t4 uppercase tracking-wider">Atividade</p>
+                  <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Atividade</p>
                   <p className="text-lg font-black text-brand tabular-nums">{s.disparos + s.interactions}</p>
                 </div>
               </div>

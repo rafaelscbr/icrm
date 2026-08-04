@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, FormEvent } from 'react'
 import { ImagePlus, X, Plus, Building2, Layers, Home, Car } from 'lucide-react'
-import { Modal } from '../../components/ui/Modal'
+import { SidePanel } from '../../components/ui/SidePanel'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { Button } from '../../components/ui/Button'
@@ -216,12 +216,12 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Imóvel' : 'Novo Imóvel'} size="lg">
+      <SidePanel isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Imóvel' : 'Novo Imóvel'} size="lg">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
           {/* Kind toggle */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Tipo de imóvel *</p>
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tipo de imóvel *</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 { value: 'ready',    label: 'Pronto',     icon: Building2, desc: 'Imóvel já construído' },
@@ -249,7 +249,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Images */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Fotos (opcional)</p>
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Fotos (opcional)</p>
             {!imagesLoaded ? (
               <p className="text-xs text-t4 py-2">Carregando fotos…</p>
             ) : (
@@ -353,7 +353,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
           {/* Dormitórios · Suítes · m² */}
           <div className="grid grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-t3 uppercase tracking-wider">Dormitórios</label>
+              <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Dormitórios</label>
               <input
                 type="number" min="0" max="20"
                 inputMode="numeric"
@@ -364,7 +364,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-t3 uppercase tracking-wider">Suítes</label>
+              <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Suítes</label>
               <input
                 type="number" min="0" max="20"
                 inputMode="numeric"
@@ -375,7 +375,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-t3 uppercase tracking-wider">Área (m²)</label>
+              <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Área (m²)</label>
               <div className="relative">
                 <input
                   type="text" inputMode="decimal"
@@ -391,7 +391,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Valor do condomínio */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Valor do Condomínio</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Valor do Condomínio</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-t3 select-none pointer-events-none">R$</span>
               <input
@@ -406,7 +406,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Value com máscara BRL */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
               {kind === 'off_plan' ? 'Ticket Médio' : 'Valor'} <span className="text-red-400">*</span>
             </label>
             <div className="relative">
@@ -428,7 +428,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Status */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium text-t3 uppercase tracking-wider">Status *</p>
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Status *</p>
             <div className="flex gap-2">
               {STATUS_OPTIONS.map(opt => (
                 <button
@@ -454,7 +454,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
           {/* Owner — apenas para pronto */}
           {kind === 'ready' && (
             <div className="flex flex-col gap-1.5 relative">
-              <p className="text-xs font-medium text-t3 uppercase tracking-wider">
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
                 Proprietário <span className="text-red-400">*</span>
               </p>
               <input
@@ -497,7 +497,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Observações */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t3 uppercase tracking-wider">Observações</label>
+            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Observações</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
@@ -526,7 +526,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
             {acceptsPermuta && (
               <>
                 <div className="flex flex-col gap-1.5">
-                  <p className="text-xs font-medium text-t3 uppercase tracking-wider">Tipos aceitos</p>
+                  <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tipos aceitos</p>
                   <div className="flex gap-2">
                     {(['imovel', 'carro'] as const).map(t => (
                       <button
@@ -551,7 +551,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
                 {permutaTypes.includes('imovel') && (
                   <div className="flex flex-col gap-1.5">
-                    <p className="text-xs font-medium text-t3 uppercase tracking-wider">Regiões aceitas para imóvel</p>
+                    <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Regiões aceitas para imóvel</p>
                     <div className="flex flex-wrap gap-1.5">
                       {['Balneário Camboriú','Camboriú','Itajaí','Navegantes','Itapema','Porto Belo','Florianópolis','Blumenau','São José','Palhoça','Biguaçu'].map(region => (
                         <button
@@ -581,7 +581,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
             <Button type="submit" className="flex-1">{isEditing ? 'Salvar alterações' : 'Salvar imóvel'}</Button>
           </div>
         </form>
-      </Modal>
+      </SidePanel>
 
       {/* key garante que o ContactForm remonta do zero a cada abertura */}
       <ContactForm

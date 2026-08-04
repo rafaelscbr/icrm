@@ -61,7 +61,7 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
           {/* Participantes atuais */}
           {list.length > 0 && (
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold text-t3 uppercase tracking-wider">Participando agora</p>
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Participando agora</p>
               {list.map(p => {
                 const profile = allProfiles.find(pr => pr.id === p.brokerId)
                 return (
@@ -93,7 +93,7 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
           {/* Adicionar corretor */}
           {isAdmin && brokers.filter(b => !participating.has(b.id)).length > 0 && (
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold text-t3 uppercase tracking-wider">Adicionar à campanha</p>
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Adicionar à campanha</p>
               {brokers.filter(b => !participating.has(b.id)).map(b => (
                 <button
                   key={b.id}

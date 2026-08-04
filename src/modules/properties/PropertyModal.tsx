@@ -141,7 +141,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
         <div className="grid grid-cols-2 gap-3">
           {(property.bedrooms || property.suites || property.areaSqm) && (
             <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
-              <p className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Características</p>
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Características</p>
               <div className="flex flex-col gap-1">
                 {property.bedrooms && (
                   <div className="flex items-center gap-1.5 text-xs text-t2">
@@ -166,7 +166,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
           )}
 
           <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
-            <p className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Financeiro</p>
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Financeiro</p>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1.5 text-xs">
                 <DollarSign size={11} className="text-emerald-400" />
