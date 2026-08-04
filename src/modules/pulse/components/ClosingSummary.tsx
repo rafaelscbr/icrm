@@ -50,15 +50,22 @@ function Bloco({ icon: Icon, titulo, children, className = '' }: {
   )
 }
 
-/** Linha "rótulo … valor" — o formato que se repete nos destaques. */
+/**
+ * Linha "rótulo … valor" dos blocos de destaque.
+ *
+ * O valor vai em Areia por padrão. Aqui o dourado não é enfeite: são dezenas
+ * de números pequenos lado a lado, e em branco eles se misturavam com os
+ * rótulos — o olho tinha que procurar o dado em vez de encontrá-lo. Uma cor
+ * só para todos os valores cria a coluna que a leitura precisa.
+ */
 function Linha({ rotulo, valor, cor }: { rotulo: string; valor: string; cor?: string }) {
   return (
     <div className="flex items-baseline gap-2 py-[3px]">
       <span className="text-[13px] text-t3 truncate">{rotulo}</span>
       <span className="flex-1 border-b border-dashed border-line/60 translate-y-[-3px]" aria-hidden />
       <span
-        className="font-heading font-bold tabular-nums text-[15px] shrink-0"
-        style={{ color: cor ?? 'var(--t1)' }}
+        className="font-heading font-extrabold tabular-nums text-[17px] leading-none shrink-0"
+        style={{ color: cor ?? 'var(--brand)' }}
       >
         {valor}
       </span>
@@ -159,7 +166,6 @@ export function ClosingSummary({ hoje, destaques, corretores, vgl }: {
               <Linha
                 rotulo="Produto mais procurado"
                 valor={`${destaques.produtoTop.nome} · ${destaques.produtoTop.qtd}`}
-                cor="var(--brand)"
               />
             )}
             {destaques?.horaPico !== null && destaques?.horaPico !== undefined && (
@@ -176,7 +182,6 @@ export function ClosingSummary({ hoje, destaques, corretores, vgl }: {
                 key={a.etapa}
                 rotulo={`Avanços para ${STAGE_THEME[a.etapa as LeadFunnelStage]?.label ?? a.etapa}`}
                 valor={String(a.qtd)}
-                cor={a.etapa === 'venda' ? 'var(--success)' : undefined}
               />
             ))}
           </Bloco>
@@ -186,7 +191,7 @@ export function ClosingSummary({ hoje, destaques, corretores, vgl }: {
             <Bloco icon={PhoneCall} titulo="Prospecção ativa" className="shrink-0">
               <Linha rotulo="Ligações feitas"   valor={String(lig.total)} />
               <Linha rotulo="Falou com alguém"  valor={String(lig.falou)} />
-              <Linha rotulo="Interessados"      valor={String(lig.interessados)} cor="var(--success)" />
+              <Linha rotulo="Interessados"      valor={String(lig.interessados)} />
               <Linha rotulo="Retorno agendado"  valor={String(lig.retornos)} />
             </Bloco>
           )}
@@ -196,7 +201,6 @@ export function ClosingSummary({ hoje, destaques, corretores, vgl }: {
               <Linha
                 rotulo="Valor vendido"
                 valor={hoje.vendasValor > 0 ? formatCurrency(hoje.vendasValor) : '—'}
-                cor={hoje.vendasValor > 0 ? 'var(--success)' : undefined}
               />
               <Linha
                 rotulo="Comissão gerada"
