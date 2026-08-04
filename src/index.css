@@ -355,6 +355,26 @@ html.light {
    * enquanto o Safari anima a barra, a tela não rola. `overscroll-behavior`
    * mata o efeito elástico do iOS ao arrastar.
    */
+  /*
+   * Barra de rolagem discreta para os painéis do Pulse. O iPad rola por
+   * toque, mas sem indicador visível ninguém descobre que dá para rolar.
+   */
+  .pulse-scroll {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  .pulse-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .pulse-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .pulse-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--line-strong);
+    border-radius: 3px;
+  }
+
   .pulse-viewport {
     position: fixed;
     inset: 0;

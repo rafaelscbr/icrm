@@ -40,7 +40,12 @@ export function LiveFeed({ feed, brokerNames, className = '' }: Props) {
         Pulso
       </PainelTitulo>
 
-      <div className="flex-1 min-h-0 overflow-hidden px-4 pb-3">
+      {/*
+        Rolável: com muita atividade o que saía da área visível ficava
+        inalcançável. `overscroll-contain` impede que o gesto vaze para o
+        documento (o viewport do quiosque é fixo e não rola).
+      */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 pulse-scroll">
         {linhas.length === 0 ? (
           <p className="text-t4 text-sm pt-6 text-center">
             Nenhuma atividade registrada hoje ainda.

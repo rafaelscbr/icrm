@@ -1,26 +1,32 @@
 /**
- * Clima da imobiliária — a leitura de 2 segundos do painel.
+ * Clima da imobiliária — a TEMPERATURA DO DIA, 24 horas por dia.
  *
  * Função pura, calculada 100% no cliente a partir de números que já estão na
  * memória. Zero consulta ao banco.
+ *
+ * Mede o dia ACUMULADO, não o instante: atendimentos, leads, visitas e vendas
+ * do dia pesam mais que o ritmo dos últimos 30 minutos. Sem isso o termômetro
+ * despencava toda vez que o time parava para almoçar e zerava à noite — o
+ * painel deixava de responder "como foi o dia" justamente quando o dia acabou.
+ * Os contadores só reiniciam na virada do dia (ver bootstrap 'virada_dia').
  *
  * Os pesos são uma calibragem inicial para um time de ~5 corretores; devem ser
  * reajustados depois de uma semana de operação real (a escala é o que dá
  * significado ao termômetro, não a fórmula em si).
  */
 
-export type ClimateLevel = 'expediente_fechado' | 'frio' | 'normal' | 'aquecido' | 'pegando_fogo'
+export type ClimateLevel = 'frio' | 'normal' | 'aquecido' | 'pegando_fogo'
 
 export interface ClimateInput {
   /** eventos de qualquer tipo nos últimos 30 min — o "ritmo agora" */
   atividade30min:     number
+  /** atendimentos acumulados no dia — o corpo da temperatura */
+  interacoesHoje:     number
   leadsNovosHoje:     number
   corretoresOnline:   number
   visitasHoje:        number
   vendasHoje:         number
   semAtendimentoHoje: number
-  /** momento da avaliação — define se estamos ou não em horário comercial */
-  agora:              Date
 }
 
 export interface ClimateResult {
@@ -31,25 +37,10 @@ export interface ClimateResult {
 }
 
 const LABELS: Record<ClimateLevel, string> = {
-  expediente_fechado: 'FORA DE EXPEDIENTE',
-  frio:               'FRIO',
-  normal:             'NORMAL',
-  aquecido:           'AQUECIDO',
-  pegando_fogo:       'PEGANDO FOGO',
-}
-
-/**
- * Horário comercial da Souza — o mesmo usado na regra de SLA dos leads Meta:
- * Seg–Sex 9h–18h, Sáb 9h–13h. Fora disso o termômetro não mede nada: às 21h
- * de um terça-feira "FRIO" não é diagnóstico, é ruído — e ruído recorrente é
- * exatamente o que faz alguém parar de olhar para um painel.
- */
-export function isHorarioComercial(d: Date): boolean {
-  const dia  = d.getDay()   // 0 = domingo
-  const hora = d.getHours()
-  if (dia === 0) return false
-  if (dia === 6) return hora >= 9 && hora < 13
-  return hora >= 9 && hora < 18
+  frio:         'FRIO',
+  normal:       'NORMAL',
+  aquecido:     'AQUECIDO',
+  pegando_fogo: 'PEGANDO FOGO',
 }
 
 function cap(value: number, max: number): number {
@@ -57,16 +48,13 @@ function cap(value: number, max: number): number {
 }
 
 export function calcClimate(input: ClimateInput): ClimateResult {
-  if (!isHorarioComercial(input.agora)) {
-    return { level: 'expediente_fechado', score: 0, label: LABELS.expediente_fechado }
-  }
-
   const bruto =
-      cap(input.atividade30min   * 4,  30)   // ritmo agora — o sinal mais forte
-    + cap(input.leadsNovosHoje   * 2,  20)   // entrada de demanda
-    + cap(input.corretoresOnline * 4,  16)   // time presente no iCRM
-    + cap(input.visitasHoje      * 5,  15)   // avanço real de pipeline
-    + cap(input.vendasHoje       * 10, 20)   // resultado
+      cap(input.interacoesHoje   * 1.5, 27)  // volume do dia — o maior peso
+    + cap(input.atividade30min   * 3,   18)  // ritmo dos últimos 30 min
+    + cap(input.leadsNovosHoje   * 2,   16)  // entrada de demanda
+    + cap(input.corretoresOnline * 3,   12)  // time presente no iCRM
+    + cap(input.visitasHoje      * 5,   15)  // avanço real de pipeline
+    + cap(input.vendasHoje       * 10,  20)  // resultado
 
   // Gargalo pesa contra: muita atividade com fila parada não é um dia bom.
   const penalidade = input.semAtendimentoHoje > 10 ? 10 : 0
@@ -83,9 +71,8 @@ export function calcClimate(input: ClimateInput): ClimateResult {
 
 /** Cor semântica do nível — usada no medidor e na borda do cartão. */
 export const CLIMATE_COLOR: Record<ClimateLevel, string> = {
-  expediente_fechado: 'var(--t4)',
-  frio:               'var(--info)',
-  normal:             'var(--t2)',
-  aquecido:           'var(--warning)',
-  pegando_fogo:       'var(--brand)',
+  frio:         'var(--info)',
+  normal:       'var(--t2)',
+  aquecido:     'var(--warning)',
+  pegando_fogo: 'var(--brand)',
 }

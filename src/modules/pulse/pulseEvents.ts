@@ -76,21 +76,28 @@ function moeda(v?: number): string {
 export function describe(ev: PulseEvent, brokerNome?: string): PulseEventView {
   const quem = brokerNome ?? 'Alguém'
   const lead = ev.leadNome ?? 'lead'
+  // O produto entra no texto principal: saber COM QUEM o corretor falou sem
+  // saber SOBRE O QUE não fecha a leitura de 2 segundos que o painel promete.
+  const comProduto = (base: string) => ev.produto ? `${base} · ${ev.produto}` : base
 
   switch (ev.kind) {
-    case 'lead_novo':
+    case 'lead_novo': {
+      // Quem recebeu o lead importa tanto quanto o lead ter entrado — é o
+      // rodízio funcionando (ou não).
+      const origem = ORIGEM_LABEL[ev.origem ?? ''] ?? ev.origem
       return {
         icon: UserPlus,
-        texto: `Novo lead — ${lead}`,
-        detalhe: ORIGEM_LABEL[ev.origem ?? ''] ?? ev.origem,
+        texto: comProduto(`Novo lead — ${lead}`),
+        detalhe: brokerNome ? `${origem ?? 'Novo'} → ${brokerNome}` : origem,
         tone: 'win',
       }
+    }
 
     case 'etapa': {
       const destino = stageLabel(ev.toStage)
       return {
         icon: ArrowRight,
-        texto: `${quem} moveu ${lead} → ${destino}`,
+        texto: comProduto(`${quem} moveu ${lead} → ${destino}`),
         detalhe: ev.fromStage ? `de ${stageLabel(ev.fromStage)}` : undefined,
         tone: ev.toStage === 'venda' ? 'win' : 'good',
       }
@@ -100,7 +107,7 @@ export function describe(ev: PulseEvent, brokerNome?: string): PulseEventView {
       const cfg = INTERACAO[ev.subTipo ?? ''] ?? INTERACAO.nota
       return {
         icon: cfg.icon,
-        texto: `${quem} ${cfg.verbo} ${lead}`,
+        texto: comProduto(`${quem} ${cfg.verbo} ${lead}`),
         detalhe: ev.subTipo === 'discard' ? ev.detalhe : undefined,
         tone: cfg.tone,
       }

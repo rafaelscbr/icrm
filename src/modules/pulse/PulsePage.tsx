@@ -150,14 +150,16 @@ export function PulsePage() {
     return () => { unsub() }
   }, [user?.id, isAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Temperatura do DIA — mede 24h, com peso maior no acumulado do que no
+  // instante. `agora` continua nas deps só para o recálculo periódico.
   const clima = useMemo(() => calcClimate({
-    atividade30min:    recent.length,
+    atividade30min:     recent.length,
+    interacoesHoje:     hoje.interacoes,
     leadsNovosHoje:     hoje.leadsNovos,
     corretoresOnline:   online.length,
     visitasHoje:        hoje.visitasMarcadas,
     vendasHoje:         hoje.vendasQtd,
     semAtendimentoHoje: gargalos.semAtendimentoHoje,
-    agora:              new Date(agora),
   }), [recent.length, hoje, online.length, gargalos.semAtendimentoHoje, agora])
 
   if (loading) return null

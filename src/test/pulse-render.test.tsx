@@ -40,10 +40,10 @@ const CORRETORES: PulseBroker[] = [
 ]
 
 const FEED: PulseEvent[] = [
-  { id: '1', at: new Date().toISOString(), kind: 'lead_novo', leadNome: 'Vanessa Lima', origem: 'meta_ads', brokerId: 'b2' },
+  { id: '1', at: new Date().toISOString(), kind: 'lead_novo', leadNome: 'Vanessa Lima', produto: 'Garden Park', origem: 'meta_ads', brokerId: 'b2' },
   { id: '2', at: new Date().toISOString(), kind: 'etapa', leadNome: 'João', fromStage: 'followup', toStage: 'visita', brokerId: 'b1' },
   { id: '3', at: new Date().toISOString(), kind: 'venda', leadNome: 'Torre Garden', valor: 850_000, brokerId: 'b1' },
-  { id: '4', at: new Date().toISOString(), kind: 'interacao', subTipo: 'whatsapp', leadNome: 'Ana', brokerId: 'b1' },
+  { id: '4', at: new Date().toISOString(), kind: 'interacao', subTipo: 'whatsapp', leadNome: 'Ana', produto: 'Al Mare', brokerId: 'b1' },
   { id: '5', at: new Date().toISOString(), kind: 'campanha', subTipo: 'dispatch', leadNome: 'Carlos', brokerId: 'b2' },
   { id: '6', at: new Date().toISOString(), kind: 'visita', leadNome: 'Visita Paramount', detalhe: '2026-08-05' },
 ]
@@ -65,10 +65,12 @@ describe('painéis do Pulse renderizam com dados', () => {
 
   it('LiveFeed renderiza todos os tipos de evento', () => {
     render(<LiveFeed feed={FEED} brokerNames={NOMES} />)
-    expect(screen.getByText(/Novo lead — Vanessa Lima/)).toBeInTheDocument()
+    // Nome + produto no texto, origem + corretor que recebeu no detalhe
+    expect(screen.getByText('Novo lead — Vanessa Lima · Garden Park')).toBeInTheDocument()
+    expect(screen.getByText('Meta Ads → Dionata Alves')).toBeInTheDocument()
     expect(screen.getByText(/Rafael moveu João → Visita/)).toBeInTheDocument()
     expect(screen.getByText(/Venda registrada — Torre Garden/)).toBeInTheDocument()
-    expect(screen.getByText(/Rafael falou no WhatsApp com Ana/)).toBeInTheDocument()
+    expect(screen.getByText('Rafael falou no WhatsApp com Ana · Al Mare')).toBeInTheDocument()
     expect(screen.getByText(/Dionata Alves disparou para Carlos/)).toBeInTheDocument()
   })
 
@@ -113,9 +115,8 @@ describe('painéis do Pulse renderizam com dados', () => {
 
   it('ClimateGauge mostra o nível calculado', () => {
     const clima = calcClimate({
-      atividade30min: 10, leadsNovosHoje: 12, corretoresOnline: 5,
-      visitasHoje: 4, vendasHoje: 2, semAtendimentoHoje: 0,
-      agora: new Date('2026-07-29T14:00:00'),
+      atividade30min: 10, interacoesHoje: 25, leadsNovosHoje: 12,
+      corretoresOnline: 5, visitasHoje: 4, vendasHoje: 2, semAtendimentoHoje: 0,
     })
     render(<ClimateGauge clima={clima} />)
     expect(screen.getByText('PEGANDO FOGO')).toBeInTheDocument()

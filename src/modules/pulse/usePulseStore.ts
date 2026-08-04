@@ -59,6 +59,8 @@ interface PulseStore {
   tempos:          PulseTempos
   corretores:      PulseBroker[]
   brokerNames:     Record<string, string>
+  /** id -> {nome, produto} dos leads; alimentado pelo snapshot e por leads novos */
+  leadsInfo:       Record<string, { nome: string; produto: string | null }>
   feed:            PulseEvent[]
   porHora:         number[]
   /** timestamps dos últimos eventos — só para o cálculo do clima */
@@ -98,6 +100,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   tempos:          TEMPOS_ZERO,
   corretores:      [],
   brokerNames:     {},
+  leadsInfo:       {},
   feed:            [],
   porHora:         Array(24).fill(0),
   recent:          [],
@@ -127,7 +130,17 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
       const brokerNames: Record<string, string> = {}
       snap.corretores.forEach(c => { brokerNames[c.brokerId] = c.nome })
 
-      const timeline = (snap.timeline ?? []).filter(ev => !isEventoRuido(ev))
+      const leadsInfo = snap.leadsInfo ?? {}
+      const timeline = (snap.timeline ?? [])
+        .filter(ev => !isEventoRuido(ev))
+        .map(ev => {
+          const info = ev.leadId ? leadsInfo[ev.leadId] : undefined
+          return {
+            ...ev,
+            leadNome: ev.leadNome ?? info?.nome,
+            produto:  ev.produto  ?? info?.produto ?? undefined,
+          }
+        })
       const corte = agora - JANELA_CLIMA_MS
 
       set({
@@ -143,6 +156,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         tempos:            snap.tempos ?? TEMPOS_ZERO,
         corretores:        snap.corretores ?? [],
         brokerNames,
+        leadsInfo,
         feed:              timeline.slice(0, FEED_MAX),
         porHora:           (snap.porHora ?? []).length === 24 ? snap.porHora : Array(24).fill(0),
         recent:            timeline
@@ -248,12 +262,21 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
 
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, p => {
         const r = p.new as Record<string, unknown>
+        const id      = r.id as string
+        const nome    = r.name as string
+        // property_name já vem preenchido nos leads do Meta (vem do produto do
+        // formulário). Alimenta o mapa para que as interações seguintes deste
+        // lead exibam o produto sem nenhuma consulta.
+        const produto = (r.property_name as string | null) ?? null
+        set(s => ({ leadsInfo: { ...s.leadsInfo, [id]: { nome, produto } } }))
         push({
-          id:        r.id as string,
+          id,
+          leadId:    id,
           at:        r.created_at as string,
           kind:      'lead_novo',
           brokerId:  (r.broker_id as string | null) ?? undefined,
-          leadNome:  r.name as string,
+          leadNome:  nome,
+          produto:   produto ?? undefined,
           origem:    (r.origin as string | null) ?? undefined,
           valor:     (r.average_ticket as number | null) ?? undefined,
         })
@@ -266,16 +289,18 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         // aparece no feed pelo INSERT em `leads`; contá-la de novo duplicaria a
         // linha e inflaria o KPI de Atendimentos. Mesmo filtro da RPC 052.
         if (!r.broker_id) return
-        const tipo = r.type as string
+        const tipo   = r.type as string
+        const leadId = r.lead_id as string
+        // Nome e produto saem do mapa em memória — zero consulta por evento.
+        const info   = get().leadsInfo[leadId]
         push({
           id:        r.id as string,
+          leadId,
           at:        r.interacted_at as string,
           kind:      tipo === 'stage_change' ? 'etapa' : 'interacao',
           brokerId:  (r.broker_id as string | null) ?? undefined,
-          // O INSERT de lead_interactions não traz o nome do lead (só lead_id).
-          // Buscá-lo custaria uma query por evento — exatamente o que esta tela
-          // não pode fazer. O feed mostra a ação; o nome vem no próximo snapshot.
-          leadNome:  undefined,
+          leadNome:  info?.nome,
+          produto:   info?.produto ?? undefined,
           fromStage: (r.from_stage as string | null) ?? undefined,
           toStage:   (r.to_stage as string | null) ?? undefined,
           subTipo:   tipo,

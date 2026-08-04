@@ -1,71 +1,60 @@
 import { describe, it, expect } from 'vitest'
-import { calcClimate, isHorarioComercial, type ClimateInput } from '../modules/pulse/climate'
+import { calcClimate, type ClimateInput } from '../modules/pulse/climate'
 import { agruparFeed, isEventoRuido, tempoRelativo } from '../modules/pulse/pulseEvents'
 import type { PulseEvent } from '../modules/pulse/types'
 
-// Quarta-feira, 14h — dentro do expediente
-const DIA_UTIL_14H = new Date('2026-07-29T14:00:00')
-
 function entrada(over: Partial<ClimateInput> = {}): ClimateInput {
   return {
-    atividade30min:    0,
+    atividade30min:     0,
+    interacoesHoje:     0,
     leadsNovosHoje:     0,
     corretoresOnline:   0,
     visitasHoje:        0,
     vendasHoje:         0,
     semAtendimentoHoje: 0,
-    agora:              DIA_UTIL_14H,
     ...over,
   }
 }
 
-describe('isHorarioComercial', () => {
-  it('domingo nunca é expediente', () => {
-    expect(isHorarioComercial(new Date('2026-07-26T10:00:00'))).toBe(false)
-  })
-
-  it('sábado só até as 13h', () => {
-    expect(isHorarioComercial(new Date('2026-08-01T10:00:00'))).toBe(true)
-    expect(isHorarioComercial(new Date('2026-08-01T14:00:00'))).toBe(false)
-  })
-
-  it('dia útil das 9h às 18h', () => {
-    expect(isHorarioComercial(new Date('2026-07-29T08:00:00'))).toBe(false)
-    expect(isHorarioComercial(new Date('2026-07-29T09:00:00'))).toBe(true)
-    expect(isHorarioComercial(new Date('2026-07-29T17:59:00'))).toBe(true)
-    expect(isHorarioComercial(new Date('2026-07-29T18:00:00'))).toBe(false)
-  })
-})
-
 describe('calcClimate', () => {
-  it('fora do expediente não classifica como frio — não é diagnóstico, é ruído', () => {
-    const r = calcClimate(entrada({ agora: new Date('2026-07-29T21:00:00'), vendasHoje: 3 }))
-    expect(r.level).toBe('expediente_fechado')
-    expect(r.score).toBe(0)
+  it('mede 24h — um dia bom continua quente depois do expediente', () => {
+    // O ritmo dos últimos 30 min zera à noite, mas o dia acumulado permanece:
+    // o painel tem que responder "como foi o dia", não só "o que houve agora".
+    const durante = calcClimate(entrada({ interacoesHoje: 18, visitasHoje: 3, vendasHoje: 1, atividade30min: 6 }))
+    const noite   = calcClimate(entrada({ interacoesHoje: 18, visitasHoje: 3, vendasHoje: 1, atividade30min: 0 }))
+    expect(durante.level).toBe('aquecido')
+    expect(noite.level).toBe('aquecido')
+    expect(noite.score).toBeGreaterThan(50)
   })
 
-  it('dia parado em horário comercial é frio', () => {
+  it('dia realmente parado é frio', () => {
     expect(calcClimate(entrada()).level).toBe('frio')
+  })
+
+  it('o volume do dia pesa mais que o ritmo do momento', () => {
+    const soRitmo  = calcClimate(entrada({ atividade30min: 20 }))
+    const soVolume = calcClimate(entrada({ interacoesHoje: 20 }))
+    expect(soVolume.score).toBeGreaterThan(soRitmo.score)
   })
 
   it('dia intenso chega em pegando fogo', () => {
     const r = calcClimate(entrada({
-      atividade30min: 10, leadsNovosHoje: 12, corretoresOnline: 5,
-      visitasHoje: 4, vendasHoje: 2,
+      atividade30min: 10, interacoesHoje: 25, leadsNovosHoje: 12,
+      corretoresOnline: 5, visitasHoje: 4, vendasHoje: 2,
     }))
     expect(r.level).toBe('pegando_fogo')
     expect(r.score).toBeGreaterThanOrEqual(75)
   })
 
-  it('cada componente tem teto — 100 interações não zeram o resto da leitura', () => {
-    const so_interacoes = calcClimate(entrada({ atividade30min: 1000 }))
-    expect(so_interacoes.score).toBe(30)
-    expect(so_interacoes.level).toBe('normal')
+  it('cada componente tem teto — mil eventos não saturam a leitura sozinhos', () => {
+    const so_ritmo = calcClimate(entrada({ atividade30min: 1000 }))
+    expect(so_ritmo.score).toBe(18)
+    expect(so_ritmo.level).toBe('frio')
   })
 
   it('fila parada penaliza o clima', () => {
-    const sem = calcClimate(entrada({ atividade30min: 8, corretoresOnline: 4 }))
-    const com = calcClimate(entrada({ atividade30min: 8, corretoresOnline: 4, semAtendimentoHoje: 15 }))
+    const sem = calcClimate(entrada({ interacoesHoje: 12, corretoresOnline: 4 }))
+    const com = calcClimate(entrada({ interacoesHoje: 12, corretoresOnline: 4, semAtendimentoHoje: 15 }))
     expect(com.score).toBe(sem.score - 10)
   })
 

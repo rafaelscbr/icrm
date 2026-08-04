@@ -59,7 +59,7 @@ export function BrokerRadar({ corretores, online, agora, className = '' }: Props
         Corretores · online no iCRM
       </PainelTitulo>
 
-      <div className="flex-1 min-h-0 overflow-hidden px-4 pb-3">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 pulse-scroll">
         <ul className="flex flex-col">
           {lista.map(({ c, estado }) => (
             <li

@@ -18,10 +18,14 @@ export type PulseEventKind =
 
 export interface PulseEvent {
   id:         string
+  /** lead de origem — cruza com PulseSnapshot.leadsInfo para nome e produto */
+  leadId?:    string
   at:         string
   kind:       PulseEventKind
   brokerId?:  string
   leadNome?:  string
+  /** empreendimento/imóvel vinculado ao lead */
+  produto?:   string
   fromStage?: string
   toStage?:   string
   /** tipo da interação ('whatsapp', 'discard'…) ou action_type da campanha */
@@ -90,6 +94,15 @@ export interface PulseSnapshot {
   gargalos:   PulseGargalos
   corretores: PulseBroker[]
   timeline:   PulseEvent[]
+  /**
+   * Mapa id -> {nome, produto} dos leads ativos.
+   *
+   * O INSERT de lead_interactions no realtime só carrega lead_id. Este mapa
+   * viaja no snapshot e se mantém sozinho — o INSERT em `leads` já traz nome e
+   * produto —, então o feed mostra "com Fulano · Garden Park" sem gastar uma
+   * consulta por evento.
+   */
+  leadsInfo:  Record<string, { nome: string; produto: string | null }>
   tempos:     PulseTempos
   porHora:    number[]
 }
