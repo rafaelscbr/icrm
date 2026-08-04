@@ -15,7 +15,7 @@ import {
   MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake,
   Sparkles, Smartphone, Globe, Handshake, Megaphone, Loader2,
   Wifi, WifiOff, Trophy, Rows2, Rows3, DollarSign,
-  Inbox,
+  Inbox, RefreshCw, BadgeCheck,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -32,8 +32,8 @@ import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { IntelPair } from '../../components/shared/IntelBadges'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { TEMPERATURE_COLOR } from '../../lib/intelligence'
+import { avisoReentrada, reentradaPrimeiro } from './reentrada'
 import { useKanbanPrefs, SORT_LABEL, KanbanSort } from '../../store/useKanbanPrefs'
-import { LeadModal } from './LeadModal'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
 import toast from 'react-hot-toast'
 
@@ -156,6 +156,10 @@ function LeadCard({
 
   const intel = useIntelligenceStore(s => s.intel[lead.id])
 
+  // Reentrada ainda não vista pelo dono — o único destaque que pode competir
+  // com a próxima ação, porque não é o sistema cobrando: é o lead chamando.
+  const aviso = isOverlay ? null : avisoReentrada(lead)
+
   return (
     <div
       ref={setNodeRef}
@@ -186,6 +190,9 @@ function LeadCard({
         ${isOverlay ? 'shadow-modal border-brand/40' : ''}
         ${isSaving ? 'opacity-60 pointer-events-none' : ''}
         ${lead.flagged ? 'border-brand/40' : ''}
+        ${/* Reentrada ganha superfície e anel: é o card que tem de ser visto
+              primeiro na coluna, e ele já sobe para o topo na ordenação. */ ''}
+        ${aviso ? 'kanban-card shadow-card ring-1 ring-inset ring-info/40 !border-info-line' : ''}
       `}
     >
       {/*
@@ -235,6 +242,23 @@ function LeadCard({
           <GripVertical size={13} strokeWidth={1.6} />
         </div>
       </div>
+
+      {/* ── NÍVEL 0 — O lead chamou ──────────────────────────────────────────
+          Fica acima do nome porque é o motivo de olhar este card antes dos
+          outros. Ícone + frase: a cor sozinha nunca diz o que houve, e quem usa
+          o funil de vez em quando não decora legenda de cor. */}
+      {aviso && (
+        <p
+          className="flex items-center gap-1.5 mb-2 pr-12 font-label text-[11px] font-bold
+                     uppercase tracking-[0.08em] text-info"
+          title={aviso.detalhe}
+        >
+          {aviso.tipo === 'cliente'
+            ? <BadgeCheck size={12} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />
+            : <RefreshCw  size={12} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />}
+          <span className="truncate">{aviso.texto}</span>
+        </p>
+      )}
 
       {/* ── NÍVEL 1 — Identidade ─────────────────────────────────────────── */}
       <div className="flex items-start gap-2.5 pr-12">
@@ -544,9 +568,14 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
   const [overStage, setOverStage] = useState<LeadFunnelStage | null>(null)
   // Painel do lead vem da URL (?lead=<id>), igual à aba de lista — assim o
   // link é compartilhável e o voltar do navegador fecha o painel.
+  //
+  // Quem MONTA o painel é a LeadsPage, não este componente. Antes os dois liam
+  // o mesmo parâmetro e montavam um LeadModal cada, empilhados — invisível para
+  // quem clica (um cobre o outro), mas era o painel inteiro renderizado em
+  // dobro. E a busca daqui olha só os leads já filtrados: link recebido por
+  // notificação para um lead que o filtro escondeu não abria nada. A LeadsPage
+  // procura na base inteira.
   const [searchParams, setSearchParams] = useSearchParams()
-  const openLeadId = searchParams.get('lead')
-  const selectedLead = openLeadId ? leads.find(l => l.id === openLeadId) ?? null : null
   const setSelectedLead = (l: Lead | null) => {
     const next = new URLSearchParams(searchParams)
     if (l) next.set('lead', l.id)
@@ -577,8 +606,12 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
       criacao:   (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     }
     const cmp = comparators[sort] ?? comparators.manual
+    // Reentrada não vista vem antes de qualquer critério: destaque que aparece
+    // só na quinta rolagem não é destaque. São um ou dois cards, não uma
+    // reordenação do funil — ver reentrada.ts.
+    const comReentrada = (a: Lead, b: Lead) => reentradaPrimeiro(a, b) || cmp(a, b)
     return STAGES.reduce((acc, stage) => {
-      acc[stage] = leads.filter(l => l.funnelStage === stage).sort(cmp)
+      acc[stage] = leads.filter(l => l.funnelStage === stage).sort(comReentrada)
       return acc
     }, {} as Record<LeadFunnelStage, Lead[]>)
   }, [leads, sort])
@@ -777,13 +810,6 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
           {activeLead ? <LeadCard lead={activeLead} onClick={() => {}} isOverlay dense={dense} /> : null}
         </DragOverlay>
       </DndContext>
-
-      {selectedLead && (
-        <LeadModal
-          lead={selectedLead}
-          onClose={() => setSelectedLead(null)}
-        />
-      )}
     </>
   )
 }

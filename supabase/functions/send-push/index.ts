@@ -74,10 +74,16 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // Abre o card, não a lista: o aviso já diz o nome, e obrigar a procurar esse
+  // nome no meio do funil é o atrito que faz o corretor parar de tocar no push.
+  const url = n.resource_type === 'lead'
+    ? (n.resource_id ? `/leads?lead=${encodeURIComponent(n.resource_id)}` : '/leads')
+    : '/tarefas'
+
   const payload = JSON.stringify({
     title: n.title,
     body:  [n.body, slaLine].filter(Boolean).join('\n'),
-    url:   n.resource_type === 'lead' ? '/leads' : '/tarefas',
+    url,
     tag:   n.id,
   })
 

@@ -6,6 +6,7 @@ import {
   ChevronDown, History, StickyNote, PhoneCall,
   Database, ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
   Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight, Timer,
+  RefreshCw, BadgeCheck,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -26,6 +27,7 @@ import { LeadTimeline } from './LeadTimeline'
 import { LeadProfilePanel } from './LeadProfilePanel'
 import { LeadIntelPanel } from './LeadIntelPanel'
 import { useSlaInfo } from './SlaBadge'
+import { avisoReentrada } from './reentrada'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import toast from 'react-hot-toast'
 
@@ -95,7 +97,7 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
-  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, setStage, transfer, leads } = useLeadsStore()
+  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, setStage, transfer, ackReentry, leads } = useLeadsStore()
   const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
 
   const { add: addContact, getById }       = useContactsStore()
@@ -149,6 +151,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [showDiscard, showEdit, showTaskForm, onClose])
+
+  // Abriu o lead = viu a reentrada. O aviso continua na tela enquanto o painel
+  // estiver aberto (o estado é capturado na montagem); o que baixa é o destaque
+  // no Kanban e na lista. Só o dono baixa — a RPC ignora os outros.
+  const [avisoAoAbrir] = useState(() => avisoReentrada(initialLead))
+  useEffect(() => { void ackReentry(initialLead.id) }, [initialLead.id, ackReentry])
 
   const slaInfo    = useSlaInfo(lead)
   const property   = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
@@ -502,6 +510,33 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
           {/* ── Corpo (scrollável) ──────────────────────────────────────────── */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+
+            {/* O lead voltou sozinho — o fato que trouxe o corretor até aqui.
+                Vem antes de tudo porque muda a abertura da conversa: não é
+                "estou retomando o contato", é "vi que você se cadastrou de
+                novo". Azul: é informação e oportunidade, não risco nem meta. */}
+            {avisoAoAbrir && (
+              <div className="flex items-start gap-2.5 rounded-[14px] p-3 border bg-info-bg border-info-line">
+                <div className="w-6 h-6 rounded-[8px] bg-info-bg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {avisoAoAbrir.tipo === 'cliente'
+                    ? <BadgeCheck size={12} strokeWidth={1.6} className="text-info" />
+                    : <RefreshCw  size={12} strokeWidth={1.6} className="text-info" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-info">
+                    {avisoAoAbrir.texto}
+                  </p>
+                  <p className="text-[13px] text-t1 mt-0.5 leading-relaxed">{avisoAoAbrir.detalhe}</p>
+                  {lead.reentryAt && (
+                    <p className="font-label text-[11px] text-t4 mt-1 tabular-nums">
+                      {new Date(lead.reentryAt).toLocaleString('pt-BR', {
+                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* SLA Meta Ads — prazo de 1º contato gerenciado pelo banco.
                 Sem registro no prazo, o lead transfere para o outro corretor. */}

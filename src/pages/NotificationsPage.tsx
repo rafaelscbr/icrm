@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
+  BadgeCheck,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushPermission } from '../lib/push'
@@ -80,9 +81,12 @@ function groupNotifications(notifications: AppNotification[]) {
 
 /** o que a notificação é, em ícone e tom — cada tipo tem o seu lugar */
 function aparencia(n: AppNotification) {
-  if (n.type === 'lead_assigned')   return { icon: UserPlus,      tom: 'marca'   as const, acao: 'Abrir lead'   }
-  if (n.type === 'lead_recaptured') return { icon: RefreshCw,     tom: 'info'    as const, acao: 'Abrir lead'   }
-  return                                   { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
+  if (n.type === 'lead_assigned')         return { icon: UserPlus,      tom: 'marca'   as const, acao: 'Abrir lead'   }
+  if (n.type === 'lead_recaptured')       return { icon: RefreshCw,     tom: 'info'    as const, acao: 'Abrir lead'   }
+  // Voltou por conta própria: azul, o mesmo tom do "reaquecendo" no funil.
+  if (n.type === 'lead_reentry')          return { icon: RefreshCw,     tom: 'info'    as const, acao: 'Abrir lead'   }
+  if (n.type === 'lead_returning_client') return { icon: BadgeCheck,    tom: 'info'    as const, acao: 'Abrir lead'   }
+  return                                         { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
 }
 
 // ─── Linha ───────────────────────────────────────────────────────────────────
@@ -98,7 +102,8 @@ function NotificationItem({
   function handleClick() {
     if (naoLida) onRead(n.id)
     if (n.resourceType === 'task') navigate('/tarefas')
-    if (n.resourceType === 'lead') navigate('/leads')
+    // Direto no card — ver comentário em NotificationsPopover.
+    if (n.resourceType === 'lead') navigate(n.resourceId ? `/leads?lead=${n.resourceId}` : '/leads')
   }
 
   return (

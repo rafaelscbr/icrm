@@ -588,6 +588,13 @@ interface LeadRow {
   stage_changed_at: string | null
   first_contact_at?: string | null
   sla_due_at?: string | null
+  // Reentrada: gerenciada pelo banco. Entra em `toLead`, NÃO entra em `fromLead`
+  // — mesmo tratamento de sla_due_at. O upsert do front não pode zerar o que
+  // o webhook escreveu.
+  reentry_at?: string | null
+  reentry_count?: number | null
+  reentry_seen_at?: string | null
+  returning_from_lead_id?: string | null
   closed_at?: string | null
   won_value?: number | null
   sale_id?: string | null
@@ -623,6 +630,10 @@ function toLead(r: LeadRow): Lead {
     stageChangedAt: r.stage_changed_at ?? undefined,
     firstContactAt: r.first_contact_at ?? undefined,
     slaDueAt: r.sla_due_at ?? undefined,
+    reentryAt: r.reentry_at ?? undefined,
+    reentryCount: r.reentry_count ?? undefined,
+    reentrySeenAt: r.reentry_seen_at ?? undefined,
+    returningFromLeadId: r.returning_from_lead_id ?? undefined,
     closedAt: r.closed_at ?? undefined,
     wonValue: r.won_value ?? undefined,
     saleId: r.sale_id ?? undefined,
@@ -1150,6 +1161,18 @@ export const db = {
         throw error
       }
       return (data as import('../types').LeadProfile | null) ?? null
+    },
+    /**
+     * Baixa o destaque de reentrada do card.
+     *
+     * A RPC só obedece ao DONO do lead: o admin abre cards na visão global o
+     * tempo todo, e apagar por esse caminho o aviso do corretor seria pior que
+     * não ter aviso. Falha aqui não interrompe nada — o lead abriu, que é o que
+     * o usuário pediu; o destaque volta a baixar na próxima abertura.
+     */
+    ackReentry: async (leadId: string): Promise<void> => {
+      const { error } = await supabase.rpc('ack_lead_reentry', { p_lead_id: leadId })
+      if (error) throw error
     },
     // Transferência manual — RPC SECURITY DEFINER valida dono/admin e grava
     // auditoria (lead_assignments), interação e notificação numa transação

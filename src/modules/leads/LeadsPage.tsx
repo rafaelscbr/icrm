@@ -11,8 +11,9 @@ import {
   Plus, LayoutGrid, List, Search, BarChart3,
   MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2,
   Sparkles, Smartphone, Globe, Handshake, Megaphone, Percent,
-  GitBranch, Filter, User, Home, X, Trophy, Flame, Target,
+  GitBranch, Filter, User, Home, X, Trophy, Flame, Target, BadgeCheck,
 } from 'lucide-react'
+import { avisoReentrada, reentradaPrimeiro } from './reentrada'
 import toast from 'react-hot-toast'
 import { EstadoTela } from '../../components/shared/EstadoTela'
 import { Abas } from '../../components/shared/Abas'
@@ -78,6 +79,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const originConf   = ORIGIN_CONFIG[lead.origin]
   const isDiscarded  = !!lead.discardReason
   const intel        = useIntelligenceStore(s => s.intel[lead.id])
+  const aviso        = avisoReentrada(lead)
 
   // Mesmo comportamento do Kanban: registra a interação no banco (dispara o
   // trigger de 1º contato do SLA Meta Ads) e avança o followup.
@@ -115,6 +117,21 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
               coluna da esquerda, e é ali que a leitura em massa acontece. */}
           {intel && <TemperatureDot temp={intel.temperature} />}
           <span className="text-sm font-medium text-t1 truncate">{displayName}</span>
+          {/* Reentrada não vista — mesmo aviso do Kanban, mesma regra (ver
+              reentrada.ts). Na lista ele fica colado no nome porque é aqui que
+              a varredura acontece. */}
+          {aviso && (
+            <span
+              className="inline-flex items-center gap-1 font-label text-[11px] font-bold uppercase
+                         tracking-[0.08em] text-info flex-shrink-0"
+              title={aviso.detalhe}
+            >
+              {aviso.tipo === 'cliente'
+                ? <BadgeCheck size={11} strokeWidth={1.8} aria-hidden />
+                : <RefreshCw  size={11} strokeWidth={1.8} aria-hidden />}
+              {aviso.texto}
+            </span>
+          )}
           {intel && fitDeserveBadge(intel.fitOrigin?.fit) && (
             <FitBadge fit={intel.fitOrigin!.fit} produto={intel.fitOrigin!.name} compact />
           )}
@@ -300,7 +317,10 @@ export function LeadsPage() {
     if (filterProduct) result = result.filter(l => productKeyOf(l) === filterProduct)
     if (filterTemp)    result = result.filter(l => intel[l.id]?.temperature === filterTemp)
     if (filterFit)     result = result.filter(l => (intel[l.id]?.fitOrigin?.fit ?? 'sem_dados') === filterFit)
-    return result
+    // Quem voltou a se cadastrar e ainda não foi visto encabeça a lista — a
+    // ordem interna do resto fica como está. Cópia antes de ordenar: `result`
+    // pode ser o próprio `scoped`, que é memo compartilhado.
+    return [...result].sort(reentradaPrimeiro)
   }, [scoped, search, filterStage, filterOrigin, filterBroker, filterProduct, filterTemp, filterFit, intel])
 
   // ── Opções dos filtros (com contagem) ────────────────────────────────────────

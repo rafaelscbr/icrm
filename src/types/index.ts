@@ -578,6 +578,12 @@ export interface Lead {
   saleId?: string           // registro criado em sales ao concluir
   firstContactAt?: string   // quando o 1º contato WhatsApp foi registrado (gerenciado por trigger)
   slaDueAt?: string         // prazo SLA de 1º contato Meta Ads (gerenciado pelo banco)
+  // Reentrada — a pessoa preencheu o formulário do Meta de novo. Tudo gerenciado
+  // pelo banco (process_meta_lead); a tela lê, nunca escreve.
+  reentryAt?: string        // quando voltou a se cadastrar
+  reentryCount?: number     // quantas vezes voltou
+  reentrySeenAt?: string    // quando o corretor viu; menor que reentryAt = destaque aceso
+  returningFromLeadId?: string // lead ganho anterior — cliente que já comprou e voltou
   brokerId?:      string | null
   createdAt: string
   updatedAt: string
@@ -843,7 +849,12 @@ export interface ContactEvent {
 
 // ─── Notificações ─────────────────────────────────────────────────────────────
 
-export type NotificationType = 'task_assigned' | 'lead_assigned' | 'lead_recaptured'
+export type NotificationType =
+  | 'task_assigned'
+  | 'lead_assigned'
+  | 'lead_recaptured'
+  | 'lead_reentry'            // lead que já estava no funil preencheu o formulário de novo
+  | 'lead_returning_client'   // cliente que já comprou voltou a se cadastrar
 
 export interface AppNotification {
   id: string

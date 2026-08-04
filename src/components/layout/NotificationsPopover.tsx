@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle } from 'lucide-react'
+import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle, BadgeCheck } from 'lucide-react'
 import { useNotificationsStore } from '../../store/useNotificationsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { AppNotification } from '../../types'
@@ -68,15 +68,20 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
 
   function notifIcon(n: AppNotification) {
     const cls = !n.read ? 'text-brand' : 'text-t4'
-    if (n.type === 'lead_assigned')   return <UserPlus      size={14} strokeWidth={1.6} className={cls} />
-    if (n.type === 'lead_recaptured') return <RefreshCw     size={14} strokeWidth={1.6} className={cls} />
+    if (n.type === 'lead_assigned')         return <UserPlus   size={14} strokeWidth={1.6} className={cls} />
+    if (n.type === 'lead_recaptured')       return <RefreshCw  size={14} strokeWidth={1.6} className={cls} />
+    if (n.type === 'lead_reentry')          return <RefreshCw  size={14} strokeWidth={1.6} className={cls} />
+    if (n.type === 'lead_returning_client') return <BadgeCheck size={14} strokeWidth={1.6} className={cls} />
     return <ClipboardList size={14} strokeWidth={1.6} className={cls} />
   }
 
   function handleClick(n: AppNotification) {
     markRead(n.id)
     if (n.resourceType === 'task') navigate('/tarefas')
-    if (n.resourceType === 'lead') navigate('/leads')
+    // Abre o card direto (?lead=). Cair na lista de 113 leads e ter de procurar
+    // o nome que estava escrito no aviso é o tipo de atrito que faz o corretor
+    // parar de clicar na notificação.
+    if (n.resourceType === 'lead') navigate(n.resourceId ? `/leads?lead=${n.resourceId}` : '/leads')
     onClose()
   }
 

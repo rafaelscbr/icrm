@@ -79,12 +79,24 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
     set(s => ({
       notifications: [n, ...s.notifications.filter(x => x.id !== n.id)],
     }))
-    // Lead novo/transferido/recapturado: alerta sonoro + toast com a urgência
-    if (n.type === 'lead_assigned' || n.type === 'lead_recaptured') {
+    // Tudo que é lead chegando ao corretor tem som e toast longo: é a única
+    // classe de aviso que perde valor se for lida meia hora depois.
+    //
+    // A tarja segue o significado da cor no sistema: ouro para lead novo e
+    // transferido (entrada do dia), azul para quem voltou por conta própria —
+    // o mesmo azul do "reaquecendo" no funil.
+    const AVISOS_DE_LEAD: Record<string, string> = {
+      lead_assigned:         'var(--brand)',
+      lead_recaptured:       'var(--brand)',
+      lead_reentry:          'var(--info)',
+      lead_returning_client: 'var(--info)',
+    }
+    const tarja = AVISOS_DE_LEAD[n.type]
+    if (tarja) {
       playAlertSound()
       toast(`${n.title}${n.body ? ` — ${n.body}` : ''}`, {
         duration: 8000,
-        style: { borderLeft: '3px solid #E4B23C' },
+        style: { borderLeft: `3px solid ${tarja}` },
       })
     }
   },

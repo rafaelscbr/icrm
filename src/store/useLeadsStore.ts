@@ -35,6 +35,8 @@ interface LeadsStore {
   restore: (id: string) => Promise<void>
   convertToContact: (id: string, contactId: string) => Promise<void>
   transfer: (id: string, toBrokerId: string) => Promise<void>
+  // Baixa o destaque de reentrada — chamado quando o dono abre o lead
+  ackReentry: (id: string) => Promise<void>
   toggleFlag: (id: string) => Promise<void>
   reorder: (id: string, kanbanOrder: number) => Promise<void>
   search: (query: string) => Lead[]
@@ -118,6 +120,10 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             stageChangedAt: (incoming.stage_changed_at as string | null) ?? undefined,
             firstContactAt: (incoming.first_contact_at as string | null) ?? undefined,
             slaDueAt: (incoming.sla_due_at as string | null) ?? undefined,
+            reentryAt: (incoming.reentry_at as string | null) ?? undefined,
+            reentryCount: (incoming.reentry_count as number | null) ?? undefined,
+            reentrySeenAt: (incoming.reentry_seen_at as string | null) ?? undefined,
+            returningFromLeadId: (incoming.returning_from_lead_id as string | null) ?? undefined,
             closedAt: (incoming.closed_at as string | null) ?? undefined,
             wonValue: (incoming.won_value as number | null) ?? undefined,
             saleId: (incoming.sale_id as string | null) ?? undefined,
@@ -148,6 +154,12 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             stageChangedAt: (r.stage_changed_at as string | null) ?? undefined,
             firstContactAt: (r.first_contact_at as string | null) ?? undefined,
             slaDueAt: (r.sla_due_at as string | null) ?? undefined,
+            // Sem isto o card só acenderia no F5: a reentrada chega como UPDATE
+            // no lead que já está em tela, não como INSERT.
+            reentryAt: (r.reentry_at as string | null) ?? undefined,
+            reentryCount: (r.reentry_count as number | null) ?? undefined,
+            reentrySeenAt: (r.reentry_seen_at as string | null) ?? undefined,
+            returningFromLeadId: (r.returning_from_lead_id as string | null) ?? undefined,
             closedAt: (r.closed_at as string | null) ?? undefined,
             wonValue: (r.won_value as number | null) ?? undefined,
             saleId: (r.sale_id as string | null) ?? undefined,
@@ -471,6 +483,30 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         ? s.leads.filter(l => l.id !== id)
         : s.leads.map(l => l.id === id ? { ...l, brokerId: toBrokerId, updatedAt: new Date().toISOString() } : l),
     }))
+  },
+
+  /**
+   * O dono viu a reentrada — o banco baixa o destaque e a tela acompanha.
+   *
+   * Banco primeiro, como todo o resto: só depois do UPDATE confirmado o card
+   * deixa de brilhar. Se falhar, o destaque continua aceso (que é o estado
+   * verdadeiro no banco) e o erro vai para o console — derrubar a abertura do
+   * lead por causa de um aviso visual seria trocar um problema pequeno por um
+   * grande. A RPC ignora quem não é dono; nesse caso nada muda, de propósito.
+   */
+  ackReentry: async (id) => {
+    const lead = get().leads.find(l => l.id === id)
+    if (!lead?.reentryAt) return
+    if (lead.reentrySeenAt && new Date(lead.reentrySeenAt) >= new Date(lead.reentryAt)) return
+    if (lead.brokerId !== getCurrentUserId()) return
+
+    try {
+      await db.leads.ackReentry(id)
+      const now = new Date().toISOString()
+      set(s => ({ leads: s.leads.map(l => l.id === id ? { ...l, reentrySeenAt: now, updatedAt: now } : l) }))
+    } catch (err) {
+      console.error('[leads] ackReentry:', err)
+    }
   },
 
   toggleFlag: async (id) => {
