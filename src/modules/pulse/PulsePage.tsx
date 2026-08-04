@@ -17,6 +17,7 @@ import { VglPanel } from './components/VglPanel'
 import { SaleCelebration } from './components/SaleCelebration'
 import { ClosingSummary, estaEmFechamento } from './components/ClosingSummary'
 import { useCarrossel } from './useCarrossel'
+import { PageBanner } from './components/PageBanner'
 
 /**
  * iCRM Pulse — o coração da imobiliária em tempo real.
@@ -260,13 +261,12 @@ export function PulsePage() {
         >
           {/* Página 0 — hoje */}
           <div className="w-full shrink-0 h-full flex flex-col gap-3 min-h-0">
+            <PageBanner
+              tipo={emFechamento ? 'balanco' : 'ao_vivo'}
+              data={new Date(agora)}
+            />
             {emFechamento ? (
-              <ClosingSummary
-                hoje={hoje}
-                corretores={corretores}
-                vgl={vgl}
-                data={new Date(agora)}
-              />
+              <ClosingSummary hoje={hoje} corretores={corretores} vgl={vgl} />
             ) : (
               <>
                 <KpiRail
@@ -305,14 +305,15 @@ export function PulsePage() {
           </div>
 
           {/* Página 1 — ontem */}
-          <div className="w-full shrink-0 h-full flex flex-col min-h-0">
+          <div className="w-full shrink-0 h-full flex flex-col gap-3 min-h-0">
+            {/* aoVoltar garante que o ao vivo está sempre a um toque, sem
+                depender de alguém adivinhar o gesto de deslize. */}
+            <PageBanner tipo="ontem" data={ontem} aoVoltar={() => irPara(0)} />
             {resumoOntem ? (
               <ClosingSummary
                 hoje={resumoOntem.hoje}
                 corretores={resumoOntem.corretores}
                 vgl={vgl}
-                data={ontem}
-                rotulo="Ontem —"
               />
             ) : (
               <div className="flex-1 flex items-center justify-center">

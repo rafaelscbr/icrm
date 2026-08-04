@@ -356,6 +356,42 @@ html.light {
    * mata o efeito elástico do iOS ao arrastar.
    */
   /*
+   * Faixas de identidade das páginas do Pulse.
+   *
+   * A diferença entre "estou vendo agora" e "estou vendo ontem" é cromática de
+   * propósito — ouro quente com luz vinda da esquerda para o ao vivo, azul frio
+   * e apagado para o passado. Bate o olho antes de ler o texto.
+   */
+  .pulse-banner-vivo {
+    border-color: var(--brand-tint);
+    background-image:
+      radial-gradient(80% 180% at 0% 50%, rgba(228, 178, 60, 0.16), transparent 62%),
+      linear-gradient(158deg, var(--surface-2) 0%, var(--surface) 70%);
+  }
+  .pulse-banner-vivo::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--brand), transparent 70%);
+    opacity: 0.7;
+  }
+  .pulse-banner-passado {
+    border-color: var(--info-line);
+    background-image:
+      radial-gradient(80% 180% at 0% 50%, rgba(147, 197, 253, 0.12), transparent 62%),
+      linear-gradient(158deg, var(--surface-2) 0%, var(--surface) 70%);
+  }
+  .pulse-banner-passado::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--info), transparent 70%);
+    opacity: 0.5;
+  }
+
+  /*
    * Entrada de evento novo no feed.
    *
    * A animação roda na MONTAGEM do <li>. Como a key é o id do evento, o React

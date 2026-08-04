@@ -1,4 +1,3 @@
-import { MoonStar } from 'lucide-react'
 import { formatCurrency } from '../../../lib/formatters'
 import type { PulseHoje, PulseBroker, PulseVgl } from '../types'
 
@@ -41,14 +40,11 @@ function Numero({ valor, rotulo, destaque = false }: {
   )
 }
 
-export function ClosingSummary({ hoje, corretores, vgl, data, rotulo }: {
+// O título e a data ficam no PageBanner da página — aqui vão só os números.
+export function ClosingSummary({ hoje, corretores, vgl }: {
   hoje:       PulseHoje
   corretores: PulseBroker[]
   vgl:        PulseVgl | null
-  /** dia a que o balanço se refere */
-  data:       Date
-  /** "Balanço de…" por padrão; a página de ontem usa "Ontem —" */
-  rotulo?:    string
 }) {
   // Só quem fez algo aparece no balanço — lista de zeros não é balanço.
   const ranking = [...corretores]
@@ -63,14 +59,6 @@ export function ClosingSummary({ hoje, corretores, vgl, data, rotulo }: {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-10 px-10">
-      <div className="flex items-center gap-3">
-        <MoonStar size={20} strokeWidth={1.6} className="text-t4" aria-hidden />
-        <span className="font-label text-[12px] uppercase tracking-[0.3em] text-t3">
-          {rotulo ?? 'Balanço de'}{' '}
-          {data.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
-        </span>
-      </div>
-
       <div className="flex items-start justify-center gap-16">
         <Numero valor={n(hoje.interacoes)}      rotulo="Atendimentos" />
         <Numero valor={n(hoje.leadsNovos)}      rotulo="Leads novos" />

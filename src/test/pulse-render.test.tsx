@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { KpiRail } from '../modules/pulse/components/KpiRail'
 import { FunnelStrip } from '../modules/pulse/components/FunnelStrip'
 import { LiveFeed } from '../modules/pulse/components/LiveFeed'
@@ -9,6 +9,7 @@ import { ClimateGauge } from '../modules/pulse/components/ClimateGauge'
 import { ResponseTimePanel } from '../modules/pulse/components/ResponseTimePanel'
 import { VglPanel } from '../modules/pulse/components/VglPanel'
 import { ClosingSummary, estaEmFechamento } from '../modules/pulse/components/ClosingSummary'
+import { PageBanner } from '../modules/pulse/components/PageBanner'
 import { calcClimate } from '../modules/pulse/climate'
 import type { PulseEvent, PulseHoje, PulseBroker, PulseVgl } from '../modules/pulse/types'
 
@@ -194,7 +195,6 @@ describe('ClosingSummary — balanço da noite', () => {
           { brokerId: 'b3', nome: 'Parado Silva', interacoesHoje: 0, leadsHoje: 0, visitasHoje: 0, vendasHoje: 0, ultimaAtividadeAt: null },
         ]}
         vgl={VGL}
-        data={new Date('2026-08-03T20:30:00')}
       />
     )
     expect(screen.getByText('Rafael')).toBeInTheDocument()
@@ -202,17 +202,30 @@ describe('ClosingSummary — balanço da noite', () => {
     expect(screen.queryByText('Parado')).not.toBeInTheDocument()
   })
 
-  it('a página de ontem usa o próprio rótulo', () => {
-    render(
-      <ClosingSummary
-        hoje={HOJE}
-        corretores={CORRETORES}
-        vgl={VGL}
-        data={new Date('2026-08-02T12:00:00')}
-        rotulo="Ontem —"
-      />
-    )
-    expect(screen.getByText(/Ontem —\s+domingo, 02 de agosto/)).toBeInTheDocument()
+})
+
+describe('PageBanner — identifica a página de relance', () => {
+  it('ao vivo mostra título e data do dia', () => {
+    render(<PageBanner tipo="ao_vivo" data={new Date('2026-08-03T14:00:00')} />)
+    expect(screen.getByText('Ao vivo')).toBeInTheDocument()
+    expect(screen.getByText(/segunda-feira, 03 de agosto/)).toBeInTheDocument()
+  })
+
+  it('ontem usa o tom frio e oferece a volta ao vivo', () => {
+    const voltar = vi.fn()
+    render(<PageBanner tipo="ontem" data={new Date('2026-08-02T12:00:00')} aoVoltar={voltar} />)
+    expect(screen.getByText('Ontem')).toBeInTheDocument()
+    expect(screen.getByText(/domingo, 02 de agosto/)).toBeInTheDocument()
+
+    // O botão de volta é o que garante "ao vivo sempre disponível"
+    const btn = screen.getByRole('button')
+    fireEvent.click(btn)
+    expect(voltar).toHaveBeenCalledOnce()
+  })
+
+  it('a página ao vivo não mostra botão de voltar — já está nela', () => {
+    render(<PageBanner tipo="ao_vivo" data={new Date()} />)
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
 
