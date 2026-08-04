@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import {
   Database, Users, Archive, Pencil, Trash2, FolderOpen,
   TrendingUp, Calendar, ChevronRight, BarChart3, Sparkles, AlertTriangle,
-  Zap, Trophy,
+  Zap, Trophy, Layers,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
+import { KpiCard }       from '../../components/shared/visual'
 import { Card }          from '../../components/ui/Card'
 import { Modal }         from '../../components/ui/Modal'
 import { Button }        from '../../components/ui/Button'
@@ -151,15 +152,13 @@ export function LeadListsPage() {
       {/* Stats */}
       {lists.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {[
-            { label: 'Listas ativas',     value: totalLists,                  color: 'text-brand'      },
-            { label: 'Leads na base',     value: totalLeads.toLocaleString(), color: 'text-info'   },
-            { label: 'Maior lista',       value: biggestList ? `${biggestList.totalCount.toLocaleString()} leads` : '—', color: 'text-info' },
-          ].map(s => (
-            <Card key={s.label} className="!py-4">
-              <p className="text-xs text-t3 mb-1">{s.label}</p>
-              <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-            </Card>
+          {([
+            { label: 'Listas ativas', value: totalLists,                  icon: Layers,   tom: 'marca'  as const, nota: 'prontas para campanha' },
+            { label: 'Leads na base', value: totalLeads.toLocaleString(), icon: Database, tom: 'info'   as const, nota: 'contatos frios' },
+            { label: 'Maior lista',   value: biggestList ? biggestList.totalCount.toLocaleString() : '—',
+              icon: TrendingUp, tom: 'neutro' as const, nota: biggestList?.name ?? 'nenhuma lista ainda' },
+          ]).map(k => (
+            <KpiCard key={k.label} icon={k.icon} rotulo={k.label} valor={k.value} nota={k.nota} tom={k.tom} />
           ))}
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Users, Megaphone, TrendingUp } from 'lucide-react'
+import { Users, Megaphone, TrendingUp, BarChart3} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { BrokersTab } from './BrokersTab'
 import { CampaignsBaseTab } from './CampaignsBaseTab'
@@ -18,6 +18,8 @@ export function PerformancePage() {
 
   return (
     <PageLayout
+      icon={BarChart3}
+      iconTom="info"
       title="Análise Comercial"
       subtitle="Performance de corretores, campanhas e vendas"
     >

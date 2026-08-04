@@ -6,6 +6,7 @@ import {
   BedDouble, ShowerHead, Ruler,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
+import { Painel, Rotulo } from '../../components/shared/visual'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -103,14 +104,16 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
             bg: 'bg-info-bg',
           },
         ].map(kpi => (
-          <Card key={kpi.label} className="!py-4">
+          <Painel key={kpi.label} className="px-4 py-3.5">
             <div className="flex items-center gap-2 mb-2">
-              <span className={`${kpi.color} ${kpi.bg} p-1.5 rounded-lg`}>{kpi.icon}</span>
-              <span className="text-xs text-t3">{kpi.label}</span>
+              <span className={`${kpi.color} ${kpi.bg} w-7 h-7 rounded-[9px] border border-line
+                                flex items-center justify-center shrink-0`}>{kpi.icon}</span>
+              <Rotulo className="truncate">{kpi.label}</Rotulo>
             </div>
-            <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
-            <p className="text-[11px] text-t4 mt-0.5">{kpi.sub}</p>
-          </Card>
+            <p className={`font-heading text-[26px] font-extrabold tabular-nums leading-none
+                           tracking-tight ${kpi.color}`}>{kpi.value}</p>
+            <p className="text-[11px] text-t4 mt-1.5">{kpi.sub}</p>
+          </Painel>
         ))}
       </div>
 
