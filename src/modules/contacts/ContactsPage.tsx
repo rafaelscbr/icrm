@@ -161,12 +161,12 @@ export function ContactsPage() {
               <Avatar name={c.name} photoUrl={c.photoUrl} size="md" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-sm font-medium text-slate-100">{c.name}</p>
+                  <p className="font-heading text-[14px] font-bold text-t1 truncate">{c.name}</p>
                   {c.birthdate && isBirthdayThisMonth(c.birthdate) && (
                     <Cake size={13} className="text-brand flex-shrink-0" aria-label="Aniversário neste mês" />
                   )}
                 </div>
-                <p className="text-xs text-t3">
+                <p className="text-[13px] text-t3 tabular-nums truncate">
                   {[c.company, formatPhone(c.phone)].filter(Boolean).join(' · ')}
                 </p>
               </div>
@@ -187,12 +187,19 @@ export function ContactsPage() {
                   return (
                     <button
                       onClick={() => setTasksContact(c)}
-                      className="relative p-2 rounded-lg hover:bg-indigo-500/10 text-t3 hover:text-brand transition-colors cursor-pointer"
-                      title="Ver tarefas vinculadas"
+                      aria-label={count > 0
+                        ? `Ver ${count} tarefa${count !== 1 ? 's' : ''} de ${c.name}`
+                        : `Ver tarefas de ${c.name}`}
+                      title="Tarefas vinculadas"
+                      className="relative w-9 h-9 flex items-center justify-center rounded-lg
+                                 text-t4 hover:text-brand-text hover:bg-brand-tint transition-colors
+                                 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
                     >
-                      <ClipboardList size={15} />
+                      <ClipboardList size={15} strokeWidth={1.7} aria-hidden />
                       {count > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-indigo-500 rounded-full text-[11px] font-bold text-white flex items-center justify-center">
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-brand
+                                         rounded-full text-[11px] font-bold text-[var(--brand-btn-text)]
+                                         flex items-center justify-center tabular-nums">
                           {count > 9 ? '9+' : count}
                         </span>
                       )}
@@ -203,24 +210,33 @@ export function ContactsPage() {
                   href={whatsappUrl(c.phone)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg hover:bg-green-500/10 text-t3 hover:text-green-400 transition-colors"
+                  aria-label={`Abrir WhatsApp de ${c.name}`}
                   title="Abrir WhatsApp"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-success-line
+                             bg-success-bg text-success hover:brightness-115 transition-all
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
                 >
-                  <MessageCircle size={15} />
+                  <MessageCircle size={15} strokeWidth={1.7} aria-hidden />
                 </a>
                 <button
                   onClick={() => { setEditing(c); setFormOpen(true) }}
-                  className="p-2 rounded-lg hover:bg-s3/70 text-t3 hover:text-t2 transition-colors cursor-pointer"
+                  aria-label={`Editar ${c.name}`}
                   title="Editar"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg text-t4 hover:text-t2
+                             hover:bg-s3/70 transition-colors cursor-pointer
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
                 >
-                  <Pencil size={15} />
+                  <Pencil size={15} strokeWidth={1.7} aria-hidden />
                 </button>
                 <button
                   onClick={() => setDeleteTarget(c)}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-t3 hover:text-red-400 transition-colors cursor-pointer"
+                  aria-label={`Excluir ${c.name}`}
                   title="Excluir"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg text-t4 hover:text-error
+                             hover:bg-error-bg transition-colors cursor-pointer
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
                 >
-                  <Trash2 size={15} />
+                  <Trash2 size={15} strokeWidth={1.7} aria-hidden />
                 </button>
               </div>
             </div>

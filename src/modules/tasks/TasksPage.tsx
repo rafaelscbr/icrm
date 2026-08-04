@@ -6,6 +6,8 @@ import {
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
   BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users, CheckSquare,} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
+import { TOM } from '../../components/shared/visual'
+import type { Tom } from '../../components/shared/visual'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -236,11 +238,11 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
 // ─── Section ─────────────────────────────────────────────────────────────────
 
 function Section({
-  title, icon, count, color, tasks, contacts, properties, allProfiles, currentUserId,
+  title, icon, count, tom, tasks, contacts, properties, allProfiles, currentUserId,
   onToggle, onEdit, onDelete, onCalendar,
   collapsible = false, defaultOpen = true, showCategory = true,
 }: {
-  title: string; icon: React.ReactNode; count: number; color: string
+  title: string; icon: React.ReactNode; count: number; tom: Tom
   tasks: Task[]; contacts: any[]; properties: any[]
   allProfiles: { id: string; name: string }[]; currentUserId?: string
   onToggle: (id: string) => void; onEdit: (t: Task) => void
@@ -256,10 +258,14 @@ function Section({
         onClick={() => collapsible && setOpen(v => !v)}
         className={`flex items-center gap-2 mb-3 ${collapsible ? 'cursor-pointer group' : 'cursor-default'}`}
       >
-        <span className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${color}`}>
+        <span className={`w-1 h-4 rounded-full ${TOM[tom].ponto}`} aria-hidden />
+        <span className={`flex items-center gap-1.5 font-label text-[11px] font-bold uppercase
+                          tracking-[0.14em] ${TOM[tom].texto}`}>
           {icon} {title}
         </span>
-        <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-s3/70 text-t3">{count}</span>
+        <span className={`font-heading text-[15px] font-extrabold tabular-nums leading-none ${TOM[tom].texto}`}>
+          {count}
+        </span>
         {collapsible && (open
           ? <ChevronUp size={12} className="text-t4 group-hover:text-t3 ml-1" />
           : <ChevronDown size={12} className="text-t4 group-hover:text-t3 ml-1" />
@@ -563,12 +569,12 @@ export function TasksPage() {
     upcoming: ['tomorrow', 'week', 'later', 'nodate'],
   }
   const allBlocks = [
-    { key: 'overdue',  title: 'Atrasadas',     tasks: overdue,   icon: <AlertTriangle size={12} />, color: 'text-red-400',    defaultOpen: true  },
-    { key: 'today',    title: 'Hoje',           tasks: todayT,    icon: <Flame size={12} />,         color: 'text-brand', defaultOpen: true  },
-    { key: 'tomorrow', title: 'Amanhã',         tasks: tomorrowT, icon: <CalendarClock size={12} />, color: 'text-amber-400',  defaultOpen: true  },
-    { key: 'week',     title: 'Esta semana',    tasks: thisWeek,  icon: <TrendingUp size={12} />,    color: 'text-info',   defaultOpen: true  },
-    { key: 'later',    title: 'Próximos dias',  tasks: later,     icon: <CheckCheck size={12} />,    color: 'text-t3',  defaultOpen: false },
-    { key: 'nodate',   title: 'Sem data',       tasks: noDate,    icon: <ListTodo size={12} />,      color: 'text-t3',  defaultOpen: false },
+    { key: 'overdue',  title: 'Atrasadas',    tasks: overdue,   icon: <AlertTriangle size={12} />, tom: 'risco'   as Tom, defaultOpen: true  },
+    { key: 'today',    title: 'Hoje',         tasks: todayT,    icon: <Flame size={12} />,         tom: 'marca'   as Tom, defaultOpen: true  },
+    { key: 'tomorrow', title: 'Amanhã',       tasks: tomorrowT, icon: <CalendarClock size={12} />, tom: 'atencao' as Tom, defaultOpen: true  },
+    { key: 'week',     title: 'Esta semana',  tasks: thisWeek,  icon: <TrendingUp size={12} />,    tom: 'info'    as Tom, defaultOpen: true  },
+    { key: 'later',    title: 'Próximos dias',tasks: later,     icon: <CheckCheck size={12} />,    tom: 'neutro'  as Tom, defaultOpen: false },
+    { key: 'nodate',   title: 'Sem data',     tasks: noDate,    icon: <ListTodo size={12} />,      tom: 'neutro'  as Tom, defaultOpen: false },
   ]
   const timeBlocks = focus
     ? allBlocks.filter(b => FOCUS_BLOCKS[focus].includes(b.key))
@@ -641,7 +647,7 @@ export function TasksPage() {
                   disabled:opacity-40 disabled:cursor-not-allowed
                   ${active
                     ? 'border-brand/40 bg-brand-tint shadow-card'
-                    : 'border-line bg-surface hover:border-line-strong'}`}
+                    : 'border-line surface-premium hover:border-line-strong'}`}
               >
                 <span className={`font-heading text-sm font-bold tabular-nums ${active ? 'text-brand-text' : f.tone}`}>
                   {f.value}
@@ -671,7 +677,7 @@ export function TasksPage() {
               title={block.title}
               icon={block.icon}
               count={block.tasks.length}
-              color={block.color}
+              tom={block.tom}
               tasks={block.tasks}
               showCategory
               collapsible
