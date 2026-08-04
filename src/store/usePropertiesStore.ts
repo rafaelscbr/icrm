@@ -3,10 +3,13 @@ import { Property, PropertyStatus } from '../types'
 import { generateId } from '../lib/formatters'
 import { makeThumbnail } from '../lib/image'
 import { db } from '../lib/db'
+import { mensagemDeErro } from '../lib/erros'
 
 interface PropertiesStore {
   properties: Property[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   load: () => Promise<void>
   /**
    * Carrega as fotos completas de um imóvel sob demanda — a listagem baixa
@@ -37,14 +40,16 @@ let thumbBackfillStarted = false
 export const usePropertiesStore = create<PropertiesStore>((set, get) => ({
   properties: [],
   loading: false,
+  erro: null,
 
   load: async () => {
-    set({ loading: true })
+    set({ loading: true, erro: null })
     try {
       const properties = await db.properties.fetchAll()
       set({ properties })
     } catch (err) {
       console.error('[properties] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
     }

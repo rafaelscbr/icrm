@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { Development } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
+import { mensagemDeErro } from '../lib/erros'
 
 /**
  * Lançamentos — o cadastro que dá o outro lado da qualificação de lead.
@@ -40,6 +41,8 @@ function snapshotDaRegua(d: Development) {
 interface DevelopmentsStore {
   developments: Development[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   load: () => Promise<void>
   add: (data: Omit<Development, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Development>
   update: (id: string, data: Partial<Development>) => Promise<void>
@@ -52,14 +55,16 @@ interface DevelopmentsStore {
 export const useDevelopmentsStore = create<DevelopmentsStore>((set, get) => ({
   developments: [],
   loading: false,
+  erro: null,
 
   load: async () => {
-    set({ loading: true })
+    set({ loading: true, erro: null })
     try {
       const developments = await db.developments.fetchAll()
       set({ developments })
     } catch (err) {
       console.error('[developments] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
     }

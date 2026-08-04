@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import {
   Phone, PhoneCall, BarChart3, Pause, Play, Pencil, Trash2, ArrowRight,
   Users, Calendar, Target, Sparkles, AlertTriangle, Repeat, Timer, Package,
+  Plus,
 } from 'lucide-react'
 import { PageLayout } from '../../../components/layout/PageLayout'
 import { Button } from '../../../components/ui/Button'
 import { Modal } from '../../../components/ui/Modal'
-import { EmptyState } from '../../../components/ui/EmptyState'
+import { EstadoTela } from '../../../components/shared/EstadoTela'
 import { CallCampaignForm } from './CallCampaignForm'
 import { CallCampaignDetail } from './CallCampaignDetail'
 import { CallPerformanceTab } from './CallPerformanceTab'
@@ -33,7 +34,7 @@ import toast from 'react-hot-toast'
 type PageTab = 'campanhas' | 'desempenho'
 
 export function LigacoesPage() {
-  const { campaigns, participants, load, remove, setStatus, loading } = useCallCampaignsStore()
+  const { campaigns, participants, load, remove, setStatus, loading, erro } = useCallCampaignsStore()
   const { contadores, carregarContadores } = useCallQueueStore()
   const { isAdmin, profile } = useAuthStore()
 
@@ -168,15 +169,20 @@ export function LigacoesPage() {
           {tab === 'desempenho' && <CallPerformanceTab />}
 
           {tab === 'campanhas' && (
-            campaigns.length === 0 ? (
-              <EmptyState
-                icon={<Phone size={24} />}
-                title="Nenhuma campanha de ligação"
-                description="Crie uma campanha, aponte para uma lista da Base de Leads e a fila monta sozinha — quem nunca foi tocado vem primeiro."
-                ctaLabel="Nova campanha"
-                onCta={() => setCriarOpen(true)}
-              />
-            ) : (
+            <EstadoTela
+              carregando={loading && campaigns.length === 0}
+              erro={erro}
+              vazio={campaigns.length === 0}
+              onTentarDeNovo={() => { void load().catch(() => {}) }}
+              icone={Phone}
+              titulo="Nenhuma campanha de ligação"
+              descricao="Crie uma campanha, aponte para uma lista da Base de Leads e a fila monta sozinha — quem nunca foi tocado vem primeiro."
+              acao={
+                <Button onClick={() => setCriarOpen(true)} className="gap-2">
+                  <Plus size={14} /> Nova campanha
+                </Button>
+              }
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {campaigns.map(c => {
                   const cfg     = CALL_STATUS_CONFIG[c.status]
@@ -284,7 +290,7 @@ export function LigacoesPage() {
                   )
                 })}
               </div>
-            )
+            </EstadoTela>
           )}
 
           {tab === 'campanhas' && ativas.length === 0 && campaigns.length > 0 && (

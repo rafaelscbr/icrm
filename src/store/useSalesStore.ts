@@ -3,6 +3,7 @@ import { Sale } from '../types'
 import { generateId } from '../lib/formatters'
 import { matchesPeriod, rangeFromPreset } from './usePeriodStore'
 import { db } from '../lib/db'
+import { mensagemDeErro } from '../lib/erros'
 import { supabase } from '../lib/supabase'
 
 const sortByDate = (sales: Sale[]) =>
@@ -11,6 +12,8 @@ const sortByDate = (sales: Sale[]) =>
 interface SalesStore {
   sales:   Sale[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   load:    () => Promise<void>
   subscribe: () => () => void
   add:     (data: Omit<Sale, 'id' | 'createdAt'>) => Sale
@@ -26,14 +29,18 @@ interface SalesStore {
 export const useSalesStore = create<SalesStore>((set, get) => ({
   sales:   [],
   loading: false,
+  erro: null,
 
   load: async () => {
-    set({ loading: true })
+    set({ loading: true, erro: null })
     try {
       const sales = await db.sales.fetchAll()
       set({ sales: sortByDate(sales) })
     } catch (err) {
+      // A tela PRECISA saber que falhou. Sem isto ela mostraria o estado vazio
+      // e afirmaria que não existe dado — ver EstadoTela.
       console.error('[sales] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
     }

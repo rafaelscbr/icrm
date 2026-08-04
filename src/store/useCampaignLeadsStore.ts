@@ -21,12 +21,15 @@ import { generateId } from '../lib/formatters'
 import { db }   from '../lib/db'
 import { supabase } from '../lib/supabase'
 import toast    from 'react-hot-toast'
+import { mensagemDeErro } from '../lib/erros'
 
 type NewLead = Omit<CampaignLead, 'id' | 'funnelStage' | 'createdAt' | 'updatedAt'>
 
 interface CampaignLeadsStore {
   leads: CampaignLead[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   load: () => Promise<void>
   /** Assina realtime de campaign_leads — eventos disparam sync incremental */
   subscribe: () => () => void
@@ -66,6 +69,7 @@ const SYNC_OVERLAP_MS = 2_000              // margem contra empates de timestamp
 export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
   leads: [],
   loading: false,
+  erro: null,
 
   // ── Carrega leads do banco ───────────────────────────────────────────────────
   // Chamado ao abrir uma campanha e pelo polling periódico.
@@ -81,6 +85,7 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     // Spinner apenas quando ainda não há nada em tela — revisitas mostram o
     // dado existente na hora e atualizam em segundo plano.
     if (get().leads.length === 0) set({ loading: true })
+    set({ erro: null })
     try {
       const overlap = (iso: string) =>
         new Date(new Date(iso).getTime() - SYNC_OVERLAP_MS).toISOString()
@@ -177,6 +182,7 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
       }
     } catch (err) {
       console.error('[campaignLeads] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
       inflightLoad = null

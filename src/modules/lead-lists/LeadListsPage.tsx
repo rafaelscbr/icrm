@@ -3,13 +3,14 @@ import {
   Database, Users, Archive, Pencil, Trash2, FolderOpen,
   TrendingUp, Calendar, ChevronRight, BarChart3, Sparkles, AlertTriangle,
   Zap, Trophy, Layers,
+  Plus,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
 import { KpiCard }       from '../../components/shared/visual'
 import { Card }          from '../../components/ui/Card'
 import { Modal }         from '../../components/ui/Modal'
 import { Button }        from '../../components/ui/Button'
-import { EmptyState }    from '../../components/ui/EmptyState'
+import { EstadoTela }    from '../../components/shared/EstadoTela'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { LeadList }      from '../../types'
@@ -21,7 +22,7 @@ import { batchListScores, ListScoreResult } from '../../lib/listScore'
 import toast             from 'react-hot-toast'
 
 export function LeadListsPage() {
-  const { lists, loading, load, remove, archive } = useLeadListsStore()
+  const { lists, loading, erro, load, remove, archive } = useLeadListsStore()
   const { isAdmin, allProfiles } = useAuthStore()
   const [tab,           setTab]           = useState<'active' | 'archived'>('active')
   const [createOpen,    setCreateOpen]    = useState(false)
@@ -121,7 +122,9 @@ export function LeadListsPage() {
       icon={Database}
       iconTom="info"
       title="Base de Leads"
-      subtitle="Gerencie suas listas de leads frios e conecte-as a campanhas"
+      subtitle={erro
+        ? 'não foi possível ler as listas'
+        : 'Gerencie suas listas de leads frios e conecte-as a campanhas'}
       ctaLabel="Nova Lista"
       onCta={() => setCreateOpen(true)}
       actions={
@@ -185,21 +188,22 @@ export function LeadListsPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-40">
-          <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : visible.length === 0 ? (
-        <EmptyState
-          icon={<Database size={24} />}
-          title={tab === 'active' ? 'Nenhuma lista criada' : 'Nenhuma lista arquivada'}
-          description={tab === 'active'
-            ? 'Importe planilhas de leads frios para criar uma lista e conectar a campanhas.'
-            : 'Listas arquivadas aparecem aqui.'}
-          ctaLabel={tab === 'active' ? 'Nova Lista' : undefined}
-          onCta={tab === 'active' ? () => setCreateOpen(true) : undefined}
-        />
-      ) : (
+      <EstadoTela
+        carregando={loading && lists.length === 0}
+        erro={erro}
+        vazio={visible.length === 0}
+        onTentarDeNovo={() => { void load() }}
+        icone={Database}
+        titulo={tab === 'active' ? 'Nenhuma lista criada' : 'Nenhuma lista arquivada'}
+        descricao={tab === 'active'
+          ? 'Importe planilhas de leads frios para criar uma lista e conectar a campanhas.'
+          : 'Listas arquivadas aparecem aqui.'}
+        acao={tab === 'active' && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus size={14} /> Nova lista
+          </Button>
+        )}
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {visible.map(list => {
             const profile    = list.productProfile
@@ -326,7 +330,7 @@ export function LeadListsPage() {
             )
           })}
         </div>
-      )}
+      </EstadoTela>
 
       <LeadListForm isOpen={createOpen}           onClose={() => setCreateOpen(false)}   />
       <LeadListForm isOpen={Boolean(editList)}     onClose={() => setEditList(undefined)} list={editList} />

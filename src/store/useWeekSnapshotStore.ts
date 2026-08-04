@@ -3,6 +3,7 @@ import { WeekSnapshot, WeekSnapshotEntry, Goal, Task, Sale } from '../types'
 import { calcProgressForRange } from './useGoalsStore'
 import { db } from '../lib/db'
 import { getCurrentUserId } from '../lib/auth'
+import { mensagemDeErro } from '../lib/erros'
 
 function localFmt(d: Date): string {
   const y = d.getFullYear()
@@ -37,6 +38,8 @@ function computeScore(entries: WeekSnapshotEntry[]): number {
 interface WeekSnapshotStore {
   snapshots: WeekSnapshot[]
   loading:   boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro:      string | null
   // Carrega histórico do banco para o usuário atual
   load:         (brokerId?: string) => Promise<void>
   // Verifica semanas passadas e salva no banco se ainda não estiverem registradas
@@ -46,16 +49,18 @@ interface WeekSnapshotStore {
 export const useWeekSnapshotStore = create<WeekSnapshotStore>((set, get) => ({
   snapshots: [],
   loading:   false,
+  erro:      null,
 
   load: async (brokerId?: string) => {
     const id = brokerId ?? getCurrentUserId()
     if (!id) return
-    set({ loading: true })
+    set({ loading: true, erro: null })
     try {
       const snapshots = await db.weekSnapshots.fetchForBroker(id)
       set({ snapshots })
     } catch (err) {
       console.error('[weekSnapshots] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
     }

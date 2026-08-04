@@ -4,13 +4,13 @@ import {
   CheckCircle2, Circle, Clock, Trash2, Pencil, User,
   Building2, AlertTriangle, CheckCheck, ListTodo, CalendarClock,
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
-  BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users, CheckSquare,} from 'lucide-react'
+  BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users, CheckSquare, Plus,} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { TOM } from '../../components/shared/visual'
 import type { Tom } from '../../components/shared/visual'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { EstadoTela } from '../../components/shared/EstadoTela'
 import { Modal } from '../../components/ui/Modal'
 import { TaskForm } from './TaskForm'
 import { TaskHistoryView } from './TaskHistoryView'
@@ -457,7 +457,7 @@ function CalendarView({
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function TasksPage() {
-  const { tasks: allTasks, load, remove, toggleDone } = useTasksStore()
+  const { tasks: allTasks, load, remove, toggleDone, loading, erro } = useTasksStore()
   const { contacts, loadByIds: loadContactsByIds }    = useContactsStore()
   const { properties, load: loadProperties }          = usePropertiesStore()
   const { isAdmin, viewAsBrokerId, profile, allProfiles } = useAuthStore()
@@ -585,7 +585,9 @@ export function TasksPage() {
       icon={CheckSquare}
       iconTom="info"
       title="Tarefas"
-      subtitle={`${pendingCount} pendente${pendingCount !== 1 ? 's' : ''} · ${doneCount} concluída${doneCount !== 1 ? 's' : ''}`}
+      subtitle={erro
+        ? 'não foi possível ler as tarefas'
+        : `${pendingCount} pendente${pendingCount !== 1 ? 's' : ''} · ${doneCount} concluída${doneCount !== 1 ? 's' : ''}`}
       ctaLabel="Nova Tarefa"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
@@ -659,16 +661,22 @@ export function TasksPage() {
         </div>
       )}
 
-      {/* Empty state */}
-      {isEmpty ? (
-        <EmptyState
-          icon={<ListTodo size={24} />}
-          title="Nenhuma tarefa ainda"
-          description="Crie tarefas para organizar seu dia e não perder nenhum follow-up."
-          ctaLabel="Nova Tarefa"
-          onCta={() => { setEditing(undefined); setFormOpen(true) }}
-        />
-      ) : (
+      {/* Carregando, falhou e vazio pela mesma tríade — falha nunca vira
+          "nenhuma tarefa". Ver EstadoTela. */}
+      <EstadoTela
+        carregando={loading && tasks.length === 0}
+        erro={erro}
+        vazio={isEmpty}
+        onTentarDeNovo={() => { void load() }}
+        icone={ListTodo}
+        titulo="Nenhuma tarefa ainda"
+        descricao="Crie tarefas para organizar seu dia e não perder nenhum follow-up."
+        acao={
+          <Button onClick={() => { setEditing(undefined); setFormOpen(true) }} className="gap-2">
+            <Plus size={14} /> Nova tarefa
+          </Button>
+        }
+      >
         <>
           {/* Blocos por tempo */}
           {timeBlocks.map(block => (
@@ -719,7 +727,7 @@ export function TasksPage() {
             </div>
           )}
         </>
-      )}
+      </EstadoTela>
 
       </> /* fim aba tasks */}
 

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter, Cake } from 'lucide-react'
+import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter, Cake, Plus} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { EstadoTela } from '../../components/shared/EstadoTela'
 import { Modal } from '../../components/ui/Modal'
 import { ContactForm } from './ContactForm'
 import { ContactModal } from './ContactModal'
@@ -40,7 +40,7 @@ const FILTER_OPTIONS: { value: ContactTag | null; label: string }[] = [
 const PAGE_SIZE = 20
 
 export function ContactsPage() {
-  const { contacts, load, remove, search, filterByTag } = useContactsStore()
+  const { contacts, load, remove, search, filterByTag, loading, erro } = useContactsStore()
   const { tasks } = useTasksStore()
   const { leads } = useLeadsStore()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -92,7 +92,12 @@ export function ContactsPage() {
       icon={Users}
       iconTom="info"
       title="Contatos"
-      subtitle={`${contacts.length} contatos cadastrados`}
+      // Com a leitura falhando, `contacts.length` é 0 por falta de dado, não
+      // por não existir contato. O subtítulo não pode afirmar um total que não
+      // foi lido.
+      subtitle={erro
+        ? 'não foi possível ler a base'
+        : `${contacts.length.toLocaleString('pt-BR')} contatos cadastrados`}
       ctaLabel="Novo Contato"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
@@ -138,16 +143,26 @@ export function ContactsPage() {
         </div>
       </div>
 
-      {/* List */}
-      {paginated.length === 0 ? (
-        <EmptyState
-          icon={<Users size={24} />}
-          title="Nenhum contato encontrado"
-          description="Adicione seu primeiro contato para começar a gerenciar sua rede."
-          ctaLabel="Novo Contato"
-          onCta={() => { setEditing(undefined); setFormOpen(true) }}
-        />
-      ) : (
+      {/* Lista — carregando, falhou e vazio passam pela mesma tríade. Falha
+          NUNCA pode virar "nenhum contato": ver EstadoTela. */}
+      <EstadoTela
+        carregando={loading && contacts.length === 0}
+        erro={erro}
+        vazio={paginated.length === 0}
+        onTentarDeNovo={() => { void load() }}
+        icone={Users}
+        titulo={query || activeTag || onlyWithTasks
+          ? 'Nenhum contato com esses filtros'
+          : 'Nenhum contato cadastrado'}
+        descricao={query || activeTag || onlyWithTasks
+          ? 'Ajuste a busca ou os filtros para ver outros contatos.'
+          : 'Adicione seu primeiro contato para começar a gerenciar sua rede.'}
+        acao={!query && !activeTag && !onlyWithTasks && (
+          <Button onClick={() => { setEditing(undefined); setFormOpen(true) }} className="gap-2">
+            <Plus size={14} /> Novo contato
+          </Button>
+        )}
+      >
         <ListContainer>
           {paginated.map((c, i) => (
             <div
@@ -242,7 +257,7 @@ export function ContactsPage() {
             </div>
           ))}
         </ListContainer>
-      )}
+      </EstadoTela>
 
       {/* Pagination */}
       {totalPages > 1 && (

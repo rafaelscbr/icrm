@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X } from 'lucide-react'
+import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle } from 'lucide-react'
 import { useNotificationsStore } from '../../store/useNotificationsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { AppNotification } from '../../types'
@@ -35,7 +35,7 @@ interface Props {
 export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
   const navigate   = useNavigate()
   const { user }   = useAuthStore()
-  const { notifications, markRead, markAllRead } = useNotificationsStore()
+  const { notifications, erro, load, markRead, markAllRead } = useNotificationsStore()
   const panelRef = useRef<HTMLDivElement>(null)
 
   const recent    = notifications.slice(0, MAX_ITEMS)
@@ -126,7 +126,26 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
 
         {/* ── Lista ─────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto max-h-[55vh]" role="list" aria-label="Notificações recentes">
-          {recent.length === 0 ? (
+          {/* "Tudo em dia" só pode ser dito quando a leitura completou. Se
+              falhou, o silêncio da lista não é ausência de notificação. */}
+          {erro ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-3 px-6 text-center">
+              <div className="w-12 h-12 rounded-[14px] bg-error-bg border border-error-line flex items-center justify-center">
+                <AlertTriangle size={18} strokeWidth={1.6} className="text-error" />
+              </div>
+              <div>
+                <p className="font-heading text-sm font-bold text-t2">Não foi possível carregar</p>
+                <p className="text-xs text-t4 mt-0.5" role="alert">{erro}</p>
+              </div>
+              <button
+                onClick={() => { if (user) void load(user.id) }}
+                className="text-xs font-semibold text-error hover:brightness-110 cursor-pointer
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-error/40 rounded-md px-2 py-1"
+              >
+                Tentar de novo
+              </button>
+            </div>
+          ) : recent.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
               <div className="w-12 h-12 rounded-[14px] bg-s2 border border-line flex items-center justify-center">
                 <Bell size={18} strokeWidth={1.6} className="text-t4" />

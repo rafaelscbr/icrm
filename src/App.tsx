@@ -6,6 +6,8 @@ import { useAuthStore } from './store/useAuthStore'
 import { usePresenceStore } from './store/usePresenceStore'
 import { getUserLocation } from './lib/geolocation'
 import { Sidebar } from './components/layout/Sidebar'
+import { ErroDeTela } from './components/shared/ErroDeTela'
+import { NaoEncontrada } from './components/shared/NaoEncontrada'
 import { BottomNav } from './components/layout/BottomNav'
 import { GlobalSearch } from './components/shared/GlobalSearch'
 import { useNotificationsStore } from './store/useNotificationsStore'
@@ -91,6 +93,7 @@ function PresenceTracker() {
 
 // ── AppRoutes ────────────────────────────────────────────────────────────────
 function AppRoutes() {
+  const location = useLocation()
   const { open: searchOpen, setOpen: setSearchOpen } = useSearchStore()
   const { user, isAdmin } = useAuthStore()
   const { load: loadNotifications, subscribe: subscribeNotifications } = useNotificationsStore()
@@ -211,6 +214,10 @@ function AppRoutes() {
       <div className="flex min-h-screen page-bg">
         <Sidebar />
         <main id="conteudo" className="flex-1 overflow-auto pb-nav-safe lg:!pb-0">
+          {/* Um erro de render em qualquer tela derrubava a árvore inteira
+              para branco. O boundary contém o estrago na área de conteúdo e
+              zera quando a rota muda. */}
+          <ErroDeTela resetKey={location.pathname}>
           <Suspense fallback={<RouteLoading />}>
           <Routes>
             <Route path="/" element={<PageWrapper><DashboardPage /></PageWrapper>} />
@@ -234,8 +241,12 @@ function AppRoutes() {
             <Route path="/escritorio"  element={<PageWrapper><VirtualOfficePage /></PageWrapper>} />
             <Route path="/base-leads" element={<PageWrapper><LeadListsPage /></PageWrapper>} />
             {isAdmin && <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />}
+            {/* Sem isto, uma URL desconhecida renderiza a sidebar com o
+                conteúdo vazio — parece tela quebrada. */}
+            <Route path="*" element={<NaoEncontrada />} />
           </Routes>
           </Suspense>
+          </ErroDeTela>
         </main>
         <BottomNav />
       </div>

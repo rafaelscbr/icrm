@@ -7,7 +7,7 @@ import {
 import { Button } from '../../components/ui/Button'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Modal } from '../../components/ui/Modal'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { EstadoTela } from '../../components/shared/EstadoTela'
 import { LeadParecerModal } from './LeadParecerModal'
 import { LeadEditModal } from './LeadEditModal'
 import { CampaignLead, FunnelStage, Campaign } from '../../types'
@@ -333,7 +333,7 @@ const PAGE_SIZE = 60
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
-  const { remove, markContacted, setStage } = useCampaignLeadsStore()
+  const { remove, markContacted, setStage, load, erro } = useCampaignLeadsStore()
   const { profile } = useAuthStore()
   const sentBy = profile ? { id: profile.id, name: profile.name } : undefined
 
@@ -796,10 +796,15 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         </div>
       </div>
 
-      {leads.length === 0 ? (
-        <EmptyState icon={<MessageCircle size={24} />} title="Nenhum lead importado"
-          description="Importe uma lista XLSX para começar a disparar." />
-      ) : (
+      <EstadoTela
+        carregando={false}
+        erro={erro}
+        vazio={leads.length === 0}
+        onTentarDeNovo={() => { void load() }}
+        icone={MessageCircle}
+        titulo="Nenhum lead importado"
+        descricao="Importe uma lista XLSX para começar a disparar."
+      >
         <>
 
         {/* ══════════════════════════════════════════════════════════════════
@@ -1094,7 +1099,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         )}
 
         </>
-      )}
+      </EstadoTela>
 
       {/* ── Modais ────────────────────────────────────────────────────────── */}
       <LeadParecerModal

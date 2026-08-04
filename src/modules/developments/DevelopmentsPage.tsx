@@ -2,11 +2,13 @@ import { useEffect, useState, useMemo } from 'react'
 import {
   Search, Rocket, Pencil, AlertTriangle, CheckCircle2, MapPin,
   Wallet, TrendingUp, Layers, Megaphone,
+  Plus,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Painel, Rotulo } from '../../components/shared/visual'
 import { Card } from '../../components/ui/Card'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { EstadoTela } from '../../components/shared/EstadoTela'
+import { Button } from '../../components/ui/Button'
 import { DevelopmentForm } from './DevelopmentForm'
 import { DevelopmentModal } from './DevelopmentModal'
 import { QualificationScale } from './QualificationScale'
@@ -143,7 +145,7 @@ function DevelopmentCard({ development: d, onOpen, onEdit, canEdit }: {
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export function DevelopmentsPage() {
-  const { developments, loading, load } = useDevelopmentsStore()
+  const { developments, loading, erro, load } = useDevelopmentsStore()
   const isAdmin = useAuthStore(s => s.isAdmin)
 
   const [busca, setBusca]           = useState('')
@@ -178,7 +180,9 @@ export function DevelopmentsPage() {
       icon={Rocket}
       iconTom="marca"
       title="Lançamentos"
-      subtitle="Empreendimentos na planta e a condição comercial que qualifica o lead"
+      subtitle={erro
+        ? 'não foi possível ler os lançamentos'
+        : 'Empreendimentos na planta e a condição comercial que qualifica o lead'}
       ctaLabel={isAdmin ? 'Novo lançamento' : undefined}
       onCta={isAdmin ? abrirNovo : undefined}
     >
@@ -249,19 +253,25 @@ export function DevelopmentsPage() {
             <div key={i} className="h-64 rounded-xl bg-surface border border-line animate-pulse" />
           ))}
         </div>
-      ) : lista.length === 0 ? (
-        <EmptyState
-          icon={<Rocket size={22} />}
-          title={busca ? 'Nenhum lançamento encontrado' : 'Nenhum lançamento cadastrado'}
-          description={
+      ) : (
+        <EstadoTela
+          carregando={false}
+          erro={erro}
+          vazio={lista.length === 0}
+          onTentarDeNovo={() => { void load() }}
+          icone={Rocket}
+          titulo={busca ? 'Nenhum lançamento encontrado' : 'Nenhum lançamento cadastrado'}
+          descricao={
             busca
               ? 'Tente outro termo de busca.'
               : 'Cadastre os empreendimentos que vocês trabalham. É a régua deles que decide se um lead faz sentido para o produto.'
           }
-          ctaLabel={isAdmin && !busca ? 'Cadastrar lançamento' : undefined}
-          onCta={isAdmin && !busca ? abrirNovo : undefined}
-        />
-      ) : (
+          acao={isAdmin && !busca && (
+            <Button onClick={abrirNovo} className="gap-2">
+              <Plus size={14} /> Cadastrar lançamento
+            </Button>
+          )}
+        >
         <div className="grid md:grid-cols-2 gap-4">
           {lista.map(d => (
             <DevelopmentCard
@@ -272,7 +282,8 @@ export function DevelopmentsPage() {
               canEdit={isAdmin}
             />
           ))}
-        </div>
+          </div>
+        </EstadoTela>
       )}
 
       {formOpen && (

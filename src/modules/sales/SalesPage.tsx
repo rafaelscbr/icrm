@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
-  TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign, Wallet,
+  TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign, Wallet, Plus,
   LineChart as LineChartIcon,
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -11,7 +11,7 @@ import { ListContainer } from '../../components/ui/ListContainer'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { EstadoTela } from '../../components/shared/EstadoTela'
 import { Modal } from '../../components/ui/Modal'
 import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import { SaleForm } from './SaleForm'
@@ -35,7 +35,7 @@ const FILTER_OPTIONS: { value: SaleType | null; label: string }[] = [
 ]
 
 export function SalesPage() {
-  const { sales: allSales, load, remove } = useSalesStore()
+  const { sales: allSales, load, remove, loading, erro } = useSalesStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const sales = isAdmin && viewAsBrokerId ? allSales.filter(s => s.brokerId === viewAsBrokerId) : allSales
   const { contacts, loadByIds: loadContactsByIds } = useContactsStore()
@@ -117,7 +117,9 @@ export function SalesPage() {
       icon={TrendingUp}
       iconTom="sucesso"
       title="Vendas"
-      subtitle={`${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} · ${periodLabel}`}
+      subtitle={erro
+        ? 'não foi possível ler as vendas'
+        : `${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} · ${periodLabel}`}
       ctaLabel="Nova Venda"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
@@ -237,16 +239,21 @@ export function SalesPage() {
         </div>
       </div>
 
-      {/* List */}
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={<TrendingUp size={24} />}
-          title="Nenhuma venda encontrada"
-          description="Registre vendas para acompanhar seu desempenho."
-          ctaLabel="Nova Venda"
-          onCta={() => { setEditing(undefined); setFormOpen(true) }}
-        />
-      ) : (
+      {/* Carregando, falhou e vazio pela mesma tríade — ver EstadoTela. */}
+      <EstadoTela
+        carregando={loading && sales.length === 0}
+        erro={erro}
+        vazio={filtered.length === 0}
+        onTentarDeNovo={() => { void load() }}
+        icone={TrendingUp}
+        titulo="Nenhuma venda no período"
+        descricao="Troque o período no seletor acima ou registre uma venda."
+        acao={
+          <Button onClick={() => { setEditing(undefined); setFormOpen(true) }} className="gap-2">
+            <Plus size={14} /> Nova venda
+          </Button>
+        }
+      >
         <>
           {/* ── Mobile cards ───────────────────────────────────────────── */}
           <div className="flex flex-col gap-3 lg:hidden">
@@ -404,7 +411,7 @@ export function SalesPage() {
             </div>
           </ListContainer>
         </>
-      )}
+      </EstadoTela>
 
       <SaleForm
         key={editing?.id ?? 'new'}

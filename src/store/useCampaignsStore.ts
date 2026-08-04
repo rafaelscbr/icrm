@@ -4,10 +4,13 @@ import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
+import { mensagemDeErro } from '../lib/erros'
 
 interface CampaignsStore {
   campaigns: Campaign[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   load: () => Promise<void>
   /** Assina realtime de campaigns — qualquer evento recarrega (tabela pequena) */
   subscribe: () => () => void
@@ -20,15 +23,18 @@ interface CampaignsStore {
 export const useCampaignsStore = create<CampaignsStore>((set, get) => ({
   campaigns: [],
   loading: false,
+  erro: null,
 
   load: async () => {
     // Spinner apenas no primeiro carregamento — revisitas mostram o dado em tela
     if (get().campaigns.length === 0) set({ loading: true })
+    set({ erro: null })
     try {
       const campaigns = await db.campaigns.fetchAll()
       set({ campaigns })
     } catch (err) {
       console.error('[campaigns] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
     }

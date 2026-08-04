@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { EstadoTela } from '../../components/shared/EstadoTela'
 import { useWeekSnapshotStore } from '../../store/useWeekSnapshotStore'
 import { useGoalsStore } from '../../store/useGoalsStore'
 import { useTasksStore } from '../../store/useTasksStore'
@@ -99,7 +99,7 @@ function WeekCard({ snapshot }: { snapshot: WeekSnapshot }) {
 }
 
 export function WeekHistoryPage() {
-  const { snapshots, checkAndSave, load: loadSnapshots } = useWeekSnapshotStore()
+  const { snapshots, erro, checkAndSave, load: loadSnapshots } = useWeekSnapshotStore()
   const { goals, load: loadGoals }   = useGoalsStore()
   const { tasks, load: loadTasks }   = useTasksStore()
   const { sales, load: loadSales }   = useSalesStore()
@@ -127,7 +127,9 @@ export function WeekHistoryPage() {
       icon={History}
       iconTom="info"
       title="Histórico Semanal"
-      subtitle={`${snapshots.length} semana${snapshots.length !== 1 ? 's' : ''} registrada${snapshots.length !== 1 ? 's' : ''}`}
+      subtitle={erro
+        ? 'não foi possível ler o histórico'
+        : `${snapshots.length} semana${snapshots.length !== 1 ? 's' : ''} registrada${snapshots.length !== 1 ? 's' : ''}`}
     >
       {/* Back link */}
       <Link
@@ -137,13 +139,15 @@ export function WeekHistoryPage() {
         <ArrowLeft size={12} /> Voltar para Metas
       </Link>
 
-      {snapshots.length === 0 ? (
-        <EmptyState
-          icon={<History size={24} />}
-          title="Nenhuma semana registrada ainda"
-          description="O histórico é gerado automaticamente ao virar a semana. Complete uma semana com atividades e volte aqui."
-        />
-      ) : (
+      <EstadoTela
+        carregando={false}
+        erro={erro}
+        vazio={snapshots.length === 0}
+        onTentarDeNovo={() => { void loadSnapshots() }}
+        icone={History}
+        titulo="Nenhuma semana registrada ainda"
+        descricao="O histórico é gerado automaticamente ao virar a semana. Complete uma semana com atividades e volte aqui."
+      >
         <>
           {/* Summary strip */}
           <div className="grid grid-cols-3 gap-3 mb-8">
@@ -171,7 +175,7 @@ export function WeekHistoryPage() {
             ))}
           </div>
         </>
-      )}
+      </EstadoTela>
     </PageLayout>
   )
 }

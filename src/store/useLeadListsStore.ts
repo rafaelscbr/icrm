@@ -2,10 +2,13 @@ import { create } from 'zustand'
 import { db }       from '../lib/db'
 import { supabase } from '../lib/supabase'
 import { LeadList, LeadListMember } from '../types'
+import { mensagemDeErro } from '../lib/erros'
 
 interface LeadListsState {
   lists:   LeadList[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro:    string | null
   load:    () => Promise<void>
   save:    (list: LeadList) => Promise<void>
   remove:  (id: string, contactIdsToDelete?: string[]) => Promise<void>
@@ -18,12 +21,23 @@ interface LeadListsState {
 export const useLeadListsStore = create<LeadListsState>((set, get) => ({
   lists:        [],
   loading:      false,
+  erro:         null,
   membersCache: {},
 
   load: async () => {
-    set({ loading: true })
-    const lists = await db.leadLists.fetchAll()
-    set({ lists, loading: false })
+    // Antes não havia try/catch: uma falha rejeitava a promise sem tratamento
+    // e `loading` ficava true para sempre — a tela girava indefinidamente sem
+    // dizer o que houve.
+    set({ loading: true, erro: null })
+    try {
+      const lists = await db.leadLists.fetchAll()
+      set({ lists })
+    } catch (err) {
+      console.error('[leadLists] load:', err)
+      set({ erro: mensagemDeErro(err) })
+    } finally {
+      set({ loading: false })
+    }
   },
 
   save: async (list) => {

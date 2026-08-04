@@ -3,12 +3,13 @@ import {
   Megaphone, Users, Calendar, Pencil, Trash2, ArrowRight,
   Play, Pause, BarChart3, Zap, ArrowLeftRight, UserCircle2,
   Clock, MessageCircle, Flame, CalendarCheck, ArrowUpRight,
+  Plus,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { EstadoTela } from '../../components/shared/EstadoTela'
 import { CampaignForm } from './CampaignForm'
 import { CampaignDetail } from './CampaignDetail'
 import { CampaignPerformanceTab } from './CampaignPerformanceTab'
@@ -23,7 +24,7 @@ import { STATUS_CONFIG } from './config'
 type PageTab = 'campanhas' | 'performance'
 
 export function CampaignsPage() {
-  const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus, update, loading: loadingCampaigns } = useCampaignsStore()
+  const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus, update, loading: loadingCampaigns, erro: erroCampanhas } = useCampaignsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const campaigns = isAdmin && viewAsBrokerId ? allCampaigns.filter(c => c.brokerId === viewAsBrokerId) : allCampaigns
   const { leads, load: loadLeads, removeForCampaign, transferLeadsToBroker, loading: loadingLeads } = useCampaignLeadsStore()
@@ -78,7 +79,9 @@ export function CampaignsPage() {
       icon={Megaphone}
       iconTom="marca"
       title="Campanhas"
-      subtitle="Prospecção ativa — listas frias e funil de conversão"
+      subtitle={erroCampanhas
+        ? 'não foi possível ler as campanhas'
+        : 'Prospecção ativa — listas frias e funil de conversão'}
       ctaLabel="Nova Campanha"
       onCta={() => setCreateOpen(true)}
     >
@@ -143,15 +146,20 @@ export function CampaignsPage() {
       )}
 
       {/* Campaign list */}
-      {campaigns.length === 0 ? (
-        <EmptyState
-          icon={<Megaphone size={24} />}
-          title="Nenhuma campanha criada"
-          description="Crie sua primeira campanha de prospecção ativa para organizar sua lista fria e acompanhar o funil."
-          ctaLabel="Nova Campanha"
-          onCta={() => setCreateOpen(true)}
-        />
-      ) : (
+      <EstadoTela
+        carregando={loadingCampaigns && allCampaigns.length === 0}
+        erro={erroCampanhas}
+        vazio={campaigns.length === 0}
+        onTentarDeNovo={() => { void loadCampaigns() }}
+        icone={Megaphone}
+        titulo="Nenhuma campanha criada"
+        descricao="Crie sua primeira campanha de prospecção ativa para organizar sua lista fria e acompanhar o funil."
+        acao={
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus size={14} /> Nova campanha
+          </Button>
+        }
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {campaigns.map(c => {
             const campaignLeads = leads.filter(l => l.campaignId === c.id)
@@ -276,7 +284,7 @@ export function CampaignsPage() {
             )
           })}
         </div>
-      )}
+      </EstadoTela>
 
       </> /* fim aba campanhas */}
 

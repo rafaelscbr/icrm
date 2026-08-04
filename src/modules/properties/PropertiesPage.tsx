@@ -4,12 +4,13 @@ import {
   Search, Building2, Pencil, Trash2, ImageOff,
   TrendingUp, Landmark, MapPin, BadgePercent, ClipboardList, ListFilter,
   BedDouble, ShowerHead, Ruler,
+  Plus,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Painel, Rotulo } from '../../components/shared/visual'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { EstadoTela } from '../../components/shared/EstadoTela'
 import { Modal } from '../../components/ui/Modal'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { PropertyForm } from './PropertyForm'
@@ -156,7 +157,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function PropertiesPage() {
-  const { properties, load, remove, search, filterByStatus, backfillThumbnails } = usePropertiesStore()
+  const { properties, loading, erro, load, remove, search, filterByStatus, backfillThumbnails } = usePropertiesStore()
   const { loadByIds: loadContactsByIds, getById } = useContactsStore()
   const { tasks } = useTasksStore()
   const { isAdmin, profile } = useAuthStore()
@@ -221,7 +222,9 @@ export function PropertiesPage() {
       icon={Building2}
       iconTom="neutro"
       title="Imóveis"
-      subtitle={`${properties.length} imóveis cadastrados`}
+      subtitle={erro
+        ? 'não foi possível ler o portfólio'
+        : `${properties.length} imóveis cadastrados`}
       ctaLabel="Novo Imóvel"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
@@ -270,15 +273,20 @@ export function PropertiesPage() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={<Building2 size={24} />}
-          title="Nenhum imóvel encontrado"
-          description="Cadastre imóveis para gerenciar seu portfólio."
-          ctaLabel="Novo Imóvel"
-          onCta={() => { setEditing(undefined); setFormOpen(true) }}
-        />
-      ) : (
+      <EstadoTela
+        carregando={loading && properties.length === 0}
+        erro={erro}
+        vazio={filtered.length === 0}
+        onTentarDeNovo={() => { void load() }}
+        icone={Building2}
+        titulo="Nenhum imóvel encontrado"
+        descricao="Cadastre imóveis para gerenciar seu portfólio."
+        acao={
+          <Button onClick={() => { setEditing(undefined); setFormOpen(true) }} className="gap-2">
+            <Plus size={14} /> Novo imóvel
+          </Button>
+        }
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(p => {
             const owner      = p.ownerId ? getById(p.ownerId) : undefined
@@ -395,7 +403,7 @@ export function PropertiesPage() {
             )
           })}
         </div>
-      )}
+      </EstadoTela>
 
       {/* Modal de detalhes do imóvel */}
       <PropertyModal

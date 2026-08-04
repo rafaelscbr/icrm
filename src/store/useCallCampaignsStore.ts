@@ -13,6 +13,7 @@ import type {
   CallCampaign, CallCampaignStatus, CallCampaignParticipant,
   CallBoard, CallPerformance,
 } from '../types'
+import { mensagemDeErro } from '../lib/erros'
 
 interface CallCampaignRow {
   id:               string
@@ -50,6 +51,8 @@ interface CallCampaignsState {
   campaigns:    CallCampaign[]
   participants: CallCampaignParticipant[]
   loading:      boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro:         string | null
 
   load:      () => Promise<void>
   create:    (input: Partial<CallCampaign> & { name: string }) => Promise<CallCampaign>
@@ -70,9 +73,10 @@ export const useCallCampaignsStore = create<CallCampaignsState>((set, get) => ({
   campaigns:    [],
   participants: [],
   loading:      false,
+  erro:         null,
 
   load: async () => {
-    set({ loading: true })
+    set({ loading: true, erro: null })
     try {
       const [campRes, partRes] = await Promise.all([
         supabase.from('call_campaigns').select('*').order('created_at', { ascending: false }),
@@ -95,7 +99,8 @@ export const useCallCampaignsStore = create<CallCampaignsState>((set, get) => ({
         loading: false,
       })
     } catch (err) {
-      set({ loading: false })
+      console.error('[callCampaigns] load:', err)
+      set({ loading: false, erro: mensagemDeErro(err) })
       throw err
     }
   },

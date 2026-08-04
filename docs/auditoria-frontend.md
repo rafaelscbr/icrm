@@ -193,10 +193,66 @@ de visibilidade do estado.
 distinguindo três estados — carregando, falhou (com "tentar de novo") e vazio
 de verdade. O Dashboard já faz isso e serve de modelo.
 
+**Status: corrigido (04/08).** `src/components/shared/EstadoTela.tsx` torna a
+tríade obrigatória por construção — `erro` é prop obrigatória e a precedência
+é **erro > carregando > vazio**, travada por seis testes em
+`src/test/estado-tela.test.tsx`. `erro: string | null` foi para as 11 stores de
+leitura; 11 telas passaram a consumi-lo, e os subtítulos que contavam registros
+("12.578 contatos cadastrados") passam a dizer "não foi possível ler a base"
+quando a leitura falhou. `EmptyState` foi **removido** do repositório: enquanto
+existisse, seria possível reintroduzir um vazio sem checagem de erro sem
+ninguém perceber.
+
+Dois defeitos adicionais apareceram durante a correção e foram corrigidos junto:
+
+- `useLeadListsStore.load` não tinha `try/catch` nenhum — a promise rejeitava
+  sem tratamento e `loading` ficava `true` para sempre. Base de Leads girava
+  indefinidamente sem dizer o que houve.
+- O popover de notificações afirmava **"Tudo em dia · Nenhuma notificação por
+  enquanto"** sobre uma leitura que podia ter falhado.
+
+**Evidência da correção (04/08, navegador).** Mesmo método: `fetch` rejeitando
+só `/rest/v1/lead_lists`, navegação interna para Base de Leads. A tela mostrou
+"Carregando…" e em seguida:
+
+- cabeçalho: **"Base de Leads · não foi possível ler as listas"**
+- corpo: **"Não foi possível carregar / Falha de comunicação com o banco. / O
+  que aparece nesta tela pode estar incompleto. Não tome decisão com base nela
+  até recarregar."**
+- ação: **"Tentar de novo"**
+
+Com a rede restaurada a mesma tela voltou a "Nenhuma lista criada" — que aqui é
+verdade e não engano: a conta usada (`e2e_test_dispatch`, perfil `broker`) é
+dona de 0 das 20 listas do banco, e a RLS restringe às próprias. Vazio de
+verdade e falha de leitura agora são visualmente inconfundíveis.
+
 ### P1-1 · Sem fronteira de erro e sem 404
 
 `/*` cai em `AppRoutes`; uma URL inválida renderiza o app vazio. Nenhuma rota
 tem `errorElement` — um erro de render derruba a tela inteira para branco.
+
+**Status: corrigido (04/08).** Duas peças novas em `components/shared`:
+
+- **`NaoEncontrada`** — `<Route path="*">` dentro de `AppRoutes`. Também é o que
+  um corretor passa a ver ao abrir `/admin`, rota que só existe para admin.
+- **`ErroDeTela`** — fronteira de erro de render envolvendo `<Routes>`.
+
+Correção ao diagnóstico: **`errorElement` não se aplica aqui.** O router é o
+declarativo (`BrowserRouter` + `Routes`), não o data router — `errorElement` só
+existe em `createBrowserRouter`. O equivalente correto no modo declarativo é um
+componente de classe com `componentDidCatch`, que é de todo modo o único
+mecanismo de React capaz de capturar erro de render. Migrar para o data router
+só por isso seria trocar a fundação de roteamento para ganhar a mesma coisa.
+
+O boundary recebe `resetKey={location.pathname}`: sem isso um erro em uma tela
+travaria todas as outras até o reload.
+
+**Evidência (04/08, navegador).** `/rota-que-nao-existe` → "Esta página não
+existe · Nada responde por /rota-que-nao-existe", com a sidebar intacta. Uma
+rota temporária que lança no render → "Esta tela parou de responder · estouro
+proposital de render", também com a sidebar intacta e com "Recarregar" e "Ir
+para o início"; clicar em Tarefas na sidebar recuperou a navegação sem reload.
+A rota temporária foi removida em seguida.
 
 ### P1-2 · Três overlays sem teclado completo
 
@@ -377,11 +433,11 @@ acontecendo. Bate exatamente com o P0-1.
 
 Na ordem que você definiu, um bloco coerente por vez, cada um com verificação:
 
-1. **P0-1 — estados de verdade.** `erro` nos stores + tríade
-   carregando/falhou/vazio nas 16 telas. É o maior ganho de confiança do
-   sistema e não muda nenhuma composição.
-2. **P1-1 — `errorElement` e 404.**
-3. **P1-2 — Radix pontual** (`Popover`, `DropdownMenu`, `Tooltip`, `Tabs`) nos
+1. ~~**P0-1 — estados de verdade.**~~ **Feito em 04/08** — `EstadoTela` +
+   `erro` em 11 stores + 11 telas, `EmptyState` removido, 6 testes de
+   precedência, verificado no navegador. Detalhe na PARTE 4.
+2. ~~**P1-1 — `errorElement` e 404.**~~ **Feito em 04/08.** Ver PARTE 4.
+3. **P1-2 — Radix pontual** ← próximo (`Popover`, `DropdownMenu`, `Tooltip`, `Tabs`) nos
    três overlays. Headless: a aparência não muda.
 4. **P2-2 — `eslint.config.js`** com `jsx-a11y`, para a régua parar de depender
    de inspeção manual.

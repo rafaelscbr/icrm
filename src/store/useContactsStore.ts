@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Contact, ContactTag } from '../types'
 import { generateId, isBirthdayThisMonth } from '../lib/formatters'
 import { db } from '../lib/db'
+import { mensagemDeErro } from '../lib/erros'
 import { supabase } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/auth'
 import toast from 'react-hot-toast'
@@ -9,6 +10,8 @@ import toast from 'react-hot-toast'
 interface ContactsStore {
   contacts: Contact[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   load: () => Promise<void>
   /** Carrega só os contatos indicados (merge). Não avança a marca d'água do sync. */
   loadByIds: (ids: string[]) => Promise<void>
@@ -42,6 +45,7 @@ const SYNC_OVERLAP_MS = 2_000
 export const useContactsStore = create<ContactsStore>((set, get) => ({
   contacts: [],
   loading: false,
+  erro: null,
 
   load: () => {
     if (inflightLoad) return inflightLoad
@@ -50,6 +54,7 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
       // Spinner apenas quando ainda não há nada em tela — revisitas mostram o
       // dado existente na hora e atualizam em segundo plano.
       if (get().contacts.length === 0) set({ loading: true })
+      set({ erro: null })
       try {
         const overlap = (iso: string) =>
           new Date(new Date(iso).getTime() - SYNC_OVERLAP_MS).toISOString()
@@ -109,7 +114,10 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
           }
         }
       } catch (err) {
+        // A tela PRECISA saber que falhou. Sem isto ela mostraria "0 contatos
+        // cadastrados" com 12.578 no banco — ver EstadoTela.
         console.error('[contacts] load:', err)
+        set({ erro: mensagemDeErro(err) })
       } finally {
         set({ loading: false })
         inflightLoad = null

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Task, TaskStatus } from '../types'
 import { generateId, localDateStr } from '../lib/formatters'
 import { db } from '../lib/db'
+import { mensagemDeErro } from '../lib/erros'
 import { supabase } from '../lib/supabase'
 // Import circular com useLeadsStore é seguro: o uso é deferido (getState em runtime)
 import { useLeadsStore } from './useLeadsStore'
@@ -10,6 +11,8 @@ import { useLeadInteractionsStore } from './useLeadInteractionsStore'
 interface TasksStore {
   tasks: Task[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   load: () => Promise<void>
   subscribe: () => () => void
   add: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Task
@@ -24,14 +27,18 @@ interface TasksStore {
 export const useTasksStore = create<TasksStore>((set, get) => ({
   tasks: [],
   loading: false,
+  erro: null,
 
   load: async () => {
-    set({ loading: true })
+    set({ loading: true, erro: null })
     try {
       const tasks = await db.tasks.fetchAll()
       set({ tasks })
     } catch (err) {
+      // A tela PRECISA saber que falhou. Sem isto ela mostraria o estado vazio
+      // e afirmaria que não existe dado — ver EstadoTela.
       console.error('[tasks] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
     }

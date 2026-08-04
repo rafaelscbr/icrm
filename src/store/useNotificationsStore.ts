@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { db } from '../lib/db'
 import { AppNotification } from '../types'
+import { mensagemDeErro } from '../lib/erros'
 
 // Som curto de alerta — gerado via Web Audio (sem asset). Pode falhar
 // silenciosamente se o navegador ainda não liberou áudio (sem interação).
@@ -28,6 +29,8 @@ function playAlertSound() {
 interface NotificationsStore {
   notifications: AppNotification[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   // Carrega notificações do usuário
   load: (userId: string) => Promise<void>
   // Marca uma notificação como lida
@@ -43,14 +46,16 @@ interface NotificationsStore {
 export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
   notifications: [],
   loading: false,
+  erro: null,
 
   load: async (userId: string) => {
-    set({ loading: true })
+    set({ loading: true, erro: null })
     try {
       const notifications = await db.notifications.fetchForUser(userId)
       set({ notifications })
     } catch (err) {
       console.error('[notifications] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
     }

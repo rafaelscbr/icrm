@@ -13,6 +13,7 @@ import {
   GitBranch, Filter, User, Home, X, Trophy, Flame, Target,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { EstadoTela } from '../../components/shared/EstadoTela'
 import { Button } from '../../components/ui/Button'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -169,7 +170,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function LeadsPage() {
-  const { leads: allLeads, loading, load, visitaSuggestLeadId, clearVisitaSuggest } = useLeadsStore()
+  const { leads: allLeads, loading, erro, load, visitaSuggestLeadId, clearVisitaSuggest } = useLeadsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const visitaSuggestLead = visitaSuggestLeadId ? allLeads.find(l => l.id === visitaSuggestLeadId) : undefined
   const leads = isAdmin && viewAsBrokerId ? allLeads.filter(l => l.brokerId === viewAsBrokerId) : allLeads
@@ -356,7 +357,7 @@ export function LeadsPage() {
   }
 
   const TABS: { value: Tab; label: string; icon: typeof List; badge?: number }[] = [
-    { value: 'leads',          label: 'Leads',          icon: List,        badge: active.length },
+    { value: 'leads',          label: 'Leads',          icon: List,        badge: erro ? undefined : active.length },
     { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                        },
     { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                         },
     { value: 'conversao',      label: 'Conversão',       icon: Percent                           },
@@ -378,7 +379,9 @@ export function LeadsPage() {
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-t1 leading-none tracking-tight">Leads</h1>
-            <p className="text-xs text-t3 mt-1">Funil de prospecção · <span className="text-t1 font-semibold">{active.length} ativos</span></p>
+            <p className="text-xs text-t3 mt-1">Funil de prospecção · <span className="text-t1 font-semibold">
+              {erro ? 'não foi possível ler o funil' : `${active.length} ativos`}
+            </span></p>
           </div>
 
           <Button onClick={() => setShowForm(true)} size="md" className="flex-shrink-0">
@@ -551,7 +554,16 @@ export function LeadsPage() {
 
           {/* Conteúdo */}
           <div className="flex-1 overflow-auto">
-            {loading ? (
+            {/* Falha vence tudo: sem a leitura completa, "nenhum lead
+                encontrado" seria uma afirmação falsa sobre o funil. */}
+            {erro ? (
+              <div className="p-4">
+                <EstadoTela carregando={false} erro={erro} vazio={false}
+                            onTentarDeNovo={() => { void load() }}>
+                  <></>
+                </EstadoTela>
+              </div>
+            ) : loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center gap-3">
                   <RefreshCw size={20} className="text-brand animate-spin" />

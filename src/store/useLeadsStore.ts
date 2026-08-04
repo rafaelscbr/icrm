@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
+import { mensagemDeErro } from '../lib/erros'
 import { supabase } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/auth'
 import { useContactsStore } from './useContactsStore'
@@ -14,6 +15,8 @@ import toast from 'react-hot-toast'
 interface LeadsStore {
   leads: Lead[]
   loading: boolean
+  /** mensagem da última falha de leitura; null quando deu certo */
+  erro: string | null
   // Lead recém-movido para 'visita' que deve sugerir o agendamento de tarefa (modal)
   visitaSuggestLeadId: string | null
   clearVisitaSuggest: () => void
@@ -49,16 +52,20 @@ const STAGE_LABEL: Record<string, string> = {
 export const useLeadsStore = create<LeadsStore>((set, get) => ({
   leads: [],
   loading: false,
+  erro: null,
   visitaSuggestLeadId: null,
   clearVisitaSuggest: () => set({ visitaSuggestLeadId: null }),
 
   load: async () => {
-    set({ loading: true })
+    set({ loading: true, erro: null })
     try {
       const leads = await db.leads.fetchAll()
       set({ leads })
     } catch (err) {
+      // A tela PRECISA saber que falhou. Sem isto ela mostraria o estado vazio
+      // e afirmaria que não existe dado — ver EstadoTela.
       console.error('[leads] load:', err)
+      set({ erro: mensagemDeErro(err) })
     } finally {
       set({ loading: false })
     }
