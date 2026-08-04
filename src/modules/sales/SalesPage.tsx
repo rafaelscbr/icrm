@@ -1,8 +1,12 @@
 import { useEffect, useState, useMemo } from 'react'
-import { TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign } from 'lucide-react'
+import {
+  TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign, Wallet,
+  LineChart as LineChartIcon,
+} from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
+import { IconeTom, Rotulo, SecaoTitulo } from '../../components/shared/visual'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -129,8 +133,12 @@ export function SalesPage() {
           e sozinho; ticket, comissão gerada e comissão do corretor são apoio
           e ocupam o porte compacto. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5 lg:mb-6">
-        <div className="lg:col-span-1 relative overflow-hidden rounded-[16px] border border-line card-surface gold-edge p-5">
-          <p className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3">VGV no período</p>
+        <div className="lg:col-span-1 relative overflow-hidden rounded-[16px] border border-line
+                        surface-premium shadow-card gold-edge gold-glow-tl p-5">
+          <div className="flex items-center gap-2">
+            <IconeTom icon={Wallet} tom="marca" tamanho="sm" />
+            <Rotulo>VGV no período</Rotulo>
+          </div>
           <p className="font-heading text-[clamp(1.9rem,3.5vw,2.5rem)] font-black text-t1 tabular-nums leading-none tracking-[-0.03em] mt-3">
             {formatCurrency(valueInPeriod)}
           </p>
@@ -141,15 +149,13 @@ export function SalesPage() {
 
         <div className="lg:col-span-2 grid grid-cols-2 gap-3">
           {[
-            { label: 'Comissão gerada', value: periodComm,   hint: 'negociada no período', icon: BadgePercent, tone: 'text-t1'      },
-            { label: 'Sua comissão',    value: periodBroker, hint: 'sua parte no período', icon: DollarSign,   tone: 'text-success' },
+            { label: 'Comissão gerada', value: periodComm,   hint: 'negociada no período', icon: BadgePercent, tone: 'text-t1',      tom: 'info'    as const },
+            { label: 'Sua comissão',    value: periodBroker, hint: 'sua parte no período', icon: DollarSign,   tone: 'text-success', tom: 'sucesso' as const },
           ].map(k => (
-            <div key={k.label} className="rounded-[14px] border border-line card-surface p-4 flex flex-col">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3 truncate">{k.label}</p>
-                <span className="w-7 h-7 rounded-lg bg-s3 flex items-center justify-center flex-shrink-0">
-                  <k.icon size={13} className="text-t3" />
-                </span>
+            <div key={k.label} className="rounded-[14px] border border-line surface-premium shadow-card p-4 flex flex-col">
+              <div className="flex items-center gap-2">
+                <IconeTom icon={k.icon} tom={k.tom} tamanho="sm" />
+                <Rotulo className="truncate">{k.label}</Rotulo>
               </div>
               <p className={`font-heading text-[22px] font-black tabular-nums leading-none mt-3 ${k.tone}`}>
                 {formatCurrency(k.value)}
@@ -163,7 +169,11 @@ export function SalesPage() {
       {/* Gráfico mensal */}
       {sales.length > 0 && (
         <Card className="mb-5 lg:mb-6">
-          <h2 className="text-sm font-semibold text-t2 mb-4">Evolução mensal — últimos 12 meses</h2>
+          <div className="mb-4">
+            <SecaoTitulo icon={LineChartIcon} tom="sucesso" descricao="VGV fechado por mês">
+              Evolução mensal
+            </SecaoTitulo>
+          </div>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />

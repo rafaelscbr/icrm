@@ -33,8 +33,23 @@ export function formatMonthYear(value: string): string {
   return data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 }
 
+/**
+ * Telefone brasileiro legível.
+ *
+ * O código do país é removido antes de formatar: os leads que entram pelo
+ * webhook do Meta chegam como `+5547999999999` (13 dígitos) e caíam no
+ * fallback, aparecendo crus em Contatos, Leads e em todo lugar que exibe
+ * telefone. Só descarta o `55` quando o que sobra tem tamanho de número
+ * brasileiro — assim um número estrangeiro continua exibido como veio, em vez
+ * de virar um DDD inventado.
+ */
 export function formatPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '')
+  let digits = phone.replace(/\D/g, '')
+
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    digits = digits.slice(2)
+  }
+
   if (digits.length === 11) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
   }
