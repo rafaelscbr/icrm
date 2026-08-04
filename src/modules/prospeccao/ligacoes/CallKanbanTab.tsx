@@ -192,8 +192,15 @@ function Cartao({ card, nomeDe, onTransferir }: {
   const desfecho  = card.lastOutcome ? OUTCOME_BY_VALUE[card.lastOutcome] : null
   const reservado = card.claimedUntil && new Date(card.claimedUntil) > new Date()
 
+  // Mesma regra do funil e dos disparos: só quem pede ação carrega superfície.
+  // Aqui "pede ação" é o lead pronto para transferir, ou o retorno que já
+  // venceu — o resto é acompanhamento e recolhe.
+  const venceu = !!card.nextAttemptAt && new Date(card.nextAttemptAt) <= new Date()
+  const pedeAcao = !!onTransferir || venceu
+
   return (
-    <article className="rounded-[12px] kanban-card border px-3 py-2.5 flex flex-col gap-2">
+    <article className={`rounded-[12px] border px-3 py-2.5 flex flex-col gap-2 transition-colors
+      ${pedeAcao ? 'kanban-card shadow-card' : 'bg-s2/50 border-line/70'}`}>
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-semibold text-t1 truncate">{card.name}</p>

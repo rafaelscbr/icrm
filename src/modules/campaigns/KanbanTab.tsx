@@ -275,8 +275,12 @@ function LeadCard({
       <div
         ref={setNodeRef}
         onClick={() => !isDragging && onParecer(lead)}
-        className={`group relative border rounded-[14px] p-3 cursor-pointer kanban-card shadow-card select-none
+        className={`group relative border rounded-[14px] p-3 cursor-pointer select-none
           transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
+          ${/* Mesma regra do funil: quem pede ação carrega superfície e sombra,
+                quem está em dia recolhe. Com todos os cartões iguais, a coluna
+                vira um paredão e o lead parado some no meio. */ ''}
+          ${cold ? 'kanban-card shadow-card' : 'bg-s2/50 border-line/70 shadow-none hover:bg-s2'}
           ${isDragging || ghost ? 'opacity-30 scale-95' : ''}
           ${ghost ? 'shadow-modal border-brand/40' : ''}
           ${cold ? '!border-info-line' : ''}
@@ -415,7 +419,12 @@ function LeadCard({
         <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
           <button
             onClick={handleSendAndRegister}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-success bg-success-bg hover:bg-success hover:text-white border border-success-line rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 min-h-[32px] font-heading text-xs font-bold
+                       text-t3 bg-transparent border border-line rounded-[10px] transition-all duration-150 active:scale-[0.98]
+                       group-hover:text-success group-hover:bg-success-bg group-hover:border-success-line
+                       hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)] hover:!border-success
+                       focus-visible:text-success focus-visible:bg-success-bg focus-visible:border-success-line
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
             title="Enviar template e registrar disparo"
           >
             <MessageCircle size={12} strokeWidth={1.6} />
@@ -522,7 +531,9 @@ function KanbanColumn({
             ${isOver ? 'bg-[rgba(228,178,60,0.05)]' : ''}`}
         >
           {leads.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center rounded-[14px] border border-dashed border-line m-0.5">
+            /* Estava centralizado num flex-1 alto: o texto caía abaixo da
+               dobra e a coluna lia como vão morto. */
+            <div className="flex items-center justify-center rounded-[14px] border border-dashed border-line-strong/60 bg-s3/20 px-3 py-7 m-0.5">
               <p className="text-xs text-t4 text-center">Arraste cards aqui</p>
             </div>
           ) : (

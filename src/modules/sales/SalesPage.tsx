@@ -12,6 +12,8 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { CabecalhoLista, AcoesLinha, ContextoLinha, celula } from '../../components/shared/lista'
+import type { Coluna } from '../../components/shared/lista'
 import { Modal } from '../../components/ui/Modal'
 import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import { SaleForm } from './SaleForm'
@@ -26,6 +28,24 @@ import toast from 'react-hot-toast'
 const TYPE_CONFIG: Record<SaleType, { label: string; variant: 'indigo' | 'purple' }> = {
   ready:    { label: 'Pronto', variant: 'indigo'  },
   off_plan: { label: 'Planta', variant: 'purple'  },
+}
+
+/**
+ * "Retroativa" = lançada em um mês POSTERIOR ao da venda, ou seja, registrada
+ * com atraso.
+ *
+ * A regra anterior comparava a data da venda com HOJE, o que marcava como
+ * retroativa praticamente toda venda passada — no filtro "Acumulado" o aviso
+ * aparecia em todas as 22 linhas e não dizia nada. O que interessa é a
+ * distância entre quando a venda aconteceu (`date`) e quando ela entrou no
+ * sistema (`createdAt`).
+ */
+function lancadaRetroativamente(s: Sale): boolean {
+  const [vAno, vMes] = s.date.split('-').map(Number)
+  const criada = new Date(s.createdAt)
+  const cAno = criada.getFullYear()
+  const cMes = criada.getMonth() + 1
+  return cAno > vAno || (cAno === vAno && cMes > vMes)
 }
 
 const FILTER_OPTIONS: { value: SaleType | null; label: string }[] = [
@@ -61,6 +81,17 @@ export function SalesPage() {
     const ids = sales.map(s => s.clientId).filter(Boolean)
     if (ids.length > 0) loadContactsByIds(ids)
   }, [sales]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Uma definição só de largura, lida pelo cabeçalho, pelas linhas e pelo
+  // rodapé — ver components/shared/lista.tsx.
+  const COLUNAS: Coluna[] = [
+    { chave: 'cliente',  rotulo: 'Cliente',       largura: 'flex-1' },
+    { chave: 'produto',  rotulo: 'Empreendimento', largura: 'w-[190px]' },
+    { chave: 'data',     rotulo: 'Data',          largura: 'w-[118px]' },
+    { chave: 'valor',    rotulo: 'Valor',         largura: 'w-[130px]', alinhar: 'dir' },
+    { chave: 'comissao', rotulo: 'Comissão',      largura: 'w-[150px]', alinhar: 'dir' },
+    ...(isAdmin ? [{ chave: 'corretor', rotulo: 'Corretor', largura: 'w-[110px]' } as Coluna] : []),
+  ]
 
   const filtered = sales.filter(s => {
     const client = contacts.find(c => c.id === s.clientId)
@@ -262,10 +293,7 @@ export function SalesPage() {
               const { label, variant } = TYPE_CONFIG[s.type]
               const { totalCommission: tc, brokerCommission: bc } = calcSaleCommissions(s)
               const hasComm = tc > 0
-              const n = new Date()
-              const sYear = Number(s.date.split('-')[0])
-              const sMonth = Number(s.date.split('-')[1]) - 1
-              const isRetro = sYear < n.getFullYear() || (sYear === n.getFullYear() && sMonth < n.getMonth())
+              const isRetro = lancadaRetroativamente(s)
               return (
                 <Card key={s.id} className="!p-4">
                   <div className="flex items-start justify-between gap-3 mb-3">
@@ -327,87 +355,98 @@ export function SalesPage() {
 
           {/* ── Desktop table ──────────────────────────────────────────── */}
           <ListContainer className="hidden lg:block">
-            <div className={`grid ${isAdmin ? 'grid-cols-[2fr_2fr_1fr_1fr_1fr_1fr_auto]' : 'grid-cols-[2fr_2fr_1fr_1fr_1fr_auto]'} gap-4 px-6 py-3 border-b border-line`}>
-              {[
-                'Cliente', 'Empreendimento', 'Data', 'Valor', 'Comissão',
-                ...(isAdmin ? ['Corretor'] : []),
-                '',
-              ].map((h, i) => (
-                <p key={i} className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">{h}</p>
-              ))}
-            </div>
+            <CabecalhoLista colunas={COLUNAS} antes="w-8" depois="w-[76px]" />
             {filtered.map((s, i) => {
               const client     = contacts.find(c => c.id === s.clientId)
               const brokerName = isAdmin ? (allProfiles.find(p => p.id === s.brokerId)?.name ?? '—') : null
-              const { label, variant } = TYPE_CONFIG[s.type]
+              const { label } = TYPE_CONFIG[s.type]
               const { totalCommission: tc, brokerCommission: bc } = calcSaleCommissions(s)
               const hasComm = tc > 0
-              const n = new Date()
-              const sYear = Number(s.date.split('-')[0])
-              const sMonth = Number(s.date.split('-')[1]) - 1
-              const isRetro = sYear < n.getFullYear() || (sYear === n.getFullYear() && sMonth < n.getMonth())
+              const isRetro = lancadaRetroativamente(s)
               return (
                 <div
                   key={s.id}
-                  className={`grid ${isAdmin ? 'grid-cols-[2fr_2fr_1fr_1fr_1fr_1fr_auto]' : 'grid-cols-[2fr_2fr_1fr_1fr_1fr_auto]'} gap-4 items-center px-6 py-4 hover:bg-s3/50 row-accent transition-colors ${i < filtered.length - 1 ? 'border-b border-line' : ''}`}
+                  className={`group flex items-center gap-4 px-6 py-3.5 hover:bg-s3/50 row-accent transition-colors ${i < filtered.length - 1 ? 'border-b border-line' : ''}`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Avatar name={client?.name ?? '?'} size="sm" />
-                    <div className="min-w-0">
-                      <span className="text-sm text-t1 truncate block">{client?.name ?? '—'}</span>
-                      {isRetro && (
-                        <span className="text-[11px] font-semibold text-amber-500/80 uppercase tracking-wide">retroativo</span>
-                      )}
-                    </div>
+                  <Avatar name={client?.name ?? '?'} size="sm" />
+
+                  <div className={celula(COLUNAS[0])}>
+                    <p className="text-sm font-medium text-t1 truncate">{client?.name ?? '—'}</p>
+                    {/* "retroativo" é contexto, não estado comparável: texto,
+                        não pílula. */}
+                    <ContextoLinha itens={[isRetro && <span key="r">lançada em outro mês</span>]} />
                   </div>
-                  <div className="min-w-0">
+
+                  <div className={celula(COLUNAS[1])}>
                     <p className="text-sm text-t2 truncate">{s.propertyName}</p>
-                    <Badge variant={variant}>{label}</Badge>
+                    <p className="text-xs text-t4">{label}</p>
                   </div>
-                  <p className="text-sm text-t3">{formatDateShort(s.date)}</p>
-                  <p className="text-sm font-semibold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</p>
-                  <div className="min-w-0">
+
+                  <p className={celula(COLUNAS[2], 'text-sm text-t3 tabular-nums')}>{formatDateShort(s.date)}</p>
+
+                  <div className={celula(COLUNAS[3])}>
+                    <p className="font-heading text-[13px] font-bold text-success tabular-nums">
+                      {formatCurrencyFull(s.value)}
+                    </p>
+                  </div>
+
+                  <div className={celula(COLUNAS[4])}>
                     {hasComm ? (
                       <>
-                        <p className="text-xs text-brand-text tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
-                        <p className="text-xs text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
+                        <p className="text-[13px] font-semibold text-t2 tabular-nums">{formatCurrencyFull(tc)}</p>
+                        <p className="text-[11px] text-t4 tabular-nums">sua parte {formatCurrencyFull(bc)}</p>
                       </>
                     ) : (
                       <span className="text-xs text-t5">—</span>
                     )}
                   </div>
+
                   {isAdmin && (
-                    <span className="text-xs text-t3 truncate">{brokerName}</span>
+                    <span className={celula(COLUNAS[5], 'text-xs text-t3 truncate')}>{brokerName}</span>
                   )}
-                  <div className="flex items-center gap-1">
+
+                  <AcoesLinha largura="w-[76px]">
                     <button
                       onClick={() => { setEditing(s); setFormOpen(true) }}
-                      className="p-2 rounded-lg hover:bg-s3/70 text-t3 hover:text-t2 transition-colors cursor-pointer"
+                      aria-label={`Editar venda de ${client?.name ?? 'cliente'}`}
+                      className="w-9 h-9 flex items-center justify-center rounded-[10px] hover:bg-s3/70 text-t3 hover:text-t1
+                                 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
                     ><Pencil size={14} /></button>
                     <button
                       onClick={() => setDeleteTarget(s)}
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-t3 hover:text-red-400 transition-colors cursor-pointer"
+                      aria-label={`Excluir venda de ${client?.name ?? 'cliente'}`}
+                      className="w-9 h-9 flex items-center justify-center rounded-[10px] hover:bg-error-bg text-t3 hover:text-error
+                                 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-error/40"
                     ><Trash2 size={14} /></button>
-                  </div>
+                  </AcoesLinha>
                 </div>
               )
             })}
-            <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr_auto] gap-4 items-center px-6 py-3 border-t border-line bg-s2/30">
-              <p className="text-xs text-t3 col-span-3">
-                {filtered.length} venda{filtered.length !== 1 ? 's' : ''}
+            {/* O rodapé declarava 6 colunas enquanto as linhas usavam 7 na
+                visão admin: os totais caíam embaixo das colunas erradas. Agora
+                lê as mesmas COLUNAS que a linha. */}
+            <div className="flex items-center gap-4 px-6 py-3 border-t border-line bg-s2/30">
+              <span className="w-8 flex-shrink-0" aria-hidden />
+              <p className={celula(COLUNAS[0], 'text-xs text-t3')}>
+                {filtered.length} venda{filtered.length !== 1 ? 's' : ''} no período
               </p>
-              <p className="text-sm font-bold text-slate-100 tabular-nums">
-                {formatCurrencyFull(filtered.reduce((acc, s) => acc + s.value, 0))}
-              </p>
-              <div>
-                <p className="text-xs font-bold text-brand-text tabular-nums">
-                  {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0))}
-                </p>
-                <p className="text-xs text-emerald-400 tabular-nums">
-                  {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0))}
+              <span className={celula(COLUNAS[1])} aria-hidden />
+              <span className={celula(COLUNAS[2])} aria-hidden />
+              <div className={celula(COLUNAS[3])}>
+                <p className="font-heading text-[13px] font-black text-t1 tabular-nums">
+                  {formatCurrencyFull(filtered.reduce((acc, s) => acc + s.value, 0))}
                 </p>
               </div>
-              <div />
+              <div className={celula(COLUNAS[4])}>
+                <p className="text-[13px] font-bold text-t2 tabular-nums">
+                  {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0))}
+                </p>
+                <p className="text-[11px] text-t4 tabular-nums">
+                  sua parte {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).brokerCommission, 0))}
+                </p>
+              </div>
+              {isAdmin && <span className={celula(COLUNAS[5])} aria-hidden />}
+              <span className="w-[76px] flex-shrink-0" aria-hidden />
             </div>
           </ListContainer>
         </>

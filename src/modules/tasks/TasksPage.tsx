@@ -87,7 +87,6 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
   const { label: dateLabel, isToday, overdue } = formatDateLabel(t.dueDate, t.dueTime)
   const isDone   = t.status === 'done'
   const CatIcon  = t.category ? CATEGORY_CONFIG[t.category].icon : null
-  const catColor = t.category ? CATEGORY_CONFIG[t.category].color : ''
 
   // Delegação
   const isAssignedToMe = t.assignedToId && t.assignedToId === currentUserId
@@ -148,15 +147,15 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
         )}
 
         <div className="flex items-center gap-3 flex-wrap">
-          <span className={`flex items-center gap-1 text-xs font-medium
-            ${overdue && !isDone ? 'text-red-400' : isToday && !isDone ? 'text-brand' : 'text-t3'}`}>
-            <Clock size={11} />
+          <span className={`flex items-center gap-1 text-xs
+            ${overdue && !isDone ? 'font-bold text-error' : isToday && !isDone ? 'font-bold text-brand-text' : 'text-t3'}`}>
+            <Clock size={11} strokeWidth={1.6} aria-hidden />
             {dateLabel}
           </span>
 
           {showCategory && CatIcon && (
-            <span className={`flex items-center gap-1 text-xs font-medium ${catColor}`}>
-              <CatIcon size={11} />
+            <span className="flex items-center gap-1 text-xs text-t4">
+              <CatIcon size={11} strokeWidth={1.6} aria-hidden />
               {CATEGORY_CONFIG[t.category!].label}
             </span>
           )}
@@ -164,50 +163,51 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
           {contact && (
             <button
               onClick={() => navigate('/contatos')}
-              className="flex items-center gap-1 text-xs text-brand hover:text-brand-text hover:underline transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs text-t3 hover:text-brand-text hover:underline transition-colors cursor-pointer"
             >
-              <User size={11} /> {contact.name}
+              <User size={11} strokeWidth={1.6} aria-hidden /> {contact.name}
             </button>
           )}
           {property && (
             <button
               onClick={() => navigate('/imoveis')}
-              className="flex items-center gap-1 text-xs text-info hover:text-info hover:underline transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs text-t3 hover:text-brand-text hover:underline transition-colors cursor-pointer"
             >
-              <Building2 size={11} /> {property.name}
+              <Building2 size={11} strokeWidth={1.6} aria-hidden /> {property.name}
             </button>
           )}
 
-          {/* Delegação: recebida de outro usuário */}
+          {/* Delegação e compartilhamento vinham com borda e fundo próprios,
+              no mesmo peso do prazo. São fatos de RESPONSABILIDADE — dizem
+              quem, não o que fazer agora — então leem como texto. A linha
+              chegava a oito elementos emoldurados; a única coisa que decide a
+              ação aqui é o prazo, e é ele que fica com cor. */}
           {isAssignedToMe && delegatedByName && (
-            <span className="flex items-center gap-1 text-xs font-medium text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-0.5 rounded-md">
-              <UserCheck size={10} /> De: {delegatedByName}
+            <span className="flex items-center gap-1 text-xs text-t3">
+              <UserCheck size={10} strokeWidth={1.6} aria-hidden /> de {delegatedByName}
             </span>
           )}
-          {/* Delegação: enviada para outro usuário */}
           {isDelegatedByMe && assignedToName && (
-            <span className="flex items-center gap-1 text-xs font-medium text-brand-text bg-brand-tint border border-brand/25 px-1.5 py-0.5 rounded-md">
-              <UserCheck size={10} /> Para: {assignedToName}
+            <span className="flex items-center gap-1 text-xs text-t3">
+              <UserCheck size={10} strokeWidth={1.6} aria-hidden /> para {assignedToName}
             </span>
           )}
 
-          {/* Compartilhamento: você é o criador e compartilhou com outros */}
           {t.participants && t.participants.length > 0 && t.brokerId === currentUserId && (
-            <span className="flex items-center gap-1 text-xs font-medium text-info bg-info-bg border border-info-line px-1.5 py-0.5 rounded-md">
-              <Users size={10} /> Compartilhada · {t.participants.length}
+            <span className="flex items-center gap-1 text-xs text-t3">
+              <Users size={10} strokeWidth={1.6} aria-hidden /> compartilhada com {t.participants.length}
             </span>
           )}
-          {/* Compartilhamento: você é participante (não é o criador) */}
           {t.participants?.includes(currentUserId ?? '') && t.brokerId !== currentUserId && (
-            <span className="flex items-center gap-1 text-xs font-medium text-info bg-info-bg border border-info-line px-1.5 py-0.5 rounded-md">
-              <Users size={10} /> De: {allProfiles.find(p => p.id === t.brokerId)?.name ?? 'Criador'}
+            <span className="flex items-center gap-1 text-xs text-t3">
+              <Users size={10} strokeWidth={1.6} aria-hidden /> de {allProfiles.find(p => p.id === t.brokerId)?.name ?? 'Criador'}
             </span>
           )}
 
           {isDone && t.completedAt && (
-            <span className="flex items-center gap-1 text-xs text-green-400/70">
-              <CheckCircle2 size={10} />
-              Concluída em {new Date(t.completedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+            <span className="flex items-center gap-1 text-xs text-t4">
+              <CheckCircle2 size={10} strokeWidth={1.6} aria-hidden />
+              concluída em {new Date(t.completedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
             </span>
           )}
         </div>

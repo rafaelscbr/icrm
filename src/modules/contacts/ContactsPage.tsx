@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter, Cake, Plus} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { ListContainer } from '../../components/ui/ListContainer'
-import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { CabecalhoLista, AcoesLinha, celula } from '../../components/shared/lista'
+import type { Coluna } from '../../components/shared/lista'
 import { Modal } from '../../components/ui/Modal'
 import { ContactForm } from './ContactForm'
 import { ContactModal } from './ContactModal'
@@ -24,11 +25,6 @@ const TAG_LABELS: Record<ContactTag, string> = {
   buyer: 'Já comprou',
 }
 
-const TAG_VARIANTS: Record<ContactTag, 'indigo' | 'purple' | 'green'> = {
-  owner: 'indigo',
-  investor: 'purple',
-  buyer: 'green',
-}
 
 const FILTER_OPTIONS: { value: ContactTag | null; label: string }[] = [
   { value: null, label: 'Todos' },
@@ -39,10 +35,32 @@ const FILTER_OPTIONS: { value: ContactTag | null; label: string }[] = [
 
 const PAGE_SIZE = 20
 
+/**
+ * Só uma coluna de conteúdo, de propósito.
+ *
+ * A primeira versão desta lista deu coluna fixa para "Situação" e "Etiquetas".
+ * Medido no banco: **59 dos 12.578 contatos têm etiqueta — 0,47%**. Seriam duas
+ * colunas com travessão em 99,5% das linhas, ou seja, ruído com rótulo.
+ *
+ * Coluna fixa só se paga quando o dado costuma existir. Quando é exceção, quem
+ * se marca é a exceção: situação e etiqueta aparecem ao lado do nome apenas nas
+ * linhas em que existem.
+ */
+const COLUNAS_CONTATO: Coluna[] = [
+  { chave: 'nome', rotulo: 'Contato', largura: 'flex-1' },
+]
+
 export function ContactsPage() {
   const { contacts, load, remove, search, filterByTag, loading, erro } = useContactsStore()
   const { tasks } = useTasksStore()
   const { leads } = useLeadsStore()
+  // Um Set em vez de varrer o array de leads a cada linha: a lista pagina 12.578
+  // contatos e o `some` rodava por linha renderizada.
+  const contatosEmFunil = useMemo(
+    () => new Set(leads.filter(l => !l.discardReason && l.contactId).map(l => l.contactId!)),
+    [leads]
+  )
+  const emFunil = (id: string) => contatosEmFunil.has(id)
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<ContactTag | null>(null)
@@ -164,38 +182,47 @@ export function ContactsPage() {
         )}
       >
         <ListContainer>
+          <CabecalhoLista colunas={COLUNAS_CONTATO} antes="w-10" depois="w-[132px]" className="hidden sm:flex" />
           {paginated.map((c, i) => (
             <div
               key={c.id}
               onClick={() => setViewContact(c)}
               className={`
-                flex items-center gap-4 px-6 py-4 transition-colors hover:bg-s3/50 row-accent cursor-pointer
+                group flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-s3/50 row-accent cursor-pointer
                 ${i < paginated.length - 1 ? 'border-b border-line' : ''}
               `}
             >
               <Avatar name={c.name} photoUrl={c.photoUrl} size="md" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
+              <div className={celula(COLUNAS_CONTATO[0])}>
+                <div className="flex items-center gap-2 mb-0.5 min-w-0">
                   <p className="font-heading text-[14px] font-bold text-t1 truncate">{c.name}</p>
                   {c.birthdate && isBirthdayThisMonth(c.birthdate) && (
                     <Cake size={13} className="text-brand flex-shrink-0" aria-label="Aniversário neste mês" />
                   )}
+                  {/* Estar em negociação é um ESTADO que muda e pede ação —
+                      fica com forma. Etiqueta é classificação estável, e desce
+                      para a linha de contexto como texto. */}
+                  {emFunil(c.id) && (
+                    <span className="flex-shrink-0 inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-[8px]
+                                     bg-brand-tint text-brand-text border border-brand/30">
+                      em funil
+                    </span>
+                  )}
                 </div>
-                <p className="text-[13px] text-t3 tabular-nums truncate">
-                  {[c.company, formatPhone(c.phone)].filter(Boolean).join(' · ')}
+                <p className="text-[13px] text-t3 truncate">
+                  <span className="tabular-nums">{formatPhone(c.phone)}</span>
+                  {c.company && <> · {c.company}</>}
+                  {c.tags.length > 0 && (
+                    <span className="text-t4"> · {c.tags.map(t => TAG_LABELS[t]).join(', ')}</span>
+                  )}
                 </p>
               </div>
-              <div className="flex gap-1.5 flex-wrap">
-                {c.tags.map(tag => (
-                  <Badge key={tag} variant={TAG_VARIANTS[tag]}>{TAG_LABELS[tag]}</Badge>
-                ))}
-                {leads.some(l => l.contactId === c.id && !l.discardReason) && (
-                  <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/25">
-                    Em Funil
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+
+              {/* WhatsApp e tarefas ficam SEMPRE visíveis: são o motivo de a
+                  lista existir, e escondê-los no hover custaria um gesto a
+                  cada linha. Editar e excluir, que são raros e um deles é
+                  destrutivo, aparecem no hover e no foco. */}
+              <div className="w-[132px] flex-shrink-0 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                 {/* Badge de tarefas vinculadas */}
                 {(() => {
                   const count = tasks.filter(t => t.contactId === c.id).length
@@ -233,26 +260,28 @@ export function ContactsPage() {
                 >
                   <MessageCircle size={15} strokeWidth={1.7} aria-hidden />
                 </a>
-                <button
-                  onClick={() => { setEditing(c); setFormOpen(true) }}
-                  aria-label={`Editar ${c.name}`}
-                  title="Editar"
-                  className="w-9 h-9 flex items-center justify-center rounded-lg text-t4 hover:text-t2
-                             hover:bg-s3/70 transition-colors cursor-pointer
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
-                >
-                  <Pencil size={15} strokeWidth={1.7} aria-hidden />
-                </button>
-                <button
-                  onClick={() => setDeleteTarget(c)}
-                  aria-label={`Excluir ${c.name}`}
-                  title="Excluir"
-                  className="w-9 h-9 flex items-center justify-center rounded-lg text-t4 hover:text-error
-                             hover:bg-error-bg transition-colors cursor-pointer
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
-                >
-                  <Trash2 size={15} strokeWidth={1.7} aria-hidden />
-                </button>
+                <AcoesLinha largura="w-[76px]">
+                  <button
+                    onClick={() => { setEditing(c); setFormOpen(true) }}
+                    aria-label={`Editar ${c.name}`}
+                    title="Editar"
+                    className="w-9 h-9 flex items-center justify-center rounded-lg text-t4 hover:text-t2
+                               hover:bg-s3/70 transition-colors cursor-pointer
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                  >
+                    <Pencil size={15} strokeWidth={1.7} aria-hidden />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(c)}
+                    aria-label={`Excluir ${c.name}`}
+                    title="Excluir"
+                    className="w-9 h-9 flex items-center justify-center rounded-lg text-t4 hover:text-error
+                               hover:bg-error-bg transition-colors cursor-pointer
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
+                  >
+                    <Trash2 size={15} strokeWidth={1.7} aria-hidden />
+                  </button>
+                </AcoesLinha>
               </div>
             </div>
           ))}
