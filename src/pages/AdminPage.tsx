@@ -1,13 +1,30 @@
 import { useEffect, useState } from 'react'
-import { Users, Shield, UserCheck, UserX, Pencil, LayoutGrid } from 'lucide-react'
+import {
+  Users, Shield, UserCheck, UserX, Pencil, LayoutGrid, Plus, EyeOff, Lock,
+} from 'lucide-react'
 import { PageLayout } from '../components/layout/PageLayout'
-import { Card } from '../components/ui/Card'
+import { SidePanel } from '../components/ui/SidePanel'
 import { Button } from '../components/ui/Button'
-import { Modal } from '../components/ui/Modal'
 import { Avatar } from '../components/ui/Avatar'
-import { Badge } from '../components/ui/Badge'
+import { EstadoTela } from '../components/shared/EstadoTela'
+import { SecaoTitulo, Rotulo, Chip, IconeTom } from '../components/shared/visual'
 import { useAuthStore, Profile } from '../store/useAuthStore'
+import { mensagemDeErro } from '../lib/erros'
 import toast from 'react-hot-toast'
+
+/**
+ * Administração de usuários.
+ *
+ * A tela estava fora da linguagem do sistema e, pior, escondia o que importa.
+ * Uma linha ocupava a largura toda para mostrar um nome e três ícones cinzentos
+ * de 28px sem rótulo — abaixo dos 44 de alvo de toque, e indistinguíveis entre
+ * si. E a restrição de menu, que é a informação de verdade desta tela, ficava
+ * comprimida num selo "Menu restrito (11/14)": para saber **o que** o corretor
+ * não vê, era preciso abrir um modal.
+ *
+ * Agora o que está bloqueado aparece na própria linha. O dado já estava em
+ * mãos (`allowedMenus`); só não estava sendo mostrado.
+ */
 
 // As chaves TÊM que espelhar as da Sidebar. Um item que existe no menu e falta
 // aqui é silenciosamente removido da permissão do corretor na primeira edição —
@@ -36,6 +53,7 @@ export function AdminPage() {
 
   const [profiles,    setProfiles]    = useState<Profile[]>([])
   const [loading,     setLoading]     = useState(true)
+  const [erro,        setErro]        = useState<string | null>(null)
   const [editTarget,  setEditTarget]  = useState<Profile | null>(null)
   const [editName,    setEditName]    = useState('')
   const [editRole,    setEditRole]    = useState<'admin' | 'broker'>('broker')
@@ -45,21 +63,24 @@ export function AdminPage() {
   const [newPassword, setNewPassword] = useState('')
   const [saving,      setSaving]      = useState(false)
 
-  // menu management state
   const [menuTarget,    setMenuTarget]    = useState<Profile | null>(null)
   const [menuSelection, setMenuSelection] = useState<string[]>([])
   const [savingMenu,    setSavingMenu]    = useState(false)
 
   async function reload() {
     setLoading(true)
+    setErro(null)
     try {
       const data = await fetchAllProfiles()
       setProfiles(data)
-    } catch { toast.error('Erro ao carregar corretores') }
-    finally   { setLoading(false) }
+    } catch (err) {
+      // Antes só saía um toast: a tela ficava vazia e parecia "nenhum usuário".
+      console.error('[admin] fetchAllProfiles:', err)
+      setErro(mensagemDeErro(err))
+    } finally { setLoading(false) }
   }
 
-  useEffect(() => { reload() }, [])
+  useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function openEdit(p: Profile) {
     setEditTarget(p)
@@ -101,10 +122,7 @@ export function AdminPage() {
     setSaving(true)
     const err = await createBroker(newEmail.trim(), newPassword, newName.trim())
     setSaving(false)
-    if (err) {
-      toast.error(err)
-      return
-    }
+    if (err) { toast.error(err); return }
     toast.success(`Conta criada para ${newName}. O corretor já pode fazer login.`)
     setNewOpen(false)
     setNewName(''); setNewEmail(''); setNewPassword('')
@@ -131,48 +149,59 @@ export function AdminPage() {
     finally   { setSavingMenu(false) }
   }
 
-  const admins  = profiles.filter(p => p.role === 'admin')
-  const brokers = profiles.filter(p => p.role === 'broker')
+  const admins   = profiles.filter(p => p.role === 'admin')
+  const brokers  = profiles.filter(p => p.role === 'broker')
+  const inativos = profiles.filter(p => !p.active).length
 
   return (
     <PageLayout
+      icon={Shield}
+      iconTom="marca"
       title="Administração"
-      subtitle={`${profiles.length} usuário${profiles.length !== 1 ? 's' : ''} cadastrado${profiles.length !== 1 ? 's' : ''}`}
-      ctaLabel="Adicionar Corretor"
+      subtitle={erro
+        ? 'não foi possível ler os usuários'
+        : `${admins.length} administrador${admins.length !== 1 ? 'es' : ''} · ${brokers.length} corretor${brokers.length !== 1 ? 'es' : ''}${inativos > 0 ? ` · ${inativos} desativado${inativos !== 1 ? 's' : ''}` : ''}`}
+      ctaLabel="Adicionar corretor"
       onCta={() => setNewOpen(true)}
     >
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-6">
-
-          {/* Admins */}
+      <EstadoTela
+        carregando={loading && profiles.length === 0}
+        erro={erro}
+        vazio={profiles.length === 0}
+        onTentarDeNovo={() => { void reload() }}
+        icone={Users}
+        titulo="Nenhum usuário cadastrado"
+        descricao="Crie a primeira conta de corretor para começar."
+        acao={
+          <Button onClick={() => setNewOpen(true)} className="gap-2">
+            <Plus size={14} /> Adicionar corretor
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-7">
           {admins.length > 0 && (
-            <div>
-              <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-3 flex items-center gap-2">
-                <Shield size={12} /> Administradores
-              </h2>
-              <div className="flex flex-col gap-2">
+            <section>
+              <SecaoTitulo icon={Shield} descricao="Enxergam tudo e administram contas">
+                Administradores
+              </SecaoTitulo>
+              <div className="flex flex-col gap-2 mt-3">
                 {admins.map(p => (
                   <ProfileRow key={p.id} profile={p} onEdit={openEdit} onToggle={toggleActive} />
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
-          {/* Brokers */}
-          <div>
-            <h2 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-3 flex items-center gap-2">
-              <Users size={12} /> Corretores
-            </h2>
+          <section>
+            <SecaoTitulo icon={Users} tom="info" descricao="Cada um vê apenas o que está liberado no menu">
+              Corretores
+            </SecaoTitulo>
             {brokers.length === 0 ? (
-              <Card>
-                <p className="text-sm text-t3 text-center py-4">Nenhum corretor cadastrado ainda.</p>
-              </Card>
+              <p className="text-sm text-t3 mt-3 rounded-[14px] border border-line bg-s2/50 px-4 py-6 text-center">
+                Nenhum corretor cadastrado ainda.
+              </p>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 mt-3">
                 {brokers.map(p => (
                   <ProfileRow
                     key={p.id}
@@ -184,227 +213,299 @@ export function AdminPage() {
                 ))}
               </div>
             )}
-          </div>
+          </section>
         </div>
-      )}
+      </EstadoTela>
 
-      {/* Edit modal */}
-      <Modal isOpen={Boolean(editTarget)} onClose={() => setEditTarget(null)} title="Editar Perfil" size="sm">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Nome</label>
-            <input
-              value={editName}
-              onChange={e => setEditName(e.target.value)}
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-brand/50"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Papel</label>
-            <div className="flex gap-2">
-              {(['admin', 'broker'] as const).map(r => (
-                <button
-                  key={r}
-                  onClick={() => setEditRole(r)}
-                  className={`flex-1 py-2 rounded-xl border text-xs font-medium transition-all cursor-pointer ${editRole === r ? 'bg-brand/20 border-brand/40 text-brand-text' : 'bg-s3/50 border-line text-t3'}`}
-                >
-                  {r === 'admin' ? 'Administrador' : 'Corretor'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-3 pt-1">
+      {/* ── Editar perfil ─────────────────────────────────────────────────── */}
+      <SidePanel
+        isOpen={Boolean(editTarget)}
+        onClose={() => setEditTarget(null)}
+        title="Editar perfil"
+        subtitle={editTarget?.name}
+        size="md"
+        footer={
+          <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setEditTarget(null)}>Cancelar</Button>
             <Button className="flex-1" onClick={saveEdit} disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar'}
+              {saving ? 'Salvando…' : 'Salvar'}
             </Button>
           </div>
-        </div>
-      </Modal>
-
-      {/* New broker modal */}
-      <Modal isOpen={newOpen} onClose={() => setNewOpen(false)} title="Adicionar Corretor" size="sm">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Nome completo</label>
-            <input
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="João Silva"
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/50"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">E-mail</label>
-            <input
-              type="email"
-              value={newEmail}
-              onChange={e => setNewEmail(e.target.value)}
-              placeholder="joao@email.com"
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/50"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Senha temporária</label>
-            <input
-              type="text"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/50"
-            />
-            <p className="text-xs text-t4">O corretor deverá alterar a senha no primeiro acesso.</p>
-          </div>
-          <div className="flex gap-3 pt-1">
-            <Button variant="secondary" className="flex-1" onClick={() => setNewOpen(false)}>Cancelar</Button>
-            <Button className="flex-1" onClick={handleCreateBroker} disabled={saving}>
-              {saving ? 'Criando...' : 'Criar conta'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Menu management modal */}
-      <Modal
-        isOpen={Boolean(menuTarget)}
-        onClose={() => setMenuTarget(null)}
-        title={`Menu de ${menuTarget?.name ?? ''}`}
-        size="sm"
+        }
       >
         <div className="flex flex-col gap-5">
-          <p className="text-xs text-t3">
-            Selecione quais itens do menu este corretor pode ver. Desmarcar um item oculta a página para ele.
-          </p>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="admin-nome"><Rotulo>Nome</Rotulo></label>
+            <input
+              id="admin-nome"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              className="w-full bg-s3/50 border border-line rounded-[14px] px-3 py-2.5 min-h-[44px] text-sm text-t1
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+            />
+          </div>
+          <fieldset className="flex flex-col gap-1.5 border-0 m-0 p-0">
+            <legend className="mb-1.5"><Rotulo>Papel</Rotulo></legend>
+            <div className="flex gap-2">
+              {([
+                { v: 'admin'  as const, label: 'Administrador', nota: 'vê tudo e administra contas' },
+                { v: 'broker' as const, label: 'Corretor',      nota: 'vê o que estiver liberado' },
+              ]).map(r => (
+                <label
+                  key={r.v}
+                  className={`flex-1 flex flex-col gap-0.5 py-3 px-3 rounded-[14px] border cursor-pointer transition-all
+                              has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/40
+                    ${editRole === r.v
+                      ? 'bg-brand/15 border-brand/40 text-brand-text'
+                      : 'bg-s3/50 border-line text-t3 hover:border-line-strong'}`}
+                >
+                  <input
+                    type="radio" name="papel" checked={editRole === r.v}
+                    onChange={() => setEditRole(r.v)} className="sr-only"
+                  />
+                  <span className="text-[13px] font-bold">{r.label}</span>
+                  <span className="text-[11px] opacity-80">{r.nota}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+      </SidePanel>
+
+      {/* ── Novo corretor ─────────────────────────────────────────────────── */}
+      <SidePanel
+        isOpen={newOpen}
+        onClose={() => setNewOpen(false)}
+        title="Adicionar corretor"
+        subtitle="A conta já nasce pronta para login"
+        size="md"
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setNewOpen(false)}>Cancelar</Button>
+            <Button className="flex-1" onClick={handleCreateBroker} disabled={saving}>
+              {saving ? 'Criando…' : 'Criar conta'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-5">
+          {[
+            { id: 'novo-nome',  label: 'Nome completo', value: newName,     set: setNewName,     type: 'text',  ph: 'João Silva' },
+            { id: 'novo-email', label: 'E-mail',        value: newEmail,    set: setNewEmail,    type: 'email', ph: 'joao@email.com' },
+            { id: 'novo-senha', label: 'Senha temporária', value: newPassword, set: setNewPassword, type: 'text', ph: 'Mínimo 6 caracteres' },
+          ].map(c => (
+            <div key={c.id} className="flex flex-col gap-1.5">
+              <label htmlFor={c.id}><Rotulo>{c.label}</Rotulo></label>
+              <input
+                id={c.id}
+                type={c.type}
+                value={c.value}
+                onChange={e => c.set(e.target.value)}
+                placeholder={c.ph}
+                className="w-full bg-s3/50 border border-line rounded-[14px] px-3 py-2.5 min-h-[44px] text-sm text-t1
+                           placeholder:text-t4 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+              />
+              {c.id === 'novo-senha' && (
+                <p className="text-xs text-t4">O corretor deverá alterar a senha no primeiro acesso.</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </SidePanel>
+
+      {/* ── Menu do corretor ──────────────────────────────────────────────── */}
+      <SidePanel
+        isOpen={Boolean(menuTarget)}
+        onClose={() => setMenuTarget(null)}
+        title="Menu liberado"
+        subtitle={menuTarget?.name}
+        size="md"
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setMenuTarget(null)}>Cancelar</Button>
+            <Button className="flex-1" onClick={saveMenuConfig} disabled={savingMenu}>
+              {savingMenu ? 'Salvando…' : 'Salvar permissões'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-line bg-s2/50 px-4 py-3">
+            <p className="text-[13px] text-t3">
+              <span className="font-bold text-t1 tabular-nums">{menuSelection.length}</span> de{' '}
+              <span className="tabular-nums">{ALL_MENU_ITEMS.length}</span> itens liberados.
+              O que estiver desmarcado some do menu dele.
+            </p>
+            <div className="flex gap-1 flex-shrink-0">
+              <button
+                onClick={() => setMenuSelection(ALL_MENU_ITEMS.map(i => i.key))}
+                className="text-xs font-semibold text-t3 hover:text-t1 transition-colors cursor-pointer px-2 py-2 rounded-lg
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+              >
+                Tudo
+              </button>
+              <button
+                onClick={() => setMenuSelection([])}
+                className="text-xs font-semibold text-t3 hover:text-t1 transition-colors cursor-pointer px-2 py-2 rounded-lg
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+              >
+                Nada
+              </button>
+            </div>
+          </div>
 
           {SECTIONS.map(section => {
             const items = ALL_MENU_ITEMS.filter(i => i.section === section)
             return (
-              <div key={section}>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-t4 mb-2">{section}</p>
+              <fieldset key={section} className="border-0 m-0 p-0">
+                <legend className="mb-2"><Rotulo>{section}</Rotulo></legend>
                 <div className="flex flex-col gap-1">
                   {items.map(item => {
                     const enabled = menuSelection.includes(item.key)
                     return (
-                      <button
+                      <label
                         key={item.key}
-                        onClick={() => toggleMenuItem(item.key)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all cursor-pointer text-left w-full"
-                        style={{
-                          background: enabled ? 'var(--brand-subtle, rgba(var(--brand-rgb),0.08))' : 'var(--s3)',
-                          borderColor: enabled ? 'var(--brand)' : 'var(--line)',
-                          opacity: enabled ? 1 : 0.6,
-                        }}
+                        className={`flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-[14px] border
+                                    cursor-pointer transition-all text-left w-full
+                                    has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/40
+                          ${enabled
+                            ? 'bg-brand/10 border-brand/40'
+                            : 'bg-s3/50 border-line'}`}
                       >
-                        <div
-                          className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          onChange={() => toggleMenuItem(item.key)}
+                          className="sr-only"
+                        />
+                        <span
+                          className="w-[18px] h-[18px] rounded-[6px] flex items-center justify-center flex-shrink-0 transition-all"
                           style={{
                             background: enabled ? 'var(--brand)' : 'transparent',
                             border: enabled ? 'none' : '1.5px solid var(--t4)',
                           }}
+                          aria-hidden
                         >
                           {enabled && (
                             <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                              <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M1 4L3.5 6.5L9 1" stroke="var(--grad-brand-text, #0F1730)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           )}
-                        </div>
-                        <span className="text-sm font-medium" style={{ color: enabled ? 'var(--t1)' : 'var(--t3)' }}>
+                        </span>
+                        <span className={`text-sm font-medium ${enabled ? 'text-t1' : 'text-t4'}`}>
                           {item.label}
                         </span>
-                      </button>
+                      </label>
                     )
                   })}
                 </div>
-              </div>
+              </fieldset>
             )
           })}
-
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={() => setMenuSelection(ALL_MENU_ITEMS.map(i => i.key))}
-              className="text-xs text-t3 hover:text-t1 transition-colors cursor-pointer"
-            >
-              Selecionar tudo
-            </button>
-            <span className="text-t4">·</span>
-            <button
-              onClick={() => setMenuSelection([])}
-              className="text-xs text-t3 hover:text-t1 transition-colors cursor-pointer"
-            >
-              Desmarcar tudo
-            </button>
-          </div>
-
-          <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setMenuTarget(null)}>Cancelar</Button>
-            <Button className="flex-1" onClick={saveMenuConfig} disabled={savingMenu}>
-              {savingMenu ? 'Salvando...' : 'Salvar permissões'}
-            </Button>
-          </div>
         </div>
-      </Modal>
+      </SidePanel>
     </PageLayout>
   )
 }
 
+// ─── Linha de usuário ────────────────────────────────────────────────────────
+
 function ProfileRow({
-  profile,
-  onEdit,
-  onToggle,
-  onManageMenu,
+  profile, onEdit, onToggle, onManageMenu,
 }: {
   profile: Profile
   onEdit: (p: Profile) => void
   onToggle: (p: Profile) => void
   onManageMenu?: (p: Profile) => void
 }) {
-  const menuRestricted = profile.role === 'broker' && profile.allowedMenus !== null
+  const restrito = profile.role === 'broker' && profile.allowedMenus !== null
+  // O que o corretor NÃO vê. Era exatamente isto que ficava escondido atrás de
+  // um selo "(11/14)" e de um modal.
+  const bloqueados = restrito
+    ? ALL_MENU_ITEMS.filter(i => !profile.allowedMenus!.includes(i.key)).map(i => i.label)
+    : []
 
   return (
-    <Card className="!p-4">
-      <div className="flex items-center gap-3">
+    <div className={`rounded-[14px] border border-line surface-premium shadow-card px-4 py-3.5 transition-all
+      ${profile.active ? '' : 'opacity-60'}`}>
+      <div className="flex items-center gap-3 flex-wrap">
         <Avatar name={profile.name} size="sm" />
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-medium text-t1 truncate">{profile.name}</p>
-            {profile.role === 'admin' && (
-              <Badge variant="indigo">Admin</Badge>
-            )}
-            {!profile.active && (
-              <Badge variant="slate">Inativo</Badge>
-            )}
-            {menuRestricted && (
-              <Badge variant="slate">
-                Menu restrito ({profile.allowedMenus!.length}/{ALL_MENU_ITEMS.length})
-              </Badge>
-            )}
+            <p className="text-sm font-bold text-t1 truncate">{profile.name}</p>
+            {profile.role === 'admin' && <Chip icon={Shield} tom="marca">Admin</Chip>}
+            {!profile.active && <Chip icon={Lock} tom="risco">Desativado</Chip>}
           </div>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {onManageMenu && (
-            <button
-              onClick={() => onManageMenu(profile)}
-              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-s3/70 text-t4 hover:text-t1 transition-colors cursor-pointer"
-              title="Gerenciar menu"
-            >
-              <LayoutGrid size={14} />
-            </button>
+          {profile.role === 'broker' && (
+            <p className="text-xs text-t4 mt-0.5">
+              {restrito
+                ? `${profile.allowedMenus!.length} de ${ALL_MENU_ITEMS.length} telas liberadas`
+                : 'Todas as telas liberadas'}
+            </p>
           )}
-          <button
+        </div>
+
+        {/* Ações com rótulo. Eram três ícones de 28px sem texto, iguais entre
+            si e abaixo do alvo mínimo de toque. */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {onManageMenu && (
+            <AcaoBotao icon={LayoutGrid} onClick={() => onManageMenu(profile)}>Menu</AcaoBotao>
+          )}
+          <AcaoBotao
+            icon={profile.active ? UserX : UserCheck}
+            tom={profile.active ? 'risco' : 'sucesso'}
             onClick={() => onToggle(profile)}
-            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors cursor-pointer ${profile.active ? 'hover:bg-red-500/10 text-t4 hover:text-red-400' : 'hover:bg-green-500/10 text-t4 hover:text-green-400'}`}
-            title={profile.active ? 'Desativar' : 'Reativar'}
           >
-            {profile.active ? <UserX size={14} /> : <UserCheck size={14} />}
-          </button>
-          <button
-            onClick={() => onEdit(profile)}
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-s3/70 text-t4 hover:text-t1 transition-colors cursor-pointer"
-          >
-            <Pencil size={14} />
-          </button>
+            {profile.active ? 'Desativar' : 'Reativar'}
+          </AcaoBotao>
+          <AcaoBotao icon={Pencil} onClick={() => onEdit(profile)}>Editar</AcaoBotao>
         </div>
       </div>
-    </Card>
+
+      {bloqueados.length > 0 && (
+        <div className="flex items-start gap-2 mt-3 pt-3 border-t border-line/70 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <IconeTom icon={EyeOff} tom="atencao" tamanho="sm" />
+            <Rotulo>Não vê</Rotulo>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {bloqueados.map(label => (
+              <span
+                key={label}
+                className="font-label text-[11px] px-2 py-1 rounded-[8px] bg-warning-bg border border-warning-line text-warning"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AcaoBotao({
+  icon: Icon, children, onClick, tom = 'neutro',
+}: {
+  icon: typeof Pencil
+  children: string
+  onClick: () => void
+  tom?: 'neutro' | 'risco' | 'sucesso'
+}) {
+  const cor = tom === 'risco'   ? 'hover:bg-error-bg hover:text-error hover:border-error-line'
+            : tom === 'sucesso' ? 'hover:bg-success-bg hover:text-success hover:border-success-line'
+            :                     'hover:bg-s3 hover:text-t1 hover:border-line-strong'
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 h-11 sm:h-9 px-3 rounded-[12px] border border-line bg-s2/50
+                  text-xs font-semibold text-t3 transition-all cursor-pointer whitespace-nowrap
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${cor}`}
+    >
+      <Icon size={13} strokeWidth={1.7} aria-hidden />
+      <span className="hidden sm:inline">{children}</span>
+      <span className="sr-only sm:hidden">{children}</span>
+    </button>
   )
 }
