@@ -49,12 +49,19 @@ function fmtFull(d: string): string {
 
 // ─── custom tooltip ───────────────────────────────────────────────────────────
 
-function CustomTooltip({ active, payload, label }: any) {
+/**
+ * Forma do que o Recharts entrega ao tooltip. O tipo genérico da biblioteca é
+ * incômodo de instanciar aqui; isto descreve exatamente o que consumimos.
+ */
+interface FatiaTooltip { name: string; value: number | string; color?: string; fill?: string }
+interface PropsTooltip { active?: boolean; payload?: FatiaTooltip[]; label?: string | number }
+
+function CustomTooltip({ active, payload, label }: PropsTooltip) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-page border border-line rounded-xl px-3 py-2 shadow-xl">
       <p className="text-xs text-t3 mb-1">{label}</p>
-      {payload.map((p: any) => (
+      {payload.map(p => (
         <p key={p.name} className="text-xs font-semibold" style={{ color: p.fill }}>
           {p.name === 'done' ? 'Concluídas' : 'Pendentes'}: {p.value}
         </p>

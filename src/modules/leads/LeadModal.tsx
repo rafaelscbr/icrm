@@ -693,9 +693,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 {showNoteInput ? (
                   <div className="bg-s2 border border-line rounded-[14px] p-3 space-y-2">
                     <label htmlFor="lead-quick-note" className="sr-only">Nota rápida</label>
-                    <textarea
+                    {/* eslint-disable-next-line jsx-a11y/no-autofocus -- a nota é aberta por clique DENTRO do modal já aberto; o foco de abertura do diálogo já correu */}
+                    <textarea autoFocus
                       id="lead-quick-note"
-                      autoFocus
                       value={noteText}
                       onChange={e => setNoteText(e.target.value)}
                       placeholder="Escreva sua observação…"
@@ -999,6 +999,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       {/* ── Discard overlay ──────────────────────────────────────────────────── */}
       {showDiscard && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fundo do diálogo: fechar por teclado é o Escape, tratado no componente */}
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => { setShowDiscard(false); setSelectedReason(null); setDiscardSearch('') }} />
           <div
             role="dialog"

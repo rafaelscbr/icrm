@@ -238,7 +238,9 @@ export function PagamentoSection({
             onChange={num('parcelasQtd')}
           />
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-t2">Valor calculado</label>
+            {/* Não é campo: é um valor derivado, só de leitura. `label` prometia
+                um controle que não existe. */}
+            <p className="text-xs font-medium text-t2">Valor calculado</p>
             <div className={`w-full rounded-lg px-3 py-2.5 min-h-[42px] text-sm flex items-center justify-between border transition-all ${
               valido
                 ? 'bg-success-bg border-success-line text-success'

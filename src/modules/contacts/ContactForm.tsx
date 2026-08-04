@@ -122,7 +122,6 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
           <Input
             label="Nome"
             required
-            autoFocus
             value={name}
             onChange={e => setName(e.target.value)}
             error={errors.name}

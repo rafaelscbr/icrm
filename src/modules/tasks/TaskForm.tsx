@@ -218,7 +218,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
     if (contact)  parts.push(`Lead: ${contact.name}`)
     if (property) parts.push(`Imóvel: ${property.name}`)
     return buildGoogleCalendarUrl({ title: title.trim(), description: parts.join('\n') || undefined, date: dueDate, time: dueTime || undefined })
-  }, [title, dueDate, dueTime, description, contactId, propertyId, properties])
+  }, [title, dueDate, dueTime, description, contactId, propertyId, properties, getContact])
 
   // Quick-date options
   const DATE_SHORTCUTS = [
@@ -346,7 +346,6 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
             type="date"
             value={dueDate}
             onChange={e => setDueDate(e.target.value)}
-            autoFocus
             className={`${inputBase} mt-1`}
           />
         )}
@@ -420,11 +419,11 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
     <div key="step2" className="flex flex-col gap-5">
       {/* Vincular lead */}
       <div className="flex flex-col gap-2">
-        <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
+        <label htmlFor="taskform-422" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
           <User size={12} /> Lead vinculado <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
         </label>
         <div className="relative">
-          <input
+          <input id="taskform-422"
             value={contactSearch}
             onChange={e => { setContactSearch(e.target.value); setContactId(''); setShowContactDrop(true) }}
             onFocus={() => setShowContactDrop(true)}
@@ -465,11 +464,11 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
 
       {/* Vincular imóvel */}
       <div className="flex flex-col gap-2">
-        <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
+        <label htmlFor="taskform-467" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
           <Building2 size={12} /> Imóvel vinculado <span className="font-normal normal-case tracking-normal text-t5">(opcional)</span>
         </label>
         <div className="relative">
-          <input
+          <input id="taskform-467"
             value={propertySearch}
             onChange={e => { setPropertySearch(e.target.value); setPropertyId(''); setShowPropertyDrop(true) }}
             onFocus={() => setShowPropertyDrop(true)}
@@ -538,12 +537,12 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
       {/* Compartilhar com */}
       {shareableProfiles.length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
+          <span id="grupo-compartilhar-rotulo" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1.5">
             <Users size={12} className={participantIds.length > 0 ? 'text-info' : ''} />
             Compartilhar com
             <span className="font-normal normal-case tracking-normal text-t5">(opcional · todos podem ver e editar)</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
+          </span>
+          <div role="group" aria-labelledby="grupo-compartilhar-rotulo" className="flex flex-wrap gap-2">
             {shareableProfiles.map(p => {
               const active = participantIds.includes(p.id)
               return (
@@ -678,8 +677,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
         </div>
         {markDone && (
           <div className="flex items-center gap-3 pl-8">
-            <label className="text-xs text-t3 whitespace-nowrap">Data de conclusão</label>
-            <input
+            <label htmlFor="taskform-680" className="text-xs text-t3 whitespace-nowrap">Data de conclusão</label>
+            <input id="taskform-680"
               type="date"
               value={completedDate}
               max={today}

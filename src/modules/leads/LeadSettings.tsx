@@ -97,8 +97,8 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
       <div className="p-4 space-y-4">
         <div className="flex gap-3">
           <div className="w-20 flex-shrink-0">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">Emoji</label>
-            <input
+            <label htmlFor="leadsettings-100" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">Emoji</label>
+            <input id="leadsettings-100"
               value={emoji}
               onChange={e => setEmoji(e.target.value)}
               placeholder="💸"
@@ -107,8 +107,8 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
             />
           </div>
           <div className="flex-1">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">Nome</label>
-            <input
+            <label htmlFor="leadsettings-110" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">Nome</label>
+            <input id="leadsettings-110"
               value={label}
               onChange={e => handleLabel(e.target.value)}
               placeholder={type === 'origin' ? 'Ex: Google Ads' : 'Ex: Sem retorno'}
@@ -119,10 +119,10 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
 
         {!isEdit && (
           <div>
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">
+            <label htmlFor="leadsettings-122" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-1.5">
               Identificador interno
             </label>
-            <input
+            <input id="leadsettings-122"
               value={slug}
               onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               placeholder="sem_retorno"
@@ -134,8 +134,8 @@ function EditForm({ type, initial, onSave, onCancel }: EditFormProps) {
 
         {type === 'origin' && (
           <div>
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">Cor</label>
-            <div className="flex flex-wrap gap-2">
+            <span id="grupo-cor-rotulo" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">Cor</span>
+            <div role="group" aria-labelledby="grupo-cor-rotulo" className="flex flex-wrap gap-2">
               {COLORS.map(c => (
                 <button
                   key={c.value}
@@ -372,7 +372,7 @@ export function LeadSettings() {
   const [showSql, setShowSql] = useState(false)
   const [copied,  setCopied]  = useState(false)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
 
   const items       = useLeadConfigStore(s => s.items)
   const allDiscards = items.filter(i => i.type === 'discard_reason')

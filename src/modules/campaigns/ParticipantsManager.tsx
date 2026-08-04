@@ -16,7 +16,7 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
   const { isAdmin, allProfiles } = useAuthStore()
   const [open, setOpen] = useState(false)
 
-  useEffect(() => { loadForCampaign(campaignId) }, [campaignId])
+  useEffect(() => { loadForCampaign(campaignId) }, [campaignId, loadForCampaign])
 
   const list    = getForCampaign(campaignId)
   const brokers = allProfiles.filter(p => p.role === 'broker')

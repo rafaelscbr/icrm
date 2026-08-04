@@ -384,8 +384,8 @@ export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
               onChange={num('taxaIndiceAnual')}
             />
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-t2">Exibição dos valores</label>
-              <div className="flex rounded-lg border border-line overflow-hidden min-h-[42px]">
+              <span id="grupo-exibicao-rotulo" className="text-xs font-medium text-t2">Exibição dos valores</span>
+              <div role="group" aria-labelledby="grupo-exibicao-rotulo" className="flex rounded-lg border border-line overflow-hidden min-h-[42px]">
                 {([
                   { v: true,  label: 'Projetar correção' },
                   { v: false, label: 'Só valores base' },

@@ -84,12 +84,17 @@ export function XlsxImport({ campaignId, onDone }: XlsxImportProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Drop zone */}
+      {/* <button> e não <div>: arrastar é atalho de mouse, e sem um controle de
+          verdade quem navega por teclado não tinha como abrir o seletor de
+          arquivo — a importação ficava inacessível para ele. */}
       {!preview.length && (
-        <div
+        <button
+          type="button"
           onDrop={handleDrop}
           onDragOver={e => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-line hover:border-brand/40 rounded-2xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-colors group"
+          className="w-full border-2 border-dashed border-line hover:border-brand/40 rounded-2xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-colors group
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
         >
           <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center group-hover:bg-brand-tint transition-colors">
             <Upload size={22} className="text-brand" />
@@ -99,7 +104,7 @@ export function XlsxImport({ campaignId, onDone }: XlsxImportProps) {
             <p className="text-xs text-t4 mt-1">Suporta .xlsx e .xls · Colunas: Nome, Telefone, E-mail (opcional)</p>
           </div>
           {loading && <p className="text-xs text-brand animate-pulse">Processando...</p>}
-        </div>
+        </button>
       )}
 
       <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleInputChange} />

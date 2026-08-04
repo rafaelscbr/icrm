@@ -437,7 +437,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     }
     loadCrossCampaign()
     return () => { cancelled = true }
-  }, [campaign.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [campaign.id])
 
   // ─── Cor do cooldown comercial por lead ───────────────────────────────────
   function getDispatchColor(lead: CampaignLead): DispatchColor | null {
@@ -537,7 +537,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
     const base = allFiltered.filter(l => l.funnelStage === 'new' && !l.situation)
     const seed  = `${profile?.id ?? 'anon'}-${campaign.id}`
     return seededShuffle(base, seed)
-  }, [allFiltered, profile?.id, campaign.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allFiltered, profile?.id, campaign.id])
 
   // 2. Já acionados: tiveram contato ou avançaram no funil
   const contactedLeads = allFiltered

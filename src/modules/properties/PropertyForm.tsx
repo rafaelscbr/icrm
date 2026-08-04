@@ -107,7 +107,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     setPermutaTypes(property?.permutaTypes ?? [])
     setPermutaRegions(property?.permutaRegions ?? [])
     setErrors({})
-  }, [isOpen, property])
+  }, [isOpen, property])  // eslint-disable-line react-hooks/exhaustive-deps -- campos semeados na abertura; incluir as fontes reescreveria o que está sendo digitado
 
   // Busca no servidor (debounce) — ver useContactSearch
   const { resultados: contactResults } = useContactSearch(ownerSearch, 8)
@@ -283,7 +283,6 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
             <Input
               label="Nome do imóvel"
               required
-              autoFocus
               value={name}
               onChange={e => setName(e.target.value)}
               error={errors.name}
@@ -293,7 +292,6 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
             <Input
               label="Nome do empreendimento"
               required
-              autoFocus
               value={developmentName}
               onChange={e => setDevelopmentName(e.target.value)}
               error={errors.developmentName}
@@ -353,8 +351,8 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
           {/* Dormitórios · Suítes · m² */}
           <div className="grid grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Dormitórios</label>
-              <input
+              <label htmlFor="propertyform-354" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Dormitórios</label>
+              <input id="propertyform-354"
                 type="number" min="0" max="20"
                 inputMode="numeric"
                 value={bedrooms}
@@ -364,8 +362,8 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Suítes</label>
-              <input
+              <label htmlFor="propertyform-365" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Suítes</label>
+              <input id="propertyform-365"
                 type="number" min="0" max="20"
                 inputMode="numeric"
                 value={suites}
@@ -375,9 +373,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Área (m²)</label>
+              <label htmlFor="propertyform-376" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Área (m²)</label>
               <div className="relative">
-                <input
+                <input id="propertyform-376"
                   type="text" inputMode="decimal"
                   value={areaSqm}
                   onChange={e => setAreaSqm(e.target.value.replace(/[^0-9,]/g, ''))}
@@ -391,10 +389,10 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Valor do condomínio */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Valor do Condomínio</label>
+            <label htmlFor="propertyform-392" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Valor do Condomínio</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-t3 select-none pointer-events-none">R$</span>
-              <input
+              <input id="propertyform-392"
                 inputMode="numeric"
                 value={fmtInput(condoFee)}
                 onChange={e => setCondoFee(e.target.value.replace(/\D/g, ''))}
@@ -497,8 +495,8 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
           {/* Observações */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Observações</label>
-            <textarea
+            <label htmlFor="propertyform-498" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Observações</label>
+            <textarea id="propertyform-498"
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}

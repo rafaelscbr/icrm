@@ -64,7 +64,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
   useEffect(() => {
     if (!isOpen || !property) return
     loadImages(property.id).catch(err => console.error('[PropertyModal] loadImages:', err))
-  }, [isOpen, property?.id])
+  }, [isOpen, property?.id])  // eslint-disable-line react-hooks/exhaustive-deps -- fotos carregadas na abertura do imóvel escolhido
 
   const linkedTasks = useMemo(
     () => property ? tasks.filter(t => t.propertyId === property.id).sort((a, b) => {

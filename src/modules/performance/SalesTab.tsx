@@ -87,7 +87,7 @@ export function SalesTab() {
   const { sales, load: loadSales } = useSalesStore()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
-  useEffect(() => { loadSales() }, [])
+  useEffect(() => { loadSales() }, [loadSales])
 
   const periodLabel  = getLabel()
   const periodSales  = useMemo(() => sales.filter(s => matchesPeriod(s.date, startDate, endDate)), [sales, startDate, endDate])

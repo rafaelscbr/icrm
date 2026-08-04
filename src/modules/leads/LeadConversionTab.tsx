@@ -56,7 +56,8 @@ export function LeadConversionTab() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() /* eslint-disable-next-line */ }, [effectiveBrokerId, period])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchData é função local, recriada a cada render; nas dependências vira laço infinito
+  useEffect(() => { fetchData() }, [effectiveBrokerId, period])
 
   // Ordena o funil na ordem canônica das etapas
   const funnel = useMemo(() => {

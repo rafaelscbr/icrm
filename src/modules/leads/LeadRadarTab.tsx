@@ -171,8 +171,8 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={labelClass}>Tipo</label>
-            <select
+            <label htmlFor="leadradartab-174" className={labelClass}>Tipo</label>
+            <select id="leadradartab-174"
               value={radarPropertyType}
               onChange={e => handleType(e.target.value)}
               className={inputClass}
@@ -182,8 +182,8 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className={labelClass}>Região</label>
-            <input
+            <label htmlFor="leadradartab-185" className={labelClass}>Região</label>
+            <input id="leadradartab-185"
               type="text"
               value={radarRegion}
               onChange={e => handleRegion(e.target.value)}
@@ -195,10 +195,10 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={labelClass}>Valor mín (R$)</label>
+            <label htmlFor="leadradartab-198" className={labelClass}>Valor mín (R$)</label>
             <div className="relative">
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-t4 pointer-events-none">R$</span>
-              <input
+              <input id="leadradartab-198"
                 type="text"
                 inputMode="numeric"
                 value={radarValueMin}
@@ -210,10 +210,10 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className={labelClass}>Valor máx (R$)</label>
+            <label htmlFor="leadradartab-213" className={labelClass}>Valor máx (R$)</label>
             <div className="relative">
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-t4 pointer-events-none">R$</span>
-              <input
+              <input id="leadradartab-213"
                 type="text"
                 inputMode="numeric"
                 value={radarValueMax}
@@ -228,8 +228,8 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={labelClass}>Área mín (m²)</label>
-            <input
+            <label htmlFor="leadradartab-231" className={labelClass}>Área mín (m²)</label>
+            <input id="leadradartab-231"
               type="number"
               inputMode="numeric"
               value={radarAreaMin}
@@ -239,8 +239,8 @@ export function LeadRadarTab({ lead, properties }: LeadRadarTabProps) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={labelClass}>Quartos</label>
-            <select
+            <label htmlFor="leadradartab-242" className={labelClass}>Quartos</label>
+            <select id="leadradartab-242"
               value={radarBedrooms}
               onChange={e => handleBedrooms(e.target.value)}
               className={inputClass}

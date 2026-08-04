@@ -43,6 +43,7 @@ export function StatCard({ label, value, sub, icon, accent = 'brand', trend, tre
     : 'text-t3 bg-s2'
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- cartão decorativo: a ação de verdade é o botão interno
     <div
       className={`
         relative bg-surface border border-line rounded-[14px] overflow-hidden

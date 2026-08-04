@@ -65,8 +65,10 @@ function Stepper({ value, onChange }: { value: number; onChange: (v: number) => 
   }
 
   if (editing) return (
-    <input
-      autoFocus
+    // Campo revelado por clique: o foco precisa acompanhar a revelação, senão
+    // o corretor clica para editar e segue digitando em lugar nenhum.
+    // eslint-disable-next-line jsx-a11y/no-autofocus
+    <input autoFocus
       type="number" min={0} max={100}
       value={raw}
       onChange={e => setRaw(e.target.value)}
@@ -116,7 +118,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
     setRates(buildRates(campaign))
     setTicketRaw(campaign.averageTicket ? fmtBRLInput(campaign.averageTicket) : '')
     setDirty(false)
-  }, [campaign.id])
+  }, [campaign.id])  // eslint-disable-line react-hooks/exhaustive-deps -- as taxas são semeadas na abertura; incluir campaign as sobrescreveria a cada atualização vinda do realtime
 
   const ticket    = campaign.averageTicket ?? 0
   const hasTicket = ticket > 0
@@ -250,8 +252,8 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
             <div className="flex items-center gap-2">
               <div className="flex-1 relative">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-t3 select-none">R$</span>
-                <input
-                  autoFocus type="text" inputMode="numeric"
+                {/* eslint-disable-next-line jsx-a11y/no-autofocus -- idem: campo revelado por clique */}
+                <input autoFocus type="text" inputMode="numeric"
                   value={ticketRaw}
                   onChange={e => setTicketRaw(e.target.value.replace(/[^\d.,]/g, ''))}
                   onKeyDown={e => { if (e.key === 'Enter') saveTicket(); if (e.key === 'Escape') setEditingTicket(false) }}

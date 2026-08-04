@@ -108,8 +108,8 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {/* Nome */}
         <div>
-          <label className={labelCls}>Nome da lista *</label>
-          <input
+          <label htmlFor="leadlistform-111" className={labelCls}>Nome da lista *</label>
+          <input id="leadlistform-111"
             className={inputCls}
             placeholder="Ex: Meta Ads Janeiro/25"
             value={name}
@@ -120,8 +120,8 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
 
         {/* Descrição */}
         <div>
-          <label className={labelCls}>Observação</label>
-          <textarea
+          <label htmlFor="leadlistform-123" className={labelCls}>Observação</label>
+          <textarea id="leadlistform-123"
             className={`${inputCls} resize-none`}
             rows={2}
             placeholder="Contexto da lista, origem, data de captação…"
@@ -135,8 +135,8 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
           <p className="text-xs font-bold text-t3 uppercase tracking-wide mb-3">Perfil de imóvel de interesse</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Tipo</label>
-              <select
+              <label htmlFor="leadlistform-138" className={labelCls}>Tipo</label>
+              <select id="leadlistform-138"
                 className={inputCls}
                 value={type}
                 onChange={e => setType(e.target.value)}
@@ -148,8 +148,8 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
               </select>
             </div>
             <div>
-              <label className={labelCls}>Bairro / Região</label>
-              <input
+              <label htmlFor="leadlistform-151" className={labelCls}>Bairro / Região</label>
+              <input id="leadlistform-151"
                 className={inputCls}
                 placeholder="Ex: Bela Vista"
                 value={region}
@@ -157,10 +157,10 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
               />
             </div>
             <div>
-              <label className={labelCls}>Valor mínimo (R$)</label>
+              <label htmlFor="leadlistform-160" className={labelCls}>Valor mínimo (R$)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-t4 pointer-events-none">R$</span>
-                <input
+                <input id="leadlistform-160"
                   className={`${inputCls} pl-9`}
                   type="text"
                   inputMode="numeric"
@@ -172,10 +172,10 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
               </div>
             </div>
             <div>
-              <label className={labelCls}>Valor máximo (R$)</label>
+              <label htmlFor="leadlistform-175" className={labelCls}>Valor máximo (R$)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-t4 pointer-events-none">R$</span>
-                <input
+                <input id="leadlistform-175"
                   className={`${inputCls} pl-9`}
                   type="text"
                   inputMode="numeric"
@@ -187,8 +187,8 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
               </div>
             </div>
             <div>
-              <label className={labelCls}>Quartos</label>
-              <input
+              <label htmlFor="leadlistform-190" className={labelCls}>Quartos</label>
+              <input id="leadlistform-190"
                 className={inputCls}
                 type="number"
                 min={1}
@@ -199,8 +199,8 @@ export function LeadListForm({ isOpen, onClose, list }: Props) {
               />
             </div>
             <div>
-              <label className={labelCls}>Fonte / Origem</label>
-              <input
+              <label htmlFor="leadlistform-202" className={labelCls}>Fonte / Origem</label>
+              <input id="leadlistform-202"
                 className={inputCls}
                 placeholder="Ex: Meta Ads, Portal"
                 value={source}

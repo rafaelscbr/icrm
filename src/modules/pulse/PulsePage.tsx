@@ -179,6 +179,7 @@ export function PulsePage() {
     visitasHoje:        hoje.visitasMarcadas,
     vendasHoje:         hoje.vendasQtd,
     semAtendimentoHoje: gargalos.semAtendimentoHoje,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `agora` entra de propósito: é o relógio que faz o painel reavaliar a cada tique
   }), [recent.length, hoje, online.length, gargalos.semAtendimentoHoje, agora])
 
   if (loading) return null

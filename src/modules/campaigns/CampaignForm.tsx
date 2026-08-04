@@ -123,7 +123,7 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
     setErrors({})
     setSaving(false)
     loadLists()
-  }, [isOpen])
+  }, [isOpen])  // eslint-disable-line react-hooks/exhaustive-deps -- o formulário é semeado quando ABRE; incluir os campos de campaign os redefiniria enquanto o usuário digita
 
   function validateStep(s: number) {
     const e: Record<string, string> = {}
@@ -248,7 +248,6 @@ export function CampaignForm({ isOpen, onClose, campaign }: Props) {
               <label htmlFor="campaign-name" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Nome</label>
               <input
                 id="campaign-name"
-                autoFocus
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && next()}

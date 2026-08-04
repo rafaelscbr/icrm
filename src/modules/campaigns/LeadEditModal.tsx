@@ -62,7 +62,7 @@ export function LeadEditModal({ isOpen, onClose, lead }: LeadEditModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Editar Lead" size="sm">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input label="Nome" required autoFocus value={name} onChange={e => setName(e.target.value)} error={errors.name} />
+        <Input label="Nome" required value={name} onChange={e => setName(e.target.value)} error={errors.name} />
         <Input label="Telefone" required value={phone} onChange={e => setPhone(e.target.value)} error={errors.phone} />
         <Input label="E-mail" type="email" value={email} onChange={e => setEmail(e.target.value)} />
 

@@ -58,11 +58,11 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
 
         {/* Data */}
         <div>
-          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
+          <label htmlFor="visitataskmodal-61" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             <Calendar size={11} className="inline mr-1.5" />
             Data da visita
           </label>
-          <input
+          <input id="visitataskmodal-61"
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
@@ -72,11 +72,11 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
 
         {/* Horário */}
         <div>
-          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
+          <label htmlFor="visitataskmodal-75" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             <Clock size={11} className="inline mr-1.5" />
             Horário
           </label>
-          <input
+          <input id="visitataskmodal-75"
             type="time"
             value={time}
             onChange={e => setTime(e.target.value)}
@@ -86,10 +86,10 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
 
         {/* Observações */}
         <div>
-          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
+          <label htmlFor="visitataskmodal-89" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             Observações (opcional)
           </label>
-          <textarea
+          <textarea id="visitataskmodal-89"
             value={notes}
             onChange={e => setNotes(e.target.value)}
             rows={2}

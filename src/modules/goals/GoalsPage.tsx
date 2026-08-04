@@ -193,7 +193,7 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
     const monthVisits = visitasDone.filter(t => { const d = t.completedAt ?? t.dueDate; return d && new Date(d) >= mStart }).length
 
     return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
-  }, [getAllInteractions, allLoaded, getCampaignActivities, campaignActivitiesLoaded, sales, tasks, weekStartMs, monthStartMs, brokerId])
+  }, [getAllInteractions, allLoaded, getCampaignActivities, campaignActivitiesLoaded, sales, tasks, weekStartMs, monthStartMs, brokerId])  // eslint-disable-line react-hooks/exhaustive-deps -- allLoaded e campaignActivitiesLoaded parecem inúteis para a regra, mas são o que faz o cálculo refazer quando os dados terminam de chegar — os getters leem do store por fora do fluxo de props
 
   return {
     disparosHoje, disparosSemana, disparosMes,

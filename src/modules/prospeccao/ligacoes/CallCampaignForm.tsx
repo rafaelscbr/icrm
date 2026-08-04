@@ -144,7 +144,6 @@ export function CallCampaignForm({ isOpen, onClose, campaign }: Props) {
               value={nome}
               onChange={e => setNome(e.target.value)}
               placeholder="Ex.: Porto Velas"
-              autoFocus
               className="w-full bg-s3/50 border border-line rounded-[14px] px-3.5 py-3 text-sm
                          text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30"
             />

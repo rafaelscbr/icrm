@@ -103,7 +103,7 @@ export function DeleteListModal({ list, isOpen, onClose, onConfirm }: Props) {
     fetchDeletePreview(list.id)
       .then(setPreview)
       .finally(() => setLoading(false))
-  }, [list?.id, isOpen])
+  }, [list?.id, isOpen])  // eslint-disable-line react-hooks/exhaustive-deps -- idem: estado semeado da lista aberta
 
   async function handleConfirm() {
     if (!list || !preview) return

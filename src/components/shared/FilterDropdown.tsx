@@ -239,6 +239,7 @@ function OptionRow({
   dot?: string
 }) {
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- o rótulo embrulha um radio nativo — o teclado entra pelas setas e pelo Enter
     <label
       className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer
                  transition-all duration-100 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/40"

@@ -118,6 +118,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   if (!isOpen) return null
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- diálogo com Escape e navegação por setas via aria-activedescendant
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
@@ -284,6 +285,7 @@ function ResultRow({ indice, icon, title, subtitle, tag, active, onHover, onClic
   // é o `aria-activedescendant` que aponta para a linha ativa. Um botão aqui
   // seria tabulável e quebraria justamente essa navegação.
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- diálogo com Escape e navegação por setas via aria-activedescendant
     <div
       ref={ref}
       id={`busca-opcao-${indice}`}

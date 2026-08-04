@@ -92,7 +92,7 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
     if (!contact || !isOpen) return
     setScore(null)
     fetchLeadScore(contact.id, contact.phone).then(setScore).catch(() => {})
-  }, [contact?.id, isOpen])
+  }, [contact?.id, isOpen])  // eslint-disable-line react-hooks/exhaustive-deps -- estado semeado do contato aberto; incluir contact perderia a edição em andamento
 
   // Permuta edit state
   const [editingPermuta, setEditingPermuta] = useState(false)

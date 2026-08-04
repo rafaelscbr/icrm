@@ -64,7 +64,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   const discarded = useMemo(() => leads.filter(l => !!l.discardReason), [leads])
 
   const { loadAll, byLead, allLoaded } = useLeadInteractionsStore()
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => { loadAll() }, [loadAll])
 
   // Leads Meta Ads com relógio de SLA rodando (1º contato pendente)
   const slaLeads = useMemo(() => active.filter(slaActive), [active])

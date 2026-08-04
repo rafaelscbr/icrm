@@ -165,12 +165,12 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-t4 pointer-events-none" aria-hidden />
-                <input
+                {/* eslint-disable-next-line jsx-a11y/no-autofocus -- página de propósito único: o formulário É a página, e o cursor no e-mail é o que se espera ao chegar */}
+                <input autoFocus
                   id={`${uid}-email`}
                   type="email"
                   required
                   autoComplete="email"
-                  autoFocus
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="seu@email.com"

@@ -58,11 +58,18 @@ export function SidePanel({
   }, [isOpen, onClose])
 
   // Foco entra no painel ao abrir e volta para a origem ao fechar.
+  // Um dono só do foco — ver a nota em Modal.tsx.
   useEffect(() => {
     if (!isOpen) return
     previousFocus.current = document.activeElement as HTMLElement | null
-    panelRef.current?.focus()
-    return () => { previousFocus.current?.focus?.() }
+    const t = setTimeout(() => {
+      const campo = panelRef.current?.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+      )
+      if (campo) campo.focus()
+      else panelRef.current?.focus()
+    }, 0)
+    return () => { clearTimeout(t); previousFocus.current?.focus?.() }
   }, [isOpen])
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -89,6 +96,7 @@ export function SidePanel({
         aria-hidden
       />
 
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- o painel é role=dialog e já tem onKeyDown (armadilha de foco) */}
       <div
         ref={panelRef}
         role="dialog"

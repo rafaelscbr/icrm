@@ -80,7 +80,7 @@ export function LeadTimeline({ leadId }: Props) {
   // Ciclo interação → tarefa: sugestão de próximo passo após salvar
   const [suggestFor,  setSuggestFor]  = useState<{ type: LeadInteractionType; outcome?: LeadInteractionOutcome } | null>(null)
 
-  useEffect(() => { loadForLead(leadId) }, [leadId])
+  useEffect(() => { loadForLead(leadId) }, [leadId, loadForLead])
 
   const interactions = getForLead(leadId)
   const isLoaded     = loaded.has(leadId)

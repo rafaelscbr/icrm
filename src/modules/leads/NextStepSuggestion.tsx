@@ -125,10 +125,10 @@ export function NextStepSuggestion({ lead, interactionType, outcome, onDone }: P
         {showCustom ? (
           <span className="flex items-center gap-1.5">
             <label htmlFor="next-step-date" className="sr-only">Data do próximo passo</label>
-            <input
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- data revelada ao escolher "outra data": o foco segue a revelação */}
+            <input autoFocus
               id="next-step-date"
               type="date"
-              autoFocus
               min={localDateStr()}
               value={customDate}
               onChange={e => setCustomDate(e.target.value)}

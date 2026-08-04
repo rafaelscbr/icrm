@@ -329,7 +329,10 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
       {/* ── UPLOAD ── */}
       {step === 'upload' && (
         <div className="flex flex-col gap-5">
-          <div className={dropZoneCls}
+          {/* <button> e não <div> — ver a nota em XlsxImport. */}
+          <button
+            type="button"
+            className={`${dropZoneCls} w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40`}
             onDragOver={e => { e.preventDefault(); setDragging(true) }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
@@ -340,7 +343,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
             </div>
             <p className="text-sm font-semibold text-t1 mb-1">Arraste ou clique para selecionar</p>
             <p className="text-xs text-t4">.xlsx · .xls · .csv — colunas detectadas automaticamente</p>
-          </div>
+          </button>
           <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
             onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f) }} />
 

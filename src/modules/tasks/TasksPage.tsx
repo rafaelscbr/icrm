@@ -18,7 +18,7 @@ import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useAuthStore } from '../../store/useAuthStore'
-import { Task, TaskPriority, TaskCategory } from '../../types'
+import { Task, TaskPriority, TaskCategory, Contact, Property } from '../../types'
 import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
 import { localDateStr } from '../../lib/formatters'
 import { ChecklistBadge } from '../../components/shared/ChecklistBadge'
@@ -243,7 +243,7 @@ function Section({
   collapsible = false, defaultOpen = true, showCategory = true,
 }: {
   title: string; icon: React.ReactNode; count: number; tom: Tom
-  tasks: Task[]; contacts: any[]; properties: any[]
+  tasks: Task[]; contacts: Contact[]; properties: Property[]
   allProfiles: { id: string; name: string }[]; currentUserId?: string
   onToggle: (id: string) => void; onEdit: (t: Task) => void
   onDelete: (t: Task) => void; onCalendar: (t: Task) => void

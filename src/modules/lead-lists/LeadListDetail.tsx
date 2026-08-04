@@ -47,7 +47,7 @@ export function LeadListDetail({ list, onBack }: Props) {
 
   useEffect(() => {
     loadData()
-  }, [list.id])
+  }, [list.id])  // eslint-disable-line react-hooks/exhaustive-deps -- loadData é função local, recriada a cada render — na lista de dependências vira laço infinito
 
   async function loadData() {
     setLoading(true)

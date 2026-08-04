@@ -181,10 +181,12 @@ export function BottomNav() {
 
       {/* ── Drawer ───────────────────────────────────────────────── */}
       {drawerOpen && (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fundo do gaveteiro: fechar por teclado é o Escape, tratado no componente
         <div
           className="lg:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
           onClick={() => setDrawerOpen(false)}
         >
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fundo do gaveteiro: fechar por teclado é o Escape, tratado no componente */}
           <div
             className="absolute inset-x-0 rounded-t-2xl pb-2 animate-in slide-in-from-bottom-4 duration-200"
             style={{

@@ -40,7 +40,20 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       ...jsxA11y.flatConfigs.recommended.rules,
 
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      /*
+       * Desligada, e vale dizer por quê.
+       *
+       * Ela só afeta o Fast Refresh em desenvolvimento: um arquivo que exporta
+       * algo além de componentes recarrega inteiro em vez de preservar estado.
+       * Não é correção nem acessibilidade — é ergonomia de quem desenvolve.
+       *
+       * Os 8 casos aqui são auxiliares colados ao componente que servem:
+       * `slaActive` e `useSlaInfo` com o SlaBadge, `fmt` com o CardShell, a
+       * tabela TOM com os componentes de visual.tsx. Separá-los em mais seis
+       * arquivos afastaria coisas que se leem juntas, para ganhar uma
+       * conveniência de recarga. Preferimos a leitura.
+       */
+      'react-refresh/only-export-components': 'off',
 
       // `any` aparece em fronteira de dados (payload de realtime, linha crua do
       // PostgREST). Avisa, não trava.
@@ -67,7 +80,10 @@ export default tseslint.config(
       'jsx-a11y/click-events-have-key-events': 'warn',
       'jsx-a11y/no-static-element-interactions': 'warn',
       'jsx-a11y/no-noninteractive-element-interactions': 'warn',
-      'jsx-a11y/label-has-associated-control': 'warn',
+      // `depth: 3` porque o padrão (2) dá falso positivo em rótulo cujo texto
+      // está dois <span> abaixo — markup correto e comum aqui, usado para
+      // empilhar título e explicação dentro do mesmo alvo clicável.
+      'jsx-a11y/label-has-associated-control': ['error', { depth: 3 }],
 
       // Quase todo `autoFocus` do sistema é o primeiro campo de um formulário
       // dentro de Modal ou SidePanel — que é o que o padrão de diálogo do

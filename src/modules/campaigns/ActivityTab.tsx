@@ -141,7 +141,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
   useEffect(() => {
     const since = periodToSince(period, customDate || undefined)
     loadForCampaign(campaignId, since)
-  }, [campaignId, period, customDate])
+  }, [campaignId, period, customDate, loadForCampaign])
 
   // Polling 15s para manter atualizado — pausa quando a aba está oculta
   useEffect(() => {
@@ -151,7 +151,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
       loadForCampaign(campaignId, since)
     }, 15_000)
     return () => clearInterval(interval)
-  }, [campaignId, period, customDate])
+  }, [campaignId, period, customDate, loadForCampaign])
 
   async function handleRefresh() {
     setSyncing(true)
@@ -207,10 +207,10 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
 
         {/* Período */}
         <div className="flex flex-col gap-1.5">
-          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1">
+          <span id="grupo-periodo-rotulo" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1">
             <Calendar size={10} /> Período
-          </label>
-          <div className="flex flex-wrap gap-1.5">
+          </span>
+          <div role="group" aria-labelledby="grupo-periodo-rotulo" className="flex flex-wrap gap-1.5">
             {PERIOD_OPTIONS.map(opt => (
               <button
                 key={opt.value}
@@ -238,8 +238,8 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
         {/* Tipo de ação + corretor (admin only) */}
         <div className="flex flex-wrap gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tipo</label>
-            <select
+            <label htmlFor="activitytab-241" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tipo</label>
+            <select id="activitytab-241"
               value={filterType}
               onChange={e => setFilterType(e.target.value as typeof filterType)}
               className="bg-s3/50 border border-line rounded-lg px-2.5 py-1.5 text-xs text-t1 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
@@ -254,10 +254,10 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
 
           {isAdmin && brokers.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1">
+              <label htmlFor="activitytab-257" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 flex items-center gap-1">
                 <User size={10} /> Corretor
               </label>
-              <select
+              <select id="activitytab-257"
                 value={filterBroker}
                 onChange={e => setFilterBroker(e.target.value)}
                 className="bg-s3/50 border border-line rounded-lg px-2.5 py-1.5 text-xs text-t1 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"

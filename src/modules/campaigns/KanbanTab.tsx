@@ -11,6 +11,7 @@ import { LeadParecerModal } from './LeadParecerModal'
 import { TransferToFunnelModal } from './TransferToFunnelModal'
 import { VisitaTaskModal } from './VisitaTaskModal'
 import { Modal } from '../../components/ui/Modal'
+import { aoTeclarAbrir } from '../../components/shared/lista'
 import { Button } from '../../components/ui/Button'
 import { CampaignLead, Campaign, FunnelStage, Lead, Task } from '../../types'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
@@ -139,17 +140,16 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
     <Modal isOpen onClose={onClose} title="Criar tarefa rápida" size="sm">
       <div className="flex flex-col gap-4">
         <div>
-          <label className="text-xs text-t3 mb-1 block">Título</label>
-          <input
-            autoFocus
+          <label htmlFor="kanbantab-142" className="text-xs text-t3 mb-1 block">Título</label>
+          <input id="kanbantab-142"
             value={title}
             onChange={e => setTitle(e.target.value)}
             className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand/25"
           />
         </div>
         <div>
-          <label className="text-xs text-t3 mb-1 block">Data</label>
-          <input
+          <label htmlFor="kanbantab-150" className="text-xs text-t3 mb-1 block">Data</label>
+          <input id="kanbantab-150"
             type="date"
             value={dueDate}
             onChange={e => setDueDate(e.target.value)}
@@ -275,6 +275,10 @@ function LeadCard({
       <div
         ref={setNodeRef}
         onClick={() => !isDragging && onParecer(lead)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={aoTeclarAbrir(() => { if (!isDragging) onParecer(lead) })}
+        aria-label={`Abrir ${lead.name}`}
         className={`group relative border rounded-[14px] p-3 cursor-pointer select-none
           transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
           ${/* Mesma regra do funil: quem pede ação carrega superfície e sombra,
@@ -298,6 +302,7 @@ function LeadCard({
 
         {/* Grip + ações no hover */}
         <div className="absolute top-2 right-2 flex items-center gap-0.5">
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             {lead.lastMessage && (
               <button onClick={() => setShowMsg(true)}
@@ -317,6 +322,7 @@ function LeadCard({
               <FileText size={11} />
             </button>
           </div>
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
           <div
             {...listeners}
             {...attributes}
@@ -389,9 +395,11 @@ function LeadCard({
 
         {/* Barrinhas de progresso — estágio "attended" */}
         {lead.funnelStage === 'attended' && (
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro
           <div className="mb-2" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-1 mb-1">
               {[1, 2, 3, 4, 5].map(step => (
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro
                 <div
                   key={step}
                   onClick={e => {
@@ -416,6 +424,7 @@ function LeadCard({
         )}
 
         {/* Barra de ações */}
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
         <div className="mt-2 pt-2 border-t border-line flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
           <button
             onClick={handleSendAndRegister}

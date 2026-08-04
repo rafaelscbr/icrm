@@ -274,7 +274,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
   }, [])
 
   // Carrega leads frescos ao abrir cada campanha
-  useEffect(() => { loadLeads() }, [campaignId])
+  useEffect(() => { loadLeads() }, [campaignId, loadLeads])
 
   // Polling de fallback: o realtime (App.tsx) já sincroniza a cada mudança;
   // este intervalo garante consistência se o socket cair silenciosamente.

@@ -23,7 +23,7 @@ export function CampaignRoutingSettings() {
       .then(setRules)
       .catch(() => { /* erro já toastado */ })
       .finally(() => setLoading(false))
-  }, [])
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps -- carga única na montagem; allProfiles.length nas dependências recarregaria em cada chegada de perfil
 
   const brokers = allProfiles.filter(p => p.active)
 

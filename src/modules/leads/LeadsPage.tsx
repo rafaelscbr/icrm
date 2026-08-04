@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { TemperatureDot, FitBadge } from '../../components/shared/IntelBadges'
+import { aoTeclarAbrir } from '../../components/shared/lista'
 import {
   fitDeserveBadge, Temperature, Fit,
   TEMPERATURE_LABEL, TEMPERATURE_COLOR, FIT_LABEL, FIT_COLOR,
@@ -98,6 +99,10 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={aoTeclarAbrir(onClick)}
+      aria-label={`Abrir lead ${displayName}`}
       className={`flex items-center gap-4 px-6 py-4 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
         ${isDiscarded ? 'opacity-50' : ''}
       `}
@@ -236,7 +241,7 @@ export function LeadsPage() {
     setSearchParams(next, { replace: !l })
   }
 
-  useEffect(() => { load(); loadProps(); loadConfig(); loadIntel() }, [])
+  useEffect(() => { load(); loadProps(); loadConfig(); loadIntel() }, [])  // eslint-disable-line react-hooks/exhaustive-deps -- cargas de abertura da tela: rodam uma vez, não a cada render
 
   // Só os contatos vinculados aos leads — antes era o fetchAll de 12.543 linhas
   // (~7,7 MB) para exibir algumas dezenas de nomes.

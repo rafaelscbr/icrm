@@ -127,7 +127,6 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
             </p>
             <input
               value={clientSearch}
-              autoFocus
               onChange={e => { setClientSearch(e.target.value); setClientId(''); setShowClientDrop(true) }}
               onFocus={() => setShowClientDrop(true)}
               onBlur={() => setTimeout(() => setShowClientDrop(false), 150)}
@@ -191,12 +190,12 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Valor da venda */}
           <div className="relative">
-            <label className="block font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5">
+            <label htmlFor="venda-valor" className="block font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5">
               Valor da venda <span className="text-red-400">*</span>
             </label>
             <div className="relative flex items-center">
               <span className="absolute left-3 text-xs text-t3 font-medium select-none">R$</span>
-              <input
+              <input id="venda-valor"
                 value={fmtInput(value)}
                 onChange={e => setValue(e.target.value)}
                 inputMode="numeric"
@@ -346,8 +345,8 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
 
           {/* Observações */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Observações</label>
-            <textarea
+            <label htmlFor="saleform-348" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Observações</label>
+            <textarea id="saleform-348"
               value={notes}
               onChange={e => setNotes(e.target.value)}
               placeholder="Informações adicionais..."

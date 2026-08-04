@@ -6,6 +6,7 @@ import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { aoTeclarAbrir } from '../../components/shared/lista'
 import { CabecalhoLista, AcoesLinha, celula } from '../../components/shared/lista'
 import type { Coluna } from '../../components/shared/lista'
 import { Modal } from '../../components/ui/Modal'
@@ -187,6 +188,10 @@ export function ContactsPage() {
             <div
               key={c.id}
               onClick={() => setViewContact(c)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={aoTeclarAbrir(() => setViewContact(c))}
+              aria-label={`Abrir ${c.name}`}
               className={`
                 group flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-s3/50 row-accent cursor-pointer
                 ${i < paginated.length - 1 ? 'border-b border-line' : ''}
@@ -222,6 +227,7 @@ export function ContactsPage() {
                   lista existir, e escondê-los no hover custaria um gesto a
                   cada linha. Editar e excluir, que são raros e um deles é
                   destrutivo, aparecem no hover e no foco. */}
+              {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
               <div className="w-[132px] flex-shrink-0 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                 {/* Badge de tarefas vinculadas */}
                 {(() => {

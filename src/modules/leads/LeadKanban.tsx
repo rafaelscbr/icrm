@@ -30,6 +30,7 @@ import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { IntelPair } from '../../components/shared/IntelBadges'
+import { aoTeclarAbrir } from '../../components/shared/lista'
 import { TEMPERATURE_COLOR } from '../../lib/intelligence'
 import { useKanbanPrefs, SORT_LABEL, KanbanSort } from '../../store/useKanbanPrefs'
 import { LeadModal } from './LeadModal'
@@ -160,6 +161,10 @@ function LeadCard({
       ref={setNodeRef}
       style={style}
       onClick={onClick}
+      role="button"
+      tabIndex={isOverlay ? -1 : 0}
+      onKeyDown={aoTeclarAbrir(onClick)}
+      aria-label={`Abrir lead ${displayName}`}
       className={`group relative border rounded-[14px] cursor-pointer
         transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
         overflow-hidden
@@ -219,6 +224,7 @@ function LeadCard({
         >
           <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
         </button>
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
         <div
           {...listeners}
           {...attributes}
@@ -398,6 +404,7 @@ function LeadCard({
       </div>
 
       {showConclude && (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro
         <div onClick={e => e.stopPropagation()}>
           <ConcludeSaleModal lead={lead} onClose={() => setShowConclude(false)} />
         </div>
@@ -549,7 +556,7 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
   const [savingId, setSavingId] = useState<string | null>(null)
   const { dense, financeMode, sort, setDense, setFinanceMode, setSort } = useKanbanPrefs()
 
-  useEffect(() => { loadAllInteractions() }, [])
+  useEffect(() => { loadAllInteractions() }, [loadAllInteractions])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),

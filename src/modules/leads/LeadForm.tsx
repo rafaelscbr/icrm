@@ -125,7 +125,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       setAverageTicket(''); setNotes('')
       setEntryDate(localDateStr())
     }
-  }, [isOpen, lead])
+  }, [isOpen, lead])  // eslint-disable-line react-hooks/exhaustive-deps -- campos semeados na abertura; properties muda com o realtime e reescreveria o que está sendo digitado
 
   // ─── Derived ──────────────────────────────────────────────────────────────────
   // Busca e dedupe vão ao BANCO. Antes varriam o array local, o que obrigava a
@@ -394,7 +394,6 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                           ref={searchRef}
                           value={contactQuery}
                           onChange={e => setContactQuery(e.target.value)}
-                          autoFocus
                           placeholder="Nome ou telefone..."
                           className="w-full bg-s3/50 border border-line-input rounded-xl pl-9 pr-4 py-3 text-sm text-t1 placeholder:text-t4
                             focus:outline-none focus:border-brand focus:bg-brand-tint focus:ring-1 focus:ring-brand/25 transition-all"
@@ -459,7 +458,6 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                       <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
                       <input
                         id="lead-name"
-                        autoFocus
                         value={newName}
                         onChange={e => setNewName(e.target.value)}
                         placeholder="Nome do lead"
@@ -565,8 +563,8 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Origem */}
               <div>
-                <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Origem</label>
-                <div className="grid grid-cols-2 gap-2">
+                <span id="grupo-origem-rotulo" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Origem</span>
+                <div role="group" aria-labelledby="grupo-origem-rotulo" className="grid grid-cols-2 gap-2">
                   {ORIGINS.map(o => (
                     <button
                       key={o.value}
@@ -589,10 +587,10 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Produto */}
               <div>
-                <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Produto / Imóvel</label>
+                <span id="grupo-produto-rotulo" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Produto / Imóvel</span>
 
                 {propertyMode === 'selected' && (
-                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-info-line rounded-xl animate-in fade-in zoom-in-95 duration-150">
+                  <div role="group" aria-labelledby="grupo-produto-rotulo" className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-info-line rounded-xl animate-in fade-in zoom-in-95 duration-150">
                     <Building2 size={14} className="text-info flex-shrink-0" />
                     <p className="flex-1 text-sm font-medium text-t1 truncate">{propertySearch}</p>
                     <button onClick={clearProperty} className="text-xs text-t3 hover:text-red-400 transition-colors px-2 py-0.5 rounded">Trocar</button>
@@ -690,8 +688,8 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Etapa */}
               <div>
-                <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Etapa do Funil</label>
-                <div className="grid grid-cols-3 gap-1.5">
+                <span id="grupo-etapa-rotulo" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2 block">Etapa do Funil</span>
+                <div role="group" aria-labelledby="grupo-etapa-rotulo" className="grid grid-cols-3 gap-1.5">
                   {STAGES.map(s => (
                     <button
                       key={s.value}
@@ -743,8 +741,8 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
               {/* Notas */}
               <div>
-                <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5 block">Observações</label>
-                <textarea
+                <label htmlFor="leadform-744" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5 block">Observações</label>
+                <textarea id="leadform-744"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Informações adicionais sobre o lead..."

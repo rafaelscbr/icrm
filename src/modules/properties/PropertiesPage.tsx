@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Painel, Rotulo } from '../../components/shared/visual'
+import { aoTeclarAbrir } from '../../components/shared/lista'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { EstadoTela } from '../../components/shared/EstadoTela'
@@ -293,9 +294,12 @@ export function PropertiesPage() {
             const commission = calcCommission(p.value)
             return (
               <Card key={p.id} hover className="group !p-0 overflow-hidden flex flex-col">
-                {/* Image (clicável) */}
+                {/* A foto é atalho de mouse para o mesmo destino do corpo do
+                    cartão. Marcada como decorativa para o teclado não parar
+                    duas vezes no mesmo lugar — quem tabula chega pelo corpo. */}
                 <div
                   onClick={() => setViewProperty(p)}
+                  aria-hidden
                   className="h-36 bg-s2/50 flex items-center justify-center flex-shrink-0 cursor-pointer"
                 >
                   {p.thumbnail ? (
@@ -308,6 +312,10 @@ export function PropertiesPage() {
                 {/* Content (clicável exceto botões) */}
                 <div
                   onClick={() => setViewProperty(p)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={aoTeclarAbrir(() => setViewProperty(p))}
+                  aria-label={`Abrir ${p.name}`}
                   className="p-5 flex flex-col gap-3 flex-1 cursor-pointer"
                 >
                   <div>
@@ -360,6 +368,7 @@ export function PropertiesPage() {
                     <p className="text-xs text-t4 italic line-clamp-2">"{p.notes}"</p>
                   )}
 
+                  {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
                   <div className="flex gap-2 mt-auto pt-2 border-t border-line" onClick={e => e.stopPropagation()}>
                     {/* Botão tarefas com badge de contagem */}
                     {(() => {

@@ -37,12 +37,26 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
     }
   }, [isOpen, onClose])
 
-  // Acessibilidade: foco entra no modal ao abrir e volta ao elemento de origem ao fechar
+  // Acessibilidade: o foco entra no diálogo ao abrir e volta ao elemento de
+  // origem ao fechar.
+  //
+  // Antes daqui, os formulários resolviam isso com `autoFocus` no primeiro
+  // campo — 18 ocorrências no sistema — enquanto o diálogo focava o painel.
+  // Eram dois donos do mesmo foco disputando a mesma abertura, e quem ganhava
+  // dependia da ordem de efeito. Agora o dono é um só: se existe um campo,
+  // o foco vai para ele; senão, para o painel, para o leitor de tela anunciar
+  // o título.
   useEffect(() => {
     if (!isOpen) return
     previousFocus.current = document.activeElement as HTMLElement | null
-    panelRef.current?.focus()
-    return () => { previousFocus.current?.focus?.() }
+    const t = setTimeout(() => {
+      const campo = panelRef.current?.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+      )
+      if (campo) campo.focus()
+      else panelRef.current?.focus()
+    }, 0)
+    return () => { clearTimeout(t); previousFocus.current?.focus?.() }
   }, [isOpen])
 
   // Tab fica preso dentro do modal (focus trap)
@@ -63,6 +77,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
   if (!isOpen) return null
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fundo do diálogo: fechar por teclado é o Escape, tratado acima
     <div
       className="fixed inset-0 z-50 flex items-end lg:items-center justify-center lg:p-4"
       onMouseDown={e => { mouseDownTarget.current = e.target }}
@@ -74,6 +89,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
       <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
 
       {/* Panel */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- fundo do diálogo: fechar por teclado é o Escape, tratado acima */}
       <div
         ref={panelRef}
         role="dialog"

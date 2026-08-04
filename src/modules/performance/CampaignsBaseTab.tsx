@@ -26,7 +26,7 @@ export function CampaignsBaseTab() {
 
   useEffect(() => {
     loadLists(); loadCampaigns(); loadCampLeads(); loadDisparos()
-  }, [])
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps -- cargas de abertura da aba: rodam uma vez
 
   const activeLists  = useMemo(() => lists.filter(l => l.status === 'active'), [lists])
   const totalLeads   = useMemo(() => activeLists.reduce((a, l) => a + l.totalCount, 0), [activeLists])

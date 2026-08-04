@@ -187,12 +187,12 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
 
         {/* Ticket médio */}
         <div>
-          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
+          <label htmlFor="transferir-ticket" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             Ticket médio (opcional)
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-t3">R$</span>
-            <input
+            <input id="transferir-ticket"
               type="text"
               inputMode="numeric"
               value={ticket ? Number(ticket.replace(/\D/g, '')).toLocaleString('pt-BR') : ''}
@@ -205,10 +205,10 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
 
         {/* Notas */}
         <div>
-          <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
+          <label htmlFor="transfertofunnelmodal-208" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 block mb-2">
             Notas (opcional)
           </label>
-          <textarea
+          <textarea id="transfertofunnelmodal-208"
             value={notes}
             onChange={e => setNotes(e.target.value)}
             rows={2}

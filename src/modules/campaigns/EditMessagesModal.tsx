@@ -143,6 +143,7 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
           const warning = charWarning(msg)
 
           return (
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- reordenação por arrasto; os botões de subir e descer ao lado cobrem o teclado
             <div
               key={index}
               draggable={!isMain}

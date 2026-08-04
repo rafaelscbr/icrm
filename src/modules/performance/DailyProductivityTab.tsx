@@ -140,8 +140,8 @@ function PastLogModal({ isOpen, log, onClose }: PastLogModalProps) {
       <div className="flex flex-col gap-4">
         {/* Date */}
         <div>
-          <label className="text-xs text-t3 mb-1.5 block">Data</label>
-          <input
+          <label htmlFor="dailyproductivitytab-143" className="text-xs text-t3 mb-1.5 block">Data</label>
+          <input id="dailyproductivitytab-143"
             type="date"
             max={new Date(Date.now() - 86400000).toISOString().split('T')[0]}
             value={date}

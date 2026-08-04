@@ -65,7 +65,6 @@ export function ConcludeSaleModal({ lead, onClose }: ConcludeSaleModalProps) {
             <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
             <input
               id="conclude-value"
-              autoFocus
               inputMode="numeric"
               value={display}
               onChange={e => setValueRaw(e.target.value)}

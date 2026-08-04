@@ -135,3 +135,31 @@ export function NumeroCelula({ children, tom = 'forte' }: { children: ReactNode;
     </p>
   )
 }
+
+/**
+ * Handler de Enter/Espaço para linha ou cartão clicável.
+ *
+ * Só o HANDLER mora aqui. `role="button"` e `tabIndex={0}` ficam escritos no
+ * JSX de propósito: vindos de um spread, o `jsx-a11y` não os enxerga e passa a
+ * aprovar qualquer div clicável — a regra fica cega justamente para o código
+ * novo, que é o que ela deveria pegar.
+ *
+ * O sistema tinha ~10 linhas de lista e cartões de kanban que abriam o detalhe
+ * só no clique: quem navega por teclado chegava até a linha e não tinha como
+ * abri-la. O `role="button"` promete o comportamento de botão, e Enter e Espaço
+ * cumprem a promessa.
+ *
+ * Espaço chama `preventDefault` porque, sem isso, ele rola a página junto.
+ *
+ * Não use em elemento que já contenha outros botões como filhos diretos — aí o
+ * certo é dar a ação a um botão interno, senão vira controle dentro de controle.
+ */
+export function aoTeclarAbrir(abrir: () => void) {
+  return (e: React.KeyboardEvent) => {
+    if (e.target !== e.currentTarget) return   // deixa os controles internos em paz
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      abrir()
+    }
+  }
+}

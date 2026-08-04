@@ -52,12 +52,19 @@ function MetaCard({ label, value, target, color }: {
 
 // ─── Tooltip customizado ──────────────────────────────────────────────────────
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+/**
+ * Forma do que o Recharts entrega ao tooltip. O tipo genérico da biblioteca é
+ * incômodo de instanciar aqui; isto descreve exatamente o que consumimos.
+ */
+interface FatiaTooltip { name: string; value: number | string; color?: string; fill?: string }
+interface PropsTooltip { active?: boolean; payload?: FatiaTooltip[]; label?: string | number }
+
+const CustomTooltip = ({ active, payload, label }: PropsTooltip) => {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-page border border-line rounded-xl px-3 py-2.5 text-xs space-y-1 shadow-xl">
       <p className="text-t3 font-semibold mb-1">{label}</p>
-      {payload.map((p: any) => (
+      {payload.map(p => (
         <p key={p.name} style={{ color: p.color }}>{p.name}: <span className="font-bold">{p.value}</span></p>
       ))}
     </div>

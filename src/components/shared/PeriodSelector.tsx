@@ -125,6 +125,7 @@ export function PeriodSelector({ className = '' }: PeriodSelectorProps) {
             {PRESETS.map(({ value, label: optLabel, sub }) => {
               const ativo = preset === value
               return (
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- o rótulo embrulha um radio nativo — o teclado entra pelas setas e pelo Enter
                 <label
                   key={value}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left cursor-pointer

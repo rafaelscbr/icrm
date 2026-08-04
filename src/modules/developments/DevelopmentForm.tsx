@@ -254,8 +254,8 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
           {/* Vale para qualquer regime: o que importa é se o saldo abate a
               entrada, não como a obra é financiada. No Belíssimo o
               financiamento é imediato e o FGTS entra sem ser associativo. */}
-          <label className="flex items-start gap-2.5 p-3 rounded-xl bg-s2 border border-line cursor-pointer">
-              <input
+          <label htmlFor="developmentform-257" className="flex items-start gap-2.5 p-3 rounded-xl bg-s2 border border-line cursor-pointer">
+              <input id="developmentform-257"
                 type="checkbox"
                 checked={fgtsComposes}
                 onChange={e => setFgtsComposes(e.target.checked)}

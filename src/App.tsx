@@ -81,12 +81,12 @@ function PresenceTracker() {
       init(user.id, profile.name, profile.role, loc)
     })
     return () => { cleanup() }
-  }, [user?.id])
+  }, [user?.id])  // eslint-disable-line react-hooks/exhaustive-deps -- presença e página são reinicializadas só quando o usuário ou a rota muda; incluir profile/user inteiros refaria a assinatura a cada troca de objeto
 
   useEffect(() => {
     if (!user) return
     updatePage(location.pathname)
-  }, [location.pathname])
+  }, [location.pathname])  // eslint-disable-line react-hooks/exhaustive-deps -- presença e página são reinicializadas só quando o usuário ou a rota muda; incluir profile/user inteiros refaria a assinatura a cada troca de objeto
 
   return null
 }
@@ -112,7 +112,7 @@ function AppRoutes() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [setSearchOpen])
 
   // Inicia todas as subscriptions realtime ao autenticar
   useEffect(() => {
@@ -197,7 +197,7 @@ function AppRoutes() {
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [user?.id])
+  }, [user?.id])  // eslint-disable-line react-hooks/exhaustive-deps -- presença e página são reinicializadas só quando o usuário ou a rota muda; incluir profile/user inteiros refaria a assinatura a cada troca de objeto
 
   if (!user) return <Navigate to="/login" replace />
 

@@ -102,13 +102,13 @@ export function BrokersTab() {
       summaries.forEach(s => { prev[s.brokerId] = 0 })
       setPrevDisparos(prev)
     }).catch(() => {})
-  }, [])
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps -- recarga controlada pelo período escolhido; a lista completa refaria a consulta a cada render
 
   useEffect(() => {
     loadBrokerSummaries().then(summaries => {
       setDisparos(buildDisparosMap(summaries, period))
     }).catch(() => {})
-  }, [period])
+  }, [period, loadBrokerSummaries])
 
   const brokers = useMemo(() =>
     allProfiles.filter(p => p.role === 'broker' || (isAdmin && p.role === 'admin')),
