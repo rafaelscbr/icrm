@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  X, User, Phone, Mail, Building2, DollarSign,
+  User, Phone, Mail, Building2, DollarSign,
   Search, MapPin, ChevronRight, ChevronLeft,
   UserPlus, Users, CheckCircle2, AlertCircle, AlertTriangle,
   Calendar, Sparkles, PenLine,
   Smartphone, Globe, Handshake, Target, MessageCircle, PhoneCall, Home, FileText, Trophy,
 } from 'lucide-react'
+import { SidePanel } from '../../components/ui/SidePanel'
+import { Button } from '../../components/ui/Button'
+import { Rotulo } from '../../components/shared/visual'
 import { Lead, LeadOrigin, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
@@ -262,57 +265,73 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
 
   if (!isOpen) return null
 
+  /*
+   * Rodapé fixo do painel. Sai do corpo de propósito: num formulário de dois
+   * passos e altura variável, a ação principal não pode depender de o corretor
+   * rolar até o fim para existir.
+   */
+  const footer = (
+    <div className="flex items-center justify-between gap-3">
+      <Button
+        variant="ghost"
+        onClick={() => { if (step === 1 || isEdit) onClose(); else goBack() }}
+        className="gap-1.5"
+      >
+        {step === 2 && !isEdit && <ChevronLeft size={14} />}
+        {step === 1 || isEdit ? 'Cancelar' : 'Voltar'}
+      </Button>
+
+      {step === 1 && !isEdit ? (
+        <Button onClick={goNext} disabled={!canAdvanceStep1()} size="lg" className="gap-2">
+          Próximo <ChevronRight size={15} />
+        </Button>
+      ) : (
+        <Button
+          onClick={handleSubmit}
+          size="lg"
+          variant={stage === 'venda' ? 'success' : 'primary'}
+          className="gap-2"
+        >
+          {lead ? 'Salvar alterações' : isRetroactive ? 'Registrar lead' : 'Criar Lead'}
+        </Button>
+      )}
+    </div>
+  )
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-md"
-        onClick={onClose}
-      />
+    <SidePanel
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? 'Editar lead' : 'Novo lead'}
+      subtitle={isEdit
+        ? lead?.name
+        : step === 1 ? 'Passo 1 de 2 — identificar o contato' : 'Passo 2 de 2 — detalhes do funil'}
+      size="md"
+      footer={footer}
+    >
+      <div className="space-y-4">
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg modal-surface rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[92vh] overflow-hidden
-        animate-in fade-in zoom-in-95 duration-200">
-
-        {/* Gradient top border */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-brand" />
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center
-              bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-info-line`}>
-              <Sparkles size={16} className="text-info" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-t1">
-                {isEdit ? 'Editar Lead' : 'Novo Lead'}
-              </h2>
-              {!isEdit && (
-                <p className="text-xs text-t3 mt-0.5">
-                  {step === 1 ? '① Identificar contato' : '② Detalhes do funil'}
-                </p>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-s3 text-t3 hover:text-t1 transition-all"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Progress bar */}
+        {/* Progresso dos dois passos */}
         {!isEdit && (
-          <div className="flex gap-1.5 px-6 pb-4 flex-shrink-0">
-            <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600" />
-            <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-brand' : 'bg-s3'}`} />
+          <div className="flex items-center gap-2" role="group" aria-label="Progresso do cadastro">
+            <span className="flex items-center gap-1.5 shrink-0">
+              <span className="w-5 h-5 rounded-full grad-brand flex items-center justify-center
+                               font-heading text-[11px] font-bold">1</span>
+              <Rotulo>Contato</Rotulo>
+            </span>
+            <span className="h-1 flex-1 rounded-full bg-s3 overflow-hidden">
+              <span className={`block h-full rounded-full transition-[width] duration-500
+                                ${step >= 2 ? 'w-full' : 'w-0'}`}
+                    style={{ background: 'linear-gradient(90deg, var(--brand-dark), var(--brand))' }} />
+            </span>
+            <span className="flex items-center gap-1.5 shrink-0">
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center
+                                font-heading text-[11px] font-bold transition-colors
+                                ${step >= 2 ? 'grad-brand' : 'bg-s3 text-t4'}`}>2</span>
+              <Rotulo>Funil</Rotulo>
+            </span>
           </div>
         )}
-
-        {/* ── Body ── */}
-        <div className="flex-1 overflow-y-auto px-6 pb-2 space-y-4">
 
           {/* ────── STEP 1: Contact ────── */}
           {step === 1 && (
@@ -324,7 +343,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   onClick={() => { setContactMode('search'); clearContact() }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     contactMode === 'search'
-                      ? 'bg-gradient-to-br bg-info-bg text-info shadow-sm border border-info-line'
+                      ? 'bg-info-bg text-info shadow-sm border border-info-line'
                       : 'text-t3 hover:text-t2'
                   }`}
                 >
@@ -348,7 +367,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
                   {selectedContact ? (
                     <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-500/10 to-blue-600/5 border border-info-line rounded-xl
                       animate-in fade-in zoom-in-95 duration-200">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br bg-info-bg text-info border border-info-line">
+                      <div className="w-10 h-10 rounded-full bg-info-bg text-info border border-info-line">
                         {selectedContact.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -735,42 +754,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
               </div>
             </div>
           )}
-        </div>
-
-        {/* ── Footer ── */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-line bg-s2/50 flex-shrink-0">
-          <button
-            onClick={() => { if (step === 1 || isEdit) onClose(); else goBack() }}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-t2 hover:text-t1 hover:bg-s3 rounded-xl transition-all"
-          >
-            {step === 2 && !isEdit && <ChevronLeft size={14} />}
-            {step === 1 || isEdit ? 'Cancelar' : 'Voltar'}
-          </button>
-
-          {step === 1 && !isEdit ? (
-            <button
-              onClick={goNext}
-              disabled={!canAdvanceStep1()}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-gradient-to-r bg-info hover:bg-info text-white rounded-xl transition-all shadow-lg shadow-blue-600/30 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
-            >
-              Próximo <ChevronRight size={15} />
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl transition-all shadow-lg active:scale-95 ${
-                stage === 'venda'
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-500/30'
-                  : stage === 'visita'
-                  ? 'bg-brand hover:bg-brand-dark text-[var(--brand-btn-text)]'
-                  : 'bg-gradient-to-r bg-info hover:bg-info text-white shadow-blue-600/30'
-              }`}
-            >
-              {lead ? 'Salvar alterações' : isRetroactive ? 'Registrar lead' : 'Criar Lead'}
-            </button>
-          )}
-        </div>
       </div>
-    </div>
+    </SidePanel>
   )
 }
