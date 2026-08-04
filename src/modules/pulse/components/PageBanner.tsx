@@ -9,17 +9,12 @@ import { Radio, MoonStar, ArrowLeft } from 'lucide-react'
  * sem ler.
  */
 
-export type TipoPagina = 'ao_vivo' | 'balanco' | 'ontem'
+export type TipoPagina = 'ao_vivo' | 'ontem'
 
 const CONFIG = {
   ao_vivo: {
     icone: Radio,
     titulo: 'Ao vivo',
-    dourado: true,
-  },
-  balanco: {
-    icone: MoonStar,
-    titulo: 'Balanço do dia',
     dourado: true,
   },
   ontem: {

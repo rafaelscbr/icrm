@@ -2,12 +2,15 @@ import { formatCurrency } from '../../../lib/formatters'
 import type { PulseHoje, PulseBroker, PulseVgl } from '../types'
 
 /**
- * Balanço de um dia — o que produziu, quem produziu, e como moveu a meta.
+ * Balanço de um dia FECHADO — o que produziu, quem produziu, e como moveu a
+ * meta. Hoje serve só à página "Ontem".
  *
- * É uma PÁGINA do carrossel, não um estado por horário. A versão anterior
- * trocava a tela sozinha às 20h e com isso tirava o ao vivo de quem ainda
- * estava trabalhando. Agora o balanço fica sempre a um deslize de distância,
- * e o ao vivo nunca sai do lugar.
+ * Não existe balanço do dia corrente de propósito: os mesmos números já estão
+ * na página ao vivo, com mais contexto ao redor. Resumir o que está à vista
+ * gasta uma página para não dizer nada novo.
+ *
+ * O componente segue recebendo o dia por parâmetro — se um dia entrar
+ * "anteontem" ou "semana passada" no carrossel, nada aqui muda.
  */
 
 function Numero({ valor, rotulo, destaque = false }: {

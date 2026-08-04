@@ -128,14 +128,14 @@ export function PulsePage() {
   useKiosk({ onViradaDoDia })
   const desloc = useAntiBurnIn()
 
-  // Três páginas, em ordem cronológica: [0] agora · [1] o dia · [2] ontem.
-  // A página 0 é SEMPRE o ao vivo — nada a substitui por horário, para o
-  // painel nunca ficar preso num resumo enquanto o dia ainda está acontecendo.
-  const { pagina, pausado, irPara, onTouchStart, onTouchEnd } = useCarrossel(3)
+  // Duas páginas: [0] o dia acontecendo · [1] ontem fechado.
+  // Não existe "balanço de hoje": os mesmos números já estão na página ao
+  // vivo, com mais contexto. Resumir o que está à vista é ocupar espaço.
+  const { pagina, pausado, irPara, onTouchStart, onTouchEnd } = useCarrossel(2)
 
-  // O resumo de ontem só é buscado quando alguém realmente desliza até lá.
+  // O resumo de ontem só é buscado quando a página entra em cena.
   useEffect(() => {
-    if (pagina === 2) carregarResumoOntem()
+    if (pagina === 1) carregarResumoOntem()
   }, [pagina, carregarResumoOntem])
 
   const ontem = new Date(agora)
@@ -225,12 +225,12 @@ export function PulsePage() {
             quiosque que ninguém toca. */}
         <div className="ml-auto flex items-center gap-4">
           <div className="flex items-center gap-1.5" role="tablist" aria-label="Páginas do painel">
-            {[0, 1, 2].map(i => (
+            {[0, 1].map(i => (
               <button
                 key={i}
                 role="tab"
                 aria-selected={pagina === i}
-                aria-label={['Ao vivo', 'Balanço do dia', 'Ontem'][i]}
+                aria-label={['Ao vivo', 'Ontem'][i]}
                 onClick={() => irPara(i)}
                 className={`relative h-1.5 rounded-full overflow-hidden transition-all duration-[280ms] ${
                   pagina === i ? 'w-6 bg-brand/25' : 'w-1.5 bg-line-strong'
@@ -311,13 +311,7 @@ export function PulsePage() {
             )}
           </div>
 
-          {/* Página 1 — balanço do dia corrente */}
-          <div className="w-full shrink-0 h-full flex flex-col gap-3 min-h-0">
-            <PageBanner tipo="balanco" data={new Date(agora)} aoVoltar={() => irPara(0)} />
-            <ClosingSummary hoje={hoje} corretores={corretores} vgl={vgl} />
-          </div>
-
-          {/* Página 2 — ontem */}
+          {/* Página 1 — ontem */}
           <div className="w-full shrink-0 h-full flex flex-col gap-3 min-h-0">
             {/* aoVoltar garante que o ao vivo está sempre a um toque, sem
                 depender de alguém adivinhar o gesto de deslize. */}
