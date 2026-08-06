@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Phone, SkipForward, Loader2, CheckCircle2, Inbox, AlertTriangle,
-  History, Clock, ArrowRight, Target, Sparkles, Timer, Voicemail,
+  History, Clock, ArrowRight, Target, Sparkles, Timer,
 } from 'lucide-react'
 import { Button } from '../../../components/ui/Button'
 import { SidePanel } from '../../../components/ui/SidePanel'
@@ -10,7 +10,7 @@ import { Painel, PainelTitulo, Rotulo, IconeTom, Barra, Dica, Chip, TOM } from '
 import { useCallQueueStore } from '../../../store/useCallQueueStore'
 import { formatPhone } from '../../../lib/formatters'
 import { DAILY_TARGETS } from '../../../lib/metasConfig'
-import { OUTCOMES_DISCADOR, OUTCOME_BY_VALUE, tempoRelativo, quandoVolta } from './config'
+import { OUTCOMES_POR_GRUPO, OUTCOME_BY_VALUE, tempoRelativo, quandoVolta } from './config'
 import type { CallCampaign, CallOutcome } from '../../../types'
 import toast from 'react-hot-toast'
 
@@ -99,10 +99,10 @@ export function CallQueueTab({ campaign }: Props) {
         <div className="flex items-center gap-3">
           <IconeTom icon={bateuMeta ? Sparkles : Target} tom={bateuMeta ? 'sucesso' : 'marca'} />
           <div className="min-w-0 flex-1">
-            <Rotulo>Ligações hoje</Rotulo>
+            <Rotulo>Tentativas hoje</Rotulo>
             <p className="text-[13px] text-t3 mt-0.5">
               {bateuMeta
-                ? 'Meta batida — cada ligação daqui é lucro.'
+                ? 'Meta batida — cada tentativa daqui é lucro.'
                 : `Faltam ${faltam} para o mínimo do dia.`}
             </p>
           </div>
@@ -288,6 +288,9 @@ export function CallQueueTab({ campaign }: Props) {
               </>
             ) : !logAtual ? (
               <>
+                {/* "Tentativa", não "ligar": o sistema não observa a chamada,
+                    observa este clique. Prometer no botão o que o registro não
+                    consegue provar é como o relatório começa a mentir. */}
                 <button
                   onClick={handleLigar}
                   className="w-full flex items-center justify-center gap-3 rounded-[14px] px-5 py-4
@@ -295,13 +298,13 @@ export function CallQueueTab({ campaign }: Props) {
                              transition-transform active:scale-[0.99] cursor-pointer min-h-[60px]
                              focus:outline-none focus:ring-2 focus:ring-success/50"
                 >
-                  <Phone size={21} strokeWidth={1.9} aria-hidden /> Ligar pelo WhatsApp
+                  <Phone size={21} strokeWidth={1.9} aria-hidden /> Tentativa de ligação
                 </button>
 
                 <Dica>
                   Abre o <span className="font-semibold text-t2">seu WhatsApp</span> já na conversa
                   dela, sem mensagem nenhuma, e <span className="font-semibold text-t2">registra a
-                  ligação</span>. É só tocar no ícone de telefone para chamar.
+                  tentativa</span>. É só tocar no ícone de telefone para chamar.
                 </Dica>
 
                 <button
@@ -317,7 +320,7 @@ export function CallQueueTab({ campaign }: Props) {
                 <div className="flex items-center gap-2.5 rounded-[14px] border border-success-line bg-success-bg px-3.5 py-3">
                   <CheckCircle2 size={15} strokeWidth={1.6} className="text-success shrink-0" aria-hidden />
                   <p className="text-[13px] text-success">
-                    Ligação registrada. Agora diga o que aconteceu.
+                    Tentativa registrada. Agora diga o que aconteceu.
                   </p>
                 </div>
 
@@ -335,41 +338,53 @@ export function CallQueueTab({ campaign }: Props) {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  {OUTCOMES_DISCADOR.map(o => {
-                    const t = TOM[o.tom]
-                    return (
-                      <button
-                        key={o.value}
-                        disabled={salvando}
-                        title={o.efeito}
-                        onClick={() => o.value === 'pediu_retorno'
-                          ? setRetornoOpen(true)
-                          : handleDesfecho(o.value)}
-                        className={`flex flex-col items-start gap-1.5 rounded-[14px] border px-3.5 py-3
-                                    text-left transition-all cursor-pointer min-h-[64px]
-                                    disabled:opacity-40 disabled:cursor-not-allowed
-                                    hover:brightness-115 active:scale-[0.98]
-                                    focus:outline-none focus:ring-2 focus:ring-brand/30
-                                    ${t.fundo} ${t.borda}`}
-                      >
-                        <o.icon size={17} strokeWidth={1.7} className={`${t.texto} shrink-0`} aria-hidden />
-                        <span className={`text-[13px] font-semibold leading-tight ${t.texto}`}>
-                          {o.label}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
+                {/* A botoeira em grupos.
+                    Eram dez opções soltas numa grade — o corretor relia todas a
+                    cada ligação para achar a única que servia. Agrupadas, ele
+                    decide primeiro O QUE ACONTECEU (falou? não falou? nem
+                    chegou a ligar?) e só então escolhe entre duas ou quatro.
+                    É a mesma divisão que os relatórios usam, de propósito: o
+                    que o corretor aperta é o que o gestor lê. */}
+                {OUTCOMES_POR_GRUPO.map(g => (
+                  <fieldset key={g.value} className="border-0 p-0 m-0 min-w-0">
+                    <legend className="flex items-baseline gap-2 mb-2 w-full">
+                      <Rotulo>{g.titulo}</Rotulo>
+                      <span className="text-[11px] text-t4 truncate">{g.descricao}</span>
+                    </legend>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {g.opcoes.map(o => {
+                        const t = TOM[o.tom]
+                        return (
+                          <button
+                            key={o.value}
+                            disabled={salvando}
+                            title={o.efeito}
+                            onClick={() => o.value === 'pediu_retorno'
+                              ? setRetornoOpen(true)
+                              : handleDesfecho(o.value)}
+                            className={`flex flex-col items-start gap-1.5 rounded-[14px] border px-3.5 py-3
+                                        text-left transition-all cursor-pointer min-h-[64px]
+                                        disabled:opacity-40 disabled:cursor-not-allowed
+                                        hover:brightness-115 active:scale-[0.98]
+                                        focus:outline-none focus:ring-2 focus:ring-brand/30
+                                        ${t.fundo} ${t.borda}`}
+                          >
+                            <o.icon size={17} strokeWidth={1.7} className={`${t.texto} shrink-0`} aria-hidden />
+                            <span className={`text-[13px] font-semibold leading-tight ${t.texto}`}>
+                              {o.label}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </fieldset>
+                ))}
 
-                <button
-                  onClick={() => handleDesfecho('caixa_postal')}
-                  disabled={salvando}
-                  className="flex items-center justify-center gap-1.5 text-[13px] text-t4
-                             hover:text-t2 transition-colors cursor-pointer py-2 min-h-[44px]"
-                >
-                  <Voicemail size={13} strokeWidth={1.6} aria-hidden /> Caiu na caixa postal
-                </button>
+                <Dica>
+                  O grupo <span className="font-semibold text-t2">Não foi possível ligar</span> não
+                  conta para a meta do dia — número morto não é trabalho feito. O esforço aparece
+                  no desempenho como qualidade da base, que é problema de quem monta a lista.
+                </Dica>
               </>
             )}
           </div>

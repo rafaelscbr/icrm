@@ -210,9 +210,19 @@ export const useCallQueueStore = create<CallQueueState>((set, get) => ({
     return (data as { leadId: string }).leadId
   },
 
+  /**
+   * Tentativas que contam como esforço.
+   *
+   * `conta_meta` é coluna gerada no banco (migração 072): falsa quando a
+   * ligação não chegou a existir — número inválido, sem WhatsApp, telefone
+   * desligado. A regra mora lá porque a mesma contagem acontece em cinco
+   * lugares; repetir o critério em TypeScript garantiria divergência na
+   * primeira alteração.
+   */
   contarLigacoes: async (brokerId) => {
     const base = () => {
       const q = supabase.from('call_logs').select('id', { count: 'exact', head: true })
+        .eq('conta_meta', true)
       return brokerId ? q.eq('broker_id', brokerId) : q
     }
     const [dia, semana, mes] = await Promise.all([
@@ -227,13 +237,16 @@ export const useCallQueueStore = create<CallQueueState>((set, get) => ({
     const brokerId = getCurrentUserId()
     if (!brokerId) return
 
+    // Os três primeiros são a meta do corretor — só tentativa que conta.
+    // O quarto é o oposto: quem tentou e não disse o que houve. Esse tem de
+    // aparecer justamente porque não conta em lugar nenhum.
     const [dia, semana, mes, semDesfecho] = await Promise.all([
       supabase.from('call_logs').select('id', { count: 'exact', head: true })
-        .eq('broker_id', brokerId).gte('called_at', inicioDoDia()),
+        .eq('broker_id', brokerId).eq('conta_meta', true).gte('called_at', inicioDoDia()),
       supabase.from('call_logs').select('id', { count: 'exact', head: true })
-        .eq('broker_id', brokerId).gte('called_at', inicioDaSemana()),
+        .eq('broker_id', brokerId).eq('conta_meta', true).gte('called_at', inicioDaSemana()),
       supabase.from('call_logs').select('id', { count: 'exact', head: true })
-        .eq('broker_id', brokerId).gte('called_at', inicioDoMes()),
+        .eq('broker_id', brokerId).eq('conta_meta', true).gte('called_at', inicioDoMes()),
       supabase.from('call_logs').select('id', { count: 'exact', head: true })
         .eq('broker_id', brokerId).eq('outcome', 'discou').gte('called_at', inicioDoDia()),
     ])

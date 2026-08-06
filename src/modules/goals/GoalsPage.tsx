@@ -149,7 +149,8 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
     load: loadDisparos,
   } = useDisparosStore()
 
-  // Ligações da prospecção ativa — contadas direto de call_logs, por corretor.
+  // Tentativas de ligação da prospecção ativa — contadas direto de call_logs,
+  // por corretor, já sem o que não chegou a virar ligação (ver migração 072).
   // Não vêm de lead_interactions: base fria não tem lead no funil ainda.
   const contarLigacoes = useCallQueueStore(s => s.contarLigacoes)
   const [ligacoes, setLigacoes] = useState({ hoje: 0, semana: 0, mes: 0 })
@@ -265,18 +266,18 @@ function PerformanceHero({ tasks, period, brokerId }: {
   const kpis = useMemo(() => {
     if (period === 'hoje') return [
       { label: 'Novos disparos',   value: data.disparosHojeNew, target: DAILY_TARGETS.disparos,   icon: Zap,            note: 'base fria'        },
-      { label: 'Ligações',         value: data.ligacoesHoje,    target: DAILY_TARGETS.ligacoes,   icon: Phone,          note: 'prospecção ativa' },
+      { label: 'Tentativas',         value: data.ligacoesHoje,    target: DAILY_TARGETS.ligacoes,   icon: Phone,          note: 'prospecção ativa' },
       { label: 'Interações',       value: data.daily,           target: DAILY_TARGETS.interacoes, icon: MessageCircle,  note: 'mensagens e calls' },
     ]
     if (period === 'semana') return [
       { label: 'Novos disparos',   value: data.disparosSemanaNew, target: WEEKLY_TARGETS.disparos,     icon: Zap,           note: 'base fria'        },
-      { label: 'Ligações',         value: data.ligacoesSemana,    target: WEEKLY_TARGETS.ligacoes,     icon: Phone,         note: 'prospecção ativa' },
+      { label: 'Tentativas',         value: data.ligacoesSemana,    target: WEEKLY_TARGETS.ligacoes,     icon: Phone,         note: 'prospecção ativa' },
       { label: 'Atendimentos',     value: data.weekVisits,        target: WEEKLY_TARGETS.atendimentos, icon: Footprints,    note: 'vídeo ou presencial' },
       { label: 'Propostas',        value: data.weekProp,          target: WEEKLY_TARGETS.propostas,    icon: FileText,      note: 'enviadas'         },
     ]
     return [
       { label: 'Novos disparos',   value: data.disparosMesNew, target: MONTHLY_TARGETS.disparos,     icon: Zap,             note: 'base fria'        },
-      { label: 'Ligações',         value: data.ligacoesMes,    target: MONTHLY_TARGETS.ligacoes,     icon: Phone,           note: 'prospecção ativa' },
+      { label: 'Tentativas',         value: data.ligacoesMes,    target: MONTHLY_TARGETS.ligacoes,     icon: Phone,           note: 'prospecção ativa' },
       { label: 'Atendimentos',     value: data.monthVisits,    target: MONTHLY_TARGETS.atendimentos, icon: Footprints,      note: 'vídeo ou presencial' },
       { label: 'Propostas',        value: data.monthProp,      target: MONTHLY_TARGETS.propostas,    icon: FileText,        note: 'enviadas'         },
       { label: 'Vendas',           value: data.monthSales,     target: MONTHLY_TARGETS.vendas,       icon: BadgeDollarSign, note: 'fechadas no mês'  },

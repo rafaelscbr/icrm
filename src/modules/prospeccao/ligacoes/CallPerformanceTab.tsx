@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   Loader2, Phone, MessageSquare, Flame, ArrowUpRight, BadgeDollarSign,
-  AlertTriangle, Clock, Target, Trophy, Medal,
+  AlertTriangle, Clock, Target, Trophy, Medal, PieChart, Ban,
 } from 'lucide-react'
 import { Painel, PainelTitulo, Rotulo, IconeTom, Barra, Dica, Chip, TOM } from './Primitivas'
 import { useCallCampaignsStore } from '../../../store/useCallCampaignsStore'
@@ -13,11 +13,19 @@ import toast from 'react-hot-toast'
 /**
  * Desempenho da prospecção por ligação.
  *
- * Honestidade da métrica é o ponto desta tela. "Ligações" conta cliques em
- * "Ligar pelo WhatsApp" — o único evento que o sistema observa sozinho, já que
- * não existe URL que inicie chamada. Atendimento e interesse são DECLARADOS por
- * quem ligou, e por isso "sem desfecho" aparece em destaque: sem esse número, a
- * taxa de atendimento seria uma média sobre uma amostra encolhida em silêncio.
+ * Honestidade da métrica é o ponto desta tela. "Tentativas" conta cliques — o
+ * único evento que o sistema observa sozinho, já que não existe URL que inicie
+ * chamada. Desfecho é DECLARADO por quem ligou, e por isso "sem desfecho"
+ * aparece em destaque: sem esse número, toda taxa seria média sobre uma amostra
+ * encolhida em silêncio.
+ *
+ * A régua vai de tentativa a venda, e cada degrau usa o anterior como
+ * denominador. O que muda desde a migração 072 é onde a conta começa: taxa de
+ * contato se mede sobre tentativa que virou LIGAÇÃO, não sobre clique. Número
+ * inválido, sem WhatsApp e telefone desligado saem do denominador e aparecem
+ * como qualidade da base — que é problema de quem monta a lista, não de quem
+ * liga. Misturar os dois é como o painel passa a punir o corretor por um
+ * defeito que não é dele.
  */
 
 type Janela = 7 | 30 | 90
@@ -68,27 +76,46 @@ export function CallPerformanceTab({ campaignId }: Props) {
 
   const corretores = dados?.corretores ?? []
   const totais = corretores.reduce((acc, c) => ({
-    ligacoes:     acc.ligacoes     + c.ligacoes,
+    tentativas:   acc.tentativas   + c.tentativas,
+    validas:      acc.validas      + c.validas,
+    alcancou:     acc.alcancou     + c.alcancou,
     falou:        acc.falou        + c.falou,
     interessados: acc.interessados + c.interessados,
+    baseRuim:     acc.baseRuim     + c.baseRuim,
     semDesfecho:  acc.semDesfecho  + c.semDesfecho,
     transferidos: acc.transferidos + c.transferidos,
     vendas:       acc.vendas       + c.vendas,
     vgl:          acc.vgl          + c.vgl,
-  }), { ligacoes: 0, falou: 0, interessados: 0, semDesfecho: 0, transferidos: 0, vendas: 0, vgl: 0 })
+  }), {
+    tentativas: 0, validas: 0, alcancou: 0, falou: 0, interessados: 0,
+    baseRuim: 0, semDesfecho: 0, transferidos: 0, vendas: 0, vgl: 0,
+  })
 
   const porHora    = dados?.porHora ?? []
-  const maxHora    = Math.max(1, ...porHora.map(h => h.ligacoes))
+  const maxHora    = Math.max(1, ...porHora.map(h => h.tentativas))
   const melhorHora = [...porHora]
-    .filter(h => h.ligacoes >= 5)
-    .sort((a, b) => pct(b.produtivas, b.ligacoes) - pct(a.produtivas, a.ligacoes))[0]
-  const maxLigacoes = Math.max(1, ...corretores.map(c => c.ligacoes))
+    .filter(h => h.tentativas >= 5)
+    .sort((a, b) => pct(b.produtivas, b.tentativas) - pct(a.produtivas, a.tentativas))[0]
+  const maxValidas = Math.max(1, ...corretores.map(c => c.validas))
 
+  /**
+   * Os KPIs em régua, não em vitrine.
+   *
+   * Cada degrau usa como denominador o degrau anterior — é o que transforma
+   * quatro números soltos numa leitura ("de 100 tentativas, 82 viraram ligação,
+   * 30 falaram, 9 se interessaram"). O denominador de "falou" é `validas`, e
+   * não `tentativas`: cobrar contato sobre número que não existe seria cobrar
+   * do corretor um defeito da lista.
+   */
   const kpis = [
-    { label: 'Ligações',       valor: totais.ligacoes,     icon: Phone,         tom: 'neutro'  as const, nota: 'cliques em ligar' },
-    { label: 'Falou',          valor: totais.falou,        icon: MessageSquare, tom: 'info'    as const, nota: `${pct(totais.falou, totais.ligacoes)}% das ligações` },
-    { label: 'Interessados',   valor: totais.interessados, icon: Flame,         tom: 'marca'   as const, nota: `${pct(totais.interessados, totais.falou)}% de quem falou` },
-    { label: 'Foram ao funil', valor: totais.transferidos, icon: ArrowUpRight,  tom: 'sucesso' as const, nota: totais.vendas > 0 ? `${totais.vendas} venda(s)` : 'nenhuma venda ainda' },
+    { label: 'Tentativas',   valor: totais.tentativas,   icon: Phone,         tom: 'neutro'  as const,
+      nota: totais.baseRuim > 0 ? `${totais.validas} viraram ligação` : 'cliques em tentativa' },
+    { label: 'Falou',        valor: totais.falou,        icon: MessageSquare, tom: 'info'    as const,
+      nota: `${pct(totais.falou, totais.validas)}% das ligações` },
+    { label: 'Interessados', valor: totais.interessados, icon: Flame,         tom: 'marca'   as const,
+      nota: `${pct(totais.interessados, totais.falou)}% de quem falou` },
+    { label: 'Foram ao funil', valor: totais.transferidos, icon: ArrowUpRight, tom: 'sucesso' as const,
+      nota: totais.vendas > 0 ? `${totais.vendas} venda(s)` : 'nenhuma venda ainda' },
   ]
 
   return (
@@ -149,13 +176,67 @@ export function CallPerformanceTab({ campaignId }: Props) {
         </Painel>
       )}
 
-      {/* Ligações sem desfecho */}
+      {/* ── No que deu cada tentativa ─────────────────────────────────────
+          A pergunta que o gestor faz olhando a operação de ligação não é
+          "quantas ligações?", é "por que não estão falando com ninguém?".
+          Os três grupos respondem isso de uma vez, e cada um aponta para uma
+          ação diferente: mudar abordagem, mudar horário ou trocar a lista. */}
+      {totais.tentativas > 0 && (
+        <Painel>
+          <PainelTitulo icon={PieChart} tom="info"
+            extra={<Rotulo>{totais.tentativas.toLocaleString('pt-BR')} tentativas</Rotulo>}>
+            No que deu cada tentativa
+          </PainelTitulo>
+
+          <div className="px-4 pb-4 flex flex-col gap-3">
+            {[
+              { rotulo: 'Falou com a pessoa',   valor: totais.falou,
+                tom: 'info'    as const, nota: 'houve conversa' },
+              { rotulo: 'Não conversou',        valor: totais.validas - totais.falou,
+                tom: 'atencao' as const, nota: 'ligou e ninguém falou' },
+              { rotulo: 'Não foi possível',     valor: totais.baseRuim,
+                tom: 'neutro'  as const, nota: 'fora da meta — qualidade da lista' },
+            ].map(g => (
+              <div key={g.rotulo}>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[13px] font-semibold text-t2 flex-1 min-w-0 truncate">
+                    {g.rotulo}
+                  </span>
+                  <span className="font-heading text-[15px] font-bold text-t1 tabular-nums">
+                    {g.valor.toLocaleString('pt-BR')}
+                  </span>
+                  <span className="font-label text-[11px] text-t4 tabular-nums w-10 text-right">
+                    {pct(g.valor, totais.tentativas)}%
+                  </span>
+                </div>
+                <div className="mt-1.5">
+                  <Barra pct={pct(g.valor, totais.tentativas)} tom={g.tom} altura={5} />
+                </div>
+                <p className="text-[11px] text-t4 mt-1">{g.nota}</p>
+              </div>
+            ))}
+          </div>
+        </Painel>
+      )}
+
+      {/* Base ruim tem dono, e não é quem liga */}
+      {totais.baseRuim > 0 && (
+        <Dica tom="atencao">
+          <span className="font-bold tabular-nums">{totais.baseRuim}</span>{' '}
+          {totais.baseRuim === 1 ? 'tentativa não chegou' : 'tentativas não chegaram'} a virar
+          ligação ({pct(totais.baseRuim, totais.tentativas)}% do total) — número inválido, sem
+          WhatsApp ou aparelho desligado. Não contam para a meta de ninguém: é sinal de que a
+          lista precisa de limpeza, não de que o corretor ligou pouco.
+        </Dica>
+      )}
+
+      {/* Tentativas sem desfecho */}
       {totais.semDesfecho > 0 && (
         <Dica tom="atencao">
           <span className="font-bold tabular-nums">{totais.semDesfecho}</span>{' '}
-          {totais.semDesfecho === 1 ? 'ligação foi feita' : 'ligações foram feitas'}
-          {' '}({pct(totais.semDesfecho, totais.ligacoes)}%) sem registro do que aconteceu.
-          As taxas acima só contam ligações com desfecho — quanto maior este número, menos
+          {totais.semDesfecho === 1 ? 'tentativa ficou' : 'tentativas ficaram'}
+          {' '}({pct(totais.semDesfecho, totais.tentativas)}%) sem registro do que aconteceu.
+          As taxas acima só contam tentativa com desfecho — quanto maior este número, menos
           confiável fica a leitura.
         </Dica>
       )}
@@ -169,7 +250,7 @@ export function CallPerformanceTab({ campaignId }: Props) {
 
         {corretores.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-t3">
-            Nenhuma ligação registrada no período.
+            Nenhuma tentativa registrada no período.
           </p>
         ) : (
           <ul className="px-3 pb-3 flex flex-col gap-2">
@@ -192,16 +273,25 @@ export function CallPerformanceTab({ campaignId }: Props) {
                   </div>
 
                   <div className="mt-2.5">
-                    <Barra pct={(c.ligacoes / maxLigacoes) * 100} tom="info" altura={5} />
+                    <Barra pct={(c.validas / maxValidas) * 100} tom="info" altura={5} />
                   </div>
 
+                  {/* "falou" sobre `validas`, nunca sobre `tentativas`: número
+                      morto na lista não pode derrubar a taxa de quem ligou. */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5">
-                    <Metrica rotulo="ligações"  valor={c.ligacoes.toLocaleString('pt-BR')} />
-                    <Metrica rotulo="falou"     valor={`${c.falou} · ${pct(c.falou, c.ligacoes)}%`} />
+                    <Metrica rotulo="ligações"  valor={c.validas.toLocaleString('pt-BR')} />
+                    <Metrica rotulo="falou"     valor={`${c.falou} · ${pct(c.falou, c.validas)}%`} />
                     <Metrica rotulo="interesse" valor={`${c.interessados} · ${pct(c.interessados, c.falou)}%`} tom="marca" />
                     <Metrica rotulo="ao funil"  valor={String(c.transferidos)} />
                     <Metrica rotulo="vendas"    valor={c.vendas > 0 ? String(c.vendas) : '—'}
                              tom={c.vendas > 0 ? 'sucesso' : 'neutro'} />
+                    {c.baseRuim > 0 && (
+                      <span className="flex items-center gap-1 text-[11px] text-t4"
+                            title="Tentativas que não chegaram a virar ligação — não contam para a meta">
+                        <Ban size={10} strokeWidth={1.8} aria-hidden />
+                        {c.baseRuim} sem ligar
+                      </span>
+                    )}
                     {c.semDesfecho > 0 && (
                       <span className="flex items-center gap-1 text-[11px] text-warning">
                         <AlertTriangle size={10} strokeWidth={1.8} aria-hidden />
@@ -222,7 +312,7 @@ export function CallPerformanceTab({ campaignId }: Props) {
           <PainelTitulo icon={Clock} tom="info"
             extra={melhorHora
               ? <Chip icon={Target} tom="marca">
-                  melhor às {String(melhorHora.hora).padStart(2, '0')}h · {pct(melhorHora.produtivas, melhorHora.ligacoes)}% produtivas
+                  melhor às {String(melhorHora.hora).padStart(2, '0')}h · {pct(melhorHora.produtivas, melhorHora.tentativas)}% produtivas
                 </Chip>
               : undefined}>
             Ligações por hora do dia
@@ -234,7 +324,7 @@ export function CallPerformanceTab({ campaignId }: Props) {
             <div className="flex items-end gap-1 h-32">
               {Array.from({ length: 24 }, (_, h) => {
                 const dado = porHora.find(p => p.hora === h)
-                const qtd  = dado?.ligacoes ?? 0
+                const qtd  = dado?.tentativas ?? 0
                 const alt  = qtd > 0 ? Math.max(8, (qtd / maxHora) * 100) : 3
                 const util = h >= 9 && h < 18
                 return (

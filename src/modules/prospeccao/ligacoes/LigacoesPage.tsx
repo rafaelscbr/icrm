@@ -87,7 +87,7 @@ export function LigacoesPage() {
           <IconeTom icon={bateuMeta ? Sparkles : Target} tom={bateuMeta ? 'sucesso' : 'marca'} tamanho="lg" />
 
           <div className="min-w-0 flex-1">
-            <Rotulo>Suas ligações hoje</Rotulo>
+            <Rotulo>Suas tentativas hoje</Rotulo>
             <div className="flex items-baseline gap-2 mt-1">
               <span className={`font-heading font-extrabold tabular-nums leading-none text-[38px]
                                 tracking-tight ${bateuMeta ? 'text-success' : 'text-brand'}`}>
@@ -97,7 +97,7 @@ export function LigacoesPage() {
             </div>
             <p className="text-[13px] text-t3 mt-1">
               {bateuMeta
-                ? 'Meta batida — cada ligação daqui é lucro.'
+                ? 'Meta batida — cada tentativa daqui é lucro.'
                 : `Faltam ${faltam} para o mínimo combinado do dia.`}
             </p>
           </div>

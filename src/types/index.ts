@@ -708,15 +708,29 @@ export type CallQueueStatus =
  * WhatsApp, então este é o único evento que o sistema observa sozinho — todos
  * os outros desfechos são declarados por quem ligou.
  */
+/**
+ * Desfecho de uma TENTATIVA de ligação — nunca "ligação feita". O sistema não
+ * observa a chamada, só o clique (ver migração 072).
+ *
+ * Os valores se organizam em três grupos, definidos em `ligacoes/config.ts`:
+ * falou com a pessoa, não conversou, e não foi possível ligar. O terceiro
+ * grupo não conta para a meta do dia.
+ */
 export type CallOutcome =
-  | 'discou'
-  | 'nao_atendeu'
-  | 'caixa_postal'
-  | 'numero_invalido'
+  | 'discou'              // tentativa registrada, desfecho ainda não dito
+  // ── falou com a pessoa
+  | 'interessado'
   | 'pediu_retorno'
   | 'sem_interesse'
   | 'nao_perturbe'
-  | 'interessado'
+  // ── não conversou
+  | 'nao_atendeu'
+  | 'caixa_postal'
+  | 'atendeu_desligou'
+  // ── não foi possível ligar (fora da meta)
+  | 'numero_invalido'
+  | 'sem_whatsapp'
+  | 'telefone_desligado'
 
 export interface CallCampaign {
   id:             string
@@ -791,19 +805,26 @@ export interface CallBoard {
 }
 
 /**
- * Desempenho por corretor.
+ * Desempenho por corretor — a régua da prospecção por ligação.
  *
- * `ligacoes` conta cliques em "Ligar pelo WhatsApp". `falou` conta os desfechos
- * que só existem se houve conversa. `semDesfecho` expõe quem liga e não
- * registra — sem esse número a taxa de atendimento mentiria.
+ * `tentativas` conta cliques; é esforço bruto. `validas` tira o que nem chegou
+ * a ser ligação (número inválido, sem WhatsApp, telefone desligado) e é o
+ * denominador honesto de toda taxa. `alcancou` inclui quem atendeu e desligou;
+ * `falou` exige conversa. `baseRuim` é problema de quem monta a lista, não de
+ * quem liga — por isso aparece separado, e não escondido numa média.
+ * `semDesfecho` expõe quem tenta e não registra: sem esse número, todas as
+ * taxas seriam médias sobre uma amostra encolhida em silêncio.
  */
 export interface CallBrokerPerformance {
   brokerId:     string
   nome?:        string
-  ligacoes:     number
+  tentativas:   number
+  validas:      number
   contatos:     number
+  alcancou:     number
   falou:        number
   interessados: number
+  baseRuim:     number
   semDesfecho:  number
   hoje:         number
   transferidos: number
@@ -811,11 +832,20 @@ export interface CallBrokerPerformance {
   vgl:          number
 }
 
+/** Retrato dos três grupos de desfecho no período. */
+export interface CallOutcomeGroups {
+  falou:        number
+  naoConversou: number
+  baseRuim:     number
+  semDesfecho:  number
+}
+
 export interface CallPerformance {
   desde:      string
   corretores: CallBrokerPerformance[]
-  porHora:    Array<{ hora: number; ligacoes: number; produtivas: number }>
-  porDia:     Array<{ dia: string; ligacoes: number }>
+  grupos:     CallOutcomeGroups
+  porHora:    Array<{ hora: number; tentativas: number; produtivas: number }>
+  porDia:     Array<{ dia: string; tentativas: number }>
 }
 
 export interface CallCampaignParticipant {
