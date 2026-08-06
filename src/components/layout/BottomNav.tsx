@@ -2,14 +2,13 @@ import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
-  Building2, Megaphone, BarChart3, X, Bell,
-  Search, Home, Tv2, ExternalLink, Plus, UserPlus,
-  LogOut, ShieldCheck, Target, Database, Rocket, Phone,
+  X, Bell, Search, ExternalLink, Plus, LogOut, ShieldCheck,
 } from 'lucide-react'
 import { TaskForm } from '../../modules/tasks/TaskForm'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSearchStore } from '../../store/useSearchStore'
 import { useUnreadCount } from '../../store/useNotificationsStore'
+import { externalTools as tools, navLeaves, isGroup, navSections } from './nav/navConfig'
 
 const mainNav = [
   { to: '/',         icon: LayoutDashboard, label: 'Início',   end: true  },
@@ -18,27 +17,36 @@ const mainNav = [
   { to: '/tarefas',  icon: CheckSquare,     label: 'Tarefas',  end: false },
 ]
 
-// Nomes idênticos aos da Sidebar — desktop e mobile nunca divergem.
-// "Produtos" não vira submenu aqui: numa gaveta já rolável, dois itens rasos
-// custam menos toque que um acordeão.
-const moreNav = [
-  { to: '/imoveis',     icon: Building2,      label: 'Produtos · Prontos'     },
-  { to: '/lancamentos', icon: Rocket,         label: 'Produtos · Lançamentos' },
-  { to: '/leads',       icon: UserPlus,       label: 'Leads'         },
-  { to: '/base-leads',  icon: Database,       label: 'Base de Leads' },
-  { to: '/metas',       icon: Target,         label: 'Metas'         },
-  { to: '/prospeccao/disparos', icon: Megaphone, label: 'Prospecção · Disparos' },
-  { to: '/prospeccao/ligacoes', icon: Phone,     label: 'Prospecção · Ligações' },
-  { to: '/performance', icon: BarChart3,      label: 'Análise'       },
-  { to: '/escritorio',  icon: Tv2,            label: 'Escritório'    },
-]
+const naBarra = new Set(mainNav.map(i => i.to))
 
-const tools = [
-  { label: 'IBuscador',   href: 'http://localhost:5177/', icon: Search   },
-  { label: 'IAgenciador', href: 'http://localhost:5174/', icon: Home     },
-  { label: 'Meta ADS',    href: 'https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=886179520398765&business_id=1889117311563062&global_scope_id=1889117311563062', icon: Tv2 },
-  { label: 'Eemovel',     href: 'https://brokers.eemovel.com.br/login', icon: Building2 },
-]
+/**
+ * A gaveta é o complemento da barra: tudo que existe na Sidebar e não coube
+ * nos quatro atalhos de baixo.
+ *
+ * Vinha de uma lista escrita à mão, e ela já tinha derivado da Sidebar em dois
+ * pontos: o Simulador nunca chegou a aparecer no mobile (tela sem nenhuma porta
+ * de entrada no celular), e as telas restritas por `allowedMenus` apareciam para
+ * todo mundo — o filtro de permissão só existia no desktop, e não há guarda nas
+ * rotas. Agora ambos saem da mesma fonte, com o mesmo filtro.
+ */
+function useMoreNav(podeVer: (key: string) => boolean) {
+  return navLeaves().filter(l => !naBarra.has(l.to) && podeVer(l.key))
+}
+
+/** Os quatro atalhos fixos também respeitam a permissão. */
+function chaveDaRota(to: string): string {
+  for (const s of navSections) {
+    for (const item of s.items) {
+      if (isGroup(item)) {
+        const filho = item.children.find(c => c.to === to)
+        if (filho) return filho.key
+      } else if (item.to === to) {
+        return item.key
+      }
+    }
+  }
+  return ''
+}
 
 export function BottomNav() {
   const [drawerOpen, setDrawerOpen]   = useState(false)
@@ -56,6 +64,12 @@ export function BottomNav() {
     navigate('/login', { replace: true })
   }
 
+  const allowedMenus = profile?.allowedMenus ?? null
+  const podeVer = (key: string) =>
+    isAdmin || allowedMenus === null || allowedMenus.includes(key)
+
+  const moreNav = useMoreNav(podeVer)
+  const barraVisivel = mainNav.filter(i => podeVer(chaveDaRota(i.to)))
   const isMoreActive = moreNav.some(item => location.pathname === item.to)
 
   return (
@@ -82,7 +96,7 @@ export function BottomNav() {
         }}
       >
         <div className="flex items-center justify-around h-16 px-1">
-          {mainNav.map(({ to, icon: Icon, label, end }) => (
+          {barraVisivel.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
               to={to}

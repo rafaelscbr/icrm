@@ -60,15 +60,23 @@
   --surface-2: #18224A;
   --surface-3: #1F2A55;
 
-  /* Navigation — Carvão */
+  /* Navigation — Carvão
+     O fundo do item ativo é NEUTRO de propósito. O ouro do menu ficou todo
+     concentrado no ícone e no filete do item ativo — um só sinal dourado por
+     vez, em vez dos três que existiam (borda + fundo + ícone). Ver a regra do
+     dourado racionado em docs/principios-visuais.md §2. */
   --nav-bg:          #070B1A;
   --nav-text:        rgba(246, 243, 236, 0.78);
   --nav-muted:       rgba(246, 243, 236, 0.40);
   --nav-active-text: #F6F3EC;
-  --nav-active-bg:   rgba(228, 178, 60, 0.16);
+  --nav-active-bg:   rgba(255, 255, 255, 0.075);
   --nav-hover-bg:    rgba(255, 255, 255, 0.05);
   --nav-line:        rgba(255, 255, 255, 0.08);
   --nav-logo:        #F6F3EC;   /* wordmark — acompanha o tema */
+  /* Um degrau acima do trilho — painéis flutuantes do menu (conta, visão). */
+  --nav-elev:        #101935;
+  /* Volume do trilho: 158°, o ângulo do sistema. Incolor, não compete com o ouro. */
+  --nav-rail-sheen:  linear-gradient(158deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 46%);
 
   /* Text — Papel sobre Marinho */
   --t1: #F6F3EC;
@@ -197,10 +205,12 @@ html.light {
   --nav-text:        #2A3660;                  /* Marinho médio */
   --nav-muted:       #5A6480;
   --nav-active-text: #0F1730;                  /* Marinho puro no item ativo */
-  --nav-active-bg:   rgba(15, 23, 48, 0.055);  /* tinta de Marinho, não ouro */
+  --nav-active-bg:   rgba(15, 23, 48, 0.062);  /* tinta de Marinho, não ouro */
   --nav-hover-bg:    rgba(15, 23, 48, 0.035);
   --nav-line:        rgba(15, 23, 48, 0.10);
   --nav-logo:        #0F1730;
+  --nav-elev:        #FFFFFF;
+  --nav-rail-sheen:  linear-gradient(158deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 46%);
 
   /* Text — Marinho sobre Papel */
   --t1: #0F1730;
@@ -556,6 +566,27 @@ html.light {
   background-color: var(--surface);
   background-image: var(--grain), var(--surface-sheen);
   border: 1px solid var(--line);
+}
+
+/*
+ * Trilho de navegação e seus painéis flutuantes.
+ *
+ * O trilho recebe o mesmo tratamento das outras superfícies grandes — grão +
+ * degradê a 158° — porque uma placa de 248px de largura por tela inteira é a
+ * maior superfície chapada do sistema, e era a que mais denunciava o "plástico".
+ *
+ * `.nav-elev` é o degrau acima: painel de conta e seletor de visão flutuam
+ * sobre o trilho e precisam se separar dele sem borda grossa.
+ */
+.nav-rail {
+  background-color: var(--nav-bg);
+  background-image: var(--grain), var(--nav-rail-sheen);
+}
+.nav-elev {
+  background-color: var(--nav-elev);
+  background-image: var(--grain), var(--surface-sheen);
+  border: 1px solid var(--nav-line);
+  box-shadow: var(--shadow-dropdown);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -1047,12 +1078,20 @@ html.light .hover\:text-indigo-300:hover { color: var(--brand-dark) !important; 
 html.light .border-indigo-500\/20 { border-color: rgba(184,132,30,0.22) !important; }
 html.light .border-indigo-500\/30 { border-color: rgba(184,132,30,0.30) !important; }
 html.light .border-indigo-500\/40 { border-color: rgba(184,132,30,0.38) !important; }
-html.light nav a[aria-current="page"],
-html.light nav a.active {
-  background: var(--brand-tint) !important;
-  border-color: rgba(184,132,30,0.25) !important;
-  color: var(--brand) !important;
-}
+/*
+ * Removida a regra `html.light nav a[aria-current="page"]`, que forçava fundo
+ * dourado + texto dourado com `!important` em todo link ativo de <nav>.
+ *
+ * Ela é anterior aos tokens --nav-active-*: existia para dar destaque ao item
+ * ativo no tema claro quando não havia token para isso. Com os tokens no lugar
+ * ela virou o oposto — sobrescrevia o valor certo e devolvia o estado ativo
+ * com três sinais dourados ao mesmo tempo, só no claro. O `!important` também
+ * atingia a barra do mobile, pintando de ouro a linha inteira do item em vez
+ * do quadradinho do ícone, o que fazia claro e escuro divergirem no celular.
+ *
+ * O item ativo agora é pastilha neutra + ícone e filete dourados, igual nos
+ * dois temas. Ver --nav-active-bg no topo do arquivo.
+ */
 
 html.light .gradient-text {
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
