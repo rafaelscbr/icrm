@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import {
   Phone, SkipForward, Loader2, CheckCircle2, Inbox, AlertTriangle,
-  History, Clock, ArrowRight, Target, Sparkles, Timer,
+  History, Clock, ArrowRight, Target, Sparkles, Timer, MessageCircle,
 } from 'lucide-react'
 import { Button } from '../../../components/ui/Button'
 import { SidePanel } from '../../../components/ui/SidePanel'
 import { TransferCallLeadPanel } from './TransferCallLeadPanel'
 import { Painel, PainelTitulo, Rotulo, IconeTom, Barra, Dica, Chip, TOM } from './Primitivas'
 import { useCallQueueStore } from '../../../store/useCallQueueStore'
-import { formatPhone } from '../../../lib/formatters'
+import { formatPhone, abrirWhatsApp } from '../../../lib/formatters'
 import { DAILY_TARGETS } from '../../../lib/metasConfig'
 import { OUTCOMES_POR_GRUPO, OUTCOME_BY_VALUE, tempoRelativo, quandoVolta } from './config'
 import type { CallCampaign, CallOutcome } from '../../../types'
@@ -38,6 +38,7 @@ export function CallQueueTab({ campaign }: Props) {
   const [retornoOpen,  setRetornoOpen]  = useState(false)
   const [retornoAt,    setRetornoAt]    = useState('')
   const [salvando,     setSalvando]     = useState(false)
+  const [ligando,      setLigando]      = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
 
   useEffect(() => {
@@ -50,11 +51,26 @@ export function CallQueueTab({ campaign }: Props) {
     try { await puxarProximo(campaign.id) } catch { /* erro já no store */ }
   }
 
+  /**
+   * O registro da tentativa acontece UMA vez.
+   *
+   * O botão some sozinho quando `logAtual` chega, mas isso só acontece depois
+   * da resposta do banco. Nesse intervalo — que num 4G ruim é meio segundo —
+   * dois toques viravam duas linhas em call_logs: meta do dia inflada e a
+   * régua da campanha contando duas tentativas onde houve uma. A trava é local
+   * porque o problema é local: são dois cliques do MESMO corretor no mesmo
+   * botão. Corretores diferentes no mesmo lead já são impedidos pela reserva
+   * da fila, no banco.
+   */
   async function handleLigar() {
+    if (ligando) return
+    setLigando(true)
     try {
       await ligar()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível registrar a ligação')
+      toast.error(err instanceof Error ? err.message : 'Não foi possível registrar a tentativa')
+    } finally {
+      setLigando(false)
     }
   }
 
@@ -293,12 +309,16 @@ export function CallQueueTab({ campaign }: Props) {
                     consegue provar é como o relatório começa a mentir. */}
                 <button
                   onClick={handleLigar}
+                  disabled={ligando}
                   className="w-full flex items-center justify-center gap-3 rounded-[14px] px-5 py-4
                              grad-call grad-call-glow font-heading text-[19px] font-bold
                              transition-transform active:scale-[0.99] cursor-pointer min-h-[60px]
+                             disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100
                              focus:outline-none focus:ring-2 focus:ring-success/50"
                 >
-                  <Phone size={21} strokeWidth={1.9} aria-hidden /> Tentativa de ligação
+                  {ligando
+                    ? <><Loader2 size={21} className="animate-spin" aria-hidden /> Registrando…</>
+                    : <><Phone size={21} strokeWidth={1.9} aria-hidden /> Tentativa de ligação</>}
                 </button>
 
                 <Dica>
@@ -323,6 +343,38 @@ export function CallQueueTab({ campaign }: Props) {
                     Tentativa registrada. Agora diga o que aconteceu.
                   </p>
                 </div>
+
+                {/*
+                  Reabrir a conversa — SEM gravar nada.
+
+                  Abrir o WhatsApp falha de um jeito que o sistema não enxerga:
+                  o app não estava instalado, o link caiu na web e o corretor
+                  fechou sem querer, o celular voltou para o navegador sozinho.
+                  Até agora, quando isso acontecia a tela já tinha trocado para
+                  os botões de desfecho e não havia caminho de volta — restava
+                  registrar um desfecho falso ou procurar o contato na mão.
+
+                  A tentativa JÁ está registrada; este botão não toca no banco.
+                  Chamar `ligar()` de novo criaria uma segunda linha em
+                  call_logs, inflaria a meta do dia e faria a régua da campanha
+                  contar duas tentativas onde houve uma. É por isso que ele usa
+                  `abrirWhatsApp` direto, e não a ação do discador.
+                */}
+                <button
+                  onClick={() => atual && abrirWhatsApp(atual.phone)}
+                  className="flex items-center justify-center gap-2 rounded-[14px] px-4 py-2.5
+                             border border-success-line bg-success-bg text-success
+                             text-[13px] font-semibold transition-all cursor-pointer min-h-[44px]
+                             hover:brightness-110 active:scale-[0.99]
+                             focus:outline-none focus:ring-2 focus:ring-success/40"
+                  title="Abre a conversa de novo sem registrar outra tentativa"
+                >
+                  <MessageCircle size={15} strokeWidth={1.7} aria-hidden />
+                  Abrir o WhatsApp de novo
+                  <span className="font-label text-[11px] font-normal opacity-70">
+                    · não conta nova tentativa
+                  </span>
+                </button>
 
                 <div>
                   <label htmlFor="notas-ligacao" className="sr-only">O que o cliente falou</label>
