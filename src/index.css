@@ -589,6 +589,25 @@ html.light {
   box-shadow: var(--shadow-dropdown);
 }
 
+/* Botão-ícone do cabeçalho do trilho — sino e recolher. Alvo de 30px, que é o
+   piso confortável para o mouse sem pesar ao lado da marca. */
+.sf-icon-btn {
+  display: flex;
+  height: 30px;
+  width: 30px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+.sf-icon-btn:hover { background-color: var(--nav-hover-bg); }
+.sf-icon-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    TEXTURA E PROFUNDIDADE — "Souza Command Center"
 

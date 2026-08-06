@@ -100,18 +100,34 @@ export const externalTools = [
 ]
 
 /**
- * Achata a árvore em destinos, prefixando o filho com o nome do pai
- * ("Produtos · Prontos"). É o que o mobile consome: numa gaveta já rolável,
- * dois itens rasos custam menos toque que um acordeão.
+ * Seções já achatadas para a gaveta do mobile, sem os destinos que já estão na
+ * barra de baixo.
+ *
+ * O filho vem prefixado com o nome do pai ("Produtos · Prontos"): numa gaveta já
+ * rolável, dois itens rasos custam menos toque que um acordeão — mas sem o
+ * prefixo "Prontos" sozinho não diz de quê.
+ *
+ * As SEÇÕES são preservadas de propósito. A gaveta era uma grade única de
+ * "Páginas" com quatro colunas, e um rótulo de duas palavras em ~80px de
+ * largura quebrava em três linhas ou era cortado. Lista por seção lê melhor no
+ * celular e mantém a mesma divisão do desktop.
  */
-export function navLeaves(): NavLeaf[] {
-  return navSections.flatMap(s =>
-    s.items.flatMap<NavLeaf>(item =>
-      isGroup(item)
-        ? item.children.map(c => ({ ...c, label: `${item.label} · ${c.label}` }))
-        : [item],
-    ),
-  )
+export function secoesDaGaveta(
+  podeVer: (key: string) => boolean,
+  excluir: Set<string>,
+): Array<{ label: string; items: NavLeaf[] }> {
+  return filtrarPorPermissao(podeVer)
+    .map(s => ({
+      label: s.label,
+      items: s.items
+        .flatMap<NavLeaf>(item =>
+          isGroup(item)
+            ? item.children.map(c => ({ ...c, label: `${item.label} · ${c.label}` }))
+            : [item],
+        )
+        .filter(l => !excluir.has(l.to)),
+    }))
+    .filter(s => s.items.length > 0)
 }
 
 /**

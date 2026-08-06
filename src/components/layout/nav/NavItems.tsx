@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
+import * as Popover from '@radix-ui/react-popover'
 import { RailPopout } from './RailPopout'
 import type { NavLeaf, NavGroupDef } from './navConfig'
 
@@ -132,9 +133,7 @@ function NavChild({ item }: { item: NavLeaf }) {
  * por `grid-template-rows` (0fr → 1fr): é a única forma de animar altura
  * automática sem medir o conteúdo em JS.
  *
- * Recolhido: vira um ícone só, e os filhos aparecem num painel ao passar o
- * mouse. Antes os filhos eram despejados soltos no trilho — dois ícones sem
- * pai, impossíveis de relacionar entre si.
+ * Recolhido: vira um ícone só, com submenu flutuante — ver `GroupFlyout`.
  */
 export function NavGroup({ group, collapsed }: { group: NavGroupDef; collapsed: boolean }) {
   const { pathname } = useLocation()
@@ -142,26 +141,7 @@ export function NavGroup({ group, collapsed }: { group: NavGroupDef; collapsed: 
   const [open, setOpen] = useState(algumFilhoAtivo)
   const aberto = open || algumFilhoAtivo
 
-  if (collapsed) {
-    /*
-     * Recolhido os filhos aparecem soltos, sem o pai — e o rótulo flutuante de
-     * cada um carrega o caminho inteiro ("Produtos · Prontos"), que é o que se
-     * perde ao tirar o agrupamento.
-     *
-     * Um submenu flutuante seria mais organizado e foi o primeiro desenho, mas
-     * custa caro no que importa: esconde rota primária atrás de "passar o mouse,
-     * esperar, mirar num painel a 10px" e, no teclado, o painel vive num portal
-     * no fim do <body> — a ordem de Tab deixa de acompanhar o trilho. Ícone
-     * solto é um clique e um Tab por destino.
-     */
-    return (
-      <>
-        {group.children.map(c => (
-          <NavItem key={c.to} item={{ ...c, label: `${group.label} · ${c.label}` }} collapsed />
-        ))}
-      </>
-    )
-  }
+  if (collapsed) return <GroupFlyout group={group} />
 
   return (
     <div>
@@ -202,6 +182,130 @@ export function NavGroup({ group, collapsed }: { group: NavGroupDef; collapsed: 
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Grupo no trilho recolhido — um ícone só, com submenu flutuante.
+ *
+ * O submenu resolve o que os ícones soltos não resolviam: com o trilho estreito
+ * "Prontos" e "Lançamentos" viravam dois desenhos sem pai, impossíveis de
+ * relacionar entre si. Aqui eles voltam a ter cabeça e ordem.
+ *
+ * As duas armadilhas conhecidas desse padrão estão tratadas:
+ *
+ * **O trajeto do mouse.** Sair do ícone em direção ao painel passa por 8px de
+ * vão, e a diagonal ainda raspa fora dos dois. Fechar na hora faria o submenu
+ * evaporar no meio do caminho — a carência de 140ms cobre o trajeto, e entrar
+ * no painel cancela o fechamento.
+ *
+ * **O teclado.** O painel vive num portal no fim do <body>, então a ordem de
+ * Tab não o acompanha. Por isso ele é um Popover do Radix e não um `div`
+ * posicionado: abrir por Enter/Espaço leva o foco para dentro, Escape fecha e
+ * devolve o foco ao ícone, clique fora fecha. Abrir por HOVER não rouba o foco
+ * (`onOpenAutoFocus` cancelado) — quem está com a mão no mouse não perde o
+ * lugar do teclado só por passar por cima.
+ */
+function GroupFlyout({ group }: { group: NavGroupDef }) {
+  const { pathname } = useLocation()
+  const algumFilhoAtivo = group.children.some(c => pathname.startsWith(c.to))
+  const [open, setOpen] = useState(false)
+  const porMouse = useRef(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  function abrir(mouse: boolean) {
+    clearTimeout(timer.current)
+    porMouse.current = mouse
+    setOpen(true)
+  }
+  function fecharComAtraso() {
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => setOpen(false), 140)
+  }
+  function cancelarFecho() {
+    clearTimeout(timer.current)
+  }
+
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  // Navegou para um filho: o painel cumpriu o papel e sai da frente.
+  useEffect(() => { setOpen(false) }, [pathname])
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Anchor asChild>
+        <button
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`${group.label} — abrir submenu`}
+          onMouseEnter={() => abrir(true)}
+          onMouseLeave={fecharComAtraso}
+          onClick={() => (open ? setOpen(false) : abrir(false))}
+          className={`${PILL} mx-auto h-10 w-10 cursor-pointer justify-center
+            ${algumFilhoAtivo ? '' : 'hover:bg-nav-hover'}`}
+          style={{ background: algumFilhoAtivo || open ? 'var(--nav-active-bg)' : undefined }}
+        >
+          {algumFilhoAtivo && <Marcador />}
+          <group.icon
+            size={18}
+            strokeWidth={algumFilhoAtivo ? 2.2 : 1.8}
+            style={{ color: algumFilhoAtivo ? 'var(--brand)' : 'var(--nav-muted)' }}
+            className="flex-shrink-0 transition-colors"
+          />
+        </button>
+      </Popover.Anchor>
+
+      <Popover.Portal>
+        <Popover.Content
+          side="right"
+          align="start"
+          sideOffset={8}
+          collisionPadding={12}
+          onMouseEnter={cancelarFecho}
+          onMouseLeave={fecharComAtraso}
+          onOpenAutoFocus={e => { if (porMouse.current) e.preventDefault() }}
+          onCloseAutoFocus={e => { if (porMouse.current) e.preventDefault() }}
+          className="nav-elev animate-in fade-in slide-in-from-left-1 z-[130] min-w-[184px]
+                     rounded-[14px] p-1.5 duration-150 focus:outline-none"
+        >
+          <p
+            className="font-label px-2 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-[0.14em]"
+            style={{ color: 'var(--nav-muted)' }}
+          >
+            {group.label}
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {group.children.map(c => (
+              <NavLink
+                key={c.to}
+                to={c.to}
+                end={c.end}
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13px] font-medium
+                   transition-colors ${isActive ? '' : 'hover:bg-nav-hover'}`
+                }
+                style={({ isActive }) => ({
+                  background: isActive ? 'var(--nav-active-bg)' : undefined,
+                  color: isActive ? 'var(--nav-active-text)' : 'var(--nav-text)',
+                })}
+              >
+                {({ isActive }) => (
+                  <>
+                    <c.icon
+                      size={15}
+                      strokeWidth={isActive ? 2.2 : 1.8}
+                      style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }}
+                      className="flex-shrink-0 transition-colors"
+                    />
+                    <span className="truncate">{c.label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 

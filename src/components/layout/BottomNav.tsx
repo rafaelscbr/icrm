@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
@@ -8,7 +8,7 @@ import { TaskForm } from '../../modules/tasks/TaskForm'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSearchStore } from '../../store/useSearchStore'
 import { useUnreadCount } from '../../store/useNotificationsStore'
-import { externalTools as tools, navLeaves, isGroup, navSections } from './nav/navConfig'
+import { externalTools as tools, secoesDaGaveta, isGroup, navSections } from './nav/navConfig'
 
 const mainNav = [
   { to: '/',         icon: LayoutDashboard, label: 'Início',   end: true  },
@@ -18,20 +18,6 @@ const mainNav = [
 ]
 
 const naBarra = new Set(mainNav.map(i => i.to))
-
-/**
- * A gaveta é o complemento da barra: tudo que existe na Sidebar e não coube
- * nos quatro atalhos de baixo.
- *
- * Vinha de uma lista escrita à mão, e ela já tinha derivado da Sidebar em dois
- * pontos: o Simulador nunca chegou a aparecer no mobile (tela sem nenhuma porta
- * de entrada no celular), e as telas restritas por `allowedMenus` apareciam para
- * todo mundo — o filtro de permissão só existia no desktop, e não há guarda nas
- * rotas. Agora ambos saem da mesma fonte, com o mesmo filtro.
- */
-function useMoreNav(podeVer: (key: string) => boolean) {
-  return navLeaves().filter(l => !naBarra.has(l.to) && podeVer(l.key))
-}
 
 /** Os quatro atalhos fixos também respeitam a permissão. */
 function chaveDaRota(to: string): string {
@@ -68,9 +54,35 @@ export function BottomNav() {
   const podeVer = (key: string) =>
     isAdmin || allowedMenus === null || allowedMenus.includes(key)
 
-  const moreNav = useMoreNav(podeVer)
+  /*
+   * A gaveta é o complemento da barra: tudo que existe na Sidebar e não coube
+   * nos quatro atalhos de baixo.
+   *
+   * Vinha de uma lista escrita à mão, e ela já tinha derivado da Sidebar em dois
+   * pontos: o Simulador nunca chegou a aparecer no mobile (tela sem nenhuma porta
+   * de entrada no celular), e as telas restritas por `allowedMenus` apareciam
+   * para todo mundo — o filtro de permissão só existia no desktop, e não há
+   * guarda nas rotas. Agora ambos saem da mesma fonte, com o mesmo filtro.
+   */
+  const moreSections = secoesDaGaveta(podeVer, naBarra)
   const barraVisivel = mainNav.filter(i => podeVer(chaveDaRota(i.to)))
-  const isMoreActive = moreNav.some(item => location.pathname === item.to)
+  const isMoreActive = moreSections.some(s => s.items.some(i => location.pathname === i.to))
+
+  // Escape fecha a gaveta, e o fundo da página para de rolar enquanto ela está
+  // aberta — sem isso o dedo arrastava a lista de trás por baixo do painel.
+  useEffect(() => {
+    if (!drawerOpen) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setDrawerOpen(false)
+    }
+    const anterior = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = anterior
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [drawerOpen])
 
   return (
     <>
@@ -195,31 +207,43 @@ export function BottomNav() {
 
       {/* ── Drawer ───────────────────────────────────────────────── */}
       {drawerOpen && (
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fundo do gaveteiro: fechar por teclado é o Escape, tratado no componente
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fundo do gaveteiro: o equivalente por teclado é o Escape, tratado no useEffect acima
         <div
           className="lg:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
-          onClick={() => setDrawerOpen(false)}
+          // Só o fundo fecha. Antes o painel precisava de um `stopPropagation`
+          // próprio para não fechar a si mesmo — um onClick num elemento sem
+          // papel interativo, que existia só para desfazer o de cima.
+          onClick={e => { if (e.target === e.currentTarget) setDrawerOpen(false) }}
         >
-          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fundo do gaveteiro: fechar por teclado é o Escape, tratado no componente */}
           <div
-            className="absolute inset-x-0 rounded-t-2xl pb-2 animate-in slide-in-from-bottom-4 duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+            className="absolute inset-x-0 rounded-t-[22px] pb-2 animate-in slide-in-from-bottom-4 duration-200
+                       flex flex-col overflow-y-auto overscroll-contain"
             style={{
               bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+              // Teto de 78% da altura: a gaveta cresceu (todas as telas, por
+              // seção) e sem limite ela passava do topo em telas pequenas.
+              maxHeight: '78vh',
               background: 'var(--surface)',
+              backgroundImage: 'var(--grain), var(--surface-sheen)',
               borderTop: '1px solid var(--line)',
             }}
-            onClick={e => e.stopPropagation()}
           >
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-4">
+            {/* Handle — fica colado no topo enquanto a gaveta rola */}
+            <div
+              className="sticky top-0 z-10 flex justify-center pt-3 pb-3"
+              style={{ background: 'var(--surface)' }}
+            >
               <div className="w-10 h-1 rounded-full" style={{ background: 'var(--line-strong)' }} />
             </div>
 
             {/* Busca global — única porta de entrada no mobile (sem ⌘K) */}
-            <div className="px-4 pb-3">
+            <div className="px-4 pb-4">
               <button
                 onClick={() => { setDrawerOpen(false); setSearchOpen(true) }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:scale-95 transition-all"
+                className="w-full flex items-center gap-3 px-4 min-h-[48px] rounded-2xl active:scale-[0.98] transition-transform"
                 style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}
               >
                 <Search size={16} style={{ color: 'var(--t3)' }} className="flex-shrink-0" />
@@ -227,33 +251,50 @@ export function BottomNav() {
               </button>
             </div>
 
-            {/* Páginas */}
-            <div className="px-4 pb-3">
-              <p className="text-[11px] font-bold text-t4 uppercase tracking-widest mb-3 px-2">Páginas</p>
-              <div className="grid grid-cols-4 gap-2">
-                {moreNav.map(({ to, icon: Icon, label }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    onClick={() => setDrawerOpen(false)}
-                    className="flex flex-col items-center gap-2 p-3 rounded-2xl transition-all active:scale-95"
-                    style={({ isActive }) => ({
-                      background: isActive ? 'var(--brand-tint)' : 'var(--s2)',
-                      color: isActive ? 'var(--brand)' : 'var(--t3)',
-                    })}
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Icon size={20} style={{ color: isActive ? 'var(--brand)' : 'var(--t3)' }} />
-                        <span className="text-xs font-medium leading-tight text-center" style={{ color: isActive ? 'var(--brand-text)' : 'var(--t2)' }}>
-                          {label}
-                        </span>
-                      </>
-                    )}
-                  </NavLink>
-                ))}
+            {/*
+              Páginas por seção, em lista.
+              Era uma grade de quatro colunas: "Prospecção · Disparos" em ~80px
+              de largura virava três linhas cortadas. Linha inteira com ícone à
+              esquerda lê de relance e dá alvo de 48px, que é o mínimo confortável
+              para o polegar.
+            */}
+            {moreSections.map(section => (
+              <div key={section.label} className="px-4 pb-3">
+                <p className="font-label text-[11px] font-bold text-t4 uppercase tracking-[0.14em] mb-1.5 px-1">
+                  {section.label}
+                </p>
+                <div className="flex flex-col gap-1">
+                  {section.items.map(({ to, icon: Icon, label }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 px-3 min-h-[48px] rounded-2xl transition-transform active:scale-[0.98]"
+                      style={({ isActive }) => ({
+                        background: isActive ? 'var(--brand-tint)' : 'var(--s2)',
+                      })}
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon
+                            size={18}
+                            strokeWidth={isActive ? 2.2 : 1.8}
+                            style={{ color: isActive ? 'var(--brand)' : 'var(--t3)' }}
+                            className="flex-shrink-0"
+                          />
+                          <span
+                            className="text-sm font-medium truncate"
+                            style={{ color: isActive ? 'var(--brand-text)' : 'var(--t2)' }}
+                          >
+                            {label}
+                          </span>
+                        </>
+                      )}
+                    </NavLink>
+                  ))}
+                </div>
               </div>
-            </div>
+            ))}
 
             {/* Ferramentas */}
             <div className="px-4 pt-3 pb-4" style={{ borderTop: '1px solid var(--line)' }}>

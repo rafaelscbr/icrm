@@ -20,6 +20,8 @@ function timeAgo(iso: string): string {
 
 const PANEL_WIDTH = 340
 const MAX_ITEMS   = 6
+/** Altura mínima utilizável — impede que o painel seja empurrado para uma faixa ilegível. */
+const MIN_HEIGHT  = 220
 
 interface Props {
   isOpen:  boolean
@@ -61,10 +63,18 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
 
   if (!isOpen || !anchorEl) return null
 
-  // Ancora à direita do item da sidebar, alinhado pela base; nunca sai da viewport
-  const rect   = anchorEl.getBoundingClientRect()
-  const left   = Math.min(rect.right + 12, window.innerWidth - PANEL_WIDTH - 12)
-  const bottom = Math.max(12, window.innerHeight - rect.bottom)
+  /*
+   * Ancora à direita do gatilho, alinhado pelo TOPO.
+   *
+   * Era alinhado pela base, o que embutia uma suposição: a de que o sino ficava
+   * no pé da barra. Com ele no topo o painel passou a crescer para cima e a sair
+   * pelo alto da tela. Alinhar pelo topo e limitar a altura ao espaço que sobra
+   * até o rodapé funciona nas duas posições — e em qualquer outra.
+   */
+  const rect = anchorEl.getBoundingClientRect()
+  const left = Math.min(rect.right + 12, window.innerWidth - PANEL_WIDTH - 12)
+  const top  = Math.max(12, Math.min(rect.top, window.innerHeight - MIN_HEIGHT - 12))
+  const maxHeight = window.innerHeight - top - 12
 
   function notifIcon(n: AppNotification) {
     const cls = !n.read ? 'text-brand' : 'text-t4'
@@ -95,7 +105,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
         role="dialog"
         aria-label={unreadAll > 0 ? `Notificações — ${unreadAll} não lidas` : 'Notificações'}
         tabIndex={-1}
-        style={{ position: 'absolute', left, bottom, width: PANEL_WIDTH }}
+        style={{ position: 'absolute', left, top, width: PANEL_WIDTH, maxHeight }}
         className="modal-surface border border-line rounded-[18px] shadow-modal overflow-hidden flex flex-col animate-in fade-in slide-in-from-left-2 duration-150 focus:outline-none"
       >
         {/* ── Header ────────────────────────────────────────────────────── */}
@@ -130,7 +140,9 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
         </div>
 
         {/* ── Lista ─────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto max-h-[55vh]">
+        {/* `min-h-0` é o que permite ao filho flex encolher dentro do painel já
+            limitado por `maxHeight`; sem ele a lista empurra o rodapé para fora. */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {/* "Tudo em dia" só pode ser dito quando a leitura completou. Se
               falhou, o silêncio da lista não é ausência de notificação. */}
           {erro ? (
