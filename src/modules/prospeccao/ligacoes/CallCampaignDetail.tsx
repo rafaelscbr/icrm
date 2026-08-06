@@ -153,7 +153,10 @@ export function CallCampaignDetail({ campaignId, onBack }: Props) {
 
       <div className="flex-1 p-5 sm:p-6">
         {tab === 'fila'       && <CallQueueTab       campaign={campaign} />}
-        {tab === 'quadro'     && <CallKanbanTab      campaign={campaign} />}
+        {/* O quadro pega o lead; quem registra o desfecho é sempre a Fila —
+            por isso ele empurra a aba em vez de abrir um formulário próprio. */}
+        {tab === 'quadro'     && <CallKanbanTab      campaign={campaign}
+                                                    onFalarAgora={() => setTab('fila')} />}
         {tab === 'desempenho' && <CallPerformanceTab campaignId={campaign.id} />}
       </div>
 

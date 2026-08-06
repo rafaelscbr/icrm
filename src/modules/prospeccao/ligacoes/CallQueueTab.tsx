@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Phone, SkipForward, Loader2, CheckCircle2, Inbox, AlertTriangle,
-  History, Clock, ArrowRight, Target, Sparkles, Timer, MessageCircle,
+  History, Clock, ArrowRight, Target, Sparkles, Timer, MessageCircle, Search,
 } from 'lucide-react'
 import { Button } from '../../../components/ui/Button'
 import { SidePanel } from '../../../components/ui/SidePanel'
@@ -10,8 +10,10 @@ import { Painel, PainelTitulo, Rotulo, IconeTom, Barra, Dica, Chip, TOM } from '
 import { useCallQueueStore } from '../../../store/useCallQueueStore'
 import { formatPhone, abrirWhatsApp } from '../../../lib/formatters'
 import { DAILY_TARGETS } from '../../../lib/metasConfig'
-import { OUTCOMES_POR_GRUPO, OUTCOME_BY_VALUE, tempoRelativo, quandoVolta } from './config'
-import type { CallCampaign, CallOutcome } from '../../../types'
+import {
+  OUTCOMES_POR_GRUPO, OUTCOME_BY_VALUE, CALL_STAGE_BY_VALUE, tempoRelativo, quandoVolta,
+} from './config'
+import type { CallCampaign, CallOutcome, CallBoardCard } from '../../../types'
 import toast from 'react-hot-toast'
 
 /**
@@ -30,7 +32,7 @@ interface Props {
 
 export function CallQueueTab({ campaign }: Props) {
   const {
-    atual, logAtual, carregando, filaVazia, erro, contadores,
+    atual, logAtual, carregando, filaVazia, erro, contadores, origemAtual,
     puxarProximo, ligar, registrar, pular, carregarContadores, limpar,
   } = useCallQueueStore()
 
@@ -186,6 +188,8 @@ export function CallQueueTab({ campaign }: Props) {
               ? <><Loader2 size={15} className="animate-spin" /> Buscando…</>
               : <><ArrowRight size={15} /> {filaVazia ? 'Tentar de novo' : 'Pegar próximo lead'}</>}
           </Button>
+
+          <BuscaLead campaign={campaign} />
         </Painel>
       )}
 
@@ -220,6 +224,12 @@ export function CallQueueTab({ campaign }: Props) {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mt-3">
+              {/* Veio fora da ordem: o corretor precisa saber que ele mesmo
+                  pediu este lead, senão parece que a fila entregou errado —
+                  ainda mais quando o retorno estava marcado para outro dia. */}
+              {origemAtual === 'manual' && (
+                <Chip icon={Search} tom="marca">você pediu este lead</Chip>
+              )}
               {atual.lastCallAt && (
                 <Chip icon={History} tom="neutro">última ligação {tempoRelativo(atual.lastCallAt)}</Chip>
               )}
@@ -501,6 +511,152 @@ export function CallQueueTab({ campaign }: Props) {
           onDone={() => { void puxarProximo(campaign.id) }}
         />
       )}
+    </div>
+  )
+}
+
+// ─── Achar um lead específico ─────────────────────────────────────────────────
+
+/**
+ * A porta para falar com quem já respondeu fora da ordem.
+ *
+ * Fica embaixo do "Pegar próximo lead", menor e sem cor: a fila continua sendo
+ * o caminho principal, e é ela que garante que a base seja trabalhada inteira.
+ * Isto aqui é a exceção — o lead que ligou de volta antes da hora, a pessoa que
+ * o corretor encontrou numa visita.
+ *
+ * A busca roda no banco e devolve no máximo oito. Uma campanha tem dezenas de
+ * milhares de contatos: filtrar no navegador exigiria baixar a fila inteira, o
+ * padrão que já custou um incidente de egress neste projeto.
+ */
+function BuscaLead({ campaign }: { campaign: CallCampaign }) {
+  const { buscar, pegarEspecifico } = useCallQueueStore()
+
+  const [aberto,     setAberto]     = useState(false)
+  const [termo,      setTermo]      = useState('')
+  const [resultados, setResultados] = useState<CallBoardCard[]>([])
+  const [buscando,   setBuscando]   = useState(false)
+  const [buscou,     setBuscou]     = useState(false)
+  const campoRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { if (aberto) campoRef.current?.focus() }, [aberto])
+
+  // Espera o corretor parar de digitar. Sem isto, "Maria" dispara cinco
+  // consultas — quatro delas para prefixos que ninguém queria ver.
+  useEffect(() => {
+    if (!aberto) return
+    const t = window.setTimeout(async () => {
+      const q = termo.trim()
+      if (q.length < 3) { setResultados([]); setBuscou(false); return }
+      setBuscando(true)
+      try {
+        setResultados(await buscar(campaign.id, q))
+        setBuscou(true)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Falha ao procurar o lead')
+      } finally {
+        setBuscando(false)
+      }
+    }, 350)
+    return () => window.clearTimeout(t)
+  }, [termo, aberto, campaign.id, buscar])
+
+  async function handlePegar(card: CallBoardCard) {
+    try {
+      await pegarEspecifico(card.id)
+      toast.success(`${card.name} está na sua mão`)
+      setAberto(false); setTermo(''); setResultados([])
+    } catch (err) {
+      // A recusa da reserva é informação, não falha: diz com quem o lead está.
+      toast.error(err instanceof Error ? err.message : 'Não foi possível pegar este lead')
+    }
+  }
+
+  if (!aberto) {
+    return (
+      <button
+        onClick={() => setAberto(true)}
+        className="flex items-center justify-center gap-1.5 text-[13px] text-t4
+                   hover:text-t2 transition-colors cursor-pointer py-2 min-h-[44px]"
+      >
+        <Search size={13} strokeWidth={1.6} aria-hidden />
+        Já falei com alguém? Procurar o lead
+      </button>
+    )
+  }
+
+  return (
+    <div className="w-full max-w-sm flex flex-col gap-2 mt-1">
+      <label htmlFor="busca-lead" className="sr-only">Procurar lead por nome ou telefone</label>
+      {/* Foco por ref, não por `autoFocus`: o atributo dispara antes de o
+          leitor de tela anunciar o que apareceu, e a pessoa fica digitando num
+          campo que ela não sabe que existe. */}
+      <input
+        id="busca-lead"
+        ref={campoRef}
+        value={termo}
+        onChange={e => setTermo(e.target.value)}
+        placeholder="Nome ou telefone do lead"
+        className="w-full bg-s3/50 border border-line rounded-[14px] px-3.5 py-3 text-sm
+                   text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30"
+      />
+
+      {buscando && (
+        <p className="flex items-center justify-center gap-1.5 text-[13px] text-t4 py-2">
+          <Loader2 size={13} className="animate-spin" aria-hidden /> Procurando…
+        </p>
+      )}
+
+      {!buscando && buscou && resultados.length === 0 && (
+        <p className="text-[13px] text-t4 text-center py-2">
+          Ninguém com esse nome ou telefone nesta campanha.
+        </p>
+      )}
+
+      <ul className="flex flex-col gap-1.5">
+        {resultados.map(r => {
+          const stage = CALL_STAGE_BY_VALUE[r.status]
+          const fora  = r.status === 'encerrado' || r.status === 'transferido'
+          return (
+            <li key={r.id}>
+              <button
+                onClick={() => handlePegar(r)}
+                disabled={fora}
+                title={fora ? `Lead ${stage?.label.toLowerCase()} — não volta para a fila` : undefined}
+                className="w-full text-left rounded-[12px] border border-line bg-s2/50 px-3 py-2.5
+                           transition-colors cursor-pointer hover:border-line-strong hover:bg-s2
+                           disabled:opacity-45 disabled:cursor-not-allowed
+                           focus:outline-none focus:ring-2 focus:ring-brand/30"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-[13px] font-semibold text-t1 truncate flex-1 min-w-0">
+                    {r.name}
+                  </span>
+                  {stage && (
+                    <span className={`font-label text-[11px] uppercase tracking-[0.08em] shrink-0
+                                      ${TOM[stage.tom].texto}`}>
+                      {stage.short}
+                    </span>
+                  )}
+                </span>
+                <span className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[11px] text-t4 tabular-nums">{formatPhone(r.phone)}</span>
+                  {r.status === 'retorno_agendado' && r.nextAttemptAt && (
+                    <span className="text-[11px] text-info">retorno {quandoVolta(r.nextAttemptAt)}</span>
+                  )}
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+
+      <button
+        onClick={() => { setAberto(false); setTermo(''); setResultados([]); setBuscou(false) }}
+        className="text-[13px] text-t4 hover:text-t2 transition-colors cursor-pointer py-2 min-h-[44px]"
+      >
+        Cancelar
+      </button>
     </div>
   )
 }

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, RefreshCw, Clock, Lock, ArrowUpRight, Users } from 'lucide-react'
+import { Loader2, RefreshCw, Clock, Lock, ArrowUpRight, Users, PhoneCall } from 'lucide-react'
 import { TransferCallLeadPanel } from './TransferCallLeadPanel'
 import { IconeTom, Dica, Chip, TOM } from './Primitivas'
 import { useCallCampaignsStore } from '../../../store/useCallCampaignsStore'
+import { useCallQueueStore } from '../../../store/useCallQueueStore'
 import { useAuthStore } from '../../../store/useAuthStore'
 import { formatPhone } from '../../../lib/formatters'
 import {
@@ -27,15 +28,40 @@ const CARTOES_POR_COLUNA = 25
 
 interface Props {
   campaign: CallCampaign
+  /**
+   * Leva o corretor para a aba Fila com o lead já na mão.
+   *
+   * O quadro não registra desfecho — quem registra é o discador, sempre. Este
+   * atalho só muda COMO o lead chega lá: em vez de esperar a fila oferecer, o
+   * corretor pede aquele com quem acabou de falar.
+   */
+  onFalarAgora?: () => void
 }
 
-export function CallKanbanTab({ campaign }: Props) {
+export function CallKanbanTab({ campaign, onFalarAgora }: Props) {
   const { loadBoard } = useCallCampaignsStore()
+  const { pegarEspecifico } = useCallQueueStore()
   const { allProfiles, profile } = useAuthStore()
 
   const [board,        setBoard]        = useState<CallBoard | null>(null)
   const [carregando,   setCarregando]   = useState(true)
   const [transferindo, setTransferindo] = useState<CallBoardCard | undefined>()
+  const [pegando,      setPegando]      = useState<string | null>(null)
+
+  async function handleFalarAgora(card: CallBoardCard) {
+    setPegando(card.id)
+    try {
+      await pegarEspecifico(card.id)
+      toast.success(`${card.name} está na sua mão — registre o que aconteceu`)
+      onFalarAgora?.()
+    } catch (err) {
+      // A recusa da reserva não é falha do sistema: é a fila fazendo o
+      // trabalho dela. A mensagem do banco diz com quem o lead está.
+      toast.error(err instanceof Error ? err.message : 'Não foi possível pegar este lead')
+    } finally {
+      setPegando(null)
+    }
+  }
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -105,7 +131,8 @@ export function CallKanbanTab({ campaign }: Props) {
       ) : (
         <Dica>
           O quadro é leitura: quem move o lead de coluna é o desfecho registrado na Fila.
-          A única ação aqui é transferir quem demonstrou interesse.
+          Daqui você transfere quem demonstrou interesse, ou puxa para a Fila alguém
+          com quem já falou fora da ordem.
         </Dica>
       )}
 
@@ -146,6 +173,15 @@ export function CallKanbanTab({ campaign }: Props) {
                     card={c}
                     nomeDe={nomeDe}
                     onTransferir={c.status === 'interessado' ? () => setTransferindo(c) : undefined}
+                    /* Só quem ainda está em jogo. Encerrado e transferido não
+                       voltam para a fila — o banco recusa, e oferecer um botão
+                       que sempre dá erro é pior que não ter botão. */
+                    onFalarAgora={
+                      c.status === 'fila' || c.status === 'tentativa' || c.status === 'retorno_agendado'
+                        ? () => handleFalarAgora(c)
+                        : undefined
+                    }
+                    pegando={pegando === c.id}
                   />
                 ))}
 
@@ -183,11 +219,14 @@ export function CallKanbanTab({ campaign }: Props) {
   )
 }
 
-function Cartao({ card, nomeDe, onTransferir }: {
+function Cartao({ card, nomeDe, onTransferir, onFalarAgora, pegando }: {
   card: CallBoardCard
   nomeDe: (id?: string) => string
   /** só existe na coluna "demonstrou interesse" */
   onTransferir?: () => void
+  /** só nas colunas em que o lead ainda está em jogo */
+  onFalarAgora?: () => void
+  pegando?: boolean
 }) {
   const desfecho  = card.lastOutcome ? OUTCOME_BY_VALUE[card.lastOutcome] : null
   const reservado = card.claimedUntil && new Date(card.claimedUntil) > new Date()
@@ -265,6 +304,27 @@ function Cartao({ card, nomeDe, onTransferir }: {
                      focus:outline-none focus:ring-2 focus:ring-brand/40"
         >
           <ArrowUpRight size={13} strokeWidth={2} aria-hidden /> Transferir para o funil
+        </button>
+      )}
+
+      {/* Discreto de propósito: a fila continua sendo o caminho principal, e é
+          ela que garante a base trabalhada por inteiro. Isto é a exceção — o
+          lead que ligou de volta antes da hora. */}
+      {onFalarAgora && (
+        <button
+          onClick={onFalarAgora}
+          disabled={pegando}
+          className="mt-0.5 flex items-center justify-center gap-1.5 rounded-[10px] px-2.5 py-2
+                     border border-line bg-s3/40 text-[12px] font-semibold text-t3
+                     transition-colors cursor-pointer min-h-[40px]
+                     hover:text-t1 hover:border-line-strong
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     focus:outline-none focus:ring-2 focus:ring-brand/30"
+          title="Traz este lead para a Fila, na sua mão, para você registrar o que aconteceu"
+        >
+          {pegando
+            ? <><Loader2 size={13} className="animate-spin" aria-hidden /> Pegando…</>
+            : <><PhoneCall size={13} strokeWidth={1.8} aria-hidden /> Já falei com este lead</>}
         </button>
       )}
     </article>

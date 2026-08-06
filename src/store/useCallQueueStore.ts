@@ -14,7 +14,9 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/auth'
 import { abrirWhatsApp } from '../lib/formatters'
-import type { CallQueueLead, CallOutcome, CallQueueStatus, CallLogEntry } from '../types'
+import type {
+  CallQueueLead, CallOutcome, CallQueueStatus, CallLogEntry, CallBoardCard,
+} from '../types'
 
 /** Contadores do corretor logado — alimentam a meta de 10 ligações/dia. */
 export interface CallCounters {
@@ -48,8 +50,24 @@ interface CallQueueState {
   filaVazia:  boolean
   erro:       string | null
   contadores: CallCounters
+  /**
+   * Como o lead chegou à mão do corretor.
+   *
+   * `fila` é o caminho normal. `manual` é o corretor tendo pedido este lead
+   * específico — a pessoa ligou de volta antes da hora, ou eles se falaram
+   * fora do sistema. Vai junto no registro da tentativa para o relatório poder
+   * separar depois; a conversa conta na meta dos dois jeitos.
+   */
+  origemAtual: 'fila' | 'manual'
 
   puxarProximo: (campaignId: string) => Promise<void>
+  /**
+   * Traz um lead ESPECÍFICO para a mão do corretor, fora da ordem da fila.
+   * A reserva continua valendo: se estiver com outro corretor agora, dá erro.
+   */
+  pegarEspecifico: (queueId: string) => Promise<void>
+  /** Procura na campanha por nome ou telefone. A busca roda no banco. */
+  buscar:       (campaignId: string, termo: string) => Promise<CallBoardCard[]>
   /** Registra a ligação E abre o WhatsApp. O clique é o que conta. */
   ligar:        () => Promise<void>
   registrar:    (outcome: CallOutcome, notes?: string, callbackAt?: string) => Promise<CallQueueStatus | null>
@@ -73,14 +91,15 @@ interface CallQueueState {
 }
 
 export const useCallQueueStore = create<CallQueueState>((set, get) => ({
-  atual:      null,
-  logAtual:   null,
-  carregando: false,
-  filaVazia:  false,
-  erro:       null,
-  contadores: ZERO,
+  atual:       null,
+  logAtual:    null,
+  carregando:  false,
+  filaVazia:   false,
+  erro:        null,
+  contadores:  ZERO,
+  origemAtual: 'fila',
 
-  limpar: () => set({ atual: null, logAtual: null, filaVazia: false, erro: null }),
+  limpar: () => set({ atual: null, logAtual: null, filaVazia: false, erro: null, origemAtual: 'fila' }),
 
   puxarProximo: async (campaignId) => {
     set({ carregando: true, erro: null })
@@ -93,10 +112,11 @@ export const useCallQueueStore = create<CallQueueState>((set, get) => ({
         return
       }
       set({
-        atual:      data as CallQueueLead,
-        logAtual:   null,
-        filaVazia:  false,
-        carregando: false,
+        atual:       data as CallQueueLead,
+        logAtual:    null,
+        filaVazia:   false,
+        carregando:  false,
+        origemAtual: 'fila',
       })
     } catch (err) {
       set({
@@ -105,6 +125,48 @@ export const useCallQueueStore = create<CallQueueState>((set, get) => ({
       })
       throw err
     }
+  },
+
+  /**
+   * A fila decide a ORDEM, não o direito de falar.
+   *
+   * O lead com retorno marcado para quinta liga de volta na terça; o corretor
+   * encontra a pessoa numa visita. Sem esta porta, ele esperava o sistema
+   * oferecer alguém com quem já tinha conversado — e até lá o lead ficava na
+   * coluna errada, com a cadência contando um retorno que já aconteceu.
+   *
+   * O que NÃO muda: a reserva. A RPC recusa lead que está na mão de outro
+   * corretor agora, que é exatamente o problema que a fila compartilhada
+   * existe para resolver.
+   */
+  pegarEspecifico: async (queueId) => {
+    set({ carregando: true, erro: null })
+    try {
+      const { data, error } = await supabase.rpc('claim_call_lead', { p_queue_id: queueId })
+      if (error) throw error
+      set({
+        atual:       data as CallQueueLead,
+        logAtual:    null,
+        filaVazia:   false,
+        carregando:  false,
+        origemAtual: 'manual',
+      })
+    } catch (err) {
+      set({ carregando: false, erro: err instanceof Error ? err.message : 'Falha ao pegar o lead' })
+      throw err
+    }
+  },
+
+  // Busca no banco, com teto de resultados. Baixar a fila inteira para filtrar
+  // no navegador é o padrão que já custou um incidente de egress aqui.
+  buscar: async (campaignId, termo) => {
+    const { data, error } = await supabase.rpc('search_call_leads', {
+      p_campaign_id: campaignId,
+      p_termo:       termo,
+      p_limite:      8,
+    })
+    if (error) throw error
+    return (data ?? []) as CallBoardCard[]
   },
 
   // Não existe URL que inicie chamada de WhatsApp — o que dá para fazer é
@@ -116,10 +178,13 @@ export const useCallQueueStore = create<CallQueueState>((set, get) => ({
   // não acontece e o corretor vê o erro — em vez de ligar sem registro e a meta
   // do dia mentir.
   ligar: async () => {
-    const { atual } = get()
+    const { atual, origemAtual } = get()
     if (!atual) return
 
-    const { data, error } = await supabase.rpc('register_call_attempt', { p_queue_id: atual.id })
+    const { data, error } = await supabase.rpc('register_call_attempt', {
+      p_queue_id: atual.id,
+      p_origem:   origemAtual,
+    })
     if (error) {
       set({ erro: error.message })
       throw error
