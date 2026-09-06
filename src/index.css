@@ -130,6 +130,8 @@
   /* Brilho diagonal das superfícies — o "gradiente dos cards".
      No escuro precisa ser mais forte: sobre Marinho um degradê sutil some. */
   --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0) 58%);
+  /* Ponto de partida do degradê do .surface-premium. */
+  --sheen-start: var(--surface-2);
 
   /* Aurora — focos de luz Areia no fundo da tela (ver .aurora) */
   --aurora-a: rgba(228, 178, 60, 0.14);
@@ -266,9 +268,13 @@ html.light {
   /* No papel o degradê inverte: em vez de luz branca (invisível sobre branco),
      é uma sombra fria de Marinho muito diluída subindo do rodapé do card. */
   --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0) 45%, rgba(15,23,48,0.030) 100%);
+  /* O card premium partia do Papel 2 inteiro e o canto ficava bege demais:
+     cinquenta cards com um canto bege viram uma tela "suja". Metade da tinta
+     dá o mesmo volume com metade do ruído. */
+  --sheen-start: color-mix(in srgb, var(--surface-2) 50%, var(--surface));
 
   /* Grão mais fraco no papel: sobre fundo claro o ruído aparece muito mais. */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.035'/%3E%3C/svg%3E");
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.025'/%3E%3C/svg%3E");
 
   /* Etapas do funil — versões escurecidas para atingir ≥4.5:1 sobre papel */
   --stage-lead:              #7D87A0;
@@ -708,7 +714,7 @@ html.light {
 
 .surface-premium {
   background-color: var(--surface);
-  background-image: var(--grain), linear-gradient(158deg, var(--surface-2) 0%, var(--surface) 62%);
+  background-image: var(--grain), linear-gradient(158deg, var(--sheen-start) 0%, var(--surface) 62%);
 }
 
 /*
@@ -1253,7 +1259,9 @@ html.light .shimmer {
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .stagger-children > * { animation: slideUp 240ms cubic-bezier(0.16,1,0.3,1) both; }
+  /* `backwards`, não `both`: com `both` o último quadro (transform: none)
+     ficaria aplicado para sempre e anularia o hover que levanta o card. */
+  .stagger-children > * { animation: slideUp 240ms cubic-bezier(0.16,1,0.3,1) backwards; }
   .stagger-children > *:nth-child(1) { animation-delay:   0ms; }
   .stagger-children > *:nth-child(2) { animation-delay:  50ms; }
   .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
@@ -1262,6 +1270,28 @@ html.light .shimmer {
   .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
   .stagger-children > *:nth-child(7) { animation-delay: 300ms; }
   .stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+
+  /* Entrada de um bloco inteiro (hero, próxima ação). Uma vez, curta. */
+  .entrada { animation: slideUp 320ms cubic-bezier(0.16,1,0.3,1) backwards; }
+
+  /*
+   * ATENÇÃO — três batidas e para.
+   *
+   * Efeito que chama atenção é o único movimento que pode interromper a
+   * leitura, então ele tem cota: pulsa poucas vezes e fica quieto. O que
+   * continua pulsando para sempre perde o significado em um minuto. A
+   * exceção é o SLA estourado, que DEVE incomodar até ser resolvido.
+   */
+  .atencao-pulse { animation: atencaoPulse 2.2s ease-in-out 3; }
+  @keyframes atencaoPulse {
+    0%,100% { box-shadow: var(--shadow-card); }
+    50%     { box-shadow: 0 0 0 4px var(--error-bg), 0 10px 28px rgba(229,113,122,0.28); }
+  }
+  .barra-atencao { animation: barraAtencao 1.6s ease-in-out 4; }
+  @keyframes barraAtencao {
+    0%,100% { opacity: 1; }
+    50%     { opacity: 0.3; }
+  }
 
   /* ── Glows — Areia ── */
   .glow-brand  { box-shadow: 0 0 20px rgba(228,178,60,0.28); }
@@ -1378,6 +1408,13 @@ html.light .shimmer {
   .bg-white\/2               { background-color: rgba(255,255,255,0.02); }
   .border-white\/7           { border-color: rgba(255,255,255,0.07); }
   .border-white\/8           { border-color: rgba(255,255,255,0.08); }
+}
+
+/* ── Densidade compacta — preferência de posto (ver useDensidadeStore) ──
+   Só o espaçamento vertical muda; a informação da linha é a mesma. */
+html.compacta .lista-linha {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 /* ── Acessibilidade: respeita preferência do sistema por menos movimento ── */

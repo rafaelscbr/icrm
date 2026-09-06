@@ -14,6 +14,8 @@ import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadModal } from '../leads/LeadModal'
 import { PageLayout } from '../../components/layout/PageLayout'
+import { ProximaAcao } from './ProximaAcao'
+import { useContagem } from '../../hooks/useContagem'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -456,6 +458,10 @@ function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClic
 }) {
   const t = KPI_TONE[tone]
   const isLead = size === 'lead'
+  // Contagem só em número puro; valor formatado (R$) aparece pronto.
+  const numero = typeof value === 'number' ? value : null
+  const contado = useContagem(numero ?? 0)
+  const exibido = numero !== null ? contado : value
 
   if (loading) {
     return (
@@ -475,6 +481,7 @@ function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClic
       className={`group relative overflow-hidden text-left rounded-[14px] border surface-premium transition-all duration-200 cursor-pointer
         hover:-translate-y-0.5 hover:shadow-dropdown hover:border-line-strong
         ${t.gold ? 'gold-edge gold-edge-short' : ''}
+        ${tone === 'alert' ? 'atencao-pulse' : ''}
         ${t.card} ${isLead ? 'p-5' : 'p-4'}`}
       style={{ boxShadow: 'var(--shadow-card)' }}
     >
@@ -485,7 +492,7 @@ function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClic
         </span>
       </div>
       <p className={`font-heading font-black tabular-nums leading-none tracking-[-0.02em] ${t.value} ${isLead ? 'text-[30px] mt-3.5' : 'text-[22px] mt-2.5'}`}>
-        {value}
+        {exibido}
       </p>
       {sub && (
         <p className="flex items-center gap-1 text-[11px] text-t4 mt-2">
@@ -564,25 +571,33 @@ function PriorityFeed({ items, loading, onSeeAll, coldOverflow = 0 }: {
 
   return (
     <div className="rounded-[16px] border border-line surface-premium overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
-      <ul className="divide-y divide-line">
-        {shown.map(item => {
+      {/* A severidade é dita UMA vez, no cabeçalho do grupo — o mesmo chip
+          repetido em dez linhas virava textura. A lista já chega ordenada por
+          severidade, então o grupo abre quando ela muda. */}
+      <ul className="divide-y divide-line stagger-children">
+        {shown.map((item, i) => {
           const s = SEVERITY[item.severity]
+          const abreGrupo = i === 0 || shown[i - 1].severity !== item.severity
+          const noGrupo = items.filter(x => x.severity === item.severity).length
           return (
             <li key={item.id} className="relative">
-              <span className={`absolute left-0 inset-y-0 w-[3px] ${s.bar}`} aria-hidden />
-              <div className="flex items-center gap-3 sm:gap-4 pl-5 pr-4 py-3.5 hover:bg-s2/50 transition-colors">
+              {abreGrupo && (
+                <div className="flex items-center gap-2 px-5 pt-2.5 pb-1.5 bg-s2/30" aria-hidden>
+                  <span className={`w-1 h-3 rounded-full ${s.bar}`} />
+                  <span className={`font-label text-[10px] font-bold uppercase tracking-[0.12em] ${s.text}`}>{s.label}</span>
+                  <span className="font-label text-[10px] font-bold text-t4 tabular-nums">{noGrupo}</span>
+                </div>
+              )}
+              <div className="relative">
+              <span className={`absolute left-0 inset-y-0 w-[3px] ${s.bar} ${item.severity === 'critical' ? 'barra-atencao' : ''}`} aria-hidden />
+              <div className="lista-linha flex items-center gap-3 sm:gap-4 pl-5 pr-4 py-3.5 hover:bg-s2/50 transition-colors">
                 <button
                   onClick={item.onOpen}
                   className="flex-1 min-w-0 text-left cursor-pointer"
-                  aria-label={`Abrir ${item.title}. ${item.reason}, ${item.time}`}
+                  aria-label={`${s.label}: abrir ${item.title}. ${item.reason}, ${item.time}`}
                 >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`font-label text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded ${s.text} ${s.bg}`}>
-                      {s.label}
-                    </span>
-                    <span className="text-sm font-bold text-t1 truncate">{item.title}</span>
-                  </div>
-                  <p className="text-xs text-t3 mt-1 truncate">
+                  <span className="block text-sm font-bold text-t1 truncate">{item.title}</span>
+                  <p className="text-xs text-t3 mt-0.5 truncate">
                     {item.reason} <span className="text-t4">· {item.time}</span>
                   </p>
                 </button>
@@ -603,6 +618,7 @@ function PriorityFeed({ items, loading, onSeeAll, coldOverflow = 0 }: {
                   <s.actionIcon size={13} strokeWidth={2} aria-hidden />
                   {item.actionLabel}
                 </button>
+              </div>
               </div>
             </li>
           )
@@ -1265,11 +1281,22 @@ export function DashboardPage() {
         />
       </div>
 
+      {/* ══ Próxima melhor ação ═════════════════════════════════════════ */}
+      <ProximaAcao
+        leads={activeLeads}
+        tasks={inViewTasks(tasks.filter(t => t.status !== 'done'))}
+        slaEstourado={overviewData?.alertas.slaEstourado ?? 0}
+        tarefasVencidas={overviewData?.alertas.tarefasEmAtraso ?? 0}
+        brokerId={isGlobalView ? null : (effectiveBrokerId ?? null)}
+        loading={kpiLoading}
+        onAbrirLead={setSelectedLead}
+      />
+
       {/* ══ 2. Indicadores ══════════════════════════════════════════════ */}
       <SectionLabel icon={Gauge} tom="marca" hint="Mês corrente">Indicadores</SectionLabel>
 
       {/* Receita — protagonismo */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3 stagger-children">
         <KpiCard
           title="Vendas no mês" size="lead" tone="success" icon={TrendingUp}
           value={overviewData?.vgl.vendasMes ?? '—'}
@@ -1297,7 +1324,7 @@ export function DashboardPage() {
       </div>
 
       {/* Operação e alerta — discretos ou urgentes */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8 stagger-children">
         <KpiCard
           title="Leads ativos" tone="neutral" icon={Users}
           value={overviewData?.leadsAtivos ?? '—'} sub="em aberto no funil"

@@ -209,7 +209,7 @@ export function LeadListsPage() {
           </Button>
         )}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 stagger-children">
           {visible.map(list => {
             const profile    = list.productProfile
             const listScore  = listScores.get(list.id)

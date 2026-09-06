@@ -98,7 +98,7 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
   const delegatedByName = t.brokerId && t.brokerId !== currentUserId ? (allProfiles.find(p => p.id === t.brokerId)?.name ?? '') : ''
 
   return (
-    <div className={`flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s3/50 group relative
+    <div className={`lista-linha flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s3/50 group relative
       ${!isLast ? 'border-b border-line' : ''}
       ${isDone ? 'opacity-55' : ''}
       ${isToday && !isDone ? 'bg-indigo-500/3' : ''}
@@ -485,14 +485,19 @@ export function TasksPage() {
 
   useEffect(() => { load(); loadProperties() }, [load, loadProperties])
 
-  // `/tarefas?nova=1` abre o formulário — é o que a busca ⌘K chama.
+  // `/tarefas?nova=1` abre o formulário (busca ⌘K); `?foco=overdue|today|upcoming`
+  // recorta a lista (Próxima melhor ação do Dashboard).
   const [searchParams, setSearchParams] = useSearchParams()
   useEffect(() => {
-    if (searchParams.get('nova') === '1') {
-      setEditing(undefined)
-      setFormOpen(true)
-      setSearchParams({}, { replace: true })
+    const nova = searchParams.get('nova') === '1'
+    const foco = searchParams.get('foco')
+    if (!nova && !foco) return
+    if (nova) { setEditing(undefined); setFormOpen(true) }
+    if (foco === 'overdue' || foco === 'today' || foco === 'upcoming') {
+      setActiveTab('tasks')
+      setFocus(foco)
     }
+    setSearchParams({}, { replace: true })
   }, [searchParams, setSearchParams])
 
   // Só os contatos citados nesta tela — antes era o fetchAll de 12.543 linhas

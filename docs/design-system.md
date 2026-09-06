@@ -108,7 +108,11 @@ brilho pinta por cima do texto.
 lead, ir para…) · `TasksLinkedModal` · `Esqueleto` (`EsqueletoLinhas`,
 `EsqueletoCards`, `EsqueletoKpis` — passe em `EstadoTela` via `esqueleto`;
 spinner só em ação do usuário, leitura de tela usa esqueleto) ·
-`lib/notificacoes.ts` (avisos iguais viram um grupo; o sino conta grupos)
+`lib/notificacoes.ts` (avisos iguais viram um grupo; o sino conta grupos) ·
+`hooks/useContagem` (número que conta até o valor) ·
+`dashboard/ProximaAcao` (próxima melhor ação: SLA, vencidas, visitas de
+amanhã, meta do dia, leads esfriando, avisos — deep links `?foco=` em Tarefas
+e `?etapa=` em Leads)
 
 ### Layout — `src/components/layout/`
 
@@ -135,6 +139,7 @@ spinner só em ação do usuário, leitura de tela usa esqueleto) ·
 | `useThemeStore` | `icrm-theme` | `version:1` migra quem tinha `dark` gravado |
 | `useSidebarStore` | `icrm-sidebar` | recolhida ou não |
 | `useKanbanPrefs` | `icrm-kanban-prefs` | densidade, ordenação, modo financeiro |
+| `useDensidadeStore` | `icrm-densidade` | `compacta` → classe `html.compacta`; linhas com `.lista-linha` apertam o espaçamento (menu da conta › Densidade) |
 
 Ao mudar um default persistido, **subir a `version` e escrever o `migrate`** —
 senão a mudança não alcança quem já usa o sistema.

@@ -111,7 +111,7 @@ function LeadRow({ lead, onClick, mostrarEncaixe = true }: {
       tabIndex={0}
       onKeyDown={aoTeclarAbrir(onClick)}
       aria-label={`Abrir lead ${displayName}`}
-      className={`flex items-center gap-4 px-5 py-3.5 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
+      className={`lista-linha flex items-center gap-4 px-5 py-3.5 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
         ${isDiscarded ? 'opacity-50' : ''}
       `}
     >
@@ -418,12 +418,19 @@ export function LeadsPage() {
       .sort((a, b) => b.count - a.count)
   }, [scoped, properties])
 
-  // `/leads?novo=1` abre o formulário — é o que a busca ⌘K chama.
+  // `/leads?novo=1` abre o formulário (busca ⌘K); `?etapa=<etapa>` filtra a
+  // lista (Próxima melhor ação do Dashboard).
   useEffect(() => {
-    if (searchParams.get('novo') === '1') {
-      setShowForm(true)
-      setSearchParams({}, { replace: true })
+    const novo = searchParams.get('novo') === '1'
+    const etapa = searchParams.get('etapa')
+    if (!novo && !etapa) return
+    if (novo) setShowForm(true)
+    if (etapa && (STAGES as string[]).includes(etapa)) {
+      setTab('leads')
+      setListView('active')
+      setFilterStage(etapa as LeadFunnelStage)
     }
+    setSearchParams({}, { replace: true })
   }, [searchParams, setSearchParams])
 
   // O chip de encaixe ("Difícil", "Ideal") só informa quando a lista é mista.
@@ -642,7 +649,7 @@ export function LeadsPage() {
           ) : isKanbanTab ? (
             <LeadKanban leads={filtered} />
           ) : (
-            <div className="rounded-xl border border-line overflow-hidden list-surface">
+            <div className="rounded-xl border border-line overflow-hidden list-surface stagger-children">
               {/* O cabeçalho espelha a linha: mesmas larguras, mesma ordem. */}
               <div className="flex items-center gap-4 px-5 py-2.5 border-b border-line bg-s3/20 select-none">
                 <span className="w-8 flex-shrink-0" aria-hidden />

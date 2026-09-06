@@ -868,13 +868,18 @@ export function VirtualOfficePage() {
           )
         })}
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-line bg-s2/50 text-xs text-t3 ml-auto">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"/>
+          <span className="w-2 h-2 rounded-full bg-success animate-pulse"/>
           Tempo real · {onlineBrokers.length} online
         </div>
       </div>
 
-      {/* Escritório SVG */}
-      <div className="w-full overflow-x-auto rounded-2xl border border-line" style={{ background: '#0d0d1a' }}>
+      {/* Escritório SVG — o pixel art continua sendo a exceção deliberada da
+          identidade; o que mudou é a MOLDURA: Marinho com o grão do sistema,
+          em vez de um preto solto sobre o papel. */}
+      <div
+        className="w-full overflow-x-auto rounded-[18px] border border-line texture-grain shadow-card p-2 sm:p-3"
+        style={{ background: '#0F1730' }}
+      >
         <OfficeSVG
           brokerSeats={brokerSeats}
           adminName={adminName}
@@ -898,7 +903,7 @@ export function VirtualOfficePage() {
               ) : (
                 names.map(n => (
                   <span key={n} className="text-xs text-t3 flex items-center gap-1">
-                    <span className={`w-1.5 h-1.5 rounded-full ${room === 'break' ? 'bg-slate-600' : 'bg-green-400'}`}/>
+                    <span className={`w-1.5 h-1.5 rounded-full ${room === 'break' ? 'bg-t5' : 'bg-success'}`}/>
                     {n}{room === 'break' && ' (offline)'}
                   </span>
                 ))

@@ -27,6 +27,7 @@ import { useDisparosStore } from '../../store/useDisparosStore'
 import { useCallQueueStore } from '../../store/useCallQueueStore'
 import { Goal, GoalCategory, Task, Sale } from '../../types'
 import { iniciais } from '../../lib/formatters'
+import { useContagem } from '../../hooks/useContagem'
 
 /**
  * Metas — o painel de esforço do corretor.
@@ -224,6 +225,7 @@ function KpiCard({ label, value, target, icon: Icon, note }: {
   const status = getStatus(value, target)
   const cfg    = STATUS[status]
   const done   = status === 'done'
+  const contado = useContagem(value)
 
   return (
     <Painel className="px-4 py-3.5 flex flex-col gap-2.5">
@@ -239,7 +241,7 @@ function KpiCard({ label, value, target, icon: Icon, note }: {
       <div className="flex items-baseline gap-1.5">
         <span className={`font-heading font-extrabold tabular-nums leading-none text-[30px]
                           tracking-tight ${done ? 'text-success' : 'text-t1'}`}>
-          {value}
+          {contado}
         </span>
         <span className="text-[13px] text-t4 font-medium tabular-nums">/{target}</span>
         {done && <CheckCircle2 size={15} className="text-success ml-auto shrink-0" aria-hidden />}
@@ -330,7 +332,7 @@ function PerformanceHero({ tasks, period, brokerId }: {
       </Painel>
 
       {/* Indicadores do período */}
-      <div className={`grid gap-3 ${
+      <div className={`grid gap-3 stagger-children ${
         kpis.length === 3 ? 'grid-cols-1 sm:grid-cols-3'
         : kpis.length === 4 ? 'grid-cols-2 lg:grid-cols-4'
         : 'grid-cols-2 lg:grid-cols-5'}`}>
@@ -357,6 +359,7 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
   const pct      = Math.min(100, goal.target > 0 ? Math.round(progress / goal.target * 100) : 0)
   const tom      = done ? 'sucesso' : cfg.tom
   const firedRef = useRef(false)
+  const contado  = useContagem(progress)
 
   useEffect(() => {
     if (done && !firedRef.current) {
@@ -381,7 +384,7 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
       <div className="flex items-baseline gap-1.5">
         <span className={`font-heading font-extrabold tabular-nums leading-none text-[32px]
                           tracking-tight ${done ? 'text-success' : 'text-t1'}`}>
-          {progress}
+          {contado}
         </span>
         <span className="text-[13px] text-t4 font-medium tabular-nums">/{goal.target}</span>
         <span className={`ml-auto font-heading text-[13px] font-bold tabular-nums
@@ -490,9 +493,10 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
       </div>
 
       <div className="grid grid-cols-3 gap-2">
+        {/* Fundo tonalizado sem borda: caixa dentro de caixa dentro de caixa
+            era o que deixava o card pesado. */}
         {numeros.map(n => (
-          <div key={n.rotulo} className={`rounded-[12px] border px-3 py-2.5 text-center
-                                          ${TOM[n.tom].borda} ${TOM[n.tom].fundo}`}>
+          <div key={n.rotulo} className={`rounded-[12px] px-3 py-2.5 text-center ${TOM[n.tom].fundo}`}>
             <p className={`font-heading font-extrabold tabular-nums leading-none text-[26px]
                            ${n.tom === 'neutro' ? 'text-t1' : TOM[n.tom].texto}`}>
               {n.valor}
@@ -626,7 +630,7 @@ function GrupoDoCorretor({ grupo, tasks, sales, disparos, onEdit, onDelete, onPa
       </div>
 
       {(movimentadas.length > 0 || (visitGoals.length > 0 && !visitasParadas) || (mostrarParadas && totalParadas > 0)) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-start stagger-children">
           {visitGoals.length > 0 && (!visitasParadas || mostrarParadas) && (
             <VisitasCard tasks={tasks} visitGoals={visitGoals} {...acoes} />
           )}
@@ -821,7 +825,7 @@ export function GoalsPage() {
           ))}
         </div>
       ) : active.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8 items-start stagger-children">
           {visitGoals.length > 0 && (
             <VisitasCard
               tasks={tasks} visitGoals={visitGoals}

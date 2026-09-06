@@ -155,7 +155,9 @@ export function Sidebar() {
             />
             {unreadCount > 0 && (
               <span
-                className="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full"
+                // a chave muda com a contagem: o ponto salta quando chega aviso novo
+                key={unreadCount}
+                className="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full badge-bounce"
                 style={{ background: 'var(--brand)', boxShadow: '0 0 0 2px var(--nav-bg)' }}
                 aria-hidden
               />

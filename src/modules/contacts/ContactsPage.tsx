@@ -222,7 +222,7 @@ export function ContactsPage() {
               onKeyDown={aoTeclarAbrir(() => setViewContact(c))}
               aria-label={`Abrir ${c.name}`}
               className={`
-                group flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-s3/50 row-accent cursor-pointer
+                lista-linha group flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-s3/50 row-accent cursor-pointer
                 ${i < paginated.length - 1 ? 'border-b border-line' : ''}
               `}
             >

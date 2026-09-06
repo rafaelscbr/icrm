@@ -289,7 +289,7 @@ export function PropertiesPage() {
           </Button>
         }
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
           {filtered.map(p => {
             const owner      = p.ownerId ? getById(p.ownerId) : undefined
             const commission = calcCommission(p.value)

@@ -164,7 +164,8 @@ export function BottomNav() {
                   />
                   {unreadCount > 0 && (
                     <span
-                      className="absolute -top-0.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-brand-fill text-brand-fill-text text-[11px] font-bold flex items-center justify-center tabular-nums leading-none"
+                      key={unreadCount}
+                      className="absolute -top-0.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-brand-fill text-brand-fill-text text-[11px] font-bold flex items-center justify-center tabular-nums leading-none badge-bounce"
                       aria-hidden="true"
                     >
                       {unreadCount > 9 ? '9+' : unreadCount}

@@ -123,6 +123,20 @@ compositor resolve na GPU. `prefers-reduced-motion` congela tudo.
 Animação que chama atenção para si mesma está errada. A exceção é a
 comemoração de venda, que **deve** interromper.
 
+Quatro movimentos têm licença, cada um com o seu limite (06/09/2026):
+
+- **Entrada em escada** (`.stagger-children`, `.entrada`) — a lista "chega"
+  em vez de aparecer pronta. 240 ms, uma vez, só os oito primeiros com atraso.
+- **Contagem** (`useContagem`) — número puro sobe até o valor em 700 ms; texto
+  formatado aparece pronto. A barra (`Barra`) nasce vazia e enche.
+- **Atenção com cota** (`.atencao-pulse`, `.barra-atencao`) — pulsa três ou
+  quatro vezes e para. O que precisa incomodar até ser resolvido é só o SLA
+  estourado, que continua com o pulso infinito.
+- **Salto do aviso** (`.badge-bounce`) — o ponto do sino salta quando a
+  contagem muda, não o tempo todo.
+
+`prefers-reduced-motion` desliga tudo isso de uma vez, pela regra global.
+
 ---
 
 ## 10. Contexto acima de foco total

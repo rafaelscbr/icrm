@@ -111,7 +111,7 @@ function NotificationItem({
   return (
     <button
       onClick={handleClick}
-      className={`group relative w-full text-left flex items-start gap-4 rounded-[14px] px-4 py-4 min-h-[44px]
+      className={`lista-linha group relative w-full text-left flex items-start gap-4 rounded-[14px] px-4 py-4 min-h-[44px]
                   border transition-all cursor-pointer overflow-hidden
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
         ${naoLida
@@ -369,7 +369,7 @@ export function NotificationsPage() {
                     </span>
                   )}
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5 stagger-children">
                   {agrupados.map(g => g.itens.length > 1
                     ? <GrupoItem key={g.chave} grupo={g} onRead={markRead} onReadMany={markManyRead} />
                     : <NotificationItem key={g.itens[0].id} n={g.itens[0]} onRead={markRead} />)}

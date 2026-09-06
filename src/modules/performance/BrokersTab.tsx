@@ -249,7 +249,7 @@ export function BrokersTab() {
       )}
 
       {/* Cards por corretor */}
-      <div className={`grid gap-6 ${brokers.length > 1 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
+      <div className={`grid gap-6 stagger-children ${brokers.length > 1 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
         {stats.map((s) => {
           const prev = prevStats[s.id] ?? {}
           const metrics = METRICS(s, prev)

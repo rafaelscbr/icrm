@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useThemeStore, applyTheme } from './store/useThemeStore'
+import { useDensidadeStore, aplicarDensidade } from './store/useDensidadeStore'
 import { useAuthStore } from './store/useAuthStore'
 import { usePresenceStore } from './store/usePresenceStore'
 import { getUserLocation } from './lib/geolocation'
@@ -260,9 +261,11 @@ function AppRoutes() {
 // ── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const { theme } = useThemeStore()
+  const compacta = useDensidadeStore(s => s.compacta)
   const { init, loading } = useAuthStore()
 
   useEffect(() => { applyTheme(theme) }, [theme])
+  useEffect(() => { aplicarDensidade(compacta) }, [compacta])
   useEffect(() => { init() }, [init])
 
   if (loading) {

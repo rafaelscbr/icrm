@@ -1,8 +1,9 @@
 import * as Popover from '@radix-ui/react-popover'
 import { Link } from 'react-router-dom'
 import {
-  ChevronsUpDown, Search, Sun, Moon, ShieldCheck, LogOut, ExternalLink,
+  ChevronsUpDown, Search, Sun, Moon, ShieldCheck, LogOut, ExternalLink, Rows3, Rows4,
 } from 'lucide-react'
+import { useDensidadeStore } from '../../../store/useDensidadeStore'
 import { externalTools } from './navConfig'
 
 /**
@@ -29,6 +30,8 @@ export function AccountMenu({
   onBuscar: () => void
   onSair: () => void
 }) {
+  const { compacta, setCompacta } = useDensidadeStore()
+
   const linhaClasse =
     'flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium ' +
     'transition-colors cursor-pointer hover:bg-nav-hover text-left'
@@ -38,7 +41,10 @@ export function AccountMenu({
       <Popover.Trigger asChild>
         <button
           aria-label={`Conta de ${nome} — preferências, ferramentas e sair`}
+          // Anel de foco discreto: o contorno dourado de 2px na largura toda do
+          // trilho competia com o item ativo. Aqui o foco é linha, não ouro.
           className={`flex w-full cursor-pointer items-center rounded-xl transition-colors hover:bg-nav-hover
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-line-strong
             ${collapsed ? 'justify-center py-1.5' : 'gap-2.5 p-1.5'}`}
         >
           <span
@@ -134,6 +140,47 @@ export function AccountMenu({
                     role="radio"
                     aria-checked={ativo}
                     onClick={() => { if (!ativo) onToggleTheme() }}
+                    className="flex cursor-pointer items-center justify-center gap-1.5 rounded-[7px] py-1.5 text-[12.5px] font-medium transition-colors"
+                    style={{
+                      background: ativo ? 'var(--nav-elev)' : 'transparent',
+                      color: ativo ? 'var(--nav-active-text)' : 'var(--nav-muted)',
+                      boxShadow: ativo ? 'var(--shadow-card)' : undefined,
+                    }}
+                  >
+                    <Icon size={13} strokeWidth={2} style={{ color: ativo ? 'var(--brand)' : 'var(--nav-muted)' }} />
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Densidade das listas — mesma lógica do tema: duas opções, uma
+              marcada. Compacta aperta as linhas sem esconder nada. */}
+          <div className="px-2 pb-1 pt-2">
+            <p
+              className="font-label mb-1.5 text-[11px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: 'var(--nav-muted)' }}
+            >
+              Densidade
+            </p>
+            <div
+              className="grid grid-cols-2 gap-1 rounded-lg p-1"
+              style={{ background: 'var(--nav-hover-bg)' }}
+              role="radiogroup"
+              aria-label="Densidade das listas"
+            >
+              {([
+                { id: false, label: 'Confortável', Icon: Rows3 },
+                { id: true,  label: 'Compacta',    Icon: Rows4 },
+              ] as const).map(({ id, label, Icon }) => {
+                const ativo = compacta === id
+                return (
+                  <button
+                    key={label}
+                    role="radio"
+                    aria-checked={ativo}
+                    onClick={() => setCompacta(id)}
                     className="flex cursor-pointer items-center justify-center gap-1.5 rounded-[7px] py-1.5 text-[12.5px] font-medium transition-colors"
                     style={{
                       background: ativo ? 'var(--nav-elev)' : 'transparent',

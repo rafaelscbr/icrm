@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useContagem } from '../../hooks/useContagem'
 import type { LucideIcon } from 'lucide-react'
 import { Lightbulb } from 'lucide-react'
 
@@ -105,6 +107,14 @@ export function Barra({ pct, tom = 'marca', altura = 6, rotuloAcessivel }: {
 }) {
   const preenchido = Math.max(0, Math.min(100, pct))
   const dourado = tom === 'marca'
+  // A barra nasce vazia e enche: o "dado chegando" que o número conta, a
+  // barra desenha. A transição de largura já existia — faltava o ponto de
+  // partida. Com prefers-reduced-motion a transição global é instantânea.
+  const [largura, setLargura] = useState(0)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setLargura(preenchido))
+    return () => cancelAnimationFrame(id)
+  }, [preenchido])
   return (
     <div
       className="w-full rounded-full bg-s3 overflow-hidden"
@@ -118,7 +128,7 @@ export function Barra({ pct, tom = 'marca', altura = 6, rotuloAcessivel }: {
       <div
         className="h-full rounded-full transition-[width] duration-[520ms]"
         style={{
-          width: `${preenchido}%`,
+          width: `${largura}%`,
           // Os dois pontos são tokens de tema: no papel o ouro escurece em vez
           // de clarear (ver --grad-brand no index.css).
           background: dourado
@@ -141,6 +151,10 @@ export function Numero({ valor, rotulo, nota, tom = 'neutro', icon, tamanho = 'm
   tamanho?: 'sm' | 'md' | 'lg'
 }) {
   const px = { sm: 'text-[22px]', md: 'text-[28px]', lg: 'text-[34px]' }[tamanho]
+  // Número puro conta até o valor; texto formatado (R$, %) aparece pronto.
+  const numero = typeof valor === 'number' ? valor : null
+  const contado = useContagem(numero ?? 0)
+  const exibido = numero !== null ? contado.toLocaleString('pt-BR') : valor
   return (
     <div className="flex flex-col gap-1 min-w-0">
       <div className="flex items-center gap-2">
@@ -154,7 +168,7 @@ export function Numero({ valor, rotulo, nota, tom = 'neutro', icon, tamanho = 'm
           classe na própria tela. */}
       <span className={`font-heading font-extrabold tabular-nums leading-none ${px}
                         tracking-tight truncate text-t1`}>
-        {valor}
+        {exibido}
       </span>
       {nota && <span className="text-[11px] text-t4 truncate">{nota}</span>}
     </div>
