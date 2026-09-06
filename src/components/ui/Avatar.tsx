@@ -1,3 +1,6 @@
+import { User } from 'lucide-react'
+import { iniciais } from '../../lib/formatters'
+
 interface AvatarProps {
   name: string
   photoUrl?: string
@@ -27,12 +30,8 @@ function pickColor(name: string) {
 }
 
 export function Avatar({ name, photoUrl, size = 'md' }: AvatarProps) {
-  const initials = name
-    .split(' ')
-    .slice(0, 2)
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
+  // Só letras: nome decorativo não pode virar "�" (ver iniciais()).
+  const initials = iniciais(name, 2)
 
   if (photoUrl) {
     return (
@@ -47,8 +46,9 @@ export function Avatar({ name, photoUrl, size = 'md' }: AvatarProps) {
   return (
     <div
       className={`${sizes[size]} ${pickColor(name)} rounded-full flex items-center justify-center font-semibold flex-shrink-0 select-none`}
+      aria-hidden
     >
-      {initials}
+      {initials || <User size={size === 'xs' ? 11 : size === 'sm' ? 13 : 16} strokeWidth={1.8} />}
     </div>
   )
 }

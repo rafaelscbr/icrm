@@ -215,3 +215,22 @@ export function isThisMonth(dateIso: string): boolean {
   const d = new Date(dateIso)
   return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
 }
+
+/**
+ * Iniciais de um nome, só com letras de verdade.
+ *
+ * Nome digitado com caracteres decorativos ("𝓰𝓻𝓪𝔃𝓲𝓮𝓵𝓮") virava um losango de
+ * caractere inválido em todo avatar. Normaliza (NFKD leva a maioria dos
+ * estilizados de volta à letra base), descarta o que não é letra e devolve a
+ * primeira letra das `quantidade` primeiras palavras. Vazio quando não sobra
+ * nada — quem chama decide o que mostrar (o Avatar cai para o ícone).
+ */
+export function iniciais(nome: string | null | undefined, quantidade = 1): string {
+  if (!nome) return ''
+  const palavras = nome
+    .normalize('NFKD')
+    .split(/\s+/)
+    .map(p => p.replace(/[^\p{L}]/gu, ''))
+    .filter(Boolean)
+  return palavras.slice(0, quantidade).map(p => p.charAt(0)).join('').toUpperCase()
+}

@@ -16,6 +16,10 @@ interface PageLayoutProps {
   actions?: ReactNode
   /** Faixa colada ao cabeçalho — indicadores, filtros ou abas da tela. */
   band?: ReactNode
+  /** `total` libera o conteúdo da largura máxima — só para quadros que rolam
+      na horizontal, como o Kanban. O cabeçalho continua igual ao das outras
+      telas: é ele que dá a sensação de "mesmo lugar". */
+  largura?: 'padrao' | 'total'
   children: ReactNode
 }
 
@@ -32,8 +36,9 @@ interface PageLayoutProps {
  */
 export function PageLayout({
   title, subtitle, icon, iconTom = 'marca',
-  ctaLabel, onCta, actions, band, children,
+  ctaLabel, onCta, actions, band, largura = 'padrao', children,
 }: PageLayoutProps) {
+  const caixa = largura === 'total' ? 'max-w-none' : 'max-w-7xl'
   return (
     <div className="flex-1 min-h-screen bg-page texture-grain aurora-host">
       {/*
@@ -86,7 +91,7 @@ export function PageLayout({
       </div>
 
       {/* ── Conteúdo ────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+      <div className={`${caixa} mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8`}>
         {children}
       </div>
     </div>

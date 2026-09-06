@@ -26,7 +26,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
 import { useTasksStore } from '../../store/useTasksStore'
-import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
+import { formatPhone, formatCurrency, whatsappUrl, iniciais } from '../../lib/formatters'
 import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { IntelPair } from '../../components/shared/IntelBadges'
@@ -263,7 +263,7 @@ function LeadCard({
       {/* ── NÍVEL 1 — Identidade ─────────────────────────────────────────── */}
       <div className="flex items-start gap-2.5 pr-12">
         <div className="w-8 h-8 rounded-[10px] bg-s2 border border-line flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
-          {displayName.charAt(0).toUpperCase()}
+          {iniciais(displayName) || '?'}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
@@ -384,7 +384,7 @@ function LeadCard({
         {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
           <button
             onClick={e => { e.stopPropagation(); setShowConclude(true) }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-[var(--brand-btn-text)] bg-brand hover:bg-brand-dark rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-brand-fill-text bg-brand-fill hover:bg-brand-fill-hover rounded-[10px] transition-all duration-150 active:scale-[0.98]"
             title="Concluir a venda e registrar no faturamento"
           >
             <Trophy size={12} strokeWidth={1.8} />

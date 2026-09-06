@@ -728,7 +728,7 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
                 Só mover na campanha
               </Button>
               <Button
-                className="flex-1 flex items-center justify-center gap-2 bg-brand hover:bg-brand"
+                className="flex-1 flex items-center justify-center gap-2"
                 onClick={openTransferFromSuggest}
               >
                 <ArrowRight size={14} />

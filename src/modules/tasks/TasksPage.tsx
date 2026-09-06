@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   CheckCircle2, Circle, Clock, Trash2, Pencil, User,
@@ -6,11 +7,13 @@ import {
   Flame, TrendingUp, Home, FileText, Zap, ChevronDown, ChevronUp,
   BarChart2, UserCheck, CalendarDays, ChevronLeft, ChevronRight, Users, CheckSquare, Plus,} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
-import { TOM } from '../../components/shared/visual'
+import { TOM, Dica } from '../../components/shared/visual'
 import type { Tom } from '../../components/shared/visual'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { EsqueletoLinhas } from '../../components/shared/Esqueleto'
+import { Abas } from '../../components/shared/Abas'
 import { Modal } from '../../components/ui/Modal'
 import { TaskForm } from './TaskForm'
 import { TaskHistoryView } from './TaskHistoryView'
@@ -482,6 +485,16 @@ export function TasksPage() {
 
   useEffect(() => { load(); loadProperties() }, [load, loadProperties])
 
+  // `/tarefas?nova=1` abre o formulário — é o que a busca ⌘K chama.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('nova') === '1') {
+      setEditing(undefined)
+      setFormOpen(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
+
   // Só os contatos citados nesta tela — antes era o fetchAll de 12.543 linhas
   // (~7,7 MB) para exibir algumas dezenas de nomes.
   useEffect(() => {
@@ -580,6 +593,13 @@ export function TasksPage() {
     ? allBlocks.filter(b => FOCUS_BLOCKS[focus].includes(b.key))
     : allBlocks
 
+  // O primeiro bloco que tem tarefa abre sempre. Com nada atrasado nem para
+  // hoje, "Próximos dias" recolhido deixava 7 pendentes atrás de um chevron e
+  // a tela vazia — parecia que não havia nada a fazer.
+  const primeiroComTarefa = timeBlocks.find(b => b.tasks.length > 0)?.key
+  const proxima = [...tomorrowT, ...thisWeek, ...later][0]
+  const emDia = !isEmpty && overdueCount === 0 && todayCount === 0 && focus === null
+
   return (
     <PageLayout
       icon={CheckSquare}
@@ -591,26 +611,18 @@ export function TasksPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
-      {/* Tabs — estilo sem barra de fundo, igual Performance */}
-      <div className="flex gap-1 mb-6 border-b border-line">
-        {([
-          { key: 'tasks',    label: 'Tarefas',       icon: <ListTodo size={14} />     },
-          { key: 'calendar', label: 'Calendário',    icon: <CalendarDays size={14} /> },
-          { key: 'history',  label: 'Resumo por dia', icon: <BarChart2 size={14} />   },
-        ] as const).map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all cursor-pointer border-b-2 -mb-px
-              ${activeTab === tab.key
-                ? 'text-brand-text border-brand'
-                : 'text-t3 border-transparent hover:text-t2'
-              }`}
-          >
-            {tab.icon} {tab.label}
-          </button>
-        ))}
-      </div>
+      <Abas
+        abas={[
+          { value: 'tasks',    label: 'Tarefas',        icon: ListTodo     },
+          { value: 'calendar', label: 'Calendário',     icon: CalendarDays },
+          { value: 'history',  label: 'Resumo por dia', icon: BarChart2    },
+        ]}
+        valor={activeTab}
+        onChange={setActiveTab}
+        rotulo="Seções de tarefas"
+        variante="sublinhado"
+        className="mb-6"
+      />
 
       {/* ── Aba Histórico ── */}
       {activeTab === 'history' && <TaskHistoryView tasks={tasks} />}
@@ -668,6 +680,7 @@ export function TasksPage() {
         erro={erro}
         vazio={isEmpty}
         onTentarDeNovo={() => { void load() }}
+        esqueleto={<EsqueletoLinhas linhas={5} />}
         icone={ListTodo}
         titulo="Nenhuma tarefa ainda"
         descricao="Crie tarefas para organizar seu dia e não perder nenhum follow-up."
@@ -678,10 +691,25 @@ export function TasksPage() {
         }
       >
         <>
+          {/* O vazio de "nada para hoje" ganha direção: diz qual é a próxima. */}
+          {emDia && (
+            <div className="mb-5">
+              <Dica icon={CheckCircle2} tom="sucesso">
+                Nada atrasado e nada para hoje.
+                {proxima
+                  ? <> Próxima: <span className="font-semibold">{proxima.title}</span>
+                      {proxima.dueDate && <> · {formatDateLabel(proxima.dueDate, proxima.dueTime).label}</>}</>
+                  : ' Nenhuma tarefa agendada — crie a próxima.'}
+              </Dica>
+            </div>
+          )}
+
           {/* Blocos por tempo */}
           {timeBlocks.map(block => (
             <Section
-              key={block.key}
+              // a chave inclui o bloco aberto: quando o primeiro com tarefa
+              // muda (ex.: as de hoje foram concluídas), o próximo abre
+              key={`${block.key}-${block.key === primeiroComTarefa}`}
               title={block.title}
               icon={block.icon}
               count={block.tasks.length}
@@ -689,7 +717,7 @@ export function TasksPage() {
               tasks={block.tasks}
               showCategory
               collapsible
-              defaultOpen={block.defaultOpen}
+              defaultOpen={block.defaultOpen || block.key === primeiroComTarefa}
               {...sharedProps}
             />
           ))}

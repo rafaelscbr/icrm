@@ -11,6 +11,8 @@ import { Card }          from '../../components/ui/Card'
 import { Modal }         from '../../components/ui/Modal'
 import { Button }        from '../../components/ui/Button'
 import { EstadoTela }    from '../../components/shared/EstadoTela'
+import { Abas } from '../../components/shared/Abas'
+import { EsqueletoCards } from '../../components/shared/Esqueleto'
 import { mensagemDeErro } from '../../lib/erros'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -37,6 +39,9 @@ export function LeadListsPage() {
   const [listScores,    setListScores]    = useState<Map<string, ListScoreResult>>(new Map())
   const [sortByScore,   setSortByScore]   = useState(false)
   const [erroScore,     setErroScore]     = useState<string | null>(null)
+  // Lista sem score não é lista "calculando": quando o lote termina e uma
+  // lista fica de fora, ela recebe "sem score" em vez de um spinner eterno.
+  const [scoresProntos, setScoresProntos] = useState(false)
 
   useEffect(() => { load() }, [load])
 
@@ -44,10 +49,11 @@ export function LeadListsPage() {
     if (lists.length === 0) return
     const ids = lists.filter(l => l.status === 'active').map(l => l.id)
     setErroScore(null)
+    setScoresProntos(false)
     // O `.catch(() => {})` daqui era silencioso: quando o cálculo falhava, o
     // quadro do score girava para sempre e a tela afirmava "carregando" sobre
     // algo que nunca ia chegar.
-    batchListScores(ids).then(setListScores).catch(err => {
+    batchListScores(ids).then(m => { setListScores(m); setScoresProntos(true) }).catch(err => {
       console.error('[leadLists] batchListScores:', err)
       setErroScore(mensagemDeErro(err))
     })
@@ -175,29 +181,19 @@ export function LeadListsPage() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 mb-6 bg-s2/50 border border-line rounded-xl p-1 w-fit">
-        {([
-          { value: 'active',   label: 'Ativas',    icon: <Database  size={13} /> },
-          { value: 'archived', label: 'Arquivadas', icon: <Archive   size={13} /> },
-        ] as { value: 'active' | 'archived'; label: string; icon: React.ReactNode }[]).map(t => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all
-              ${tab === t.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-t3 hover:text-t2'}`}
-          >
-            {t.icon} {t.label}
-            {t.value === 'active' && lists.filter(l => l.status === 'active').length > 0 && (
-              <span className="ml-1 bg-[#0B0F1C]/25 rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none">
-                {lists.filter(l => l.status === 'active').length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <Abas
+        abas={[
+          { value: 'active'   as const, label: 'Ativas',     icon: Database, badge: lists.filter(l => l.status === 'active').length || undefined },
+          { value: 'archived' as const, label: 'Arquivadas', icon: Archive },
+        ]}
+        valor={tab}
+        onChange={setTab}
+        rotulo="Situação das listas"
+        className="mb-6"
+      />
 
       <EstadoTela
+        esqueleto={<EsqueletoCards cards={6} colunas={3} />}
         carregando={loading && lists.length === 0}
         erro={erro}
         vazio={visible.length === 0}
@@ -311,6 +307,8 @@ export function LeadListsPage() {
                       </span>
                     ) : erroScore ? (
                       <span className="text-[11px] text-error" title={erroScore}>score indisponível</span>
+                    ) : scoresProntos ? (
+                      <span className="text-[11px] text-t4" title="A lista ainda não tem leads pontuados">sem score</span>
                     ) : (
                       <span className="flex items-center gap-1.5 text-[11px] text-t5">
                         <span className="w-2.5 h-2.5 border border-t4 border-t-transparent rounded-full animate-spin" aria-hidden />

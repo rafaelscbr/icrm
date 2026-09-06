@@ -7,7 +7,9 @@ import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
 import { EstadoTela } from '../../components/shared/EstadoTela'
 import { aoTeclarAbrir } from '../../components/shared/lista'
-import { CabecalhoLista, AcoesLinha, celula } from '../../components/shared/lista'
+import { CabecalhoLista, AcoesLinha, NumeroCelula, celula } from '../../components/shared/lista'
+import { EsqueletoLinhas } from '../../components/shared/Esqueleto'
+import { useAuthStore } from '../../store/useAuthStore'
 import type { Coluna } from '../../components/shared/lista'
 import { Modal } from '../../components/ui/Modal'
 import { ContactForm } from './ContactForm'
@@ -37,24 +39,41 @@ const FILTER_OPTIONS: { value: ContactTag | null; label: string }[] = [
 const PAGE_SIZE = 20
 
 /**
- * Só uma coluna de conteúdo, de propósito.
+ * Coluna fixa só se paga quando o dado costuma existir.
  *
  * A primeira versão desta lista deu coluna fixa para "Situação" e "Etiquetas".
  * Medido no banco: **59 dos 12.578 contatos têm etiqueta — 0,47%**. Seriam duas
- * colunas com travessão em 99,5% das linhas, ou seja, ruído com rótulo.
+ * colunas com travessão em 99,5% das linhas, ou seja, ruído com rótulo. Quando
+ * é exceção, quem se marca é a exceção: situação e etiqueta aparecem ao lado do
+ * nome apenas nas linhas em que existem.
  *
- * Coluna fixa só se paga quando o dado costuma existir. Quando é exceção, quem
- * se marca é a exceção: situação e etiqueta aparecem ao lado do nome apenas nas
- * linhas em que existem.
+ * Dono e data de cadastro existem em 100% das linhas — e são o que permite
+ * varrer a lista com uma pergunta ("de quem é?", "é antigo?") em vez de só
+ * ler nomes. Com uma coluna só, 12.848 linhas ficavam 90% vazias.
  */
 const COLUNAS_CONTATO: Coluna[] = [
-  { chave: 'nome', rotulo: 'Contato', largura: 'flex-1' },
+  { chave: 'nome',     rotulo: 'Contato',  largura: 'flex-1' },
+  { chave: 'dono',     rotulo: 'Dono',     largura: 'w-[120px]', desde: 'md' },
+  { chave: 'cadastro', rotulo: 'Cadastro', largura: 'w-[96px]',  alinhar: 'dir', desde: 'lg' },
 ]
+
+function dataCurta(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
+}
 
 export function ContactsPage() {
   const { contacts, load, remove, search, filterByTag, loading, erro } = useContactsStore()
   const { tasks } = useTasksStore()
   const { leads } = useLeadsStore()
+  const { allProfiles, profile } = useAuthStore()
+  const nomeDoDono = (id?: string) => {
+    if (!id) return '—'
+    if (id === profile?.id) return 'Você'
+    const p = allProfiles.find(x => x.id === id)
+    return p ? p.name.split(' ')[0] : '—'
+  }
   // Um Set em vez de varrer o array de leads a cada linha: a lista pagina 12.578
   // contatos e o `some` rodava por linha renderizada.
   const contatosEmFunil = useMemo(
@@ -74,6 +93,15 @@ export function ContactsPage() {
   const [viewContact, setViewContact] = useState<Contact | undefined>()
 
   useEffect(() => { load() }, [load])
+
+  // `/contatos?novo=1` abre o cadastro — é o que a busca ⌘K chama.
+  useEffect(() => {
+    if (searchParams.get('novo') === '1') {
+      setEditing(undefined)
+      setFormOpen(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   // Abre modal automaticamente se vier ?open=<id> na URL
   useEffect(() => {
@@ -169,6 +197,7 @@ export function ContactsPage() {
         erro={erro}
         vazio={paginated.length === 0}
         onTentarDeNovo={() => { void load() }}
+        esqueleto={<EsqueletoLinhas linhas={8} />}
         icone={Users}
         titulo={query || activeTag || onlyWithTasks
           ? 'Nenhum contato com esses filtros'
@@ -223,6 +252,13 @@ export function ContactsPage() {
                 </p>
               </div>
 
+              <div className={celula(COLUNAS_CONTATO[1])}>
+                <p className="text-xs text-t3 truncate">{nomeDoDono(c.brokerId)}</p>
+              </div>
+              <div className={celula(COLUNAS_CONTATO[2])}>
+                <NumeroCelula tom="suave">{dataCurta(c.createdAt)}</NumeroCelula>
+              </div>
+
               {/* WhatsApp e tarefas ficam SEMPRE visíveis: são o motivo de a
                   lista existir, e escondê-los no hover custaria um gesto a
                   cada linha. Editar e excluir, que são raros e um deles é
@@ -245,8 +281,8 @@ export function ContactsPage() {
                     >
                       <ClipboardList size={15} strokeWidth={1.7} aria-hidden />
                       {count > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-brand
-                                         rounded-full text-[11px] font-bold text-[var(--brand-btn-text)]
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-brand-fill
+                                         rounded-full text-[11px] font-bold text-brand-fill-text
                                          flex items-center justify-center tabular-nums">
                           {count > 9 ? '9+' : count}
                         </span>

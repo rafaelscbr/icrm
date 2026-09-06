@@ -65,7 +65,7 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
               <span className={`text-xs w-8 flex-shrink-0 font-medium ${isCurrentMonth ? 'text-brand' : 'text-t4'}`}>{d.month}</span>
               <div className="flex-1 h-2 bg-s3/50 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${isBest ? 'bg-brand' : isCurrentMonth ? 'bg-brand/60' : 'bg-brand/30'}`}
+                  className={`h-full rounded-full transition-all duration-500 ${isBest ? 'bg-brand-fill' : isCurrentMonth ? 'bg-brand-fill/60' : 'bg-brand-fill/30'}`}
                   style={{ width: `${d.barPct}%` }}
                 />
               </div>

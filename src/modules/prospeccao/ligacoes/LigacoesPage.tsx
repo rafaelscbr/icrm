@@ -8,6 +8,7 @@ import { PageLayout } from '../../../components/layout/PageLayout'
 import { Button } from '../../../components/ui/Button'
 import { Modal } from '../../../components/ui/Modal'
 import { EstadoTela } from '../../../components/shared/EstadoTela'
+import { EsqueletoCards } from '../../../components/shared/Esqueleto'
 import { Abas } from '../../../components/shared/Abas'
 import { CallCampaignForm } from './CallCampaignForm'
 import { CallCampaignDetail } from './CallCampaignDetail'
@@ -131,12 +132,7 @@ export function LigacoesPage() {
         </div>
       </Painel>
 
-      {loading && campaigns.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-10 h-10 rounded-full border-2 border-brand/30 border-t-brand animate-spin" aria-hidden />
-          <p className="text-sm text-t3">Carregando campanhas…</p>
-        </div>
-      )}
+      {loading && campaigns.length === 0 && <EsqueletoCards cards={3} colunas={3} />}
 
       {(!loading || campaigns.length > 0) && (
         <>

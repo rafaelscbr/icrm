@@ -224,9 +224,9 @@ export function LoginPage() {
               type="submit"
               disabled={loading}
               className="w-full min-h-[46px] flex items-center justify-center gap-2 rounded-[10px] text-sm font-bold
-                bg-brand hover:bg-brand-dark transition-colors cursor-pointer
+                bg-brand-fill hover:bg-brand-fill-hover transition-colors cursor-pointer
                 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.99]"
-              style={{ color: 'var(--brand-btn-text)' }}
+              style={{ color: 'var(--brand-fill-text)' }}
             >
               {loading && <Loader2 size={15} className="animate-spin" aria-hidden />}
               {loading ? 'Entrando…' : 'Entrar'}

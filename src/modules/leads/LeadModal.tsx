@@ -19,7 +19,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
-import { formatPhone, formatCurrency, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
+import { formatPhone, formatCurrency, formatCurrencyFull, whatsappUrl, iniciais } from '../../lib/formatters'
 import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
@@ -340,7 +340,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   : lead.flagged
                     ? 'bg-brand-tint text-brand-text border-brand/40'
                     : 'bg-s2 text-t1 border-line'}`}>
-                {lead.name.charAt(0).toUpperCase()}
+                {iniciais(lead.name) || '?'}
               </div>
 
               <div className="flex-1 min-w-0">
@@ -404,7 +404,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                           className={`flex items-center gap-1.5 pl-1 pr-2 py-0.5 rounded-full bg-brand-tint border border-brand/25 transition-all duration-150
                             ${canTransfer ? 'cursor-pointer hover:border-brand/50' : 'cursor-default'}`}
                         >
-                          <span className="w-4 h-4 rounded-full bg-brand flex items-center justify-center font-heading text-[10px] font-bold text-[#0F1730]">
+                          <span className="w-4 h-4 rounded-full bg-brand-fill flex items-center justify-center font-heading text-[10px] font-bold text-brand-fill-text">
                             {(brokerName ?? '?').charAt(0).toUpperCase()}
                           </span>
                           <span className="font-label text-[11px] text-brand-text truncate max-w-[120px]">
@@ -738,7 +738,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                       className="w-full bg-transparent text-sm text-t1 placeholder:text-t4 resize-none focus:outline-none leading-relaxed"
                     />
                     <div className="flex gap-2">
-                      <button onClick={handleSaveNote} className="flex-1 py-1.5 bg-brand hover:bg-brand-dark font-heading text-xs font-bold rounded-[10px] transition-all duration-150">
+                      <button onClick={handleSaveNote} className="flex-1 py-1.5 bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-text font-heading text-xs font-bold rounded-[10px] transition-all duration-150">
                         Salvar nota
                       </button>
                       <button onClick={() => { setShowNoteInput(false); setNoteText('') }} className="px-3 py-1.5 bg-s3/50 text-t2 text-xs rounded-[10px] hover:bg-s3 transition-all duration-150">
@@ -895,7 +895,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                       <button
                         onClick={handleAddToList}
                         disabled={!selectedListId || addingToList}
-                        className="flex-1 py-1.5 text-xs font-semibold bg-brand hover:bg-brand-dark text-[#0B0F1C] rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                        className="flex-1 py-1.5 text-xs font-semibold bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-text rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                       >
                         {addingToList
                           ? <><Loader2 size={11} className="animate-spin" /> Adicionando…</>

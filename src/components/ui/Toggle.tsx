@@ -19,7 +19,7 @@ export function Toggle({ label, description, checked, onChange }: ToggleProps) {
       <div
         className={`
           relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0
-          ${checked ? 'bg-brand' : 'bg-s3'}
+          ${checked ? 'bg-brand-fill' : 'bg-s3'}
         `}
       >
         <div

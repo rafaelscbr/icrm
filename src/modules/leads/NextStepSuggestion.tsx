@@ -115,7 +115,7 @@ export function NextStepSuggestion({ lead, interactionType, outcome, onDone }: P
             onClick={() => createTask(c.date, c.label.toLowerCase())}
             className={`px-2.5 py-1.5 rounded-full font-label text-[11px] uppercase tracking-[0.06em] border transition-all duration-150
               ${c.date === addDays(suggestion.defaultDays)
-                ? 'bg-brand text-[#0F1730] border-brand font-semibold hover:bg-brand-dark'
+                ? 'bg-brand-fill text-brand-fill-text border-brand-fill font-semibold hover:bg-brand-fill-hover'
                 : 'bg-s2/60 border-line text-t2 hover:border-brand/40 hover:text-t1'
               }`}
           >
@@ -137,7 +137,7 @@ export function NextStepSuggestion({ lead, interactionType, outcome, onDone }: P
             <button
               onClick={() => customDate && createTask(customDate, new Date(customDate + 'T12:00:00').toLocaleDateString('pt-BR'))}
               disabled={!customDate}
-              className="px-2.5 py-1.5 rounded-full font-label text-[11px] uppercase tracking-[0.06em] bg-brand text-[#0F1730] font-semibold disabled:opacity-40 transition-all duration-150"
+              className="px-2.5 py-1.5 rounded-full font-label text-[11px] uppercase tracking-[0.06em] bg-brand-fill text-brand-fill-text font-semibold disabled:opacity-40 transition-all duration-150"
             >
               OK
             </button>

@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { EsqueletoCards } from '../../components/shared/Esqueleto'
 import { CampaignForm } from './CampaignForm'
 import { CampaignDetail } from './CampaignDetail'
 import { CampaignPerformanceTab } from './CampaignPerformanceTab'
@@ -91,12 +92,7 @@ export function CampaignsPage() {
       </div>
 
       {/* Skeleton de carregamento inicial */}
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-10 h-10 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
-          <p className="text-sm text-t3">Carregando campanhas...</p>
-        </div>
-      )}
+      {isLoading && <EsqueletoCards cards={3} colunas={3} />}
 
       {/* Conteúdo — oculto durante carregamento */}
       {!isLoading && <>

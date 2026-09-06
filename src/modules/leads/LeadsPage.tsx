@@ -9,13 +9,15 @@ import {
 import { useSearchParams } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, Search, BarChart3,
-  MessageCircle, Users, UserCheck, Trash2, ChevronRight, RefreshCw, Settings2,
+  MessageCircle, Users, UserPlus, UserX, Trash2, ChevronRight, RefreshCw, Settings2,
   Sparkles, Smartphone, Globe, Handshake, Megaphone, Percent,
   GitBranch, Filter, User, Home, X, Trophy, Flame, Target, BadgeCheck,
 } from 'lucide-react'
 import { avisoReentrada, reentradaPrimeiro } from './reentrada'
 import toast from 'react-hot-toast'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { EsqueletoLinhas, EsqueletoCards } from '../../components/shared/Esqueleto'
+import { PageLayout } from '../../components/layout/PageLayout'
 import { Abas } from '../../components/shared/Abas'
 import { Button } from '../../components/ui/Button'
 import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
@@ -60,7 +62,11 @@ type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'configuracoes'
 
 // ─── LeadRow ──────────────────────────────────────────────────────────────────
 
-function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
+function LeadRow({ lead, onClick, mostrarEncaixe = true }: {
+  lead: Lead; onClick: () => void
+  /** o chip de encaixe só informa quando a lista é mista — ver LeadsPage */
+  mostrarEncaixe?: boolean
+}) {
   const { advanceFollowup } = useLeadsStore()
   const { add: addInteraction } = useLeadInteractionsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
@@ -105,13 +111,16 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       tabIndex={0}
       onKeyDown={aoTeclarAbrir(onClick)}
       aria-label={`Abrir lead ${displayName}`}
-      className={`flex items-center gap-4 px-6 py-4 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
+      className={`flex items-center gap-4 px-5 py-3.5 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
         ${isDiscarded ? 'opacity-50' : ''}
       `}
     >
       <Avatar name={displayName} size="sm" />
 
-      <div className="flex-1 min-w-0">
+      {/* O nome cresce até 46% da linha e para. Sem o teto, produto, valor e
+          etapa iam parar na borda direita com 600 px de vazio no meio — a
+          linha deixava de ser varrida num movimento só. */}
+      <div className="flex-1 min-w-0 md:max-w-[46%]">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Ponto de temperatura antes do nome: na lista o olho desce pela
               coluna da esquerda, e é ali que a leitura em massa acontece. */}
@@ -132,7 +141,7 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
               {aviso.texto}
             </span>
           )}
-          {intel && fitDeserveBadge(intel.fitOrigin?.fit) && (
+          {mostrarEncaixe && intel && fitDeserveBadge(intel.fitOrigin?.fit) && (
             <FitBadge fit={intel.fitOrigin!.fit} produto={intel.fitOrigin!.name} compact />
           )}
           <SlaBadge lead={lead} />
@@ -156,11 +165,13 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
               </span>
             </>
           )}
-          {lead.contactId && (
+          {/* O vínculo com o CRM é a regra, então não se escreve; a EXCEÇÃO
+              é o que se marca. "no CRM" em todas as linhas era textura. */}
+          {!lead.contactId && (
             <>
               <span className="text-t5" aria-hidden>·</span>
-              <span className="inline-flex items-center gap-1 text-t4 flex-shrink-0" title="Lead vinculado a um contato do CRM">
-                <UserCheck size={10} strokeWidth={1.6} aria-hidden /> no CRM
+              <span className="inline-flex items-center gap-1 text-t4 flex-shrink-0" title="Lead sem contato vinculado no CRM">
+                <UserX size={10} strokeWidth={1.6} aria-hidden /> sem cadastro
               </span>
             </>
           )}
@@ -170,11 +181,11 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
       {/* Produto e valor eram a MESMA célula, num encadeamento de `else`: quem
           tinha produto nunca via o valor. São dois fatos diferentes e agora
           ocupam colunas diferentes. */}
-      <div className="hidden md:block text-right flex-shrink-0 w-[130px] min-w-0">
+      <div className="hidden md:block flex-shrink-0 w-[150px] min-w-0">
         {property ? (
           <p className="text-xs text-t3 truncate">{property.name}</p>
         ) : lead.propertyName ? (
-          <p className="text-xs text-t3 truncate flex items-center justify-end gap-1">
+          <p className="text-xs text-t3 truncate flex items-center gap-1">
             <Home size={10} className="flex-shrink-0" aria-hidden /> {lead.propertyName}
           </p>
         ) : (
@@ -198,14 +209,20 @@ function LeadRow({ lead, onClick }: { lead: Lead; onClick: () => void }) {
         <originConf.icon size={11} strokeWidth={1.6} aria-hidden /> {originConf.label}
       </div>
 
-      <div className="w-[92px] flex-shrink-0">
+      {/* Etapa nunca quebra em duas linhas; a tentativa de follow-up sai do
+          chip e vira número ao lado. */}
+      <div className="w-[118px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap">
         <span className={`inline-flex text-xs font-medium px-2 py-1 rounded-lg border ${conf.bg} ${conf.color} ${conf.border}`}>
           {conf.label}
-          {lead.funnelStage === 'followup' && lead.followupStep > 0 && ` · ${lead.followupStep}ª`}
         </span>
+        {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
+          <span className="text-[11px] text-t4 tabular-nums" title={`${lead.followupStep}ª tentativa de follow-up`}>
+            {lead.followupStep}ª
+          </span>
+        )}
       </div>
 
-      <div className="w-[52px] flex-shrink-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+      <div className="ml-auto w-[52px] flex-shrink-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
         {!isDiscarded && (
           <button
             onClick={handleWhatsApp}
@@ -401,6 +418,25 @@ export function LeadsPage() {
       .sort((a, b) => b.count - a.count)
   }, [scoped, properties])
 
+  // `/leads?novo=1` abre o formulário — é o que a busca ⌘K chama.
+  useEffect(() => {
+    if (searchParams.get('novo') === '1') {
+      setShowForm(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
+
+  // O chip de encaixe ("Difícil", "Ideal") só informa quando a lista é mista.
+  // Em cem linhas todas "Difícil" ele vira textura e some da leitura.
+  const encaixeMisto = useMemo(() => {
+    const fits = new Set<string>()
+    for (const l of filtered) {
+      const f = intel[l.id]?.fitOrigin?.fit
+      if (f) fits.add(f)
+    }
+    return fits.size > 1
+  }, [filtered, intel])
+
   const activeFilterCount =
     (filterStage ? 1 : 0) + (filterOrigin ? 1 : 0) + (filterTemp ? 1 : 0) + (filterFit ? 1 : 0) +
     (filterBroker != null ? 1 : 0) + (filterProduct ? 1 : 0)
@@ -428,59 +464,36 @@ export function LeadsPage() {
   const isConfigTab      = tab === 'configuracoes'
 
   return (
-    <div className="flex flex-col h-full">
-
-      {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 sticky top-0 z-10 nav-bg-blur border-b border-line px-6 py-4">
-        {/* Título + ações */}
-        <div className="flex items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-t1 leading-none tracking-tight">Leads</h1>
-            <p className="text-xs text-t3 mt-1">Funil de prospecção · <span className="text-t1 font-semibold">
-              {erro ? 'não foi possível ler o funil' : `${active.length} ativos`}
-            </span></p>
-          </div>
-
-          <Button onClick={() => setShowForm(true)} size="md" className="flex-shrink-0">
-            <Plus size={15} />
-            Novo Lead
-          </Button>
-        </div>
-
-        {/* Tabs */}
+    <PageLayout
+      icon={UserPlus}
+      iconTom="marca"
+      title="Leads"
+      subtitle={erro ? 'não foi possível ler o funil' : `Funil de prospecção · ${active.length} ativos`}
+      ctaLabel="Novo Lead"
+      onCta={() => setShowForm(true)}
+      // O Kanban rola na horizontal e merece a largura toda; as outras visões
+      // ficam no mesmo contêiner das demais telas.
+      largura={isKanbanTab ? 'total' : 'padrao'}
+      band={
         <Abas
           abas={TABS.map(t => ({ value: t.value, label: t.label, icon: t.icon, badge: t.badge }))}
           valor={tab}
           onChange={setTab}
           rotulo="Visões do funil"
           variante="sublinhado"
-          className="mt-4"
         />
-      </div>
-
-      {/* ── Dashboard ─────────────────────────────────────────────────────────── */}
-      {isDashTab && (
-        <div className="flex-1 overflow-auto">
-          <LeadsDashboard leads={leads} onOpenLead={setSelectedLead} />
-        </div>
-      )}
-
-      {/* ── Conversão ─────────────────────────────────────────────────────────── */}
+      }
+    >
+      {isDashTab && <LeadsDashboard leads={leads} onOpenLead={setSelectedLead} />}
       {isConvTab && <LeadConversionTab />}
+      {isConfigTab && <LeadSettings />}
 
-      {/* ── Configurações ──────────────────────────────────────────────────────── */}
-      {isConfigTab && (
-        <div className="flex-1 overflow-auto">
-          <LeadSettings />
-        </div>
-      )}
-
-      {/* ── Lista / Kanban ────────────────────────────────────────────────────── */}
       {(isListTab || isKanbanTab) && (
         <>
-          {/* Toolbar filtros */}
-          <div className="flex-shrink-0 px-6 py-3 border-b border-line flex items-center gap-2.5 flex-wrap">
-            {/* Search */}
+          {/* Toolbar de filtros. No celular é UMA linha rolável: seis filtros
+              quebrando em três linhas empurravam o primeiro lead para fora da
+              tela. */}
+          <div className="flex items-center gap-2.5 mb-4 overflow-x-auto sm:overflow-visible sm:flex-wrap pb-1 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
               <input
@@ -500,10 +513,8 @@ export function LeadsPage() {
               )}
             </div>
 
-            {/* Divisória */}
             <span className="w-px h-6 bg-line hidden sm:block" aria-hidden="true" />
 
-            {/* Filtros em dropdown */}
             <FilterDropdown
               label="Etapa"
               icon={GitBranch}
@@ -563,101 +574,90 @@ export function LeadsPage() {
             {activeFilterCount > 0 && (
               <button
                 onClick={clearAllFilters}
-                className="flex items-center gap-1.5 h-9 px-2.5 rounded-[12px] text-xs font-semibold text-t3 hover:text-t1 hover:bg-s2 transition-all"
+                className="flex items-center gap-1.5 h-9 px-2.5 rounded-[12px] text-xs font-semibold text-t3 hover:text-t1 hover:bg-s2 transition-all flex-shrink-0"
                 title="Limpar todos os filtros"
               >
                 <X size={13} strokeWidth={1.8} />
                 Limpar
-                <span className="font-bold text-brand">{activeFilterCount}</span>
+                <span className="font-bold text-brand-text">{activeFilterCount}</span>
               </button>
             )}
 
-            {/* Ganhos (vendas encerradas) + Descartados */}
-            <div className="ml-auto flex items-center gap-2">
+            {/* Ganhos e descartados sempre com rótulo: "6" e "888" soltos ao
+                lado de um ícone não diziam o que eram. */}
+            <div className="ml-auto flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => setListView(v => v === 'won' ? 'active' : 'won')}
-                className={`flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all
+                aria-pressed={listView === 'won'}
+                className={`flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all whitespace-nowrap
                   ${listView === 'won' ? 'bg-success-bg border-success-line text-success' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
               >
                 <Trophy size={13} strokeWidth={1.6} />
-                <span className="hidden sm:inline">{listView === 'won' ? 'Ganhos' : 'Ver ganhos'}</span>
+                Ganhos
                 {won.length > 0 && <span className="font-bold tabular-nums">{won.length}</span>}
               </button>
               <button
                 onClick={() => setListView(v => v === 'discarded' ? 'active' : 'discarded')}
-                className={`flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all
+                aria-pressed={listView === 'discarded'}
+                className={`flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all whitespace-nowrap
                   ${listView === 'discarded' ? 'bg-error-bg border-error-line text-error' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
               >
                 <Trash2 size={13} strokeWidth={1.6} />
-                <span className="hidden sm:inline">{listView === 'discarded' ? 'Descartados' : 'Ver descartados'}</span>
+                Descartados
                 {discarded.length > 0 && <span className="font-bold tabular-nums">{discarded.length}</span>}
               </button>
             </div>
           </div>
 
-          {/* Conteúdo */}
-          <div className="flex-1 overflow-auto">
-            {/* Falha vence tudo: sem a leitura completa, "nenhum lead
-                encontrado" seria uma afirmação falsa sobre o funil. */}
-            {erro ? (
-              <div className="p-4">
-                <EstadoTela carregando={false} erro={erro} vazio={false}
-                            onTentarDeNovo={() => { void load() }}>
-                  <></>
-                </EstadoTela>
+          {/* Falha vence tudo: sem a leitura completa, "nenhum lead
+              encontrado" seria uma afirmação falsa sobre o funil. */}
+          {erro ? (
+            <EstadoTela carregando={false} erro={erro} vazio={false}
+                        onTentarDeNovo={() => { void load() }}>
+              <></>
+            </EstadoTela>
+          ) : loading && allLeads.length === 0 ? (
+            isKanbanTab ? <EsqueletoCards cards={6} colunas={3} /> : <EsqueletoLinhas linhas={8} />
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-s3/60 flex items-center justify-center">
+                <Users size={28} className="text-t3" />
               </div>
-            ) : loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="flex flex-col items-center gap-3">
-                  <RefreshCw size={20} className="text-brand animate-spin" />
-                  <p className="text-sm text-t3">Carregando leads...</p>
-                </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-t2">
+                  {listView === 'discarded' ? 'Nenhum lead descartado'
+                    : listView === 'won' ? 'Nenhuma venda ganha ainda'
+                    : 'Nenhum lead encontrado'}
+                </p>
+                <p className="text-xs text-t4 mt-1">
+                  {search || activeFilterCount > 0 ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
+                </p>
               </div>
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-s3/60 flex items-center justify-center">
-                  <Users size={28} className="text-t3" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-t2">
-                    {listView === 'discarded' ? 'Nenhum lead descartado'
-                      : listView === 'won' ? 'Nenhuma venda ganha ainda'
-                      : 'Nenhum lead encontrado'}
-                  </p>
-                  <p className="text-xs text-t4 mt-1">
-                    {search || activeFilterCount > 0 ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
-                  </p>
-                </div>
-                {!search && activeFilterCount === 0 && listView === 'active' && (
-                  <Button onClick={() => setShowForm(true)} size="md">
-                    <Plus size={14} /> Criar primeiro lead
-                  </Button>
-                )}
+              {!search && activeFilterCount === 0 && listView === 'active' && (
+                <Button onClick={() => setShowForm(true)} size="md">
+                  <Plus size={14} /> Criar primeiro lead
+                </Button>
+              )}
+            </div>
+          ) : isKanbanTab ? (
+            <LeadKanban leads={filtered} />
+          ) : (
+            <div className="rounded-xl border border-line overflow-hidden list-surface">
+              {/* O cabeçalho espelha a linha: mesmas larguras, mesma ordem. */}
+              <div className="flex items-center gap-4 px-5 py-2.5 border-b border-line bg-s3/20 select-none">
+                <span className="w-8 flex-shrink-0" aria-hidden />
+                <span className="flex-1 min-w-0 md:max-w-[46%] font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Nome</span>
+                <span className="hidden md:block w-[150px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Produto</span>
+                <span className="hidden lg:block w-[92px] flex-shrink-0 text-right font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Valor</span>
+                <span className="hidden sm:block w-[104px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Origem</span>
+                <span className="w-[118px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Etapa</span>
+                <span className="ml-auto w-[52px] flex-shrink-0" aria-hidden />
               </div>
-            ) : isKanbanTab ? (
-              <div className="p-4">
-                <LeadKanban leads={filtered} />
-              </div>
-            ) : (
-              <div className="mx-4 my-4 rounded-xl border border-line overflow-hidden list-surface">
-                {/* O cabeçalho era `grid` e as linhas são `flex`: as colunas
-                    nunca alinharam de verdade — os rótulos flutuavam sobre
-                    conteúdo alinhado à direita. Agora espelha a linha. */}
-                <div className="flex items-center gap-4 px-6 py-2.5 border-b border-line bg-s3/20 select-none">
-                  <span className="w-8 flex-shrink-0" aria-hidden />
-                  <span className="flex-1 min-w-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Nome</span>
-                  <span className="hidden md:block w-[130px] flex-shrink-0 text-right font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Produto</span>
-                  <span className="hidden lg:block w-[92px] flex-shrink-0 text-right font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Valor</span>
-                  <span className="hidden sm:block w-[104px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Origem</span>
-                  <span className="w-[92px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Etapa</span>
-                  <span className="w-[52px] flex-shrink-0" aria-hidden />
-                </div>
-                {filtered.map(lead => (
-                  <LeadRow key={lead.id} lead={lead} onClick={() => setSelectedLead(lead)} />
-                ))}
-              </div>
-            )}
-          </div>
+              {filtered.map(lead => (
+                <LeadRow key={lead.id} lead={lead} mostrarEncaixe={encaixeMisto} onClick={() => setSelectedLead(lead)} />
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -671,6 +671,6 @@ export function LeadsPage() {
       {visitaSuggestLead && (
         <LeadVisitaTaskModal lead={visitaSuggestLead} onClose={clearVisitaSuggest} />
       )}
-    </div>
+    </PageLayout>
   )
 }

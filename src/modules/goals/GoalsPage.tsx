@@ -25,7 +25,8 @@ import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
 import { useCallQueueStore } from '../../store/useCallQueueStore'
-import { Goal, GoalCategory, Task } from '../../types'
+import { Goal, GoalCategory, Task, Sale } from '../../types'
+import { iniciais } from '../../lib/formatters'
 
 /**
  * Metas — o painel de esforço do corretor.
@@ -547,6 +548,125 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
   )
 }
 
+// ─── Visão Global: metas por corretor ────────────────────────────────────────
+
+interface GrupoDeMetas {
+  id: string
+  nome: string
+  ativo: boolean
+  metas: Goal[]
+}
+
+/**
+ * Na Visão Global as metas de todo mundo chegavam numa grade só, sem dizer de
+ * quem era cada uma: 33 cards, a maioria "Acionamentos semanais · 0/250", e o
+ * admin não conseguia responder a pergunta mais simples da tela — quem está
+ * atrasado. Agora cada corretor é uma seção, com o próprio progresso (só as
+ * tarefas e vendas DELE), e o que não se moveu no período fica recolhido numa
+ * linha, em vez de ocupar uma parede.
+ */
+function GrupoDoCorretor({ grupo, tasks, sales, disparos, onEdit, onDelete, onPause, onNova }: {
+  grupo: GrupoDeMetas
+  tasks: Task[]
+  sales: Sale[]
+  disparos: { week: number; month: number }
+  onEdit: (g: Goal) => void
+  onDelete: (g: Goal) => void
+  onPause: (id: string) => void
+  onNova: () => void
+}) {
+  const [mostrarParadas, setMostrarParadas] = useState(false)
+
+  const visitGoals = grupo.metas.filter(g => g.category === 'visita')
+  const outras     = grupo.metas.filter(g => g.category !== 'visita')
+  const comProgresso = outras.map(goal => ({ goal, progress: calcProgress(goal, tasks, sales, disparos) }))
+  const movimentadas = comProgresso.filter(x => x.progress > 0)
+  const paradas      = comProgresso.filter(x => x.progress === 0)
+  const emDia        = comProgresso.filter(x => x.progress >= x.goal.target).length
+
+  const { agendadasMes, realizadasSemana, realizadasMes } = getVisitMetrics(tasks)
+  const visitasComMovimento = agendadasMes + realizadasSemana + realizadasMes > 0
+  const visitasParadas = visitGoals.length > 0 && !visitasComMovimento
+  const totalParadas = paradas.length + (visitasParadas ? 1 : 0)
+  const total = grupo.metas.length
+
+  const acoes = {
+    onEdit: (g: Goal) => onEdit(g),
+    onDelete: (g: Goal) => onDelete(g),
+    onPause: (id: string) => onPause(id),
+  }
+
+  return (
+    <section aria-label={`Metas de ${grupo.nome}`}>
+      <div className="flex items-center gap-3 mb-3">
+        <span
+          className="w-8 h-8 rounded-full bg-brand-tint border border-brand/25 text-brand-text font-heading
+                     text-[12px] font-bold flex items-center justify-center shrink-0"
+          aria-hidden
+        >
+          {iniciais(grupo.nome) || '?'}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-heading text-[14px] font-bold text-t1 leading-tight truncate">
+            {grupo.nome}
+            {!grupo.ativo && <span className="ml-2 text-[11px] font-medium text-t4">desativado</span>}
+          </p>
+          <p className="text-[11px] text-t4 tabular-nums">
+            {total} meta{total !== 1 ? 's' : ''} · {emDia} em dia
+          </p>
+        </div>
+        <button
+          onClick={onNova}
+          className="flex items-center gap-1.5 text-[12px] font-semibold text-t3 hover:text-t1 px-3 py-2
+                     rounded-[10px] hover:bg-s3/50 transition-colors cursor-pointer min-h-[36px]
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+        >
+          <Plus size={13} strokeWidth={2} aria-hidden /> Nova meta
+        </button>
+      </div>
+
+      {(movimentadas.length > 0 || (visitGoals.length > 0 && !visitasParadas) || (mostrarParadas && totalParadas > 0)) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
+          {visitGoals.length > 0 && (!visitasParadas || mostrarParadas) && (
+            <VisitasCard tasks={tasks} visitGoals={visitGoals} {...acoes} />
+          )}
+          {movimentadas.map(({ goal, progress }) => (
+            <GoalCard
+              key={goal.id} goal={goal} progress={progress}
+              onEdit={() => onEdit(goal)} onDelete={() => onDelete(goal)} onPause={() => onPause(goal.id)}
+            />
+          ))}
+          {mostrarParadas && paradas.map(({ goal, progress }) => (
+            <GoalCard
+              key={goal.id} goal={goal} progress={progress}
+              onEdit={() => onEdit(goal)} onDelete={() => onDelete(goal)} onPause={() => onPause(goal.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {totalParadas > 0 && (
+        <button
+          onClick={() => setMostrarParadas(v => !v)}
+          aria-expanded={mostrarParadas}
+          className="mt-3 w-full flex items-center justify-center gap-2 rounded-[12px] border border-dashed
+                     border-line-strong px-4 py-2.5 text-[12.5px] text-t3 hover:text-t1 hover:bg-s2/60
+                     transition-colors cursor-pointer min-h-[40px]
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+        >
+          <ChevronRight
+            size={13} strokeWidth={1.8} aria-hidden
+            className={`transition-transform ${mostrarParadas ? 'rotate-90' : ''}`}
+          />
+          {mostrarParadas
+            ? 'Recolher as metas sem movimento'
+            : `${totalParadas} meta${totalParadas !== 1 ? 's' : ''} sem movimento no período · mostrar`}
+        </button>
+      )}
+    </section>
+  )
+}
+
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export function GoalsPage() {
@@ -554,7 +674,7 @@ export function GoalsPage() {
   const { tasks: allTasks, load: loadTasks }  = useTasksStore()
   const { sales: allSales, load: loadSales }  = useSalesStore()
   const { checkAndSave, snapshots, load: loadSnapshots } = useWeekSnapshotStore()
-  const { isAdmin, viewAsBrokerId, profile }  = useAuthStore()
+  const { isAdmin, viewAsBrokerId, profile, allProfiles } = useAuthStore()
   // Acionamentos do período (disparos sem followup) — alimenta metas de acionamento
   const { countWeekNew: disparosWeek, countMonthNew: disparosMonth } = useDisparosStore()
 
@@ -562,6 +682,8 @@ export function GoalsPage() {
   const [formOpen,     setFormOpen]     = useState(false)
   const [editing,      setEditing]      = useState<Goal | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Goal | undefined>()
+  // Na Visão Global, "Nova meta" dentro da seção de um corretor cria para ele.
+  const [formBroker,   setFormBroker]   = useState<string | null>(null)
 
   // Usa viewAsBrokerId do store global — elimina estado local desconectado
   const effectiveBrokerId = isAdmin ? viewAsBrokerId : (profile?.id ?? null)
@@ -593,6 +715,25 @@ export function GoalsPage() {
   const visitGoals = active.filter(g => g.category === 'visita')
   const otherGoals = active.filter(g => g.category !== 'visita')
 
+  // Visão Global: uma seção por corretor, com o progresso calculado só com o
+  // que é dele. Corretores ativos primeiro; quem não tem cadastro fica por último.
+  const visaoGlobal = isAdmin && !effectiveBrokerId
+  const gruposPorCorretor = useMemo<GrupoDeMetas[]>(() => {
+    if (!visaoGlobal) return []
+    const porId = new Map<string, Goal[]>()
+    for (const g of active) {
+      const k = g.brokerId ?? ''
+      if (!porId.has(k)) porId.set(k, [])
+      porId.get(k)!.push(g)
+    }
+    return [...porId.entries()]
+      .map(([id, metas]) => {
+        const p = allProfiles.find(x => x.id === id)
+        return { id, nome: p?.name ?? (id ? 'Corretor sem cadastro' : 'Sem dono'), ativo: p?.active !== false, metas }
+      })
+      .sort((a, b) => Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome))
+  }, [visaoGlobal, active, allProfiles])
+
   const PERIOD_TABS: Array<{ id: PeriodTab; label: string; sub: string }> = [
     { id: 'hoje',   label: 'Hoje',        sub: new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }) },
     { id: 'semana', label: 'Esta semana', sub: (() => { const s = getWeekStart(); const e = new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} a ${e.getDate()}/${e.getMonth()+1}` })() },
@@ -606,7 +747,9 @@ export function GoalsPage() {
       icon={Target}
       iconTom="marca"
       title="Metas"
-      subtitle={`${active.length} meta${active.length !== 1 ? 's' : ''} ativa${active.length !== 1 ? 's' : ''} · esforço que vira venda`}
+      subtitle={visaoGlobal
+        ? `${active.length} meta${active.length !== 1 ? 's' : ''} ativa${active.length !== 1 ? 's' : ''} · ${gruposPorCorretor.length} corretor${gruposPorCorretor.length !== 1 ? 'es' : ''}`
+        : `${active.length} meta${active.length !== 1 ? 's' : ''} ativa${active.length !== 1 ? 's' : ''} · esforço que vira venda`}
       ctaLabel="Nova meta"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
       band={
@@ -661,7 +804,23 @@ export function GoalsPage() {
 
       {/* items-start porque o card de Atendimentos ocupa duas colunas e é mais
           alto: sem isso os vizinhos esticam até a altura dele e sobra vazio. */}
-      {active.length > 0 ? (
+      {visaoGlobal && gruposPorCorretor.length > 0 ? (
+        <div className="flex flex-col gap-7 mb-8">
+          {gruposPorCorretor.map(grupo => (
+            <GrupoDoCorretor
+              key={grupo.id || 'sem-dono'}
+              grupo={grupo}
+              tasks={allTasks.filter(t => t.brokerId === grupo.id)}
+              sales={allSales.filter(s => s.brokerId === grupo.id)}
+              disparos={{ week: disparosWeek, month: disparosMonth }}
+              onEdit={g => { setEditing(g); setFormBroker(g.brokerId ?? null); setFormOpen(true) }}
+              onDelete={g => setDeleteTarget(g)}
+              onPause={id => update(id, { active: false })}
+              onNova={() => { setEditing(undefined); setFormBroker(grupo.id || null); setFormOpen(true) }}
+            />
+          ))}
+        </div>
+      ) : active.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8 items-start">
           {visitGoals.length > 0 && (
             <VisitasCard
@@ -759,7 +918,12 @@ export function GoalsPage() {
         </div>
       )}
 
-      <GoalForm isOpen={formOpen} onClose={() => setFormOpen(false)} goal={editing} forBrokerId={effectiveBrokerId ?? undefined} />
+      <GoalForm
+        isOpen={formOpen}
+        onClose={() => { setFormOpen(false); setFormBroker(null) }}
+        goal={editing}
+        forBrokerId={formBroker ?? effectiveBrokerId ?? undefined}
+      />
 
       {/* Modal central é a exceção: exclusão é curta e destrutiva. */}
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir meta" size="sm">

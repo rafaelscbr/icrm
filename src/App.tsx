@@ -23,28 +23,29 @@ import { useContactsStore } from './store/useContactsStore'
 import { useSearchStore } from './store/useSearchStore'
 import { supabase } from './lib/supabase'
 import { syncPushSubscription } from './lib/push'
+import { carregadores } from './rotas'
 
 // ── Code splitting por rota ──────────────────────────────────────────────────
 // Cada página vira um chunk separado — o carregamento inicial baixa apenas a
 // tela aberta, em vez do app inteiro (gráficos, xlsx, kanban etc. de uma vez).
-const DashboardPage     = lazy(() => import('./modules/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })))
-const ContactsPage      = lazy(() => import('./modules/contacts/ContactsPage').then(m => ({ default: m.ContactsPage })))
-const PropertiesPage    = lazy(() => import('./modules/properties/PropertiesPage').then(m => ({ default: m.PropertiesPage })))
-const DevelopmentsPage  = lazy(() => import('./modules/developments/DevelopmentsPage').then(m => ({ default: m.DevelopmentsPage })))
-const SalesPage         = lazy(() => import('./modules/sales/SalesPage').then(m => ({ default: m.SalesPage })))
-const PerformancePage   = lazy(() => import('./modules/performance/PerformancePage').then(m => ({ default: m.PerformancePage })))
-const TasksPage         = lazy(() => import('./modules/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
-const CampaignsPage     = lazy(() => import('./modules/campaigns/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
-const LigacoesPage      = lazy(() => import('./modules/prospeccao/ligacoes/LigacoesPage').then(m => ({ default: m.LigacoesPage })))
-const LeadsPage         = lazy(() => import('./modules/leads/LeadsPage').then(m => ({ default: m.LeadsPage })))
-const SimuladorPage     = lazy(() => import('./modules/simulador/SimuladorPage').then(m => ({ default: m.SimuladorPage })))
+const DashboardPage     = lazy(() => carregadores['/']().then(m => ({ default: m.DashboardPage })))
+const ContactsPage      = lazy(() => carregadores['/contatos']().then(m => ({ default: m.ContactsPage })))
+const PropertiesPage    = lazy(() => carregadores['/imoveis']().then(m => ({ default: m.PropertiesPage })))
+const DevelopmentsPage  = lazy(() => carregadores['/lancamentos']().then(m => ({ default: m.DevelopmentsPage })))
+const SalesPage         = lazy(() => carregadores['/vendas']().then(m => ({ default: m.SalesPage })))
+const PerformancePage   = lazy(() => carregadores['/performance']().then(m => ({ default: m.PerformancePage })))
+const TasksPage         = lazy(() => carregadores['/tarefas']().then(m => ({ default: m.TasksPage })))
+const CampaignsPage     = lazy(() => carregadores['/prospeccao/disparos']().then(m => ({ default: m.CampaignsPage })))
+const LigacoesPage      = lazy(() => carregadores['/prospeccao/ligacoes']().then(m => ({ default: m.LigacoesPage })))
+const LeadsPage         = lazy(() => carregadores['/leads']().then(m => ({ default: m.LeadsPage })))
+const SimuladorPage     = lazy(() => carregadores['/simulador']().then(m => ({ default: m.SimuladorPage })))
 const LoginPage         = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
-const AdminPage         = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })))
-const GoalsPage         = lazy(() => import('./modules/goals/GoalsPage').then(m => ({ default: m.GoalsPage })))
-const WeekHistoryPage   = lazy(() => import('./modules/goals/WeekHistoryPage').then(m => ({ default: m.WeekHistoryPage })))
-const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
-const VirtualOfficePage = lazy(() => import('./modules/office/VirtualOfficePage').then(m => ({ default: m.VirtualOfficePage })))
-const LeadListsPage     = lazy(() => import('./modules/lead-lists/LeadListsPage').then(m => ({ default: m.LeadListsPage })))
+const AdminPage         = lazy(() => carregadores['/admin']().then(m => ({ default: m.AdminPage })))
+const GoalsPage         = lazy(() => carregadores['/metas']().then(m => ({ default: m.GoalsPage })))
+const WeekHistoryPage   = lazy(() => carregadores['/metas/historico']().then(m => ({ default: m.WeekHistoryPage })))
+const NotificationsPage = lazy(() => carregadores['/notificacoes']().then(m => ({ default: m.NotificationsPage })))
+const VirtualOfficePage = lazy(() => carregadores['/escritorio']().then(m => ({ default: m.VirtualOfficePage })))
+const LeadListsPage     = lazy(() => carregadores['/base-leads']().then(m => ({ default: m.LeadListsPage })))
 const PulsePage         = lazy(() => import('./modules/pulse/PulsePage').then(m => ({ default: m.PulsePage })))
 
 // Fallback exibido enquanto o chunk da rota é baixado (apenas na 1ª visita)
@@ -207,7 +208,7 @@ function AppRoutes() {
       {/* Skip link — teclado pula a navegação e vai direto ao conteúdo */}
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-brand focus:text-[#0F1730] focus:font-semibold focus:shadow-modal"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-brand-fill focus:text-brand-fill-text focus:font-semibold focus:shadow-modal"
       >
         Pular para o conteúdo
       </a>

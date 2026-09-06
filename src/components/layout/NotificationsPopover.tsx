@@ -5,6 +5,7 @@ import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, Al
 import { useNotificationsStore } from '../../store/useNotificationsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { AppNotification } from '../../types'
+import { agruparNotificacoes, tituloDoGrupo, type GrupoNotificacao } from '../../lib/notificacoes'
 
 function timeAgo(iso: string): string {
   const diff  = Date.now() - new Date(iso).getTime()
@@ -40,8 +41,10 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
   const { notifications, erro, load, markRead, markAllRead } = useNotificationsStore()
   const panelRef = useRef<HTMLDivElement>(null)
 
-  const recent    = notifications.slice(0, MAX_ITEMS)
-  const unreadAll = notifications.filter(n => !n.read).length
+  // Por assunto: cem avisos iguais viram uma linha "21 leads transferidos".
+  const grupos    = agruparNotificacoes(notifications)
+  const recent    = grupos.slice(0, MAX_ITEMS)
+  const unreadAll = grupos.filter(g => g.naoLidas > 0).length
 
   // Foco entra no painel ao abrir e retorna ao gatilho ao fechar
   useEffect(() => {
@@ -85,6 +88,13 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
     return <ClipboardList size={14} strokeWidth={1.6} className={cls} />
   }
 
+  function handleGrupo(g: GrupoNotificacao) {
+    if (g.itens.length === 1) { handleClick(g.itens[0]); return }
+    // Grupo abre a página, onde dá para ver os itens e marcar todos de uma vez.
+    navigate('/notificacoes')
+    onClose()
+  }
+
   function handleClick(n: AppNotification) {
     markRead(n.id)
     if (n.resourceType === 'task') navigate('/tarefas')
@@ -114,7 +124,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
             <Bell size={14} strokeWidth={1.6} className="text-brand" />
             <span className="font-heading text-sm font-bold text-t1">Notificações</span>
             {unreadAll > 0 && (
-              <span className="font-label text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-brand text-[#0F1730] leading-none tabular-nums">
+              <span className="font-label text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-brand-fill text-brand-fill-text leading-none tabular-nums">
                 {unreadAll}
               </span>
             )}
@@ -177,45 +187,55 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
             // leitor anunciava "item de lista" e o botão sumia. Lista de
             // verdade, com o botão dentro.
             <ul aria-label="Notificações recentes" className="list-none m-0 p-0">
-            {recent.map((n, i) => (
-              <li key={n.id}>
+            {recent.map((g, i) => {
+              const n = g.itens[0]
+              const naoLida = g.naoLidas > 0
+              const varios = g.itens.length > 1
+              return (
+              <li key={g.chave}>
               <button
-                onClick={() => handleClick(n)}
+                onClick={() => handleGrupo(g)}
                 className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors duration-150 cursor-pointer hover:bg-s2
                   ${i < recent.length - 1 ? 'border-b border-line' : ''}
-                  ${!n.read ? 'bg-brand-tint/40' : ''}
+                  ${naoLida ? 'bg-brand-tint/40' : ''}
                 `}
               >
                 <span className={`w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 mt-0.5 border
-                  ${!n.read ? 'bg-brand-tint border-brand/25' : 'bg-s2 border-line'}`}>
-                  {notifIcon(n)}
+                  ${naoLida ? 'bg-brand-tint border-brand/25' : 'bg-s2 border-line'}`}>
+                  {notifIcon({ ...n, read: !naoLida })}
                 </span>
 
                 <span className="flex-1 min-w-0">
                   <span className="flex items-start justify-between gap-2">
-                    <span className={`block text-xs font-medium leading-snug ${!n.read ? 'text-t1' : 'text-t3'}`}>
-                      {n.title}
+                    <span className={`block text-xs font-medium leading-snug ${naoLida ? 'text-t1' : 'text-t3'}`}>
+                      {tituloDoGrupo(g)}
                     </span>
-                    {!n.read && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1" aria-label="Não lida" />
+                    {naoLida && (
+                      varios
+                        ? <span className="font-label text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-brand-fill text-brand-fill-text tabular-nums leading-none flex-shrink-0">{g.naoLidas}</span>
+                        : <span className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1" aria-label="Não lida" />
                     )}
                   </span>
-                  {n.body && (
-                    <span className="block text-[11px] text-t3 mt-0.5 truncate">{n.body}</span>
+                  {g.corpo && (
+                    <span className="block text-[11px] text-t3 mt-0.5 truncate">{g.corpo}</span>
                   )}
                   <span className="flex items-center gap-1.5 mt-1">
-                    <span className="font-label text-[10px] text-t4 tabular-nums">{timeAgo(n.createdAt)}</span>
-                    {n.resourceType === 'lead' && (
+                    <span className="font-label text-[10px] text-t4 tabular-nums">{timeAgo(g.maisRecente)}</span>
+                    {varios && (
+                      <span className="font-label text-[10px] text-brand-text">· Ver os {g.itens.length}</span>
+                    )}
+                    {!varios && n.resourceType === 'lead' && (
                       <span className="font-label text-[10px] text-brand-text">· Abrir lead</span>
                     )}
-                    {n.resourceType === 'task' && (
+                    {!varios && n.resourceType === 'task' && (
                       <span className="font-label text-[10px] text-brand-text">· Abrir tarefa</span>
                     )}
                   </span>
                 </span>
               </button>
               </li>
-            ))}
+              )
+            })}
             </ul>
           )}
         </div>
@@ -226,7 +246,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
             onClick={() => { navigate('/notificacoes'); onClose() }}
             className="w-full flex items-center justify-center gap-1.5 font-label text-[11px] uppercase tracking-[0.08em] text-t3 hover:text-brand-text py-1.5 rounded-[10px] hover:bg-brand-tint transition-all duration-150"
           >
-            Ver todas{notifications.length > MAX_ITEMS ? ` (${notifications.length})` : ''}
+            Ver todas{grupos.length > MAX_ITEMS ? ` (${grupos.length})` : ''}
             <ArrowRight size={11} strokeWidth={1.6} />
           </button>
         </div>

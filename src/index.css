@@ -39,6 +39,16 @@
   --brand-shadow:  rgba(228, 178, 60, 0.30);
   --brand-btn-text:#0F1730;   /* Marinho sobre Areia — 6.5:1 */
 
+  /* Preenchimento de marca — botão, pílula ativa, avatar, FAB, barra.
+     É o MESMO ouro nos dois temas: a Areia é a cor da marca e um controle
+     preenchido não precisa passar em contraste de texto (o texto por cima é
+     Marinho, 6.5:1). `--brand` continua sendo a "tinta" — ícone, marcador,
+     texto — e por isso escurece no claro; o preenchimento, não. */
+  --brand-fill:       #E4B23C;
+  --brand-fill-hover: #F0CC78;
+  --brand-fill-deep:  #C2922A;
+  --brand-fill-text:  #0F1730;
+
   /* Gradientes de ação — ver .grad-* no bloco SUPERFÍCIES.
      Existem como token por tema porque no claro o degradê NÃO é o do escuro
      invertido: lá o ouro clareia para Areia Clara e o texto é Marinho; aqui ele
@@ -176,14 +186,20 @@ html.light {
   --brand-dark:    #8A6210;
   --brand-tint:    rgba(228, 178, 60, 0.16);
   --brand-text:    #8A6210;
-  --brand-shadow:  rgba(168, 121, 26, 0.22);
-  --brand-btn-text:#FFFFFF;
+  --brand-shadow:  rgba(228, 178, 60, 0.30);
+  --brand-btn-text:#0F1730;
 
-  /* No papel o degradê ESCURECE em vez de clarear: luz sobre branco não existe.
-     Os dois pontos precisam sustentar texto branco — #A8791A dá 4.6:1 e
-     #8A6210 dá 6.3:1. */
-  --grad-brand:      linear-gradient(158deg, #A8791A 0%, #8A6210 62%);
-  --grad-brand-text: #FFFFFF;
+  /* O botão primário é Areia viva com Marinho por cima nos DOIS temas.
+     A versão anterior escurecia o ouro para #A8791A → #8A6210 com texto
+     branco, e o resultado era um botão marrom que não lembrava a marca nem o
+     login. Marinho sobre Areia dá 6.5:1 — mais contraste que o branco sobre
+     o marrom (4.6:1) — e devolve ao tema claro a mesma cor do escuro. */
+  --grad-brand:      linear-gradient(158deg, #F0CC78 0%, #E4B23C 62%);
+  --grad-brand-text: #0F1730;
+  --brand-fill:       #E4B23C;
+  --brand-fill-hover: #D9A62F;
+  --brand-fill-deep:  #C2922A;
+  --brand-fill-text:  #0F1730;
   --grad-call:       linear-gradient(158deg, #34D07A 0%, #16A34A 62%);
   --grad-call-text:  #06210F;
   --grad-call-glow:  rgba(22, 163, 74, 0.20);

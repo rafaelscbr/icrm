@@ -43,7 +43,7 @@ export function AccountMenu({
         >
           <span
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
-            style={{ background: 'var(--brand)', color: 'var(--brand-btn-text)' }}
+            style={{ background: 'var(--brand-fill)', color: 'var(--brand-fill-text)' }}
             aria-hidden
           >
             {inicial}

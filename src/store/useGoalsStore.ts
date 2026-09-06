@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Goal, GoalCategory } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
+import { getCurrentUserId } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { WEEKLY_TARGETS, MONTHLY_TARGETS } from '../lib/metasConfig'
 
@@ -70,6 +71,7 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
           target: r.target as number,
           period: r.period as Goal['period'],
           active: r.active as boolean,
+          brokerId: (r.broker_id as string | null) ?? undefined,
           createdAt: r.created_at as string,
           updatedAt: r.updated_at as string,
         }
@@ -85,6 +87,7 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
             target: r.target as number,
             period: r.period as Goal['period'],
             active: r.active as boolean,
+          brokerId: (r.broker_id as string | null) ?? undefined,
             updatedAt: r.updated_at as string,
           }),
         }))
@@ -111,7 +114,7 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
   },
 
   add: (data, brokerId?) => {
-    const goal = makeGoal(data)
+    const goal = makeGoal({ ...data, brokerId: brokerId ?? data.brokerId ?? getCurrentUserId() ?? undefined })
     set(s => ({ goals: [...s.goals, goal] }))
     db.goals.upsert(goal, brokerId).catch(err => console.error('[goals] add:', err))
     return goal

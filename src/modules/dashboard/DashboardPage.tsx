@@ -312,7 +312,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
                 className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000"
                 style={{
                   width: `${Math.min(pct, 1) * 100}%`,
-                  background: 'linear-gradient(90deg, var(--brand-dark), var(--brand) 70%, var(--brand-text))',
+                  background: 'linear-gradient(90deg, var(--brand-fill-deep), var(--brand-fill) 70%, var(--brand-fill-hover))',
                   boxShadow: '0 0 16px rgba(228,178,60,0.35)',
                 }}
                 aria-hidden
@@ -434,7 +434,7 @@ type KpiTone = 'revenue' | 'brand' | 'success' | 'neutral' | 'alert'
 const KPI_TONE: Record<KpiTone, { value: string; chip: string; icon: string; card: string; gold: boolean }> = {
   revenue: { value: 'text-t1',      chip: 'bg-brand-tint', icon: 'text-brand',   card: 'border-line',       gold: true  },
   brand:   { value: 'text-t1',      chip: 'bg-brand-tint', icon: 'text-brand',   card: 'border-line',       gold: true  },
-  success: { value: 'text-success', chip: 'bg-success-bg', icon: 'text-success', card: 'border-line',       gold: true  },
+  success: { value: 'text-t1',      chip: 'bg-success-bg', icon: 'text-success', card: 'border-line',       gold: true  },
   neutral: { value: 'text-t1',      chip: 'bg-s3',         icon: 'text-t3',      card: 'border-line',       gold: false },
   alert:   { value: 'text-error',   chip: 'bg-error-bg',   icon: 'text-error',   card: 'border-error-line', gold: false },
 }
@@ -892,7 +892,7 @@ function RevenueTrend({ points, target, loading }: {
     <div className="rounded-[16px] border border-line surface-premium overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
       <div className="flex items-center gap-4 px-5 pt-4 pb-1 flex-wrap">
         <span className="flex items-center gap-1.5 text-[11px] text-t3">
-          <span className="w-2.5 h-2.5 rounded-sm bg-brand flex-shrink-0" aria-hidden /> VGV da semana
+          <span className="w-2.5 h-2.5 rounded-sm bg-brand-fill flex-shrink-0" aria-hidden /> VGV da semana
         </span>
         <span className="flex items-center gap-1.5 text-[11px] text-t3">
           <span className="w-4 h-0.5 rounded bg-success flex-shrink-0" aria-hidden /> Acumulado
@@ -913,7 +913,7 @@ function RevenueTrend({ points, target, loading }: {
         >
           <defs>
             <linearGradient id="rtBar" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="var(--brand)"      stopOpacity="0.95" />
+              <stop offset="0%"   stopColor="var(--brand-fill)" stopOpacity="0.95" />
               <stop offset="100%" stopColor="var(--brand-dark)" stopOpacity="0.55" />
             </linearGradient>
           </defs>

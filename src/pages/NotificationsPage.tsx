@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
-  BadgeCheck,
+  BadgeCheck, ChevronRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushPermission } from '../lib/push'
@@ -14,6 +14,8 @@ import { Button } from '../components/ui/Button'
 import { useNotificationsStore } from '../store/useNotificationsStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { AppNotification } from '../types'
+import { agruparNotificacoes, tituloDoGrupo, type GrupoNotificacao } from '../lib/notificacoes'
+import { EsqueletoLinhas } from '../components/shared/Esqueleto'
 
 /**
  * Notificações.
@@ -156,13 +158,101 @@ function NotificationItem({
   )
 }
 
+// ─── Grupo de avisos iguais ──────────────────────────────────────────────────
+
+/**
+ * Cem "Lead transferido para você" são UMA informação. O grupo diz quantos,
+ * de quando até quando, e abre a lista só se alguém quiser o detalhe. Marcar
+ * o grupo como lido é uma escrita no banco, não vinte.
+ */
+function GrupoItem({ grupo, onRead, onReadMany }: {
+  grupo: GrupoNotificacao
+  onRead: (id: string) => void
+  onReadMany: (ids: string[]) => Promise<void>
+}) {
+  const [aberto, setAberto] = useState(false)
+  const [marcando, setMarcando] = useState(false)
+  const { icon, tom } = aparencia(grupo.itens[0])
+  const naoLida = grupo.naoLidas > 0
+  const n = grupo.itens.length
+
+  async function marcarTodas() {
+    setMarcando(true)
+    await onReadMany(grupo.itens.filter(i => !i.read).map(i => i.id))
+    setMarcando(false)
+  }
+
+  return (
+    <div
+      className={`relative rounded-[14px] border overflow-hidden transition-all
+        ${naoLida ? 'surface-premium border-line shadow-card' : 'bg-transparent border-transparent'}`}
+    >
+      {naoLida && <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full grad-brand" aria-hidden />}
+
+      <div className="flex items-start gap-4 px-4 py-4">
+        <IconeTom icon={icon} tom={naoLida ? tom : 'neutro'} tamanho="md" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className={`text-sm leading-snug ${naoLida ? 'font-bold text-t1' : 'font-medium text-t3'}`}>
+              {tituloDoGrupo(grupo)}
+            </p>
+            {naoLida && (
+              <span className="font-label text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-brand-fill text-brand-fill-text tabular-nums leading-none">
+                {grupo.naoLidas} nova{grupo.naoLidas !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          {grupo.corpo && (
+            <p className={`text-[13px] mt-0.5 ${naoLida ? 'text-t2' : 'text-t4'}`}>{grupo.corpo}</p>
+          )}
+          <div className="flex items-center gap-x-3 gap-y-1.5 mt-2 flex-wrap">
+            <span className="font-label text-[11px] text-t4 tabular-nums" title={`${dataCompleta(grupo.maisAntigo)} até ${dataCompleta(grupo.maisRecente)}`}>
+              {grupo.maisAntigo === grupo.maisRecente
+                ? timeAgo(grupo.maisRecente)
+                : `entre ${timeAgo(grupo.maisAntigo)} e ${timeAgo(grupo.maisRecente)}`}
+            </span>
+            <button
+              onClick={() => setAberto(v => !v)}
+              aria-expanded={aberto}
+              className={`flex items-center gap-1 font-label text-[11px] font-bold uppercase tracking-[0.08em]
+                          transition-colors cursor-pointer ${naoLida ? 'text-brand-text' : 'text-t4 hover:text-brand-text'}
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded`}
+            >
+              {aberto ? 'Recolher' : `Ver os ${n}`}
+              <ChevronRight size={11} strokeWidth={2} aria-hidden className={`transition-transform ${aberto ? 'rotate-90' : ''}`} />
+            </button>
+            {naoLida && (
+              <button
+                onClick={marcarTodas}
+                disabled={marcando}
+                className="flex items-center gap-1 font-label text-[11px] font-bold uppercase tracking-[0.08em]
+                           text-t4 hover:text-t2 transition-colors cursor-pointer disabled:opacity-50
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded"
+              >
+                <CheckCheck size={11} strokeWidth={2} aria-hidden />
+                {marcando ? 'Marcando…' : `Marcar ${grupo.naoLidas} como lida${grupo.naoLidas !== 1 ? 's' : ''}`}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {aberto && (
+        <div className="border-t border-line px-2 pb-2 pt-1.5 flex flex-col gap-1">
+          {grupo.itens.map(n => <NotificationItem key={n.id} n={n} onRead={onRead} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Página ──────────────────────────────────────────────────────────────────
 
 type Filtro = 'all' | 'unread'
 
 export function NotificationsPage() {
   const { user } = useAuthStore()
-  const { notifications, loading, erro, load, markRead, markAllRead } = useNotificationsStore()
+  const { notifications, loading, erro, load, markRead, markAllRead, markManyRead } = useNotificationsStore()
   const [filtro, setFiltro] = useState<Filtro>('all')
   const [pushState, setPushState] = useState<NotificationPermission | 'unsupported'>(pushPermission())
   const [enabling,  setEnabling]  = useState(false)
@@ -178,9 +268,12 @@ export function NotificationsPage() {
     else if (result === 'error')  toast.error('Não foi possível ativar — tente novamente')
   }
 
-  const unreadCount = notifications.filter(n => !n.read).length
   const filtered = filtro === 'unread' ? notifications.filter(n => !n.read) : notifications
   const groups = groupNotifications(filtered)
+  // Contagens por assunto (grupo), não por item — ver useUnreadCount.
+  const gruposTodos  = agruparNotificacoes(notifications)
+  const unreadCount  = gruposTodos.filter(g => g.naoLidas > 0).length
+  const itensNaoLidos = notifications.filter(n => !n.read).length
 
   function handleMarkAll() {
     if (user) markAllRead(user.id)
@@ -194,12 +287,12 @@ export function NotificationsPage() {
       subtitle={erro
         ? 'não foi possível ler as notificações'
         : unreadCount > 0
-          ? `${unreadCount} esperando você`
+          ? `${unreadCount} assunto${unreadCount !== 1 ? 's' : ''} esperando você${itensNaoLidos > unreadCount ? ` · ${itensNaoLidos} avisos` : ''}`
           : 'tudo lido'}
       band={
         <Abas
           abas={[
-            { value: 'all'    as Filtro, label: 'Todas',     badge: erro ? undefined : notifications.length },
+            { value: 'all'    as Filtro, label: 'Todas',     badge: erro ? undefined : gruposTodos.length },
             { value: 'unread' as Filtro, label: 'Não lidas', badge: erro ? undefined : unreadCount },
           ]}
           valor={filtro}
@@ -254,6 +347,7 @@ export function NotificationsPage() {
         erro={erro}
         vazio={groups.length === 0}
         onTentarDeNovo={() => { if (user) void load(user.id) }}
+        esqueleto={<EsqueletoLinhas linhas={5} />}
         icone={Bell}
         titulo={filtro === 'unread' ? 'Nada esperando você' : 'Nenhuma notificação ainda'}
         descricao={filtro === 'unread'
@@ -262,7 +356,8 @@ export function NotificationsPage() {
       >
         <div className="flex flex-col gap-6">
           {groups.map(group => {
-            const naoLidasNoGrupo = group.items.filter(n => !n.read).length
+            const agrupados = agruparNotificacoes(group.items)
+            const naoLidasNoGrupo = agrupados.filter(g => g.naoLidas > 0).length
             return (
               <section key={group.label}>
                 <div className="flex items-center gap-2 mb-2 px-1">
@@ -275,9 +370,9 @@ export function NotificationsPage() {
                   )}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  {group.items.map(n => (
-                    <NotificationItem key={n.id} n={n} onRead={markRead} />
-                  ))}
+                  {agrupados.map(g => g.itens.length > 1
+                    ? <GrupoItem key={g.chave} grupo={g} onRead={markRead} onReadMany={markManyRead} />
+                    : <NotificationItem key={g.itens[0].id} n={g.itens[0]} onRead={markRead} />)}
                 </div>
               </section>
             )

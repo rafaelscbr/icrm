@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Users, Building2, Megaphone, CheckSquare, X, UserPlus } from 'lucide-react'
+import { Search, Users, Building2, Megaphone, CheckSquare, X, UserPlus, Plus, Sun, Moon, Zap } from 'lucide-react'
+import { useThemeStore } from '../../store/useThemeStore'
+import { navSections, isGroup, type NavIcon } from '../layout/nav/navConfig'
 import { useContactSearch } from '../../hooks/useContactSearch'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
@@ -15,6 +17,18 @@ interface GlobalSearchProps {
 }
 
 const MAX_PER_SECTION = 5
+
+/** Ação da paleta — o ⌘K deixa de ser só busca e passa a executar. */
+interface Acao {
+  id: string
+  label: string
+  icon: NavIcon
+  run: () => void
+}
+
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
 
 export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState('')
@@ -56,6 +70,32 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
   const q = query.trim().toLowerCase()
 
+  /*
+   * Ações: criar e ir para. Sem busca, as quatro primeiras aparecem como
+   * atalhos; com busca, entram no filtro junto com o resto. As telas
+   * respondem a `?nova=1` / `?novo=1` abrindo o formulário.
+   */
+  const { theme, toggle: toggleTheme } = useThemeStore()
+  const acoes: Acao[] = [
+    { id: 'nova-tarefa',  label: 'Nova tarefa',  icon: Plus, run: () => go('/tarefas?nova=1') },
+    { id: 'novo-lead',    label: 'Novo lead',    icon: Plus, run: () => go('/leads?novo=1') },
+    { id: 'novo-contato', label: 'Novo contato', icon: Plus, run: () => go('/contatos?novo=1') },
+    ...navSections.flatMap(secao => secao.items.flatMap<Acao>(item =>
+      isGroup(item)
+        ? item.children.map(c => ({ id: c.to, label: `Ir para ${item.label} · ${c.label}`, icon: c.icon, run: () => go(c.to) }))
+        : [{ id: item.to, label: `Ir para ${item.label}`, icon: item.icon, run: () => go(item.to) }],
+    )),
+    {
+      id: 'tema',
+      label: theme === 'dark' ? 'Tema claro' : 'Tema escuro',
+      icon: theme === 'dark' ? Sun : Moon,
+      run: () => { toggleTheme(); onClose() },
+    },
+  ]
+  const acoesVisiveis = q
+    ? acoes.filter(a => normalizar(a.label).includes(normalizar(q))).slice(0, 6)
+    : acoes.slice(0, 4)
+
   const { resultados: filteredContacts } = useContactSearch(query.trim(), MAX_PER_SECTION)
 
   const filteredProperties = q ? properties.filter(p =>
@@ -76,7 +116,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     t.title.toLowerCase().includes(q) || (t.description ?? '').toLowerCase().includes(q)
   ).slice(0, MAX_PER_SECTION) : []
 
-  const hasResults = filteredContacts.length > 0 || filteredProperties.length > 0 ||
+  const hasResults = acoesVisiveis.length > 0 || filteredContacts.length > 0 || filteredProperties.length > 0 ||
     filteredFunnelLeads.length > 0 || filteredCampLeads.length > 0 || filteredTasks.length > 0
 
   function go(path: string) { navigate(path); onClose() }
@@ -90,6 +130,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
   // Lista plana na mesma ordem visual — base da navegação por teclado
   const flatItems: Array<() => void> = [
+    ...acoesVisiveis.map(a => a.run),
     ...filteredContacts.map(c => () => goWithModal('/contatos', c.id)),
     ...filteredProperties.map(p => () => goWithModal('/imoveis', p.id)),
     ...filteredFunnelLeads.map(l => () => goWithModal('/leads', l.id)),
@@ -97,7 +138,9 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     ...filteredTasks.map(() => () => go('/tarefas')),
   ]
 
-  const offProperties = filteredContacts.length
+  const offAcoes      = acoesVisiveis.length
+  const offContatos   = offAcoes
+  const offProperties = offAcoes + filteredContacts.length
   const offFunnel     = offProperties + filteredProperties.length
   const offCamp       = offFunnel + filteredFunnelLeads.length
   const offTasks      = offCamp + filteredCampLeads.length
@@ -144,7 +187,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             value={query}
             onChange={e => { setQuery(e.target.value); setActiveIndex(0) }}
             onKeyDown={handleInputKeyDown}
-            placeholder="Buscar contatos, imóveis, leads, tarefas…"
+            placeholder="Buscar ou executar: contatos, leads, tarefas, ações…"
             aria-label="Buscar em todo o CRM"
             // A navegação por seta já existia, mas nada disso era anunciado:
             // sem `combobox` + `aria-activedescendant`, quem usa leitor de tela
@@ -171,11 +214,6 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
         {/* Results */}
         <div className="max-h-[60vh] overflow-y-auto">
-          {!q && (
-            <div className="px-4 py-10 text-center text-xs text-t4" role="status">
-              Digite para buscar em todo o CRM
-            </div>
-          )}
           {q && !hasResults && (
             <div className="px-4 py-10 text-center text-xs text-t3" role="status">
               Nenhum resultado para &ldquo;{query}&rdquo;
@@ -184,12 +222,29 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
           <div id="busca-resultados" role="listbox" aria-label="Resultados da busca">
 
+          {acoesVisiveis.length > 0 && (
+            <Section icon={<Zap size={12} className="text-brand-text" />} label={q ? 'Ações' : 'Ações rápidas'}>
+              {acoesVisiveis.map((a, i) => (
+                <ResultRow key={a.id} indice={i} icon={<a.icon size={13} className="text-brand-text" />}
+                  title={a.label} subtitle={a.id.startsWith('/') ? a.id : 'abre o formulário'} tag="Executar"
+                  active={activeIndex === i} onHover={() => setActiveIndex(i)}
+                  onClick={a.run} />
+              ))}
+            </Section>
+          )}
+
+          {!q && (
+            <div className="px-4 pt-3 pb-4 text-[11px] text-t4" role="status">
+              Digite para buscar contatos, imóveis, leads e tarefas
+            </div>
+          )}
+
           {filteredContacts.length > 0 && (
             <Section icon={<Users size={12} className="text-brand" />} label="Contatos">
               {filteredContacts.map((c, i) => (
-                <ResultRow key={c.id} indice={i} icon={<Users size={13} className="text-brand" />}
+                <ResultRow key={c.id} indice={offContatos + i} icon={<Users size={13} className="text-brand" />}
                   title={c.name} subtitle={formatPhone(c.phone)} tag="Ver contato"
-                  active={activeIndex === i} onHover={() => setActiveIndex(i)}
+                  active={activeIndex === offContatos + i} onHover={() => setActiveIndex(offContatos + i)}
                   onClick={() => goWithModal('/contatos', c.id)} />
               ))}
             </Section>

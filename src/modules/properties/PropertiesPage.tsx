@@ -70,7 +70,8 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
 
   return (
     <div className="mb-8 flex flex-col gap-4">
-      {/* KPI strip */}
+      {/* KPI strip — o tom fica no ícone; o número é neutro. Cor em número
+          só quando há estado (risco acima de zero, meta atingida). */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
@@ -78,16 +79,16 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
             value: total.toString(),
             sub: 'no portfólio',
             icon: <Building2 size={15} />,
-            color: 'text-brand',
-            bg: 'bg-indigo-500/10',
+            color: 'text-brand-text',
+            bg: 'bg-brand-tint',
           },
           {
             label: 'VGV total',
             value: formatCurrencyFull(vgv),
             sub: 'valor geral de vendas',
             icon: <Landmark size={15} />,
-            color: 'text-emerald-400',
-            bg: 'bg-emerald-500/10',
+            color: 'text-success',
+            bg: 'bg-success-bg',
           },
           {
             label: 'Comissão estimada',
@@ -113,7 +114,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
               <Rotulo className="truncate">{kpi.label}</Rotulo>
             </div>
             <p className={`font-heading text-[26px] font-extrabold tabular-nums leading-none
-                           tracking-tight ${kpi.color}`}>{kpi.value}</p>
+                           tracking-tight text-t1`}>{kpi.value}</p>
             <p className="text-[11px] text-t4 mt-1.5">{kpi.sub}</p>
           </Painel>
         ))}

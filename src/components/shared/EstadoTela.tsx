@@ -38,6 +38,9 @@ interface Props {
   descricao?: string
   acao?: ReactNode
 
+  /** esqueleto no formato final da tela; sem ele cai no spinner genérico */
+  esqueleto?: ReactNode
+
   /** o que renderizar quando há dado */
   children: ReactNode
 }
@@ -45,7 +48,7 @@ interface Props {
 export function EstadoTela({
   carregando, erro, vazio, onTentarDeNovo,
   icone, titulo = 'Nada por aqui ainda', descricao, acao,
-  children,
+  esqueleto, children,
 }: Props) {
   // 1. FALHA vence tudo. Se a leitura não completou, a tela não tem o direito
   //    de afirmar coisa alguma sobre o volume de dados.
@@ -80,8 +83,10 @@ export function EstadoTela({
     )
   }
 
-  // 2. CARREGANDO — só quando ainda não há nada em tela.
+  // 2. CARREGANDO — só quando ainda não há nada em tela. Com esqueleto, a
+  //    tela já nasce no formato final e nada pula quando o dado chega.
   if (carregando) {
+    if (esqueleto) return <>{esqueleto}</>
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3" aria-busy="true">
         <Loader2 size={24} className="animate-spin text-brand" aria-hidden />

@@ -154,9 +154,9 @@ export function SalesPage() {
       ctaLabel="Nova Venda"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
     >
-      {/* Seletor de período */}
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-xs text-t3">Todos os dados filtrados pelo período</p>
+      {/* Seletor de período — é ele que recorta tudo abaixo; a frase que
+          explicava isso era uma linha de texto sem função. */}
+      <div className="flex items-center justify-end mb-5">
         <PeriodSelector />
       </div>
 
@@ -183,7 +183,7 @@ export function SalesPage() {
         <div className="lg:col-span-2 grid grid-cols-2 gap-3">
           {[
             { label: 'Comissão gerada', value: periodComm,   hint: 'negociada no período', icon: BadgePercent, tone: 'text-t1',      tom: 'info'    as const },
-            { label: 'Sua comissão',    value: periodBroker, hint: 'sua parte no período', icon: DollarSign,   tone: 'text-success', tom: 'sucesso' as const },
+            { label: 'Sua comissão',    value: periodBroker, hint: 'sua parte no período', icon: DollarSign,   tone: 'text-t1',      tom: 'sucesso' as const },
           ].map(k => (
             <div key={k.label} className="rounded-[14px] border border-line surface-premium shadow-card p-4 flex flex-col">
               <div className="flex items-center gap-2">
@@ -199,7 +199,8 @@ export function SalesPage() {
         </div>
       </div>
 
-      {/* Gráfico mensal */}
+      {/* Gráfico mensal — doze meses sem venda viravam um card de 200 px de
+          eixos vazios. O gráfico só aparece quando tem o que desenhar. */}
       {sales.length > 0 && (
         <Card className="mb-5 lg:mb-6">
           <div className="mb-4">
@@ -207,6 +208,9 @@ export function SalesPage() {
               Evolução mensal
             </SecaoTitulo>
           </div>
+          {monthlyData.every(m => m.value === 0) ? (
+            <p className="text-[13px] text-t3 py-3">Nenhuma venda fechada nos últimos 12 meses.</p>
+          ) : (
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
@@ -237,6 +241,7 @@ export function SalesPage() {
               />
             </LineChart>
           </ResponsiveContainer>
+          )}
         </Card>
       )}
 

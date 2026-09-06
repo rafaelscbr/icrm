@@ -113,7 +113,7 @@ export function CampaignsBaseTab() {
                 )}
                 <div className="w-full flex items-end" style={{ height: 60 }}>
                   <div
-                    className={`w-full rounded-t transition-all ${isToday ? 'bg-brand' : d.count > 0 ? 'bg-brand-tint' : 'bg-s3/40'}`}
+                    className={`w-full rounded-t transition-all ${isToday ? 'bg-brand-fill' : d.count > 0 ? 'bg-brand-tint' : 'bg-s3/40'}`}
                     style={{ height: `${Math.max(pct, d.count > 0 ? 6 : 1)}%` }}
                   />
                 </div>

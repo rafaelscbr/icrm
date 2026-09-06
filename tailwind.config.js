@@ -9,6 +9,11 @@ export default {
         'brand-dark':   'var(--brand-dark)',
         'brand-tint':   'var(--brand-tint)',
         'brand-text':   'var(--brand-text)',
+        // Preenchimento de marca — o mesmo ouro nos dois temas (ver index.css)
+        'brand-fill':       'var(--brand-fill)',
+        'brand-fill-hover': 'var(--brand-fill-hover)',
+        'brand-fill-deep':  'var(--brand-fill-deep)',
+        'brand-fill-text':  'var(--brand-fill-text)',
 
         // ── Surfaces ─────────────────────────────────────────────────
         page:    'var(--page-bg)',

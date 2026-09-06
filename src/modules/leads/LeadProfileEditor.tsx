@@ -131,9 +131,9 @@ export function LeadProfileEditor({
         <button
           onClick={confirmar}
           disabled={salvando}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-brand hover:bg-brand-dark
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-brand-fill hover:bg-brand-fill-hover
                      font-heading text-xs font-bold rounded-[10px] transition-all duration-150 disabled:opacity-50"
-          style={{ color: 'var(--brand-btn-text)' }}
+          style={{ color: 'var(--brand-fill-text)' }}
         >
           {salvando ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
           Salvar

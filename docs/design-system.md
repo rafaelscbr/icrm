@@ -24,8 +24,23 @@ Todos em `src/index.css`. `:root` = tema escuro, `html.light` = tema claro
 | `--brand`, `--brand-dark`, `--brand-tint`, `--brand-text` | Areia |
 | `--brand-btn-text` | texto **sobre** fundo dourado (branco no claro, Marinho no escuro) |
 
-> `--brand` é a Areia de fundo; `--brand-text` é a Areia **legível como texto**.
+> `--brand` é a Areia como **tinta** (ícone, marcador, texto de apoio) e por
+> isso escurece no tema claro; `--brand-text` é a Areia **legível como texto**.
 > Trocar um pelo outro é a causa mais comum de dourado ilegível.
+
+### Preenchimento de marca (`--brand-fill`)
+
+| Token | Papel |
+|---|---|
+| `--brand-fill` | Areia viva (`#E4B23C`) **nos dois temas** — botão primário, pílula ativa, avatar, badge, barra |
+| `--brand-fill-hover` / `--brand-fill-deep` | estados do preenchimento |
+| `--brand-fill-text` | Marinho sobre o preenchimento (6,5:1) |
+
+Regra: **controle preenchido usa `bg-brand-fill` + `text-brand-fill-text`**,
+nunca `bg-brand`. Foi o que devolveu o ouro ao tema claro em 06/09/2026 — o
+botão primário era um degradê marrom (`#A8791A → #8A6210`) com texto branco,
+que não lembrava a marca nem o login. `.grad-brand` também usa a Areia viva
+nos dois temas agora.
 
 ### Texto
 
@@ -39,6 +54,11 @@ informação.
 `--info` informação neutra (azul-petróleo). Cada um tem `-bg` e `-line`.
 
 **Cor nunca é o único indicador.** Sempre acompanhada de texto, ícone ou forma.
+
+**Número é neutro por padrão.** Em card de indicador o tom colore o **ícone**;
+o número fica em `--t1`. Cor no número só quando há estado: risco acima de
+zero em vermelho, meta atingida em verde, dinheiro no bloco hero em ouro.
+Zero nunca recebe cor. (`Numero`/`KpiCard` em `visual.tsx` já seguem isso.)
 
 ### Etapas do funil
 
@@ -84,7 +104,11 @@ brilho pinta por cima do texto.
 ### Compartilhados — `src/components/shared/`
 
 `StatCard` · `StatusBadge` · `ChecklistBadge` · `FilterDropdown` ·
-`PeriodSelector` · `GlobalSearch` (⌘K) · `TasksLinkedModal`
+`PeriodSelector` · `GlobalSearch` (⌘K, busca **e ações**: nova tarefa, novo
+lead, ir para…) · `TasksLinkedModal` · `Esqueleto` (`EsqueletoLinhas`,
+`EsqueletoCards`, `EsqueletoKpis` — passe em `EstadoTela` via `esqueleto`;
+spinner só em ação do usuário, leitura de tela usa esqueleto) ·
+`lib/notificacoes.ts` (avisos iguais viram um grupo; o sino conta grupos)
 
 ### Layout — `src/components/layout/`
 

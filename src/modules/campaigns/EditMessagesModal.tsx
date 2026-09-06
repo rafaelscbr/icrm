@@ -161,7 +161,7 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
                 <div className="flex items-center gap-2">
                   {/* Numeração colorida */}
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0
-                    ${isMain ? 'bg-brand text-[#0F1730]' : 'bg-s3/70 text-t3'}`}>
+                    ${isMain ? 'bg-brand-fill text-brand-fill-text' : 'bg-s3/70 text-t3'}`}>
                     {index + 1}
                   </div>
                   <span className="text-xs font-semibold text-t2">

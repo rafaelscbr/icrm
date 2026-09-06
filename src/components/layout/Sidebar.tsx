@@ -11,6 +11,7 @@ import { filtrarPorPermissao, isGroup } from './nav/navConfig'
 import { NavItem, NavGroup, SectionLabel } from './nav/NavItems'
 import { AccountMenu } from './nav/AccountMenu'
 import { ViewSwitcher, type Visao } from './nav/ViewSwitcher'
+import { iniciais } from '../../lib/formatters'
 
 /**
  * Trilho de navegação.
@@ -64,7 +65,7 @@ export function Sidebar() {
   }, [toggleCollapsed])
 
   const nome = profile?.name ?? 'Usuário'
-  const inicial = nome.charAt(0).toUpperCase()
+  const inicial = iniciais(nome) || 'U'
   const papel = isAdmin ? 'Admin · Corretor' : 'Corretor'
 
   const allowedMenus = profile?.allowedMenus ?? null
@@ -78,7 +79,7 @@ export function Sidebar() {
         ...(profile ? [{ id: profile.id, inicial, label: 'Meu Desempenho' }] : []),
         ...allProfiles
           .filter(p => p.role === 'broker' && p.id !== profile?.id)
-          .map(p => ({ id: p.id, inicial: p.name.charAt(0).toUpperCase(), label: p.name })),
+          .map(p => ({ id: p.id, inicial: iniciais(p.name) || '?', label: p.name })),
       ]
     : []
 

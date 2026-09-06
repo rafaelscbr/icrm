@@ -218,7 +218,7 @@ export function MessagePickerModal({ isOpen, onClose, templates, onPick, leadNam
           <button
             onClick={handleConfirm}
             disabled={selected === null || loading}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-brand hover:bg-brand-dark text-[#0F1730] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-text transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />}
             {loading ? 'Registrando…' : `Enviar mensagem${selected !== null ? ` ${selected + 1}` : ''}`}
@@ -258,7 +258,7 @@ export function MessagePickerModal({ isOpen, onClose, templates, onPick, leadNam
               <div className="flex items-center justify-between px-4 pt-3 pb-2">
                 <div className="flex items-center gap-2">
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold transition-all
-                    ${isSelected ? 'bg-brand text-[#0F1730]' : 'bg-s3/70 text-t3'}`}>
+                    ${isSelected ? 'bg-brand-fill text-brand-fill-text' : 'bg-s3/70 text-t3'}`}>
                     {i + 1}
                   </div>
                   <span className={`text-xs font-semibold transition-colors ${isSelected ? 'text-brand' : 'text-t3'}`}>
@@ -267,7 +267,7 @@ export function MessagePickerModal({ isOpen, onClose, templates, onPick, leadNam
                 </div>
                 {/* Indicador de seleção */}
                 <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all
-                  ${isSelected ? 'border-brand bg-brand' : 'border-line'}`}>
+                  ${isSelected ? 'border-brand-fill bg-brand-fill' : 'border-line'}`}>
                   {isSelected && (
                     <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
                       <path d="M1.5 4L3.5 6L6.5 2" stroke="#0F1730" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

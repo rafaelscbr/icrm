@@ -35,19 +35,31 @@ function computeScore(entries: WeekSnapshotEntry[]): number {
   return Math.round((sum / entries.length) * 100)
 }
 
+export type WeekSnapshotDeCorretor = WeekSnapshot & { brokerId: string }
+
 interface WeekSnapshotStore {
   snapshots: WeekSnapshot[]
+  /** Histórico de TODOS os corretores — só a Visão Global do admin lê isto. */
+  snapshotsTodos: WeekSnapshotDeCorretor[]
   loading:   boolean
   /** mensagem da última falha de leitura; null quando deu certo */
   erro:      string | null
   // Carrega histórico do banco para o usuário atual
   load:         (brokerId?: string) => Promise<void>
+  // Carrega o histórico de todos os corretores (admin, Visão Global)
+  loadTodos:    () => Promise<void>
   // Verifica semanas passadas e salva no banco se ainda não estiverem registradas
   checkAndSave: (tasks: Task[], sales: Sale[], goals: Goal[]) => Promise<void>
 }
 
+// Evita duas gravações simultâneas do mesmo lote: o efeito que chama
+// checkAndSave dispara a cada mudança de tarefas, vendas ou metas, e duas
+// rodadas em paralelo apareciam como semanas duplicadas na tela.
+let salvando = false
+
 export const useWeekSnapshotStore = create<WeekSnapshotStore>((set, get) => ({
   snapshots: [],
+  snapshotsTodos: [],
   loading:   false,
   erro:      null,
 
@@ -66,9 +78,31 @@ export const useWeekSnapshotStore = create<WeekSnapshotStore>((set, get) => ({
     }
   },
 
-  checkAndSave: async (tasks, sales, goals) => {
+  loadTodos: async () => {
+    set({ loading: true, erro: null })
+    try {
+      const todos = await db.weekSnapshots.fetchForAdmin()
+      set({ snapshotsTodos: todos })
+    } catch (err) {
+      console.error('[weekSnapshots] loadTodos:', err)
+      set({ erro: mensagemDeErro(err) })
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  checkAndSave: async (tasksTodas, salesTodas, goalsTodas) => {
     const brokerId = getCurrentUserId()
-    if (!brokerId) return
+    if (!brokerId || salvando) return
+
+    // O snapshot é do usuário logado, então só entram as metas, tarefas e
+    // vendas DELE. Na Visão Global a página passa tudo de todo mundo, e sem
+    // este recorte o histórico do admin registrava as metas dos corretores
+    // como se fossem suas — semanas com dez linhas repetidas e progresso
+    // somado da equipe inteira.
+    const goals = goalsTodas.filter(g => !g.brokerId || g.brokerId === brokerId)
+    const tasks = tasksTodas.filter(t => !t.brokerId || t.brokerId === brokerId)
+    const sales = salesTodas.filter(s => !s.brokerId || s.brokerId === brokerId)
 
     // Acionamento fica fora do snapshot: o realizado vem de disparo_logs e não é
     // reconstituível retroativamente a partir de tasks/sales — gravaria 0 errado.
@@ -123,19 +157,25 @@ export const useWeekSnapshotStore = create<WeekSnapshotStore>((set, get) => ({
 
     if (newSnapshots.length === 0) return
 
-    // Persiste no banco e atualiza o store
-    await Promise.all(
-      newSnapshots.map(snap =>
-        db.weekSnapshots.upsert(snap, brokerId).catch(err =>
-          console.error('[weekSnapshots] checkAndSave upsert:', err)
+    // Persiste no banco e só então atualiza o store — o banco é a fonte.
+    salvando = true
+    try {
+      await Promise.all(
+        newSnapshots.map(snap =>
+          db.weekSnapshots.upsert(snap, brokerId).catch(err =>
+            console.error('[weekSnapshots] checkAndSave upsert:', err)
+          )
         )
       )
-    )
-
-    set(s => ({
-      snapshots: [...s.snapshots, ...newSnapshots].sort(
-        (a, b) => b.weekStart.localeCompare(a.weekStart)
-      ),
-    }))
+      set(s => {
+        const porSemana = new Map(s.snapshots.map(x => [x.weekStart, x]))
+        for (const snap of newSnapshots) if (!porSemana.has(snap.weekStart)) porSemana.set(snap.weekStart, snap)
+        return {
+          snapshots: [...porSemana.values()].sort((a, b) => b.weekStart.localeCompare(a.weekStart)),
+        }
+      })
+    } finally {
+      salvando = false
+    }
   },
 }))

@@ -217,7 +217,7 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
                 onClick={() => { setPeriod(opt.value); if (opt.value !== 'custom') setCustomDate('') }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer
                   ${period === opt.value
-                    ? 'bg-brand text-[#0F1730] border-brand'
+                    ? 'bg-brand-fill text-brand-fill-text border-brand-fill'
                     : 'bg-s3/40 border-line text-t3 hover:text-t1 hover:border-brand/30'
                   }`}
               >

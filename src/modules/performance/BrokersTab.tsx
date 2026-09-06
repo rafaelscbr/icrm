@@ -111,7 +111,9 @@ export function BrokersTab() {
   }, [period, loadBrokerSummaries])
 
   const brokers = useMemo(() =>
-    allProfiles.filter(p => p.role === 'broker' || (isAdmin && p.role === 'admin')),
+    // Perfil desativado não é corretor em atividade: aparecer aqui só polui a
+    // comparação (o "E2E Tester" da conta de teste entrava no ranking).
+    allProfiles.filter(p => p.active !== false && (p.role === 'broker' || (isAdmin && p.role === 'admin'))),
     [allProfiles, isAdmin]
   )
 
@@ -203,9 +205,9 @@ export function BrokersTab() {
 
   const METRICS = (s: BrokerStats, prev: Partial<BrokerStats>) => [
     { label: 'Novos Disparos',     icon: Zap,            color: 'text-brand-text', bg: 'bg-brand-tint', value: s.disparosNew,      prevVal: prev.disparosNew },
-    { label: 'Follow-ups',         icon: BarChart2,      color: 'text-indigo-400', bg: 'bg-indigo-500/10', value: s.disparosFollowup, prevVal: prev.disparosFollowup },
-    { label: 'Interações leads',   icon: MessageCircle,  color: 'text-green-400',  bg: 'bg-green-500/10',  value: s.interactions,     prevVal: prev.interactions },
-    { label: 'Avanços no funil',   icon: ArrowRight,     color: 'text-brand',      bg: 'bg-brand/10',      value: s.advances,         prevVal: prev.advances },
+    { label: 'Follow-ups',         icon: BarChart2,      color: 'text-brand-text', bg: 'bg-brand-tint', value: s.disparosFollowup, prevVal: prev.disparosFollowup },
+    { label: 'Interações leads',   icon: MessageCircle,  color: 'text-success',    bg: 'bg-success-bg',  value: s.interactions,     prevVal: prev.interactions },
+    { label: 'Avanços no funil',   icon: ArrowRight,     color: 'text-brand-text', bg: 'bg-brand-tint',    value: s.advances,         prevVal: prev.advances },
     { label: 'Leads novos',        icon: UserPlus,       color: 'text-info',    bg: 'bg-info-bg',    value: s.newLeads,         prevVal: undefined },
     { label: 'Descartes',          icon: XCircle,        color: 'text-error',      bg: 'bg-error-bg',      value: s.discards,         prevVal: prev.discards },
     { label: 'Vendas',             icon: TrendingUp,     color: 'text-success',    bg: 'bg-success-bg',    value: s.sales,            prevVal: undefined },
@@ -226,7 +228,7 @@ export function BrokersTab() {
             onClick={() => setPeriod(p.id)}
             className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               period === p.id
-                ? 'bg-brand text-[#0B0F1C]'
+                ? 'bg-brand-fill text-brand-fill-text'
                 : 'text-t3 hover:text-t1 hover:bg-s3/60'
             }`}
           >
@@ -241,7 +243,7 @@ export function BrokersTab() {
           <Crown size={14} className="text-brand flex-shrink-0" />
           <p className="text-sm text-t2">
             <span className="font-bold text-t1">{ranked[0].name}</span> lidera em atividade —{' '}
-            <span className="text-brand font-semibold">{ranked[0].disparos + ranked[0].interactions}</span> ações no período
+            <span className="text-brand-text font-semibold">{ranked[0].disparos + ranked[0].interactions}</span> ações no período
           </p>
         </div>
       )}
@@ -261,8 +263,8 @@ export function BrokersTab() {
                     {s.initial}
                   </div>
                   {rank === 0 && ranked.length > 1 && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand flex items-center justify-center">
-                      <Crown size={9} className="text-[#0B0F1C]" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand-fill flex items-center justify-center">
+                      <Crown size={9} className="text-brand-fill-text" />
                     </div>
                   )}
                 </div>
@@ -274,7 +276,7 @@ export function BrokersTab() {
                 </div>
                 <div className="text-right">
                   <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Atividade</p>
-                  <p className="text-lg font-black text-brand tabular-nums">{s.disparos + s.interactions}</p>
+                  <p className="font-heading text-lg font-black text-t1 tabular-nums">{s.disparos + s.interactions}</p>
                 </div>
               </div>
 
@@ -283,11 +285,11 @@ export function BrokersTab() {
                 {metrics.filter(m => m.label !== 'Receita').map(m => {
                   const Icon = m.icon
                   return (
-                    <div key={m.label} className="flex flex-col gap-2 p-3 rounded-xl bg-s2/50 border border-line">
+                    <div key={m.label} className="flex flex-col gap-2 p-3 rounded-xl bg-s2/40">
                       <div className={`w-6 h-6 ${m.bg} rounded-lg flex items-center justify-center`}>
                         <Icon size={12} className={m.color} />
                       </div>
-                      <p className={`text-2xl font-black tabular-nums leading-none ${m.color}`}>{m.value}</p>
+                      <p className="font-heading text-2xl font-black tabular-nums leading-none text-t1">{m.value}</p>
                       <div className="flex flex-col gap-0.5">
                         <p className="text-[11px] text-t4 leading-tight">{m.label}</p>
                         {m.prevVal !== undefined && period !== 'total' && (
@@ -356,7 +358,7 @@ export function BrokersTab() {
                         )}
                         <div className="w-full flex items-end" style={{ height: 36 }}>
                           <div
-                            className={`w-full rounded-t-sm transition-all ${di === 13 ? 'bg-brand/70' : d.count > 0 ? 'bg-brand-tint' : 'bg-s3/40'}`}
+                            className={`w-full rounded-t-sm transition-all ${di === 13 ? 'bg-brand-fill' : d.count > 0 ? 'bg-brand-fill/60' : 'bg-s3/40'}`}
                             style={{ height: `${Math.max((d.count / max) * 100, d.count > 0 ? 8 : 2)}%` }}
                           />
                         </div>

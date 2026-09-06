@@ -511,6 +511,10 @@ export interface Goal {
   target: number        // quantidade alvo por período
   period: GoalPeriod
   active: boolean
+  /** Dono da meta. Na Visão Global as metas de todos chegam juntas e é este
+      campo que diz de quem é cada uma — sem ele a tela virava uma parede de
+      cards idênticos. */
+  brokerId?: string
   createdAt: string
   updatedAt: string
 }

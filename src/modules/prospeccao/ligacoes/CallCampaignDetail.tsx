@@ -253,8 +253,8 @@ function AddListsPanel({ isOpen, onClose, campaignId }: {
                     : 'bg-s3/30 border-line hover:border-line-strong'}`}
               >
                 <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 border-2
-                  ${selecionada ? 'bg-brand border-brand' : 'border-t5 bg-s3/50'}`} aria-hidden>
-                  {selecionada && <Check size={11} strokeWidth={3} className="text-[var(--brand-btn-text)]" />}
+                  ${selecionada ? 'bg-brand-fill border-brand-fill' : 'border-t5 bg-s3/50'}`} aria-hidden>
+                  {selecionada && <Check size={11} strokeWidth={3} className="text-brand-fill-text" />}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className={`text-[13px] font-semibold truncate ${selecionada ? 'text-t1' : 'text-t2'}`}>

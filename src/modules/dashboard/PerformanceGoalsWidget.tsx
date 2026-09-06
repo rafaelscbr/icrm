@@ -289,10 +289,10 @@ function BrokerRow({
             }
             {isTop && (
               <span
-                className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-brand flex items-center justify-center shadow-brand"
+                className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-brand-fill flex items-center justify-center shadow-brand"
                 title="Melhor desempenho"
               >
-                <Crown size={11} className="text-[var(--brand-btn-text)]" />
+                <Crown size={11} className="text-brand-fill-text" />
               </span>
             )}
           </div>

@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
 import { RailPopout } from './RailPopout'
+import { prefetchRota } from '../../../rotas'
 import type { NavLeaf, NavGroupDef } from './navConfig'
 
 /*
@@ -23,7 +24,7 @@ function Marcador() {
     <span
       aria-hidden
       className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full"
-      style={{ background: 'var(--brand)' }}
+      style={{ background: 'var(--brand-fill)' }}
     />
   )
 }
@@ -38,6 +39,8 @@ export function NavItem({ item, collapsed }: { item: NavLeaf; collapsed: boolean
         <NavLink
           to={to}
           end={end}
+          onMouseEnter={() => prefetchRota(to)}
+          onFocus={() => prefetchRota(to)}
           className={`${PILL} mx-auto h-10 w-10 justify-center`}
           style={({ isActive }) => ({
             background: isActive ? 'var(--nav-active-bg)' : undefined,
@@ -64,6 +67,8 @@ export function NavItem({ item, collapsed }: { item: NavLeaf; collapsed: boolean
     <NavLink
       to={to}
       end={end}
+      onMouseEnter={() => prefetchRota(to)}
+      onFocus={() => prefetchRota(to)}
       className={({ isActive }) =>
         `${PILL} h-9 gap-2.5 px-2.5 text-[13.5px] ${isActive ? '' : 'hover:bg-nav-hover'}`
       }
@@ -94,6 +99,8 @@ function NavChild({ item }: { item: NavLeaf }) {
     <NavLink
       to={item.to}
       end={item.end}
+      onMouseEnter={() => prefetchRota(item.to)}
+      onFocus={() => prefetchRota(item.to)}
       className={({ isActive }) =>
         `relative flex h-8 items-center gap-2.5 rounded-lg pl-4 pr-2.5 text-[13px] font-medium
          transition-colors duration-150 ${isActive ? '' : 'hover:bg-nav-hover'}`

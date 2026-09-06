@@ -1,20 +1,27 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Users, TrendingUp, CheckSquare, MoreHorizontal,
-  X, Bell, Search, ExternalLink, Plus, LogOut, ShieldCheck,
+  LayoutDashboard, UserPlus, Phone, CheckSquare, MoreHorizontal,
+  X, Bell, Search, ExternalLink, LogOut, ShieldCheck,
 } from 'lucide-react'
-import { TaskForm } from '../../modules/tasks/TaskForm'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSearchStore } from '../../store/useSearchStore'
 import { useUnreadCount } from '../../store/useNotificationsStore'
 import { externalTools as tools, secoesDaGaveta, isGroup, navSections } from './nav/navConfig'
+import { iniciais } from '../../lib/formatters'
 
+/*
+ * Os quatro atalhos fixos são o TRABALHO DIÁRIO do corretor no celular: o funil,
+ * a fila de ligação, as tarefas e a página inicial. Contatos e Vendas ficavam
+ * aqui e empurravam Leads e Ligações para a gaveta — o que se abre dez vezes
+ * por dia estava atrás de "Mais", e o que se consulta uma vez por semana tinha
+ * vaga fixa. Os dois continuam a um toque, na gaveta.
+ */
 const mainNav = [
-  { to: '/',         icon: LayoutDashboard, label: 'Início',   end: true  },
-  { to: '/contatos', icon: Users,           label: 'Contatos', end: false },
-  { to: '/vendas',   icon: TrendingUp,      label: 'Vendas',   end: false },
-  { to: '/tarefas',  icon: CheckSquare,     label: 'Tarefas',  end: false },
+  { to: '/',                    icon: LayoutDashboard, label: 'Início',   end: true  },
+  { to: '/leads',               icon: UserPlus,        label: 'Leads',    end: false },
+  { to: '/prospeccao/ligacoes', icon: Phone,           label: 'Ligações', end: false },
+  { to: '/tarefas',             icon: CheckSquare,     label: 'Tarefas',  end: false },
 ]
 
 const naBarra = new Set(mainNav.map(i => i.to))
@@ -36,14 +43,13 @@ function chaveDaRota(to: string): string {
 
 export function BottomNav() {
   const [drawerOpen, setDrawerOpen]   = useState(false)
-  const [taskFormOpen, setTaskFormOpen] = useState(false)
   const location  = useLocation()
   const navigate  = useNavigate()
   const { profile, isAdmin, logout } = useAuthStore()
   const setSearchOpen = useSearchStore(s => s.setOpen)
   const unreadCount = useUnreadCount()
 
-  const initial = (profile?.name ?? 'U').charAt(0).toUpperCase()
+  const initial = iniciais(profile?.name) || 'U'
 
   function handleLogout() {
     logout()
@@ -86,15 +92,12 @@ export function BottomNav() {
 
   return (
     <>
-      {/* ── FAB nova tarefa ──────────────────────────────────────── */}
-      <button
-        onClick={() => setTaskFormOpen(true)}
-        className="lg:hidden fixed right-4 z-50 w-12 h-12 rounded-full bg-brand hover:bg-brand-dark active:scale-95 flex items-center justify-center shadow-brand text-[var(--brand-btn-text)] transition-all duration-150"
-        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
-        title="Nova tarefa"
-      >
-        <Plus size={20} strokeWidth={2.5} />
-      </button>
+      {/*
+        O FAB de "nova tarefa" saiu. No celular ele convivia com o botão
+        "Novo" do cabeçalho de cada tela — dois "+" dourados para funções
+        diferentes — e ainda cobria a ação da última linha das listas. A
+        criação fica onde o contexto está: no cabeçalho da tela.
+      */}
 
       {/* ── Bottom bar ───────────────────────────────────────────── */}
       <nav
@@ -161,7 +164,7 @@ export function BottomNav() {
                   />
                   {unreadCount > 0 && (
                     <span
-                      className="absolute -top-0.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-brand text-[var(--brand-btn-text)] text-[11px] font-bold flex items-center justify-center tabular-nums leading-none"
+                      className="absolute -top-0.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-brand-fill text-brand-fill-text text-[11px] font-bold flex items-center justify-center tabular-nums leading-none"
                       aria-hidden="true"
                     >
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -201,9 +204,6 @@ export function BottomNav() {
           </button>
         </div>
       </nav>
-
-      {/* ── Task Form ────────────────────────────────────────────── */}
-      <TaskForm isOpen={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
 
       {/* ── Drawer ───────────────────────────────────────────────── */}
       {drawerOpen && (
@@ -343,7 +343,7 @@ export function BottomNav() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-2xl"
                 style={{ background: 'var(--s2)', border: '1px solid var(--line)' }}
               >
-                <div className="w-9 h-9 bg-brand rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                <div className="w-9 h-9 bg-brand-fill rounded-full flex items-center justify-center text-sm font-bold text-brand-fill-text flex-shrink-0">
                   {initial}
                 </div>
                 <div className="min-w-0 flex-1">

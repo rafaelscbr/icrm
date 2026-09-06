@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { db } from '../lib/db'
 import { AppNotification } from '../types'
 import { mensagemDeErro } from '../lib/erros'
+import { agruparNotificacoes } from '../lib/notificacoes'
 
 // Som curto de alerta — gerado via Web Audio (sem asset). Pode falhar
 // silenciosamente se o navegador ainda não liberou áudio (sem interação).
@@ -37,6 +38,8 @@ interface NotificationsStore {
   markRead: (id: string) => void
   // Marca todas como lidas
   markAllRead: (userId: string) => void
+  // Marca um grupo de avisos como lido — grava no banco antes de mudar a tela
+  markManyRead: (ids: string[]) => Promise<void>
   // Inicia subscription realtime — retorna fn de cleanup
   subscribe: (userId: string) => () => void
   // Adiciona notificação recebida via realtime
@@ -73,6 +76,18 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
       notifications: s.notifications.map(n => ({ ...n, read: true })),
     }))
     db.notifications.markAllRead(userId).catch(err => console.error('[notifications] markAllRead:', err))
+  },
+
+  markManyRead: async (ids: string[]) => {
+    try {
+      await db.notifications.markManyRead(ids)
+    } catch (err) {
+      console.error('[notifications] markManyRead:', err)
+      toast.error(`Não foi possível marcar como lidas: ${mensagemDeErro(err)}`)
+      return
+    }
+    const lidas = new Set(ids)
+    set(s => ({ notifications: s.notifications.map(n => lidas.has(n.id) ? { ...n, read: true } : n) }))
   },
 
   _addRealtime: (n: AppNotification) => {
@@ -136,8 +151,14 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
 }))
 
 // Selectors
+
+/**
+ * Não lidas contadas por GRUPO, não por item: cem avisos iguais de "lead
+ * transferido" são um assunto pendente, não cem. É o número do sino e da
+ * barra inferior — o que a pessoa ainda precisa olhar.
+ */
 export const useUnreadCount = () =>
-  useNotificationsStore(s => s.notifications.filter(n => !n.read).length)
+  useNotificationsStore(s => agruparNotificacoes(s.notifications).filter(g => g.naoLidas > 0).length)
 
 export const useRecentNotifications = (limit = 3) =>
   useNotificationsStore(s => s.notifications.slice(0, limit))

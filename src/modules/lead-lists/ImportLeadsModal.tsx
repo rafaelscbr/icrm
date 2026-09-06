@@ -733,7 +733,7 @@ function ConflictRow({
         ${checked
           ? isClient
             ? 'bg-amber-500 border-amber-400'
-            : 'bg-brand border-brand/80'
+            : 'bg-brand-fill border-brand-fill'
           : 'border-line bg-s3/50'
         }`}
       >

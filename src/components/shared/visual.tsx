@@ -122,7 +122,7 @@ export function Barra({ pct, tom = 'marca', altura = 6, rotuloAcessivel }: {
           // Os dois pontos são tokens de tema: no papel o ouro escurece em vez
           // de clarear (ver --grad-brand no index.css).
           background: dourado
-            ? 'linear-gradient(90deg, var(--brand-dark), var(--brand) 75%)'
+            ? 'linear-gradient(90deg, var(--brand-fill-deep), var(--brand-fill) 75%)'
             : TOM[tom].solido,
           boxShadow: dourado && preenchido > 0 ? '0 0 16px var(--brand-shadow)' : undefined,
         }}
@@ -147,8 +147,13 @@ export function Numero({ valor, rotulo, nota, tom = 'neutro', icon, tamanho = 'm
         {icon && <IconeTom icon={icon} tom={tom} tamanho="sm" />}
         <Rotulo>{rotulo}</Rotulo>
       </div>
+      {/* O tom colore o ícone, nunca o número: um indicador de estoque não
+          tem estado, e quatro números em quatro cores lado a lado deixam de
+          significar qualquer coisa. Número colorido é só para estado — meta
+          atingida, risco acima de zero — e quem precisa disso escreve a
+          classe na própria tela. */}
       <span className={`font-heading font-extrabold tabular-nums leading-none ${px}
-                        tracking-tight truncate ${tom === 'neutro' ? 'text-t1' : TOM[tom].texto}`}>
+                        tracking-tight truncate text-t1`}>
         {valor}
       </span>
       {nota && <span className="text-[11px] text-t4 truncate">{nota}</span>}

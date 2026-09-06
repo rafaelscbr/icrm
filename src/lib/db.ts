@@ -437,7 +437,8 @@ function toGoal(r: GoalRow): Goal {
   return {
     id: r.id, name: r.name, category: r.category as Goal['category'],
     target: r.target, period: r.period as Goal['period'],
-    active: r.active, createdAt: r.created_at, updatedAt: r.updated_at,
+    active: r.active, brokerId: r.broker_id ?? undefined,
+    createdAt: r.created_at, updatedAt: r.updated_at,
   }
 }
 
@@ -445,7 +446,9 @@ function fromGoal(g: Goal): GoalRow {
   return {
     id: g.id, name: g.name, category: g.category, target: g.target,
     period: g.period, active: g.active,
-    broker_id: requireBrokerId(),
+    // O dono vai junto. Antes o upsert gravava sempre o usuário logado: o
+    // admin que pausava a meta de um corretor na Visão Global a tomava para si.
+    broker_id: g.brokerId ?? requireBrokerId(),
     created_at: g.createdAt, updated_at: g.updatedAt,
   }
 }
@@ -1319,6 +1322,12 @@ export const db = {
       const { error } = await supabase
         .from('notifications').update({ read: true })
         .eq('user_id', userId).eq('read', false)
+      if (error) throw error
+    },
+    /** Um grupo de avisos iguais é lido de uma vez — uma escrita, não vinte. */
+    markManyRead: async (ids: string[]) => {
+      if (ids.length === 0) return
+      const { error } = await supabase.from('notifications').update({ read: true }).in('id', ids)
       if (error) throw error
     },
   },

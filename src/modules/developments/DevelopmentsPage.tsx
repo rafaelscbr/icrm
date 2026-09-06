@@ -223,7 +223,7 @@ export function DevelopmentsPage() {
                 <Rotulo className="truncate">{kpi.label}</Rotulo>
               </div>
               <p className={`font-heading text-[26px] font-extrabold tabular-nums leading-none
-                             tracking-tight ${kpi.color}`}>{kpi.value}</p>
+                             tracking-tight text-t1`}>{kpi.value}</p>
               <p className="text-[11px] text-t4 mt-1.5">{kpi.sub}</p>
             </Painel>
           ))}

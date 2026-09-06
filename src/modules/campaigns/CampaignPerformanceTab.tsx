@@ -141,9 +141,9 @@ export function CampaignPerformanceTab({ leads }: Props) {
           <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Metas de disparo — lista fria</p>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <MetaCard label="Hoje"       value={disparosHoje}   target={DAILY_TARGET}   color="bg-brand" />
-          <MetaCard label="Esta semana" value={disparosSemana} target={WEEKLY_TARGET}  color="bg-brand" />
-          <MetaCard label="Este mês"   value={disparosMes}    target={MONTHLY_TARGET} color="bg-brand" />
+          <MetaCard label="Hoje"       value={disparosHoje}   target={DAILY_TARGET}   color="bg-brand-fill" />
+          <MetaCard label="Esta semana" value={disparosSemana} target={WEEKLY_TARGET}  color="bg-brand-fill" />
+          <MetaCard label="Este mês"   value={disparosMes}    target={MONTHLY_TARGET} color="bg-brand-fill" />
         </div>
       </div>
 

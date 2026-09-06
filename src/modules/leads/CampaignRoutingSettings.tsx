@@ -139,7 +139,7 @@ export function CampaignRoutingSettings() {
                             : 'bg-s2 border-line text-t3 hover:border-line-strong hover:text-t2'}`}
                       >
                         <span className={`w-5 h-5 rounded-full flex items-center justify-center font-heading text-[10px] font-bold flex-shrink-0
-                          ${on ? 'bg-brand text-[#0F1730]' : 'bg-s3 text-t3'}`}>
+                          ${on ? 'bg-brand-fill text-brand-fill-text' : 'bg-s3 text-t3'}`}>
                           {on ? <Check size={11} strokeWidth={2.5} /> : b.name.charAt(0).toUpperCase()}
                         </span>
                         {b.name.split(' ')[0]}

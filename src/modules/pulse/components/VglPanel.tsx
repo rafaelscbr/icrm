@@ -67,7 +67,7 @@ export function VglPanel({ vgl }: { vgl: PulseVgl | null }) {
 
         <div className="h-1.5 rounded-full bg-s3 overflow-hidden mt-2">
           <div
-            className="h-full rounded-full bg-brand transition-[width] duration-[420ms]"
+            className="h-full rounded-full bg-brand-fill transition-[width] duration-[420ms]"
             style={{ width: `${pct}%` }}
           />
         </div>

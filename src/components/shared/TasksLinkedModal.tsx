@@ -157,8 +157,8 @@ export function TasksLinkedModal({
 
           <button
             onClick={() => setNewTaskOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer text-white"
-            style={{ background: 'var(--brand)' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer text-brand-fill-text"
+            style={{ background: 'var(--brand-fill)' }}
           >
             <Plus size={12} /> Nova tarefa
           </button>

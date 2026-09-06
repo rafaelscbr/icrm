@@ -244,7 +244,7 @@ export function TransferToFunnelModal({ isOpen, onClose, lead, campaign, onTrans
             Cancelar
           </Button>
           <Button
-            className="flex-1 flex items-center justify-center gap-2 bg-brand hover:bg-brand"
+            className="flex-1 flex items-center justify-center gap-2"
             onClick={handleTransfer}
           >
             <ArrowRight size={14} />
