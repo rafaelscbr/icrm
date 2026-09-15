@@ -656,7 +656,7 @@ export function ImportLeadsModal({ listId, listName, isOpen, onClose, onSuccess 
             {[
               { label: 'Novos contatos criados',    value: stats.newContacts,      color: 'text-green-400',  bg: 'bg-green-500/8 border-green-500/20'   },
               { label: 'Já existiam no sistema',    value: stats.existingContacts, color: 'text-info',   bg: 'bg-s3/50 border-info-line'     },
-              { label: 'Adicionados à lista',       value: stats.linkedToList,     color: 'text-brand',      bg: 'bg-brand/8 border-brand/20'           },
+              { label: 'Adicionados à lista',       value: stats.linkedToList,     color: 'text-brand',      bg: 'bg-brand/10 border-brand/20'           },
               { label: 'Já estavam nesta lista',    value: stats.alreadyInList,    color: 'text-t3',  bg: 'bg-s2/50 border-line'                 },
               { label: 'Pulados por sua escolha',   value: stats.skippedByUser,    color: 'text-amber-400',  bg: 'bg-amber-500/8 border-amber-500/20'   },
             ].map(s => (

@@ -188,9 +188,7 @@ function LeadCard({
         ${isSaving ? 'opacity-60 pointer-events-none' : ''}
         ${lead.flagged ? 'kanban-card-prioridade' : ''}
         ${/* Reentrada ganha anel: é o card que tem de ser visto primeiro na
-              coluna, e ele já sobe para o topo na ordenação.
-              Sem modificador de opacidade (ring-info/40): com cor em var() o
-              Tailwind 3 não gera a classe, e o anel simplesmente não existia. */ ''}
+              coluna, e ele já sobe para o topo na ordenação. */ ''}
         ${aviso ? 'kanban-card-alerta ring-1 ring-inset ring-info-line !border-info-line' : ''}
       `}
     >

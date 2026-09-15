@@ -250,8 +250,8 @@ export function MessagePickerModal({ isOpen, onClose, templates, onPick, leadNam
               onClick={() => setSelected(i)}
               className={`group w-full text-left rounded-2xl border-2 transition-all duration-150 overflow-hidden cursor-pointer
                 ${isSelected
-                  ? 'border-brand bg-brand/8 shadow-sm shadow-brand/10'
-                  : 'border-line bg-surface hover:border-brand/30 hover:bg-brand/4'
+                  ? 'border-brand bg-brand/10 shadow-sm shadow-brand/10'
+                  : 'border-line bg-surface hover:border-brand/30 hover:bg-brand/5'
                 }`}
             >
               {/* Badge + seleção */}

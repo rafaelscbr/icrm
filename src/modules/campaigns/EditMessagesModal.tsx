@@ -126,7 +126,7 @@ export function EditMessagesModal({ isOpen, onClose, campaign }: EditMessagesMod
       </div>
 
       {/* Aviso de rotação */}
-      <div className="flex items-start gap-2 bg-brand/8 border border-brand/20 rounded-xl px-3 py-2.5 mb-5">
+      <div className="flex items-start gap-2 bg-brand/10 border border-brand/20 rounded-xl px-3 py-2.5 mb-5">
         <Info size={13} className="text-brand flex-shrink-0 mt-0.5" />
         <p className="text-xs text-brand/90 leading-relaxed">
           Use <code className="bg-s3/70 px-1.5 py-0.5 rounded text-xs">{'{nome}'}</code> para personalizar com o primeiro nome do lead.

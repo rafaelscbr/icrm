@@ -874,12 +874,11 @@ html.light {
   box-shadow: var(--kanban-card-shadow-alerta);
 }
 /*
- * Borda de prioridade (estrela) e do card sendo arrastado.
+ * Borda de prioridade (estrela) e do card sendo arrastado. Precisa de
+ * !important para vencer a borda do `.kanban-card:hover`.
  *
- * color-mix e não `border-brand/40`: com cor definida como var(), o Tailwind 3
- * NÃO gera modificador de opacidade — a classe some do CSS em silêncio. Foi
- * exatamente assim que o antigo card "recolhido" (bg-s2/50) ficou transparente
- * e da cor da coluna. Nos tokens de cor do projeto, nunca usar `/NN`.
+ * Nota: `/NN` (bg-s2/50) passou a funcionar nos tokens — ver `cor()` no
+ * tailwind.config.js. Só valores da escala de opacidade (5, 10 … 95) geram.
  */
 .kanban-card-prioridade,
 .kanban-card-prioridade:hover {

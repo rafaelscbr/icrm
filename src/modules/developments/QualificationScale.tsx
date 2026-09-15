@@ -28,10 +28,9 @@ interface Zona {
 }
 
 /*
- * As cores vão por `style`, não por classe utilitária: os tokens de cor do
- * sistema são `var(--x)` puro, e o Tailwind 3 NÃO gera a regra quando se pede
- * opacidade em cima disso (`bg-warning/45` simplesmente não existe no CSS
- * final — a barra some). `color-mix` resolve sem tocar nos tokens.
+ * As cores vão por `style` com `color-mix`. Escrito quando `bg-warning/45` não
+ * gerava CSS nos tokens var(); desde `cor()` no tailwind.config.js a classe
+ * funcionaria, mas o `style` continua correto e não há motivo para mexer.
  *
  * "Difícil" usa o cinza, não o âmbar: --warning (#E0A030) e --brand (#E4B23C)
  * são quase a mesma cor, e lado a lado numa barra as duas primeiras zonas
