@@ -147,8 +147,7 @@ export function CallKanbanTab({ campaign, onFalarAgora }: Props) {
           return (
             <section
               key={stage.value}
-              className="flex flex-col min-w-[272px] w-[272px] shrink-0 rounded-[14px] kanban-col
-                         border border-line overflow-hidden"
+              className="flex flex-col min-w-[272px] w-[272px] shrink-0 rounded-[14px] kanban-col overflow-hidden"
               aria-label={`${stage.label} — ${qtd} contatos`}
             >
               {/* Cabeçalho colorido da coluna */}
@@ -238,16 +237,17 @@ function Cartao({ card, nomeDe, onTransferir, onFalarAgora, pegando }: {
   const pedeAcao = !!onTransferir || venceu
 
   return (
-    <article className={`rounded-[12px] border px-3 py-2.5 flex flex-col gap-2 transition-colors
-      ${pedeAcao ? 'kanban-card shadow-card' : 'bg-s2/50 border-line/70'}`}>
+    <article className={`kanban-card rounded-[12px] border px-3 py-2.5 flex flex-col gap-2
+      transition-[box-shadow,background-color,border-color] duration-200
+      ${pedeAcao ? 'kanban-card-alerta' : ''}`}>
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-semibold text-t1 truncate">{card.name}</p>
-          <p className="text-[11px] text-t4 tabular-nums">{formatPhone(card.phone)}</p>
+          <p className="text-[11px] text-t3 tabular-nums">{formatPhone(card.phone)}</p>
         </div>
         {card.attemptCount > 0 && (
           <span
-            className="shrink-0 rounded-lg border border-line bg-s2 px-1.5 py-0.5
+            className="shrink-0 rounded-lg border border-line-strong bg-s3 px-1.5 py-0.5
                        font-heading text-[12px] font-bold text-t2 tabular-nums"
             title={`${card.attemptCount} tentativa(s)`}
           >
@@ -261,7 +261,7 @@ function Cartao({ card, nomeDe, onTransferir, onFalarAgora, pegando }: {
           <desfecho.icon size={12} strokeWidth={1.7} className={`${TOM[desfecho.tom].texto} shrink-0`} aria-hidden />
           <span className="text-[11px] text-t3 truncate">{desfecho.short}</span>
           {card.lastCallAt && (
-            <span className="ml-auto text-[11px] text-t4 shrink-0">{tempoRelativo(card.lastCallAt)}</span>
+            <span className="ml-auto text-[11px] text-t3 shrink-0">{tempoRelativo(card.lastCallAt)}</span>
           )}
         </div>
       )}

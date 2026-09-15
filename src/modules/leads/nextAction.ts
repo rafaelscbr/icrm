@@ -1,3 +1,5 @@
+import { AlertTriangle, Clock, CalendarClock, CircleDashed } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Lead, Task, LeadInteraction } from '../../types'
 import { slaActive } from './SlaBadge'
 
@@ -103,12 +105,21 @@ export function computeNextAction(
   return { text: 'Sem próxima ação definida', urgency: 'none' }
 }
 
-/** Classes por urgência — cor NUNCA é o único indicador; o texto já diz tudo. */
-export const URGENCY_STYLE: Record<ActionUrgency, { text: string; dot: string }> = {
-  critical:  { text: 'text-error',   dot: 'bg-error'   },
-  attention: { text: 'text-warning', dot: 'bg-warning' },
-  neutral:   { text: 'text-t2',      dot: 'bg-t4'      },
-  none:      { text: 'text-t4',      dot: 'bg-t5'      },
+/**
+ * Estilo por urgência — cor NUNCA é o único indicador: frase + ícone próprio.
+ *
+ * `chip` só existe onde há risco ou prazo. Faixa tingida em todo card viraria
+ * o mesmo paredão que o destaque tentava evitar; em dia, a linha fica limpa.
+ *
+ * Dentro da faixa o texto é t1 e o tom fica no ícone, no fundo e na borda:
+ * âmbar e vermelho como COR DE TEXTO sobre o próprio fundo tingido ficavam em
+ * 3.1:1 e 4.1:1 no tema claro — reprovados no AA para 12px.
+ */
+export const URGENCY_STYLE: Record<ActionUrgency, { text: string; iconColor: string; icon: LucideIcon; chip: string }> = {
+  critical:  { text: 'text-t1', iconColor: 'text-error',   icon: AlertTriangle, chip: 'bg-error-bg border-error-line'     },
+  attention: { text: 'text-t1', iconColor: 'text-warning', icon: Clock,         chip: 'bg-warning-bg border-warning-line' },
+  neutral:   { text: 'text-t2', iconColor: 'text-t3',      icon: CalendarClock, chip: ''                                  },
+  none:      { text: 'text-t3', iconColor: 'text-t3',      icon: CircleDashed,  chip: ''                                  },
 }
 
 /**

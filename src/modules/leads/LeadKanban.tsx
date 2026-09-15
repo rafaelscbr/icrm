@@ -150,6 +150,8 @@ function LeadCard({
   )
   const next = isOverlay ? null : computeNextAction(lead, leadTasks, lastInteraction)
   const nextStyle = next ? URGENCY_STYLE[next.urgency] : null
+  const NextIcon = nextStyle?.icon
+  const urgente = next?.urgency === 'critical' || next?.urgency === 'attention'
 
   // Comissão só onde ajuda a priorizar: etapas finais ou modo financeiro.
   const showCommission = financeMode || lead.funnelStage === 'proposta' || lead.funnelStage === 'venda'
@@ -169,30 +171,27 @@ function LeadCard({
       tabIndex={isOverlay ? -1 : 0}
       onKeyDown={aoTeclarAbrir(onClick)}
       aria-label={`Abrir lead ${displayName}`}
-      className={`group relative border rounded-[14px] cursor-pointer
-        transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
-        overflow-hidden
+      className={`kanban-card group relative border rounded-[14px] cursor-pointer overflow-hidden
+        transition-[transform,box-shadow,background-color,border-color,opacity] duration-200
+        hover:-translate-y-px hover:shadow-dropdown
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
         ${/*
-            Nem todo card merece o mesmo peso. Antes todos vinham com a mesma
-            superfície, a mesma sombra e o mesmo botão verde — o lead parado há
-            35 dias ficava visualmente igual ao contactado hoje, e a coluna
-            virava um paredão uniforme.
-
-            Agora quem pede ação carrega superfície e sombra; quem está em dia
-            recolhe para um card raso. A urgência já era calculada
-            (computeNextAction), só não estava sendo usada para dar peso.
+            Todo card tem superfície própria — é o que separa card de coluna.
+            A versão "recolhida" (bg-s2/50) tinha a mesma cor da coluna e
+            apagava a maioria dos leads. O peso da urgência agora vem de
+            sombra mais funda + faixa tingida na linha de decisão (nível 2).
          */ ''}
-        ${next?.urgency === 'critical' || next?.urgency === 'attention'
-          ? 'kanban-card shadow-card'
-          : 'bg-s2/50 border-line/70 shadow-none hover:bg-s2'}
+        ${urgente ? 'kanban-card-alerta' : ''}
         ${dense ? 'p-2.5' : 'p-3'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
-        ${isOverlay ? 'shadow-modal border-brand/40' : ''}
+        ${isOverlay ? '!shadow-modal kanban-card-prioridade' : ''}
         ${isSaving ? 'opacity-60 pointer-events-none' : ''}
-        ${lead.flagged ? 'border-brand/40' : ''}
-        ${/* Reentrada ganha superfície e anel: é o card que tem de ser visto
-              primeiro na coluna, e ele já sobe para o topo na ordenação. */ ''}
-        ${aviso ? 'kanban-card shadow-card ring-1 ring-inset ring-info/40 !border-info-line' : ''}
+        ${lead.flagged ? 'kanban-card-prioridade' : ''}
+        ${/* Reentrada ganha anel: é o card que tem de ser visto primeiro na
+              coluna, e ele já sobe para o topo na ordenação.
+              Sem modificador de opacidade (ring-info/40): com cor em var() o
+              Tailwind 3 não gera a classe, e o anel simplesmente não existia. */ ''}
+        ${aviso ? 'kanban-card-alerta ring-1 ring-inset ring-info-line !border-info-line' : ''}
       `}
     >
       {/*
@@ -262,18 +261,18 @@ function LeadCard({
 
       {/* ── NÍVEL 1 — Identidade ─────────────────────────────────────────── */}
       <div className="flex items-start gap-2.5 pr-12">
-        <div className="w-8 h-8 rounded-[10px] bg-s2 border border-line flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
+        <div className="w-8 h-8 rounded-[10px] bg-s3 border border-line-strong flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
           {iniciais(displayName) || '?'}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
+            <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
               {displayName}
             </p>
             {/* O valor decide prioridade tanto quanto o nome. Estava em 11px
                 perdido na terceira linha, ao lado do produto. */}
             {lead.averageTicket && (
-              <span className="ml-auto flex-shrink-0 font-heading text-[13px] font-bold text-t2 tabular-nums leading-tight">
+              <span className="ml-auto flex-shrink-0 font-heading text-[13px] font-bold text-t1 tabular-nums leading-tight">
                 {formatCurrency(lead.averageTicket)}
               </span>
             )}
@@ -293,7 +292,7 @@ function LeadCard({
               </span>
             )}
             {brokerName && (
-              <span className="font-label text-[11px] text-t4 truncate" title={`Corretor responsável: ${brokerName}`}>
+              <span className="font-label text-[11px] text-t3 truncate" title={`Corretor responsável: ${brokerName}`}>
                 {brokerName.split(' ')[0]}
               </span>
             )}
@@ -304,15 +303,19 @@ function LeadCard({
       {/* ── NÍVEL 2 — Decisão ────────────────────────────────────────────── */}
       {/* A linha mais importante do card. Risco chama atenção pela FRASE,
           não só pela cor — o ponto colorido é reforço, nunca o único sinal. */}
-      {next && (
-        <div className="flex items-start gap-2 mt-2.5" title={next.hint}>
-          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[5px] ${nextStyle!.dot}`} aria-hidden />
-          <p className={`text-xs font-semibold leading-snug min-w-0 ${nextStyle!.text}`}>
+      {next && NextIcon && (
+        <div
+          className={`flex items-start gap-2 mt-2.5
+            ${nextStyle!.chip ? `-mx-1 px-2 py-1.5 rounded-[10px] border ${nextStyle!.chip}` : ''}`}
+          title={next.hint}
+        >
+          <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 mt-px ${nextStyle!.iconColor}`} aria-hidden />
+          <p className={`flex-1 text-xs font-semibold leading-snug min-w-0 ${nextStyle!.text}`}>
             {next.text}
           </p>
           {!isOverlay && (
             <span
-              className="ml-auto flex-shrink-0 font-label text-[11px] text-t4 tabular-nums"
+              className="ml-auto flex-shrink-0 font-label text-[11px] text-t3 tabular-nums"
               title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}
             >
               {stageDays}d
@@ -340,7 +343,7 @@ function LeadCard({
                 title={`Marcar ${step}ª tentativa`}
                 aria-label={`Marcar ${step}ª tentativa`}
                 className={`flex-1 h-1.5 rounded-full transition-all duration-150 cursor-pointer active:scale-95
-                  ${step <= lead.followupStep ? 'bg-brand hover:opacity-80' : 'bg-s3 hover:bg-brand-tint'}`}
+                  ${step <= lead.followupStep ? 'bg-brand hover:opacity-80' : 'bg-line-strong hover:bg-brand-tint'}`}
               />
             ))}
           </div>
@@ -350,7 +353,7 @@ function LeadCard({
       {/* ── NÍVEL 3 — Contexto comercial ─────────────────────────────────── */}
       {/* Uma linha discreta, não um empilhamento de badges. Some no modo compacto. */}
       {!dense && (
-        <div className="flex items-center gap-1.5 mt-2.5 min-w-0 text-[11px] text-t4">
+        <div className="flex items-center gap-1.5 mt-2.5 min-w-0 text-[11px] text-t3">
           {originMeta && (
             <originMeta.icon size={11} strokeWidth={1.6} className="flex-shrink-0" aria-label={originMeta.label} />
           )}
@@ -380,7 +383,7 @@ function LeadCard({
           Agora ele é um botão fantasma que se enche de cor ao passar o mouse
           ou receber foco: continua visível e descobrível (esconder no hover
           seria pior, some no toque e no teclado), só parou de gritar. */}
-      <div className="mt-2.5 pt-2.5 border-t border-line/60 flex items-center gap-1.5">
+      <div className="mt-2.5 pt-2.5 border-t border-line flex items-center gap-1.5">
         {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
           <button
             onClick={e => { e.stopPropagation(); setShowConclude(true) }}
@@ -394,7 +397,7 @@ function LeadCard({
           <button
             onClick={handleWhatsApp}
             className="flex-1 flex items-center justify-center gap-1.5 py-1.5 min-h-[32px] font-heading text-xs font-bold
-                       text-t3 bg-transparent border border-line rounded-[10px] transition-all duration-150 active:scale-[0.98]
+                       text-t2 bg-transparent border border-line-strong rounded-[10px] transition-all duration-150 active:scale-[0.98]
                        group-hover:text-success group-hover:bg-success-bg group-hover:border-success-line
                        hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)] hover:!border-success
                        focus-visible:text-success focus-visible:bg-success-bg focus-visible:border-success-line
@@ -410,7 +413,7 @@ function LeadCard({
         )}
         <button
           onClick={handleWhatsAppOpen}
-          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-success bg-s2 hover:bg-success-bg border border-line hover:border-success-line rounded-[10px] transition-all duration-150 flex-shrink-0"
+          className="w-8 h-8 flex items-center justify-center text-t3 hover:text-success bg-transparent hover:bg-success-bg border border-line-strong hover:border-success-line rounded-[10px] transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           title="Só abrir WhatsApp, sem registrar"
           aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
         >
@@ -419,7 +422,7 @@ function LeadCard({
         <a
           href={`tel:${displayPhone}`}
           onClick={e => e.stopPropagation()}
-          className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150 flex-shrink-0"
+          className="w-8 h-8 flex items-center justify-center text-t3 hover:text-t1 bg-transparent hover:bg-s3 border border-line-strong rounded-[10px] transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           title={`Ligar — ${formatPhone(displayPhone)}`}
           aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
         >
@@ -470,7 +473,7 @@ function KanbanColumn({
         ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-brand/40' : ''}
       `}>
         {/* Cabeçalho fixo — acompanha a rolagem vertical da coluna */}
-        <div className="sticky top-0 z-10 flex flex-col px-4 pt-3.5 pb-2.5 rounded-t-[18px] kanban-col">
+        <div className="sticky top-0 z-10 flex flex-col px-4 pt-3.5 pb-2.5 rounded-t-[18px] kanban-col-bg">
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${conf.dot}`} aria-hidden />
             <h3 className="font-label text-xs font-semibold uppercase tracking-[0.12em] text-t2">

@@ -816,25 +816,74 @@ html.light .list-surface {
 }
 
 /*
- * Kanban — coluna preenchida (sem borda) e card elevado.
- * Dark:  coluna surface-2 sobre page-bg; card surface-3 (mais claro) salta da coluna.
- * Light: coluna papel-2 sobre papel; card branco flutua.
+ * Kanban — três degraus de profundidade: página → coluna (poço) → card (relevo).
+ *
+ * Regra que não se quebra: o card é SEMPRE distinguível da coluna, em qualquer
+ * estado. A versão anterior "recolhia" o card em dia para `bg-s2/50` — a mesma
+ * cor da coluna (surface-2). Como a maioria dos leads está em dia, a coluna
+ * inteira virava um paredão sem borda, sem hierarquia, nos dois temas.
+ *
+ * A urgência continua dando peso, mas por cima de uma superfície que existe:
+ * `.kanban-card-alerta` ganha sombra mais funda, e o próprio card mostra a
+ * frase + ícone da próxima ação numa faixa tingida (cor nunca sozinha).
+ *
+ * Dark:  página → coluna recuada (entre página e surface) → card entre
+ *        surface-2 e surface-3. Card/coluna ≈ 1.3:1, mais borda e sombra.
+ * Light: papel #F6F3EC → coluna areia #E6E1D5 → card branco. ≈ 1.3:1.
+ * Carvão (html.dark) herda sozinho: os tokens abaixo são color-mix de --surface*.
+ *
+ * Texto pequeno dentro do card usa t3, não t4: sobre esta superfície o t4 cai
+ * para 3.8:1 no escuro, abaixo do AA.
  */
-.kanban-col {
-  background-color: var(--surface-2);
+:root {
+  --kanban-col-bg:            color-mix(in srgb, var(--surface) 55%, var(--page-bg));
+  --kanban-card-bg:           color-mix(in srgb, var(--surface-2) 60%, var(--surface-3));
+  --kanban-card-hover:        var(--surface-3);
+  --kanban-card-line:         rgba(255, 255, 255, 0.09);
+  --kanban-card-shadow:       inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(0,0,0,0.40);
+  --kanban-card-shadow-alerta:inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 14px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.50);
 }
-html.light .kanban-col {
-  background-color: var(--surface-2);
+html.light {
+  --kanban-col-bg:            #E6E1D5;
+  --kanban-card-bg:           #FFFFFF;
+  --kanban-card-hover:        #FFFFFF;
+  --kanban-card-line:         rgba(15, 23, 48, 0.09);
+  --kanban-card-shadow:       0 1px 2px rgba(15,23,48,0.06), 0 1px 1px rgba(15,23,48,0.04);
+  --kanban-card-shadow-alerta:0 4px 12px rgba(15,23,48,0.10), 0 1px 3px rgba(15,23,48,0.08);
+}
+
+.kanban-col {
+  background-color: var(--kanban-col-bg);
+  border: 1px solid var(--line);
+}
+/* Só o fundo — para o cabeçalho fixo da coluna, que não pode repetir a borda. */
+.kanban-col-bg {
+  background-color: var(--kanban-col-bg);
 }
 .kanban-card {
-  background-color: var(--surface-3);
+  background-color: var(--kanban-card-bg);
   background-image: var(--grain), var(--surface-sheen);
-  border-color: var(--line);
+  border-color: var(--kanban-card-line);
+  box-shadow: var(--kanban-card-shadow);
 }
-html.light .kanban-card {
-  background-color: var(--surface);
-  background-image: var(--grain), var(--surface-sheen);
-  border-color: var(--line);
+.kanban-card:hover {
+  background-color: var(--kanban-card-hover);
+  border-color: var(--line-strong);
+}
+.kanban-card-alerta {
+  box-shadow: var(--kanban-card-shadow-alerta);
+}
+/*
+ * Borda de prioridade (estrela) e do card sendo arrastado.
+ *
+ * color-mix e não `border-brand/40`: com cor definida como var(), o Tailwind 3
+ * NÃO gera modificador de opacidade — a classe some do CSS em silêncio. Foi
+ * exatamente assim que o antigo card "recolhido" (bg-s2/50) ficou transparente
+ * e da cor da coluna. Nos tokens de cor do projeto, nunca usar `/NN`.
+ */
+.kanban-card-prioridade,
+.kanban-card-prioridade:hover {
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════

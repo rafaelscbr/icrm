@@ -279,14 +279,15 @@ function LeadCard({
         tabIndex={0}
         onKeyDown={aoTeclarAbrir(() => { if (!isDragging) onParecer(lead) })}
         aria-label={`Abrir ${lead.name}`}
-        className={`group relative border rounded-[14px] p-3 cursor-pointer select-none
-          transition-all duration-200 hover:translate-y-[-1px] hover:shadow-dropdown
-          ${/* Mesma regra do funil: quem pede ação carrega superfície e sombra,
-                quem está em dia recolhe. Com todos os cartões iguais, a coluna
-                vira um paredão e o lead parado some no meio. */ ''}
-          ${cold ? 'kanban-card shadow-card' : 'bg-s2/50 border-line/70 shadow-none hover:bg-s2'}
+        className={`kanban-card group relative border rounded-[14px] p-3 cursor-pointer select-none
+          transition-[transform,box-shadow,background-color,border-color,opacity] duration-200
+          hover:-translate-y-px hover:shadow-dropdown
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
+          ${/* Mesma regra do funil: todo cartão tem superfície própria (senão
+                some na coluna); quem pede ação ganha sombra mais funda. */ ''}
+          ${cold ? 'kanban-card-alerta' : ''}
           ${isDragging || ghost ? 'opacity-30 scale-95' : ''}
-          ${ghost ? 'shadow-modal border-brand/40' : ''}
+          ${ghost ? '!shadow-modal kanban-card-prioridade' : ''}
           ${cold ? '!border-info-line' : ''}
         `}
       >
@@ -336,13 +337,13 @@ function LeadCard({
 
         {/* Avatar + nome + info */}
         <div className="flex items-start gap-2.5 pr-12 mb-2">
-          <div className="w-8 h-8 rounded-[10px] bg-s2 border border-line flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
+          <div className="w-8 h-8 rounded-[10px] bg-s3 border border-line-strong flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
             {lead.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-heading text-[13px] font-bold text-t1 truncate leading-tight tracking-[-0.01em]">{lead.name}</p>
+            <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.01em]">{lead.name}</p>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="font-label text-[11px] text-t4 tabular-nums tracking-wide">{formatPhone(lead.phone)}</span>
+              <span className="font-label text-[11px] text-t3 tabular-nums tracking-wide">{formatPhone(lead.phone)}</span>
               {ageBadge && (
                 <span
                   title={`${days} ${days === 1 ? 'dia' : 'dias'} nesta etapa`}
@@ -369,7 +370,7 @@ function LeadCard({
 
         {/* Última mensagem */}
         {lead.lastMessage && (
-          <p className="mb-1.5 text-[11px] text-t4 line-clamp-1 italic">"{lead.lastMessage}"</p>
+          <p className="mb-1.5 text-[11px] text-t3 line-clamp-1 italic">"{lead.lastMessage}"</p>
         )}
 
         {/* Migrado */}
@@ -410,7 +411,7 @@ function LeadCard({
                   }}
                   title={`Marcar ${step}ª mensagem como enviada`}
                   className={`flex-1 h-2 rounded-full transition-all duration-150 cursor-pointer active:scale-95
-                    ${step <= dispatchStep ? 'bg-info hover:opacity-80' : 'bg-s3 hover:bg-info-bg'}`}
+                    ${step <= dispatchStep ? 'bg-info hover:opacity-80' : 'bg-line-strong hover:bg-info-bg'}`}
                 />
               ))}
             </div>
@@ -444,16 +445,18 @@ function LeadCard({
           </button>
           <button
             onClick={handleOpenOnly}
-            className="w-7 h-7 flex items-center justify-center text-t3 hover:text-success bg-s2 hover:bg-success-bg border border-line hover:border-success-line rounded-[10px] transition-all duration-150"
+            className="w-8 h-8 flex items-center justify-center text-t3 hover:text-success bg-transparent hover:bg-success-bg border border-line-strong hover:border-success-line rounded-[10px] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             title="Só abrir WhatsApp"
+            aria-label={`Abrir WhatsApp de ${lead.name} sem registrar`}
           >
             <MessageCircle size={12} strokeWidth={1.6} />
           </button>
           <a
             href={`tel:${lead.phone}`}
             onClick={e => e.stopPropagation()}
-            className="w-7 h-7 flex items-center justify-center text-t3 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150"
+            className="w-8 h-8 flex items-center justify-center text-t3 hover:text-t1 bg-transparent hover:bg-s3 border border-line-strong rounded-[10px] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             title="Ligar"
+            aria-label={`Ligar para ${lead.name}`}
           >
             <Phone size={12} strokeWidth={1.6} />
           </a>
