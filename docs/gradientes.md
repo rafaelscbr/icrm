@@ -167,8 +167,8 @@ bundle.
 - A **opacidade vai dentro do `<rect>`**, não no CSS: `background-image` não
   aceita `opacity`.
 
-Por isso existem duas versões: **0.06** no escuro, **0.04** no claro, onde o
-ruído aparece mais sobre fundo claro.
+Por isso existem duas versões: **0.06** no escuro, **0.055** no claro —
+praticamente a mesma intensidade, com um fio menos de tinta sobre papel.
 
 ---
 
