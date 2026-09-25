@@ -119,6 +119,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             kanbanOrder: (incoming.kanban_order as number | null) ?? undefined,
             stageChangedAt: (incoming.stage_changed_at as string | null) ?? undefined,
             firstContactAt: (incoming.first_contact_at as string | null) ?? undefined,
+            lastContactAt: (incoming.last_contact_at as string | null) ?? undefined,
             slaDueAt: (incoming.sla_due_at as string | null) ?? undefined,
             reentryAt: (incoming.reentry_at as string | null) ?? undefined,
             reentryCount: (incoming.reentry_count as number | null) ?? undefined,
@@ -153,6 +154,9 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             kanbanOrder: (r.kanban_order as number | null) ?? undefined,
             stageChangedAt: (r.stage_changed_at as string | null) ?? undefined,
             firstContactAt: (r.first_contact_at as string | null) ?? undefined,
+            // Chega por aqui: o trigger da migração 074 atualiza o lead quando
+            // um contato é registrado.
+            lastContactAt: (r.last_contact_at as string | null) ?? undefined,
             slaDueAt: (r.sla_due_at as string | null) ?? undefined,
             // Sem isto o card só acenderia no F5: a reentrada chega como UPDATE
             // no lead que já está em tela, não como INSERT.

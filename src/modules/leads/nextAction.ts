@@ -1,7 +1,8 @@
 import { AlertTriangle, Clock, CalendarClock, CircleDashed } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { Lead, Task, LeadInteraction } from '../../types'
+import { Lead, Task } from '../../types'
 import { slaActive } from './SlaBadge'
+import { nivelContato, fraseContato } from './contato'
 
 /**
  * Próxima ação do lead — a informação que decide o dia do corretor.
@@ -12,7 +13,7 @@ import { slaActive } from './SlaBadge'
  *
  *   1. SLA de 1º contato vencido / vencendo   (leads.sla_due_at, trigger no banco)
  *   2. Tarefa vencida / de hoje / agendada    (tasks, via contato do lead)
- *   3. Silêncio prolongado                    (lead_interactions)
+ *   3. Silêncio prolongado                    (leads.last_contact_at — ver contato.ts)
  *   4. Nenhuma ação definida                  (estado que precisa aparecer)
  *
  * O vínculo tarefa↔lead é direto desde a migração 058 (`tasks.lead_id`). Para
@@ -23,7 +24,7 @@ import { slaActive } from './SlaBadge'
 export type ActionUrgency = 'critical' | 'attention' | 'neutral' | 'none'
 
 export interface NextAction {
-  /** Frase pronta para leitura — "Ligar hoje às 14h", "Sem interação há 3 dias". */
+  /** Frase pronta para leitura — "Ligar hoje às 14h", "Último contato há 3 dias". */
   text: string
   urgency: ActionUrgency
   /** Detalhe para tooltip/leitor de tela, quando houver. */
@@ -31,10 +32,6 @@ export interface NextAction {
 }
 
 const DAY = 86_400_000
-
-function daysBetween(fromISO: string): number {
-  return Math.floor((Date.now() - new Date(fromISO).getTime()) / DAY)
-}
 
 /** Diferença em dias entre hoje e uma data YYYY-MM-DD (negativo = passado). */
 function daysUntilDate(dateStr: string): number {
@@ -52,11 +49,7 @@ function formatTaskWhen(t: Task): string {
   return `em ${diff} dias`
 }
 
-export function computeNextAction(
-  lead: Lead,
-  tasks: Task[],
-  lastInteraction: LeadInteraction | null,
-): NextAction {
+export function computeNextAction(lead: Lead, tasks: Task[]): NextAction {
   // ── 1. SLA de primeiro contato ────────────────────────────────────────────
   if (slaActive(lead)) {
     const msLeft = new Date(lead.slaDueAt!).getTime() - Date.now()
@@ -92,11 +85,16 @@ export function computeNextAction(
   }
 
   // ── 3. Silêncio prolongado ────────────────────────────────────────────────
-  const ref = lastInteraction?.interactedAt ?? lead.createdAt
-  if (ref) {
-    const d = daysBetween(ref)
-    if (d > 7) return { text: `Sem interação há ${d} dias`, urgency: 'critical' }
-    if (d > 2) return { text: `Sem interação há ${d} dias`, urgency: 'attention' }
+  // Mesma régua do cabeçalho da coluna e do filtro "Sem contato": a data vem
+  // do banco e só conta o que o corretor fez em direção ao cliente. Nota
+  // automática de transferência não é contato.
+  const nivel = nivelContato(lead)
+  if (nivel !== 'em_dia') {
+    return {
+      text: fraseContato(lead),
+      urgency: nivel === 'parado' ? 'critical' : 'attention',
+      hint: 'Conta WhatsApp aberto pelo funil, ligação registrada e tarefa concluída.',
+    }
   }
 
   // ── 4. Nada agendado ──────────────────────────────────────────────────────

@@ -590,6 +590,10 @@ interface LeadRow {
   kanban_order: number | null
   stage_changed_at: string | null
   first_contact_at?: string | null
+  // Último contato: gerenciado por trigger (migração 074). Entra em `toLead`,
+  // NÃO entra em `fromLead` — o upsert do front não pode apagar o que o banco
+  // calculou.
+  last_contact_at?: string | null
   sla_due_at?: string | null
   // Reentrada: gerenciada pelo banco. Entra em `toLead`, NÃO entra em `fromLead`
   // — mesmo tratamento de sla_due_at. O upsert do front não pode zerar o que
@@ -632,6 +636,7 @@ function toLead(r: LeadRow): Lead {
     kanbanOrder: r.kanban_order ?? undefined,
     stageChangedAt: r.stage_changed_at ?? undefined,
     firstContactAt: r.first_contact_at ?? undefined,
+    lastContactAt: r.last_contact_at ?? undefined,
     slaDueAt: r.sla_due_at ?? undefined,
     reentryAt: r.reentry_at ?? undefined,
     reentryCount: r.reentry_count ?? undefined,
@@ -1145,7 +1150,11 @@ export const db = {
   },
 
   leads: {
-    fetchAll: () => fetchAll<LeadRow, Lead>('leads', toLead),
+    // Paginado: o PostgREST devolve no máximo 1.000 linhas por requisição, e a
+    // base passou disso em set/2026 (1.259). O corte caía nos leads mais
+    // antigos — descartados sumiam da contagem e um lead ATIVO de abril ficou
+    // invisível no funil. O filtro por data de entrada depende deles.
+    fetchAll: () => fetchAllPaginated<LeadRow, Lead>('leads', toLead),
     upsert:   (l: Lead) => upsertOne('leads', fromLead(l)),
     delete:   (id: string) => deleteOne('leads', id),
     /**

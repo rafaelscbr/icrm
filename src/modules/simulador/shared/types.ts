@@ -20,5 +20,7 @@ export interface PagamentoBase {
 export interface SharedFields {
   empreendimento: string
   cliente: string
+  /** só dígitos — com ele, o botão do WhatsApp abre a conversa do cliente */
+  telefone: string
   valorTotal: number
 }

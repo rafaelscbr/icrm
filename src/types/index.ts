@@ -581,6 +581,7 @@ export interface Lead {
   wonValue?: number         // valor real do negócio fechado
   saleId?: string           // registro criado em sales ao concluir
   firstContactAt?: string   // quando o 1º contato WhatsApp foi registrado (gerenciado por trigger)
+  lastContactAt?: string    // último contato registrado — whatsapp, ligação ou tarefa concluída (trigger, migração 074)
   slaDueAt?: string         // prazo SLA de 1º contato Meta Ads (gerenciado pelo banco)
   // Reentrada — a pessoa preencheu o formulário do Meta de novo. Tudo gerenciado
   // pelo banco (process_meta_lead); a tela lê, nunca escreve.

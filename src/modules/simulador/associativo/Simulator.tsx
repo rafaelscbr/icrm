@@ -1,18 +1,22 @@
 import { useState, useRef, useCallback } from 'react'
-import { Download, AlertCircle, TrendingDown, Info } from 'lucide-react'
+import { Download, AlertCircle, TrendingDown, Info, Image as ImageIcon, CalendarDays, MessageSquareText } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import toast from 'react-hot-toast'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { SharedFields } from '../shared/types'
-import { Section, CurrencyInput, DerivedBox, IdentificacaoSection, fmtBRL } from '../shared/components'
+import { Section, CurrencyInput, DerivedBox, IdentificacaoSection, SemMensagem, fmtBRL } from '../shared/components'
+import {
+  AlternadorVisao, BalaoMensagem, BotaoCopiar, BotaoWhatsApp, useAcoesMensagem,
+} from '../shared/MensagemWhatsApp'
 import {
   calcularAssociativo, AssociativoInput, Indice, Sistema, MesAno,
   INDICE_LABELS, mesAnoLabel,
 } from './calc'
 import { AssociativoCard } from './Card'
 import { AssociativoCardCompleto } from './CardCompleto'
+import { mensagemAssociativo } from './mensagem'
 
 // Modo Associativo: composição do pagamento na obra (entrada + parcelas +
 // balões anuais), linha do tempo com assinatura do financiamento e entrega,
@@ -145,22 +149,25 @@ function BlocoHibrido({
   )
 }
 
-// ── Preview com toggle Resumo / Completo ──────────────────────────────────────
+// ── Preview: Resumo / Mês a mês / Texto ──────────────────────────────────────
 
-type Visao = 'resumo' | 'completo'
+type Visao = 'resumo' | 'completo' | 'texto'
 
-function PreviewAssociativo({ valido, slugBase, renderResumo, renderCompleto }: {
+function PreviewAssociativo({ valido, slugBase, renderResumo, renderCompleto, mensagem, telefone }: {
   valido: boolean
   slugBase: string
   renderResumo: (ref: React.Ref<HTMLDivElement>) => React.ReactNode
   renderCompleto: (ref: React.Ref<HTMLDivElement>) => React.ReactNode
+  mensagem: string
+  telefone: string
 }) {
   const [visao, setVisao] = useState<Visao>('resumo')
   const [exporting, setExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
+  const acoes = useAcoesMensagem(mensagem, telefone)
 
   const handleExport = useCallback(async () => {
-    if (!cardRef.current || !valido) return
+    if (!cardRef.current || !valido || visao === 'texto') return
     setExporting(true)
     try {
       const slug = slugBase.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-') || 'simulacao'
@@ -179,50 +186,56 @@ function PreviewAssociativo({ valido, slugBase, renderResumo, renderCompleto }: 
 
   return (
     <div className="flex flex-col items-center gap-4 xl:sticky xl:top-6">
-      <div className="flex items-center justify-between w-full">
-        <p className="text-t3 text-xs uppercase tracking-widest">Preview da proposta</p>
-        {/* Toggle resumo/completo */}
-        <div className="flex rounded-lg border border-line overflow-hidden">
-          {([
-            { v: 'resumo' as const,   label: 'Resumo' },
-            { v: 'completo' as const, label: 'Mês a mês' },
-          ]).map(({ v, label }) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setVisao(v)}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                visao === v ? 'bg-brand/15 text-brand' : 'bg-surface text-t3 hover:text-t1'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="flex items-center justify-between gap-3 w-full flex-wrap">
+        <p className="text-t3 text-xs uppercase tracking-widest">Proposta</p>
+        <AlternadorVisao
+          rotulo="Formato da proposta"
+          valor={visao}
+          onChange={setVisao}
+          opcoes={[
+            { value: 'resumo',   label: 'Resumo',    icon: ImageIcon },
+            { value: 'completo', label: 'Mês a mês', icon: CalendarDays },
+            { value: 'texto',    label: 'Texto',     icon: MessageSquareText },
+          ]}
+        />
       </div>
 
       <div className="flex justify-center w-full">
-        {visao === 'resumo'
-          ? renderResumo(cardRef)
-          : <div style={{ zoom: 0.72 }}>{renderCompleto(cardRef)}</div>}
+        {visao === 'resumo' && renderResumo(cardRef)}
+        {visao === 'completo' && <div style={{ zoom: 0.72 }}>{renderCompleto(cardRef)}</div>}
+        {visao === 'texto' && (valido ? <BalaoMensagem texto={mensagem} /> : <SemMensagem />)}
       </div>
 
-      <Button
-        variant="primary"
-        size="lg"
-        onClick={handleExport}
-        disabled={!valido || exporting}
-        className="w-full"
-      >
-        <Download size={16} />
-        {exporting
-          ? 'Gerando imagem…'
-          : visao === 'resumo' ? 'Baixar resumo (PNG)' : 'Baixar mês a mês (PNG)'}
-      </Button>
+      {visao !== 'texto' ? (
+        <>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleExport}
+            disabled={!valido || exporting}
+            className="w-full"
+          >
+            <Download size={16} />
+            {exporting
+              ? 'Gerando imagem…'
+              : visao === 'resumo' ? 'Baixar resumo (PNG)' : 'Baixar mês a mês (PNG)'}
+          </Button>
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <BotaoCopiar copiado={acoes.copiado} onClick={acoes.copiar} disabled={!valido} />
+            <BotaoWhatsApp comNumero={acoes.comNumero} telefone={telefone} onClick={acoes.abrir} disabled={!valido} />
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+          <BotaoWhatsApp comNumero={acoes.comNumero} telefone={telefone} onClick={acoes.abrir} disabled={!valido} destaque />
+          <BotaoCopiar copiado={acoes.copiado} onClick={acoes.copiar} disabled={!valido} destaque />
+        </div>
+      )}
 
       <p className="text-t4 text-xs text-center leading-relaxed">
-        O resumo é para enviar ao cliente no WhatsApp. O mês a mês é o material completo
-        para você abrir e explicar em uma vídeo chamada.
+        O resumo e o texto são para o WhatsApp do cliente — o texto abre pronto na caixa de
+        mensagem, e a imagem você anexa na mesma conversa. O mês a mês é o material completo
+        para explicar numa vídeo chamada.
       </p>
     </div>
   )
@@ -508,6 +521,8 @@ export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
       <PreviewAssociativo
         valido={result.valido}
         slugBase={shared.empreendimento}
+        mensagem={result.valido ? mensagemAssociativo(input, result, { ...shared, corretor }) : ''}
+        telefone={shared.telefone}
         renderResumo={ref => (
           <AssociativoCard
             ref={ref}

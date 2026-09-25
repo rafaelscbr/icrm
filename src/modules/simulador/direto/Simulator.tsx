@@ -7,6 +7,7 @@ import {
 } from '../shared/components'
 import { calcularDireto, DiretoInput } from './calc'
 import { DiretoCard } from './Card'
+import { mensagemDireto } from './mensagem'
 
 const DEFAULT: PagamentoBase = {
   entradaQtd:   1,
@@ -86,6 +87,8 @@ export function DiretoSimulator({ shared, onShared, corretor }: Props) {
       <PreviewColumn
         valido={result.valido}
         slugBase={shared.empreendimento}
+        mensagem={result.valido ? mensagemDireto(input, result, { ...shared, corretor }) : ''}
+        telefone={shared.telefone}
         renderCard={ref => (
           <DiretoCard
             ref={ref}

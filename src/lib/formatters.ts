@@ -137,6 +137,15 @@ export function whatsappUrl(phone: string, message?: string): string {
 }
 
 /**
+ * WhatsApp com o texto pronto e SEM destinatário — o próprio WhatsApp pede
+ * para escolher a conversa. Para quando o número não está à mão (simulador
+ * sem telefone do cliente). Mesmo destino e mesma codificação de `whatsappUrl`.
+ */
+export function whatsappTextoUrl(message: string): string {
+  return `https://api.whatsapp.com/send?text=${encodeWhatsAppText(message)}`
+}
+
+/**
  * Abre a conversa no APP do WhatsApp, sem mensagem.
  *
  * Diferente de whatsappUrl (usada no disparo, onde o texto é o ponto): aqui o

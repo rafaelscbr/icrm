@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   DndContext, DragOverlay, closestCenter,
@@ -12,10 +12,9 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake,
-  Sparkles, Smartphone, Globe, Handshake, Megaphone, Loader2,
+  MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake, Loader2,
   Wifi, WifiOff, Trophy, Rows2, Rows3, DollarSign,
-  Inbox, RefreshCw, BadgeCheck,
+  Inbox, RefreshCw, BadgeCheck, X,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -32,8 +31,11 @@ import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { IntelPair } from '../../components/shared/IntelBadges'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { TEMPERATURE_COLOR } from '../../lib/intelligence'
-import { avisoReentrada, reentradaPrimeiro } from './reentrada'
-import { useKanbanPrefs, SORT_LABEL, KanbanSort } from '../../store/useKanbanPrefs'
+import { avisoReentrada } from './reentrada'
+import { useKanbanPrefs } from '../../store/useKanbanPrefs'
+import { ORIGEM_META } from './origens'
+import { semContatoHaMaisDe, ESFRIANDO_DIAS } from './contato'
+import { ordenar, ordemEfetiva } from './leadFiltros'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
 import toast from 'react-hot-toast'
 
@@ -43,33 +45,14 @@ export const STAGE_CONFIG = STAGE_THEME
 
 const STAGES = FUNNEL_STAGES
 
-const ORIGIN_META: Record<string, { icon: typeof Sparkles; label: string }> = {
-  felicita: { icon: Sparkles,   label: 'Felicità' },
-  meta_ads: { icon: Smartphone, label: 'Meta Ads' },
-  portal:   { icon: Globe,      label: 'Portal' },
-  offline:  { icon: Handshake,  label: 'Offline' },
-  campanha: { icon: Megaphone,  label: 'Campanha' },
-}
-
-const COOLING_DAYS = 2
-
-function daysWithoutInteraction(lastInteractionAt?: string, createdAt?: string): number {
-  const ref = lastInteractionAt ?? createdAt ?? new Date().toISOString()
-  return (Date.now() - new Date(ref).getTime()) / 86_400_000
-}
-
 function daysInStage(stageChangedAt?: string, createdAt?: string): number {
   const ref = stageChangedAt ?? createdAt ?? new Date().toISOString()
   return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
 }
 
-function effectiveOrder(lead: Lead): number {
-  return lead.kanbanOrder ?? new Date(lead.updatedAt).getTime()
-}
-
 function orderBetween(above: Lead | null, below: Lead | null): number {
-  const a = above ? effectiveOrder(above) : Date.now() + 1_000_000
-  const b = below ? effectiveOrder(below) : 0
+  const a = above ? ordemEfetiva(above) : Date.now() + 1_000_000
+  const b = below ? ordemEfetiva(below) : 0
   return (a + b) / 2
 }
 
@@ -90,7 +73,7 @@ function LeadCard({
   const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { tasks } = useTasksStore()
-  const { add: addInteraction, getForLead } = useLeadInteractionsStore()
+  const { add: addInteraction } = useLeadInteractionsStore()
   const [showConclude, setShowConclude] = useState(false)
 
   // Visão admin global: identifica o corretor responsável em cada card
@@ -112,10 +95,8 @@ function LeadCard({
   const contact = lead.contactId ? getById(lead.contactId) : undefined
   const displayName = contact?.name ?? lead.name
   const displayPhone = contact?.phone ?? lead.phone
-  const interactions = getForLead(lead.id)
-  const lastInteraction = interactions[0] ?? null
   const stageDays = isOverlay ? 0 : daysInStage(lead.stageChangedAt, lead.createdAt)
-  const originMeta = ORIGIN_META[lead.origin]
+  const originMeta = ORIGEM_META[lead.origin]
 
   // Registra no banco e só então confirma — sem otimismo
   async function handleWhatsApp(e: React.MouseEvent) {
@@ -148,7 +129,7 @@ function LeadCard({
   const leadTasks = tasks.filter(t =>
     t.leadId === lead.id || (!t.leadId && !!lead.contactId && t.contactId === lead.contactId)
   )
-  const next = isOverlay ? null : computeNextAction(lead, leadTasks, lastInteraction)
+  const next = isOverlay ? null : computeNextAction(lead, leadTasks)
   const nextStyle = next ? URGENCY_STYLE[next.urgency] : null
   const NextIcon = nextStyle?.icon
   const urgente = next?.urgency === 'critical' || next?.urgency === 'attention'
@@ -441,28 +422,32 @@ function LeadCard({
 // ─── Coluna do kanban ─────────────────────────────────────────────────────────
 
 function KanbanColumn({
-  stage, leads, onCardClick, isActiveDragTarget, savingId, dense, financeMode,
+  stage, leads, total, onCardClick, isActiveDragTarget, savingId, dense, financeMode,
+  onFiltrarSemContato, filtroSemContatoAtivo,
 }: {
   stage: LeadFunnelStage
   leads: Lead[]
+  /** total da etapa sem filtro — só vem quando há recorte aplicado */
+  total?: number
   onCardClick: (lead: Lead) => void
   isActiveDragTarget: boolean
   savingId: string | null
   dense: boolean
   financeMode: boolean
+  onFiltrarSemContato?: () => void
+  filtroSemContatoAtivo: boolean
 }) {
   const conf = STAGE_CONFIG[stage]
   const { isOver, setNodeRef } = useDroppable({ id: stage })
-  const { byLead } = useLeadInteractionsStore()
   const ids = leads.map(l => l.id)
 
   const totalPipeline   = leads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
   const totalCommission = totalPipeline * 0.02
-  // Risco da coluna: leads sem contato além da janela de esfriamento.
-  const coldCount = leads.filter(l => {
-    const last = (byLead[l.id] ?? [])[0]
-    return daysWithoutInteraction(last?.interactedAt, l.createdAt) > COOLING_DAYS
-  }).length
+  // Risco da coluna: leads em aberto sem contato além da janela de
+  // esfriamento. Mesma régua do filtro e da linha do card (contato.ts).
+  const coldCount = leads.filter(l =>
+    !l.discardReason && !l.closedAt && semContatoHaMaisDe(l, ESFRIANDO_DIAS)
+  ).length
   const riskPct = leads.length > 0 ? Math.round((coldCount / leads.length) * 100) : 0
 
   return (
@@ -483,6 +468,13 @@ function KanbanColumn({
                               leading-none ${conf.color}`}>
               {leads.length}
             </span>
+            {/* Com filtro, o total da etapa: sem ele a coluna encolhida parece
+                funil vazio. */}
+            {total !== undefined && total !== leads.length && (
+              <span className="font-label text-[11px] text-t4 tabular-nums -ml-1" title={`${leads.length} de ${total} leads desta etapa`}>
+                /{total}
+              </span>
+            )}
           </div>
 
           {/* VGV + comissão da etapa */}
@@ -500,13 +492,33 @@ function KanbanColumn({
             </div>
           )}
 
-          {/* Indicador de risco — texto + proporção, nunca só cor */}
+          {/* Indicador de risco — texto + proporção, nunca só cor. É também
+              um atalho: tocar filtra o funil inteiro por quem esfriou, que é
+              exatamente a pergunta que o número levanta. */}
           {coldCount > 0 && (
             <div className="mt-2 pl-4">
-              <p className="flex items-center gap-1 font-label text-[11px] text-warning tabular-nums">
-                <Snowflake size={10} strokeWidth={1.6} aria-hidden />
-                {coldCount} sem contato há +{COOLING_DAYS}d
-              </p>
+              {onFiltrarSemContato ? (
+                <button
+                  type="button"
+                  onClick={onFiltrarSemContato}
+                  aria-pressed={filtroSemContatoAtivo}
+                  title={filtroSemContatoAtivo
+                    ? 'Mostrar todos os leads de novo'
+                    : `Mostrar só quem está há mais de ${ESFRIANDO_DIAS} dias sem contato, em todas as colunas`}
+                  className={`-ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-label text-[11px] text-warning tabular-nums
+                    transition-colors hover:bg-warning-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-warning/40
+                    ${filtroSemContatoAtivo ? 'bg-warning-bg' : ''}`}
+                >
+                  <Snowflake size={10} strokeWidth={1.6} aria-hidden />
+                  {coldCount} sem contato há +{ESFRIANDO_DIAS}d
+                  {filtroSemContatoAtivo && <X size={10} strokeWidth={2} aria-hidden />}
+                </button>
+              ) : (
+                <p className="flex items-center gap-1 font-label text-[11px] text-warning tabular-nums">
+                  <Snowflake size={10} strokeWidth={1.6} aria-hidden />
+                  {coldCount} sem contato há +{ESFRIANDO_DIAS}d
+                </p>
+              )}
               <div
                 className="mt-1 h-1 rounded-full bg-s3 overflow-hidden"
                 role="progressbar" aria-valuenow={riskPct} aria-valuemin={0} aria-valuemax={100}
@@ -559,11 +571,15 @@ function KanbanColumn({
 
 interface LeadKanbanProps {
   leads: Lead[]
+  /** total por etapa sem filtro — só quando há recorte aplicado */
+  totalPorEtapa?: Record<LeadFunnelStage, number>
+  /** liga/desliga o filtro "sem contato há +2d" a partir do cabeçalho da coluna */
+  onFiltrarSemContato?: () => void
+  filtroSemContatoAtivo?: boolean
 }
 
-export function LeadKanban({ leads }: LeadKanbanProps) {
+export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSemContatoAtivo = false }: LeadKanbanProps) {
   const { setStage, reorder } = useLeadsStore()
-  const { loadAll: loadAllInteractions } = useLeadInteractionsStore()
   const connected = useRealtimeStatusStore(s => s.connected)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<LeadFunnelStage | null>(null)
@@ -584,9 +600,11 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
     setSearchParams(next, { replace: !l })
   }
   const [savingId, setSavingId] = useState<string | null>(null)
-  const { dense, financeMode, sort, setDense, setFinanceMode, setSort } = useKanbanPrefs()
+  const { dense, financeMode, sort, setDense, setFinanceMode } = useKanbanPrefs()
 
-  useEffect(() => { loadAllInteractions() }, [loadAllInteractions])
+  // O Kanban baixava a tabela inteira de interações (~5,4 MB, e ainda cortada
+  // em 1.000 linhas) só para saber a data do último contato de cada card.
+  // Essa data agora vem no próprio lead (`lastContactAt`, migração 074).
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -598,21 +616,9 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
     // `manual` preserva a ordenação arrastada (kanbanOrder). Os demais critérios
     // são visualizações — arrastar continua gravando a ordem manual no banco,
     // ela só volta a aparecer quando a ordenação retorna para "manual".
-    const comparators: Record<KanbanSort, (a: Lead, b: Lead) => number> = {
-      manual:    (a, b) => effectiveOrder(b) - effectiveOrder(a),
-      prioridade:(a, b) => Number(!!b.flagged) - Number(!!a.flagged) || effectiveOrder(b) - effectiveOrder(a),
-      valor:     (a, b) => (b.averageTicket ?? 0) - (a.averageTicket ?? 0),
-      etapa:     (a, b) => new Date(a.stageChangedAt ?? a.createdAt).getTime()
-                         - new Date(b.stageChangedAt ?? b.createdAt).getTime(),
-      criacao:   (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    }
-    const cmp = comparators[sort] ?? comparators.manual
-    // Reentrada não vista vem antes de qualquer critério: destaque que aparece
-    // só na quinta rolagem não é destaque. São um ou dois cards, não uma
-    // reordenação do funil — ver reentrada.ts.
-    const comReentrada = (a: Lead, b: Lead) => reentradaPrimeiro(a, b) || cmp(a, b)
+    // Reentrada não vista vem antes de qualquer critério (ver leadFiltros.ts).
     return STAGES.reduce((acc, stage) => {
-      acc[stage] = leads.filter(l => l.funnelStage === stage).sort(comReentrada)
+      acc[stage] = ordenar(leads.filter(l => l.funnelStage === stage), sort)
       return acc
     }, {} as Record<LeadFunnelStage, Lead[]>)
   }, [leads, sort])
@@ -737,22 +743,9 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
           <span className="text-[11px] text-t4">propostas</span>
         </span>
 
+        {/* A ordenação subiu para a barra de filtros, no mesmo lugar da lista:
+            a pergunta "em que ordem?" é a mesma nas duas visões. */}
         <div className="ml-auto flex items-center gap-2 flex-wrap">
-          {/* Ordenação */}
-          <label className="flex items-center gap-1.5">
-            <span className="sr-only">Ordenar cards por</span>
-            <select
-              value={sort}
-              onChange={e => setSort(e.target.value as KanbanSort)}
-              className="text-[11px] text-t2 bg-s2 border border-line rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:border-brand"
-              title="Ordenar os cards de cada coluna"
-            >
-              {(Object.keys(SORT_LABEL) as KanbanSort[]).map(k => (
-                <option key={k} value={k}>{SORT_LABEL[k]}</option>
-              ))}
-            </select>
-          </label>
-
           {/* Densidade */}
           <button
             onClick={() => setDense(!dense)}
@@ -799,6 +792,9 @@ export function LeadKanban({ leads }: LeadKanbanProps) {
               key={stage}
               stage={stage}
               leads={sortedByStage[stage]}
+              total={totalPorEtapa?.[stage]}
+              onFiltrarSemContato={onFiltrarSemContato}
+              filtroSemContatoAtivo={filtroSemContatoAtivo}
               onCardClick={setSelectedLead}
               dense={dense} financeMode={financeMode}
               isActiveDragTarget={overStage === stage && !!activeId}

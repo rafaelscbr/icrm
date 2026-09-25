@@ -10,8 +10,9 @@ import { AssociativoSimulator } from './associativo/Simulator'
 
 // Shell do simulador: quadro comum das telas (PageLayout), seletor de modo e
 // renderização do modo ativo. Cada modo vive em sua própria pasta (calc.ts +
-// Simulator.tsx + Card.tsx) e compõe as peças compartilhadas de shared/. Para
-// adicionar um modo novo, crie a pasta e registre a aba aqui — nada mais.
+// Simulator.tsx + Card.tsx + mensagem.ts) e compõe as peças compartilhadas de
+// shared/. Para adicionar um modo novo, crie a pasta e registre a aba aqui —
+// nada mais.
 //
 // Era a única tela (com Leads) fora do PageLayout: título sem ícone de área,
 // padding próprio e um terceiro estilo de aba. Agora entra no quadro comum,
@@ -31,6 +32,7 @@ export function SimuladorPage() {
   const [shared, setShared] = useState<SharedFields>({
     empreendimento: 'Porto Velas 3D',
     cliente: '',
+    telefone: '',
     valorTotal: 758584.61,
   })
   const onShared = (patch: Partial<SharedFields>) => setShared(prev => ({ ...prev, ...patch }))
@@ -40,7 +42,7 @@ export function SimuladorPage() {
       icon={Calculator}
       iconTom="marca"
       title="Simulador de fluxo de pagamento"
-      subtitle="Preencha os campos e baixe a proposta pronta para enviar ao cliente"
+      subtitle="Preencha os campos: a proposta sai em imagem e em texto pronto para o WhatsApp"
       band={
         <Abas
           abas={MODOS}

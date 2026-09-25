@@ -1,11 +1,14 @@
 import { useState, useRef, useCallback, Ref, ReactNode } from 'react'
-import { Download, AlertCircle } from 'lucide-react'
+import { Download, AlertCircle, Image as ImageIcon, MessageSquareText } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import toast from 'react-hot-toast'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { PagamentoBase, ReforcoPeriodo, SharedFields } from './types'
+import {
+  AlternadorVisao, BalaoMensagem, BotaoCopiar, BotaoWhatsApp, useAcoesMensagem, telefoneValido,
+} from './MensagemWhatsApp'
 
 // ── Formatação ────────────────────────────────────────────────────────────────
 
@@ -69,24 +72,53 @@ export function DerivedBox({ label, value, accent = false, icon }: {
 
 // ── Seção de identificação (compartilhada entre modos) ────────────────────────
 
+/** Máscara progressiva: "47999" → "(47) 999", até "(47) 99999-9999". */
+export function mascaraTelefone(digitos: string): string {
+  const d = digitos.slice(0, 11)
+  if (d.length <= 2) return d.length ? `(${d}` : ''
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
+
 export function IdentificacaoSection({ shared, onShared }: {
   shared: SharedFields
   onShared: (patch: Partial<SharedFields>) => void
 }) {
+  const incompleto = shared.telefone.length > 0 && !telefoneValido(shared.telefone)
   return (
     <Section title="Identificação">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input
-          label="Empreendimento / Unidade"
-          value={shared.empreendimento}
-          onChange={e => onShared({ empreendimento: e.target.value })}
-          placeholder="Ex: Porto Velas 3D"
-        />
+        <div className="sm:col-span-2">
+          <Input
+            label="Empreendimento / Unidade"
+            value={shared.empreendimento}
+            onChange={e => onShared({ empreendimento: e.target.value })}
+            placeholder="Ex: Porto Velas 3D"
+          />
+        </div>
         <Input
           label="Nome do cliente (opcional)"
           value={shared.cliente}
           onChange={e => onShared({ cliente: e.target.value })}
           placeholder="Ex: João da Silva"
+          autoComplete="off"
+        />
+        <Input
+          label="WhatsApp do cliente (opcional)"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          value={mascaraTelefone(shared.telefone)}
+          onChange={e => {
+            // Colar "+55 47 9..." também funciona: o 55 do país sai antes da máscara.
+            let d = e.target.value.replace(/\D/g, '')
+            if (d.length > 11 && d.startsWith('55')) d = d.slice(2)
+            onShared({ telefone: d.slice(0, 11) })
+          }}
+          placeholder="(47) 99999-9999"
+          error={incompleto ? 'Faltam dígitos: DDD + número' : undefined}
+          hint="Com o número, o botão abre a conversa do cliente direto"
         />
       </div>
     </Section>
@@ -268,13 +300,26 @@ export function PagamentoSection({
 
 // ── Coluna de preview + export (compartilhada entre modos) ────────────────────
 
-export function PreviewColumn({ valido, slugBase, renderCard }: {
+type VisaoPreview = 'imagem' | 'texto'
+
+/**
+ * A proposta sai de duas formas, dos mesmos números: a IMAGEM, que o cliente
+ * guarda, e o TEXTO, que ele lê na notificação. A coluna mostra uma de cada
+ * vez — as duas juntas passariam da altura da tela e a coluna fixa deixaria
+ * os botões fora de alcance —, mas copiar e abrir o WhatsApp ficam a um toque
+ * nas duas visões.
+ */
+export function PreviewColumn({ valido, slugBase, renderCard, mensagem, telefone }: {
   valido: boolean
   slugBase: string
   renderCard: (ref: Ref<HTMLDivElement>) => ReactNode
+  mensagem: string
+  telefone: string
 }) {
+  const [visao, setVisao] = useState<VisaoPreview>('imagem')
   const [exporting, setExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
+  const acoes = useAcoesMensagem(mensagem, telefone)
 
   const handleExport = useCallback(async () => {
     if (!cardRef.current || !valido) return
@@ -296,29 +341,67 @@ export function PreviewColumn({ valido, slugBase, renderCard }: {
 
   return (
     <div className="flex flex-col items-center gap-4 xl:sticky xl:top-6">
-      <div className="flex items-center justify-between w-full">
-        <p className="text-t3 text-xs uppercase tracking-widest">Preview da proposta</p>
-        <p className="text-t4 text-xs">como o cliente recebe</p>
+      <div className="flex items-center justify-between gap-3 w-full">
+        <p className="text-t3 text-xs uppercase tracking-widest">Proposta</p>
+        <AlternadorVisao
+          rotulo="Formato da proposta"
+          valor={visao}
+          onChange={setVisao}
+          opcoes={[
+            { value: 'imagem', label: 'Imagem', icon: ImageIcon },
+            { value: 'texto',  label: 'Texto WhatsApp', icon: MessageSquareText },
+          ]}
+        />
       </div>
 
-      <div className="flex justify-center">
-        {renderCard(cardRef)}
-      </div>
+      {visao === 'imagem' ? (
+        <div className="flex justify-center">
+          {renderCard(cardRef)}
+        </div>
+      ) : valido ? (
+        <BalaoMensagem texto={mensagem} />
+      ) : (
+        <SemMensagem />
+      )}
 
-      <Button
-        variant="primary"
-        size="lg"
-        onClick={handleExport}
-        disabled={!valido || exporting}
-        className="w-full"
-      >
-        <Download size={16} />
-        {exporting ? 'Gerando imagem…' : 'Baixar proposta (PNG)'}
-      </Button>
+      {visao === 'imagem' ? (
+        <>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleExport}
+            disabled={!valido || exporting}
+            className="w-full"
+          >
+            <Download size={16} />
+            {exporting ? 'Gerando imagem…' : 'Baixar proposta (PNG)'}
+          </Button>
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <BotaoCopiar copiado={acoes.copiado} onClick={acoes.copiar} disabled={!valido} />
+            <BotaoWhatsApp comNumero={acoes.comNumero} telefone={telefone} onClick={acoes.abrir} disabled={!valido} />
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+          <BotaoWhatsApp comNumero={acoes.comNumero} telefone={telefone} onClick={acoes.abrir} disabled={!valido} destaque />
+          <BotaoCopiar copiado={acoes.copiado} onClick={acoes.copiar} disabled={!valido} destaque />
+        </div>
+      )}
 
       <p className="text-t4 text-xs text-center leading-relaxed">
-        A imagem é gerada em alta resolução (3×) e fica ótima para enviar no WhatsApp ou e-mail.
+        O WhatsApp abre com o texto na caixa de mensagem — você revisa e envia.
+        Para mandar a imagem junto, baixe o PNG e anexe na mesma conversa.
       </p>
+    </div>
+  )
+}
+
+/** Enquanto a conta não fecha, não há mensagem — mandar número errado é pior que não mandar. */
+export function SemMensagem() {
+  return (
+    <div className="w-full flex items-center gap-2.5 text-sm rounded-[14px] px-4 py-6 bg-s2 border border-line text-t3">
+      <AlertCircle size={15} className="flex-shrink-0" aria-hidden />
+      <span>Ajuste os valores do formulário: a mensagem aparece assim que a conta fechar.</span>
     </div>
   )
 }

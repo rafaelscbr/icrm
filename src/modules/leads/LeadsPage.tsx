@@ -2,30 +2,28 @@ import { useState, useEffect, useMemo } from 'react'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { TemperatureDot, FitBadge } from '../../components/shared/IntelBadges'
 import { aoTeclarAbrir } from '../../components/shared/lista'
-import {
-  fitDeserveBadge, Temperature, Fit,
-  TEMPERATURE_LABEL, TEMPERATURE_COLOR, FIT_LABEL, FIT_COLOR,
-} from '../../lib/intelligence'
+import { fitDeserveBadge } from '../../lib/intelligence'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Plus, LayoutGrid, List, Search, BarChart3,
-  MessageCircle, Users, UserPlus, UserX, Trash2, ChevronRight, RefreshCw, Settings2,
-  Sparkles, Smartphone, Globe, Handshake, Megaphone, Percent,
-  GitBranch, Filter, User, Home, X, Trophy, Flame, Target, BadgeCheck,
+  Plus, LayoutGrid, List, BarChart3,
+  MessageCircle, Users, UserPlus, UserX, ChevronRight, RefreshCw, Settings2,
+  Percent, Home, BadgeCheck, Snowflake, SearchX,
 } from 'lucide-react'
-import { avisoReentrada, reentradaPrimeiro } from './reentrada'
+import { avisoReentrada } from './reentrada'
 import toast from 'react-hot-toast'
 import { EstadoTela } from '../../components/shared/EstadoTela'
 import { EsqueletoLinhas, EsqueletoCards } from '../../components/shared/Esqueleto'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Abas } from '../../components/shared/Abas'
 import { Button } from '../../components/ui/Button'
-import { Lead, LeadFunnelStage, LeadOrigin } from '../../types'
+import { Lead, LeadFunnelStage } from '../../types'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
+import { useKanbanPrefs, KanbanSort } from '../../store/useKanbanPrefs'
+import { useLeadFiltersStore, OrdemLista } from '../../store/useLeadFiltersStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { Avatar } from '../../components/ui/Avatar'
 import { LeadForm } from './LeadForm'
@@ -37,35 +35,45 @@ import { LeadConversionTab } from './LeadConversionTab'
 import { SlaBadge } from './SlaBadge'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { LeadSettings } from './LeadSettings'
-import { FilterDropdown, FilterOption } from '../../components/shared/FilterDropdown'
-
-const ORIGIN_CONFIG: Record<string, { label: string; icon: typeof Sparkles; color: string; bg: string; border: string }> = {
-  felicita: { label: 'Felicità', icon: Sparkles,   color: 'text-brand-text',   bg: 'bg-brand-tint',   border: 'border-brand/25'   },
-  meta_ads: { label: 'Meta ADS', icon: Smartphone, color: 'text-info',   bg: 'bg-s3/70',         border: 'border-info-line'   },
-  portal:   { label: 'Portal',   icon: Globe,      color: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line'   },
-  offline:  { label: 'Offline',  icon: Handshake,  color: 'text-amber-400',  bg: 'bg-amber-500/15',  border: 'border-amber-500/25'  },
-  campanha: { label: 'Campanha', icon: Megaphone,  color: 'text-brand-text', bg: 'bg-brand-tint', border: 'border-brand/25' },
-}
-
-const ORIGINS: LeadOrigin[] = ['felicita', 'meta_ads', 'portal', 'offline', 'campanha']
+import { ORIGEM_META } from './origens'
+import { diasSemContato, nivelContato, haQuantoTempo } from './contato'
+import {
+  ContextoFiltro, aplicarFiltros, contarFiltros, ordenar, chaveProduto,
+} from './leadFiltros'
+import { BarraDeFiltros, PainelDeFiltros, OpcaoCatalogo } from './FiltrosDoFunil'
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
-// Chave única do produto de interesse: imóvel cadastrado (id:) ou nome livre (name:)
-function productKeyOf(lead: Lead): string | null {
-  if (lead.propertyId)   return `id:${lead.propertyId}`
-  if (lead.propertyName) return `name:${lead.propertyName.trim().toLowerCase()}`
-  return null
-}
+const ORDENS_LISTA: OrdemLista[] = ['criacao', 'sem_contato', 'prioridade', 'valor', 'etapa', 'antigos']
+const ORDENS_KANBAN: KanbanSort[] = ['manual', ...ORDENS_LISTA]
 
 type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'configuracoes'
 
+/**
+ * Relógio de minuto. Os filtros de tempo ("sem contato há mais de 2 dias",
+ * "entraram hoje") dependem do agora; um tique por minuto mantém a tela
+ * honesta sem recalcular a cada render. Não toca a rede.
+ */
+function useAgora(): number {
+  const [agora, setAgora] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setAgora(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
+  return agora
+}
+
+function dataCurta(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
+}
+
 // ─── LeadRow ──────────────────────────────────────────────────────────────────
 
-function LeadRow({ lead, onClick, mostrarEncaixe = true }: {
+function LeadRow({ lead, onClick, mostrarEncaixe = true, agora }: {
   lead: Lead; onClick: () => void
   /** o chip de encaixe só informa quando a lista é mista — ver LeadsPage */
   mostrarEncaixe?: boolean
+  agora: number
 }) {
   const { advanceFollowup } = useLeadsStore()
   const { add: addInteraction } = useLeadInteractionsStore()
@@ -82,8 +90,13 @@ function LeadRow({ lead, onClick, mostrarEncaixe = true }: {
   const displayName  = contact?.name   ?? lead.name
   const displayPhone = contact?.phone  ?? lead.phone
   const conf         = STAGE_CONFIG[lead.funnelStage]
-  const originConf   = ORIGIN_CONFIG[lead.origin]
+  const originConf   = ORIGEM_META[lead.origin]
   const isDiscarded  = !!lead.discardReason
+  // Tempo sem contato só é alerta no funil aberto. Descartado e ganho têm o
+  // silêncio que deveriam ter.
+  const emAberto     = !isDiscarded && !lead.closedAt
+  const dias         = diasSemContato(lead, agora)
+  const nivel        = emAberto ? nivelContato(lead, agora) : 'em_dia'
   const intel        = useIntelligenceStore(s => s.intel[lead.id])
   const aviso        = avisoReentrada(lead)
 
@@ -203,10 +216,27 @@ function LeadRow({ lead, onClick, mostrarEncaixe = true }: {
         )}
       </div>
 
-      {/* Origem sem moldura: é procedência, não estado. A etapa continua a
-          única pílula deste lado, porque é a que muda e a que se compara. */}
-      <div className="hidden sm:flex items-center gap-1.5 text-xs text-t4 flex-shrink-0 w-[104px]">
-        <originConf.icon size={11} strokeWidth={1.6} aria-hidden /> {originConf.label}
+      {/* Contato: o dado da ordem "mais tempo sem contato". Em cima, há quanto
+          tempo alguém falou com o lead; embaixo, quando ele entrou. O ícone
+          acompanha a cor — cor sozinha não diz status. */}
+      <div
+        className="hidden sm:flex flex-col flex-shrink-0 w-[112px] min-w-0"
+        title={lead.lastContactAt
+          ? `Último contato em ${new Date(lead.lastContactAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} · entrou em ${new Date(lead.createdAt).toLocaleDateString('pt-BR')}`
+          : `Nenhum contato registrado · entrou em ${new Date(lead.createdAt).toLocaleDateString('pt-BR')}`}
+      >
+        <span className={`inline-flex items-center gap-1 text-xs tabular-nums truncate
+          ${nivel === 'parado' ? 'text-error font-semibold' : nivel === 'esfriando' ? 'text-warning font-semibold' : 'text-t2'}`}>
+          {nivel !== 'em_dia' && <Snowflake size={11} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />}
+          {lead.lastContactAt ? haQuantoTempo(dias) : 'sem contato'}
+        </span>
+        <span className="text-[11px] text-t4 tabular-nums truncate">entrou {dataCurta(lead.createdAt)}</span>
+      </div>
+
+      {/* Origem sem moldura: é procedência, não estado. Com 99% dos leads
+          vindo do Meta, ela desce de prioridade e só aparece em tela larga. */}
+      <div className="hidden xl:flex items-center gap-1.5 text-xs text-t4 flex-shrink-0 w-[104px]">
+        {originConf && <><originConf.icon size={11} strokeWidth={1.6} aria-hidden /> {originConf.label}</>}
       </div>
 
       {/* Etapa nunca quebra em duas linhas; a tentativa de follow-up sai do
@@ -244,9 +274,12 @@ export function LeadsPage() {
   const { leads: allLeads, loading, erro, load, visitaSuggestLeadId, clearVisitaSuggest } = useLeadsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const visitaSuggestLead = visitaSuggestLeadId ? allLeads.find(l => l.id === visitaSuggestLeadId) : undefined
-  const leads = isAdmin && viewAsBrokerId ? allLeads.filter(l => l.brokerId === viewAsBrokerId) : allLeads
+  const leads = useMemo(
+    () => (isAdmin && viewAsBrokerId ? allLeads.filter(l => l.brokerId === viewAsBrokerId) : allLeads),
+    [allLeads, isAdmin, viewAsBrokerId],
+  )
   const { load: loadProps, properties } = usePropertiesStore()
-  const { loadByIds: loadContactsByIds } = useContactsStore()
+  const { loadByIds: loadContactsByIds, contacts } = useContactsStore()
   const { load: loadConfig }   = useLeadConfigStore()
   const { load: loadIntel, intel } = useIntelligenceStore()
 
@@ -254,13 +287,10 @@ export function LeadsPage() {
   const showBrokerFilter = isAdmin && !viewAsBrokerId
 
   const [tab,           setTab]           = useState<Tab>('leads')
-  const [search,        setSearch]        = useState('')
-  const [filterStage,   setFilterStage]   = useState<LeadFunnelStage | null>(null)
-  const [filterOrigin,  setFilterOrigin]  = useState<LeadOrigin | null>(null)
-  const [filterBroker,  setFilterBroker]  = useState<string | null>(null)
-  const [filterProduct, setFilterProduct] = useState<string | null>(null)
-  const [filterTemp,    setFilterTemp]    = useState<Temperature | null>(null)
-  const [filterFit,     setFilterFit]     = useState<Fit | null>(null)
+  const { filtros, definir, limpar, ordemLista, setOrdemLista } = useLeadFiltersStore()
+  const { sort: ordemKanban, setSort: setOrdemKanban } = useKanbanPrefs()
+  const [painelFiltros, setPainelFiltros] = useState(false)
+  const agora = useAgora()
   // Escopo da lista/kanban: funil ativo, descartados ou ganhos (vendas encerradas)
   const [listView,      setListView]      = useState<'active' | 'discarded' | 'won'>('active')
   const [showForm,      setShowForm]      = useState(false)
@@ -318,105 +348,70 @@ export function LeadsPage() {
     return leads.filter(l => !l.discardReason && !l.closedAt)
   }, [leads, listView])
 
+  const isListTab        = tab === 'leads'
+  const isKanbanTab      = tab === 'kanban'
+  const isDashTab        = tab === 'dashboard'
+  const isConvTab        = tab === 'conversao'
+  const isConfigTab      = tab === 'configuracoes'
+
+  // Contexto dos filtros: a busca procura pelo nome que a tela MOSTRA (o do
+  // contato do CRM, quando vinculado) e pelo produto, cadastrado ou livre.
+  const ctx: ContextoFiltro = useMemo(() => {
+    const contatoPorId = new Map(contacts.map(c => [c.id, c]))
+    const imovelPorId  = new Map(properties.map(p => [p.id, p]))
+    return {
+      intel,
+      agora,
+      ignorarEtapa: isKanbanTab,
+      nomeExibido: l => (l.contactId ? contatoPorId.get(l.contactId)?.name : undefined) ?? l.name,
+      nomeProduto: l => (l.propertyId ? imovelPorId.get(l.propertyId)?.name : undefined) ?? l.propertyName,
+    }
+  }, [intel, agora, isKanbanTab, contacts, properties])
+
+  // A lista ordena aqui; o Kanban ordena por coluna, com a ordem dele.
   const filtered = useMemo(() => {
-    let result = scoped
-    if (search) {
-      const q = search.toLowerCase()
-      result = result.filter(l =>
-        l.name.toLowerCase().includes(q) ||
-        l.phone.includes(q) ||
-        (l.email ?? '').toLowerCase().includes(q)
-      )
-    }
-    if (filterStage)   result = result.filter(l => l.funnelStage === filterStage)
-    if (filterOrigin)  result = result.filter(l => l.origin === filterOrigin)
-    if (filterBroker)  result = result.filter(l => (l.brokerId ?? '') === filterBroker)
-    if (filterProduct) result = result.filter(l => productKeyOf(l) === filterProduct)
-    if (filterTemp)    result = result.filter(l => intel[l.id]?.temperature === filterTemp)
-    if (filterFit)     result = result.filter(l => (intel[l.id]?.fitOrigin?.fit ?? 'sem_dados') === filterFit)
-    // Quem voltou a se cadastrar e ainda não foi visto encabeça a lista — a
-    // ordem interna do resto fica como está. Cópia antes de ordenar: `result`
-    // pode ser o próprio `scoped`, que é memo compartilhado.
-    return [...result].sort(reentradaPrimeiro)
-  }, [scoped, search, filterStage, filterOrigin, filterBroker, filterProduct, filterTemp, filterFit, intel])
+    const passam = aplicarFiltros(scoped, filtros, ctx)
+    return isKanbanTab ? passam : ordenar(passam, ordemLista, agora)
+  }, [scoped, filtros, ctx, isKanbanTab, ordemLista, agora])
 
-  // ── Opções dos filtros (com contagem) ────────────────────────────────────────
-  const stageOptions: FilterOption[] = useMemo(
-    () => STAGES.map(s => ({
-      value: s,
-      label: STAGE_CONFIG[s].label,
-      dot: STAGE_CONFIG[s].dot,
-      count: scoped.filter(l => l.funnelStage === s).length,
-    })),
-    [scoped],
-  )
+  const nFiltros   = contarFiltros(filtros, ctx)
+  const temRecorte = nFiltros > 0 || filtros.busca.trim() !== ''
 
-  const tempOptions: FilterOption[] = useMemo(() => {
-    const ordem: Temperature[] = ['quente', 'reaquecendo', 'morno', 'novo', 'frio']
-    return ordem
-      .map(t => ({
-        value: t,
-        label: TEMPERATURE_LABEL[t],
-        count: scoped.filter(l => intel[l.id]?.temperature === t).length,
-        dot:   TEMPERATURE_COLOR[t],
-      }))
-      .filter(o => o.count > 0)
-  }, [scoped, intel])
+  // Kanban filtrado: cada coluna mostra "12 de 40" — sem o total, a coluna
+  // encolhida parece funil vazio.
+  const totalPorEtapa = useMemo(() => {
+    if (!isKanbanTab || !temRecorte) return undefined
+    const out = {} as Record<LeadFunnelStage, number>
+    for (const s of STAGES) out[s] = 0
+    for (const l of scoped) out[l.funnelStage] = (out[l.funnelStage] ?? 0) + 1
+    return out
+  }, [isKanbanTab, temRecorte, scoped])
 
-  const fitOptions: FilterOption[] = useMemo(() => {
-    const ordem: Fit[] = ['ideal', 'possivel', 'dificil', 'sem_dados']
-    return ordem
-      .map(f => ({
-        value: f,
-        label: FIT_LABEL[f],
-        count: scoped.filter(l => (intel[l.id]?.fitOrigin?.fit ?? 'sem_dados') === f).length,
-        dot:   FIT_COLOR[f],
-      }))
-      .filter(o => o.count > 0)
-  }, [scoped, intel])
-
-  const originOptions: FilterOption[] = useMemo(
-    () => ORIGINS.map(o => ({
-      value: o,
-      label: ORIGIN_CONFIG[o].label,
-      icon: ORIGIN_CONFIG[o].icon,
-      count: scoped.filter(l => l.origin === o).length,
-    })).filter(o => o.count > 0),
-    [scoped],
-  )
-
-  const brokerOptions: FilterOption[] = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const l of scoped) {
-      const key = l.brokerId ?? '__none__'
-      counts.set(key, (counts.get(key) ?? 0) + 1)
-    }
-    const opts: FilterOption[] = allProfiles
-      .map(p => ({ value: p.id, label: p.name, icon: User, count: counts.get(p.id) ?? 0 }))
-      .filter(o => o.count > 0)
-      .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
-    if (counts.get('__none__')) {
-      opts.push({ value: '', label: 'Sem corretor', icon: User, count: counts.get('__none__') })
-    }
-    return opts
-  }, [scoped, allProfiles])
-
-  const productOptions: FilterOption[] = useMemo(() => {
+  // Catálogos do painel: o que existe no escopo, não o que existe no mundo.
+  const produtosCatalogo: OpcaoCatalogo[] = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>()
     for (const l of scoped) {
-      const key = productKeyOf(l)
+      const key = chaveProduto(l)
       if (!key) continue
-      const label = l.propertyId
-        ? (properties.find(p => p.id === l.propertyId)?.name ?? l.propertyName ?? 'Imóvel')
-        : (l.propertyName ?? 'Imóvel')
+      const label = ctx.nomeProduto?.(l) ?? 'Imóvel'
       const cur = map.get(key)
       if (cur) cur.count++
       else map.set(key, { label, count: 1 })
     }
     return Array.from(map.entries())
-      .map(([value, { label, count }]) => ({ value, label, icon: Home, count }))
-      .sort((a, b) => b.count - a.count)
-  }, [scoped, properties])
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([value, { label }]) => ({ value, label }))
+  }, [scoped, ctx])
+
+  const corretoresCatalogo: OpcaoCatalogo[] | null = useMemo(() => {
+    if (!showBrokerFilter) return null
+    const ids = new Set(scoped.map(l => l.brokerId ?? ''))
+    const opts = allProfiles
+      .filter(p => ids.has(p.id))
+      .map(p => ({ value: p.id, label: p.name }))
+    if (ids.has('')) opts.push({ value: '', label: 'Sem corretor' })
+    return opts
+  }, [showBrokerFilter, scoped, allProfiles])
 
   // `/leads?novo=1` abre o formulário (busca ⌘K); `?etapa=<etapa>` filtra a
   // lista (Próxima melhor ação do Dashboard).
@@ -426,12 +421,15 @@ export function LeadsPage() {
     if (!novo && !etapa) return
     if (novo) setShowForm(true)
     if (etapa && (STAGES as string[]).includes(etapa)) {
+      // Link com etapa é pergunta fechada ("quem está em visita?"): recortes
+      // antigos da sessão não podem esconder a resposta.
       setTab('leads')
       setListView('active')
-      setFilterStage(etapa as LeadFunnelStage)
+      limpar()
+      definir({ busca: '', etapas: [etapa as LeadFunnelStage] })
     }
     setSearchParams({}, { replace: true })
-  }, [searchParams, setSearchParams])
+  }, [searchParams, setSearchParams]) // eslint-disable-line react-hooks/exhaustive-deps -- limpar/definir são estáveis (zustand)
 
   // O chip de encaixe ("Difícil", "Ideal") só informa quando a lista é mista.
   // Em cem linhas todas "Difícil" ele vira textura e some da leitura.
@@ -444,18 +442,6 @@ export function LeadsPage() {
     return fits.size > 1
   }, [filtered, intel])
 
-  const activeFilterCount =
-    (filterStage ? 1 : 0) + (filterOrigin ? 1 : 0) + (filterTemp ? 1 : 0) + (filterFit ? 1 : 0) +
-    (filterBroker != null ? 1 : 0) + (filterProduct ? 1 : 0)
-
-  function clearAllFilters() {
-    setFilterStage(null)
-    setFilterOrigin(null)
-    setFilterBroker(null)
-    setFilterProduct(null)
-    setSearch('')
-  }
-
   const TABS: { value: Tab; label: string; icon: typeof List; badge?: number }[] = [
     { value: 'leads',          label: 'Leads',          icon: List,        badge: erro ? undefined : active.length },
     { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                        },
@@ -463,12 +449,6 @@ export function LeadsPage() {
     { value: 'conversao',      label: 'Conversão',       icon: Percent                           },
     { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                         },
   ]
-
-  const isListTab        = tab === 'leads'
-  const isKanbanTab      = tab === 'kanban'
-  const isDashTab        = tab === 'dashboard'
-  const isConvTab        = tab === 'conversao'
-  const isConfigTab      = tab === 'configuracoes'
 
   return (
     <PageLayout
@@ -497,124 +477,34 @@ export function LeadsPage() {
 
       {(isListTab || isKanbanTab) && (
         <>
-          {/* Toolbar de filtros. No celular é UMA linha rolável: seis filtros
-              quebrando em três linhas empurravam o primeiro lead para fora da
-              tela. */}
-          <div className="flex items-center gap-2.5 mb-4 overflow-x-auto sm:overflow-visible sm:flex-wrap pb-1 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar por nome, telefone ou e-mail..."
-                className="w-full h-9 bg-surface border border-line-input rounded-[12px] pl-9 pr-8 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand/50 transition-all"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch('')}
-                  aria-label="Limpar busca"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-t4 hover:text-t2 hover:bg-s2 transition-colors"
-                >
-                  <X size={13} strokeWidth={2} />
-                </button>
-              )}
-            </div>
-
-            <span className="w-px h-6 bg-line hidden sm:block" aria-hidden="true" />
-
-            <FilterDropdown
-              label="Etapa"
-              icon={GitBranch}
-              options={stageOptions}
-              value={filterStage}
-              onChange={v => setFilterStage(v as LeadFunnelStage | null)}
-              allLabel="Todas as etapas"
-            />
-            <FilterDropdown
-              label="Origem"
-              icon={Filter}
-              options={originOptions}
-              value={filterOrigin}
-              onChange={v => setFilterOrigin(v as LeadOrigin | null)}
-              allLabel="Todas as origens"
-            />
-            {tempOptions.length > 0 && (
-              <FilterDropdown
-                label="Temperatura"
-                icon={Flame}
-                options={tempOptions}
-                value={filterTemp}
-                onChange={v => setFilterTemp(v as Temperature | null)}
-                allLabel="Todas as temperaturas"
-              />
-            )}
-            {fitOptions.length > 0 && (
-              <FilterDropdown
-                label="Encaixe"
-                icon={Target}
-                options={fitOptions}
-                value={filterFit}
-                onChange={v => setFilterFit(v as Fit | null)}
-                allLabel="Todos os encaixes"
-              />
-            )}
-            {showBrokerFilter && (
-              <FilterDropdown
-                label="Corretor"
-                icon={User}
-                options={brokerOptions}
-                value={filterBroker}
-                onChange={setFilterBroker}
-                allLabel="Todos os corretores"
-              />
-            )}
-            <FilterDropdown
-              label="Produto"
-              icon={Home}
-              options={productOptions}
-              value={filterProduct}
-              onChange={setFilterProduct}
-              allLabel="Todos os produtos"
-              searchable
-            />
-
-            {activeFilterCount > 0 && (
-              <button
-                onClick={clearAllFilters}
-                className="flex items-center gap-1.5 h-9 px-2.5 rounded-[12px] text-xs font-semibold text-t3 hover:text-t1 hover:bg-s2 transition-all flex-shrink-0"
-                title="Limpar todos os filtros"
-              >
-                <X size={13} strokeWidth={1.8} />
-                Limpar
-                <span className="font-bold text-brand-text">{activeFilterCount}</span>
-              </button>
-            )}
-
-            {/* Ganhos e descartados sempre com rótulo: "6" e "888" soltos ao
-                lado de um ícone não diziam o que eram. */}
-            <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => setListView(v => v === 'won' ? 'active' : 'won')}
-                aria-pressed={listView === 'won'}
-                className={`flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all whitespace-nowrap
-                  ${listView === 'won' ? 'bg-success-bg border-success-line text-success' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
-              >
-                <Trophy size={13} strokeWidth={1.6} />
-                Ganhos
-                {won.length > 0 && <span className="font-bold tabular-nums">{won.length}</span>}
-              </button>
-              <button
-                onClick={() => setListView(v => v === 'discarded' ? 'active' : 'discarded')}
-                aria-pressed={listView === 'discarded'}
-                className={`flex items-center gap-1.5 h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all whitespace-nowrap
-                  ${listView === 'discarded' ? 'bg-error-bg border-error-line text-error' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
-              >
-                <Trash2 size={13} strokeWidth={1.6} />
-                Descartados
-                {discarded.length > 0 && <span className="font-bold tabular-nums">{discarded.length}</span>}
-              </button>
-            </div>
-          </div>
+          <BarraDeFiltros
+            vista={isKanbanTab ? 'kanban' : 'lista'}
+            base={scoped}
+            visiveis={filtered.length}
+            ctx={ctx}
+            agora={agora}
+            ordem={isKanbanTab ? ordemKanban : ordemLista}
+            opcoesOrdem={isKanbanTab ? ORDENS_KANBAN : ORDENS_LISTA}
+            onOrdem={o => (isKanbanTab ? setOrdemKanban(o) : setOrdemLista(o as OrdemLista))}
+            escopo={listView}
+            onEscopo={setListView}
+            ganhos={won.length}
+            descartados={discarded.length}
+            onAbrirPainel={() => setPainelFiltros(true)}
+            produtos={produtosCatalogo}
+            corretores={corretoresCatalogo}
+          />
+          <PainelDeFiltros
+            isOpen={painelFiltros}
+            onClose={() => setPainelFiltros(false)}
+            vista={isKanbanTab ? 'kanban' : 'lista'}
+            base={scoped}
+            visiveis={filtered.length}
+            ctx={ctx}
+            agora={agora}
+            produtos={produtosCatalogo}
+            corretores={corretoresCatalogo}
+          />
 
           {/* Falha vence tudo: sem a leitura completa, "nenhum lead
               encontrado" seria uma afirmação falsa sobre o funil. */}
@@ -625,6 +515,23 @@ export function LeadsPage() {
             </EstadoTela>
           ) : loading && allLeads.length === 0 ? (
             isKanbanTab ? <EsqueletoCards cards={6} colunas={3} /> : <EsqueletoLinhas linhas={8} />
+          ) : filtered.length === 0 && temRecorte ? (
+            // Vazio por causa do filtro é outro estado: o funil tem leads, o
+            // recorte é que não pegou ninguém. A saída fica a um toque.
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-s3/60 flex items-center justify-center">
+                <SearchX size={28} strokeWidth={1.5} className="text-t3" aria-hidden />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-t2">Nenhum lead com esses filtros</p>
+                <p className="text-xs text-t4 mt-1">
+                  {scoped.length} {scoped.length === 1 ? 'lead fica' : 'leads ficam'} de fora do recorte atual
+                </p>
+              </div>
+              <Button variant="secondary" size="md" onClick={() => { limpar(); definir({ busca: '' }) }}>
+                Limpar filtros e busca
+              </Button>
+            </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-4">
               <div className="w-16 h-16 rounded-2xl bg-s3/60 flex items-center justify-center">
@@ -634,20 +541,28 @@ export function LeadsPage() {
                 <p className="text-sm font-medium text-t2">
                   {listView === 'discarded' ? 'Nenhum lead descartado'
                     : listView === 'won' ? 'Nenhuma venda ganha ainda'
-                    : 'Nenhum lead encontrado'}
+                    : 'Nenhum lead no funil'}
                 </p>
-                <p className="text-xs text-t4 mt-1">
-                  {search || activeFilterCount > 0 ? 'Tente ajustar os filtros' : 'Clique em "Novo Lead" para começar'}
-                </p>
+                {listView === 'active' && (
+                  <p className="text-xs text-t4 mt-1">Clique em "Novo Lead" para começar</p>
+                )}
               </div>
-              {!search && activeFilterCount === 0 && listView === 'active' && (
+              {listView === 'active' && (
                 <Button onClick={() => setShowForm(true)} size="md">
                   <Plus size={14} /> Criar primeiro lead
                 </Button>
               )}
             </div>
           ) : isKanbanTab ? (
-            <LeadKanban leads={filtered} />
+            <LeadKanban
+              leads={filtered}
+              totalPorEtapa={totalPorEtapa}
+              filtroSemContatoAtivo={filtros.semContato === '2'}
+              // Descartado e ganho não esfriam: o atalho só existe no funil aberto.
+              onFiltrarSemContato={listView === 'active'
+                ? () => definir({ semContato: filtros.semContato === '2' ? null : '2' })
+                : undefined}
+            />
           ) : (
             <div className="rounded-xl border border-line overflow-hidden list-surface stagger-children">
               {/* O cabeçalho espelha a linha: mesmas larguras, mesma ordem. */}
@@ -656,12 +571,13 @@ export function LeadsPage() {
                 <span className="flex-1 min-w-0 md:max-w-[46%] font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Nome</span>
                 <span className="hidden md:block w-[150px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Produto</span>
                 <span className="hidden lg:block w-[92px] flex-shrink-0 text-right font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Valor</span>
-                <span className="hidden sm:block w-[104px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Origem</span>
+                <span className="hidden sm:block w-[112px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Contato</span>
+                <span className="hidden xl:block w-[104px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Origem</span>
                 <span className="w-[118px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Etapa</span>
                 <span className="ml-auto w-[52px] flex-shrink-0" aria-hidden />
               </div>
               {filtered.map(lead => (
-                <LeadRow key={lead.id} lead={lead} mostrarEncaixe={encaixeMisto} onClick={() => setSelectedLead(lead)} />
+                <LeadRow key={lead.id} lead={lead} mostrarEncaixe={encaixeMisto} agora={agora} onClick={() => setSelectedLead(lead)} />
               ))}
             </div>
           )}

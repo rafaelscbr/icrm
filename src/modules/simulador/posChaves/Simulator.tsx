@@ -8,6 +8,7 @@ import {
 } from '../shared/components'
 import { calcularPosChaves, PosChavesInput } from './calc'
 import { PosChavesCard } from './Card'
+import { mensagemPosChaves } from './mensagem'
 
 const DEFAULT: Omit<PosChavesInput, 'valorTotal'> = {
   pctChaves:    33,
@@ -114,6 +115,8 @@ export function PosChavesSimulator({ shared, onShared, corretor }: Props) {
       <PreviewColumn
         valido={result.valido}
         slugBase={shared.empreendimento}
+        mensagem={result.valido ? mensagemPosChaves(input, result, { ...shared, corretor }) : ''}
+        telefone={shared.telefone}
         renderCard={ref => (
           <PosChavesCard
             ref={ref}

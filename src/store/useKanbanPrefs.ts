@@ -13,14 +13,17 @@ import { persist } from 'zustand/middleware'
  * coluna. Por isso "manual" é o padrão — é a única ordenação que reflete o
  * que o corretor organizou à mão.
  */
-export type KanbanSort = 'manual' | 'prioridade' | 'valor' | 'etapa' | 'criacao'
+export type KanbanSort =
+  | 'manual' | 'sem_contato' | 'prioridade' | 'valor' | 'etapa' | 'criacao' | 'antigos'
 
 export const SORT_LABEL: Record<KanbanSort, string> = {
-  manual:     'Ordem manual',
-  prioridade: 'Prioridade',
-  valor:      'Maior valor',
-  etapa:      'Mais tempo na etapa',
-  criacao:    'Mais recentes',
+  manual:      'Ordem manual',
+  sem_contato: 'Mais tempo sem contato',
+  prioridade:  'Prioridade primeiro',
+  valor:       'Maior valor',
+  etapa:       'Mais tempo na etapa',
+  criacao:     'Entrada mais recente',
+  antigos:     'Entrada mais antiga',
 }
 
 interface KanbanPrefs {
