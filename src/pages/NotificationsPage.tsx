@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
-  BadgeCheck, ChevronRight,
+  BadgeCheck, ChevronRight, AlertTriangle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushPermission } from '../lib/push'
@@ -88,6 +88,8 @@ function aparencia(n: AppNotification) {
   // Voltou por conta própria: azul, o mesmo tom do "reaquecendo" no funil.
   if (n.type === 'lead_reentry')          return { icon: RefreshCw,     tom: 'info'    as const, acao: 'Abrir lead'   }
   if (n.type === 'lead_returning_client') return { icon: BadgeCheck,    tom: 'info'    as const, acao: 'Abrir lead'   }
+  // Rodízio do SLA esgotado: ninguém atendeu em 20 voltas — decisão do admin.
+  if (n.type === 'lead_sla_exhausted')    return { icon: AlertTriangle, tom: 'risco'   as const, acao: 'Abrir lead'   }
   return                                         { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
 }
 

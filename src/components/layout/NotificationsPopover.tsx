@@ -85,6 +85,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
     if (n.type === 'lead_recaptured')       return <RefreshCw  size={14} strokeWidth={1.6} className={cls} />
     if (n.type === 'lead_reentry')          return <RefreshCw  size={14} strokeWidth={1.6} className={cls} />
     if (n.type === 'lead_returning_client') return <BadgeCheck size={14} strokeWidth={1.6} className={cls} />
+    if (n.type === 'lead_sla_exhausted')    return <AlertTriangle size={14} strokeWidth={1.6} className={!n.read ? 'text-error' : 'text-t4'} />
     return <ClipboardList size={14} strokeWidth={1.6} className={cls} />
   }
 

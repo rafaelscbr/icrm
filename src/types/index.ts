@@ -890,6 +890,7 @@ export type NotificationType =
   | 'lead_recaptured'
   | 'lead_reentry'            // lead que já estava no funil preencheu o formulário de novo
   | 'lead_returning_client'   // cliente que já comprou voltou a se cadastrar
+  | 'lead_sla_exhausted'      // admin: lead girou 20x no rodízio do SLA sem 1º contato (migração 076)
 
 export interface AppNotification {
   id: string
