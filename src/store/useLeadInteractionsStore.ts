@@ -3,14 +3,23 @@ import { LeadInteraction, LeadInteractionType, LeadInteractionOutcome } from '..
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 import { supabase } from '../lib/supabase'
+import { getCurrentUserId } from '../lib/auth'
 
 interface LeadInteractionsStore {
+  /** Histórico completo por lead — alimenta a timeline, carregado sob demanda. */
   byLead:            Record<string, LeadInteraction[]>
   loaded:            Set<string>
+  /**
+   * Tudo que os corretores registraram, em todos os leads (sem as notas
+   * automáticas do sistema) — base das métricas de Metas, Corretores e do
+   * painel do funil. Só existe depois de loadAll().
+   */
+  todas:             LeadInteraction[]
   allLoaded:         boolean
   loadForLead:       (leadId: string) => Promise<void>
   loadAll:           () => Promise<void>
-  reload:            () => Promise<void>
+  /** Delta desde a última sync — reconciliação após reconexão ou volta à aba. */
+  sincronizar:       () => Promise<void>
   subscribe:         () => () => void
   add:               (data: Omit<LeadInteraction, 'id' | 'createdAt'>) => Promise<LeadInteraction>
   remove:            (id: string, leadId: string) => Promise<void>
@@ -18,29 +27,84 @@ interface LeadInteractionsStore {
   getAllInteractions: () => LeadInteraction[]
 }
 
+// ── Sync incremental de `todas` ───────────────────────────────────────────────
+// A lista desce uma vez por sessão; depois, o realtime mantém ao vivo e a
+// reconciliação busca só o que entrou (created_at) e o que foi excluído
+// (deleted_rows, migração 075). Antes, cada volta para a aba rebaixava a
+// tabela inteira — e o select sem paginação ainda cortava em 1.000 linhas.
+let inflightSync: Promise<void> | null = null
+let lastSyncAt: string | null = null
+let lastDeleteSyncAt: string | null = null
+let syncUserId: string | null = null
+// created_at vem do relógio do navegador de quem registrou — folga generosa.
+const SYNC_OVERLAP_MS = 60_000
+
+const ms = (iso: string) => new Date(iso).getTime()
+const recuar = (iso: string) => new Date(ms(iso) - SYNC_OVERLAP_MS).toISOString()
+
+function maisRecente(atual: string | null, iso: string): string {
+  return !atual || ms(iso) > ms(atual) ? iso : atual
+}
+
 export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get) => ({
   byLead: {},
   loaded: new Set(),
+  todas: [],
   allLoaded: false,
 
-  loadAll: async () => {
-    if (get().allLoaded) return
-    await get().reload()
+  loadAll: () => {
+    const userId = getCurrentUserId()
+    if (get().allLoaded && syncUserId === userId) return Promise.resolve()
+    if (inflightSync) return inflightSync
+    inflightSync = (async () => {
+      try {
+        const todas = await db.leadInteractions.fetchDosCorretores()
+        let marca: string | null = null
+        for (const i of todas) marca = maisRecente(marca, i.createdAt)
+        lastSyncAt = marca ?? new Date(0).toISOString()
+        lastDeleteSyncAt = lastSyncAt
+        syncUserId = userId
+        set({ todas, allLoaded: true })
+      } catch {
+        // erro já exibido pela camada db
+      } finally {
+        inflightSync = null
+      }
+    })()
+    return inflightSync
   },
 
-  // Recarrega tudo do banco (reconciliação após reconexão/aba voltar a ficar visível)
-  reload: async () => {
-    try {
-      const items = await db.leadInteractions.fetchAll()
-      const byLead: Record<string, LeadInteraction[]> = {}
-      items.forEach(i => {
-        if (!byLead[i.leadId]) byLead[i.leadId] = []
-        byLead[i.leadId].push(i)
-      })
-      set({ byLead, allLoaded: true })
-    } catch {
-      // error already toasted by db layer
+  sincronizar: () => {
+    if (!get().allLoaded || lastSyncAt === null) return Promise.resolve()
+    // Outro usuário na mesma aba: o cache não é dele — recomeça do zero.
+    if (syncUserId !== getCurrentUserId()) {
+      set({ todas: [], allLoaded: false })
+      return get().loadAll()
     }
+    if (inflightSync) return inflightSync
+    inflightSync = (async () => {
+      try {
+        const [novas, removidas] = await Promise.all([
+          db.leadInteractions.fetchDosCorretores(recuar(lastSyncAt!)),
+          db.leadInteractions.fetchDeletedSince(recuar(lastDeleteSyncAt ?? lastSyncAt!)),
+        ])
+        for (const i of novas)     lastSyncAt       = maisRecente(lastSyncAt, i.createdAt)
+        for (const d of removidas) lastDeleteSyncAt = maisRecente(lastDeleteSyncAt, d.deletedAt)
+        if (novas.length === 0 && removidas.length === 0) return
+        const fora = new Set(removidas.map(d => d.id))
+        set(s => {
+          const ids = new Set(s.todas.map(i => i.id))
+          return {
+            todas: [...s.todas, ...novas.filter(i => !ids.has(i.id))].filter(i => !fora.has(i.id)),
+          }
+        })
+      } catch {
+        // erro já exibido pela camada db
+      } finally {
+        inflightSync = null
+      }
+    })()
+    return inflightSync
   },
 
   loadForLead: async (leadId) => {
@@ -77,15 +141,18 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
           interactedAt: r.interacted_at as string,
           createdAt: r.created_at as string,
           brokerId: (r.broker_id as string | null) ?? undefined,
+          fromStage: (r.from_stage as LeadInteraction['fromStage'] | null) ?? undefined,
+          toStage: (r.to_stage as LeadInteraction['toStage'] | null) ?? undefined,
         }
         set(s => {
           const leadItems = s.byLead[item.leadId] ?? []
-          if (leadItems.some(i => i.id === item.id)) return s
+          const naTimeline = leadItems.some(i => i.id === item.id)
+          // Nota automática (sem autor) vai para a timeline, não para as métricas
+          const naLista = !s.allLoaded || !item.brokerId || s.todas.some(i => i.id === item.id)
+          if (naTimeline && naLista) return s
           return {
-            byLead: {
-              ...s.byLead,
-              [item.leadId]: [item, ...leadItems],
-            },
+            byLead: naTimeline ? s.byLead : { ...s.byLead, [item.leadId]: [item, ...leadItems] },
+            todas:  naLista    ? s.todas  : [...s.todas, item],
           }
         })
       })
@@ -94,20 +161,20 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
         const id = r.id as string
         const leadId = r.lead_id as string
         set(s => ({
-          byLead: {
-            ...s.byLead,
-            [leadId]: (s.byLead[leadId] ?? []).filter(i => i.id !== id),
-          },
+          byLead: leadId
+            ? { ...s.byLead, [leadId]: (s.byLead[leadId] ?? []).filter(i => i.id !== id) }
+            : s.byLead,
+          todas: s.todas.filter(i => i.id !== id),
         }))
       })
 
-    // Reconexão automática + reconciliação (mesmo padrão do canal de leads)
+    // Reconexão automática + reconciliação pelo delta (mesmo padrão do canal de leads)
     const connect = (isReconnect: boolean) => {
       if (disposed) return
       channel = buildChannel()
       channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          if (isReconnect && get().allLoaded) get().reload()
+          if (isReconnect) get().sincronizar()
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           if (disposed) return
           if (channel) { supabase.removeChannel(channel); channel = null }
@@ -129,16 +196,19 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
   // Falha → erro toastado pela camada db + throw para o caller não exibir sucesso.
   add: async (data) => {
     const now = new Date().toISOString()
-    const item: LeadInteraction = { ...data, id: generateId(), createdAt: now }
+    // brokerId explícito: é o que a camada db grava (requireBrokerId) e o que
+    // as métricas usam para atribuir a interação a quem agiu.
+    const item: LeadInteraction = { ...data, brokerId: getCurrentUserId() ?? undefined, id: generateId(), createdAt: now }
     await db.leadInteractions.upsert(item)
     set(s => {
       const leadItems = s.byLead[data.leadId] ?? []
-      if (leadItems.some(i => i.id === item.id)) return s // realtime pode ter chegado antes
+      // realtime pode ter chegado antes
+      const naTimeline = leadItems.some(i => i.id === item.id)
+      const naLista    = !s.allLoaded || s.todas.some(i => i.id === item.id)
+      if (naTimeline && naLista) return s
       return {
-        byLead: {
-          ...s.byLead,
-          [data.leadId]: [item, ...leadItems],
-        },
+        byLead: naTimeline ? s.byLead : { ...s.byLead, [data.leadId]: [item, ...leadItems] },
+        todas:  naLista    ? s.todas  : [...s.todas, item],
       }
     })
     return item
@@ -151,9 +221,10 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
         ...s.byLead,
         [leadId]: (s.byLead[leadId] ?? []).filter(i => i.id !== id),
       },
+      todas: s.todas.filter(i => i.id !== id),
     }))
   },
 
   getForLead:        (leadId) => get().byLead[leadId] ?? [],
-  getAllInteractions: ()       => Object.values(get().byLead).flat(),
+  getAllInteractions: ()       => get().todas,
 }))

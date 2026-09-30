@@ -141,7 +141,7 @@ interface PeriodData {
 }
 
 function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
-  const { getAllInteractions, loadAll, allLoaded } = useLeadInteractionsStore()
+  const { todas, loadAll, allLoaded } = useLeadInteractionsStore()
   const { getAll: getCampaignActivities, loadAll: loadCampaignActivities, allLoaded: campaignActivitiesLoaded } = useCampaignActivityStore()
   const { sales }        = useSalesStore()
   // Fonte única: disparo_logs no Supabase (por corretor via RLS)
@@ -171,7 +171,7 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
   const metrics = useMemo(() => {
     // Atribuição pela autoria: interações que o corretor fez (inclusive em leads
     // de campanha de outros) contam para ele. Sem brokerId (visão global), conta tudo.
-    const all    = brokerId ? getAllInteractions().filter(i => i.brokerId === brokerId) : getAllInteractions()
+    const all    = brokerId ? todas.filter(i => i.brokerId === brokerId) : todas
     const wStart = new Date(weekStartMs)
     const mStart = new Date(monthStartMs)
     const now    = new Date()
@@ -196,7 +196,7 @@ function usePeriodData(tasks: Task[], brokerId: string | null): PeriodData {
     const monthVisits = visitasDone.filter(t => { const d = t.completedAt ?? t.dueDate; return d && new Date(d) >= mStart }).length
 
     return { daily, weekVisits, weekProp, monthVisits, monthProp, monthSales }
-  }, [getAllInteractions, allLoaded, getCampaignActivities, campaignActivitiesLoaded, sales, tasks, weekStartMs, monthStartMs, brokerId])  // eslint-disable-line react-hooks/exhaustive-deps -- allLoaded e campaignActivitiesLoaded parecem inúteis para a regra, mas são o que faz o cálculo refazer quando os dados terminam de chegar — os getters leem do store por fora do fluxo de props
+  }, [todas, getCampaignActivities, campaignActivitiesLoaded, sales, tasks, weekStartMs, monthStartMs, brokerId])  // eslint-disable-line react-hooks/exhaustive-deps -- campaignActivitiesLoaded parece inútil para a regra, mas é o que faz o cálculo refazer quando as atividades terminam de chegar — o getter lê do store por fora do fluxo de props
 
   return {
     disparosHoje, disparosSemana, disparosMes,

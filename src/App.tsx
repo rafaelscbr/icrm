@@ -192,10 +192,11 @@ function AppRoutes() {
       if (result) supabase.realtime.setAuth(result.access_token)
       if (Date.now() - lastReconcile < 30_000) return
       lastReconcile = Date.now()
+      // Só o delta: os dois stores baixam a tabela uma vez por sessão e aqui
+      // buscam o que mudou enquanto a aba estava oculta. Recarga completa a
+      // cada volta para a aba estourou o egress em 29/09/2026.
       useLeadsStore.getState().reload()
-      if (useLeadInteractionsStore.getState().allLoaded) {
-        useLeadInteractionsStore.getState().reload()
-      }
+      useLeadInteractionsStore.getState().sincronizar()
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)

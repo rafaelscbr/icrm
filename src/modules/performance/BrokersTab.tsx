@@ -68,7 +68,7 @@ interface BrokerStats {
 export function BrokersTab() {
   const { allProfiles, fetchAllProfiles, isAdmin } = useAuthStore()
   const { leads: allLeads, load: loadLeads }       = useLeadsStore()
-  const { byLead, loadAll, allLoaded }             = useLeadInteractionsStore()
+  const { todas: allInteractions, loadAll, allLoaded } = useLeadInteractionsStore()
   const { activities: campaignActivities, loadAll: loadCampaignActivities, allLoaded: campaignActivitiesLoaded } = useCampaignActivityStore()
   const { sales, load: loadSales }                 = useSalesStore()
   const { loadBrokerSummaries }                    = useDisparosStore()
@@ -130,8 +130,6 @@ export function BrokersTab() {
   // data local correta em string, mas em timestamp é 3h antes da meia-noite local).
   const fromStr    = useMemo(() => toDateStr(from),    [from])
   const prevFromStr = useMemo(() => toDateStr(prevFrom), [prevFrom])
-
-  const allInteractions = useMemo(() => Object.values(byLead).flat(), [byLead])
 
   const stats = useMemo((): BrokerStats[] => {
     return brokers.map(broker => {

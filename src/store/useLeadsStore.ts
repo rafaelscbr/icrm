@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create, type StoreApi } from 'zustand'
 import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
@@ -51,6 +51,113 @@ const STAGE_LABEL: Record<string, string> = {
   visita: 'Visita', proposta: 'Proposta', venda: 'Venda',
 }
 
+// ── Sync incremental ──────────────────────────────────────────────────────────
+// A tabela inteira (~2,2 MB) desce UMA vez por sessão. Depois disso load() e
+// reload() buscam só o que mudou desde a marca d'água (updated_at) e o que saiu
+// do alcance desde a última sync (deleted_rows: exclusão ou troca de dono —
+// migração 075). Antes, cada volta para a aba e cada reconexão do realtime
+// baixava tudo de novo: o corretor alterna com o WhatsApp o dia inteiro, e foi
+// isso que estourou o egress em 29/09/2026.
+//
+// Carga completa de novo só quando o usuário muda (logout → login de outra
+// pessoa na mesma aba): o cache é de quem estava logado, e a RLS é por dono.
+let inflightSync: Promise<void> | null = null
+let lastSyncAt: string | null = null
+let lastDeleteSyncAt: string | null = null
+let syncUserId: string | null = null
+// Folga generosa: updated_at pode vir do relógio do navegador de quem gravou.
+// Re-baixar os leads do último minuto custa poucas linhas.
+const SYNC_OVERLAP_MS = 60_000
+
+const ms = (iso: string) => new Date(iso).getTime()
+const recuar = (iso: string) => new Date(ms(iso) - SYNC_OVERLAP_MS).toISOString()
+
+function sincronizar(
+  set: StoreApi<LeadsStore>['setState'],
+  get: StoreApi<LeadsStore>['getState'],
+  explicito: boolean,
+): Promise<void> {
+  if (inflightSync) return inflightSync
+  const userId = getCurrentUserId()
+  const completo = lastSyncAt === null || syncUserId !== userId
+
+  // reload() é reconciliação: se ninguém nesta sessão abriu uma tela de
+  // leads ainda, não é a volta para a aba que vai baixar a tabela inteira.
+  if (completo && !explicito) return Promise.resolve()
+
+  inflightSync = (async () => {
+    if (explicito) {
+      // Spinner só quando não há nada em tela — revisitas mostram o dado na
+      // hora e sincronizam em segundo plano.
+      if (completo && syncUserId !== userId) set({ leads: [] })
+      if (completo || get().leads.length === 0) set({ loading: true })
+      set({ erro: null })
+    }
+
+    try {
+      if (completo) {
+        const leads = await db.leads.fetchAll()
+        let marca: string | null = null
+        for (const l of leads) if (!marca || ms(l.updatedAt) > ms(marca)) marca = l.updatedAt
+        lastSyncAt = marca ?? new Date(0).toISOString()
+        lastDeleteSyncAt = lastSyncAt
+        syncUserId = userId
+        set({ leads })
+        return
+      }
+
+      const [changed, removed] = await Promise.all([
+        db.leads.fetchSince(recuar(lastSyncAt!)),
+        db.leads.fetchDeletedSince(recuar(lastDeleteSyncAt ?? lastSyncAt!)),
+      ])
+      if (changed.length === 0 && removed.length === 0) return
+
+      for (const l of changed) if (ms(l.updatedAt) > ms(lastSyncAt!)) lastSyncAt = l.updatedAt
+      for (const d of removed) {
+        if (!lastDeleteSyncAt || ms(d.deletedAt) > ms(lastDeleteSyncAt)) lastDeleteSyncAt = d.deletedAt
+      }
+
+      set(s => {
+        // 1. O que mudou no banco entra (ou substitui). Se a versão em tela é
+        //    mais nova — gravação desta aba que o delta em voo ainda não viu —,
+        //    ela fica: o eco do realtime confirma em seguida.
+        const porId = new Map(s.leads.map(l => [l.id, l]))
+        for (const l of changed) {
+          const atual = porId.get(l.id)
+          if (!atual || ms(l.updatedAt) >= ms(atual.updatedAt)) porId.set(l.id, l)
+        }
+        // 2. O que saiu do alcance sai da tela — só se o registro de saída é
+        //    MAIS NOVO que a versão local. Quem ganhou o lead numa troca de
+        //    dono recebe a linha com o mesmo instante do registro e a mantém.
+        for (const d of removed) {
+          const atual = porId.get(d.id)
+          if (atual && ms(d.deletedAt) > ms(atual.updatedAt)) porId.delete(d.id)
+        }
+        // Mantém a ordem atual; novos entram no topo (a lista é por created_at desc).
+        const vistos = new Set<string>()
+        const ordenados: Lead[] = []
+        for (const l of s.leads) {
+          const v = porId.get(l.id)
+          if (v) { ordenados.push(v); vistos.add(l.id) }
+        }
+        const novos = [...porId.values()]
+          .filter(l => !vistos.has(l.id))
+          .sort((a, b) => ms(b.createdAt) - ms(a.createdAt))
+        return { leads: [...novos, ...ordenados] }
+      })
+    } catch (err) {
+      console.error(`[leads] ${explicito ? 'load' : 'reload'}:`, err)
+      // A tela PRECISA saber que falhou. Sem isto ela mostraria o estado vazio
+      // e afirmaria que não existe dado — ver EstadoTela.
+      if (explicito) set({ erro: mensagemDeErro(err) })
+    } finally {
+      if (explicito) set({ loading: false })
+      inflightSync = null
+    }
+  })()
+  return inflightSync
+}
+
 export const useLeadsStore = create<LeadsStore>((set, get) => ({
   leads: [],
   loading: false,
@@ -58,31 +165,11 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
   visitaSuggestLeadId: null,
   clearVisitaSuggest: () => set({ visitaSuggestLeadId: null }),
 
-  load: async () => {
-    set({ loading: true, erro: null })
-    try {
-      const leads = await db.leads.fetchAll()
-      set({ leads })
-    } catch (err) {
-      // A tela PRECISA saber que falhou. Sem isto ela mostraria o estado vazio
-      // e afirmaria que não existe dado — ver EstadoTela.
-      console.error('[leads] load:', err)
-      set({ erro: mensagemDeErro(err) })
-    } finally {
-      set({ loading: false })
-    }
-  },
+  load: () => sincronizar(set, get, true),
 
-  // Reconciliação silenciosa — atualiza os dados sem ligar a flag `loading`,
-  // para a tela não trocar pelo spinner nem perder o contexto do usuário.
-  reload: async () => {
-    try {
-      const leads = await db.leads.fetchAll()
-      set({ leads })
-    } catch (err) {
-      console.error('[leads] reload:', err)
-    }
-  },
+  // Reconciliação silenciosa — delta sem ligar a flag `loading`, para a tela
+  // não trocar pelo spinner nem perder o contexto do usuário.
+  reload: () => sincronizar(set, get, false),
 
   subscribe: () => {
     const channelName = 'leads-realtime'
@@ -90,6 +177,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
     let disposed = false
     let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let deltaTimer: ReturnType<typeof setTimeout> | null = null
     let channel: ReturnType<typeof buildChannel> | null = null
 
     const buildChannel = () => supabase
@@ -137,6 +225,13 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'leads' }, (payload) => {
         const r = payload.new as Record<string, unknown>
+        // Lead que não está em tela e chegou por UPDATE: acabou de ser
+        // transferido para mim (ping-pong do SLA, transferência manual). O
+        // payload não traz tudo que o card precisa — o delta busca a linha.
+        if (!get().leads.some(l => l.id === r.id)) {
+          if (!deltaTimer) deltaTimer = setTimeout(() => { deltaTimer = null; get().reload() }, 500)
+          return
+        }
         set(s => ({
           leads: s.leads.map(l => l.id !== r.id ? l : {
             ...l,
@@ -200,6 +295,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     return () => {
       disposed = true
       if (retryTimer) clearTimeout(retryTimer)
+      if (deltaTimer) clearTimeout(deltaTimer)
       if (channel) supabase.removeChannel(channel)
     }
   },

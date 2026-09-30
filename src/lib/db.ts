@@ -1155,6 +1155,10 @@ export const db = {
     // antigos — descartados sumiam da contagem e um lead ATIVO de abril ficou
     // invisível no funil. O filtro por data de entrada depende deles.
     fetchAll: () => fetchAllPaginated<LeadRow, Lead>('leads', toLead),
+    // Delta do sync incremental (migração 075). fetchDeletedSince traz também
+    // os leads que trocaram de dono — ver useLeadsStore.
+    fetchSince:        (sinceIso: string) => fetchSince<LeadRow, Lead>('leads', sinceIso, toLead),
+    fetchDeletedSince: (sinceIso: string) => fetchDeletedSince('leads', sinceIso),
     upsert:   (l: Lead) => upsertOne('leads', fromLead(l)),
     delete:   (id: string) => deleteOne('leads', id),
     /**
@@ -1258,17 +1262,45 @@ export const db = {
       }
       return (data as LeadInteractionRow[]).map(toLeadInteraction)
     },
-    fetchAll: async (): Promise<LeadInteraction[]> => {
-      const { data, error } = await supabase
-        .from('lead_interactions')
-        .select('*')
-        .order('interacted_at', { ascending: false })
-      if (error) {
-        toast.error(`Erro ao carregar interações: ${error.message}`)
-        throw error
+    /**
+     * O que os corretores registraram, em todos os leads — base das métricas
+     * de Metas, Corretores e do painel do funil.
+     *
+     * Fica de fora o que não tem autor (broker_id nulo): as notas automáticas
+     * do sistema, ~65% da tabela, quase todas "Transferido automaticamente".
+     * Nenhuma métrica conta ação do sistema como ação do corretor.
+     *
+     * Paginado: antes era um select sem range, e o PostgREST cortava em 1.000
+     * linhas — as métricas saíam de uma fração da tabela.
+     *
+     * `desde` (created_at) faz o delta do sync incremental.
+     */
+    fetchDosCorretores: async (desde?: string): Promise<LeadInteraction[]> => {
+      const PAGE = 1000
+      const rows: LeadInteractionRow[] = []
+      let from = 0
+      while (true) {
+        let q = supabase
+          .from('lead_interactions')
+          .select('*')
+          .not('broker_id', 'is', null)
+        if (desde) q = q.gt('created_at', desde)
+        const { data, error } = await q
+          .order('created_at', { ascending: true })
+          .order('id',         { ascending: true })
+          .range(from, from + PAGE - 1)
+          .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
+        if (error) {
+          toast.error(`Erro ao carregar interações: ${error.message}`)
+          throw error
+        }
+        rows.push(...(data as LeadInteractionRow[]))
+        if (data.length < PAGE) break
+        from += PAGE
       }
-      return (data as LeadInteractionRow[]).map(toLeadInteraction)
+      return rows.map(toLeadInteraction)
     },
+    fetchDeletedSince: (sinceIso: string) => fetchDeletedSince('lead_interactions', sinceIso),
     upsert: (i: LeadInteraction) => upsertOne('lead_interactions', fromLeadInteraction(i)),
     delete: (id: string)         => deleteOne('lead_interactions', id),
   },

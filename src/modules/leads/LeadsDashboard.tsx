@@ -63,7 +63,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   const active    = useMemo(() => leads.filter(l => !l.discardReason && !l.closedAt), [leads])
   const discarded = useMemo(() => leads.filter(l => !!l.discardReason), [leads])
 
-  const { loadAll, byLead, allLoaded } = useLeadInteractionsStore()
+  const { loadAll, todas, allLoaded } = useLeadInteractionsStore()
   useEffect(() => { loadAll() }, [loadAll])
 
   // Leads Meta Ads com relógio de SLA rodando (1º contato pendente)
@@ -92,8 +92,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
 
     // Mapa: etapa → quantos foram descartados nela (via interaction type='discard')
     const discardedByStage: Record<string, number> = {}
-    const allInteractions = Object.values(byLead).flat()
-    allInteractions
+    todas
       .filter(i => i.type === 'discard')
       .forEach(i => {
         // description: "Descartado em Atendimento — motivo"
@@ -117,7 +116,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       const discardedHere = discardedByStage[stage] ?? 0
       return { stage, count, vgv, parados, dropRate, discardedHere, conf: STAGE_CONFIG[stage] }
     })
-  }, [active, discarded, byLead])
+  }, [active, discarded, todas])
 
   // ── BLOCO 3 — Priority Ranking ──────────────────────────────────────────────
   const priorityList = useMemo(() =>
@@ -182,7 +181,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   const radarData = useMemo(() => {
     // Build map: leadId → most recent interactedAt
     const lastByLead: Record<string, string> = {}
-    Object.values(byLead).flat().forEach(i => {
+    todas.forEach(i => {
       if (!lastByLead[i.leadId] || i.interactedAt > lastByLead[i.leadId]) {
         lastByLead[i.leadId] = i.interactedAt
       }
@@ -198,20 +197,19 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       const coldPct   = inStage.length > 0 ? (cold.length / inStage.length) * 100 : 0
       return { stage, label: STAGE_CONFIG[stage].label, conf: STAGE_CONFIG[stage], total: inStage.length, cold: cold.length, coldPct, vgvAtRisk }
     })
-  }, [active, byLead])
+  }, [active, todas])
 
   // ── BLOCO 6 — Pulso Comercial ────────────────────────────────────────────────
   const pulsoData = useMemo(() => {
-    const allInteractions = Object.values(byLead).flat()
     return Array.from({ length: 14 }, (_, i) => {
       const d = new Date()
       d.setDate(d.getDate() - (13 - i))
       const dateStr = d.toISOString().split('T')[0]
       const label   = i === 13 ? 'Hoje' : i === 12 ? 'Ontem' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-      const count   = allInteractions.filter(x => x.interactedAt.startsWith(dateStr)).length
+      const count   = todas.filter(x => x.interactedAt.startsWith(dateStr)).length
       return { dateStr, label, count }
     })
-  }, [byLead])
+  }, [todas])
   const maxPulso = Math.max(1, ...pulsoData.map(d => d.count))
 
   // ─────────────────────────────────────────────────────────────────────────────

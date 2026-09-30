@@ -42,6 +42,15 @@ let lastSyncAt: string | null = null
 let lastDeleteSyncAt: string | null = null
 const SYNC_OVERLAP_MS = 2_000
 
+// Ids já pedidos por loadByIds nesta sessão — encontrados ou não. Um id que a
+// RLS esconde (contato de outro corretor) nunca entra no store; sem esta
+// memória ele continuava "faltando" e a tela de Leads repedia a mesma lista a
+// cada evento de lead — 230 vezes num dia só (incidente de egress, 29/09/2026).
+// Custo aceito: contato que só passa a ser visível depois (trocou de dono)
+// aparece no próximo carregamento da página. Falha de rede libera o id de novo.
+let idsPedidos = new Set<string>()
+let idsPedidosUserId: string | null = null
+
 export const useContactsStore = create<ContactsStore>((set, get) => ({
   contacts: [],
   loading: false,
@@ -146,8 +155,12 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
   // este carregamento é parcial, e avançar `lastSyncAt` faria o delta seguinte
   // pular os contatos que nunca foram baixados.
   loadByIds: async (ids) => {
-    const faltantes = ids.filter(id => id && !get().contacts.some(c => c.id === id))
+    const userId = getCurrentUserId()
+    if (idsPedidosUserId !== userId) { idsPedidos = new Set(); idsPedidosUserId = userId }
+    const presentes = new Set(get().contacts.map(c => c.id))
+    const faltantes = [...new Set(ids)].filter(id => id && !presentes.has(id) && !idsPedidos.has(id))
     if (faltantes.length === 0) return
+    faltantes.forEach(id => idsPedidos.add(id))
     try {
       const novos = await db.contacts.fetchByIds(faltantes)
       if (novos.length === 0) return
@@ -156,6 +169,7 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
         return { contacts: [...s.contacts, ...novos.filter(c => !existentes.has(c.id))] }
       })
     } catch (err) {
+      faltantes.forEach(id => idsPedidos.delete(id))
       console.error('[contacts] loadByIds:', err)
     }
   },
