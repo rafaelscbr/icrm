@@ -17,6 +17,10 @@ interface SalesStore {
   load:    () => Promise<void>
   subscribe: () => () => void
   add:     (data: Omit<Sale, 'id' | 'createdAt'>) => Sale
+  /** Grava no banco e só então entra no estado — para quem vai referenciar a venda em seguida */
+  create:  (data: Omit<Sale, 'id' | 'createdAt'>) => Promise<Sale>
+  /** Remove do banco e do estado, esperando a confirmação */
+  discard: (id: string) => Promise<void>
   update:  (id: string, data: Partial<Sale>) => void
   remove:  (id: string) => void
   getByPeriod:      (start: string, end: string) => Sale[]
@@ -105,6 +109,22 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
     set(s => ({ sales: sortByDate([sale, ...s.sales]) }))
     db.sales.upsert(sale).catch(err => console.error('[sales] add:', err))
     return sale
+  },
+
+  // O lead ganho grava sale_id apontando para esta venda (FK). Com o add()
+  // otimista, o lead podia chegar ao banco antes da venda — e uma falha na
+  // venda sumia no console, com o lead já encerrado.
+  create: async (data) => {
+    const sale: Sale = { ...data, id: generateId(), createdAt: new Date().toISOString() }
+    await db.sales.upsert(sale)
+    // O INSERT do realtime pode chegar antes desta linha
+    set(s => s.sales.some(x => x.id === sale.id) ? s : { sales: sortByDate([sale, ...s.sales]) })
+    return sale
+  },
+
+  discard: async (id) => {
+    await db.sales.delete(id)
+    set(s => ({ sales: s.sales.filter(s => s.id !== id) }))
   },
 
   update: (id, data) => {

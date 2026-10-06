@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -76,7 +77,13 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
 
   if (!isOpen) return null
 
-  return (
+  // Portal no <body>: `fixed inset-0` só cobre a tela se nenhum ancestral tiver
+  // transform/filter. O card do Kanban tem (hover:-translate-y-px, arraste do
+  // dnd-kit) e ainda overflow-hidden — o "Concluir venda" abria preso dentro do
+  // card, invisível, com a rolagem da página já travada. Eventos React seguem
+  // subindo pela árvore de componentes, então quem envolve o modal com
+  // stopPropagation continua precisando disso.
+  return createPortal(
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fundo do diálogo: fechar por teclado é o Escape, tratado acima
     <div
       className="fixed inset-0 z-50 flex items-end lg:items-center justify-center lg:p-4"
@@ -139,6 +146,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

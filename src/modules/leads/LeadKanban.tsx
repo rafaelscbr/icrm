@@ -59,9 +59,11 @@ function orderBetween(above: Lead | null, below: Lead | null): number {
 // ─── Card sortável ────────────────────────────────────────────────────────────
 
 function LeadCard({
-  lead, onClick, isOverlay = false, isSaving = false, dense = false, financeMode = false,
+  lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, financeMode = false,
 }: {
   lead: Lead; onClick: () => void
+  /** Abre o "Concluir venda" — o modal mora no Kanban, não no card */
+  onConclude?: () => void
   isOverlay?: boolean; isSaving?: boolean
   /** Densidade compacta — esconde o contexto comercial e aperta o espaçamento. */
   dense?: boolean
@@ -74,7 +76,6 @@ function LeadCard({
   const { properties } = usePropertiesStore()
   const { tasks } = useTasksStore()
   const { add: addInteraction } = useLeadInteractionsStore()
-  const [showConclude, setShowConclude] = useState(false)
 
   // Visão admin global: identifica o corretor responsável em cada card
   const brokerName = isAdmin && !viewAsBrokerId && lead.brokerId
@@ -365,7 +366,7 @@ function LeadCard({
       <div className="mt-2.5 pt-2.5 border-t border-line flex items-center gap-1.5">
         {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
           <button
-            onClick={e => { e.stopPropagation(); setShowConclude(true) }}
+            onClick={e => { e.stopPropagation(); onConclude?.() }}
             className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-brand-fill-text bg-brand-fill hover:bg-brand-fill-hover rounded-[10px] transition-all duration-150 active:scale-[0.98]"
             title="Concluir a venda e registrar no faturamento"
           >
@@ -408,13 +409,6 @@ function LeadCard({
           <Phone size={12} strokeWidth={1.6} />
         </a>
       </div>
-
-      {showConclude && (
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro
-        <div onClick={e => e.stopPropagation()}>
-          <ConcludeSaleModal lead={lead} onClose={() => setShowConclude(false)} />
-        </div>
-      )}
     </div>
   )
 }
@@ -422,7 +416,7 @@ function LeadCard({
 // ─── Coluna do kanban ─────────────────────────────────────────────────────────
 
 function KanbanColumn({
-  stage, leads, total, onCardClick, isActiveDragTarget, savingId, dense, financeMode,
+  stage, leads, total, onCardClick, onConclude, isActiveDragTarget, savingId, dense, financeMode,
   onFiltrarSemContato, filtroSemContatoAtivo,
 }: {
   stage: LeadFunnelStage
@@ -430,6 +424,7 @@ function KanbanColumn({
   /** total da etapa sem filtro — só vem quando há recorte aplicado */
   total?: number
   onCardClick: (lead: Lead) => void
+  onConclude: (lead: Lead) => void
   isActiveDragTarget: boolean
   savingId: string | null
   dense: boolean
@@ -556,6 +551,7 @@ function KanbanColumn({
               <LeadCard
                 key={lead.id} lead={lead}
                 onClick={() => onCardClick(lead)}
+                onConclude={() => onConclude(lead)}
                 isSaving={savingId === lead.id}
                 dense={dense} financeMode={financeMode}
               />
@@ -600,6 +596,11 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
     setSearchParams(next, { replace: !l })
   }
   const [savingId, setSavingId] = useState<string | null>(null)
+  // "Concluir venda" vive aqui, fora do card: dentro dele o modal herdava o
+  // transform e o overflow-hidden do card. Guardamos o id, não o lead, para o
+  // modal sempre ler a versão atual do store.
+  const [concludeId, setConcludeId] = useState<string | null>(null)
+  const concludeLead = concludeId ? leads.find(l => l.id === concludeId) : null
   const { dense, financeMode, sort, setDense, setFinanceMode } = useKanbanPrefs()
 
   // O Kanban baixava a tabela inteira de interações (~5,4 MB, e ainda cortada
@@ -674,6 +675,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
         try {
           await setStage(leadId, newStage)
           toast.success(`Lead movido para ${STAGE_CONFIG[newStage].label}`)
+          seguirParaConclusao(draggedLead, newStage)
         } catch { /* erro já toastado — card permanece na etapa original */ }
         finally { setSavingId(null) }
       }
@@ -711,13 +713,22 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
     setSavingId(leadId)
     try {
       // Cross-column: muda a etapa primeiro, depois a posição
-      if (draggedLead.funnelStage !== targetStage) {
+      const mudouEtapa = draggedLead.funnelStage !== targetStage
+      if (mudouEtapa) {
         await setStage(leadId, targetStage)
         toast.success(`Lead movido para ${STAGE_CONFIG[targetStage].label}`)
       }
       await reorder(leadId, orderBetween(above, below))
+      if (mudouEtapa) seguirParaConclusao(draggedLead, targetStage)
     } catch { /* erro já toastado — posição original mantida */ }
     finally { setSavingId(null) }
+  }
+
+  // Soltar em Venda é a intenção de fechar o negócio: o próximo passo (valor e
+  // data) abre na hora. Cancelar deixa o lead em Venda, com o botão "Concluir
+  // venda" no card para terminar depois.
+  function seguirParaConclusao(lead: Lead, stage: LeadFunnelStage) {
+    if (stage === 'venda' && !lead.closedAt) setConcludeId(lead.id)
   }
 
   return (
@@ -796,6 +807,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
               onFiltrarSemContato={onFiltrarSemContato}
               filtroSemContatoAtivo={filtroSemContatoAtivo}
               onCardClick={setSelectedLead}
+              onConclude={l => setConcludeId(l.id)}
               dense={dense} financeMode={financeMode}
               isActiveDragTarget={overStage === stage && !!activeId}
               savingId={savingId}
@@ -807,6 +819,10 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
           {activeLead ? <LeadCard lead={activeLead} onClick={() => {}} isOverlay dense={dense} /> : null}
         </DragOverlay>
       </DndContext>
+
+      {concludeLead && !concludeLead.closedAt && (
+        <ConcludeSaleModal lead={concludeLead} onClose={() => setConcludeId(null)} />
+      )}
     </>
   )
 }

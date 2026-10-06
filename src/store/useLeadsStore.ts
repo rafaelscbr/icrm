@@ -482,18 +482,27 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       : undefined
     const propertyName = property?.name ?? lead.propertyName ?? lead.name
 
-    // Cria o registro de venda (entra no VGL do mês da data)
-    const sale = useSalesStore.getState().add({
-      clientId: contactId,
-      propertyId: lead.propertyId,
-      propertyName,
-      date,
-      value,
-      type: 'off_plan',
-      commissionPct: 5,
-      brokerPct: 40,
-      brokerId: lead.brokerId ?? undefined,
-    })
+    // Cria o registro de venda (entra no VGL do mês da data). Espera o banco:
+    // o lead abaixo referencia a venda por FK.
+    const sales = useSalesStore.getState()
+    let sale
+    try {
+      sale = await sales.create({
+        clientId: contactId,
+        propertyId: lead.propertyId,
+        propertyName,
+        date,
+        value,
+        type: 'off_plan',
+        commissionPct: 5,
+        brokerPct: 40,
+        brokerId: lead.brokerId ?? undefined,
+      })
+    } catch (err) {
+      console.error('[leads] concludeSale sale:', err)
+      toast.error('Erro ao registrar a venda. Nada foi alterado — tente novamente.')
+      throw err
+    }
 
     // Encerra o lead — sai do funil ativo
     const updated = {
@@ -510,7 +519,14 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       set(s => ({ leads: s.leads.map(l => l.id === id ? updated : l) }))
     } catch (err) {
       console.error('[leads] concludeSale:', err)
-      toast.error('Erro ao concluir a venda. Verifique sua conexão e tente novamente.')
+      // Desfaz a venda recém-criada: sem isso, tentar de novo duplicaria o VGL.
+      try {
+        await sales.discard(sale.id)
+        toast.error('Erro ao concluir a venda. Nada foi alterado — tente novamente.')
+      } catch (undoErr) {
+        console.error('[leads] concludeSale undo:', undoErr)
+        toast.error('Erro ao encerrar o lead, e a venda já foi registrada em Vendas. Confira lá antes de tentar de novo.')
+      }
       throw err
     }
 
