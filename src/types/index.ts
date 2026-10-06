@@ -524,7 +524,7 @@ export interface Goal {
 // 'campanha' = Prospecção · Disparo. O slug ficou por causa do histórico: são
 // centenas de leads gravados com ele. Só o rótulo mudou.
 export type LeadOrigin       = 'felicita' | 'meta_ads' | 'portal' | 'offline' | 'campanha'
-                             | 'indicacao' | 'prospeccao_ligacao'
+                             | 'indicacao' | 'prospeccao_ligacao' | 'site'
 export type LeadFunnelStage  = 'lead' | 'followup' | 'atendimento' | 'visita' | 'proposta' | 'venda'
 export type LeadDiscardReason = string
 export type LeadInteractionType  = 'ligacao' | 'whatsapp' | 'email' | 'visita' | 'reuniao' | 'nota' | 'stage_change' | 'discard' | 'tarefa'

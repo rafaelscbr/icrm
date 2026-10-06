@@ -25,6 +25,7 @@ const ORIGEM_LABEL: Record<string, string> = {
   campanha:  'Prospecção · Disparo',
   indicacao: 'Indicação',
   prospeccao_ligacao: 'Prospecção · Ligação',
+  site: 'Site',
 }
 
 /**

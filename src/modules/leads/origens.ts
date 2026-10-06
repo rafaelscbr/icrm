@@ -1,4 +1,4 @@
-import { Sparkles, Smartphone, Globe, Handshake, Megaphone, UserPlus, PhoneOutgoing } from 'lucide-react'
+import { Sparkles, Smartphone, Globe, Handshake, Megaphone, UserPlus, PhoneOutgoing, MousePointerClick } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { LeadOrigin } from '../../types'
 
@@ -18,8 +18,10 @@ export const ORIGEM_META: Record<LeadOrigin, { label: string; icon: LucideIcon }
   campanha: { label: 'Campanha', icon: Megaphone  },
   indicacao: { label: 'Indicação', icon: UserPlus },
   prospeccao_ligacao: { label: 'Ligação ativa', icon: PhoneOutgoing },
+  // Formulários do souzaimobi.com.br (migração 077, Edge Function site-leads)
+  site: { label: 'Site', icon: MousePointerClick },
 }
 
 export const ORIGENS: LeadOrigin[] = [
-  'meta_ads', 'felicita', 'portal', 'offline', 'campanha', 'indicacao', 'prospeccao_ligacao',
+  'meta_ads', 'felicita', 'portal', 'offline', 'campanha', 'indicacao', 'prospeccao_ligacao', 'site',
 ]
