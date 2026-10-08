@@ -6,7 +6,7 @@ import {
   Sparkles, Smartphone, Globe, Handshake, Megaphone, CheckCircle2, Filter,
 } from 'lucide-react'
 import { SlaBadge, slaActive } from './SlaBadge'
-import { Lead, LeadFunnelStage } from '../../types'
+import { Lead, LeadFunnelStage, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { formatCurrency } from '../../lib/formatters'
 import { STAGE_CONFIG } from './LeadKanban'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
@@ -156,7 +156,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   // ── BLOCO 4 — Follow-up Intelligence ────────────────────────────────────────
   const followupLeads = useMemo(() => active.filter(l => l.funnelStage === 'followup'), [active])
   const followupSteps = useMemo(() =>
-    [0, 1, 2, 3, 4, 5].map(step => ({
+    Array.from({ length: MAX_TENTATIVAS_FOLLOWUP + 1 }, (_, step) => ({
       step,
       count: followupLeads.filter(l => l.followupStep === step).length,
     })), [followupLeads])
@@ -595,7 +595,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
                 const label    = i === 0 ? 'Nunca contactado' : `${i}ª mensagem enviada`
                 const barPct   = maxFu > 0 ? (item.count / maxFu) * 100 : 0
                 const next     = followupSteps[i + 1]?.count ?? 0
-                const dropPct  = i < 5 && item.count > 0
+                const dropPct  = i < MAX_TENTATIVAS_FOLLOWUP && item.count > 0
                   ? Math.round(((item.count - next) / item.count) * 100)
                   : null
                 const isRisk   = i === 0 && item.count > 0

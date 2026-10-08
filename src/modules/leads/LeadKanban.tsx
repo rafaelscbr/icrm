@@ -16,7 +16,7 @@ import {
   Wifi, WifiOff, Trophy, Rows2, Rows3, DollarSign,
   Inbox, RefreshCw, BadgeCheck, X,
 } from 'lucide-react'
-import { Lead, LeadFunnelStage } from '../../types'
+import { Lead, LeadFunnelStage, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -103,7 +103,7 @@ function LeadCard({
   async function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
     window.open(whatsappUrl(displayPhone), '_blank')
-    const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
+    const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, MAX_TENTATIVAS_FOLLOWUP)
     try {
       await advanceFollowup(lead.id)
       await addInteraction({
@@ -307,8 +307,8 @@ function LeadCard({
       {/* Tentativas de followup — só onde a cadência existe */}
       {lead.funnelStage === 'followup' && !dense && (
         <div className="mt-2.5">
-          <div className="flex items-center gap-1" role="group" aria-label={`${lead.followupStep} de 5 tentativas`}>
-            {[1, 2, 3, 4, 5].map(step => (
+          <div className="flex items-center gap-1" role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
+            {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
               <button
                 key={step}
                 type="button"

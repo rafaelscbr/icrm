@@ -494,6 +494,9 @@ export interface DailyLog {
   updatedAt: string
 }
 
+/** Quantas vezes o corretor tenta falar com o lead no followup antes de a cadência acabar. */
+export const MAX_TENTATIVAS_FOLLOWUP = 10
+
 export const DAILY_TARGETS = {
   newLeads:   5,
   ownerCalls: 5,
@@ -550,7 +553,7 @@ export interface Lead {
   email?: string
   origin: LeadOrigin
   funnelStage: LeadFunnelStage
-  followupStep: number        // 1-5 quando funnelStage === 'followup'; 0 = não iniciado
+  followupStep: number        // 1..MAX_TENTATIVAS_FOLLOWUP quando funnelStage === 'followup'; 0 = não iniciado
   discardReason?: LeadDiscardReason
   discardedAt?: string
   propertyId?: string

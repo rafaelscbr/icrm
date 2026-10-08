@@ -1,5 +1,5 @@
 import { create, type StoreApi } from 'zustand'
-import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin } from '../types'
+import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin, MAX_TENTATIVAS_FOLLOWUP } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 import { mensagemDeErro } from '../lib/erros'
@@ -418,7 +418,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       nextStage = 'followup'
       nextStep = 1
     } else if (lead.funnelStage === 'followup') {
-      if (lead.followupStep < 5) {
+      if (lead.followupStep < MAX_TENTATIVAS_FOLLOWUP) {
         nextStep = lead.followupStep + 1
       }
     }

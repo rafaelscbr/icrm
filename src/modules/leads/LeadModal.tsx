@@ -8,7 +8,7 @@ import {
   Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight, Timer,
   RefreshCw, BadgeCheck,
 } from 'lucide-react'
-import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType } from '../../types'
+import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { useTasksStore } from '../../store/useTasksStore'
 import { NextStepSuggestion } from './NextStepSuggestion'
@@ -81,7 +81,7 @@ function getNextAction(stage: LeadFunnelStage, followupStep: number, daysSince: 
   }
   const msg: Partial<Record<LeadFunnelStage, string>> = {
     lead:        'Fazer primeiro contato via WhatsApp',
-    followup:    `Enviar ${Math.min(followupStep + 1, 5)}ª mensagem de follow-up`,
+    followup:    `Enviar ${Math.min(followupStep + 1, MAX_TENTATIVAS_FOLLOWUP)}ª mensagem de follow-up`,
     atendimento: 'Qualificar necessidades e apresentar o imóvel ideal',
     visita:      'Confirmar visita e preparar apresentação do imóvel',
     proposta:    'Aguardar retorno — acionar se passar de 2 dias',
@@ -202,7 +202,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   // Toast de sucesso só após confirmação do banco — erros já são toastados pela camada db
   async function handleWhatsApp() {
     window.open(whatsappUrl(contact?.phone ?? lead.phone), '_blank')
-    const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, 5)
+    const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, MAX_TENTATIVAS_FOLLOWUP)
     try {
       await advanceFollowup(lead.id)
       await addInteraction({ leadId: lead.id, type: 'whatsapp', description: 'Interagiu via WhatsApp', interactedAt: new Date().toISOString() })
@@ -623,7 +623,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <span className="text-[11px] text-t4">clique para marcar</span>
                 </div>
                 <div className="flex items-center gap-1.5" role="group" aria-label="Tentativas de contato">
-                  {[1, 2, 3, 4, 5].map(step => (
+                  {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
                     <button
                       key={step}
                       onClick={async () => {
@@ -646,7 +646,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   ))}
                 </div>
                 <p className="text-xs text-t4 mt-1.5">
-                  {lead.followupStep === 0 ? 'Nenhuma tentativa registrada' : `${lead.followupStep} de 5 tentativas realizadas`}
+                  {lead.followupStep === 0 ? 'Nenhuma tentativa registrada' : `${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas realizadas`}
                 </p>
               </div>
             )}
