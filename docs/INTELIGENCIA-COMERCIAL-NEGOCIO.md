@@ -312,7 +312,7 @@ As duas convivem. Urgência manda no *quando*; a nova camada manda no *o quê*.
 
 | Situação | Sugestão |
 |---|---|
-| Frio no Follow-up, não respondeu 2-3 tentativas | Estratégia de reganho — trocar canal, trocar horário, trocar abordagem |
+| Frio no Follow-up, não respondeu 5+ tentativas | Estratégia de reganho — trocar canal, trocar horário, trocar abordagem |
 | Morno em Atendimento | Criar conexão e rapport, encontrar o produto ideal, **converter em videochamada ou visita no decorado** |
 | Enrolando no Atendimento, ou se cadastrou em outro anúncio | Reganhar — ele continua procurando, só não com você |
 | **Visita feita e parado** | Identificar o produto ideal, buscar condição melhor de pagamento |

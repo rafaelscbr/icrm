@@ -59,8 +59,8 @@ export function computeNextPlay(lead: Lead, intel?: LeadIntel): Play | null {
     }
   }
 
-  // ── Sem resposta a 3+ tentativas ─────────────────────────────────────────
-  if (lead.followupStep >= 3 && (etapa === 'lead' || etapa === 'followup')) {
+  // ── Sem resposta a 5+ tentativas ─────────────────────────────────────────
+  if (lead.followupStep >= 5 && (etapa === 'lead' || etapa === 'followup')) {
     return {
       title: 'Trocar a abordagem, não repetir',
       detail: `${lead.followupStep} tentativas sem resposta. Mais uma mensagem igual não muda o resultado — trocar canal, horário ou motivo do contato.`,
