@@ -1,6 +1,7 @@
 import { it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { DiretoSimulator } from '../modules/simulador/direto/Simulator'
+import { AssociativoSimulator } from '../modules/simulador/associativo/Simulator'
 
 it('modo individual: converte, adiciona com +, remove e recalcula', () => {
   render(<DiretoSimulator shared={{ empreendimento: 'X', cliente: '', telefone: '', valorTotal: 600000 }} onShared={() => {}} corretor="R" />)
@@ -23,4 +24,18 @@ it('modo individual: converte, adiciona com +, remove e recalcula', () => {
   expect(screen.queryByText(/^Reforço \d+$/)).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Individual' }))
   expect(screen.getAllByText(/^Reforço \d+$/).length).toBe(8)
+})
+
+it('associativo: balões individuais com + e remoção', () => {
+  render(<AssociativoSimulator shared={{ empreendimento: 'X', cliente: '', telefone: '', valorTotal: 480000 }} onShared={() => {}} corretor="R" />)
+  fireEvent.click(screen.getByRole('button', { name: 'Individuais' }))
+  expect(screen.getAllByText(/^Balão \d+$/).length).toBe(3)
+  fireEvent.click(screen.getByRole('button', { name: /Adicionar balão/ }))
+  expect(screen.getAllByText(/^Balão \d+$/).length).toBe(4)
+  fireEvent.click(screen.getByRole('button', { name: 'Remover balão 4' }))
+  expect(screen.getAllByText(/^Balão \d+$/).length).toBe(3)
+  // 3 × 5% de 480.000 / 3 = 24.000 em balões
+  expect(screen.getByText('3 balões')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Anuais' }))
+  expect(screen.queryByText(/^Balão \d+$/)).toBeNull()
 })

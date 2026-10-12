@@ -66,6 +66,9 @@ const MARCO_LABELS = {
 export const AssociativoCardCompleto = forwardRef<HTMLDivElement, Props>(
   ({ input, result, empreendimento, cliente, corretor }, ref) => {
     const indice = INDICE_LABELS[input.indice]
+    const qtdBaloes = input.balaoModo === 'individual'
+      ? (input.baloesAvulsos ?? []).filter(b => b.valor > 0).length
+      : input.balaoQtd
     return (
       <div ref={ref}>
         <CardFrame width={620}>
@@ -85,7 +88,7 @@ export const AssociativoCardCompleto = forwardRef<HTMLDivElement, Props>(
             <StatBox
               label={`Pago na obra · ${result.pagoNaObraPct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
               value={fmt(result.pagoNaObra)}
-              note={`entrada + ${input.parcelasQtd} parcelas${input.balaoQtd > 0 ? ` + ${input.balaoQtd} balões` : ''}`}
+              note={`entrada + ${input.parcelasQtd} parcelas${qtdBaloes > 0 ? ` + ${qtdBaloes} ${qtdBaloes === 1 ? 'balão' : 'balões'}` : ''}`}
             />
             <StatBox
               label={`A financiar · ${result.saldoFinanciarPct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}

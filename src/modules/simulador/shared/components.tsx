@@ -319,7 +319,7 @@ export function PagamentoSection({
 
 // ── Alternador de modo (Entrada R$/%, Reforço periódico/individual) ─────────
 
-function ToggleModo<T extends string>({ valor, onChange, opcoes }: {
+export function ToggleModo<T extends string>({ valor, onChange, opcoes }: {
   valor: T
   onChange: (m: T) => void
   opcoes: readonly { modo: T; label: string }[]
@@ -359,11 +359,18 @@ function reforcosDoPeriodico(base: PagamentoBase): ReforcoAvulso[] {
   })
 }
 
-function ReforcosIndividuais({ lista, onLista, total }: {
+export function ReforcosIndividuais({
+  lista, onLista, total, nome = { singular: 'Reforço', plural: 'reforços' }, passoMeses = 6,
+}: {
   lista: ReforcoAvulso[]
   onLista: (l: ReforcoAvulso[]) => void
   total: number
+  /** "Reforço"/"reforços" no Pós-chaves e Direto; "Balão"/"balões" no Associativo */
+  nome?: { singular: string; plural: string }
+  /** intervalo sugerido ao adicionar um novo depois do último */
+  passoMeses?: number
 }) {
+  const singularMin = nome.singular.toLowerCase()
   const anoAtual = new Date().getFullYear()
   const anos = Array.from({ length: 16 }, (_, i) => anoAtual + i)
 
@@ -373,20 +380,20 @@ function ReforcosIndividuais({ lista, onLista, total }: {
   return (
     <div className="space-y-3">
       {lista.length === 0 && (
-        <p className="text-xs text-t4">Nenhum reforço. Use o botão abaixo para adicionar.</p>
+        <p className="text-xs text-t4">Nenhum {singularMin}. Use o botão abaixo para adicionar.</p>
       )}
 
       {lista.map((r, i) => (
         <div key={r.id} className="rounded-[14px] border border-line bg-s2 p-3">
           <div className="flex items-center justify-between mb-2">
             <p className="font-label text-[11px] font-bold text-t3 uppercase tracking-[0.14em]">
-              Reforço {i + 1}
+              {nome.singular} {i + 1}
             </p>
             <button
               type="button"
               onClick={() => onLista(lista.filter(x => x.id !== r.id))}
-              aria-label={`Remover reforço ${i + 1}`}
-              title="Remover reforço"
+              aria-label={`Remover ${singularMin} ${i + 1}`}
+              title={`Remover ${singularMin}`}
               className="w-8 h-8 -mr-1 flex items-center justify-center rounded-lg text-t4 hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
             >
               <Trash2 size={14} />
@@ -425,16 +432,16 @@ function ReforcosIndividuais({ lista, onLista, total }: {
       <Button
         type="button"
         variant="secondary"
-        onClick={() => onLista([...lista, novoReforco(lista[lista.length - 1])])}
+        onClick={() => onLista([...lista, novoReforco(lista[lista.length - 1], passoMeses)])}
         className="w-full"
       >
         <Plus size={15} />
-        Adicionar reforço
+        Adicionar {singularMin}
       </Button>
 
       {lista.length > 0 && (
         <div className="flex items-center justify-between text-xs text-t3 px-1">
-          <span>{lista.length} {lista.length === 1 ? 'reforço' : 'reforços'}</span>
+          <span>{lista.length} {lista.length === 1 ? singularMin : nome.plural}</span>
           <span>Total: <span className="font-semibold text-brand">{fmtBRL(total)}</span></span>
         </div>
       )}

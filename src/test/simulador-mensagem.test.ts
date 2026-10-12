@@ -144,3 +144,26 @@ describe('Reforços individuais', () => {
     expect(sp(mensagemDireto(um, calcularDireto(um), IDS))).toContain('• Reforço em jul/2028: R$ 15.000,00')
   })
 })
+
+describe('Associativo · balões individuais', () => {
+  it('lista cada balão com mês/ano', () => {
+    const input: AssociativoInput = {
+      valorTotal: 480000,
+      entradaQtd: 1, entradaValor: 59040,
+      parcelasQtd: 36, parcelaValor: 1026.67,
+      balaoQtd: 3, balaoValor: 8000,
+      balaoModo: 'individual',
+      baloesAvulsos: [
+        { id: 'a', valor: 10000, mes: 6, ano: 2026 },
+        { id: 'b', valor: 14000, mes: 12, ano: 2027 },
+      ],
+      indice: 'incc', taxaIndiceAnual: 5, aplicarCorrecao: true,
+      inicioParcelas: '2026-01', financiamento: '2027-12', entrega: '2030-12',
+      jurosObraMensal: 0.83, taxaAdm: 25, seguro: 79, pctObraAssinatura: 0,
+      taxaBancoAnual: 10, prazoMeses: 420, sistema: 'price',
+    }
+    const texto = sp(mensagemAssociativo(input, calcularAssociativo(input), IDS))
+    expect(texto).toContain('• 2 balões (total R$ 24.000,00):\n   - jun/2026: R$ 10.000,00\n   - dez/2027: R$ 14.000,00')
+    expect(texto).not.toContain('anuais')
+  })
+})

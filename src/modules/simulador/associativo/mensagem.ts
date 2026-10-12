@@ -1,6 +1,6 @@
 import { fmtBRL } from '../shared/components'
 import {
-  saudacao, fechamento, doEmpreendimento, linhaEntrada, linhaParcelas, pct, montar,
+  saudacao, fechamento, doEmpreendimento, linhaEntrada, linhaParcelas, linhasDatadas, pct, montar,
 } from '../shared/mensagem'
 import {
   AssociativoInput, AssociativoResult, INDICE_LABELS, SISTEMA_LABELS, mesAnoLabel,
@@ -23,7 +23,9 @@ export function mensagemAssociativo(
     `*Durante a obra — pago ao empreendimento (${pct(result.pagoNaObraPct)}: ${fmtBRL(result.pagoNaObra)})*`,
     linhaEntrada(input.entradaQtd, input.entradaValor),
     linhaParcelas(input.parcelasQtd, input.parcelaValor, `, reajustadas pelo ${indice}`),
-    input.balaoQtd > 0 && input.balaoValor > 0
+    input.balaoModo === 'individual'
+      ? linhasDatadas(input.baloesAvulsos, { singular: 'Balão', plural: 'balões' })
+      : input.balaoQtd > 0 && input.balaoValor > 0
       ? input.balaoQtd === 1
         ? `• 1 balão anual de ${fmtBRL(input.balaoValor)}`
         : `• ${input.balaoQtd} balões anuais de ${fmtBRL(input.balaoValor)} (total ${fmtBRL(result.balaoTotal)})`

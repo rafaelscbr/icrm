@@ -150,3 +150,37 @@ describe('helpers de mês', () => {
     expect(mesAnoLabel('2027-12')).toBe('dez/2027')
   })
 })
+
+describe('calcularAssociativo — balões individuais', () => {
+  const input: AssociativoInput = {
+    ...GARDEN_PARK,
+    balaoModo: 'individual',
+    baloesAvulsos: [
+      { id: 'b', valor: 14000, mes: 12, ano: 2027 },
+      { id: 'a', valor: 10000, mes: 6,  ano: 2026 },
+      { id: 'z', valor: 0,     mes: 3,  ano: 2028 },
+    ],
+  }
+  const r = calcularAssociativo(input)
+  const mes = (m: string) => r.fluxo.find(f => f.idx === mesIndex(m))
+
+  it('soma só a lista (ignora os anuais e os zerados)', () => {
+    expect(r.valido).toBe(true)
+    expect(r.balaoTotal).toBeCloseTo(24000, 2)
+    expect(r.saldoFinanciar).toBeCloseTo(360000, 2)
+  })
+
+  it('cai no mês escolhido, corrigido pelo índice até lá', () => {
+    // jun/2026 = 6ª parcela → corr(6); dez/2027 = 24ª → corr(24)
+    expect(mes('2026-06')?.balao).toBeCloseTo(10000 * Math.pow(1.05, 6 / 12), 4)
+    expect(mes('2027-12')?.balao).toBeCloseTo(14000 * Math.pow(1.05, 2), 4)
+    expect(mes('2026-12')?.balao).toBeNull()
+    expect(r.fluxo.filter(f => f.balao !== null).length).toBe(2)
+  })
+
+  it('balão depois da entrega estende o fluxo e gera aviso', () => {
+    const tarde = calcularAssociativo({ ...input, baloesAvulsos: [{ id: 'x', valor: 5000, mes: 6, ano: 2031 }] })
+    expect(tarde.avisos).toContain('Há balões depois da entrega da obra.')
+    expect(tarde.fluxo[tarde.fluxo.length - 1].label).toBe('jun/31')
+  })
+})

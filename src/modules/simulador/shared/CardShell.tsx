@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
-import { PagamentoBase, ReforcoPeriodo } from './types'
-import { ehIndividual, reforcosValidos } from './reforcos'
+import { PagamentoBase, ReforcoAvulso, ReforcoPeriodo } from './types'
+import { ehIndividual, ordenarValidos } from './reforcos'
 
 // Primitivas visuais do card de proposta (PNG exportado).
 // A identidade Souza (navy + ouro) mora AQUI — os modos (posChaves/, direto/,
@@ -212,11 +212,21 @@ export function ReforcoRows({ base, total }: { base: PagamentoBase; total: numbe
     )
   }
 
-  const lista = reforcosValidos(base)
-  if (lista.length === 0) return null
+  return <AvulsoRows lista={base.reforcosAvulsos} total={total} label="Reforço" />
+}
+
+/** Um por linha, com a data no selo (reforços ou balões individuais). */
+export function AvulsoRows({ lista, total, label, plural = 'reforços' }: {
+  lista: ReforcoAvulso[] | undefined
+  total: number
+  label: string
+  plural?: string
+}) {
+  const validos = ordenarValidos(lista)
+  if (validos.length === 0) return null
   return (
     <>
-      {lista.map(r => (
+      {validos.map(r => (
         <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
@@ -228,14 +238,14 @@ export function ReforcoRows({ base, total }: { base: PagamentoBase; total: numbe
               <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.3 }}>{MES_CARD[r.mes - 1]}</span>
               <span style={{ fontSize: 8, fontWeight: 600, marginTop: 2, color: '#6B7280' }}>{String(r.ano).slice(-2)}</span>
             </div>
-            <span style={{ color: '#374151', fontSize: 13.5 }}>Reforço</span>
+            <span style={{ color: '#374151', fontSize: 13.5 }}>{label}</span>
           </div>
           <div style={{ color: NAVY, fontSize: 13.5, fontWeight: 600 }}>{fmt(r.valor)}</div>
         </div>
       ))}
-      {lista.length > 1 && (
+      {validos.length > 1 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -4, marginBottom: 12 }}>
-          <div style={{ color: '#9CA3AF', fontSize: 10.5 }}>total em reforços = {fmt(total)}</div>
+          <div style={{ color: '#9CA3AF', fontSize: 10.5 }}>total em {plural} = {fmt(total)}</div>
         </div>
       )}
     </>

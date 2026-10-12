@@ -1,6 +1,6 @@
-import { PagamentoBase, ReforcoPeriodo } from './types'
+import { PagamentoBase, ReforcoAvulso, ReforcoPeriodo } from './types'
 import { fmtBRL } from './components'
-import { ehIndividual, reforcosValidos, rotuloMesAno } from './reforcos'
+import { ehIndividual, ordenarValidos, rotuloMesAno } from './reforcos'
 
 /**
  * Peças do texto de WhatsApp — o mesmo fluxo da imagem, em mensagem.
@@ -56,18 +56,26 @@ export function linhaReforco(qtd: number, valor: number, periodo: ReforcoPeriodo
 
 /**
  * Linha(s) de reforço do fluxo, no modo que o corretor escolheu.
- * Individual: "• Reforços (total R$ 30.000,00):" seguido de um por linha,
+ * Individual: "• 2 reforços (total R$ 30.000,00):" seguido de um por linha,
  * com mês/ano — o cliente vê quando cada um vence.
  */
 export function linhasReforco(base: PagamentoBase): string | null {
   if (!ehIndividual(base)) return linhaReforco(base.reforcoQtd, base.reforcoValor, base.reforcoPeriodo)
-  const lista = reforcosValidos(base)
-  if (lista.length === 0) return null
-  if (lista.length === 1) return `• Reforço em ${rotuloMesAno(lista[0])}: ${fmtBRL(lista[0].valor)}`
-  const total = lista.reduce((s, r) => s + r.valor, 0)
+  return linhasDatadas(base.reforcosAvulsos, { singular: 'Reforço', plural: 'reforços' })
+}
+
+/** Lista datada (reforços ou balões individuais), em ordem cronológica. */
+export function linhasDatadas(
+  lista: ReforcoAvulso[] | undefined,
+  nome: { singular: string; plural: string },
+): string | null {
+  const validos = ordenarValidos(lista)
+  if (validos.length === 0) return null
+  if (validos.length === 1) return `• ${nome.singular} em ${rotuloMesAno(validos[0])}: ${fmtBRL(validos[0].valor)}`
+  const total = validos.reduce((s, r) => s + r.valor, 0)
   return [
-    `• ${lista.length} reforços (total ${fmtBRL(total)}):`,
-    ...lista.map(r => `   - ${rotuloMesAno(r)}: ${fmtBRL(r.valor)}`),
+    `• ${validos.length} ${nome.plural} (total ${fmtBRL(total)}):`,
+    ...validos.map(r => `   - ${rotuloMesAno(r)}: ${fmtBRL(r.valor)}`),
   ].join('\n')
 }
 

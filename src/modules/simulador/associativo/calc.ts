@@ -6,6 +6,9 @@
 // Modelo simplificado: evolução linear da obra entre a assinatura e a entrega,
 // partindo do percentual já concluído na assinatura.
 
+import { ReforcoAvulso, ReforcoModo } from '../shared/types'
+import { idxDoAvulso, ordenarValidos } from '../shared/reforcos'
+
 export type Indice = 'incc' | 'cub'
 export type Sistema = 'sac' | 'price'
 
@@ -43,8 +46,12 @@ export interface AssociativoInput {
   entradaValor: number
   parcelasQtd: number
   parcelaValor: number
-  balaoQtd: number          // balões são sempre anuais no associativo
+  balaoQtd: number          // modo periódico: balões anuais (12ª, 24ª… parcela)
   balaoValor: number
+  /** ausente = 'periodico' (anuais). 'individual' usa `baloesAvulsos`. */
+  balaoModo?: ReforcoModo
+  /** cada balão com valor e mês/ano próprios — o valor é o de hoje, corrigido no fluxo */
+  baloesAvulsos?: ReforcoAvulso[]
 
   // Correção monetária projetada
   indice: Indice
@@ -122,9 +129,13 @@ export function calcularAssociativo(input: AssociativoInput): AssociativoResult 
     taxaBancoAnual, prazoMeses, sistema,
   } = input
 
+  const individual    = input.balaoModo === 'individual'
+  const avulsos       = individual ? ordenarValidos(input.baloesAvulsos) : []
   const entradaTotal  = entradaQtd * entradaValor
   const parcelasTotal = parcelasQtd * parcelaValor
-  const balaoTotal    = balaoQtd * balaoValor
+  const balaoTotal    = individual
+    ? avulsos.reduce((s, b) => s + b.valor, 0)
+    : balaoQtd * balaoValor
   const pagoNaObra    = entradaTotal + parcelasTotal + balaoTotal
   const saldoFinanciar = valorTotal - pagoNaObra
 
@@ -154,6 +165,16 @@ export function calcularAssociativo(input: AssociativoInput): AssociativoResult 
   if (fimParcelas > ent) avisos.push('As parcelas continuam após a entrega da obra.')
   if (fin < ini) avisos.push('O financiamento foi assinado antes da 1ª parcela ao empreendimento.')
 
+  // Balões individuais: valor somado por mês absoluto (dois no mesmo mês somam)
+  const balaoNoMes = new Map<number, number>()
+  for (const b of avulsos) {
+    const idx = idxDoAvulso(b)
+    balaoNoMes.set(idx, (balaoNoMes.get(idx) ?? 0) + b.valor)
+  }
+  const idxAvulsos = [...balaoNoMes.keys()]
+  if (idxAvulsos.some(i => i > ent)) avisos.push('Há balões depois da entrega da obra.')
+  if (idxAvulsos.some(i => i < ini)) avisos.push('Há balões antes da 1ª parcela.')
+
   // Correção composta mensal equivalente ao índice anual (como na planilha:
   // a 1ª parcela já recebe uma correção)
   const taxaMensalIndice = Math.pow(1 + taxaIndiceAnual / 100, 1 / 12) - 1
@@ -167,17 +188,21 @@ export function calcularAssociativo(input: AssociativoInput): AssociativoResult 
     return saldoFinanciar * fracao * (jurosObraMensal / 100) + taxaAdm + seguro
   }
 
-  const fim = Math.max(ent, fimParcelas)
+  const inicio = Math.min(ini, ...idxAvulsos)
+  const fim = Math.max(ent, fimParcelas, ...idxAvulsos)
   const fluxo: MesFluxo[] = []
   let taxaObraTotal = 0
   let totalNaObra = 0
 
-  for (let idx = ini; idx <= fim; idx++) {
-    const k = idx - ini + 1 // nº da parcela (1-based)
-    const parcela = k <= parcelasQtd ? parcelaValor * corr(k) : null
+  for (let idx = inicio; idx <= fim; idx++) {
+    const k = idx - ini + 1 // nº da parcela (1-based); ≤ 0 antes da 1ª parcela
+    const parcela = k >= 1 && k <= parcelasQtd ? parcelaValor * corr(k) : null
 
-    // Balões anuais: a cada 12 meses a partir do início (12ª, 24ª, 36ª…)
-    const balao = k % 12 === 0 && k / 12 <= balaoQtd ? balaoValor * corr(k) : null
+    // Periódico: balões anuais a cada 12 meses a partir do início (12ª, 24ª…).
+    // Individual: no mês escolhido, corrigido pelo tempo desde o início.
+    const balao = individual
+      ? (balaoNoMes.has(idx) ? balaoNoMes.get(idx)! * corr(Math.max(k, 0)) : null)
+      : (k % 12 === 0 && k / 12 <= balaoQtd ? balaoValor * corr(k) : null)
 
     let taxaObra: number | null = null
     if (idx > fin && idx <= ent) {

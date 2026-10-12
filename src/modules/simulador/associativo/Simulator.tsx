@@ -5,14 +5,17 @@ import toast from 'react-hot-toast'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
-import { SharedFields } from '../shared/types'
-import { Section, CurrencyInput, DerivedBox, IdentificacaoSection, SemMensagem, fmtBRL } from '../shared/components'
+import { ReforcoAvulso, ReforcoModo, SharedFields } from '../shared/types'
+import {
+  Section, CurrencyInput, DerivedBox, IdentificacaoSection, SemMensagem, ToggleModo, ReforcosIndividuais, fmtBRL,
+} from '../shared/components'
+import { avulsoDoIdx, novoReforco } from '../shared/reforcos'
 import {
   AlternadorVisao, BalaoMensagem, BotaoCopiar, BotaoWhatsApp, useAcoesMensagem,
 } from '../shared/MensagemWhatsApp'
 import {
   calcularAssociativo, AssociativoInput, Indice, Sistema, MesAno,
-  INDICE_LABELS, mesAnoLabel,
+  INDICE_LABELS, mesAnoLabel, mesIndex,
 } from './calc'
 import { AssociativoCard } from './Card'
 import { AssociativoCardCompleto } from './CardCompleto'
@@ -36,6 +39,7 @@ interface Cfg {
   entradaQtd: number; entradaModo: BlocoModo; entradaValor: number; entradaPct: number
   parcelasQtd: number; parcelasModo: BlocoModo; parcelaValor: number; parcelasPct: number
   balaoQtd: number; balaoModo: BlocoModo; balaoValor: number; balaoPct: number
+  balaoForma: ReforcoModo; baloesAvulsos: ReforcoAvulso[]
   indice: Indice; taxaIndiceAnual: number; aplicarCorrecao: boolean
   inicioParcelas: MesAno; financiamento: MesAno; entrega: MesAno
   jurosObraMensal: number; taxaAdm: number; seguro: number; pctObraAssinatura: number
@@ -46,6 +50,7 @@ const DEFAULT: Cfg = {
   entradaQtd: 1,  entradaModo: 'pct',  entradaValor: 0, entradaPct: 12,
   parcelasQtd: 36, parcelasModo: 'pct', parcelaValor: 0, parcelasPct: 8,
   balaoQtd: 3,    balaoModo: 'pct',    balaoValor: 0,  balaoPct: 5,
+  balaoForma: 'periodico', baloesAvulsos: [],
   indice: 'incc', taxaIndiceAnual: 5, aplicarCorrecao: true,
   inicioParcelas: mesAnoDaqui(1), financiamento: mesAnoDaqui(13), entrega: mesAnoDaqui(37),
   jurosObraMensal: 0.83, taxaAdm: 25, seguro: 79, pctObraAssinatura: 0,
@@ -272,6 +277,7 @@ export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
     entradaQtd: cfg.entradaQtd,   entradaValor: entradaValorEf,
     parcelasQtd: cfg.parcelasQtd, parcelaValor: parcelaValorEf,
     balaoQtd: cfg.balaoQtd,       balaoValor: balaoValorEf,
+    balaoModo: cfg.balaoForma,    baloesAvulsos: cfg.baloesAvulsos,
     indice: cfg.indice, taxaIndiceAnual: cfg.taxaIndiceAnual, aplicarCorrecao: cfg.aplicarCorrecao,
     inicioParcelas: cfg.inicioParcelas, financiamento: cfg.financiamento, entrega: cfg.entrega,
     jurosObraMensal: cfg.jurosObraMensal, taxaAdm: cfg.taxaAdm, seguro: cfg.seguro,
@@ -280,6 +286,14 @@ export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
   }
   const result = calcularAssociativo(input)
   const indice = INDICE_LABELS[cfg.indice]
+
+  /** Balões anuais (12ª, 24ª… parcela) convertidos em lista editável com data. */
+  function baloesDoPeriodico(): ReforcoAvulso[] {
+    if (cfg.balaoQtd <= 0 || !cfg.inicioParcelas) return [novoReforco()]
+    const ini = mesIndex(cfg.inicioParcelas)
+    return Array.from({ length: Math.min(cfg.balaoQtd, 60) }, (_, j) =>
+      avulsoDoIdx(ini + 12 * (j + 1) - 1, balaoValorEf))
+  }
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_500px] gap-8 items-start max-w-6xl mx-auto">
@@ -322,15 +336,53 @@ export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
 
           <div className="w-full h-px bg-line" />
 
-          <BlocoHibrido
-            label="Balões anuais"
-            unidade="por balão"
-            qtd={cfg.balaoQtd} onQtd={v => up({ balaoQtd: v })}
-            modo={cfg.balaoModo} onModo={m => up({ balaoModo: m })}
-            valor={cfg.balaoValor} onValor={v => up({ balaoValor: v })}
-            pct={cfg.balaoPct} onPct={v => up({ balaoPct: v })}
-            valorTotal={shared.valorTotal} valorEfetivo={balaoValorEf}
-          />
+          <div>
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-t3 text-xs font-medium">Balões</p>
+              <ToggleModo<ReforcoModo>
+                valor={cfg.balaoForma}
+                onChange={forma => {
+                  // Na primeira vez, a lista parte dos balões anuais já
+                  // digitados (12ª, 24ª… parcela): o corretor ajusta em vez de redigitar.
+                  if (forma === 'individual' && cfg.baloesAvulsos.length === 0) {
+                    up({ balaoForma: forma, baloesAvulsos: baloesDoPeriodico() })
+                  } else {
+                    up({ balaoForma: forma })
+                  }
+                }}
+                opcoes={[
+                  { modo: 'periodico',  label: 'Anuais' },
+                  { modo: 'individual', label: 'Individuais' },
+                ]}
+              />
+            </div>
+            {cfg.balaoForma === 'individual' ? (
+              <>
+                <ReforcosIndividuais
+                  lista={cfg.baloesAvulsos}
+                  onLista={baloesAvulsos => up({ baloesAvulsos })}
+                  total={result.balaoTotal}
+                  nome={{ singular: 'Balão', plural: 'balões' }}
+                  passoMeses={12}
+                />
+                {cfg.aplicarCorrecao && cfg.baloesAvulsos.length > 0 && (
+                  <p className="mt-2 text-xs text-t4">
+                    Valores de hoje: no fluxo mês a mês, cada balão é corrigido pelo {indice} até o mês dele.
+                  </p>
+                )}
+              </>
+            ) : (
+              <BlocoHibrido
+                label="Um balão a cada 12 parcelas"
+                unidade="por balão"
+                qtd={cfg.balaoQtd} onQtd={v => up({ balaoQtd: v })}
+                modo={cfg.balaoModo} onModo={m => up({ balaoModo: m })}
+                valor={cfg.balaoValor} onValor={v => up({ balaoValor: v })}
+                pct={cfg.balaoPct} onPct={v => up({ balaoPct: v })}
+                valorTotal={shared.valorTotal} valorEfetivo={balaoValorEf}
+              />
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-3 mt-1">
             <DerivedBox

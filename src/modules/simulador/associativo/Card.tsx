@@ -1,7 +1,7 @@
 import { forwardRef } from 'react'
 import {
   CardFrame, CardHeader, HeroParcela, SectionLabel, CondRow, ValueRow,
-  HighlightBox, CardFooter, fmt, NAVY, GOLD, GOLD2,
+  HighlightBox, CardFooter, AvulsoRows, fmt, NAVY, GOLD, GOLD2,
 } from '../shared/CardShell'
 import {
   AssociativoInput, AssociativoResult, INDICE_LABELS, SISTEMA_LABELS, mesAnoLabel,
@@ -109,7 +109,9 @@ export const AssociativoCard = forwardRef<HTMLDivElement, Props>(
               total={result.entradaTotal}
               showTotal={input.entradaQtd > 1}
             />
-            {input.balaoQtd > 0 && (
+            {input.balaoModo === 'individual' ? (
+              <AvulsoRows lista={input.baloesAvulsos} total={result.balaoTotal} label="Balão" plural="balões" />
+            ) : input.balaoQtd > 0 && (
               <CondRow
                 qtd={input.balaoQtd}
                 label="Balão anual"
