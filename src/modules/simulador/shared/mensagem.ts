@@ -1,5 +1,6 @@
-import { ReforcoPeriodo } from './types'
+import { PagamentoBase, ReforcoPeriodo } from './types'
 import { fmtBRL } from './components'
+import { ehIndividual, reforcosValidos, rotuloMesAno } from './reforcos'
 
 /**
  * Peças do texto de WhatsApp — o mesmo fluxo da imagem, em mensagem.
@@ -51,6 +52,23 @@ export function linhaReforco(qtd: number, valor: number, periodo: ReforcoPeriodo
   if (qtd <= 0 || valor <= 0) return null
   if (qtd === 1) return `• 1 reforço ${PERIODO_SING[periodo]} de ${fmtBRL(valor)}`
   return `• ${qtd} reforços ${PERIODO_PLUR[periodo]} de ${fmtBRL(valor)} (total ${fmtBRL(qtd * valor)})`
+}
+
+/**
+ * Linha(s) de reforço do fluxo, no modo que o corretor escolheu.
+ * Individual: "• Reforços (total R$ 30.000,00):" seguido de um por linha,
+ * com mês/ano — o cliente vê quando cada um vence.
+ */
+export function linhasReforco(base: PagamentoBase): string | null {
+  if (!ehIndividual(base)) return linhaReforco(base.reforcoQtd, base.reforcoValor, base.reforcoPeriodo)
+  const lista = reforcosValidos(base)
+  if (lista.length === 0) return null
+  if (lista.length === 1) return `• Reforço em ${rotuloMesAno(lista[0])}: ${fmtBRL(lista[0].valor)}`
+  const total = lista.reduce((s, r) => s + r.valor, 0)
+  return [
+    `• ${lista.length} reforços (total ${fmtBRL(total)}):`,
+    ...lista.map(r => `   - ${rotuloMesAno(r)}: ${fmtBRL(r.valor)}`),
+  ].join('\n')
 }
 
 /** A parcela é o número que decide a conversa — vai em negrito. */

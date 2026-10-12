@@ -286,7 +286,9 @@ export function LeadsPage() {
   // Filtro por corretor só faz sentido na visão admin global (sem corretor fixado)
   const showBrokerFilter = isAdmin && !viewAsBrokerId
 
-  const [tab,           setTab]           = useState<Tab>('leads')
+  // O funil abre no Kanban: é a visão de trabalho do corretor (o que está em
+  // cada etapa). A lista continua a um toque, na aba ao lado.
+  const [tab,           setTab]           = useState<Tab>('kanban')
   const { filtros, definir, limpar, ordemLista, setOrdemLista } = useLeadFiltersStore()
   const { sort: ordemKanban, setSort: setOrdemKanban } = useKanbanPrefs()
   const [painelFiltros, setPainelFiltros] = useState(false)
@@ -443,8 +445,8 @@ export function LeadsPage() {
   }, [filtered, intel])
 
   const TABS: { value: Tab; label: string; icon: typeof List; badge?: number }[] = [
-    { value: 'leads',          label: 'Leads',          icon: List,        badge: erro ? undefined : active.length },
     { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                        },
+    { value: 'leads',          label: 'Leads',          icon: List,        badge: erro ? undefined : active.length },
     { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                         },
     { value: 'conversao',      label: 'Conversão',       icon: Percent                           },
     { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                         },

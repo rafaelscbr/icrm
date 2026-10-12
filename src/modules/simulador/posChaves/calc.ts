@@ -1,4 +1,5 @@
 import { PagamentoBase } from '../shared/types'
+import { totalReforcos } from '../shared/reforcos'
 
 // Modo Pós-chaves: o cliente paga uma fatia do valor até as chaves
 // (entrada + reforços + parcelas) e o restante vira saldo devedor
@@ -20,12 +21,12 @@ export interface PosChavesResult {
 }
 
 export function calcularPosChaves(input: PosChavesInput): PosChavesResult {
-  const { valorTotal, pctChaves, entradaQtd, entradaValor, reforcoQtd, reforcoValor, parcelasQtd } = input
+  const { valorTotal, pctChaves, entradaQtd, entradaValor, parcelasQtd } = input
 
   const valorAteChaves = valorTotal * (pctChaves / 100)
   const saldoDevedor   = valorTotal - valorAteChaves
   const entradaTotal   = entradaQtd * entradaValor
-  const reforcoTotal   = reforcoQtd * reforcoValor
+  const reforcoTotal   = totalReforcos(input)
   const restoParcelas  = valorAteChaves - entradaTotal - reforcoTotal
 
   if (parcelasQtd <= 0) {

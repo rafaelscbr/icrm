@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, Ref, ReactNode } from 'react'
-import { Download, AlertCircle, Image as ImageIcon, MessageSquareText } from 'lucide-react'
+import { Download, AlertCircle, Image as ImageIcon, MessageSquareText, Plus, Trash2 } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import toast from 'react-hot-toast'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
-import { PagamentoBase, ReforcoPeriodo, SharedFields } from './types'
+import { PagamentoBase, ReforcoAvulso, ReforcoModo, ReforcoPeriodo, SharedFields } from './types'
+import { MESES_NOME, novoReforco, totalReforcos } from './reforcos'
 import {
   AlternadorVisao, BalaoMensagem, BotaoCopiar, BotaoWhatsApp, useAcoesMensagem, telefoneValido,
 } from './MensagemWhatsApp'
@@ -162,25 +163,14 @@ export function PagamentoSection({
         <div className="flex items-center justify-between mb-2.5">
           <p className="text-t3 text-xs font-medium">Entrada</p>
           {/* Toggle R$ fixo / % do total */}
-          <div className="flex rounded-lg border border-line overflow-hidden">
-            {([
+          <ToggleModo<EntradaModo>
+            valor={entradaModo}
+            onChange={setEntradaModo}
+            opcoes={[
               { modo: 'valor', label: 'R$ fixo' },
               { modo: 'pct',   label: '% do total' },
-            ] as const).map(({ modo, label }) => (
-              <button
-                key={modo}
-                type="button"
-                onClick={() => setEntradaModo(modo)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                  entradaModo === modo
-                    ? 'bg-brand/15 text-brand'
-                    : 'bg-surface text-t3 hover:text-t1'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+            ]}
+          />
         </div>
         <div className="grid grid-cols-[110px_1fr] gap-3">
           <Input
@@ -225,34 +215,63 @@ export function PagamentoSection({
 
       {/* Reforço */}
       <div>
-        <p className="text-t3 text-xs font-medium mb-2.5">Reforço</p>
-        <div className="grid grid-cols-[110px_1fr] gap-3">
-          <Input
-            label="Quantidade"
-            type="number"
-            step="1"
-            min="0"
-            value={base.reforcoQtd}
-            onChange={num('reforcoQtd')}
-          />
-          <CurrencyInput
-            label="Valor por reforço"
-            value={base.reforcoValor}
-            onChange={v => onChange({ reforcoValor: v })}
-            disabled={base.reforcoQtd === 0}
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="text-t3 text-xs font-medium">Reforço</p>
+          <ToggleModo<ReforcoModo>
+            valor={base.reforcoModo ?? 'periodico'}
+            onChange={modo => {
+              // Ao passar para individual pela primeira vez, a lista parte do
+              // fluxo periódico já digitado: o corretor ajusta em vez de redigitar.
+              if (modo === 'individual' && !(base.reforcosAvulsos?.length)) {
+                onChange({ reforcoModo: modo, reforcosAvulsos: reforcosDoPeriodico(base) })
+              } else {
+                onChange({ reforcoModo: modo })
+              }
+            }}
+            opcoes={[
+              { modo: 'periodico',  label: 'Periódico' },
+              { modo: 'individual', label: 'Individual' },
+            ]}
           />
         </div>
-        <div className="mt-3">
-          <Select
-            label="Periodicidade do reforço"
-            value={base.reforcoPeriodo}
-            onChange={e => onChange({ reforcoPeriodo: e.target.value as ReforcoPeriodo })}
-            disabled={base.reforcoQtd === 0}
-          >
-            <option value="semestral">Semestral</option>
-            <option value="anual">Anual</option>
-          </Select>
-        </div>
+
+        {base.reforcoModo === 'individual' ? (
+          <ReforcosIndividuais
+            lista={base.reforcosAvulsos ?? []}
+            onLista={reforcosAvulsos => onChange({ reforcosAvulsos })}
+            total={totalReforcos(base)}
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-[110px_1fr] gap-3">
+              <Input
+                label="Quantidade"
+                type="number"
+                step="1"
+                min="0"
+                value={base.reforcoQtd}
+                onChange={num('reforcoQtd')}
+              />
+              <CurrencyInput
+                label="Valor por reforço"
+                value={base.reforcoValor}
+                onChange={v => onChange({ reforcoValor: v })}
+                disabled={base.reforcoQtd === 0}
+              />
+            </div>
+            <div className="mt-3">
+              <Select
+                label="Periodicidade do reforço"
+                value={base.reforcoPeriodo}
+                onChange={e => onChange({ reforcoPeriodo: e.target.value as ReforcoPeriodo })}
+                disabled={base.reforcoQtd === 0}
+              >
+                <option value="semestral">Semestral</option>
+                <option value="anual">Anual</option>
+              </Select>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="w-full h-px bg-line" />
@@ -295,6 +314,131 @@ export function PagamentoSection({
         </div>
       )}
     </Section>
+  )
+}
+
+// ── Alternador de modo (Entrada R$/%, Reforço periódico/individual) ─────────
+
+function ToggleModo<T extends string>({ valor, onChange, opcoes }: {
+  valor: T
+  onChange: (m: T) => void
+  opcoes: readonly { modo: T; label: string }[]
+}) {
+  return (
+    <div className="flex rounded-lg border border-line overflow-hidden">
+      {opcoes.map(({ modo, label }) => (
+        <button
+          key={modo}
+          type="button"
+          aria-pressed={valor === modo}
+          onClick={() => onChange(modo)}
+          className={`px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+            valor === modo
+              ? 'bg-brand/15 text-brand'
+              : 'bg-surface text-t3 hover:text-t1'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Reforços individuais: cada um com valor e mês/ano próprios ───────────────
+
+/** Converte o fluxo periódico (N × valor, a cada 6 ou 12 meses) em lista editável. */
+function reforcosDoPeriodico(base: PagamentoBase): ReforcoAvulso[] {
+  if (base.reforcoQtd <= 0) return [novoReforco()]
+  const passo = base.reforcoPeriodo === 'anual' ? 12 : 6
+  const primeiro = novoReforco()
+  const inicio = primeiro.ano * 12 + (primeiro.mes - 1) + (passo - 1)
+  return Array.from({ length: Math.min(base.reforcoQtd, 60) }, (_, i) => {
+    const idx = inicio + i * passo
+    return { ...novoReforco(), valor: base.reforcoValor, mes: (idx % 12) + 1, ano: Math.floor(idx / 12) }
+  })
+}
+
+function ReforcosIndividuais({ lista, onLista, total }: {
+  lista: ReforcoAvulso[]
+  onLista: (l: ReforcoAvulso[]) => void
+  total: number
+}) {
+  const anoAtual = new Date().getFullYear()
+  const anos = Array.from({ length: 16 }, (_, i) => anoAtual + i)
+
+  const atualizar = (id: string, patch: Partial<ReforcoAvulso>) =>
+    onLista(lista.map(r => (r.id === id ? { ...r, ...patch } : r)))
+
+  return (
+    <div className="space-y-3">
+      {lista.length === 0 && (
+        <p className="text-xs text-t4">Nenhum reforço. Use o botão abaixo para adicionar.</p>
+      )}
+
+      {lista.map((r, i) => (
+        <div key={r.id} className="rounded-[14px] border border-line bg-s2 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="font-label text-[11px] font-bold text-t3 uppercase tracking-[0.14em]">
+              Reforço {i + 1}
+            </p>
+            <button
+              type="button"
+              onClick={() => onLista(lista.filter(x => x.id !== r.id))}
+              aria-label={`Remover reforço ${i + 1}`}
+              title="Remover reforço"
+              className="w-8 h-8 -mr-1 flex items-center justify-center rounded-lg text-t4 hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+          <div className="grid grid-cols-[1fr_96px] sm:grid-cols-[1fr_96px_1.3fr] gap-3">
+            <Select
+              label="Mês"
+              value={r.mes}
+              onChange={e => atualizar(r.id, { mes: Number(e.target.value) })}
+            >
+              {MESES_NOME.map((nome, m) => (
+                <option key={nome} value={m + 1}>{nome}</option>
+              ))}
+            </Select>
+            <Select
+              label="Ano"
+              value={r.ano}
+              onChange={e => atualizar(r.id, { ano: Number(e.target.value) })}
+            >
+              {(anos.includes(r.ano) ? anos : [r.ano, ...anos]).map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </Select>
+            <div className="col-span-2 sm:col-span-1">
+              <CurrencyInput
+                label="Valor"
+                value={r.valor}
+                onChange={v => atualizar(r.id, { valor: v })}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => onLista([...lista, novoReforco(lista[lista.length - 1])])}
+        className="w-full"
+      >
+        <Plus size={15} />
+        Adicionar reforço
+      </Button>
+
+      {lista.length > 0 && (
+        <div className="flex items-center justify-between text-xs text-t3 px-1">
+          <span>{lista.length} {lista.length === 1 ? 'reforço' : 'reforços'}</span>
+          <span>Total: <span className="font-semibold text-brand">{fmtBRL(total)}</span></span>
+        </div>
+      )}
+    </div>
   )
 }
 

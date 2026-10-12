@@ -1,15 +1,9 @@
 import { forwardRef } from 'react'
 import {
   CardFrame, CardHeader, HeroParcela, SectionLabel, CondRow, ValueRow,
-  HighlightBox, CardFooter, fmt,
+  HighlightBox, CardFooter, ReforcoRows, fmt,
 } from '../shared/CardShell'
-import { ReforcoPeriodo } from '../shared/types'
 import { PosChavesInput, PosChavesResult } from './calc'
-
-const PERIODO_LABELS: Record<ReforcoPeriodo, string> = {
-  semestral: 'semestral',
-  anual:     'anual',
-}
 
 interface Props {
   input: PosChavesInput
@@ -46,15 +40,7 @@ export const PosChavesCard = forwardRef<HTMLDivElement, Props>(
             total={result.entradaTotal}
             showTotal={input.entradaQtd > 1}
           />
-          {input.reforcoQtd > 0 && (
-            <CondRow
-              qtd={input.reforcoQtd}
-              label={`Reforço ${PERIODO_LABELS[input.reforcoPeriodo]}`}
-              valor={input.reforcoValor}
-              total={result.reforcoTotal}
-              showTotal={input.reforcoQtd > 1}
-            />
-          )}
+          <ReforcoRows base={input} total={result.reforcoTotal} />
         </div>
 
         {/* Valores */}

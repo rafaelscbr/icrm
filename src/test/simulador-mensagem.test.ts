@@ -113,3 +113,34 @@ describe('Associativo', () => {
     expect(t).not.toContain('a última parcela fica')
   })
 })
+
+describe('Reforços individuais', () => {
+  const input: DiretoInput = {
+    valorTotal: 500000, entradaQtd: 1, entradaValor: 50000,
+    reforcoQtd: 9, reforcoValor: 8000, reforcoPeriodo: 'semestral',
+    reforcoModo: 'individual',
+    reforcosAvulsos: [
+      { id: 'b', valor: 20000, mes: 12, ano: 2027 },
+      { id: 'a', valor: 10000, mes: 3,  ano: 2027 },
+      { id: 'c', valor: 0,     mes: 6,  ano: 2028 },
+    ],
+    parcelasQtd: 42,
+  }
+  const result = calcularDireto(input)
+
+  it('soma só os reforços da lista, ignorando os periódicos e os zerados', () => {
+    expect(result.reforcoTotal).toBe(30000)
+    expect(result.parcelaValor).toBeCloseTo((500000 - 50000 - 30000) / 42)
+  })
+
+  it('lista cada reforço com mês/ano, em ordem de data', () => {
+    const texto = sp(mensagemDireto(input, result, IDS))
+    expect(texto).toContain('• 2 reforços (total R$ 30.000,00):\n   - mar/2027: R$ 10.000,00\n   - dez/2027: R$ 20.000,00')
+    expect(texto).not.toContain('semestra')
+  })
+
+  it('um reforço só vira uma linha', () => {
+    const um: DiretoInput = { ...input, reforcosAvulsos: [{ id: 'a', valor: 15000, mes: 7, ano: 2028 }] }
+    expect(sp(mensagemDireto(um, calcularDireto(um), IDS))).toContain('• Reforço em jul/2028: R$ 15.000,00')
+  })
+})

@@ -1,6 +1,6 @@
 import { fmtBRL } from '../shared/components'
 import {
-  saudacao, fechamento, doEmpreendimento, linhaEntrada, linhaReforco, linhaParcelas, pct, montar,
+  saudacao, fechamento, doEmpreendimento, linhaEntrada, linhasReforco, linhaParcelas, pct, montar,
 } from '../shared/mensagem'
 import { PosChavesInput, PosChavesResult } from './calc'
 
@@ -17,7 +17,7 @@ export function mensagemPosChaves(
     [
       `*Até as chaves — ${pct(input.pctChaves)} (${fmtBRL(result.valorAteChaves)})*`,
       linhaEntrada(input.entradaQtd, input.entradaValor),
-      linhaReforco(input.reforcoQtd, input.reforcoValor, input.reforcoPeriodo),
+      linhasReforco(input),
       linhaParcelas(input.parcelasQtd, result.parcelaValor),
     ].filter(Boolean).join('\n'),
     [

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UserPlus, Phone, CheckSquare, MoreHorizontal,
-  X, Bell, Search, ExternalLink, LogOut, ShieldCheck,
+  X, Bell, Search, ExternalLink, LogOut, ShieldCheck, Calculator, ChevronRight,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSearchStore } from '../../store/useSearchStore'
@@ -24,7 +24,13 @@ const mainNav = [
   { to: '/tarefas',             icon: CheckSquare,     label: 'Tarefas',  end: false },
 ]
 
-const naBarra = new Set(mainNav.map(i => i.to))
+/*
+ * O Simulador é usado na frente do cliente, com o celular na mão: precisa
+ * estar no topo da gaveta, não no fim da seção Comercial depois de rolar.
+ */
+const SIMULADOR = '/simulador'
+
+const naBarra = new Set([...mainNav.map(i => i.to), SIMULADOR])
 
 /** Os quatro atalhos fixos também respeitam a permissão. */
 function chaveDaRota(to: string): string {
@@ -72,7 +78,8 @@ export function BottomNav() {
    */
   const moreSections = secoesDaGaveta(podeVer, naBarra)
   const barraVisivel = mainNav.filter(i => podeVer(chaveDaRota(i.to)))
-  const isMoreActive = moreSections.some(s => s.items.some(i => location.pathname === i.to))
+  const isMoreActive = location.pathname === SIMULADOR
+    || moreSections.some(s => s.items.some(i => location.pathname === i.to))
 
   // Escape fecha a gaveta, e o fundo da página para de rolar enquanto ela está
   // aberta — sem isso o dedo arrastava a lista de trás por baixo do painel.
@@ -251,6 +258,30 @@ export function BottomNav() {
                 <span className="text-sm text-t3">Buscar contatos, imóveis, leads…</span>
               </button>
             </div>
+
+            {/* Atalho do Simulador — primeiro item da gaveta */}
+            {podeVer(chaveDaRota(SIMULADOR)) && (
+              <div className="px-4 pb-4">
+                <NavLink
+                  to={SIMULADOR}
+                  onClick={() => setDrawerOpen(false)}
+                  className="flex items-center gap-3 px-3 min-h-[56px] rounded-2xl transition-transform active:scale-[0.98]"
+                  style={({ isActive }) => ({
+                    background: isActive ? 'var(--brand-tint)' : 'var(--s2)',
+                    border: '1px solid var(--line)',
+                  })}
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--brand-tint)' }}>
+                    <Calculator size={18} strokeWidth={2} style={{ color: 'var(--brand)' }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-t1 truncate">Simulador</p>
+                    <p className="text-xs text-t3 truncate">Fluxo de pagamento para o cliente</p>
+                  </div>
+                  <ChevronRight size={16} className="text-t4 flex-shrink-0" />
+                </NavLink>
+              </div>
+            )}
 
             {/*
               Páginas por seção, em lista.

@@ -1,4 +1,5 @@
 import { PagamentoBase } from '../shared/types'
+import { totalReforcos } from '../shared/reforcos'
 
 // Modo Direto com a Construtora: sem financiamento bancário.
 // O cliente paga 100% do valor à construtora — entrada + reforços + parcelas
@@ -18,10 +19,10 @@ export interface DiretoResult {
 }
 
 export function calcularDireto(input: DiretoInput): DiretoResult {
-  const { valorTotal, entradaQtd, entradaValor, reforcoQtd, reforcoValor, parcelasQtd } = input
+  const { valorTotal, entradaQtd, entradaValor, parcelasQtd } = input
 
   const entradaTotal   = entradaQtd * entradaValor
-  const reforcoTotal   = reforcoQtd * reforcoValor
+  const reforcoTotal   = totalReforcos(input)
   const totalParcelado = valorTotal - entradaTotal - reforcoTotal
 
   if (parcelasQtd <= 0) {

@@ -1,6 +1,6 @@
 import { fmtBRL } from '../shared/components'
 import {
-  saudacao, fechamento, doEmpreendimento, linhaEntrada, linhaReforco, linhaParcelas, montar,
+  saudacao, fechamento, doEmpreendimento, linhaEntrada, linhasReforco, linhaParcelas, montar,
 } from '../shared/mensagem'
 import { DiretoInput, DiretoResult } from './calc'
 
@@ -17,7 +17,7 @@ export function mensagemDireto(
     [
       '*Condição de pagamento*',
       linhaEntrada(input.entradaQtd, input.entradaValor),
-      linhaReforco(input.reforcoQtd, input.reforcoValor, input.reforcoPeriodo),
+      linhasReforco(input),
       linhaParcelas(input.parcelasQtd, result.parcelaValor),
     ].filter(Boolean).join('\n'),
     '100% pago direto à construtora, sem financiamento bancário.',
