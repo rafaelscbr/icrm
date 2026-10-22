@@ -6,7 +6,7 @@
 -- de entrada definido, a compra não fecha hoje. O lead continua sendo atendido;
 -- o rótulo só avisa que a conversa começa pela entrada.
 --
--- A renda "ainda planejando" continua como 'sem_dados' (fora do escopo).
+-- A renda "ainda planejando" ganhou a mesma regra na 081.
 
 create or replace function public.lead_fit_regua(
   p_profile jsonb, p_income_min numeric, p_income_ideal numeric,
