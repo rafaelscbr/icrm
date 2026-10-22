@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { AvisoDeAtualizacao } from './components/shared/AvisoDeAtualizacao'
 import { useThemeStore, applyTheme } from './store/useThemeStore'
 import { useDensidadeStore, aplicarDensidade } from './store/useDensidadeStore'
 import { useAuthStore } from './store/useAuthStore'
@@ -296,6 +297,7 @@ export default function App() {
           <Route path="/*" element={<AppRoutes />} />
         </Routes>
       </Suspense>
+      <AvisoDeAtualizacao />
       <Toaster
         position="bottom-right"
         toastOptions={{

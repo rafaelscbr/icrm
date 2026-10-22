@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': a versão nova espera e a tela avisa (src/lib/atualizacao.ts).
+      // 'autoUpdate' trocava em silêncio e a tela aberta seguia com o código velho.
+      registerType: 'prompt',
       includeAssets: ['icon.svg', 'icon-maskable.svg'],
       manifest: {
         name: 'Souza Imobiliária',
