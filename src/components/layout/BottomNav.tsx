@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UserPlus, Phone, CheckSquare, MoreHorizontal,
-  X, Bell, Search, ExternalLink, LogOut, ShieldCheck, Calculator, ChevronRight,
+  X, Bell, Search, ExternalLink, LogOut, ShieldCheck, Calculator,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSearchStore } from '../../store/useSearchStore'
@@ -11,28 +11,26 @@ import { externalTools as tools, secoesDaGaveta, isGroup, navSections } from './
 import { iniciais } from '../../lib/formatters'
 
 /*
- * Os quatro atalhos fixos são o TRABALHO DIÁRIO do corretor no celular: o funil,
- * a fila de ligação, as tarefas e a página inicial. Contatos e Vendas ficavam
- * aqui e empurravam Leads e Ligações para a gaveta — o que se abre dez vezes
- * por dia estava atrás de "Mais", e o que se consulta uma vez por semana tinha
- * vaga fixa. Os dois continuam a um toque, na gaveta.
+ * Os atalhos fixos são o TRABALHO DIÁRIO do corretor no celular: o funil,
+ * o simulador, a fila de ligação, as tarefas e a página inicial. Contatos e
+ * Vendas ficavam aqui e empurravam Leads e Ligações para a gaveta — o que se
+ * abre dez vezes por dia estava atrás de "Mais", e o que se consulta uma vez
+ * por semana tinha vaga fixa. Os dois continuam a um toque, na gaveta.
+ *
+ * O Simulador é usado na frente do cliente, com o celular na mão: fica ao lado
+ * de Leads, a um toque, sem abrir a gaveta.
  */
 const mainNav = [
-  { to: '/',                    icon: LayoutDashboard, label: 'Início',   end: true  },
-  { to: '/leads',               icon: UserPlus,        label: 'Leads',    end: false },
-  { to: '/prospeccao/ligacoes', icon: Phone,           label: 'Ligações', end: false },
-  { to: '/tarefas',             icon: CheckSquare,     label: 'Tarefas',  end: false },
+  { to: '/',                    icon: LayoutDashboard, label: 'Início',    end: true  },
+  { to: '/leads',               icon: UserPlus,        label: 'Leads',     end: false },
+  { to: '/simulador',           icon: Calculator,      label: 'Simulador', end: false },
+  { to: '/prospeccao/ligacoes', icon: Phone,           label: 'Ligações',  end: false },
+  { to: '/tarefas',             icon: CheckSquare,     label: 'Tarefas',   end: false },
 ]
 
-/*
- * O Simulador é usado na frente do cliente, com o celular na mão: precisa
- * estar no topo da gaveta, não no fim da seção Comercial depois de rolar.
- */
-const SIMULADOR = '/simulador'
+const naBarra = new Set(mainNav.map(i => i.to))
 
-const naBarra = new Set([...mainNav.map(i => i.to), SIMULADOR])
-
-/** Os quatro atalhos fixos também respeitam a permissão. */
+/** Os atalhos fixos também respeitam a permissão. */
 function chaveDaRota(to: string): string {
   for (const s of navSections) {
     for (const item of s.items) {
@@ -68,7 +66,7 @@ export function BottomNav() {
 
   /*
    * A gaveta é o complemento da barra: tudo que existe na Sidebar e não coube
-   * nos quatro atalhos de baixo.
+   * nos atalhos de baixo.
    *
    * Vinha de uma lista escrita à mão, e ela já tinha derivado da Sidebar em dois
    * pontos: o Simulador nunca chegou a aparecer no mobile (tela sem nenhuma porta
@@ -78,8 +76,7 @@ export function BottomNav() {
    */
   const moreSections = secoesDaGaveta(podeVer, naBarra)
   const barraVisivel = mainNav.filter(i => podeVer(chaveDaRota(i.to)))
-  const isMoreActive = location.pathname === SIMULADOR
-    || moreSections.some(s => s.items.some(i => location.pathname === i.to))
+  const isMoreActive = moreSections.some(s => s.items.some(i => location.pathname === i.to))
 
   // Escape fecha a gaveta, e o fundo da página para de rolar enquanto ela está
   // aberta — sem isso o dedo arrastava a lista de trás por baixo do painel.
@@ -124,7 +121,7 @@ export function BottomNav() {
               to={to}
               end={end}
               onClick={() => setDrawerOpen(false)}
-              className="flex flex-col items-center justify-center gap-1 flex-1 h-full px-1 rounded-xl transition-all duration-150 active:scale-95"
+              className="flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all duration-150 active:scale-95"
             >
               {({ isActive }) => (
                 <>
@@ -156,7 +153,7 @@ export function BottomNav() {
             aria-label={unreadCount > 0
               ? `Notificações — ${unreadCount} não lida${unreadCount !== 1 ? 's' : ''}`
               : 'Notificações'}
-            className="flex flex-col items-center justify-center gap-1 flex-1 h-full px-1 rounded-xl transition-all duration-150 active:scale-95"
+            className="flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all duration-150 active:scale-95"
           >
             {({ isActive }) => (
               <>
@@ -192,7 +189,7 @@ export function BottomNav() {
           {/* Mais */}
           <button
             onClick={() => setDrawerOpen(v => !v)}
-            className="flex flex-col items-center justify-center gap-1 flex-1 h-full px-1 rounded-xl transition-all duration-150 active:scale-95"
+            className="flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all duration-150 active:scale-95"
           >
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
@@ -258,30 +255,6 @@ export function BottomNav() {
                 <span className="text-sm text-t3">Buscar contatos, imóveis, leads…</span>
               </button>
             </div>
-
-            {/* Atalho do Simulador — primeiro item da gaveta */}
-            {podeVer(chaveDaRota(SIMULADOR)) && (
-              <div className="px-4 pb-4">
-                <NavLink
-                  to={SIMULADOR}
-                  onClick={() => setDrawerOpen(false)}
-                  className="flex items-center gap-3 px-3 min-h-[56px] rounded-2xl transition-transform active:scale-[0.98]"
-                  style={({ isActive }) => ({
-                    background: isActive ? 'var(--brand-tint)' : 'var(--s2)',
-                    border: '1px solid var(--line)',
-                  })}
-                >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--brand-tint)' }}>
-                    <Calculator size={18} strokeWidth={2} style={{ color: 'var(--brand)' }} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-t1 truncate">Simulador</p>
-                    <p className="text-xs text-t3 truncate">Fluxo de pagamento para o cliente</p>
-                  </div>
-                  <ChevronRight size={16} className="text-t4 flex-shrink-0" />
-                </NavLink>
-              </div>
-            )}
 
             {/*
               Páginas por seção, em lista.
