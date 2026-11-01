@@ -4,17 +4,17 @@ import {
   Target, Pencil, Trash2, CheckCircle2, TrendingUp,
   Calendar, CalendarDays, Footprints, FileText,
   BadgeDollarSign, History, Zap, MessageCircle,
-  ChevronRight, Plus, Phone, Gauge, PauseCircle, PlayCircle, Sparkles,
+  ChevronRight, Plus, Phone, PauseCircle, PlayCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { DAILY_TARGETS, WEEKLY_TARGETS, MONTHLY_TARGETS } from '../../lib/metasConfig'
 import confetti from 'canvas-confetti'
 import { useAuthStore } from '../../store/useAuthStore'
-import { useRovingTabs } from '../../components/shared/Abas'
+import { Abas } from '../../components/shared/Abas'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
-import { Painel, Rotulo, IconeTom, Barra, Chip, SecaoTitulo, TOM } from '../../components/shared/visual'
+import { Painel, Rotulo, IconeTom, Barra, SecaoTitulo, TOM } from '../../components/shared/visual'
 import type { Tom } from '../../components/shared/visual'
 import { GoalForm } from './GoalForm'
 import { useGoalsStore, calcProgress, getVisitMetrics } from '../../store/useGoalsStore'
@@ -95,7 +95,7 @@ const STATUS: Record<KpiStatus, { tom: Tom; label: string }> = {
 // ─── Anel de score ────────────────────────────────────────────────────────────
 
 function ScoreRing({ score }: { score: number }) {
-  const r = 52; const sz = 128; const circ = 2 * Math.PI * r
+  const sz = 60; const r = 25; const circ = 2 * Math.PI * r
   const dash = (score / 100) * circ
   const cor = score >= 80 ? 'var(--success)'
             : score >= 50 ? 'var(--brand)'
@@ -104,18 +104,16 @@ function ScoreRing({ score }: { score: number }) {
   return (
     <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`} className="shrink-0" role="img"
          aria-label={`Score do período: ${score} de 100 pontos`}>
-      <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={9} />
+      <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={6} />
       <circle
         cx={sz/2} cy={sz/2} r={r} fill="none"
-        stroke={cor} strokeWidth={9} strokeLinecap="round"
+        stroke={cor} strokeWidth={6} strokeLinecap="round"
         strokeDasharray={`${dash} ${circ - dash}`}
         strokeDashoffset={circ / 4}
         style={{ transition: 'stroke-dasharray 900ms cubic-bezier(0.16,1,0.3,1), stroke 500ms' }}
       />
-      <text x={sz/2} y={sz/2 - 4} textAnchor="middle" fill="var(--t1)"
-            fontSize={30} fontWeight="900" fontFamily="inherit">{score}</text>
-      <text x={sz/2} y={sz/2 + 14} textAnchor="middle" fill="var(--t4)"
-            fontSize={10} fontFamily="inherit">de 100</text>
+      <text x={sz/2} y={sz/2 + 6} textAnchor="middle" fill="var(--t1)"
+            fontSize={18} fontWeight="800" fontFamily="inherit">{score}</text>
     </svg>
   )
 }
@@ -216,46 +214,30 @@ function calcScore(kpis: Array<{ value: number; target: number }>): number {
   return Math.round(avg * 100)
 }
 
-// ─── Cartão de indicador ──────────────────────────────────────────────────────
+// ─── Indicador do período (uma célula da faixa) ───────────────────────────────
 
-function KpiCard({ label, value, target, icon: Icon, note }: {
-  label: string; value: number; target: number; icon: LucideIcon; note?: string
+function KpiCelula({ label, value, target, note }: {
+  label: string; value: number; target: number; note?: string
 }) {
-  const pct    = Math.min(100, target > 0 ? Math.round(value / target * 100) : 0)
-  const status = getStatus(value, target)
-  const cfg    = STATUS[status]
-  const done   = status === 'done'
+  const pct     = Math.min(100, target > 0 ? Math.round(value / target * 100) : 0)
+  const status  = getStatus(value, target)
+  const cfg     = STATUS[status]
+  const done    = status === 'done'
   const contado = useContagem(value)
 
   return (
-    <Painel className="px-4 py-3.5 flex flex-col gap-2.5">
-      <div className="flex items-center gap-2">
-        <IconeTom icon={Icon} tom={cfg.tom} tamanho="sm" />
-        <Rotulo className="truncate">{label}</Rotulo>
-        <span className={`ml-auto font-heading text-[13px] font-bold tabular-nums shrink-0
-                          ${done ? 'text-success' : 'text-t3'}`}>
-          {pct}%
-        </span>
-      </div>
-
-      <div className="flex items-baseline gap-1.5">
-        <span className={`font-heading font-extrabold tabular-nums leading-none text-[30px]
-                          tracking-tight ${done ? 'text-success' : 'text-t1'}`}>
+    <div className="px-5 py-3.5 min-w-0 flex flex-col gap-1.5" title={note}>
+      <p className="text-[12.5px] text-t4 truncate">{label}</p>
+      <p className="flex items-baseline gap-1.5">
+        <span className={`font-display font-extrabold tabular-nums leading-none text-[22px] tracking-[-0.02em]
+                          ${done ? 'text-success' : 'text-t1'}`}>
           {contado}
         </span>
-        <span className="text-[13px] text-t4 font-medium tabular-nums">/{target}</span>
-        {done && <CheckCircle2 size={15} className="text-success ml-auto shrink-0" aria-hidden />}
-      </div>
-
-      <Barra pct={pct} tom={cfg.tom} altura={5} rotuloAcessivel={`${label}: ${value} de ${target}`} />
-
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-[11px] font-semibold ${done ? 'text-success' : 'text-t4'}`}>
-          {cfg.label}
-        </span>
-        {note && <span className="text-[11px] text-t4 truncate">{note}</span>}
-      </div>
-    </Painel>
+        <span className="text-[12.5px] text-t4 tabular-nums">de {target}</span>
+      </p>
+      <Barra pct={pct} tom={cfg.tom} altura={4} rotuloAcessivel={`${label}: ${value} de ${target}`} />
+      <p className={`text-[12px] ${done ? 'text-success font-medium' : 'text-t4'}`}>{cfg.label}</p>
+    </div>
   )
 }
 
@@ -301,43 +283,30 @@ function PerformanceHero({ tasks, period, brokerId }: {
     mes:    { titulo: 'Este mês',    sub: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) },
   }[period]
 
+  // v10 (01/11/2026): score e indicadores numa faixa só. Antes era um painel
+  // dourado com anel de 128px e frase de 22px, mais uma grade de cards — ~350px
+  // antes da primeira meta personalizada.
+  const colunas = {
+    3: 'md:grid-cols-[minmax(220px,1.3fr)_repeat(3,minmax(0,1fr))]',
+    4: 'md:grid-cols-[minmax(220px,1.3fr)_repeat(4,minmax(0,1fr))]',
+    5: 'md:grid-cols-[minmax(220px,1.3fr)_repeat(5,minmax(0,1fr))]',
+  }[kpis.length] ?? 'md:grid-cols-4'
+
   return (
-    <div className="flex flex-col gap-4 mb-7">
-      {/* Desempenho — o único bloco dourado da tela */}
-      <Painel dourado className="px-5 py-5">
-        <div className="flex items-center gap-6 flex-wrap">
-          <ScoreRing score={score} />
-
-          <div className="flex-1 min-w-[240px]">
-            <div className="flex items-center gap-2">
-              <Gauge size={13} strokeWidth={1.7} className="text-brand" aria-hidden />
-              <Rotulo>Desempenho · {PERIODO.titulo}</Rotulo>
-            </div>
-
-            <p className="font-heading text-[22px] font-extrabold text-t1 leading-tight
-                          tracking-[-0.02em] mt-1.5">
-              {veredito}
-            </p>
-            <p className="text-[13px] text-t3 mt-1">{PERIODO.sub}</p>
-
-            <div className="flex flex-wrap items-center gap-2 mt-3">
-              {faltando === 0
-                ? <Chip icon={Sparkles} tom="sucesso">todas as metas do período batidas</Chip>
-                : <Chip icon={Target} tom={score >= 50 ? 'marca' : 'atencao'}>
-                    {faltando} de {kpis.length} {faltando === 1 ? 'meta em aberto' : 'metas em aberto'}
-                  </Chip>}
-            </div>
-          </div>
+    <div className={`bento grid grid-cols-2 ${colunas} divide-y md:divide-y-0 md:divide-x divide-[color:var(--line)] overflow-hidden mb-7`}>
+      <div className="col-span-2 md:col-span-1 flex items-center gap-3.5 px-5 py-3.5 min-w-0">
+        <ScoreRing score={score} />
+        <div className="min-w-0">
+          <p className="text-[12.5px] text-t4 truncate">Desempenho · {PERIODO.sub}</p>
+          <p className="text-[14.5px] font-semibold text-t1 leading-snug mt-0.5">{veredito}</p>
+          <p className={`text-[12px] mt-0.5 ${faltando === 0 ? 'text-success' : 'text-t4'}`}>
+            {faltando === 0
+              ? 'Todas as metas do período batidas'
+              : `${faltando} de ${kpis.length} ${faltando === 1 ? 'meta em aberto' : 'metas em aberto'}`}
+          </p>
         </div>
-      </Painel>
-
-      {/* Indicadores do período */}
-      <div className={`grid gap-3 stagger-children ${
-        kpis.length === 3 ? 'grid-cols-1 sm:grid-cols-3'
-        : kpis.length === 4 ? 'grid-cols-2 lg:grid-cols-4'
-        : 'grid-cols-2 lg:grid-cols-5'}`}>
-        {kpis.map(k => <KpiCard key={k.label} {...k} />)}
       </div>
+      {kpis.map(k => <KpiCelula key={k.label} {...k} />)}
     </div>
   )
 }
@@ -371,7 +340,6 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
   return (
     <Painel className="group px-4 py-4 flex flex-col gap-3">
       <div className="flex items-start gap-2.5">
-        <IconeTom icon={cfg.icon} tom={tom} />
         <div className="min-w-0 flex-1">
           <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight">{goal.name}</p>
           <p className="text-[11px] text-t4 mt-0.5">
@@ -382,8 +350,8 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
       </div>
 
       <div className="flex items-baseline gap-1.5">
-        <span className={`font-heading font-extrabold tabular-nums leading-none text-[32px]
-                          tracking-tight ${done ? 'text-success' : 'text-t1'}`}>
+        <span className={`font-display font-extrabold tabular-nums leading-none text-[24px]
+                          tracking-[-0.02em] ${done ? 'text-success' : 'text-t1'}`}>
           {contado}
         </span>
         <span className="text-[13px] text-t4 font-medium tabular-nums">/{goal.target}</span>
@@ -463,7 +431,6 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
   return (
     <Painel className="group px-4 py-4 flex flex-col gap-3 sm:col-span-2">
       <div className="flex items-start gap-2.5">
-        <IconeTom icon={Footprints} tom="atencao" />
         <div className="min-w-0 flex-1">
           <p className="font-heading text-[14px] font-bold text-t1 leading-tight">Atendimentos</p>
           <p className="text-[11px] text-t4 mt-0.5">meta {metaSem}/semana · {metaMes}/mês</p>
@@ -497,7 +464,7 @@ function VisitasCard({ tasks, visitGoals, onEdit, onDelete, onPause }: {
             era o que deixava o card pesado. */}
         {numeros.map(n => (
           <div key={n.rotulo} className={`rounded-[12px] px-3 py-2.5 text-center ${TOM[n.tom].fundo}`}>
-            <p className={`font-heading font-extrabold tabular-nums leading-none text-[26px]
+            <p className={`font-display font-extrabold tabular-nums leading-none text-[22px]
                            ${n.tom === 'neutro' ? 'text-t1' : TOM[n.tom].texto}`}>
               {n.valor}
             </p>
@@ -675,6 +642,13 @@ function GrupoDoCorretor({ grupo, tasks, sales, disparos, onEdit, onDelete, onPa
 
 export function GoalsPage() {
   const { goals, load, loadForBroker, remove, update } = useGoalsStore()
+  const [excluindo, setExcluindo] = useState(false)
+
+  // Pausar e reativar esperam o banco; a falha já vira toast na camada do
+  // banco, aqui só evitamos a promessa rejeitada solta.
+  function mudarAtiva(id: string, active: boolean) {
+    update(id, { active }).catch(() => {})
+  }
   const { tasks: allTasks, load: loadTasks }  = useTasksStore()
   const { sales: allSales, load: loadSales }  = useSalesStore()
   const { checkAndSave, snapshots, load: loadSnapshots } = useWeekSnapshotStore()
@@ -743,13 +717,9 @@ export function GoalsPage() {
     { id: 'semana', label: 'Esta semana', sub: (() => { const s = getWeekStart(); const e = new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} a ${e.getDate()}/${e.getMonth()+1}` })() },
     { id: 'mes',    label: 'Este mês',    sub: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) },
   ]
-  // rótulo em duas linhas não cabe no <Abas>; só o teclado vem de lá
-  const propsDaAba = useRovingTabs(PERIOD_TABS.map(t => t.id), tab, setTab)
 
   return (
     <PageLayout
-      icon={Target}
-      iconTom="marca"
       title="Metas"
       subtitle={visaoGlobal
         ? `${active.length} meta${active.length !== 1 ? 's' : ''} ativa${active.length !== 1 ? 's' : ''} · ${gruposPorCorretor.length} corretor${gruposPorCorretor.length !== 1 ? 'es' : ''}`
@@ -757,28 +727,13 @@ export function GoalsPage() {
       ctaLabel="Nova meta"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
       band={
-        <div className="flex gap-1 p-1 my-3 rounded-[14px] border border-line bg-s2/50 w-full sm:w-fit"
-             role="tablist" aria-label="Período">
-          {PERIOD_TABS.map((t, i) => {
-            const ativo = tab === t.id
-            return (
-              <button
-                key={t.id}
-                {...propsDaAba(i)}
-                onClick={() => setTab(t.id)}
-                className={`flex-1 sm:flex-none flex flex-col items-center sm:items-start gap-0.5
-                            px-4 py-2 rounded-[10px] transition-all cursor-pointer min-h-[44px]
-                            focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30
-                            ${ativo ? 'grad-brand' : 'text-t3 hover:text-t1 hover:bg-s3/50'}`}
-              >
-                <span className="text-[13px] font-bold leading-none">{t.label}</span>
-                <span className={`text-[11px] leading-none ${ativo ? 'opacity-75' : 'text-t4'}`}>
-                  {t.sub}
-                </span>
-              </button>
-            )
-          })}
-        </div>
+        <Abas
+          abas={PERIOD_TABS.map(t => ({ value: t.id, label: t.label }))}
+          valor={tab}
+          onChange={setTab}
+          rotulo="Período"
+          variante="sublinhado"
+        />
       }
     >
       {/* ── Desempenho do período ──────────────────────────────────────── */}
@@ -819,7 +774,7 @@ export function GoalsPage() {
               disparos={{ week: disparosWeek, month: disparosMonth }}
               onEdit={g => { setEditing(g); setFormBroker(g.brokerId ?? null); setFormOpen(true) }}
               onDelete={g => setDeleteTarget(g)}
-              onPause={id => update(id, { active: false })}
+              onPause={id => mudarAtiva(id, false)}
               onNova={() => { setEditing(undefined); setFormBroker(grupo.id || null); setFormOpen(true) }}
             />
           ))}
@@ -831,7 +786,7 @@ export function GoalsPage() {
               tasks={tasks} visitGoals={visitGoals}
               onEdit={g => { setEditing(g); setFormOpen(true) }}
               onDelete={g => setDeleteTarget(g)}
-              onPause={id => update(id, { active: false })}
+              onPause={id => mudarAtiva(id, false)}
             />
           )}
           {otherGoals.map(goal => (
@@ -840,7 +795,7 @@ export function GoalsPage() {
               progress={calcProgress(goal, tasks, sales, { week: disparosWeek, month: disparosMonth })}
               onEdit={() => { setEditing(goal); setFormOpen(true) }}
               onDelete={() => setDeleteTarget(goal)}
-              onPause={() => update(goal.id, { active: false })}
+              onPause={() => mudarAtiva(goal.id, false)}
             />
           ))}
         </div>
@@ -889,7 +844,7 @@ export function GoalsPage() {
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100
                                   focus-within:opacity-100 transition-opacity">
                     <button
-                      onClick={() => update(goal.id, { active: true })}
+                      onClick={() => mudarAtiva(goal.id, true)}
                       className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-text
                                  px-2.5 py-1.5 rounded-lg hover:bg-brand-tint transition-colors
                                  cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
@@ -940,8 +895,19 @@ export function GoalsPage() {
             Cancelar
           </Button>
           <Button
-            variant="danger" className="flex-1"
-            onClick={async () => { if (deleteTarget) { await remove(deleteTarget.id); setDeleteTarget(undefined) } }}
+            variant="danger" className="flex-1" carregando={excluindo}
+            onClick={async () => {
+              if (!deleteTarget) return
+              setExcluindo(true)
+              try {
+                await remove(deleteTarget.id)
+                setDeleteTarget(undefined)
+              } catch {
+                // deleteOne já mostrou o erro; a meta continua na tela.
+              } finally {
+                setExcluindo(false)
+              }
+            }}
           >
             Excluir
           </Button>

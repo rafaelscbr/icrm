@@ -38,7 +38,9 @@ interface CampaignLeadsStore {
   /** Persiste alteração no banco. Aplica rollback e exibe toast se falhar. */
   update: (id: string, data: Partial<CampaignLead>) => Promise<void>
   remove: (id: string) => void
-  removeForCampaign: (campaignId: string) => void
+  /** Só tira da memória os leads de uma campanha já apagada — o banco os remove
+   *  em cascata (campaign_leads.campaign_id ON DELETE CASCADE). */
+  esquecerCampanha: (campaignId: string) => void
   /** Muda etapa do funil com persistência confirmada. Lança erro se falhar. */
   setStage: (id: string, stage: FunnelStage, extra?: Partial<CampaignLead>, actorBy?: { id: string; name: string }) => Promise<void>
   /** Atualiza situação com persistência confirmada. Lança erro se falhar. */
@@ -323,9 +325,8 @@ export const useCampaignLeadsStore = create<CampaignLeadsStore>((set, get) => ({
     db.campaignLeads.delete(id).catch(err => console.error('[campaignLeads] remove:', err))
   },
 
-  removeForCampaign: (campaignId) => {
+  esquecerCampanha: (campaignId) => {
     set(s => ({ leads: s.leads.filter(l => l.campaignId !== campaignId) }))
-    db.campaignLeads.deleteForCampaign(campaignId).catch(err => console.error('[campaignLeads] removeForCampaign:', err))
   },
 
   // ── Muda etapa do funil ────────────────────────────────────────────────

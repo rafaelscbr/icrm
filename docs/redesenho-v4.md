@@ -143,3 +143,11 @@ pixel art).
 | Admin | `/admin` | pendente |
 | Escritório virtual | `/escritorio` | exceção (pixel art) |
 | Pulse | `/pulse` | exceção (quiosque, já é a referência) |
+
+### v10.1 — Ligações, Disparos, Base de Leads e Metas (01/11/2026)
+
+- **Ligações:** meta do dia vira uma linha (`LinhaMetaDia`, usada também na fila); campanhas viram lista com "Abrir fila".
+- **Disparos:** KPIs em `FaixaNumeros`, limite diário em uma linha, campanhas em lista com o funil em 4 números (lg+).
+- **Base de Leads:** KPIs em `FaixaNumeros`, ordem por `Segmentado`, listas em linhas (score e tamanho à direita); o emoji do score saiu da tela.
+- **Metas:** abas de período no padrão `Abas`; score e indicadores numa faixa só (anel de 60px).
+- **Banco primeiro:** excluir/transferir campanha, criar/editar/pausar/excluir meta, arquivar lista e limpeza de órfãos agora esperam o banco e mostram o erro — antes eram otimistas ou engoliam a falha.

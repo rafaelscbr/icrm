@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react'
 import {
-  Database, Archive, Pencil, Trash2, FolderOpen,
-  TrendingUp, Calendar, ChevronRight, Sparkles, AlertTriangle,
-  Zap, Trophy, Layers,
-  Plus,
+  Database, Archive, Pencil, Trash2, ArrowRight, Sparkles, AlertTriangle,
+  Trophy, Plus,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
-import { KpiCard }       from '../../components/shared/visual'
-import { Card }          from '../../components/ui/Card'
+import { FaixaNumeros, Segmentado } from '../../components/shared/visual'
+import { ListContainer } from '../../components/ui/ListContainer'
 import { Modal }         from '../../components/ui/Modal'
 import { Button }        from '../../components/ui/Button'
 import { EstadoTela }    from '../../components/shared/EstadoTela'
 import { Abas } from '../../components/shared/Abas'
-import { EsqueletoCards } from '../../components/shared/Esqueleto'
+import { EsqueletoLinhas } from '../../components/shared/Esqueleto'
 import { mensagemDeErro } from '../../lib/erros'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -81,21 +79,33 @@ export function LeadListsPage() {
     await remove(listId, contactIdsToDelete)
   }
 
+  async function handleArchive(list: LeadList) {
+    try {
+      await archive(list.id)
+      toast.success('Lista arquivada')
+    } catch {
+      // upsert já mostrou o erro; a lista continua em Ativas.
+    }
+  }
+
   async function openCleanup() {
     setCleanupOpen(true)
     setCleanupCount(null)
     setCleanupLoading(true)
     try {
       // Conta órfãos: is_base_lead=true, sem lista ativa, sem funil ativo
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('contacts')
         .select('id', { count: 'exact', head: true })
         .eq('is_base_lead', true)
         .filter('id', 'not.in', `(select contact_id from lead_list_members)`)
         .filter('id', 'not.in', `(select contact_id from leads where discard_reason is null and contact_id is not null)`)
+      if (error) throw error
       setCleanupCount(count ?? 0)
-    } catch {
-      setCleanupCount(0)
+    } catch (err) {
+      // Antes virava 0 e a tela dizia "Base limpa!" sem ter conseguido contar.
+      toast.error(`Não foi possível contar os órfãos: ${mensagemDeErro(err)}`)
+      setCleanupOpen(false)
     } finally {
       setCleanupLoading(false)
     }
@@ -108,16 +118,18 @@ export function LeadListsPage() {
       const CHUNK = 500
       let deleted = 0
       while (true) {
-        const { data } = await supabase
+        const { data, error: erroBusca } = await supabase
           .from('contacts')
           .select('id')
           .eq('is_base_lead', true)
           .filter('id', 'not.in', `(select contact_id from lead_list_members)`)
           .filter('id', 'not.in', `(select contact_id from leads where discard_reason is null and contact_id is not null)`)
           .limit(CHUNK)
+        if (erroBusca) throw erroBusca
         if (!data || data.length === 0) break
         const ids = (data as { id: string }[]).map(r => r.id)
-        await supabase.from('contacts').delete().in('id', ids)
+        const { error: erroApagar } = await supabase.from('contacts').delete().in('id', ids)
+        if (erroApagar) throw erroApagar
         deleted += ids.length
         if (ids.length < CHUNK) break
       }
@@ -134,8 +146,6 @@ export function LeadListsPage() {
 
   return (
     <PageLayout
-      icon={Database}
-      iconTom="info"
       title="Base de Leads"
       subtitle={erro
         ? 'não foi possível ler as listas'
@@ -155,47 +165,34 @@ export function LeadListsPage() {
         />
       }
       actions={
-        <div className="flex items-center gap-2">
-          {tab === 'active' && (
-            <button
-              onClick={() => setSortByScore(s => !s)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-xl transition-all ${
-                sortByScore
-                  ? 'bg-brand-tint border-brand/25 text-brand-text'
-                  : 'bg-s2/50 border-line text-t3 hover:text-brand-text hover:border-brand/25 hover:bg-brand-tint'
-              }`}
-              title="Ordenar por score de qualidade"
-            >
-              <Zap size={13} /> {sortByScore ? 'Score ativo' : 'Por score'}
-            </button>
-          )}
-          <button
-            onClick={openCleanup}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-t3 hover:text-amber-400 bg-s2/50 hover:bg-amber-500/8 border border-line hover:border-amber-500/25 rounded-xl transition-all"
-            title="Limpar contatos órfãos de listas excluídas"
-          >
-            <Sparkles size={12} /> Limpar órfãos
-          </button>
-        </div>
+        <Button variant="ghost" size="sm" onClick={openCleanup} className="gap-1.5"
+                title="Limpar contatos órfãos de listas excluídas">
+          <Sparkles size={14} strokeWidth={1.8} aria-hidden /> <span className="hidden md:inline">Limpar órfãos</span>
+        </Button>
       }
     >
-      {/* Stats */}
       {lists.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {([
-            { label: 'Listas ativas', value: totalLists,                  icon: Layers,   tom: 'marca'  as const, nota: 'prontas para campanha' },
-            { label: 'Leads na base', value: totalLeads.toLocaleString(), icon: Database, tom: 'info'   as const, nota: 'contatos frios' },
-            { label: 'Maior lista',   value: biggestList ? biggestList.totalCount.toLocaleString() : '—',
-              icon: TrendingUp, tom: 'neutro' as const, nota: biggestList?.name ?? 'nenhuma lista ainda' },
-          ]).map(k => (
-            <KpiCard key={k.label} icon={k.icon} rotulo={k.label} valor={k.value} nota={k.nota} tom={k.tom} />
-          ))}
+        <FaixaNumeros className="mb-5" itens={[
+          { rotulo: 'Listas ativas', valor: totalLists.toLocaleString('pt-BR') },
+          { rotulo: 'Leads na base', valor: totalLeads.toLocaleString('pt-BR') },
+          { rotulo: 'Maior lista',   valor: biggestList ? biggestList.totalCount.toLocaleString('pt-BR') : '—',
+            nota: biggestList?.name },
+        ]} />
+      )}
+
+      {tab === 'active' && visible.length > 1 && (
+        <div className="flex items-center justify-end mb-3">
+          <Segmentado
+            rotulo="Ordem das listas"
+            valor={sortByScore ? 'score' : 'recentes'}
+            onChange={v => setSortByScore(v === 'score')}
+            opcoes={[{ value: 'recentes', label: 'Recentes' }, { value: 'score', label: 'Melhor score' }]}
+          />
         </div>
       )}
 
-
       <EstadoTela
-        esqueleto={<EsqueletoCards cards={6} colunas={3} />}
+        esqueleto={<EsqueletoLinhas linhas={6} />}
         carregando={loading && lists.length === 0}
         erro={erro}
         vazio={visible.length === 0}
@@ -211,152 +208,81 @@ export function LeadListsPage() {
           </Button>
         )}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 stagger-children">
+        <ListContainer>
           {visible.map(list => {
             const profile    = list.productProfile
             const listScore  = listScores.get(list.id)
-            const hasClients = (listScore?.clients ?? 0) > 0
+            const vendas     = listScore?.clients ?? 0
+            const perfil = [
+              profile?.type ? (PROPERTY_TYPE_LABEL as Record<string, string>)[profile.type] ?? profile.type : null,
+              profile?.region,
+              profile?.bedrooms ? `${profile.bedrooms}q` : null,
+              profile?.valueMin ? `a partir de R$ ${(profile.valueMin / 1000).toFixed(0)}k` : null,
+            ].filter(Boolean).join(' · ')
+            const dono = isAdmin && list.brokerId
+              ? allProfiles.find(p => p.id === list.brokerId)?.name ?? 'Corretor'
+              : null
+
             return (
-              <Card
-                key={list.id}
-                className={`group flex flex-col gap-4 transition-all duration-200 border
-                  ${hasClients
-                    ? 'border-brand/40 hover:border-brand/70 ring-1 ring-brand/15'
-                    : 'border-line hover:border-brand/25'
-                  }`}
-              >
-                {/* Barra de destaque — listas com vendas */}
-                {hasClients && (
-                  <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl bg-gradient-to-r from-brand/60 via-brand to-brand/60" />
-                )}
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${hasClients ? 'bg-brand/15' : 'bg-s3/60'}`}>
-                      <Database size={15} className={hasClients ? 'text-brand' : 'text-t3'} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-t1 truncate">{list.name}</p>
-                        {hasClients && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand bg-brand/10 border border-brand/25 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                            <Trophy size={11} /> {listScore!.clients} venda{listScore!.clients > 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                      {profile?.region || profile?.type ? (
-                        <p className="text-[11px] text-t3 truncate mt-0.5">
-                          {[
-                            profile.type ? (PROPERTY_TYPE_LABEL as Record<string, string>)[profile.type] ?? profile.type : null,
-                            profile.region,
-                            profile.bedrooms ? `${profile.bedrooms}q` : null,
-                          ].filter(Boolean).join(' · ')}
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-t4 mt-0.5">Sem perfil definido</p>
-                      )}
-                      {isAdmin && list.brokerId && (
-                        <p className="text-[11px] text-t3 mt-0.5">
-                          {allProfiles.find(p => p.id === list.brokerId)?.name ?? 'Corretor'}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    {list.status === 'active' && (
-                      <button onClick={() => archive(list.id)} title="Arquivar"
-                        className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer">
-                        <Archive size={13} />
-                      </button>
+              <div key={list.id}
+                className="lista-linha group flex items-center gap-4 px-5 py-3.5 border-b border-line last:border-0 transition-colors">
+                <button onClick={() => setDetailId(list.id)}
+                  className="flex-1 min-w-0 text-left cursor-pointer focus:outline-none focus-visible:underline">
+                  <p className="flex items-center gap-2 min-w-0">
+                    <span className="text-[14.5px] font-semibold text-t1 truncate">{list.name}</span>
+                    {vendas > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-success shrink-0">
+                        <Trophy size={12} strokeWidth={1.8} aria-hidden /> {vendas} venda{vendas > 1 ? 's' : ''}
+                      </span>
                     )}
-                    <button onClick={() => setEditList(list)}
-                      className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer">
-                      <Pencil size={13} />
-                    </button>
-                    <button onClick={() => setDeleteList(list)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+                  </p>
+                  <p className="text-[12.5px] text-t4 truncate mt-0.5">
+                    {perfil || 'Sem perfil definido'}
+                    {dono && <> · {dono}</>}
+                  </p>
+                </button>
+
+                <div className="hidden md:block text-right min-w-[84px] shrink-0">
+                  <p className="text-[14px] font-semibold text-t1 tabular-nums leading-tight">
+                    {listScore ? listScore.score : erroScore ? '—' : scoresProntos ? '—' : '…'}
+                  </p>
+                  <p className={`text-[11.5px] leading-tight mt-0.5 ${listScore ? listScore.color : erroScore ? 'text-error' : 'text-t4'}`}
+                     title={erroScore ?? undefined}>
+                    {listScore ? listScore.label : erroScore ? 'score indisponível' : scoresProntos ? 'sem score' : 'calculando'}
+                  </p>
                 </div>
 
-                {/* Contagem + score */}
-                {/* Eram três quadros idênticos, e "Ticket mín" vem vazio na
-                    maioria das listas. O tamanho da lista é o número que decide
-                    se ela vale uma campanha: ele domina, e o resto é apoio. */}
-                <div className="flex items-end gap-3">
-                  <div className="min-w-0">
-                    <p className="font-heading text-[26px] font-black tabular-nums text-t1 leading-none tracking-[-0.02em]">
-                      {list.totalCount.toLocaleString('pt-BR')}
-                    </p>
-                    <p className="font-label text-[11px] uppercase tracking-[0.12em] text-t4 mt-1">leads</p>
-                  </div>
-
-                  <div className="ml-auto flex items-center gap-2">
-                    {profile?.valueMin && (
-                      <span className="text-[11px] text-t4 tabular-nums" title="Ticket mínimo do perfil">
-                        a partir de R$ {(profile.valueMin / 1000).toFixed(0)}k
-                      </span>
-                    )}
-                    {listScore ? (
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-[10px] border ${listScore.bg} ${listScore.border}`}
-                        title={`Score de qualidade: ${listScore.score}`}
-                      >
-                        <span className="text-[13px] leading-none">{listScore.emoji}</span>
-                        <span className={`font-heading text-[13px] font-bold tabular-nums ${listScore.color}`}>{listScore.score}</span>
-                        <span className={`text-[11px] ${listScore.color} opacity-80`}>{listScore.label}</span>
-                      </span>
-                    ) : erroScore ? (
-                      <span className="text-[11px] text-error" title={erroScore}>score indisponível</span>
-                    ) : scoresProntos ? (
-                      <span className="text-[11px] text-t4" title="A lista ainda não tem leads pontuados">sem score</span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-[11px] text-t5">
-                        <span className="w-2.5 h-2.5 border border-t4 border-t-transparent rounded-full animate-spin" aria-hidden />
-                        calculando score
-                      </span>
-                    )}
-                  </div>
+                <div className="text-right min-w-[72px] shrink-0">
+                  <p className="text-[14px] font-semibold text-t1 tabular-nums leading-tight">
+                    {list.totalCount.toLocaleString('pt-BR')}
+                  </p>
+                  <p className="text-[11.5px] text-t4 leading-tight mt-0.5">leads</p>
                 </div>
 
-                {list.description && (
-                  <p className="text-xs text-t3 line-clamp-2">{list.description}</p>
-                )}
-
-                {/* CTA */}
-                <div className="flex gap-2 pt-1 border-t border-line">
-                  <button
-                    onClick={() => setDetailId(list.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-t2 hover:text-t1 hover:bg-s2 transition-colors cursor-pointer"
-                  >
-                    <FolderOpen size={12} /> Ver Leads <ChevronRight size={11} />
+                <div className="hidden sm:flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
+                  {list.status === 'active' && (
+                    <button onClick={() => handleArchive(list)} aria-label="Arquivar lista"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/30">
+                      <Archive size={14} strokeWidth={1.8} />
+                    </button>
+                  )}
+                  <button onClick={() => setEditList(list)} aria-label="Editar lista"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/30">
+                    <Pencil size={14} strokeWidth={1.8} />
                   </button>
-                  {/* Era um ícone de gráfico de barras que abria a EDIÇÃO da
-                      lista, sem rótulo acessível. Ícone errado e ação muda. */}
-                  <button
-                    onClick={() => setEditList(list)}
-                    aria-label={`Editar a lista ${list.name}`}
-                    title="Editar lista"
-                    className="flex items-center gap-1.5 py-2 px-3 min-h-[36px] rounded-xl text-xs font-medium text-t3
-                               hover:text-t1 hover:bg-s3/50 transition-all cursor-pointer
-                               focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-                  >
-                    <Pencil size={12} strokeWidth={1.7} aria-hidden /> Editar
+                  <button onClick={() => setDeleteList(list)} aria-label="Excluir lista"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error-bg text-t4 hover:text-error transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-error/30">
+                    <Trash2 size={14} strokeWidth={1.8} />
                   </button>
                 </div>
 
-                {/* Data */}
-                <div className="flex items-center gap-1.5 -mt-2">
-                  <Calendar size={10} className="text-t5" />
-                  <span className="text-[11px] text-t5">
-                    Criada em {new Date(list.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
-              </Card>
+                <Button variant="secondary" size="sm" onClick={() => setDetailId(list.id)} className="gap-1.5 shrink-0">
+                  Abrir <ArrowRight size={13} strokeWidth={1.8} aria-hidden />
+                </Button>
+              </div>
             )
           })}
-        </div>
+        </ListContainer>
       </EstadoTela>
 
       <LeadListForm isOpen={createOpen}           onClose={() => setCreateOpen(false)}   />
@@ -372,8 +298,8 @@ export function LeadListsPage() {
       {/* Modal limpeza de órfãos */}
       <Modal isOpen={cleanupOpen} onClose={() => setCleanupOpen(false)} title="Limpar contatos órfãos" size="sm">
         <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
-            <AlertTriangle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-3 bg-warning-bg border border-warning-line rounded-xl">
+            <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
             <p className="text-xs text-t3">
               Remove contatos que foram importados em listas que <span className="font-semibold text-t1">já não existem mais</span> no sistema e não estão no funil principal.
             </p>
@@ -387,14 +313,14 @@ export function LeadListsPage() {
           ) : (
             <div className="flex items-center justify-between px-3 py-3 bg-s2/50 border border-line rounded-xl">
               <span className="text-xs text-t3">Contatos que serão excluídos</span>
-              <span className={`text-sm font-bold tabular-nums ${(cleanupCount ?? 0) > 0 ? 'text-red-400' : 'text-t4'}`}>
+              <span className={`text-sm font-bold tabular-nums ${(cleanupCount ?? 0) > 0 ? 'text-error' : 'text-t4'}`}>
                 {(cleanupCount ?? 0).toLocaleString('pt-BR')}
               </span>
             </div>
           )}
 
           {cleanupCount === 0 && !cleanupLoading && (
-            <p className="text-xs text-green-400 text-center">Nenhum contato órfão encontrado. Base limpa!</p>
+            <p className="text-[13px] text-success text-center">Nenhum contato órfão encontrado.</p>
           )}
 
           <div className="flex gap-3">
@@ -405,14 +331,10 @@ export function LeadListsPage() {
               variant="danger"
               className="flex-1"
               onClick={runCleanup}
-              disabled={cleanupLoading || cleaning || (cleanupCount ?? 0) === 0}
+              disabled={cleanupLoading || (cleanupCount ?? 0) === 0}
+              carregando={cleaning}
             >
-              {cleaning ? (
-                <span className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  Limpando…
-                </span>
-              ) : `Excluir ${(cleanupCount ?? 0).toLocaleString('pt-BR')} contatos`}
+              {cleaning ? 'Limpando…' : `Excluir ${(cleanupCount ?? 0).toLocaleString('pt-BR')} contatos`}
             </Button>
           </div>
         </div>

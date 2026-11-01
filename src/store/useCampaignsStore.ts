@@ -16,7 +16,8 @@ interface CampaignsStore {
   subscribe: () => () => void
   add: (data: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Campaign>
   update: (id: string, data: Partial<Campaign>) => Promise<void>
-  remove: (id: string) => void
+  /** Banco primeiro: só sai da tela depois do delete confirmado. Lança se falhar. */
+  remove: (id: string) => Promise<void>
   setStatus: (id: string, status: CampaignStatus) => void
 }
 
@@ -114,9 +115,11 @@ export const useCampaignsStore = create<CampaignsStore>((set, get) => ({
     }
   },
 
-  remove: (id) => {
+  // Antes tirava da tela e apagava no banco em segundo plano, engolindo a
+  // falha no console: a campanha sumia e voltava no próximo carregamento.
+  remove: async (id) => {
+    await db.campaigns.delete(id)
     set(s => ({ campaigns: s.campaigns.filter(c => c.id !== id) }))
-    db.campaigns.delete(id).catch(err => console.error('[campaigns] remove:', err))
   },
 
   setStatus: (id, status) => get().update(id, { status }),

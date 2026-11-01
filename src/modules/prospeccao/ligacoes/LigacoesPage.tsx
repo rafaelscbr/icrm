@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react'
 import {
   Phone, PhoneCall, BarChart3, Pause, Play, Pencil, Trash2, ArrowRight,
-  Users, Calendar, Target, Sparkles, AlertTriangle, Repeat, Timer, Package,
-  Plus,
+  AlertTriangle, Plus,
 } from 'lucide-react'
 import { PageLayout } from '../../../components/layout/PageLayout'
 import { Button } from '../../../components/ui/Button'
 import { Modal } from '../../../components/ui/Modal'
 import { EstadoTela } from '../../../components/shared/EstadoTela'
-import { EsqueletoCards } from '../../../components/shared/Esqueleto'
+import { EsqueletoLinhas } from '../../../components/shared/Esqueleto'
 import { Abas } from '../../../components/shared/Abas'
 import { CallCampaignForm } from './CallCampaignForm'
 import { CallCampaignDetail } from './CallCampaignDetail'
 import { CallPerformanceTab } from './CallPerformanceTab'
-import { Painel, Rotulo, IconeTom, Barra, Chip } from './Primitivas'
+import { LinhaMetaDia } from './LinhaMetaDia'
+import { ListContainer } from '../../../components/ui/ListContainer'
 import { useCallCampaignsStore } from '../../../store/useCallCampaignsStore'
 import { useCallQueueStore } from '../../../store/useCallQueueStore'
 import { useAuthStore } from '../../../store/useAuthStore'
@@ -30,7 +30,8 @@ import toast from 'react-hot-toast'
  * ligação a fila escolhe por ele — um lead por vez, um desfecho por ligação.
  *
  * A meta do dia abre a tela porque é o número que decide se o corretor precisa
- * trabalhar agora. Tudo mais é consequência dela.
+ * trabalhar agora. Desde a v10 (01/11/2026) ela é uma linha, não um painel —
+ * e as campanhas são lista, não cards: o que importa é o nome e "Abrir fila".
  */
 
 type PageTab = 'campanhas' | 'desempenho'
@@ -67,16 +68,11 @@ export function LigacoesPage() {
     }
   }
 
-  const metaDia   = DAILY_TARGETS.ligacoes
-  const bateuMeta = contadores.hoje >= metaDia
-  const faltam    = Math.max(0, metaDia - contadores.hoje)
   const ativas    = campaigns.filter(c => c.status === 'active')
   const primeira  = ativas[0] ?? campaigns[0]
 
   return (
     <PageLayout
-      icon={Phone}
-      iconTom="marca"
       title="Ligações WhatsApp"
       subtitle="Prospecção ativa por telefone — fila compartilhada e cadência automática"
       ctaLabel="Nova campanha"
@@ -94,57 +90,19 @@ export function LigacoesPage() {
         />
       }
     >
-      {/* ── Meta do dia — o hero da tela ──────────────────────────── */}
-      <Painel dourado className="mb-5 px-5 py-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          <IconeTom icon={bateuMeta ? Sparkles : Target} tom={bateuMeta ? 'sucesso' : 'marca'} tamanho="lg" />
+      {/* ── Meta do dia — uma linha: número, barra, ritmo e o botão ───── */}
+      <LinhaMetaDia
+        className="mb-5"
+        hoje={contadores.hoje} meta={DAILY_TARGETS.ligacoes}
+        semana={contadores.semana} mes={contadores.mes} semDesfecho={contadores.semDesfechoHoje}
+        acao={primeira && (
+          <Button onClick={() => setSelecionada(primeira.id)} className="gap-2 shrink-0">
+            <Phone size={14} strokeWidth={2} aria-hidden /> Ligar agora
+          </Button>
+        )}
+      />
 
-          <div className="min-w-0 flex-1">
-            <Rotulo>Suas tentativas hoje</Rotulo>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className={`font-heading font-extrabold tabular-nums leading-none text-[38px]
-                                tracking-tight ${bateuMeta ? 'text-success' : 'text-brand'}`}>
-                {contadores.hoje}
-              </span>
-              <span className="font-label text-[13px] text-t4 tabular-nums">de {metaDia}</span>
-            </div>
-            <p className="text-[13px] text-t3 mt-1">
-              {bateuMeta
-                ? 'Meta batida — cada tentativa daqui é lucro.'
-                : `Faltam ${faltam} para o mínimo combinado do dia.`}
-            </p>
-          </div>
-
-          {primeira && (
-            <button
-              onClick={() => setSelecionada(primeira.id)}
-              className="flex items-center gap-2.5 rounded-[14px] px-5 py-3.5 shrink-0
-                         grad-brand grad-brand-glow font-heading text-[15px] font-bold
-                         transition-transform active:scale-[0.99] cursor-pointer min-h-[52px]
-                         focus:outline-none focus:ring-2 focus:ring-brand/40"
-            >
-              <Phone size={18} strokeWidth={1.8} aria-hidden /> Ligar agora
-            </button>
-          )}
-        </div>
-
-        <div className="mt-3.5">
-          <Barra pct={(contadores.hoje / metaDia) * 100} tom={bateuMeta ? 'sucesso' : 'marca'} altura={7} />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
-          <span className="text-[11px] text-t4 tabular-nums">{contadores.semana} na semana</span>
-          <span className="text-t5" aria-hidden>·</span>
-          <span className="text-[11px] text-t4 tabular-nums">{contadores.mes} no mês</span>
-          {contadores.semDesfechoHoje > 0 && (
-            <Chip icon={AlertTriangle} tom="atencao">
-              {contadores.semDesfechoHoje} sem desfecho registrado
-            </Chip>
-          )}
-        </div>
-      </Painel>
-
-      {loading && campaigns.length === 0 && <EsqueletoCards cards={3} colunas={3} />}
+      {loading && campaigns.length === 0 && <EsqueletoLinhas linhas={4} />}
 
       {(!loading || campaigns.length > 0) && (
         <>
@@ -166,113 +124,72 @@ export function LigacoesPage() {
                 </Button>
               }
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              <ListContainer>
                 {campaigns.map(c => {
                   const cfg     = CALL_STATUS_CONFIG[c.status]
                   const equipe  = participants.filter(p => p.campaignId === c.id).length
                     + (c.ownerBrokerId ? 1 : 0)
                   const souDono = c.ownerBrokerId === profile?.id
                   const podeEditar = isAdmin || souDono
+                  const ativa = c.status === 'active'
 
                   return (
-                    <Painel key={c.id} className="group flex flex-col">
-                      {/* Cabeçalho */}
-                      <div className="flex items-start gap-3 px-4 pt-4 pb-3">
-                        <IconeTom icon={Phone} tom={c.status === 'active' ? 'marca' : 'neutro'} />
+                    <div key={c.id}
+                      className="lista-linha group flex items-center gap-4 px-5 py-3.5 border-b border-line last:border-0 transition-colors">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${ativa ? 'bg-success' : 'bg-t5'}`} aria-hidden />
 
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-heading text-[15px] font-bold text-t1 truncate leading-tight">
-                            {c.name}
-                          </h3>
-                          <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                            <Chip tom={cfg.tom}>{cfg.label}</Chip>
-                            {c.productName && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-t4 truncate">
-                                <Package size={10} strokeWidth={1.6} aria-hidden /> {c.productName}
-                              </span>
-                            )}
-                          </div>
+                      <button onClick={() => setSelecionada(c.id)}
+                        className="flex-1 min-w-0 text-left cursor-pointer focus:outline-none focus-visible:underline">
+                        <p className="text-[14.5px] font-semibold text-t1 truncate">{c.name}</p>
+                        <p className="text-[12.5px] text-t4 truncate mt-0.5">
+                          {cfg.label}
+                          {c.productName && <> · {c.productName}</>}
+                          {' · '}{equipe} {equipe === 1 ? 'corretor' : 'corretores'}
+                          {' · '}até {c.maxAttempts} tentativas
+                          <span className="hidden md:inline"> · reserva {c.claimMinutes} min</span>
+                        </p>
+                      </button>
+
+                      {podeEditar && (
+                        <div className="hidden sm:flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100
+                                        transition-opacity shrink-0">
+                          <button
+                            onClick={() => setStatus(c.id, ativa ? 'paused' : 'active')}
+                            aria-label={ativa ? 'Pausar campanha' : 'Reativar campanha'}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70
+                                       text-t4 hover:text-t2 transition-colors cursor-pointer
+                                       focus:outline-none focus:ring-2 focus:ring-brand/30"
+                          >
+                            {ativa ? <Pause size={14} strokeWidth={1.8} /> : <Play size={14} strokeWidth={1.8} />}
+                          </button>
+                          <button
+                            onClick={() => setEditando(c)}
+                            aria-label="Editar campanha"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70
+                                       text-t4 hover:text-t2 transition-colors cursor-pointer
+                                       focus:outline-none focus:ring-2 focus:ring-brand/30"
+                          >
+                            <Pencil size={14} strokeWidth={1.8} />
+                          </button>
+                          <button
+                            onClick={() => setExcluindo(c)}
+                            aria-label="Excluir campanha"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error-bg
+                                       text-t4 hover:text-error transition-colors cursor-pointer
+                                       focus:outline-none focus:ring-2 focus:ring-error/30"
+                          >
+                            <Trash2 size={14} strokeWidth={1.8} />
+                          </button>
                         </div>
+                      )}
 
-                        {podeEditar && (
-                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100
-                                          transition-opacity shrink-0">
-                            <button
-                              onClick={() => setStatus(c.id, c.status === 'active' ? 'paused' : 'active')}
-                              aria-label={c.status === 'active' ? 'Pausar campanha' : 'Reativar campanha'}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70
-                                         text-t4 hover:text-t2 transition-colors cursor-pointer
-                                         focus:outline-none focus:ring-2 focus:ring-brand/30"
-                            >
-                              {c.status === 'active'
-                                ? <Pause size={13} strokeWidth={1.6} />
-                                : <Play  size={13} strokeWidth={1.6} />}
-                            </button>
-                            <button
-                              onClick={() => setEditando(c)}
-                              aria-label="Editar campanha"
-                              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70
-                                         text-t4 hover:text-t2 transition-colors cursor-pointer
-                                         focus:outline-none focus:ring-2 focus:ring-brand/30"
-                            >
-                              <Pencil size={13} strokeWidth={1.6} />
-                            </button>
-                            <button
-                              onClick={() => setExcluindo(c)}
-                              aria-label="Excluir campanha"
-                              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error-bg
-                                         text-t4 hover:text-error transition-colors cursor-pointer
-                                         focus:outline-none focus:ring-2 focus:ring-error/30"
-                            >
-                              <Trash2 size={13} strokeWidth={1.6} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Regras da fila, em linguagem de gente */}
-                      <div className="px-4 pb-3 flex flex-wrap gap-x-3.5 gap-y-1.5">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-t4">
-                          <Users size={11} strokeWidth={1.6} aria-hidden />
-                          {equipe} {equipe === 1 ? 'corretor' : 'corretores'}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-t4">
-                          <Repeat size={11} strokeWidth={1.6} aria-hidden />
-                          até {c.maxAttempts} tentativas
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-t4">
-                          <Timer size={11} strokeWidth={1.6} aria-hidden />
-                          reserva {c.claimMinutes} min
-                        </span>
-                      </div>
-
-                      {/* Ação principal — um clique para o trabalho */}
-                      <div className="mt-auto px-3 pb-3">
-                        <button
-                          onClick={() => setSelecionada(c.id)}
-                          className="w-full flex items-center justify-center gap-2 rounded-[12px]
-                                     border border-line-strong bg-s2 px-4 py-2.5 min-h-[44px]
-                                     font-heading text-[13px] font-semibold text-t1
-                                     hover:bg-s3 transition-colors cursor-pointer
-                                     focus:outline-none focus:ring-2 focus:ring-brand/30"
-                        >
-                          <Phone size={13} strokeWidth={1.8} aria-hidden /> Abrir fila
-                          <ArrowRight size={12} strokeWidth={1.8} aria-hidden />
-                        </button>
-                      </div>
-
-                      <div className="px-4 pb-3 flex items-center gap-1.5">
-                        <Calendar size={10} strokeWidth={1.6} className="text-t5" aria-hidden />
-                        <span className="text-[11px] text-t5">
-                          Criada em {new Date(c.createdAt).toLocaleDateString('pt-BR', {
-                            day: '2-digit', month: 'short', year: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                    </Painel>
+                      <Button variant="secondary" size="sm" onClick={() => setSelecionada(c.id)} className="gap-1.5 shrink-0">
+                        Abrir fila <ArrowRight size={13} strokeWidth={1.8} aria-hidden />
+                      </Button>
+                    </div>
                   )
                 })}
-              </div>
+              </ListContainer>
             </EstadoTela>
           )}
 

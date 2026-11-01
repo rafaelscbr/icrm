@@ -50,7 +50,9 @@ export const useLeadListsStore = create<LeadListsState>((set, get) => ({
     const CHUNK = 500
     for (let i = 0; i < contactIdsToDelete.length; i += CHUNK) {
       const chunk = contactIdsToDelete.slice(i, i + CHUNK)
-      await supabase.from('contacts').delete().in('id', chunk)
+      // O erro era ignorado: a lista sumia e os contatos ficavam no banco.
+      const { error } = await supabase.from('contacts').delete().in('id', chunk)
+      if (error) throw error
     }
     // Excluir a lista (CASCADE remove lead_list_members automaticamente)
     await db.leadLists.delete(id)

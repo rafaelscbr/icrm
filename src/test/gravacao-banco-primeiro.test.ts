@@ -1,5 +1,5 @@
 /**
- * Banco primeiro — contatos e vendas (01/11/2026).
+ * Banco primeiro — contatos, vendas, metas e campanhas (01/11/2026).
  *
  * Os dois stores colocavam o registro na tela antes de o banco responder, e a
  * venda ainda engolia a falha no console: o corretor via "Venda registrada" e
@@ -20,6 +20,8 @@ vi.mock('../lib/auth', () => ({
 const db = {
   contacts: { upsert: vi.fn(), delete: vi.fn() },
   sales:    { upsert: vi.fn(), delete: vi.fn() },
+  goals:    { upsert: vi.fn(), delete: vi.fn() },
+  campaigns: { delete: vi.fn() },
 }
 vi.mock('../lib/db', () => ({ db }))
 
@@ -27,14 +29,17 @@ async function stores() {
   vi.resetModules()
   const { useContactsStore } = await import('../store/useContactsStore')
   const { useSalesStore } = await import('../store/useSalesStore')
-  return { useContactsStore, useSalesStore }
+  const { useGoalsStore } = await import('../store/useGoalsStore')
+  const { useCampaignsStore } = await import('../store/useCampaignsStore')
+  return { useContactsStore, useSalesStore, useGoalsStore, useCampaignsStore }
 }
 
 const contatoBase = { name: 'Ana Lima', phone: '47999990000', tags: [], hasChildren: false, isMarried: false, permutaItems: [] }
 const vendaBase = { clientId: 'c1', propertyName: 'Residencial Atlântico', date: '2026-11-01', value: 2450000, type: 'ready' as const }
 
 beforeEach(() => {
-  for (const t of [db.contacts, db.sales]) { t.upsert.mockReset(); t.delete.mockReset() }
+  for (const t of [db.contacts, db.sales, db.goals]) { t.upsert.mockReset(); t.delete.mockReset() }
+  db.campaigns.delete.mockReset()
 })
 
 describe('contatos: banco primeiro', () => {
@@ -87,5 +92,48 @@ describe('vendas: banco primeiro', () => {
 
     await expect(useSalesStore.getState().update(v.id, { value: 1 })).rejects.toThrow()
     expect(useSalesStore.getState().sales[0].value).toBe(2450000)
+  })
+})
+
+const metaBase = { name: 'Atendimentos', category: 'visita' as const, target: 2, period: 'weekly' as const, active: true }
+
+describe('metas: banco primeiro', () => {
+  it('meta que falha ao criar não aparece', async () => {
+    const { useGoalsStore } = await stores()
+    db.goals.upsert.mockRejectedValue(new Error('rede'))
+
+    await expect(useGoalsStore.getState().add(metaBase)).rejects.toThrow('rede')
+    expect(useGoalsStore.getState().goals).toHaveLength(0)
+  })
+
+  it('pausar que falha mantém a meta ativa', async () => {
+    const { useGoalsStore } = await stores()
+    db.goals.upsert.mockResolvedValueOnce(undefined)
+    const g = await useGoalsStore.getState().add(metaBase)
+    db.goals.upsert.mockRejectedValueOnce(new Error('rede'))
+
+    await expect(useGoalsStore.getState().update(g.id, { active: false })).rejects.toThrow()
+    expect(useGoalsStore.getState().goals[0].active).toBe(true)
+  })
+
+  it('exclusão que falha mantém a meta', async () => {
+    const { useGoalsStore } = await stores()
+    db.goals.upsert.mockResolvedValueOnce(undefined)
+    await useGoalsStore.getState().add(metaBase)
+    db.goals.delete.mockRejectedValue(new Error('rls'))
+
+    await expect(useGoalsStore.getState().remove(useGoalsStore.getState().goals[0].id)).rejects.toThrow()
+    expect(useGoalsStore.getState().goals).toHaveLength(1)
+  })
+})
+
+describe('campanhas: banco primeiro', () => {
+  it('exclusão que falha mantém a campanha', async () => {
+    const { useCampaignsStore } = await stores()
+    useCampaignsStore.setState({ campaigns: [{ id: 'c1', name: 'Lista fria' } as never] })
+    db.campaigns.delete.mockRejectedValue(new Error('rls'))
+
+    await expect(useCampaignsStore.getState().remove('c1')).rejects.toThrow()
+    expect(useCampaignsStore.getState().campaigns).toHaveLength(1)
   })
 })

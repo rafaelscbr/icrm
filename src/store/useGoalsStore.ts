@@ -27,9 +27,10 @@ interface GoalsStore {
   load: () => Promise<void>
   subscribe: () => () => void
   loadForBroker: (brokerId: string) => Promise<void>
-  add: (data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>, brokerId?: string) => Goal
-  update: (id: string, data: Partial<Goal>) => void
-  remove: (id: string) => void
+  /** Banco primeiro: a meta só entra na tela depois do upsert. Lança se falhar. */
+  add: (data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>, brokerId?: string) => Promise<Goal>
+  update: (id: string, data: Partial<Goal>) => Promise<void>
+  remove: (id: string) => Promise<void>
 }
 
 export const useGoalsStore = create<GoalsStore>((set, get) => ({
@@ -113,25 +114,28 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
     }
   },
 
-  add: (data, brokerId?) => {
+  // As três escritas eram otimistas e engoliam a falha no console: a meta
+  // aparecia (ou sumia) e voltava no próximo carregamento. Agora a tela só
+  // muda depois que o banco confirma — o realtime não duplica, porque o
+  // INSERT que chega pelo canal é ignorado quando o id já está na lista.
+  add: async (data, brokerId?) => {
     const goal = makeGoal({ ...data, brokerId: brokerId ?? data.brokerId ?? getCurrentUserId() ?? undefined })
-    set(s => ({ goals: [...s.goals, goal] }))
-    db.goals.upsert(goal, brokerId).catch(err => console.error('[goals] add:', err))
+    await db.goals.upsert(goal, brokerId)
+    set(s => s.goals.some(g => g.id === goal.id) ? s : { goals: [...s.goals, goal] })
     return goal
   },
 
-  update: (id, data) => {
-    const goals = get().goals.map(g =>
-      g.id === id ? { ...g, ...data, updatedAt: new Date().toISOString() } : g
-    )
-    set({ goals })
-    const updated = goals.find(g => g.id === id)
-    if (updated) db.goals.upsert(updated).catch(err => console.error('[goals] update:', err))
+  update: async (id, data) => {
+    const atual = get().goals.find(g => g.id === id)
+    if (!atual) throw new Error('Meta não encontrada')
+    const updated = { ...atual, ...data, updatedAt: new Date().toISOString() }
+    await db.goals.upsert(updated)
+    set(s => ({ goals: s.goals.map(g => g.id === id ? updated : g) }))
   },
 
-  remove: (id) => {
+  remove: async (id) => {
+    await db.goals.delete(id)
     set(s => ({ goals: s.goals.filter(g => g.id !== id) }))
-    db.goals.delete(id).catch(err => console.error('[goals] remove:', err))
   },
 }))
 

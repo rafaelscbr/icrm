@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Phone, SkipForward, Loader2, CheckCircle2, Inbox, AlertTriangle,
-  History, Clock, ArrowRight, Target, Sparkles, Timer, MessageCircle, Search,
+  History, Clock, ArrowRight, Sparkles, Timer, MessageCircle, Search,
 } from 'lucide-react'
 import { Button } from '../../../components/ui/Button'
 import { SidePanel } from '../../../components/ui/SidePanel'
 import { TransferCallLeadPanel } from './TransferCallLeadPanel'
-import { Painel, PainelTitulo, Rotulo, IconeTom, Barra, Dica, Chip, TOM } from './Primitivas'
+import { LinhaMetaDia } from './LinhaMetaDia'
+import { Painel, PainelTitulo, Rotulo, IconeTom, Dica, Chip, TOM } from './Primitivas'
 import { useCallQueueStore } from '../../../store/useCallQueueStore'
 import { formatPhone, abrirWhatsApp } from '../../../lib/formatters'
 import { DAILY_TARGETS } from '../../../lib/metasConfig'
@@ -102,52 +103,16 @@ export function CallQueueTab({ campaign }: Props) {
     }
   }
 
-  const metaDia      = DAILY_TARGETS.ligacoes
-  const progresso    = Math.min(100, Math.round((contadores.hoje / metaDia) * 100))
-  const bateuMeta    = contadores.hoje >= metaDia
-  const faltam       = Math.max(0, metaDia - contadores.hoje)
   const jaLigouAgora = Boolean(logAtual) || atual?.status === 'interessado'
   const qualificado  = atual?.status === 'interessado'
 
   return (
     <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full">
 
-      {/* ── Meta do dia — o único bloco dourado da tela ───────────── */}
-      <Painel dourado className="px-4 py-3.5">
-        <div className="flex items-center gap-3">
-          <IconeTom icon={bateuMeta ? Sparkles : Target} tom={bateuMeta ? 'sucesso' : 'marca'} />
-          <div className="min-w-0 flex-1">
-            <Rotulo>Tentativas hoje</Rotulo>
-            <p className="text-[13px] text-t3 mt-0.5">
-              {bateuMeta
-                ? 'Meta batida — cada tentativa daqui é lucro.'
-                : `Faltam ${faltam} para o mínimo do dia.`}
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <span className={`font-heading font-extrabold tabular-nums leading-none text-[34px]
-                              tracking-tight ${bateuMeta ? 'text-success' : 'text-brand'}`}>
-              {contadores.hoje}
-            </span>
-            <span className="font-label text-[13px] text-t4 tabular-nums">/{metaDia}</span>
-          </div>
-        </div>
-
-        <div className="mt-3">
-          <Barra pct={progresso} tom={bateuMeta ? 'sucesso' : 'marca'} altura={7} />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5">
-          <span className="text-[11px] text-t4 tabular-nums">{contadores.semana} na semana</span>
-          <span className="text-t5" aria-hidden>·</span>
-          <span className="text-[11px] text-t4 tabular-nums">{contadores.mes} no mês</span>
-          {contadores.semDesfechoHoje > 0 && (
-            <Chip icon={AlertTriangle} tom="atencao">
-              {contadores.semDesfechoHoje} sem desfecho
-            </Chip>
-          )}
-        </div>
-      </Painel>
+      <LinhaMetaDia
+        hoje={contadores.hoje} meta={DAILY_TARGETS.ligacoes}
+        semana={contadores.semana} mes={contadores.mes} semDesfecho={contadores.semDesfechoHoje}
+      />
 
       {erro && (
         <div

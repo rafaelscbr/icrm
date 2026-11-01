@@ -1,17 +1,17 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import {
-  Megaphone, Users, Calendar, Pencil, Trash2, ArrowRight,
-  Play, Pause, BarChart3, Zap, ArrowLeftRight, UserCircle2,
-  Clock, MessageCircle, Flame, CalendarCheck, ArrowUpRight,
-  Plus,
+  Megaphone, Pencil, Trash2, ArrowRight,
+  Play, Pause, Zap, ArrowLeftRight, Plus,
 } from 'lucide-react'
 import { Abas } from '../../components/shared/Abas'
 import { PageLayout } from '../../components/layout/PageLayout'
-import { Card } from '../../components/ui/Card'
+import { ListContainer } from '../../components/ui/ListContainer'
+import { FaixaNumeros } from '../../components/shared/visual'
+import toast from 'react-hot-toast'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { EstadoTela } from '../../components/shared/EstadoTela'
-import { EsqueletoCards } from '../../components/shared/Esqueleto'
+import { EsqueletoLinhas } from '../../components/shared/Esqueleto'
 import { CampaignForm } from './CampaignForm'
 import { CampaignDetail } from './CampaignDetail'
 // Aba com gráfico: o ECharts só baixa quando a aba abre, não junto com a tela.
@@ -30,7 +30,7 @@ export function CampaignsPage() {
   const { campaigns: allCampaigns, load: loadCampaigns, remove, setStatus, update, loading: loadingCampaigns, erro: erroCampanhas } = useCampaignsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const campaigns = isAdmin && viewAsBrokerId ? allCampaigns.filter(c => c.brokerId === viewAsBrokerId) : allCampaigns
-  const { leads, load: loadLeads, removeForCampaign, transferLeadsToBroker, loading: loadingLeads } = useCampaignLeadsStore()
+  const { leads, load: loadLeads, esquecerCampanha, transferLeadsToBroker, loading: loadingLeads } = useCampaignLeadsStore()
   const { load: loadDisparos } = useDisparosStore()
   const brokers = allProfiles.filter(p => p.role === 'broker')
 
@@ -41,6 +41,7 @@ export function CampaignsPage() {
   const [deleteCampaign,    setDeleteCampaign]    = useState<Campaign | undefined>()
   const [transferCampaign,  setTransferCampaign]  = useState<Campaign | undefined>()
   const [transferBrokerId,  setTransferBrokerId]  = useState<string>('')
+  const [gravando,          setGravando]          = useState(false)
 
   useEffect(() => { loadCampaigns(); loadLeads(); loadDisparos() }, [loadCampaigns, loadLeads, loadDisparos])
 
@@ -56,20 +57,38 @@ export function CampaignsPage() {
     )
   }
 
-  function handleDelete() {
+  // Banco primeiro: a campanha só some depois do delete confirmado. Os leads
+  // dela saem do banco em cascata; aqui só são esquecidos da memória.
+  async function handleDelete() {
     if (!deleteCampaign) return
-    removeForCampaign(deleteCampaign.id)
-    remove(deleteCampaign.id)
-    setDeleteCampaign(undefined)
+    setGravando(true)
+    try {
+      await remove(deleteCampaign.id)
+      esquecerCampanha(deleteCampaign.id)
+      toast.success('Campanha excluída')
+      setDeleteCampaign(undefined)
+    } catch {
+      // deleteOne já mostrou o erro; o modal fica aberto e a campanha na lista.
+    } finally {
+      setGravando(false)
+    }
   }
 
   async function handleTransfer() {
     if (!transferCampaign) return
     const brokerId = transferBrokerId || null
-    update(transferCampaign.id, { brokerId })
-    await transferLeadsToBroker(transferCampaign.id, brokerId)
-    setTransferCampaign(undefined)
-    setTransferBrokerId('')
+    setGravando(true)
+    try {
+      await update(transferCampaign.id, { brokerId })
+      await transferLeadsToBroker(transferCampaign.id, brokerId)
+      toast.success('Campanha transferida')
+      setTransferCampaign(undefined)
+      setTransferBrokerId('')
+    } catch {
+      toast.error('A transferência não terminou. Confira o responsável e tente de novo.')
+    } finally {
+      setGravando(false)
+    }
   }
 
   const totalLeads   = leads.length
@@ -79,8 +98,6 @@ export function CampaignsPage() {
 
   return (
     <PageLayout
-      icon={Megaphone}
-      iconTom="marca"
       title="Campanhas"
       subtitle={erroCampanhas
         ? 'não foi possível ler as campanhas'
@@ -106,7 +123,7 @@ export function CampaignsPage() {
       </div>
 
       {/* Skeleton de carregamento inicial */}
-      {isLoading && <EsqueletoCards cards={3} colunas={3} />}
+      {isLoading && <EsqueletoLinhas linhas={4} />}
 
       {/* Conteúdo — oculto durante carregamento */}
       {!isLoading && <>
@@ -120,22 +137,15 @@ export function CampaignsPage() {
       {/* ── Aba Campanhas ── */}
       {pageTab === 'campanhas' && <>
 
-      {/* Overview stats */}
       {campaigns.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Número é neutro: cor só quando há estado (venda > 0 = ganho). */}
-          {[
-            { label: 'Campanhas ativas',    value: totalActive,    color: 'text-t1' },
-            { label: 'Leads na base',       value: totalLeads,     color: 'text-t1' },
-            { label: 'Leads acionados',     value: totalContacted, color: 'text-t1' },
-            { label: 'Convertidos (venda)', value: totalSales,     color: totalSales > 0 ? 'text-success' : 'text-t1' },
-          ].map(s => (
-            <Card key={s.label} className="!py-4">
-              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-t4 mb-1.5">{s.label}</p>
-              <p className={`font-display text-[26px] font-extrabold tabular-nums leading-none ${s.color}`}>{s.value.toLocaleString('pt-BR')}</p>
-            </Card>
-          ))}
-        </div>
+        <FaixaNumeros className="mb-5" itens={[
+          { rotulo: 'Campanhas ativas',    valor: totalActive.toLocaleString('pt-BR') },
+          { rotulo: 'Leads na base',       valor: totalLeads.toLocaleString('pt-BR') },
+          { rotulo: 'Leads acionados',     valor: totalContacted.toLocaleString('pt-BR'),
+            nota: totalLeads > 0 ? `${Math.round(totalContacted / totalLeads * 100)}% da base` : undefined },
+          { rotulo: 'Convertidos (venda)', valor: totalSales.toLocaleString('pt-BR'),
+            tom: totalSales > 0 ? 'text-success' : undefined },
+        ]} />
       )}
 
       {/* Campaign list */}
@@ -153,132 +163,82 @@ export function CampaignsPage() {
           </Button>
         }
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <ListContainer>
           {campaigns.map(c => {
             const campaignLeads = leads.filter(l => l.campaignId === c.id)
             const total         = campaignLeads.length
 
-            // Mini funil — contagens por etapa
             const nPending     = campaignLeads.filter(l => l.funnelStage === 'new').length
-            const nApproached  = campaignLeads.filter(l => l.funnelStage === 'sent').length
             const nInterested  = campaignLeads.filter(l => l.funnelStage === 'attended').length
             const nScheduled   = campaignLeads.filter(l => l.funnelStage === 'scheduled').length
             const nTransferred = campaignLeads.filter(l => l.transferredAt).length
 
-            // Taxas
-            const reachRate    = total > 0 ? Math.round((total - nPending) / total * 100) : 0
-            const interestRate = (total - nPending) > 0 ? Math.round(nInterested / (total - nPending) * 100) : 0
+            const acionados    = total - nPending
+            const reachRate    = total > 0 ? Math.round(acionados / total * 100) : 0
+            const interestRate = acionados > 0 ? Math.round(nInterested / acionados * 100) : 0
 
             const statusCfg = STATUS_CONFIG[c.status]
-
+            const ativa     = c.status === 'active'
             const brokerName = c.brokerId
               ? (allProfiles.find(p => p.id === c.brokerId)?.name ?? 'Corretor')
               : null
 
             return (
-              <Card key={c.id} className="group flex flex-col gap-4 hover:border-brand/25 transition-all duration-200 border border-line">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-9 h-9 bg-brand-tint rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Megaphone size={15} className="text-brand" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-t1 truncate">{c.name}</p>
-                      <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                        <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border} border`}>
-                          {statusCfg.label}
-                        </span>
-                        {isAdmin && brokerName && (
-                          <span className="flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-brand-tint text-brand-text border border-brand/25">
-                            <UserCircle2 size={9} /> {brokerName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button onClick={() => setStatus(c.id, c.status === 'active' ? 'paused' : 'active')}
-                      className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer"
-                      title={c.status === 'active' ? 'Pausar' : 'Reativar'}>
-                      {c.status === 'active' ? <Pause size={13} /> : <Play size={13} />}
-                    </button>
-                    {isAdmin && (
-                      <button onClick={() => { setTransferCampaign(c); setTransferBrokerId(c.brokerId ?? '') }}
-                        className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-brand-text transition-colors cursor-pointer"
-                        title="Transferir campanha">
-                        <ArrowLeftRight size={13} />
-                      </button>
-                    )}
-                    <button onClick={() => setEditCampaign(c)}
-                      className="p-1.5 rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer">
-                      <Pencil size={13} />
-                    </button>
-                    <button onClick={() => setDeleteCampaign(c)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-t4 hover:text-red-400 transition-colors cursor-pointer">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
+              <div key={c.id}
+                className="lista-linha group flex items-center gap-4 px-5 py-3.5 border-b border-line last:border-0 transition-colors">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${ativa ? 'bg-success' : 'bg-t5'}`} aria-hidden />
 
-                {/* Mini funil */}
+                <button onClick={() => setSelectedId(c.id)}
+                  className="flex-1 min-w-0 text-left cursor-pointer focus:outline-none focus-visible:underline">
+                  <p className="text-[14.5px] font-semibold text-t1 truncate">{c.name}</p>
+                  <p className="text-[12.5px] text-t4 truncate mt-0.5">
+                    {statusCfg.label}
+                    {isAdmin && brokerName && <> · {brokerName}</>}
+                    {' · '}{total.toLocaleString('pt-BR')} {total === 1 ? 'lead' : 'leads'}
+                  </p>
+                </button>
+
+                {/* O funil da campanha em números — só onde cabe. */}
                 {total > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-1">
-                      {([
-                        // Funil em tons neutros: a cor fica só no ícone e segue a
-                        // temperatura (neutro → informação → marca → ganho).
-                        { label: 'Pendentes',  value: nPending,    color: 'text-t4',         icon: <Clock         size={11} /> },
-                        { label: 'Abordados',  value: nApproached, color: 'text-info',       icon: <MessageCircle size={11} /> },
-                        { label: 'Interesse',  value: nInterested, color: 'text-info',       icon: <Flame         size={11} /> },
-                        { label: 'Agendados',  value: nScheduled,  color: 'text-brand-text', icon: <CalendarCheck size={11} /> },
-                        { label: 'Transf.',    value: nTransferred,color: 'text-success',    icon: <ArrowUpRight  size={11} /> },
-                      ] as const).map(chip => (
-                        <div
-                          key={chip.label}
-                          className="flex flex-col items-center gap-0.5 py-2 rounded-xl border border-line bg-s2/60 flex-1"
-                        >
-                          <span className={chip.color}>{chip.icon}</span>
-                          <span className="text-[13px] font-bold tabular-nums leading-tight text-t1">{chip.value.toLocaleString('pt-BR')}</span>
-                          <span className="text-[11px] text-t4 text-center leading-tight">{chip.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-t3">
-                      <span>Acionamento <span className="text-t2 font-semibold tabular-nums">{reachRate}%</span></span>
-                      <span className="text-t5">·</span>
-                      <span>Interesse <span className="text-t2 font-semibold tabular-nums">{interestRate}%</span></span>
-                    </div>
+                  <div className="hidden lg:flex items-center gap-6 shrink-0 tabular-nums">
+                    <Metrica rotulo="Acionamento" valor={`${reachRate}%`} />
+                    <Metrica rotulo="Interesse"   valor={`${interestRate}%`} />
+                    <Metrica rotulo="Agendados"   valor={nScheduled.toLocaleString('pt-BR')} />
+                    <Metrica rotulo="Transferidos" valor={nTransferred.toLocaleString('pt-BR')}
+                             tom={nTransferred > 0 ? 'text-success' : undefined} />
                   </div>
                 )}
 
-                {/* CTA */}
-                <div className="flex gap-2 pt-1 border-t border-line">
-                  <button
-                    onClick={() => setSelectedId(c.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-t2 hover:text-t1 hover:bg-s2 transition-colors cursor-pointer"
-                  >
-                    <Users size={12} /> Ver Leads <ArrowRight size={11} />
+                <div className="hidden sm:flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
+                  <button onClick={() => setStatus(c.id, ativa ? 'paused' : 'active')}
+                    aria-label={ativa ? 'Pausar campanha' : 'Reativar campanha'}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/30">
+                    {ativa ? <Pause size={14} strokeWidth={1.8} /> : <Play size={14} strokeWidth={1.8} />}
                   </button>
-                  <button
-                    onClick={() => { setSelectedId(c.id) }}
-                    className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium text-t3 hover:text-t2 hover:bg-s3/50 transition-all cursor-pointer"
-                  >
-                    <BarChart3 size={12} />
+                  {isAdmin && (
+                    <button onClick={() => { setTransferCampaign(c); setTransferBrokerId(c.brokerId ?? '') }}
+                      aria-label="Transferir campanha"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/30">
+                      <ArrowLeftRight size={14} strokeWidth={1.8} />
+                    </button>
+                  )}
+                  <button onClick={() => setEditCampaign(c)} aria-label="Editar campanha"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-s3/70 text-t4 hover:text-t2 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/30">
+                    <Pencil size={14} strokeWidth={1.8} />
+                  </button>
+                  <button onClick={() => setDeleteCampaign(c)} aria-label="Excluir campanha"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error-bg text-t4 hover:text-error transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-error/30">
+                    <Trash2 size={14} strokeWidth={1.8} />
                   </button>
                 </div>
 
-                {/* Date */}
-                <div className="flex items-center gap-1.5 -mt-2">
-                  <Calendar size={10} className="text-t5" />
-                  <span className="text-[11px] text-t5">
-                    Criada em {new Date(c.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
-              </Card>
+                <Button variant="secondary" size="sm" onClick={() => setSelectedId(c.id)} className="gap-1.5 shrink-0">
+                  Abrir <ArrowRight size={13} strokeWidth={1.8} aria-hidden />
+                </Button>
+              </div>
             )
           })}
-        </div>
+        </ListContainer>
       </EstadoTela>
 
       </> /* fim aba campanhas */}
@@ -292,12 +252,12 @@ export function CampaignsPage() {
         <p className="text-sm text-t3 mb-2">
           Excluir <span className="text-t1 font-medium">"{deleteCampaign?.name}"</span>?
         </p>
-        <p className="text-xs text-red-400/80 bg-red-500/8 border border-red-500/15 rounded-xl px-3 py-2 mb-6">
+        <p className="text-[13px] text-error bg-error-bg border border-error-line rounded-xl px-3 py-2 mb-6">
           Todos os leads desta campanha também serão removidos permanentemente.
         </p>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteCampaign(undefined)}>Cancelar</Button>
-          <Button variant="danger"    className="flex-1" onClick={handleDelete}>Excluir tudo</Button>
+          <Button variant="danger"    className="flex-1" onClick={handleDelete} carregando={gravando}>Excluir tudo</Button>
         </div>
       </Modal>
 
@@ -306,11 +266,11 @@ export function CampaignsPage() {
           Defina o responsável por <span className="text-t1 font-medium">"{transferCampaign?.name}"</span>:
         </p>
         <div className="flex flex-col gap-1.5 mb-6">
-          <label htmlFor="campaignspage-314" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Responsável</label>
+          <label htmlFor="campaignspage-314" className="rotulo-campo">Responsável</label>
           <select id="campaignspage-314"
             value={transferBrokerId}
             onChange={e => setTransferBrokerId(e.target.value)}
-            className="w-full bg-s3/50 border border-line rounded-xl px-4 py-3.5 text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all min-h-[48px] appearance-none"
+            className="campo w-full"
           >
             <option value="">Admin (sem corretor)</option>
             {brokers.map(b => (
@@ -320,9 +280,18 @@ export function CampaignsPage() {
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setTransferCampaign(undefined)}>Cancelar</Button>
-          <Button variant="primary"   className="flex-1" onClick={handleTransfer}>Transferir</Button>
+          <Button variant="primary"   className="flex-1" onClick={handleTransfer} carregando={gravando}>Transferir</Button>
         </div>
       </Modal>
     </PageLayout>
+  )
+}
+
+function Metrica({ rotulo, valor, tom }: { rotulo: string; valor: string; tom?: string }) {
+  return (
+    <div className="text-right min-w-[64px]">
+      <p className={`text-[14px] font-semibold leading-tight ${tom ?? 'text-t1'}`}>{valor}</p>
+      <p className="text-[11.5px] text-t4 leading-tight mt-0.5">{rotulo}</p>
+    </div>
   )
 }

@@ -35,6 +35,7 @@ export function GoalForm({ isOpen, onClose, goal, forBrokerId }: GoalFormProps) 
   const [target,   setTarget]   = useState(String(goal?.target ?? 1))
   const [period,   setPeriod]   = useState<GoalPeriod>(goal?.period ?? 'weekly')
   const [errors,   setErrors]   = useState<Record<string, string>>({})
+  const [salvando, setSalvando] = useState(false)
 
   useEffect(() => {
     if (!isOpen) return
@@ -53,9 +54,9 @@ export function GoalForm({ isOpen, onClose, goal, forBrokerId }: GoalFormProps) 
     return Object.keys(errs).length === 0
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!validate()) return
+    if (!validate() || salvando) return
 
     const data = {
       name:     name.trim(),
@@ -65,14 +66,23 @@ export function GoalForm({ isOpen, onClose, goal, forBrokerId }: GoalFormProps) 
       active:   goal?.active ?? true,
     }
 
-    if (isEditing && goal) {
-      update(goal.id, data)
-      toast.success('Meta atualizada')
-    } else {
-      add(data, forBrokerId)
-      toast.success('Meta criada')
+    // Banco primeiro: o "salvo" só aparece depois do upsert. Se falhar, o
+    // upsert já mostrou o erro e o formulário fica aberto com o que foi digitado.
+    setSalvando(true)
+    try {
+      if (isEditing && goal) {
+        await update(goal.id, data)
+        toast.success('Meta atualizada')
+      } else {
+        await add(data, forBrokerId)
+        toast.success('Meta criada')
+      }
+      onClose()
+    } catch {
+      // erro já exibido pela camada do banco
+    } finally {
+      setSalvando(false)
     }
-    onClose()
   }
 
   return (
@@ -122,7 +132,7 @@ export function GoalForm({ isOpen, onClose, goal, forBrokerId }: GoalFormProps) 
 
         <div className="flex gap-3 pt-1">
           <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" className="flex-1">{isEditing ? 'Salvar' : 'Criar meta'}</Button>
+          <Button type="submit" className="flex-1" carregando={salvando}>{isEditing ? 'Salvar' : 'Criar meta'}</Button>
         </div>
       </form>
     </Modal>

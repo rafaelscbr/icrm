@@ -1,4 +1,4 @@
-import { ShieldAlert, AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { DAILY_WARN, DAILY_LIMIT } from './dailyCounter'
 import { useDisparosStore } from '../../store/useDisparosStore'
 
@@ -11,42 +11,36 @@ interface Props {
 export function DailyLimitBar({ count }: Props) {
   const dbCount    = useDisparosStore(s => s.countDay)
   const dailyCount = count ?? dbCount
-  const pct        = Math.min(100, Math.round((dailyCount / DAILY_LIMIT) * 100))
-  const barColor   = dailyCount >= DAILY_LIMIT ? 'bg-red-500'
-                   : dailyCount >= DAILY_WARN  ? 'bg-amber-500'
-                   :                             'bg-green-500'
-  const textColor  = dailyCount >= DAILY_LIMIT ? 'text-red-400'
-                   : dailyCount >= DAILY_WARN  ? 'text-amber-400'
-                   :                             'text-green-400'
+  const pct      = Math.min(100, Math.round((dailyCount / DAILY_LIMIT) * 100))
+  const estourou = dailyCount >= DAILY_LIMIT
+  const perto    = !estourou && dailyCount >= DAILY_WARN
+  const corBarra = estourou ? 'bg-error' : perto ? 'bg-warning' : 'bg-success'
+  const corNum   = estourou ? 'text-error' : perto ? 'text-warning' : 'text-t1'
 
+  // v10 (01/11/2026): uma linha no padrão da meta de ligações — número,
+  // barra fina e o aviso só quando existe.
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-xl card-surface border border-line text-xs">
-      <ShieldAlert size={13} className={textColor} />
-
-      <div className="flex-1 min-w-[160px]">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-t3">Disparos hoje</span>
-          <span className={`font-bold tabular-nums ${textColor}`}>
-            {dailyCount}/{DAILY_LIMIT}
-          </span>
-        </div>
-        <div className="h-1.5 bg-s3/70 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+    <div className="bento flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3">
+      <div className="flex items-baseline gap-2 shrink-0">
+        <span className="text-[12.5px] text-t4">Disparos hoje</span>
+        <span className={`font-display font-extrabold tabular-nums leading-none text-[20px] tracking-[-0.02em] ${corNum}`}>
+          {dailyCount}
+        </span>
+        <span className="text-[13px] text-t4 tabular-nums">de {DAILY_LIMIT}</span>
       </div>
 
-      {dailyCount >= DAILY_LIMIT ? (
-        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-semibold">
-          <AlertTriangle size={11} /> Limite atingido
+      <div className="flex-1 min-w-[160px] h-[5px] rounded-full bg-s3 overflow-hidden"
+           role="progressbar" aria-label={`${dailyCount} de ${DAILY_LIMIT} disparos hoje`}
+           aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div className={`h-full rounded-full transition-[width] duration-500 ${corBarra}`} style={{ width: `${pct}%` }} />
+      </div>
+
+      {(estourou || perto) && (
+        <span className={`flex items-center gap-1.5 text-[12.5px] font-medium ${estourou ? 'text-error' : 'text-warning'}`}>
+          <AlertTriangle size={13} strokeWidth={1.8} aria-hidden />
+          {estourou ? 'Limite atingido' : 'Perto do limite'}
         </span>
-      ) : dailyCount >= DAILY_WARN ? (
-        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
-          <AlertTriangle size={11} /> Próximo do limite
-        </span>
-      ) : null}
+      )}
     </div>
   )
 }
