@@ -7,7 +7,6 @@ import {
   Filter, MessageCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { TOM } from '../../components/shared/visual'
 import type { Tom } from '../../components/shared/visual'
 import { Task, Lead, calcSaleCommissions } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -106,18 +105,17 @@ const COLD_LIMIT = 10
  * O filete e o ícone existem para o olho achar a divisão sem ler: numa página
  * desta altura, quatro títulos de mesmo peso em texto puro viram uma parede.
  */
-function SectionLabel({ children, hint, icon: Icon, tom = 'marca' }: {
+function SectionLabel({ children, hint, icon: _icon, tom: _tom }: {
   children: ReactNode
   hint?: string
   icon?: LucideIcon
   tom?: Tom
 }) {
   return (
-    <div className="flex items-center gap-2.5 mb-3.5 px-0.5">
-      <span className={`w-1 h-4 rounded-full ${TOM[tom].ponto}`} aria-hidden />
-      {Icon && <Icon size={15} strokeWidth={1.7} className={TOM[tom].texto} aria-hidden />}
-      <h2 className="font-display text-[17px] font-bold text-t1 tracking-[-0.02em]">{children}</h2>
-      {hint && <span className="text-[11px] text-t4 truncate">{hint}</span>}
+    // v9: só o título e a dica — filete e ícone saíram.
+    <div className="flex items-baseline gap-2.5 mb-3.5 px-0.5">
+      <h2 className="font-display text-[18px] font-bold text-t1 tracking-[-0.02em]">{children}</h2>
+      {hint && <span className="text-[12px] text-t4 truncate">{hint}</span>}
     </div>
   )
 }
@@ -282,8 +280,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
         <section className={`hero-tile p-6 lg:p-8 flex flex-col ${metaClass}`} aria-label="Meta de VGV do mês">
           <HorizonCurve />
           <div className="flex items-center gap-2 mb-5">
-            <span className="w-1 h-3.5 rounded-full bg-brand" aria-hidden />
-            <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.16em] text-t3">
+                        <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.16em] text-t3">
               Meta de VGV — {monthTitle}
             </h3>
             <button
@@ -428,8 +425,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
         {/* ── Previsão de VGV ──────────────────────────────────────────── */}
         <section className={`bento relative p-6 ${previsaoClass}`} aria-label="Previsão de VGV">
           <div className="flex items-center gap-2 mb-5 flex-wrap">
-            <span className={`w-1 h-3.5 rounded-full ${health.dot}`} aria-hidden />
-            <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.16em] text-t3">Previsão de VGV</h3>
+                        <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.16em] text-t3">Previsão de VGV</h3>
             <InfoHint text="Previsão = VGV somado apenas das etapas Visita e Proposta. Etapas de topo (Lead, Follow-up, Atendimento) não entram: são volume, não oportunidade madura." />
             <span className={`ml-auto flex items-center gap-1.5 font-label text-[11px] font-bold uppercase tracking-[0.08em] px-2.5 py-1 rounded-full border ${health.cls}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`} aria-hidden />
@@ -543,9 +539,7 @@ function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClic
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3 leading-tight">{title}</span>
-        <span className={`rounded-lg flex items-center justify-center flex-shrink-0 ${t.chip} ${isLead ? 'w-8 h-8' : 'w-7 h-7'}`}>
-          <Icon size={isLead ? 15 : 13} className={t.icon} />
-        </span>
+        <Icon size={15} className={`flex-shrink-0 ${t.icon}`} />
       </div>
       <p className={`font-display font-extrabold tabular-nums leading-none tracking-[-0.02em] ${t.value} ${isLead ? 'text-[30px] mt-4' : 'text-[26px] mt-3'}`}>
         {exibido}

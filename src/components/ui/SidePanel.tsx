@@ -116,11 +116,10 @@ export function SidePanel({
       >
         {/* Cabeçalho fixo */}
         <div
-          className="flex-shrink-0 flex items-start justify-between gap-3 px-5 py-4"
-          style={{ borderBottom: '1px solid var(--line)' }}
+          className="flex-shrink-0 flex items-start justify-between gap-3 px-6 pt-5 pb-2"
         >
           <div className="min-w-0 flex-1">
-            <h2 className="font-heading text-[17px] font-bold text-t1 leading-tight tracking-[-0.01em] truncate">
+            <h2 className="text-[13px] font-semibold text-t3 leading-tight truncate">
               {title}
             </h2>
             {subtitle && <p className="text-xs text-t3 mt-0.5 truncate">{subtitle}</p>}
@@ -139,14 +138,14 @@ export function SidePanel({
         </div>
 
         {/* Corpo rolável — o único que rola */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4">
           {children}
         </div>
 
         {/* Rodapé fixo: as ações nunca somem no scroll de um formulário longo */}
         {footer && (
           <div
-            className="dialogo-rodape flex-shrink-0 px-5 py-4"
+            className="dialogo-rodape flex-shrink-0 px-6 py-4"
           >
             {footer}
           </div>

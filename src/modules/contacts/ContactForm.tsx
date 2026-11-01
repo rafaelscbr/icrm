@@ -94,137 +94,140 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
     onClose()
   }
 
+  const temDetalhes = showLeadInfo || tags.length > 0 || isMarried || hasChildren
+  const [maisDetalhes, setMaisDetalhes] = useState(temDetalhes)
+
+  // v9 "folha limpa": o nome é o título do painel, telefone logo abaixo, e o
+  // resto (empresa, aniversário, etiquetas, família) fica atrás de "Mais
+  // detalhes" — 90% dos contatos são criados só com nome e telefone, e o
+  // formulário antigo mostrava onze controles para isso.
   return (
-    <SidePanel size="md" isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Contato' : 'Novo Contato'}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-
-        {/* Photo */}
-        <div className="flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="w-16 h-16 rounded-full bg-s3/50 border border-line flex items-center justify-center overflow-hidden hover:bg-s3/70 transition-colors cursor-pointer"
-          >
-            {photoUrl ? (
-              <img src={photoUrl} alt="foto" className="w-full h-full object-cover" />
-            ) : (
-              <Camera size={20} className="text-t3" />
-            )}
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
-          <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-brand hover:text-brand-text cursor-pointer">
-            {photoUrl ? 'Alterar foto' : 'Adicionar foto'}
-          </button>
-        </div>
-
-        {/* Nome + Telefone — sempre visíveis */}
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Nome"
-            required
-            value={name}
-            onChange={e => setName(e.target.value)}
-            error={errors.name}
-            placeholder="Ana Lima"
-          />
-          <Input
-            label="Telefone"
-            required
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            error={errors.phone}
-            placeholder="(11) 99000-0000"
-          />
-        </div>
-
-        {/* Toggle Informações do lead */}
-        <div className="flex flex-col gap-3">
-          <Toggle
-            label="Informações do lead"
-            checked={showLeadInfo}
-            onChange={setShowLeadInfo}
-          />
-
-          {showLeadInfo && (
-            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-150">
-              <Input
-                label="Empresa"
-                value={company}
-                onChange={e => setCompany(e.target.value)}
-                placeholder="Construtora ABC"
-              />
-              <Input
-                label="Data de nascimento"
-                type="date"
-                value={birthdate}
-                onChange={e => setBirthdate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-col gap-2">
-          <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tags</p>
-          <div className="flex gap-2">
-            {TAG_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => toggleTag(opt.value)}
-                className={`
-                  px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
-                  ${tags.includes(opt.value)
-                    ? 'bg-brand-tint border-brand/40 text-brand-text'
-                    : 'bg-s3/50 border-line text-t3 hover:text-t2 hover:border-line-strong'
-                  }
-                `}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="border-t border-line" />
-
-        {/* Casado */}
-        <div className="flex flex-col gap-3">
-          <Toggle label="Casado(a)?" checked={isMarried} onChange={setIsMarried} />
-          {isMarried && (
-            <Input
-              label="Nome do(a) cônjuge"
-              value={spouseName}
-              onChange={e => setSpouseName(e.target.value)}
-              placeholder="Maria Lima"
-            />
-          )}
-        </div>
-
-        {/* Filhos */}
-        <div className="flex flex-col gap-3">
-          <Toggle label="Tem filhos?" checked={hasChildren} onChange={setHasChildren} />
-          {hasChildren && (
-            <Input
-              label="Nome dos filhos"
-              value={childrenNames}
-              onChange={e => setChildrenNames(e.target.value)}
-              placeholder="Pedro, Maria"
-            />
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3 pt-1">
-          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" className="flex-1">
+    <SidePanel
+      size="md"
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Editar contato' : 'Novo contato'}
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" form="form-contato">
             {isEditing ? 'Salvar alterações' : 'Salvar contato'}
           </Button>
         </div>
+      }
+    >
+      <form id="form-contato" onSubmit={handleSubmit} className="flex flex-col gap-6">
+
+        {/* Identidade: foto pequena ao lado do nome grande */}
+        <div className="flex items-center gap-3.5">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            aria-label={photoUrl ? 'Alterar foto' : 'Adicionar foto'}
+            title={photoUrl ? 'Alterar foto' : 'Adicionar foto'}
+            className="w-12 h-12 rounded-full bg-s2 flex items-center justify-center overflow-hidden hover:bg-s3 transition-colors cursor-pointer flex-shrink-0"
+          >
+            {photoUrl
+              ? <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+              : <Camera size={17} className="text-t4" aria-hidden />}
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+          <div className="flex-1 min-w-0">
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Nome do contato"
+              aria-label="Nome do contato"
+              aria-invalid={errors.name ? true : undefined}
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- o painel abre para criar: o cursor já vai para o nome
+              autoFocus={!isEditing}
+              className="campo-titulo campo-livre"
+            />
+            {errors.name && <p className="text-xs text-error mt-0.5" role="alert">{errors.name}</p>}
+          </div>
+        </div>
+
+        <Input
+          label="Telefone"
+          required
+          type="tel"
+          inputMode="tel"
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+          error={errors.phone}
+          placeholder="(47) 99000-0000"
+        />
+
+        {!maisDetalhes ? (
+          <button
+            type="button"
+            onClick={() => setMaisDetalhes(true)}
+            className="manter-borda self-start text-[13px] font-medium text-t3 hover:text-t1 cursor-pointer"
+          >
+            + Mais detalhes <span className="text-t4">· empresa, aniversário, etiquetas, família</span>
+          </button>
+        ) : (
+          <div className="flex flex-col gap-5 animate-in fade-in duration-150">
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Empresa"
+                value={company}
+                onChange={e => { setCompany(e.target.value); setShowLeadInfo(true) }}
+                placeholder="Construtora ABC"
+              />
+              <Input
+                label="Aniversário"
+                type="date"
+                value={birthdate}
+                onChange={e => { setBirthdate(e.target.value); setShowLeadInfo(true) }}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <span className="rotulo-campo">Etiquetas</span>
+              <div className="flex flex-wrap gap-1.5">
+                {TAG_OPTIONS.map(opt => {
+                  const ativo = tags.includes(opt.value)
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleTag(opt.value)}
+                      aria-pressed={ativo}
+                      className={`px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors cursor-pointer
+                        ${ativo ? 'bg-brand-fill text-brand-fill-text' : 'bg-s2 text-t2 hover:bg-s3'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <span className="rotulo-campo">Família</span>
+              <Toggle label="Casado(a)" checked={isMarried} onChange={setIsMarried} />
+              {isMarried && (
+                <Input
+                  label="Cônjuge"
+                  value={spouseName}
+                  onChange={e => setSpouseName(e.target.value)}
+                  placeholder="Maria Lima"
+                />
+              )}
+              <Toggle label="Tem filhos" checked={hasChildren} onChange={setHasChildren} />
+              {hasChildren && (
+                <Input
+                  label="Filhos"
+                  value={childrenNames}
+                  onChange={e => setChildrenNames(e.target.value)}
+                  placeholder="Pedro, Maria"
+                />
+              )}
+            </div>
+          </div>
+        )}
       </form>
     </SidePanel>
   )

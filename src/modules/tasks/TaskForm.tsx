@@ -233,18 +233,17 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
     <div key="step0" className="flex flex-col gap-5">
       {/* Título */}
       <div className="flex flex-col gap-2">
-        <div className={`relative rounded-xl border-2 transition-all duration-150
-          ${titleError ? 'border-red-500/60' : title ? 'border-indigo-500/50' : 'border-line hover:border-line-strong'}`}
-        >
-          <input
-            ref={titleRef}
-            value={title}
-            onChange={e => { setTitle(e.target.value); if (e.target.value.trim()) setTitleError('') }}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleNext() } }}
-            placeholder="O que precisa ser feito?"
-            className="w-full bg-transparent px-4 py-4 text-lg font-medium text-slate-100 placeholder:text-t4 focus:outline-none"
-          />
-        </div>
+        {/* v9: o título é o próprio cabeçalho do formulário — sem caixa. */}
+        <input
+          ref={titleRef}
+          value={title}
+          onChange={e => { setTitle(e.target.value); if (e.target.value.trim()) setTitleError('') }}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleNext() } }}
+          placeholder="O que precisa ser feito?"
+          aria-label="Título da tarefa"
+          aria-invalid={titleError ? true : undefined}
+          className="campo-titulo campo-livre"
+        />
         {titleError && <p className="text-xs text-red-400 px-1">{titleError}</p>}
       </div>
 

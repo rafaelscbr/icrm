@@ -7,6 +7,15 @@ Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
 **Progresso: 100%**
 
+## v9 — "folha limpa": formulários e menos elementos (01/11/2026)
+
+- [x] Causa de "o formulário não mudou": uma regra antiga do tema claro forçava todo campo a fundo branco + borda com !important — removida
+- [x] Campos sem borda (fundo preenchido que acende no foco), pílulas de escolha sem contorno, rótulos em texto normal, divisórias soltas somem
+- [x] Painel e modal: cabeçalho vira um sobretítulo pequeno, sem filetes; rodapé liso
+- [x] Novo contato reescrito: nome grande no topo, telefone, e o resto atrás de "Mais detalhes" (de 11 controles para 3 à vista)
+- [x] Nova tarefa: título sem caixa, como cabeçalho do formulário
+- [x] Menos elementos nas telas: rótulos sem MAIÚSCULAS espaçadas no sistema inteiro, indicadores sem caixinha de ícone, títulos de seção sem filete e ícone
+
 ## v8 — limpeza, cor, formulários e Kanban (01/11/2026)
 
 - [x] Tema escuro (e claro) com fundo liso: topo de página sem degradê, sem aurora, sem grão, sem brilhos dourados decorativos

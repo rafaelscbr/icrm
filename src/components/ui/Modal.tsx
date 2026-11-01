@@ -120,7 +120,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
         </div>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 lg:px-6 py-4 border-b border-line flex-shrink-0">
+        <div className="flex items-start justify-between px-5 lg:px-6 pt-5 pb-1 flex-shrink-0">
           <div className="min-w-0 pr-4">
             <h2 id="modal-title" className="font-heading text-[17px] font-bold text-t1 leading-tight tracking-[-0.015em]">{title}</h2>
             {subtitle && <p id="modal-subtitle" className="text-xs text-t3 mt-0.5">{subtitle}</p>}
@@ -135,7 +135,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
         </div>
 
         {/* Body */}
-        <div className="px-5 lg:px-6 py-5 lg:py-6 overflow-y-auto flex-1">
+        <div className="px-5 lg:px-6 pt-3 pb-6 overflow-y-auto flex-1">
           {children}
         </div>
 

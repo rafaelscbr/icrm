@@ -1292,12 +1292,13 @@ html.light [class*="divide-white"] > * + * { border-color: var(--line) !importan
 html.light .ring-white\/10 { --tw-ring-color: var(--line) !important; }
 html.light .ring-white\/20 { --tw-ring-color: var(--line-strong) !important; }
 
+/* v9: esta regra forçava TODO campo do tema claro a fundo branco e borda com
+   !important — era por isso que a mudança dos formulários não aparecia no
+   claro. Fica só a cor do texto e o esquema de cor do seletor nativo. */
 html.light input,
 html.light textarea,
 html.light select {
-  background-color: var(--surface) !important;
   color: var(--t1) !important;
-  border-color: var(--line-input) !important;
   color-scheme: light !important;
 }
 html.light select option {
@@ -1963,24 +1964,26 @@ html.compacta .lista-linha {
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   FORMULÁRIOS — v8 (01/11/2026)
+   FORMULÁRIOS — v9 "folha limpa" (01/11/2026)
 
-   Um campo só, no sistema inteiro: fundo levemente afundado, borda fina,
-   cantos de 10px e foco azul com anel suave. Vale para os componentes Input,
-   Select e Textarea (classe .campo) e também para os campos escritos à mão
-   dentro de qualquer diálogo ou painel — eram ~40 formulários com cinco
-   estilos diferentes de campo. Os rótulos em MAIÚSCULAS espaçadas dos
-   formulários viram texto normal, mais fácil de ler.
+   O Rafael achou que a v8 não mudou nada: trocar a cor da borda não muda a
+   cara de um formulário. Agora a regra é TIRAR elementos:
 
-   `.campo-livre` tira o campo da regra (busca global, título grande da tarefa).
+   - campo sem borda: um fundo levemente preenchido, que acende no foco;
+   - rótulo pequeno em texto normal, nunca MAIÚSCULAS espaçadas;
+   - escolhas (categoria, etiqueta, prioridade) viram pílulas sem contorno;
+   - cabeçalho e rodapé do painel sem filete; divisórias soltas somem.
+
+   Vale para os componentes (.campo) e para todo campo escrito à mão dentro de
+   um diálogo ou painel. `.campo-livre` tira o campo da regra.
    ══════════════════════════════════════════════════════════════════════════════ */
-:root      { --field-bg: #0F1C38; --field-focus: #4C8DFF; }
-html.light { --field-bg: #F5F8FC; --field-focus: #2563EB; }
+:root      { --field-bg: rgba(160, 190, 240, 0.07); --field-bg-hover: rgba(160, 190, 240, 0.11); --field-focus: #4C8DFF; }
+html.light { --field-bg: #EEF2F8;                  --field-bg-hover: #E6ECF5;                  --field-focus: #2563EB; }
 
 .campo,
 [role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.campo-livre) {
   background-color: var(--field-bg);
-  border: 1px solid var(--line-input);
+  border: 1px solid transparent;
   border-radius: 10px;
   color: var(--t1);
   font-size: 14px;
@@ -1989,37 +1992,71 @@ html.light { --field-bg: #F5F8FC; --field-focus: #2563EB; }
 }
 .campo:hover,
 [role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.campo-livre):hover {
-  border-color: var(--line-strong);
+  background-color: var(--field-bg-hover);
+  border-color: transparent;
 }
 .campo:focus,
 [role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.campo-livre):focus {
   outline: none;
   background-color: var(--surface);
   border-color: var(--field-focus);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 20%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 18%, transparent);
 }
 .campo[aria-invalid="true"],
 [role="dialog"] :is(input, select, textarea)[aria-invalid="true"]:not(.campo-livre) {
   border-color: var(--error);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--error) 16%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--error) 14%, transparent);
 }
 [role="dialog"] :is(input, textarea)::placeholder { color: var(--t4); }
 
-/* Rótulos de campo: texto normal, peso médio, sem caixa alta. */
-[role="dialog"] label.font-label,
+/* Rótulos e títulos de grupo dentro de formulários: texto normal, discreto. */
+[role="dialog"] :is(label, p, span).font-label,
 label.rotulo-campo {
   text-transform: none;
   letter-spacing: 0;
   font-family: 'Geist', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: var(--t2);
+  color: var(--t3);
 }
 
-/* Rodapé de diálogo: ações à direita, fundo liso. */
-.dialogo-rodape {
-  background-color: var(--surface);
-  border-top: 1px solid var(--line);
+/* Pílulas de escolha: sem contorno — o selecionado se lê pelo fundo. */
+[role="dialog"] button.border:is(.rounded-xl, .rounded-full, .rounded-lg):not(.manter-borda) {
+  border-color: transparent;
+}
+[role="dialog"] button.border:is(.rounded-xl, .rounded-full, .rounded-lg):not(.manter-borda):not([class*="bg-brand"]):not([class*="bg-success"]):not([class*="bg-error"]):not([class*="bg-warning"]):not([class*="bg-indigo"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]) {
+  background-color: var(--field-bg);
+}
+
+/* Divisória solta (div vazia com borda) some — o espaço já separa. */
+[role="dialog"] div.border-t:empty { display: none; }
+
+/* Rodapé de diálogo: liso, sem filete. */
+.dialogo-rodape { background-color: var(--surface); }
+
+/* Título grande de formulário (nome do contato, título da tarefa) */
+.campo-titulo {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-family: 'Plus Jakarta Sans', 'Geist', system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--t1);
+  padding: 4px 0;
+}
+.campo-titulo::placeholder { color: var(--t5); }
+
+/* v9 — rótulos em texto normal no sistema inteiro. As ~120 etiquetas em
+   MAIÚSCULAS ESPAÇADAS (rótulo de indicador, cabeçalho de bloco, selos) eram o
+   que mais deixava as telas carregadas. Uma regra só, em vez de mexer em cada
+   tela: tamanho e cor continuam os de cada lugar. */
+.font-label.uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
 }
 
 /* ── Acessibilidade: respeita preferência do sistema por menos movimento ── */

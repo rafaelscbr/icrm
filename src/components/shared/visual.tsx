@@ -71,7 +71,7 @@ export function PainelTitulo({ icon: Icon, children, extra, tom = 'marca' }: {
 /** Rótulo de dado — Space Grotesk maiúsculo, o padrão da identidade. */
 export function Rotulo({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <span className={`font-label text-[11px] uppercase tracking-[0.14em] text-t4 ${className}`}>
+    <span className={`text-[12.5px] font-medium text-t4 ${className}`}>
       {children}
     </span>
   )
@@ -142,7 +142,7 @@ export function Barra({ pct, tom = 'marca', altura = 6, rotuloAcessivel }: {
 }
 
 /** Número grande com rótulo — o bloco de leitura de relance. */
-export function Numero({ valor, rotulo, nota, tom = 'neutro', icon, tamanho = 'md' }: {
+export function Numero({ valor, rotulo, nota, tom: _tom, icon: _icon, tamanho = 'md' }: {
   valor: ReactNode
   rotulo: string
   nota?: ReactNode
@@ -157,10 +157,9 @@ export function Numero({ valor, rotulo, nota, tom = 'neutro', icon, tamanho = 'm
   const exibido = numero !== null ? contado.toLocaleString('pt-BR') : valor
   return (
     <div className="flex flex-col gap-1 min-w-0">
-      <div className="flex items-center gap-2">
-        {icon && <IconeTom icon={icon} tom={tom} tamanho="sm" />}
-        <Rotulo>{rotulo}</Rotulo>
-      </div>
+      {/* v9: sem a caixinha de ícone — o rótulo basta, e quatro caixinhas
+          coloridas por linha de indicadores eram o maior ruído das telas. */}
+      <Rotulo>{rotulo}</Rotulo>
       {/* O tom colore o ícone, nunca o número: um indicador de estoque não
           tem estado, e quatro números em quatro cores lado a lado deixam de
           significar qualquer coisa. Número colorido é só para estado — meta
@@ -233,20 +232,17 @@ export function Chip({ icon: Icon, tom = 'neutro', children }: {
  * Formulário sem divisão vira parede de campo. Isto quebra em blocos com nome,
  * e o nome carrega um ícone para o olho achar a seção sem ler.
  */
-export function SecaoTitulo({ icon: Icon, children, descricao, tom = 'marca' }: {
+export function SecaoTitulo({ icon: _icon, children, descricao, tom: _tom }: {
   icon: LucideIcon
   children: ReactNode
   descricao?: string
   tom?: Tom
 }) {
   return (
-    <div className="flex items-start gap-2.5 mb-3">
-      <span className={`w-1 self-stretch min-h-[1.5rem] rounded-full ${TOM[tom].ponto}`} aria-hidden />
-      <Icon size={15} strokeWidth={1.6} className="text-t3 mt-0.5 shrink-0" aria-hidden />
-      <div className="min-w-0">
-        <h3 className="font-label text-[11px] uppercase tracking-[0.14em] text-t3">{children}</h3>
-        {descricao && <p className="text-[11px] text-t4 mt-0.5">{descricao}</p>}
-      </div>
+    // v9: título de seção é só texto — filete e ícone saíram.
+    <div className="mb-3">
+      <h3 className="text-[15px] font-semibold text-t1 tracking-[-0.01em]">{children}</h3>
+      {descricao && <p className="text-[12.5px] text-t4 mt-0.5">{descricao}</p>}
     </div>
   )
 }
