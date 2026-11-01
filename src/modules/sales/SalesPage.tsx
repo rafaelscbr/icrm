@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign, Wallet, Plus,
   LineChart as LineChartIcon,
@@ -66,6 +67,15 @@ export function SalesPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Sale | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Sale | undefined>()
+
+  // `?nova=1` abre o formulário — é o atalho do "Criar" da barra do topo.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('nova') !== '1') return
+    setEditing(undefined)
+    setFormOpen(true)
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
 
   useEffect(() => {
     load()

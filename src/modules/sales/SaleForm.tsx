@@ -1,8 +1,7 @@
 import { useState, FormEvent, useMemo } from 'react'
-import { Plus, BadgePercent, DollarSign } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { SidePanel } from '../../components/ui/SidePanel'
 import { Input } from '../../components/ui/Input'
-import { Select } from '../../components/ui/Select'
 import { Button } from '../../components/ui/Button'
 import { Sale, SaleType } from '../../types'
 import { useSalesStore } from '../../store/useSalesStore'
@@ -115,61 +114,112 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
     onClose()
   }
 
+  const [showNotes, setShowNotes] = useState(Boolean(sale?.notes))
+  const pctPresets = ['3', '4', '5', '6', '7']
+  const splitPresets = [['100', 'Autônomo'], ['50', 'Parceria 50/50'], ['40', 'Com imobiliária 40%']] as const
+
+  const pilula = (ativo: boolean) =>
+    `px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors cursor-pointer ${
+      ativo ? 'bg-brand-fill text-brand-fill-text' : 'bg-s2 text-t2 hover:bg-s3'}`
+
+  // v9 "folha limpa": o valor é o título do formulário (é o que se quer
+  // registrar), a comissão aparece calculada logo embaixo, e o resto vem em
+  // linhas simples — sem caixa azul em volta da comissão, sem divisórias.
   return (
     <>
-      <SidePanel size="md" isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Venda' : 'Nova Venda'}>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <SidePanel
+        size="md"
+        isOpen={isOpen}
+        onClose={onClose}
+        title={isEditing ? 'Editar venda' : 'Nova venda'}
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" form="form-venda">{isEditing ? 'Salvar alterações' : 'Registrar venda'}</Button>
+          </div>
+        }
+      >
+        <form id="form-venda" onSubmit={handleSubmit} className="flex flex-col gap-6">
+
+          {/* Valor — o título */}
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-[22px] font-bold text-t4 select-none">R$</span>
+              <input
+                id="venda-valor"
+                value={fmtInput(value)}
+                onChange={e => setValue(e.target.value)}
+                inputMode="numeric"
+                placeholder="Valor da venda"
+                aria-label="Valor da venda"
+                aria-invalid={errors.value ? true : undefined}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- o painel abre para registrar: o cursor já vai para o valor
+                autoFocus={!isEditing}
+                className="campo-titulo campo-livre tabular-nums"
+              />
+            </div>
+            {errors.value && <p className="text-xs text-error mt-0.5" role="alert">{errors.value}</p>}
+            {preview && preview.totalComm > 0 && (
+              <p className="mt-1 text-[13px] text-t3">
+                Sua comissão{' '}
+                <span className="font-semibold text-success tabular-nums">{formatCurrencyFull(preview.brokerComm)}</span>
+                {parseFloat(brokerPct) !== 100 && (
+                  <span className="text-t4"> de {formatCurrencyFull(preview.totalComm)}</span>
+                )}
+              </p>
+            )}
+          </div>
 
           {/* Cliente */}
           <div className="flex flex-col gap-1.5 relative">
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
-              Cliente <span className="text-red-400">*</span>
-            </p>
+            <label htmlFor="venda-cliente" className="rotulo-campo">Cliente <span className="text-error">*</span></label>
             <input
+              id="venda-cliente"
               value={clientSearch}
               onChange={e => { setClientSearch(e.target.value); setClientId(''); setShowClientDrop(true) }}
               onFocus={() => setShowClientDrop(true)}
               onBlur={() => setTimeout(() => setShowClientDrop(false), 150)}
-              placeholder="Buscar contato..."
-              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 ${errors.client ? 'border-red-500/50' : 'border-line'}`}
+              placeholder="Buscar por nome ou telefone"
+              aria-invalid={errors.client ? true : undefined}
+              className="w-full px-3.5 py-2.5 min-h-[44px]"
             />
-            {errors.client && <p className="text-xs text-red-400">{errors.client}</p>}
+            {errors.client && <p className="text-xs text-error">{errors.client}</p>}
             {showClientDrop && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-xl shadow-dropdown z-10 overflow-hidden">
                 {filteredClients.map(c => (
                   <button key={c.id} type="button"
                     onMouseDown={() => { mergeLocal([c]); setClientId(c.id); setClientSearch(c.name); setShowClientDrop(false) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s2 transition-colors cursor-pointer"
                   >{c.name}</button>
                 ))}
                 <button type="button"
                   onMouseDown={() => { setShowClientDrop(false); setNewContactOpen(true) }}
-                  className="w-full text-left px-4 py-2.5 text-xs text-brand hover:bg-indigo-500/10 border-t border-line flex items-center gap-2 transition-colors cursor-pointer"
-                ><Plus size={12} /> Criar novo contato</button>
+                  className="w-full text-left px-4 py-2.5 text-[13px] text-t2 hover:bg-s2 flex items-center gap-2 transition-colors cursor-pointer"
+                ><Plus size={13} /> Criar novo contato</button>
               </div>
             )}
           </div>
 
-          {/* Empreendimento */}
+          {/* Imóvel */}
           <div className="flex flex-col gap-1.5 relative">
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
-              Empreendimento / Imóvel <span className="text-red-400">*</span>
-            </p>
+            <label htmlFor="venda-imovel" className="rotulo-campo">Imóvel ou empreendimento <span className="text-error">*</span></label>
             <input
+              id="venda-imovel"
               value={propertyName}
               onChange={e => { setPropertyName(e.target.value); setPropertyId(''); setShowPropDrop(true) }}
               onFocus={() => setShowPropDrop(true)}
               onBlur={() => setTimeout(() => setShowPropDrop(false), 150)}
-              placeholder="Buscar imóvel ou digitar nome..."
-              className={`w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 ${errors.property ? 'border-red-500/50' : 'border-line'}`}
+              placeholder="Buscar ou digitar o nome"
+              aria-invalid={errors.property ? true : undefined}
+              className="w-full px-3.5 py-2.5 min-h-[44px]"
             />
-            {errors.property && <p className="text-xs text-red-400">{errors.property}</p>}
+            {errors.property && <p className="text-xs text-error">{errors.property}</p>}
             {showPropDrop && filteredProps.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-xl shadow-dropdown z-10 overflow-hidden">
                 {filteredProps.map(p => (
                   <button key={p.id} type="button"
                     onMouseDown={() => { setPropertyId(p.id); setPropertyName(p.name); setShowPropDrop(false) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s2 transition-colors cursor-pointer"
                   >
                     {p.name}
                     <span className="text-t4 ml-2 text-xs">{p.neighborhood}</span>
@@ -179,186 +229,84 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
             )}
           </div>
 
-          {/* Data + Tipo */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Data + tipo */}
+          <div className="grid grid-cols-2 gap-3 items-end">
             <Input label="Data" required type="date" value={date} onChange={e => setDate(e.target.value)} error={errors.date} />
-            <Select label="Tipo" required value={type} onChange={e => setType(e.target.value as SaleType)}>
-              <option value="ready">Pronto</option>
-              <option value="off_plan">Planta</option>
-            </Select>
-          </div>
-
-          {/* Valor da venda */}
-          <div className="relative">
-            <label htmlFor="venda-valor" className="block font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-1.5">
-              Valor da venda <span className="text-red-400">*</span>
-            </label>
-            <div className="relative flex items-center">
-              <span className="absolute left-3 text-xs text-t3 font-medium select-none">R$</span>
-              <input id="venda-valor"
-                value={fmtInput(value)}
-                onChange={e => setValue(e.target.value)}
-                inputMode="numeric"
-                placeholder="600.000"
-                className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 ${errors.value ? 'border-red-500/50' : 'border-line'}`}
-              />
-            </div>
-            {errors.value && <p className="text-xs text-red-400 mt-1">{errors.value}</p>}
-          </div>
-
-          {/* ── Seção de comissão ── */}
-          <div className="flex flex-col gap-3 p-4 rounded-xl bg-info-bg border border-info-line">
-            <div className="flex items-center gap-2 mb-1">
-              <BadgePercent size={13} className="text-brand-text" />
-              <p className="text-xs font-semibold text-brand-text uppercase tracking-wider">Comissão negociada</p>
-            </div>
-
-            {/* Modo: % ou valor fixo */}
-            <div className="flex gap-2">
-              {([['pct', 'Por % da venda'], ['fixed', 'Valor fixo (R$)']] as const).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setCommMode(mode)}
-                  className={`flex-1 text-xs py-2 rounded-xl border transition-all cursor-pointer ${
-                    commMode === mode
-                      ? 'bg-brand-tint border-brand/25 text-brand-text font-semibold'
-                      : 'bg-s3/50 border-line text-t3 hover:text-t2'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Input + presets de % */}
-            {commMode === 'pct' ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={commPct}
-                      onChange={e => setCommPct(e.target.value)}
-                      className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand/30"
-                      placeholder="5"
-                    />
-                  </div>
-                  <span className="text-t3 text-sm font-medium">% do valor</span>
-                </div>
-                {/* Presets rápidos de % */}
-                <div className="flex gap-1.5">
-                  {['3', '4', '5', '6', '7'].map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setCommPct(p)}
-                      className={`flex-1 text-xs py-1.5 rounded-lg border transition-all cursor-pointer ${
-                        commPct === p
-                          ? 'bg-brand-tint border-brand/25 text-brand-text font-semibold'
-                          : 'bg-s3/30 border-line text-t4 hover:text-t2 hover:border-slate-500'
-                      }`}
-                    >{p}%</button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="relative flex items-center">
-                <span className="absolute left-3 text-xs text-t3 font-medium select-none">R$</span>
-                <input
-                  value={fmtInput(commFixed)}
-                  onChange={e => setCommFixed(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="30.000"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30"
-                />
-              </div>
-            )}
-
-            {/* Split — presets rápidos */}
-            <div className="flex flex-col gap-2 pt-1 border-t border-brand/25">
-              <p className="text-[11px] font-medium text-t3 uppercase tracking-wider">Divisão da comissão</p>
-              <div className="flex gap-1.5">
-                {([['100', 'Autônomo', '100%'], ['50', 'Parceria', '50/50'], ['40', 'Com imob.', '40%']] as const).map(([val, label, sub]) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setBrokerPct(val)}
-                    className={`flex-1 flex flex-col items-center py-2 rounded-xl border transition-all cursor-pointer ${
-                      brokerPct === val
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                        : 'bg-s3/30 border-line text-t3 hover:text-t2 hover:border-slate-500'
-                    }`}
-                  >
-                    <span className="text-xs font-semibold">{label}</span>
-                    <span className="text-[11px] opacity-70">{sub}</span>
-                  </button>
+            <div className="flex flex-col gap-1.5">
+              <span className="rotulo-campo">Tipo</span>
+              <div className="flex gap-1.5 min-h-[44px] items-center" role="radiogroup" aria-label="Tipo de imóvel">
+                {([['ready', 'Pronto'], ['off_plan', 'Na planta']] as const).map(([v, l]) => (
+                  <button key={v} type="button" role="radio" aria-checked={type === v}
+                    onClick={() => setType(v as SaleType)} className={pilula(type === v)}>{l}</button>
                 ))}
-                {/* Input manual de split */}
-                <div className="flex items-center gap-1 bg-s3/30 border border-line rounded-xl px-2">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={brokerPct}
-                    onChange={e => setBrokerPct(e.target.value)}
-                    className="w-10 bg-transparent text-xs text-t2 focus:outline-none text-center"
-                    placeholder="—"
-                  />
-                  <span className="text-[11px] text-t4">%</span>
-                </div>
               </div>
             </div>
+          </div>
 
-            {/* Preview calculado */}
-            {preview && preview.totalComm > 0 && (
-              <div className="pt-1 border-t border-brand/25">
-                {parseFloat(brokerPct) === 100 ? (
-                  /* Modo autônomo: exibe só um valor */
-                  <div className="bg-s2/50 rounded-xl px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <DollarSign size={14} className="text-emerald-400" />
-                      <p className="text-xs text-t3">Sua comissão</p>
-                    </div>
-                    <p className="text-base font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
-                  </div>
-                ) : (
-                  /* Modo split: exibe divisão */
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
-                      <p className="text-[11px] text-t3 mb-0.5">Comissão total</p>
-                      <p className="text-sm font-bold text-brand-text tabular-nums">{formatCurrencyFull(preview.totalComm)}</p>
-                    </div>
-                    <div className="bg-s2/50 rounded-xl px-3 py-2.5 text-center">
-                      <p className="text-[11px] text-t3 mb-0.5">Sua parte ({brokerPct}%)</p>
-                      <p className="text-sm font-bold text-emerald-400 tabular-nums">{formatCurrencyFull(preview.brokerComm)}</p>
-                    </div>
-                  </div>
-                )}
+          {/* Comissão */}
+          <div className="flex flex-col gap-2">
+            <span className="rotulo-campo">Comissão</span>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Comissão negociada">
+              {pctPresets.map(p => (
+                <button key={p} type="button" role="radio" aria-checked={commMode === 'pct' && commPct === p}
+                  onClick={() => { setCommMode('pct'); setCommPct(p) }}
+                  className={pilula(commMode === 'pct' && commPct === p)}>{p}%</button>
+              ))}
+              <button type="button" role="radio" aria-checked={commMode === 'pct' && !pctPresets.includes(commPct)}
+                onClick={() => { setCommMode('pct'); if (pctPresets.includes(commPct)) setCommPct('') }}
+                className={pilula(commMode === 'pct' && !pctPresets.includes(commPct))}>Outro %</button>
+              <button type="button" role="radio" aria-checked={commMode === 'fixed'}
+                onClick={() => setCommMode('fixed')} className={pilula(commMode === 'fixed')}>Valor fixo</button>
+            </div>
+            {commMode === 'pct' && !pctPresets.includes(commPct) && (
+              <div className="flex items-center gap-2 animate-in fade-in duration-150">
+                <input type="number" min="0" max="100" step="0.1" value={commPct}
+                  onChange={e => setCommPct(e.target.value)} placeholder="4,5" aria-label="Percentual de comissão"
+                  className="w-28 px-3.5 py-2.5 min-h-[44px]" />
+                <span className="text-[13px] text-t3">% do valor</span>
+              </div>
+            )}
+            {commMode === 'fixed' && (
+              <div className="relative flex items-center animate-in fade-in duration-150">
+                <span className="absolute left-3.5 text-[13px] text-t4 select-none">R$</span>
+                <input value={fmtInput(commFixed)} onChange={e => setCommFixed(e.target.value)}
+                  inputMode="numeric" placeholder="30.000" aria-label="Comissão em reais"
+                  className="w-full pl-10 pr-4 py-2.5 min-h-[44px]" />
               </div>
             )}
           </div>
 
-          {/* Observações */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="saleform-348" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Observações</label>
-            <textarea id="saleform-348"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Informações adicionais..."
-              rows={2}
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 resize-none"
-            />
+          {/* Divisão */}
+          <div className="flex flex-col gap-2">
+            <span className="rotulo-campo">Sua parte</span>
+            <div className="flex flex-wrap gap-1.5 items-center" role="radiogroup" aria-label="Divisão da comissão">
+              {splitPresets.map(([v, l]) => (
+                <button key={v} type="button" role="radio" aria-checked={brokerPct === v}
+                  onClick={() => setBrokerPct(v)} className={pilula(brokerPct === v)}>{l}</button>
+              ))}
+              <span className="flex items-center gap-1">
+                <input type="number" min="0" max="100" step="1" value={brokerPct}
+                  onChange={e => setBrokerPct(e.target.value)} aria-label="Percentual da sua parte"
+                  className="w-16 px-2.5 py-1.5 text-center" />
+                <span className="text-[13px] text-t4">%</span>
+              </span>
+            </div>
           </div>
 
-          <div className="flex gap-3 pt-1">
-            <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="flex-1">{isEditing ? 'Salvar alterações' : 'Registrar venda'}</Button>
-          </div>
+          {/* Observação — recolhida */}
+          {showNotes ? (
+            <div className="flex flex-col gap-1.5 animate-in fade-in duration-150">
+              <label htmlFor="venda-obs" className="rotulo-campo">Observação</label>
+              <textarea id="venda-obs" value={notes} onChange={e => setNotes(e.target.value)}
+                placeholder="Algo que vale lembrar sobre esta venda" rows={2}
+                className="w-full px-3.5 py-2.5 resize-none" />
+            </div>
+          ) : (
+            <button type="button" onClick={() => setShowNotes(true)}
+              className="self-start text-[13px] font-medium text-t3 hover:text-t1 cursor-pointer">
+              + Observação
+            </button>
+          )}
         </form>
       </SidePanel>
 

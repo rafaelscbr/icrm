@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import * as Popover from '@radix-ui/react-popover'
 import {
   Search, Plus, ChevronDown, Bell, Sun, Moon,
-  CheckSquare, UserPlus, Users, MoreHorizontal,
+  CheckSquare, UserPlus, Users, MoreHorizontal, Trophy,
 } from 'lucide-react'
 import { filtrarPorPermissao, isGroup } from './nav/navConfig'
 import type { NavEntry, NavLeaf } from './nav/navConfig'
@@ -48,6 +48,7 @@ const CRIAR = [
   { label: 'Nova tarefa',  desc: 'Visita, ligação, retorno',  icon: CheckSquare, to: '/tarefas?nova=1' },
   { label: 'Novo lead',    desc: 'Entra no funil comercial',  icon: UserPlus,    to: '/leads?novo=1' },
   { label: 'Novo contato', desc: 'Cliente ou parceiro',       icon: Users,       to: '/contatos?novo=1' },
+  { label: 'Nova venda',   desc: 'Registrar negócio fechado', icon: Trophy,      to: '/vendas?nova=1' },
 ]
 
 function folhaAtiva(f: NavLeaf, pathname: string) {

@@ -14,6 +14,8 @@ Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 - [x] Painel e modal: cabeçalho vira um sobretítulo pequeno, sem filetes; rodapé liso
 - [x] Novo contato reescrito: nome grande no topo, telefone, e o resto atrás de "Mais detalhes" (de 11 controles para 3 à vista)
 - [x] Nova tarefa: título sem caixa, como cabeçalho do formulário
+- [x] Novo lead reescrito: uma página só (eram dois passos), busca do contato como título, origem e etapa em pílulas, imóvel e ticket, data de entrada e observação recolhidas
+- [x] Nova venda reescrita: valor como título com a comissão calculada embaixo, comissão e divisão em pílulas, observação recolhida; abre por `/vendas?nova=1` e entrou no "Criar" da barra
 - [x] Menos elementos nas telas: rótulos sem MAIÚSCULAS espaçadas no sistema inteiro, indicadores sem caixinha de ícone, títulos de seção sem filete e ícone
 
 ## v8 — limpeza, cor, formulários e Kanban (01/11/2026)

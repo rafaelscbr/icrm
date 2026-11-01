@@ -2011,7 +2011,7 @@ html.light { --field-bg: #EEF2F8;                  --field-bg-hover: #E6ECF5;   
 
 /* Rótulos e títulos de grupo dentro de formulários: texto normal, discreto. */
 [role="dialog"] :is(label, p, span).font-label,
-label.rotulo-campo {
+.rotulo-campo {
   text-transform: none;
   letter-spacing: 0;
   font-family: 'Geist', system-ui, sans-serif;
