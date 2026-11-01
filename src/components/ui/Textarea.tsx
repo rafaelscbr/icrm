@@ -15,7 +15,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={areaId} className="text-xs font-medium text-t2">
+          <label htmlFor={areaId} className="rotulo-campo">
             {label}
             {props.required && <span className="text-error ml-1">*</span>}
           </label>
@@ -26,14 +26,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           {...props}
           aria-invalid={error ? true : undefined}
           aria-describedby={errorId ?? hintId}
-          style={{ backgroundColor: 'var(--surface)', color: 'var(--t1)' }}
           className={`
-            w-full border rounded-[11px] px-3.5 py-2.5 text-sm
-            placeholder:text-t3
-            focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand
-            hover:border-line-strong
-            transition-all duration-150 resize-none
-            ${error ? 'border-error-line ring-1 ring-error/20' : 'border-line-input'}
+            campo w-full px-3.5 py-2.5 placeholder:text-t4 resize-none
             ${className}
           `}
         />

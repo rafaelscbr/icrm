@@ -14,7 +14,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={selectId} className="text-xs font-medium text-t2">
+          <label htmlFor={selectId} className="rotulo-campo">
             {label}
             {props.required && <span className="text-error ml-1">*</span>}
           </label>
@@ -30,12 +30,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               WebkitAppearance: 'none',
               MozAppearance: 'none',
               appearance: 'none',
-              backgroundColor: 'var(--surface)',
-              color: 'var(--t1)',
               colorScheme: 'auto',
             }}
             className={`
-              w-full border rounded-[11px] px-3 py-2.5 pr-9 min-h-[44px]
+              campo w-full px-3 py-2.5 pr-9 min-h-[44px]
               text-sm
               focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand
               hover:border-line-strong

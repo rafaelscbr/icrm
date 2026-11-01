@@ -9,12 +9,15 @@ import { LeadFunnelStage } from '../types'
  * A cor aqui é SEMÂNTICA, não decorativa. Ela codifica a temperatura comercial
  * do lead ao longo do funil, e não uma paleta de enfeite:
  *
- *   lead        neutro   — entrou, ninguém tocou ainda
- *   followup    azul     — em cadência, informativo
- *   atendimento azul+    — engajado, conversa real acontecendo
- *   visita      âmbar    — compromisso marcado, prazo a cumprir
+ *   lead        índigo   — entrou, ninguém tocou ainda
+ *   followup    violeta  — em cadência
+ *   atendimento celeste  — engajado, conversa real acontecendo
+ *   visita      turquesa — compromisso marcado
  *   proposta    ouro     — momento de decisão, destaque estratégico da marca
  *   venda       verde    — ganho
+ *
+ * v8 (01/11/2026): as etapas iniciais eram cinzas; o Rafael pediu mais cor e
+ * cada etapa ganhou tom próprio — a régua do funil e o Kanban se leem pela cor.
  *
  * Os valores vivem em `--stage-*` (index.css), com variante de modo claro
  * escurecida para atingir ≥4.5:1 sobre papel. Alterar lá reflete no sistema

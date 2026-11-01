@@ -138,7 +138,7 @@ export function Abas<T extends string>({
             aria-hidden
             className={pilula
               ? 'absolute top-1 bottom-1 left-0 rounded-[10px] bg-surface border border-line shadow-card'
-              : 'absolute bottom-0 left-0 h-[2px] rounded-full bg-brand-fill'}
+              : 'absolute bottom-0 left-0 h-[2.5px] rounded-full bg-[var(--aba-cor,var(--brand-fill))]'}
             style={{
               width: ind.w,
               transform: `translateX(${ind.x}px)`,

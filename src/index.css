@@ -133,7 +133,7 @@
   --bar-field:     rgba(255, 255, 255, 0.07);
   --hero-bg:       linear-gradient(140deg, #1A3F8F 0%, #12306E 48%, #0C2153 100%);
   --hero-line:     rgba(255, 255, 255, 0.10);
-  --mast-bg:       linear-gradient(180deg, #102047 0%, #0D1A36 55%, #0B1426 100%);
+  --mast-bg:       #0E1A33;
 
   --r-sm: 10px;
   --r-md: 14px;
@@ -181,11 +181,11 @@
      das superfícies grandes sem introduzir cor nenhuma.
      A opacidade é embutida no próprio <rect> porque background-image não
      aceita opacity — por isso existe uma variante por tema. */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E");
+  --grain: none;
 
   /* Brilho diagonal das superfícies — o "gradiente dos cards".
      No escuro precisa ser mais forte: sobre Marinho um degradê sutil some. */
-  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0) 55%);
+  --surface-sheen: none;
   /* Ponto de partida do degradê do .surface-premium. */
   --sheen-start: var(--surface-2);
 
@@ -204,24 +204,24 @@
        venda    → verde de sucesso
      Roxo, teal e laranja saíram — não significavam nada.
      Fonte única: lib/stageTheme.ts consome estes tokens. */
-  --stage-lead:              #6C7591;
-  --stage-lead-bg:           rgba(108, 117, 145, 0.14);
-  --stage-lead-line:         rgba(108, 117, 145, 0.32);
-  --stage-followup:          #8A90A6;
-  --stage-followup-bg:       rgba(138, 144, 166, 0.14);
-  --stage-followup-line:     rgba(138, 144, 166, 0.32);
-  --stage-atendimento:       #AEB4C6;
-  --stage-atendimento-bg:    rgba(174, 180, 198, 0.14);
-  --stage-atendimento-line:  rgba(174, 180, 198, 0.32);
-  --stage-visita:            #E5CE96;
-  --stage-visita-bg:         rgba(229, 206, 150, 0.10);
-  --stage-visita-line:       rgba(229, 206, 150, 0.30);
-  --stage-proposta:          #D6B26E;
-  --stage-proposta-bg:       rgba(214, 178, 110, 0.12);
-  --stage-proposta-line:     rgba(214, 178, 110, 0.32);
-  --stage-venda:             #34C88A;
-  --stage-venda-bg:          rgba(52, 200, 138, 0.10);
-  --stage-venda-line:        rgba(52, 200, 138, 0.28);
+  --stage-lead:              #8B95FF;
+  --stage-lead-bg:           rgba(139, 149, 255, 0.13);
+  --stage-lead-line:         rgba(139, 149, 255, 0.34);
+  --stage-followup:          #B794F6;
+  --stage-followup-bg:       rgba(183, 148, 246, 0.13);
+  --stage-followup-line:     rgba(183, 148, 246, 0.34);
+  --stage-atendimento:       #4FC3F7;
+  --stage-atendimento-bg:    rgba(79, 195, 247, 0.13);
+  --stage-atendimento-line:  rgba(79, 195, 247, 0.34);
+  --stage-visita:            #2DD4BF;
+  --stage-visita-bg:         rgba(45, 212, 191, 0.13);
+  --stage-visita-line:       rgba(45, 212, 191, 0.34);
+  --stage-proposta:          #E2B862;
+  --stage-proposta-bg:       rgba(226, 184, 98, 0.13);
+  --stage-proposta-line:     rgba(226, 184, 98, 0.34);
+  --stage-venda:             #34D399;
+  --stage-venda-bg:          rgba(52, 211, 153, 0.13);
+  --stage-venda-line:        rgba(52, 211, 153, 0.34);
 }
 
 /* ── MODO ESCURO MÁXIMO (Carvão) ── quando html.dark for usado explicitamente */
@@ -275,7 +275,7 @@ html.light {
      TINTA: a barra é clara, e o Marinho aparece na tipografia, no estado
      ativo e nas linhas. A marca continua estruturando a navegação sem
      pesar a tela — que era exatamente o problema do marinho dominante. */
-  --mast-bg:         linear-gradient(180deg, #DCE6F5 0%, #E9EFF8 55%, #F3F6FB 100%);
+  --mast-bg:         #E9EFF8;
   --nav-bg:          #EAF0F8;
   --nav-text:        #2A3A5C;                  /* Marinho médio */
   --nav-muted:       #5D6E8E;
@@ -332,7 +332,7 @@ html.light {
 
   /* No papel o degradê inverte: em vez de luz branca (invisível sobre branco),
      é uma sombra fria de Marinho muito diluída subindo do rodapé do card. */
-  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0) 50%, rgba(15,39,89,0.02) 100%);
+  --surface-sheen: none;
   /* O card premium partia do Papel 2 inteiro e o canto ficava bege demais:
      cinquenta cards com um canto bege viram uma tela "suja". Metade da tinta
      dá o mesmo volume com metade do ruído. */
@@ -340,27 +340,27 @@ html.light {
 
   /* Grão no papel quase na mesma intensidade do escuro: a 0.04 a textura
      praticamente desaparecia sobre fundo claro. */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
+  --grain: none;
 
   /* Etapas do funil — versões escurecidas para atingir ≥4.5:1 sobre papel */
-  --stage-lead:              #7D87A0;
-  --stage-lead-bg:           rgba(125, 135, 160, 0.14);
-  --stage-lead-line:         rgba(125, 135, 160, 0.34);
-  --stage-followup:          #4A5573;
-  --stage-followup-bg:       rgba(74, 85, 115, 0.11);
-  --stage-followup-line:     rgba(74, 85, 115, 0.32);
-  --stage-atendimento:       #2A3660;
-  --stage-atendimento-bg:    rgba(42, 54, 96, 0.10);
-  --stage-atendimento-line:  rgba(42, 54, 96, 0.30);
-  --stage-visita:            #A8842C;
-  --stage-visita-bg:         rgba(168, 132, 44, 0.10);
-  --stage-visita-line:       rgba(168, 132, 44, 0.30);
-  --stage-proposta:          #7A5408;
-  --stage-proposta-bg:       rgba(122, 84, 8, 0.11);
-  --stage-proposta-line:     rgba(122, 84, 8, 0.34);
-  --stage-venda:             #1F8A62;
-  --stage-venda-bg:          rgba(31, 138, 98, 0.10);
-  --stage-venda-line:        rgba(31, 138, 98, 0.32);
+  --stage-lead:              #4F46E5;
+  --stage-lead-bg:           rgba(79, 70, 229, 0.13);
+  --stage-lead-line:         rgba(79, 70, 229, 0.34);
+  --stage-followup:          #7E22CE;
+  --stage-followup-bg:       rgba(126, 34, 206, 0.13);
+  --stage-followup-line:     rgba(126, 34, 206, 0.34);
+  --stage-atendimento:       #0369A1;
+  --stage-atendimento-bg:    rgba(3, 105, 161, 0.13);
+  --stage-atendimento-line:  rgba(3, 105, 161, 0.34);
+  --stage-visita:            #0F766E;
+  --stage-visita-bg:         rgba(15, 118, 110, 0.13);
+  --stage-visita-line:       rgba(15, 118, 110, 0.34);
+  --stage-proposta:          #946200;
+  --stage-proposta-bg:       rgba(148, 98, 0, 0.13);
+  --stage-proposta-line:     rgba(148, 98, 0, 0.34);
+  --stage-venda:             #15803D;
+  --stage-venda-bg:          rgba(21, 128, 61, 0.13);
+  --stage-venda-line:        rgba(21, 128, 61, 0.34);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -798,11 +798,31 @@ html.light {
 }
 .hero-tile::after {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background-image:
-    radial-gradient(60% 80% at 100% 0%, rgba(214, 178, 110, 0.20) 0%, transparent 60%),
-    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
-  background-size: auto, 32px 32px, 32px 32px;
+  background-image: radial-gradient(60% 80% at 100% 0%, rgba(214, 178, 110, 0.18) 0%, transparent 60%);
+}
+
+/* v8 — cor de cada área do sistema. Aparece no selo do topo da página e no
+   indicador das abas: dá memória de lugar sem pintar a tela. */
+:root {
+  --area-operacao:    #4C8DFF;
+  --area-comercial:   #9B7BFF;
+  --area-produtos:    #22C3B0;
+  --area-prospeccao:  #FF8A4C;
+  --area-inteligencia:#E2B862;
+  --area-conta:       #8C9DBA;
+}
+html.light {
+  --area-operacao:    #2563EB;
+  --area-comercial:   #7C3AED;
+  --area-produtos:    #0F9488;
+  --area-prospeccao:  #EA580C;
+  --area-inteligencia:#B7862A;
+  --area-conta:       #5D6E8E;
+}
+.area-selo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 7px;
+  background-color: var(--area); color: #FFFFFF;
 }
 
 /* Bloco comum do mosaico */
@@ -918,9 +938,7 @@ html.light {
 
 /* No celular a aurora sai: dois focos de 40vw com blur de 90px animando o dia
    inteiro custam bateria e GPU, e numa tela de 375px o brilho quase não se vê. */
-@media (max-width: 1023px) {
-  .aurora { display: none; }
-}
+.aurora { display: none; }  /* v8: fundo liso nos dois temas */
 
 /* O conteúdo da página precisa ficar acima da aurora. */
 .aurora-host { position: relative; }
@@ -931,7 +949,6 @@ html.light {
 
 .surface-premium {
   background-color: var(--surface);
-  background-image: var(--grain), linear-gradient(158deg, var(--sheen-start) 0%, var(--surface) 62%);
 }
 
 /*
@@ -963,6 +980,7 @@ html.light {
 
 /* Filete dourado no topo — precisa de position:relative no elemento host. */
 .gold-edge::before {
+  display: none;  /* v8: enfeite removido — o sistema ficou mais limpo */
   content: '';
   position: absolute;
   left: 0; right: 0; top: 0;
@@ -990,6 +1008,7 @@ html.light {
   isolation: isolate;
 }
 .gold-glow-tl::after {
+  display: none;
   content: '';
   position: absolute;
   inset: 0;
@@ -1019,11 +1038,11 @@ html.light .gold-glow-tl::after {
  */
 .list-surface {
   background-color: var(--surface);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), var(--shadow-card);
+  box-shadow: none;   /* v8: tabela é borda fina, sem sombra */
 }
 html.light .list-surface {
   background-color: var(--surface);
-  box-shadow: 0 1px 2px rgba(15,39,89,0.05);
+  box-shadow: none;
 }
 
 /*
@@ -1035,19 +1054,21 @@ html.light .list-surface {
   transition: background-color var(--dur-fast) ease;
 }
 .lista-linha:hover {
-  background-color: color-mix(in srgb, var(--t1) 4%, transparent);
+  /* v8: a linha tinge com a cor da área da tela (roxo em Comercial, azul em
+     Operação…) — leve o bastante para não competir com o conteúdo. */
+  background-color: color-mix(in srgb, var(--area, var(--t1)) 7%, transparent);
 }
 .app-sheet table tbody tr {
   transition: background-color var(--dur-fast) ease;
 }
 .app-sheet table tbody tr:hover {
-  background-color: color-mix(in srgb, var(--t1) 4%, transparent);
+  background-color: color-mix(in srgb, var(--area, var(--t1)) 7%, transparent);
 }
 .app-sheet table thead th {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--t4);
 }
 
@@ -1150,6 +1171,51 @@ html.light {
 .kanban-card-prioridade:hover {
   border-color: color-mix(in srgb, var(--brand) 55%, transparent) !important;
 }
+
+/*
+ * Kanban v8 (01/11/2026) — mais limpo. As colunas deixaram de ser poços
+ * pintados: o fundo é a própria página e a etapa se lê pela cor do cabeçalho
+ * (filete de 2px + contagem tingida). O card fica chato, com borda fina, e só
+ * ganha sombra no hover. Coluna vazia vira um trilho estreito (.kanban-trilho)
+ * que só se abre quando há card sendo arrastado.
+ */
+:root {
+  --kanban-card-bg:            var(--surface);
+  --kanban-card-hover:         var(--surface);
+  --kanban-card-line:          var(--line);
+  --kanban-card-shadow:        none;
+  --kanban-card-shadow-alerta: 0 10px 24px -14px rgba(2, 8, 24, 0.75);
+}
+html.light {
+  --kanban-card-bg:            #FFFFFF;
+  --kanban-card-hover:         #FFFFFF;
+  --kanban-card-line:          rgba(15, 39, 89, 0.10);
+  --kanban-card-shadow:        0 1px 2px rgba(15, 39, 89, 0.04);
+  --kanban-card-shadow-alerta: 0 12px 24px -14px rgba(15, 39, 89, 0.30);
+}
+.kanban-col { background: transparent; background-image: none; border: 0; }
+.kanban-col::before { display: none; }
+.kanban-col-bg { background-color: var(--page-bg); background-image: none; }
+.kanban-cabeca { border-bottom: 2px solid var(--etapa); }
+.kanban-contagem {
+  background-color: color-mix(in srgb, var(--etapa) 16%, transparent);
+  color: var(--etapa);
+}
+.kanban-solta {
+  background-color: color-mix(in srgb, var(--etapa) 7%, transparent);
+  outline: 2px dashed color-mix(in srgb, var(--etapa) 55%, transparent);
+  outline-offset: -2px;
+}
+.kanban-trilho {
+  background-color: color-mix(in srgb, var(--etapa) 7%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--etapa) 35%, transparent);
+}
+.kanban-trilho:hover { background-color: color-mix(in srgb, var(--etapa) 12%, transparent); }
+.kanban-card:hover { transform: translateY(-1px); }
+
+/* Régua do funil — a faixa que resume e navega o quadro */
+.regua-segmento { transition: background-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out); }
+.regua-segmento:hover { background-color: color-mix(in srgb, var(--etapa) 9%, transparent); }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    LIGHT MODE — overrides para classes Tailwind herdadas
@@ -1893,6 +1959,67 @@ html.compacta .lista-linha {
   -webkit-text-fill-color: var(--t1);
   caret-color: var(--t1);
   transition: background-color 9999s;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   FORMULÁRIOS — v8 (01/11/2026)
+
+   Um campo só, no sistema inteiro: fundo levemente afundado, borda fina,
+   cantos de 10px e foco azul com anel suave. Vale para os componentes Input,
+   Select e Textarea (classe .campo) e também para os campos escritos à mão
+   dentro de qualquer diálogo ou painel — eram ~40 formulários com cinco
+   estilos diferentes de campo. Os rótulos em MAIÚSCULAS espaçadas dos
+   formulários viram texto normal, mais fácil de ler.
+
+   `.campo-livre` tira o campo da regra (busca global, título grande da tarefa).
+   ══════════════════════════════════════════════════════════════════════════════ */
+:root      { --field-bg: #0F1C38; --field-focus: #4C8DFF; }
+html.light { --field-bg: #F5F8FC; --field-focus: #2563EB; }
+
+.campo,
+[role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.campo-livre) {
+  background-color: var(--field-bg);
+  border: 1px solid var(--line-input);
+  border-radius: 10px;
+  color: var(--t1);
+  font-size: 14px;
+  box-shadow: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+.campo:hover,
+[role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.campo-livre):hover {
+  border-color: var(--line-strong);
+}
+.campo:focus,
+[role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.campo-livre):focus {
+  outline: none;
+  background-color: var(--surface);
+  border-color: var(--field-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 20%, transparent);
+}
+.campo[aria-invalid="true"],
+[role="dialog"] :is(input, select, textarea)[aria-invalid="true"]:not(.campo-livre) {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--error) 16%, transparent);
+}
+[role="dialog"] :is(input, textarea)::placeholder { color: var(--t4); }
+
+/* Rótulos de campo: texto normal, peso médio, sem caixa alta. */
+[role="dialog"] label.font-label,
+label.rotulo-campo {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t2);
+}
+
+/* Rodapé de diálogo: ações à direita, fundo liso. */
+.dialogo-rodape {
+  background-color: var(--surface);
+  border-top: 1px solid var(--line);
 }
 
 /* ── Acessibilidade: respeita preferência do sistema por menos movimento ── */

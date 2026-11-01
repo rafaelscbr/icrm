@@ -72,12 +72,12 @@ export function CabecalhoLista({
 }) {
   return (
     <div
-      className={`flex items-center gap-4 px-6 py-2.5 border-b border-line bg-s2/70 select-none ${className}`}
+      className={`flex items-center gap-4 px-6 py-2.5 border-b border-line select-none ${className}`}
       role="presentation"
     >
       {antes && <span className={`${antes} flex-shrink-0`} aria-hidden />}
       {colunas.map(c => (
-        <span key={c.chave} className={celula(c, 'font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4')}>
+        <span key={c.chave} className={celula(c, 'text-[12px] font-semibold text-t4')}>
           {c.rotulo}
         </span>
       ))}

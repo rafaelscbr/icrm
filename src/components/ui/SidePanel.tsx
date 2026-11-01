@@ -146,8 +146,7 @@ export function SidePanel({
         {/* Rodapé fixo: as ações nunca somem no scroll de um formulário longo */}
         {footer && (
           <div
-            className="flex-shrink-0 px-5 py-4"
-            style={{ borderTop: '1px solid var(--line)', background: 'var(--s2)' }}
+            className="dialogo-rodape flex-shrink-0 px-5 py-4"
           >
             {footer}
           </div>

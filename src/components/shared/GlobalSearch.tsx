@@ -197,7 +197,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             aria-controls="busca-resultados"
             aria-autocomplete="list"
             aria-activedescendant={hasResults ? `busca-opcao-${activeIndex}` : undefined}
-            className="flex-1 bg-transparent text-sm text-t1 placeholder-t4 outline-none"
+            className="campo-livre flex-1 bg-transparent text-sm text-t1 placeholder-t4 outline-none"
           />
           {query && (
             <button onClick={() => setQuery('')} className="text-t4 hover:text-t2 transition-colors flex-shrink-0" aria-label="Limpar busca">

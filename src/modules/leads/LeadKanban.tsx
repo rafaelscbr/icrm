@@ -25,7 +25,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
 import { useTasksStore } from '../../store/useTasksStore'
-import { formatPhone, formatCurrency, whatsappUrl, iniciais } from '../../lib/formatters'
+import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { IntelPair } from '../../components/shared/IntelBadges'
@@ -153,7 +153,7 @@ function LeadCard({
       tabIndex={isOverlay ? -1 : 0}
       onKeyDown={aoTeclarAbrir(onClick)}
       aria-label={`Abrir lead ${displayName}`}
-      className={`kanban-card group relative border rounded-[14px] cursor-pointer overflow-hidden
+      className={`kanban-card group relative border rounded-[12px] cursor-pointer overflow-hidden
         transition-[transform,box-shadow,background-color,border-color,opacity] duration-200
         hover:-translate-y-px hover:shadow-dropdown
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
@@ -240,10 +240,9 @@ function LeadCard({
       )}
 
       {/* ── NÍVEL 1 — Identidade ─────────────────────────────────────────── */}
+      {/* v8: sem o quadrado de iniciais — o nome já identifica, e o quadrado
+          repetido em 100 cards era o maior ruído visual do quadro. */}
       <div className="flex items-start gap-2.5 pr-12">
-        <div className="w-8 h-8 rounded-[10px] bg-s3 border border-line-strong flex items-center justify-center font-heading text-sm font-bold text-t2 flex-shrink-0">
-          {iniciais(displayName) || '?'}
-        </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
@@ -363,11 +362,11 @@ function LeadCard({
           Agora ele é um botão fantasma que se enche de cor ao passar o mouse
           ou receber foco: continua visível e descobrível (esconder no hover
           seria pior, some no toque e no teclado), só parou de gritar. */}
-      <div className="mt-2.5 pt-2.5 border-t border-line flex items-center gap-1.5">
+      <div className="mt-2.5 flex items-center gap-1">
         {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
           <button
             onClick={e => { e.stopPropagation(); onConclude?.() }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 font-heading text-xs font-bold text-brand-fill-text bg-brand-fill hover:bg-brand-fill-hover rounded-[10px] transition-all duration-150 active:scale-[0.98]"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 min-h-[32px] text-[12px] font-bold text-brand-fill-text bg-brand-fill hover:bg-brand-fill-hover rounded-[9px] transition-all duration-150 active:scale-[0.98]"
             title="Concluir a venda e registrar no faturamento"
           >
             <Trophy size={12} strokeWidth={1.8} />
@@ -376,11 +375,11 @@ function LeadCard({
         ) : (
           <button
             onClick={handleWhatsApp}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 min-h-[32px] font-heading text-xs font-bold
-                       text-t2 bg-transparent border border-line-strong rounded-[10px] transition-all duration-150 active:scale-[0.98]
-                       group-hover:text-success group-hover:bg-success-bg group-hover:border-success-line
-                       hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)] hover:!border-success
-                       focus-visible:text-success focus-visible:bg-success-bg focus-visible:border-success-line
+            className="flex-1 flex items-center justify-start gap-1.5 px-2 py-1.5 min-h-[32px] text-[12px] font-semibold
+                       text-t3 bg-s2/60 rounded-[9px] transition-all duration-150 active:scale-[0.98]
+                       group-hover:text-success group-hover:bg-success-bg
+                       hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)]
+                       focus-visible:text-success focus-visible:bg-success-bg
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
             title="Abrir WhatsApp e registrar o contato na timeline"
           >
@@ -393,7 +392,7 @@ function LeadCard({
         )}
         <button
           onClick={handleWhatsAppOpen}
-          className="w-8 h-8 flex items-center justify-center text-t3 hover:text-success bg-transparent hover:bg-success-bg border border-line-strong hover:border-success-line rounded-[10px] transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          className="w-8 h-8 flex items-center justify-center text-t4 hover:text-success bg-transparent hover:bg-success-bg rounded-[9px] transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           title="Só abrir WhatsApp, sem registrar"
           aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
         >
@@ -402,7 +401,7 @@ function LeadCard({
         <a
           href={`tel:${displayPhone}`}
           onClick={e => e.stopPropagation()}
-          className="w-8 h-8 flex items-center justify-center text-t3 hover:text-t1 bg-transparent hover:bg-s3 border border-line-strong rounded-[10px] transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          className="w-8 h-8 flex items-center justify-center text-t4 hover:text-t1 bg-transparent hover:bg-s3 rounded-[9px] transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           title={`Ligar — ${formatPhone(displayPhone)}`}
           aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
         >
@@ -417,8 +416,13 @@ function LeadCard({
 
 function KanbanColumn({
   stage, leads, total, onCardClick, onConclude, isActiveDragTarget, savingId, dense, financeMode,
-  onFiltrarSemContato, filtroSemContatoAtivo,
+  onFiltrarSemContato, filtroSemContatoAtivo, arrastando, aberta, onAbrir,
 }: {
+  /** há um card sendo arrastado — trilhos vazios se abrem para receber */
+  arrastando: boolean
+  /** coluna vazia aberta à mão pelo corretor */
+  aberta: boolean
+  onAbrir: () => void
   stage: LeadFunnelStage
   leads: Lead[]
   /** total da etapa sem filtro — só vem quando há recorte aplicado */
@@ -445,54 +449,77 @@ function KanbanColumn({
   ).length
   const riskPct = leads.length > 0 ? Math.round((coldCount / leads.length) * 100) : 0
 
+  const alvo = isOver || isActiveDragTarget
+  const vazia = leads.length === 0
+
+  // Coluna vazia vira um trilho estreito: no quadro de hoje, Leads e Visita
+  // vazias ocupavam 600px de "Nada em…" e empurravam Proposta e Venda para
+  // fora da tela. Enquanto há card sendo arrastado o trilho se abre, para
+  // continuar sendo um destino fácil de soltar.
+  if (vazia && !arrastando && !aberta) {
+    return (
+      <div className="flex-shrink-0" style={{ ['--etapa' as string]: `var(--stage-${stage})` }} id={`coluna-${stage}`}>
+        <button
+          ref={setNodeRef}
+          type="button"
+          onClick={onAbrir}
+          title={`${conf.columnLabel}: nenhum lead. Clique para abrir a coluna.`}
+          aria-label={`${conf.columnLabel}, nenhum lead. Abrir coluna`}
+          className="kanban-trilho w-[52px] min-h-[420px] h-full rounded-[14px] flex flex-col items-center gap-3 pt-4 cursor-pointer
+                     transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+        >
+          <span className={`w-2.5 h-2.5 rounded-full ${conf.dot}`} aria-hidden />
+          <span className="font-display text-[15px] font-extrabold tabular-nums text-t4">0</span>
+          <span className="text-[12px] font-semibold text-t3 tracking-[0.04em]" style={{ writingMode: 'vertical-rl' }}>
+            {conf.columnLabel}
+          </span>
+        </button>
+      </div>
+    )
+  }
+
   return (
-    // --etapa alimenta o filete e o tingimento da coluna (ver .kanban-col).
-    <div className="flex flex-col w-[19rem] flex-shrink-0" style={{ ['--etapa' as string]: `var(--stage-${stage})` }}>
-      <div className={`flex flex-col flex-1 rounded-[18px] kanban-col transition-shadow duration-200
-        ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-brand/40' : ''}
-      `}>
+    // --etapa alimenta o filete e a contagem do cabeçalho (ver .kanban-cabeca).
+    <div className="flex flex-col w-[18.5rem] flex-shrink-0" style={{ ['--etapa' as string]: `var(--stage-${stage})` }} id={`coluna-${stage}`}>
+      <div className="flex flex-col flex-1 kanban-col">
         {/* Cabeçalho fixo — acompanha a rolagem vertical da coluna */}
-        <div className="sticky top-0 z-10 flex flex-col px-4 pt-3.5 pb-2.5 rounded-t-[18px] kanban-col-bg">
+        <div className="kanban-cabeca kanban-col-bg sticky top-0 z-10 flex flex-col px-1 pt-1 pb-2.5 mb-2.5">
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${conf.dot}`} aria-hidden />
-            <h3 className="font-label text-xs font-semibold uppercase tracking-[0.12em] text-t2">
+            <h3 className="text-[14px] font-semibold text-t1">
               {conf.columnLabel}
             </h3>
-            {/* A contagem herda a cor da etapa: é o número que se lê primeiro ao
-                varrer o funil, e em cinza ele some no meio do cabeçalho. */}
-            <span className={`ml-auto font-heading text-[17px] font-extrabold tabular-nums
-                              leading-none ${conf.color}`}>
+            <span className="kanban-contagem font-display text-[12.5px] font-extrabold tabular-nums leading-none px-2 py-1 rounded-full">
               {leads.length}
+              {total !== undefined && total !== leads.length && (
+                <span className="opacity-70 font-semibold" title={`${leads.length} de ${total} leads desta etapa`}>/{total}</span>
+              )}
             </span>
-            {/* Com filtro, o total da etapa: sem ele a coluna encolhida parece
-                funil vazio. */}
-            {total !== undefined && total !== leads.length && (
-              <span className="font-label text-[11px] text-t4 tabular-nums -ml-1" title={`${leads.length} de ${total} leads desta etapa`}>
-                /{total}
-              </span>
+            {vazia && aberta && (
+              <button
+                type="button"
+                onClick={onAbrir}
+                className="ml-auto text-[12px] text-t4 hover:text-t1 px-1.5 py-0.5 rounded-md hover:bg-s2 cursor-pointer"
+                title="Recolher coluna vazia"
+              >
+                Recolher
+              </button>
+            )}
+            {totalPipeline > 0 && (
+              <span className="ml-auto text-[12px] text-t3 font-semibold tabular-nums">{formatCurrency(totalPipeline)}</span>
             )}
           </div>
 
-          {/* VGV + comissão da etapa */}
-          {totalPipeline > 0 && (
-            <div className="flex items-center gap-1.5 mt-1.5 pl-4">
-              <span className="font-label text-[11px] text-t2 font-semibold tabular-nums">{formatCurrency(totalPipeline)}</span>
-              {financeMode && (
-                <>
-                  <span className="text-[11px] text-t5" aria-hidden>·</span>
-                  <span className="font-label text-[11px] text-success tabular-nums" title="Comissão estimada (2%)">
-                    {formatCurrency(totalCommission)}
-                  </span>
-                </>
-              )}
-            </div>
+          {(financeMode && totalPipeline > 0) && (
+            <p className="mt-1 pl-4 text-[11px] text-success tabular-nums" title="Comissão estimada (2%)">
+              {formatCurrency(totalCommission)} em comissão
+            </p>
           )}
 
-          {/* Indicador de risco — texto + proporção, nunca só cor. É também
-              um atalho: tocar filtra o funil inteiro por quem esfriou, que é
-              exatamente a pergunta que o número levanta. */}
+          {/* Risco — texto + proporção, nunca só cor. Tocar filtra o funil
+              inteiro por quem esfriou. */}
           {coldCount > 0 && (
-            <div className="mt-2 pl-4">
+            <div className="mt-1.5 pl-4 flex items-center gap-2">
               {onFiltrarSemContato ? (
                 <button
                   type="button"
@@ -501,27 +528,27 @@ function KanbanColumn({
                   title={filtroSemContatoAtivo
                     ? 'Mostrar todos os leads de novo'
                     : `Mostrar só quem está há mais de ${ESFRIANDO_DIAS} dias sem contato, em todas as colunas`}
-                  className={`-ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-label text-[11px] text-warning tabular-nums
+                  className={`-ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11.5px] text-warning tabular-nums
                     transition-colors hover:bg-warning-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-warning/40
                     ${filtroSemContatoAtivo ? 'bg-warning-bg' : ''}`}
                 >
-                  <Snowflake size={10} strokeWidth={1.6} aria-hidden />
+                  <Snowflake size={11} strokeWidth={1.7} aria-hidden />
                   {coldCount} sem contato há +{ESFRIANDO_DIAS}d
                   {filtroSemContatoAtivo && <X size={10} strokeWidth={2} aria-hidden />}
                 </button>
               ) : (
-                <p className="flex items-center gap-1 font-label text-[11px] text-warning tabular-nums">
-                  <Snowflake size={10} strokeWidth={1.6} aria-hidden />
+                <p className="flex items-center gap-1 text-[11.5px] text-warning tabular-nums">
+                  <Snowflake size={11} strokeWidth={1.7} aria-hidden />
                   {coldCount} sem contato há +{ESFRIANDO_DIAS}d
                 </p>
               )}
-              <div
-                className="mt-1 h-1 rounded-full bg-s3 overflow-hidden"
+              <span
+                className="flex-1 h-1 rounded-full bg-s3 overflow-hidden"
                 role="progressbar" aria-valuenow={riskPct} aria-valuemin={0} aria-valuemax={100}
                 aria-label={`${riskPct}% dos leads desta etapa estão sem contato`}
               >
-                <div className="h-full rounded-full bg-warning" style={{ width: `${riskPct}%` }} />
-              </div>
+                <span className="block h-full rounded-full bg-warning" style={{ width: `${riskPct}%` }} />
+              </span>
             </div>
           )}
         </div>
@@ -529,22 +556,17 @@ function KanbanColumn({
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div
             ref={setNodeRef}
-            className={`flex-1 min-h-[420px] rounded-b-[18px] px-2.5 pb-2.5 flex flex-col transition-colors duration-200
-              ${dense ? 'gap-1.5' : 'gap-2.5'}
-              ${isOver || isActiveDragTarget ? 'bg-brand-tint' : ''}
+            className={`flex-1 min-h-[420px] rounded-[14px] p-1 flex flex-col transition-colors duration-200
+              ${dense ? 'gap-1.5' : 'gap-2'}
+              ${alvo ? 'kanban-solta' : ''}
             `}
           >
-            {leads.length === 0 && (
-              /* Ficava centralizado num flex-1 de 420px+ de altura: o texto
-                 caía abaixo da dobra e a coluna vazia lia como um vão morto.
-                 Agora a área de solta fica no topo, onde o card entraria. */
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-[14px] border border-dashed
-                              border-line-strong/60 bg-s3/20 px-3 py-7 m-0.5">
+            {vazia && (
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-[12px] border border-dashed
+                              border-line-strong px-3 py-8">
                 <Inbox size={16} strokeWidth={1.5} className="text-t4" aria-hidden />
                 <p className="text-xs text-t4 text-center leading-snug">
-                  Nada em {conf.label.toLowerCase()}
-                  <br />
-                  <span className="text-t5">Arraste um card para cá</span>
+                  Solte um card aqui para mover para {conf.label.toLowerCase()}
                 </p>
               </div>
             )}
@@ -601,6 +623,18 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   // transform e o overflow-hidden do card. Guardamos o id, não o lead, para o
   // modal sempre ler a versão atual do store.
   const [concludeId, setConcludeId] = useState<string | null>(null)
+  // Colunas vazias que o corretor abriu à mão (por padrão viram trilho).
+  const [abertas, setAbertas] = useState<Set<LeadFunnelStage>>(new Set())
+  function alternarColuna(stage: LeadFunnelStage) {
+    setAbertas(prev => {
+      const n = new Set(prev)
+      if (n.has(stage)) n.delete(stage); else n.add(stage)
+      return n
+    })
+  }
+  function irParaColuna(stage: LeadFunnelStage) {
+    document.getElementById(`coluna-${stage}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
+  }
   const concludeLead = concludeId ? leads.find(l => l.id === concludeId) : null
   const { dense, financeMode, sort, setDense, setFinanceMode } = useKanbanPrefs()
 
@@ -734,60 +768,86 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
 
   return (
     <>
-      {/* ── Resumo do funil + controles de visualização ────────────────────
-          Compacto de propósito: é uma régua para decidir, não um segundo
-          dashboard. Os números saem dos mesmos leads já renderizados. */}
-      <div className="flex items-center gap-x-5 gap-y-2 flex-wrap px-1 pb-3">
-        <span className="flex items-baseline gap-1.5">
-          <span className="font-heading text-sm font-bold text-t1 tabular-nums">{resumo.ativos}</span>
-          <span className="text-[11px] text-t4">ativos</span>
-        </span>
-        <span className="flex items-baseline gap-1.5">
-          <span className="font-heading text-sm font-bold text-t1 tabular-nums">{formatCurrency(resumo.vgv)}</span>
-          <span className="text-[11px] text-t4">em pipeline</span>
-        </span>
-        <span className="flex items-baseline gap-1.5">
-          <span className="font-heading text-sm font-bold text-t2 tabular-nums">{resumo.visitas}</span>
-          <span className="text-[11px] text-t4">visitas</span>
-        </span>
-        <span className="flex items-baseline gap-1.5">
-          <span className="font-heading text-sm font-bold text-t2 tabular-nums">{resumo.propostas}</span>
-          <span className="text-[11px] text-t4">propostas</span>
-        </span>
+      {/* ── Régua do funil (v8) ──────────────────────────────────────────────
+          Substitui a linha de números soltos: uma barra contínua mostra o
+          tamanho de cada etapa na proporção real, e cada etapa embaixo é um
+          atalho — clicar leva até a coluna (útil quando o quadro não cabe na
+          tela). Os números saem dos mesmos leads já renderizados. */}
+      <div className="bento p-3 sm:p-4 mb-4">
+        <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mb-3 px-1">
+          <p className="text-[13px] text-t3">
+            <span className="font-display text-[15px] font-extrabold text-t1 tabular-nums">{resumo.ativos}</span> em aberto
+            <span className="text-t5 mx-2" aria-hidden>·</span>
+            <span className="font-display text-[15px] font-extrabold text-t1 tabular-nums">{formatCurrency(resumo.vgv)}</span> em pipeline
+          </p>
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              onClick={() => setDense(!dense)}
+              aria-pressed={dense}
+              title={dense ? 'Mostrar contexto comercial nos cards' : 'Compactar cards'}
+              className={`flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer
+                ${dense ? 'text-t1 bg-s3' : 'text-t3 hover:text-t1 hover:bg-s2'}`}
+            >
+              {dense ? <Rows2 size={13} strokeWidth={1.7} /> : <Rows3 size={13} strokeWidth={1.7} />}
+              {dense ? 'Compacto' : 'Completo'}
+            </button>
+            <button
+              onClick={() => setFinanceMode(!financeMode)}
+              aria-pressed={financeMode}
+              title="Exibir comissão estimada em todos os cards e colunas"
+              className={`flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer
+                ${financeMode ? 'text-success bg-success-bg' : 'text-t3 hover:text-t1 hover:bg-s2'}`}
+            >
+              <DollarSign size={13} strokeWidth={1.7} />
+              Comissão
+            </button>
+            <span className="flex items-center pl-1" title={connected ? 'Sincronizado em tempo real' : 'Reconectando ao servidor'}>
+              {connected
+                ? <Wifi size={13} strokeWidth={1.7} className="text-success" aria-label="Tempo real ativo" />
+                : <WifiOff size={13} strokeWidth={1.7} className="text-warning" aria-label="Reconectando" />}
+            </span>
+          </div>
+        </div>
 
-        {/* A ordenação subiu para a barra de filtros, no mesmo lugar da lista:
-            a pergunta "em que ordem?" é a mesma nas duas visões. */}
-        <div className="ml-auto flex items-center gap-2 flex-wrap">
-          {/* Densidade */}
-          <button
-            onClick={() => setDense(!dense)}
-            aria-pressed={dense}
-            title={dense ? 'Mostrar contexto comercial nos cards' : 'Compactar cards'}
-            className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-lg border transition-colors cursor-pointer
-              ${dense ? 'text-t1 bg-s3 border-line-strong' : 'text-t3 bg-s2 border-line hover:text-t1'}`}
-          >
-            {dense ? <Rows2 size={12} strokeWidth={1.6} /> : <Rows3 size={12} strokeWidth={1.6} />}
-            {dense ? 'Compacto' : 'Completo'}
-          </button>
+        {/* Barra proporcional */}
+        <div className="flex h-2 gap-0.5 rounded-full overflow-hidden bg-s2" aria-hidden>
+          {STAGES.map(st => {
+            const n = sortedByStage[st].length
+            if (n === 0) return null
+            return <span key={st} style={{ flexGrow: n, background: `var(--stage-${st})` }} />
+          })}
+        </div>
 
-          {/* Modo financeiro */}
-          <button
-            onClick={() => setFinanceMode(!financeMode)}
-            aria-pressed={financeMode}
-            title="Exibir comissão estimada em todos os cards e colunas"
-            className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-lg border transition-colors cursor-pointer
-              ${financeMode ? 'text-success bg-success-bg border-success-line' : 'text-t3 bg-s2 border-line hover:text-t1'}`}
-          >
-            <DollarSign size={12} strokeWidth={1.6} />
-            Comissão
-          </button>
-
-          {/* Sincronização — discreto, como pede o briefing */}
-          <span className="flex items-center gap-1.5" title={connected ? 'Sincronizado em tempo real' : 'Reconectando ao servidor'}>
-            {connected
-              ? <Wifi size={12} strokeWidth={1.6} className="text-success" aria-label="Tempo real ativo" />
-              : <WifiOff size={12} strokeWidth={1.6} className="text-warning" aria-label="Reconectando" />}
-          </span>
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-1 mt-2.5">
+          {STAGES.map(st => {
+            const lista = sortedByStage[st]
+            const vgv = lista.reduce((t, l) => t + (l.averageTicket ?? 0), 0)
+            const pct = leads.length > 0 ? Math.round((lista.length / leads.length) * 100) : 0
+            return (
+              <button
+                key={st}
+                type="button"
+                onClick={() => irParaColuna(st)}
+                className="regua-segmento text-left rounded-[10px] px-2.5 py-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                style={{ ['--etapa' as string]: `var(--stage-${st})` }}
+                title={`Ir para ${STAGE_CONFIG[st].columnLabel}`}
+              >
+                <span className="flex items-center gap-1.5 text-[12px] font-medium text-t3">
+                  <span className={`w-2 h-2 rounded-full ${STAGE_CONFIG[st].dot}`} aria-hidden />
+                  {STAGE_CONFIG[st].columnLabel}
+                </span>
+                <span className="flex items-baseline gap-1.5 mt-1">
+                  <span className={`font-display text-[20px] font-extrabold tabular-nums leading-none ${lista.length > 0 ? STAGE_CONFIG[st].color : 'text-t5'}`}>
+                    {lista.length}
+                  </span>
+                  <span className="text-[11px] text-t4 tabular-nums">{pct}%</span>
+                </span>
+                <span className="block text-[11px] text-t4 tabular-nums mt-0.5 truncate">
+                  {vgv > 0 ? formatCurrency(vgv) : '—'}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -798,7 +858,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 px-1">
+        <div className="flex gap-4 overflow-x-auto pb-4 px-1 items-stretch">
           {STAGES.map(stage => (
             <KanbanColumn
               key={stage}
@@ -812,6 +872,9 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
               dense={dense} financeMode={financeMode}
               isActiveDragTarget={overStage === stage && !!activeId}
               savingId={savingId}
+              arrastando={!!activeId}
+              aberta={abertas.has(stage)}
+              onAbrir={() => alternarColuna(stage)}
             />
           ))}
         </div>

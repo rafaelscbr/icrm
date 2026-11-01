@@ -7,6 +7,15 @@ Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
 **Progresso: 100%**
 
+## v8 — limpeza, cor, formulários e Kanban (01/11/2026)
+
+- [x] Tema escuro (e claro) com fundo liso: topo de página sem degradê, sem aurora, sem grão, sem brilhos dourados decorativos
+- [x] Mais cor com significado: cada área tem a sua (Operação azul, Comercial violeta, Produtos turquesa, Prospecção laranja, Inteligência ouro) no selo do topo, no indicador das abas e no hover das linhas de tabela
+- [x] Etapas do funil coloridas (índigo, violeta, celeste, turquesa, ouro, verde)
+- [x] Formulários: um só visual de campo no sistema inteiro (inclusive campos escritos à mão dentro de diálogos), foco azul com anel suave, rótulos em texto normal em vez de MAIÚSCULAS espaçadas, rodapé de painel liso
+- [x] Tabelas: sem sombra, cabeçalho sem faixa e em texto normal, hover na cor da área
+- [x] Kanban: régua do funil (barra proporcional + atalho para cada coluna), colunas sem fundo pintado com filete da etapa, coluna vazia vira trilho estreito que abre ao arrastar, cards sem quadrado de iniciais e com ações fantasma
+
 ## v7 — topo de página, abas e fluxos (01/11/2026)
 
 - [x] Topo de página novo em todas as telas: faixa azulada continuando a barra, seção escrita em cima ("Comercial"), título grande, ação principal à direita; no Kanban fica mais baixo

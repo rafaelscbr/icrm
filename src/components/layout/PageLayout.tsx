@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Tom } from '../shared/visual'
-import { TOM } from '../shared/visual'
 import { navSections, isGroup } from './nav/navConfig'
 
 interface PageLayoutProps {
@@ -11,7 +10,7 @@ interface PageLayoutProps {
   subtitle?: string
   /** Ícone da tela — aparece pequeno, ao lado da seção, para dar memória de lugar. */
   icon?: LucideIcon
-  /** Tom do ícone. Cada área do sistema tem o seu. */
+  /** Mantido por compatibilidade: desde a v8 a cor vem da área (--area-*). */
   iconTom?: Tom
   ctaLabel?: string
   onCta?: () => void
@@ -23,6 +22,17 @@ interface PageLayoutProps {
       na horizontal, como o Kanban. */
   largura?: 'padrao' | 'total'
   children: ReactNode
+}
+
+/** Cor de cada área (ver --area-* no index.css). */
+function corDaArea(secao: string | null): string {
+  if (!secao) return 'var(--area-conta)'
+  if (secao.includes('Produtos'))  return 'var(--area-produtos)'
+  if (secao.includes('Prospecção')) return 'var(--area-prospeccao)'
+  if (secao.startsWith('Operação')) return 'var(--area-operacao)'
+  if (secao.startsWith('Comercial')) return 'var(--area-comercial)'
+  if (secao.startsWith('Inteligência')) return 'var(--area-inteligencia)'
+  return 'var(--area-conta)'
 }
 
 /** Seção do menu onde a tela mora ("Comercial", "Operação"…). */
@@ -60,7 +70,7 @@ function secaoDa(pathname: string): string | null {
  * (não há barra azul lá) e as abas rolam com o conteúdo.
  */
 export function PageLayout({
-  title, subtitle, icon: Icon, iconTom = 'marca',
+  title, subtitle, icon: Icon, iconTom: _iconTom,
   ctaLabel, onCta, actions, band, largura = 'padrao', children,
 }: PageLayoutProps) {
   const { pathname } = useLocation()
@@ -69,10 +79,10 @@ export function PageLayout({
   // Quadros de largura total (Kanban) precisam da altura para as colunas:
   // o topo fica mais baixo e o título menor.
   const compacto = largura === 'total'
-  const tom = TOM[iconTom]
+  const area = corDaArea(secao)
 
   return (
-    <div className="flex-1 min-h-full bg-page texture-grain aurora-host">
+    <div className="flex-1 min-h-full bg-page aurora-host" style={{ ['--area' as string]: area, ['--aba-cor' as string]: area }}>
       <div className="aurora" aria-hidden />
 
       {/* ── Topo da página ──────────────────────────────────────── */}
@@ -81,8 +91,12 @@ export function PageLayout({
           <div className="min-w-0">
             {secao && (
               <p className={`hidden lg:flex items-center gap-1.5 ${compacto ? 'mb-1' : 'mb-2'} font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4`}>
-                {Icon && <Icon size={13} strokeWidth={2} className={tom.texto} aria-hidden />}
-                {secao}
+                {Icon && (
+                  <span className="area-selo" aria-hidden>
+                    <Icon size={13} strokeWidth={2.2} />
+                  </span>
+                )}
+                <span className="ml-1">{secao}</span>
               </p>
             )}
             <h1 className={`font-display text-[21px] ${compacto ? 'lg:text-[26px]' : 'lg:text-[32px]'} font-extrabold text-t1 leading-[1.1]
