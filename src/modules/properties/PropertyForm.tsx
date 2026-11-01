@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect, FormEvent } from 'react'
-import { ImagePlus, X, Plus, Building2, Layers, Home, Car } from 'lucide-react'
+import { ImagePlus, X, Plus } from 'lucide-react'
 import { SidePanel } from '../../components/ui/SidePanel'
-import { Input } from '../../components/ui/Input'
-import { Select } from '../../components/ui/Select'
 import { Button } from '../../components/ui/Button'
+import { Segmentado } from '../../components/shared/visual'
 import { Property, PropertyStatus, PropertyType, PropertyKind } from '../../types'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useContactsStore } from '../../store/useContactsStore'
@@ -26,8 +25,8 @@ const STATUS_OPTIONS: { value: PropertyStatus; label: string }[] = [
 
 const TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
   { value: 'apartment',          label: 'Apartamento'        },
-  { value: 'apartment_duplex',   label: 'Apartamento Duplex' },
-  { value: 'penthouse_duplex',   label: 'Cobertura Duplex'   },
+  { value: 'apartment_duplex',   label: 'Apto duplex'        },
+  { value: 'penthouse_duplex',   label: 'Cobertura duplex'   },
   { value: 'house',              label: 'Casa'               },
   { value: 'commercial',         label: 'Comercial'          },
   { value: 'land',               label: 'Terreno'            },
@@ -70,6 +69,8 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
   const [acceptsPermuta,  setAcceptsPermuta]  = useState(property?.acceptsPermuta ?? false)
   const [permutaTypes,    setPermutaTypes]    = useState<Array<'imovel' | 'carro'>>(property?.permutaTypes ?? [])
   const [permutaRegions,  setPermutaRegions]  = useState<string[]>(property?.permutaRegions ?? [])
+  const [salvando,        setSalvando]        = useState(false)
+  const [detalhes,        setDetalhes]        = useState(false)
 
   useEffect(() => {
     if (!isOpen) return
@@ -107,6 +108,9 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
     setPermutaTypes(property?.permutaTypes ?? [])
     setPermutaRegions(property?.permutaRegions ?? [])
     setErrors({})
+    setSalvando(false)
+    setDetalhes(Boolean(property && (property.address || property.complement || property.unit
+      || property.condoFee || property.notes || property.acceptsPermuta)))
   }, [isOpen, property])  // eslint-disable-line react-hooks/exhaustive-deps -- campos semeados na abertura; incluir as fontes reescreveria o que está sendo digitado
 
   // Busca no servidor (debounce) — ver useContactSearch
@@ -159,7 +163,7 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!validate()) return
+    if (!validate() || salvando) return
 
     const resolvedName = kind === 'off_plan' ? developmentName.trim() : name.trim()
 
@@ -204,278 +208,195 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
       permutaRegions:  acceptsPermuta && permutaTypes.includes('imovel') ? permutaRegions : [],
     }
 
-    if (isEditing && property) {
-      update(property.id, data)
-      toast.success('Imóvel atualizado')
-    } else {
-      add(data)
-      toast.success('Imóvel cadastrado')
+    // Banco primeiro: "cadastrado" só depois do upsert. Se falhar, o upsert já
+    // mostrou o erro e o painel continua aberto com tudo o que foi digitado.
+    setSalvando(true)
+    try {
+      if (isEditing && property) {
+        await update(property.id, data)
+        toast.success('Imóvel atualizado')
+      } else {
+        await add(data)
+        toast.success('Imóvel cadastrado')
+      }
+      onClose()
+    } catch {
+      // erro já exibido pela camada do banco
+    } finally {
+      setSalvando(false)
     }
-    onClose()
   }
 
+  const ehApto = ['apartment', 'apartment_duplex', 'penthouse_duplex'].includes(type)
+  const sujo = !isEditing && Boolean(name.trim() || developmentName.trim() || value || neighborhood.trim()
+    || ownerId || images.length || notes.trim())
+
+  const pilula = (ativo: boolean) =>
+    `px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors cursor-pointer ${
+      ativo ? 'bg-brand-fill text-brand-fill-text' : 'bg-s2 text-t2 hover:bg-s3'}`
+
+  // v10 "folha limpa" (01/11/2026): o nome é o título e o valor vem logo
+  // abaixo, como em Nova venda. Tipo e situação viram pílulas; endereço,
+  // condomínio, observações e permuta ficam em "Mais detalhes". Antes eram
+  // 14 campos em caixa, com rótulo em maiúsculas, todos abertos de uma vez.
   return (
     <>
-      <SidePanel isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Imóvel' : 'Novo Imóvel'} size="lg">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-
-          {/* Kind toggle */}
-          <div className="flex flex-col gap-2">
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tipo de imóvel *</p>
-            <div className="grid grid-cols-2 gap-2">
-              {([
-                { value: 'ready',    label: 'Pronto',     icon: Building2, desc: 'Imóvel já construído' },
-                { value: 'off_plan', label: 'Na Planta',  icon: Layers,    desc: 'Empreendimento em lançamento' },
-              ] as { value: PropertyKind; label: string; icon: typeof Building2; desc: string }[]).map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setKind(opt.value)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all cursor-pointer text-left
-                    ${kind === opt.value
-                      ? 'bg-brand-tint border-brand/40 text-brand-text'
-                      : 'bg-s3/50 border-line text-t3 hover:text-t2 hover:border-line-strong'
-                    }`}
-                >
-                  <opt.icon size={16} className={kind === opt.value ? 'text-brand' : 'text-t4'} />
-                  <div>
-                    <p className="text-sm font-medium">{opt.label}</p>
-                    <p className="text-[11px] opacity-70">{opt.desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+      <SidePanel
+        isOpen={isOpen}
+        onClose={onClose}
+        title={isEditing ? 'Editar imóvel' : 'Novo imóvel'}
+        size="md"
+        confirmarSaida={sujo && !salvando}
+        headerActions={
+          <Segmentado
+            rotulo="Pronto ou na planta"
+            valor={kind}
+            onChange={v => setKind(v)}
+            opcoes={[{ value: 'ready' as PropertyKind, label: 'Pronto' }, { value: 'off_plan' as PropertyKind, label: 'Na planta' }]}
+          />
+        }
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" form="form-imovel" carregando={salvando}>
+              {isEditing ? 'Salvar alterações' : 'Cadastrar imóvel'}
+            </Button>
           </div>
+        }
+      >
+        <form id="form-imovel" onSubmit={handleSubmit} className="flex flex-col gap-6">
 
-          {/* Images */}
-          <div className="flex flex-col gap-2">
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Fotos (opcional)</p>
-            {!imagesLoaded ? (
-              <p className="text-xs text-t4 py-2">Carregando fotos…</p>
+          {/* Nome — o título — e o valor logo abaixo */}
+          <div>
+            {kind === 'ready' ? (
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Nome do imóvel"
+                aria-label="Nome do imóvel"
+                aria-invalid={errors.name ? true : undefined}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- o painel abre para cadastrar: o cursor vai para o nome
+                autoFocus={!isEditing}
+                className="campo-titulo campo-livre"
+              />
             ) : (
-            <div className="flex gap-2 flex-wrap">
-              {images.map((img, i) => (
-                <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden">
-                  <img src={img} alt="" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}
-                    className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/70 rounded-full flex items-center justify-center text-white cursor-pointer"
-                  >
-                    <X size={10} />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="w-16 h-16 rounded-xl bg-s3/50 border border-dashed border-line-strong flex items-center justify-center text-t3 hover:bg-s3/70 hover:text-t2 transition-colors cursor-pointer"
-              >
-                <ImagePlus size={18} />
-              </button>
-              <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={handleImages} />
-            </div>
-            )}
-          </div>
-
-          {/* Name field — conditional */}
-          {kind === 'ready' ? (
-            <Input
-              label="Nome do imóvel"
-              required
-              value={name}
-              onChange={e => setName(e.target.value)}
-              error={errors.name}
-              placeholder="Apt 203 - Pinheiros"
-            />
-          ) : (
-            <Input
-              label="Nome do empreendimento"
-              required
-              value={developmentName}
-              onChange={e => setDevelopmentName(e.target.value)}
-              error={errors.developmentName}
-              placeholder="Reserva do Parque"
-            />
-          )}
-
-          {/* Type + Neighborhood */}
-          <div className="grid grid-cols-2 gap-4">
-            <Select label="Tipo" required value={type} onChange={e => setType(e.target.value as PropertyType)}>
-              {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </Select>
-            <Input
-              label="Bairro / Região"
-              required
-              value={neighborhood}
-              onChange={e => setNeighborhood(e.target.value)}
-              error={errors.neighborhood}
-              placeholder="Pinheiros"
-            />
-          </div>
-
-          {/* Cidade + Endereço */}
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Cidade"
-              value={city}
-              onChange={e => setCity(e.target.value)}
-              placeholder="São Paulo"
-            />
-            <Input
-              label="Rua / Logradouro"
-              value={address}
-              onChange={e => setAddress(e.target.value)}
-              placeholder="Rua das Flores, 123"
-            />
-          </div>
-
-          {/* Complemento + Unidade (apartamento) */}
-          <div className={`grid gap-4 ${['apartment','apartment_duplex','penthouse_duplex'].includes(type) ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            <Input
-              label="Complemento"
-              value={complement}
-              onChange={e => setComplement(e.target.value)}
-              placeholder="Bloco A, Torre 2…"
-            />
-            {['apartment','apartment_duplex','penthouse_duplex'].includes(type) && (
-              <Input
-                label="Unidade"
-                value={unit}
-                onChange={e => setUnit(e.target.value)}
-                placeholder="Apto 203"
+              <input
+                value={developmentName}
+                onChange={e => setDevelopmentName(e.target.value)}
+                placeholder="Nome do empreendimento"
+                aria-label="Nome do empreendimento"
+                aria-invalid={errors.developmentName ? true : undefined}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- idem
+                autoFocus={!isEditing}
+                className="campo-titulo campo-livre"
               />
             )}
+            {(errors.name || errors.developmentName) && (
+              <p className="text-xs text-error mt-0.5" role="alert">{errors.name || errors.developmentName}</p>
+            )}
+
+            <div className="flex items-baseline gap-2 mt-2">
+              <span className="font-display text-[18px] font-bold text-t4 select-none">R$</span>
+              <input
+                inputMode="numeric"
+                value={fmtInput(value)}
+                onChange={e => setValue(e.target.value.replace(/\D/g, ''))}
+                placeholder={kind === 'off_plan' ? 'Ticket médio' : 'Valor'}
+                aria-label={kind === 'off_plan' ? 'Ticket médio' : 'Valor do imóvel'}
+                aria-invalid={errors.value ? true : undefined}
+                className="campo-livre flex-1 min-w-0 bg-transparent font-display text-[18px] font-bold text-t1
+                           placeholder:text-t5 tabular-nums focus:outline-none"
+              />
+            </div>
+            {errors.value && <p className="text-xs text-error mt-0.5" role="alert">{errors.value}</p>}
+          </div>
+
+          {/* Situação do preço */}
+          <div className="flex flex-col gap-2">
+            <span className="rotulo-campo">Preço</span>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Situação do preço">
+              {STATUS_OPTIONS.map(o => (
+                <button key={o.value} type="button" role="radio" aria-checked={status === o.value}
+                  onClick={() => setStatus(o.value)} className={pilula(status === o.value)}>{o.label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tipo */}
+          <div className="flex flex-col gap-2">
+            <span className="rotulo-campo">Tipo</span>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Tipo de imóvel">
+              {TYPE_OPTIONS.map(o => (
+                <button key={o.value} type="button" role="radio" aria-checked={type === o.value}
+                  onClick={() => setType(o.value)} className={pilula(type === o.value)}>{o.label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Onde */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="imovel-bairro" className="rotulo-campo">Bairro ou região <span className="text-error">*</span></label>
+              <input id="imovel-bairro" value={neighborhood} onChange={e => setNeighborhood(e.target.value)}
+                placeholder="Centro" aria-invalid={errors.neighborhood ? true : undefined}
+                className="w-full px-3.5 py-2.5 min-h-[44px]" />
+              {errors.neighborhood && <p className="text-xs text-error">{errors.neighborhood}</p>}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="imovel-cidade" className="rotulo-campo">Cidade</label>
+              <input id="imovel-cidade" value={city} onChange={e => setCity(e.target.value)}
+                placeholder="Balneário Camboriú" className="w-full px-3.5 py-2.5 min-h-[44px]" />
+            </div>
           </div>
 
           {/* Dormitórios · Suítes · m² */}
           <div className="grid grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="propertyform-354" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Dormitórios</label>
-              <input id="propertyform-354"
-                type="number" min="0" max="20"
-                inputMode="numeric"
-                value={bedrooms}
-                onChange={e => setBedrooms(e.target.value)}
-                placeholder="0"
-                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
-              />
+              <label htmlFor="imovel-dorm" className="rotulo-campo">Dormitórios</label>
+              <input id="imovel-dorm" type="number" min="0" max="20" inputMode="numeric"
+                value={bedrooms} onChange={e => setBedrooms(e.target.value)} placeholder="0"
+                className="w-full px-3.5 py-2.5 min-h-[44px] tabular-nums" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="propertyform-365" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Suítes</label>
-              <input id="propertyform-365"
-                type="number" min="0" max="20"
-                inputMode="numeric"
-                value={suites}
-                onChange={e => setSuites(e.target.value)}
-                placeholder="0"
-                className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
-              />
+              <label htmlFor="imovel-suites" className="rotulo-campo">Suítes</label>
+              <input id="imovel-suites" type="number" min="0" max="20" inputMode="numeric"
+                value={suites} onChange={e => setSuites(e.target.value)} placeholder="0"
+                className="w-full px-3.5 py-2.5 min-h-[44px] tabular-nums" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="propertyform-376" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Área (m²)</label>
-              <div className="relative">
-                <input id="propertyform-376"
-                  type="text" inputMode="decimal"
-                  value={areaSqm}
-                  onChange={e => setAreaSqm(e.target.value.replace(/[^0-9,]/g, ''))}
-                  placeholder="85"
-                  className="w-full bg-s3/50 border border-line rounded-xl pl-3 pr-9 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-t3 pointer-events-none">m²</span>
+              <label htmlFor="imovel-area" className="rotulo-campo">Área</label>
+              <div className="relative flex items-center">
+                <input id="imovel-area" type="text" inputMode="decimal"
+                  value={areaSqm} onChange={e => setAreaSqm(e.target.value.replace(/[^0-9,]/g, ''))}
+                  placeholder="85" className="w-full pl-3.5 pr-10 py-2.5 min-h-[44px] tabular-nums" />
+                <span className="absolute right-3.5 text-[13px] text-t4 pointer-events-none">m²</span>
               </div>
             </div>
           </div>
 
-          {/* Valor do condomínio */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="propertyform-392" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Valor do Condomínio</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-t3 select-none pointer-events-none">R$</span>
-              <input id="propertyform-392"
-                inputMode="numeric"
-                value={fmtInput(condoFee)}
-                onChange={e => setCondoFee(e.target.value.replace(/\D/g, ''))}
-                placeholder="800"
-                className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
-              />
-            </div>
-          </div>
-
-          {/* Value com máscara BRL */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
-              {kind === 'off_plan' ? 'Ticket Médio' : 'Valor'} <span className="text-red-400">*</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-t3 select-none pointer-events-none">
-                R$
-              </span>
-              <input
-                inputMode="numeric"
-                value={fmtInput(value)}
-                onChange={e => setValue(e.target.value.replace(/\D/g, ''))}
-                placeholder="850.000"
-                className={`w-full bg-s3/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100
-                  placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25
-                  ${errors.value ? 'border-red-500/50' : 'border-line'}`}
-              />
-            </div>
-            {errors.value && <p className="text-xs text-red-400">{errors.value}</p>}
-          </div>
-
-          {/* Status */}
-          <div className="flex flex-col gap-2">
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Status *</p>
-            <div className="flex gap-2">
-              {STATUS_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setStatus(opt.value)}
-                  className={`
-                    flex-1 py-2 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
-                    ${status === opt.value
-                      ? opt.value === 'opportunity' ? 'bg-green-500/20 border-green-500/40 text-green-300'
-                        : opt.value === 'market_price' ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'
-                        : 'bg-red-500/20 border-red-500/40 text-red-300'
-                      : 'bg-s3/50 border-line text-t3 hover:text-t2'
-                    }
-                  `}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Owner — apenas para pronto */}
+          {/* Proprietário — só pronto */}
           {kind === 'ready' && (
             <div className="flex flex-col gap-1.5 relative">
-              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">
-                Proprietário <span className="text-red-400">*</span>
-              </p>
+              <label htmlFor="imovel-dono" className="rotulo-campo">Proprietário <span className="text-error">*</span></label>
               <input
+                id="imovel-dono"
                 value={ownerSearch}
                 onChange={e => { setOwnerSearch(e.target.value); setOwnerId(''); setShowOwnerDropdown(true) }}
                 onFocus={() => setShowOwnerDropdown(true)}
                 onBlur={() => setTimeout(() => setShowOwnerDropdown(false), 150)}
-                placeholder="Buscar contato..."
-                className={`
-                  w-full bg-s3/50 border rounded-xl px-3 py-2.5 text-sm text-slate-100
-                  placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25
-                  ${errors.owner ? 'border-red-500/50' : 'border-line'}
-                `}
+                placeholder="Buscar por nome ou telefone"
+                aria-invalid={errors.owner ? true : undefined}
+                className="w-full px-3.5 py-2.5 min-h-[44px]"
               />
-              {errors.owner && <p className="text-xs text-red-400">{errors.owner}</p>}
+              {errors.owner && <p className="text-xs text-error">{errors.owner}</p>}
               {showOwnerDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-page border border-line rounded-xl shadow-xl z-10 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-xl shadow-dropdown z-10 overflow-hidden">
                   {filteredContacts.map(c => (
                     <button
                       key={c.id}
                       type="button"
                       onMouseDown={() => { mergeLocal([c]); setOwnerId(c.id); setOwnerSearch(c.name); setShowOwnerDropdown(false) }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s3/50 transition-colors cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s2 transition-colors cursor-pointer"
                     >
                       {c.name}
                       {c.company && <span className="text-t4 ml-2 text-xs">{c.company}</span>}
@@ -484,100 +405,145 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
                   <button
                     type="button"
                     onMouseDown={() => { setShowOwnerDropdown(false); setNewContactOpen(true) }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-brand hover:bg-indigo-500/10 border-t border-line flex items-center gap-2 transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-[13px] text-t2 hover:bg-s2 flex items-center gap-2 transition-colors cursor-pointer"
                   >
-                    <Plus size={12} /> Criar novo contato
+                    <Plus size={13} /> Criar novo contato
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          {/* Observações */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="propertyform-498" className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Observações</label>
-            <textarea id="propertyform-498"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              rows={3}
-              placeholder="Informações adicionais, diferenciais do imóvel, condições especiais…"
-              className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 resize-none"
-            />
-          </div>
-
-          {/* Permuta */}
-          <div className="flex flex-col gap-3 bg-s2/50 border border-line rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-t1">Aceita Permuta</p>
-                <p className="text-xs text-t3 mt-0.5">Permite troca por imóvel ou carro como parte do pagamento</p>
+          {/* Fotos */}
+          <div className="flex flex-col gap-2">
+            <span className="rotulo-campo">Fotos</span>
+            {!imagesLoaded ? (
+              <p className="text-[13px] text-t4">Carregando fotos…</p>
+            ) : (
+              <div className="flex gap-2 flex-wrap">
+                {images.map((img, i) => (
+                  <div key={i} className="relative w-16 h-16 rounded-[12px] overflow-hidden">
+                    <img src={img} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}
+                      aria-label={`Remover foto ${i + 1}`}
+                      className="absolute top-1 right-1 w-5 h-5 bg-black/70 rounded-full flex items-center justify-center text-white cursor-pointer"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  aria-label="Adicionar fotos"
+                  className="w-16 h-16 rounded-[12px] bg-s2 flex items-center justify-center text-t3 hover:bg-s3 hover:text-t1 transition-colors cursor-pointer"
+                >
+                  <ImagePlus size={18} strokeWidth={1.8} />
+                </button>
+                <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={handleImages} />
               </div>
-              <button
-                type="button"
-                onClick={() => { setAcceptsPermuta(v => !v); if (acceptsPermuta) { setPermutaTypes([]); setPermutaRegions([]) } }}
-                className={`relative w-10 h-6 rounded-full transition-colors ${acceptsPermuta ? 'bg-indigo-500' : 'bg-s3/90'}`}
-              >
-                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${acceptsPermuta ? 'left-5' : 'left-1'}`} />
-              </button>
-            </div>
-
-            {acceptsPermuta && (
-              <>
-                <div className="flex flex-col gap-1.5">
-                  <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Tipos aceitos</p>
-                  <div className="flex gap-2">
-                    {(['imovel', 'carro'] as const).map(t => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setPermutaTypes(prev =>
-                          prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
-                        )}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-all ${
-                          permutaTypes.includes(t)
-                            ? 'bg-brand-tint border-brand/40 text-brand-text'
-                            : 'bg-s3/50 border-line text-t3 hover:text-t2'
-                        }`}
-                      >
-                        {t === 'imovel'
-                          ? <span className="flex items-center gap-1"><Home size={12} /> Imóvel</span>
-                          : <span className="flex items-center gap-1"><Car size={12} /> Carro</span>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {permutaTypes.includes('imovel') && (
-                  <div className="flex flex-col gap-1.5">
-                    <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Regiões aceitas para imóvel</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['Balneário Camboriú','Camboriú','Itajaí','Navegantes','Itapema','Porto Belo','Florianópolis','Blumenau','São José','Palhoça','Biguaçu'].map(region => (
-                        <button
-                          key={region}
-                          type="button"
-                          onClick={() => setPermutaRegions(prev =>
-                            prev.includes(region) ? prev.filter(r => r !== region) : [...prev, region]
-                          )}
-                          className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
-                            permutaRegions.includes(region)
-                              ? 'bg-brand-tint border-brand/25 text-brand-text'
-                              : 'bg-s3/50 border-line text-t3 hover:text-t2 hover:border-line-strong'
-                          }`}
-                        >
-                          {region}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
             )}
           </div>
 
-          <div className="flex gap-3 pt-1">
-            <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="flex-1">{isEditing ? 'Salvar alterações' : 'Salvar imóvel'}</Button>
-          </div>
+          {/* Mais detalhes */}
+          {detalhes ? (
+            <div className="flex flex-col gap-5 animate-in fade-in duration-150">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="imovel-rua" className="rotulo-campo">Endereço</label>
+                <input id="imovel-rua" value={address} onChange={e => setAddress(e.target.value)}
+                  placeholder="Rua das Flores, 123" className="w-full px-3.5 py-2.5 min-h-[44px]" />
+              </div>
+
+              <div className={`grid gap-4 ${ehApto ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="imovel-compl" className="rotulo-campo">Complemento</label>
+                  <input id="imovel-compl" value={complement} onChange={e => setComplement(e.target.value)}
+                    placeholder="Bloco A, Torre 2…" className="w-full px-3.5 py-2.5 min-h-[44px]" />
+                </div>
+                {ehApto && (
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="imovel-unidade" className="rotulo-campo">Unidade</label>
+                    <input id="imovel-unidade" value={unit} onChange={e => setUnit(e.target.value)}
+                      placeholder="Apto 203" className="w-full px-3.5 py-2.5 min-h-[44px]" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="imovel-condo" className="rotulo-campo">Condomínio</label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3.5 text-[13px] text-t4 select-none pointer-events-none">R$</span>
+                  <input id="imovel-condo" inputMode="numeric" value={fmtInput(condoFee)}
+                    onChange={e => setCondoFee(e.target.value.replace(/\D/g, ''))}
+                    placeholder="800" className="w-full pl-10 pr-4 py-2.5 min-h-[44px] tabular-nums" />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="imovel-obs" className="rotulo-campo">Observações</label>
+                <textarea id="imovel-obs" value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+                  placeholder="Diferenciais, condições especiais…"
+                  className="w-full px-3.5 py-2.5 resize-none" />
+              </div>
+
+              {/* Permuta */}
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <span>
+                    <span className="block text-[14px] font-medium text-t1">Aceita permuta</span>
+                    <span className="block text-[12.5px] text-t4">Imóvel ou carro como parte do pagamento</span>
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={acceptsPermuta}
+                    aria-label="Aceita permuta"
+                    onClick={() => { setAcceptsPermuta(v => !v); if (acceptsPermuta) { setPermutaTypes([]); setPermutaRegions([]) } }}
+                    className={`relative w-10 h-6 rounded-full transition-colors shrink-0 cursor-pointer ${acceptsPermuta ? 'bg-brand-fill' : 'bg-s3'}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${acceptsPermuta ? 'left-5' : 'left-1'}`} />
+                  </button>
+                </label>
+
+                {acceptsPermuta && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-150">
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tipos de permuta aceitos">
+                      {(['imovel', 'carro'] as const).map(t => (
+                        <button key={t} type="button" aria-pressed={permutaTypes.includes(t)}
+                          onClick={() => setPermutaTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                          className={pilula(permutaTypes.includes(t))}>
+                          {t === 'imovel' ? 'Imóvel' : 'Carro'}
+                        </button>
+                      ))}
+                    </div>
+
+                    {permutaTypes.includes('imovel') && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="rotulo-campo">Regiões aceitas</span>
+                        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Regiões aceitas para permuta">
+                          {['Balneário Camboriú','Camboriú','Itajaí','Navegantes','Itapema','Porto Belo','Florianópolis','Blumenau','São José','Palhoça','Biguaçu'].map(region => (
+                            <button key={region} type="button" aria-pressed={permutaRegions.includes(region)}
+                              onClick={() => setPermutaRegions(prev => prev.includes(region) ? prev.filter(r => r !== region) : [...prev, region])}
+                              className={pilula(permutaRegions.includes(region))}>
+                              {region}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setDetalhes(true)}
+              className="self-start text-[13px] font-medium text-t3 hover:text-t1 cursor-pointer">
+              + Mais detalhes
+              <span className="text-t4 font-normal"> · endereço, condomínio, observações, permuta</span>
+            </button>
+          )}
         </form>
       </SidePanel>
 

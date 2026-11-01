@@ -1,5 +1,5 @@
 /**
- * Banco primeiro — contatos, vendas, metas e campanhas (01/11/2026).
+ * Banco primeiro — contatos, vendas, metas, campanhas e imóveis (01/11/2026).
  *
  * Os dois stores colocavam o registro na tela antes de o banco responder, e a
  * venda ainda engolia a falha no console: o corretor via "Venda registrada" e
@@ -22,6 +22,7 @@ const db = {
   sales:    { upsert: vi.fn(), delete: vi.fn() },
   goals:    { upsert: vi.fn(), delete: vi.fn() },
   campaigns: { delete: vi.fn() },
+  properties: { upsert: vi.fn(), delete: vi.fn() },
 }
 vi.mock('../lib/db', () => ({ db }))
 
@@ -31,14 +32,15 @@ async function stores() {
   const { useSalesStore } = await import('../store/useSalesStore')
   const { useGoalsStore } = await import('../store/useGoalsStore')
   const { useCampaignsStore } = await import('../store/useCampaignsStore')
-  return { useContactsStore, useSalesStore, useGoalsStore, useCampaignsStore }
+  const { usePropertiesStore } = await import('../store/usePropertiesStore')
+  return { useContactsStore, useSalesStore, useGoalsStore, useCampaignsStore, usePropertiesStore }
 }
 
 const contatoBase = { name: 'Ana Lima', phone: '47999990000', tags: [], hasChildren: false, isMarried: false, permutaItems: [] }
 const vendaBase = { clientId: 'c1', propertyName: 'Residencial Atlântico', date: '2026-11-01', value: 2450000, type: 'ready' as const }
 
 beforeEach(() => {
-  for (const t of [db.contacts, db.sales, db.goals]) { t.upsert.mockReset(); t.delete.mockReset() }
+  for (const t of [db.contacts, db.sales, db.goals, db.properties]) { t.upsert.mockReset(); t.delete.mockReset() }
   db.campaigns.delete.mockReset()
 })
 
@@ -135,5 +137,30 @@ describe('campanhas: banco primeiro', () => {
 
     await expect(useCampaignsStore.getState().remove('c1')).rejects.toThrow()
     expect(useCampaignsStore.getState().campaigns).toHaveLength(1)
+  })
+})
+
+const imovelBase = {
+  kind: 'ready' as const, name: 'Apto 203', type: 'apartment' as const, neighborhood: 'Centro',
+  value: 850000, status: 'opportunity' as const,
+}
+
+describe('imóveis: banco primeiro', () => {
+  it('cadastro que falha não aparece', async () => {
+    const { usePropertiesStore } = await stores()
+    db.properties.upsert.mockRejectedValue(new Error('rede'))
+
+    await expect(usePropertiesStore.getState().add(imovelBase as never)).rejects.toThrow('rede')
+    expect(usePropertiesStore.getState().properties).toHaveLength(0)
+  })
+
+  it('exclusão que falha mantém o imóvel', async () => {
+    const { usePropertiesStore } = await stores()
+    db.properties.upsert.mockResolvedValueOnce(undefined)
+    const p = await usePropertiesStore.getState().add(imovelBase as never)
+    db.properties.delete.mockRejectedValue(new Error('rls'))
+
+    await expect(usePropertiesStore.getState().remove(p.id)).rejects.toThrow()
+    expect(usePropertiesStore.getState().properties).toHaveLength(1)
   })
 })

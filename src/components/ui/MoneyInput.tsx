@@ -49,14 +49,14 @@ export function MoneyInput({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={inputId} className="text-xs font-medium text-t2">
+        <label htmlFor={inputId} className="rotulo-campo">
           {label}
           {required && <span className="text-error ml-1">*</span>}
         </label>
       )}
       <div className="relative flex items-center">
         <span
-          className="absolute left-3 text-xs font-medium text-t3 select-none pointer-events-none"
+          className="absolute left-3.5 text-[13px] text-t4 select-none pointer-events-none"
           aria-hidden
         >
           R$
@@ -70,15 +70,8 @@ export function MoneyInput({
           disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={errorId ?? hintId}
-          className={`
-            w-full bg-surface border rounded-lg pl-9 pr-3 py-2.5 text-sm text-t1 min-h-[42px]
-            tabular-nums placeholder:text-t3
-            focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand
-            hover:border-line-strong
-            disabled:opacity-40 disabled:cursor-not-allowed
-            transition-all duration-150
-            ${error ? 'border-error-line ring-1 ring-error/20' : 'border-line-input'}
-          `}
+          className="campo w-full pl-10 pr-3.5 py-2.5 min-h-[44px] tabular-nums placeholder:text-t4
+                     disabled:opacity-40 disabled:cursor-not-allowed"
         />
       </div>
       {hint && !error && <p id={hintId} className="text-xs text-t4">{hint}</p>}

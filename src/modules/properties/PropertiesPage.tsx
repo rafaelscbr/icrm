@@ -165,11 +165,19 @@ export function PropertiesPage() {
     return result
   })()
 
-  function handleDelete() {
+  const [excluindo, setExcluindo] = useState(false)
+  async function handleDelete() {
     if (!deleteTarget) return
-    remove(deleteTarget.id)
-    toast.success('Imóvel excluído')
-    setDeleteTarget(undefined)
+    setExcluindo(true)
+    try {
+      await remove(deleteTarget.id)
+      toast.success('Imóvel excluído')
+      setDeleteTarget(undefined)
+    } catch {
+      // deleteOne já mostrou o erro; o imóvel continua na lista.
+    } finally {
+      setExcluindo(false)
+    }
   }
 
   return (
@@ -394,7 +402,7 @@ export function PropertiesPage() {
         </p>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteTarget(undefined)}>Cancelar</Button>
-          <Button variant="danger" className="flex-1" onClick={handleDelete}>Excluir</Button>
+          <Button variant="danger" className="flex-1" onClick={handleDelete} carregando={excluindo}>Excluir</Button>
         </div>
       </Modal>
     </PageLayout>

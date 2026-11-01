@@ -25,9 +25,10 @@ interface PropertiesStore {
    * execução não encontra mais candidatos.
    */
   backfillThumbnails: () => Promise<void>
-  add: (data: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>) => Property
-  update: (id: string, data: Partial<Property>) => void
-  remove: (id: string) => void
+  /** Banco primeiro: a tela só muda depois do upsert/delete. Lança se falhar. */
+  add: (data: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Property>
+  update: (id: string, data: Partial<Property>) => Promise<void>
+  remove: (id: string) => Promise<void>
   getById: (id: string) => Property | undefined
   search: (query: string) => Property[]
   filterByStatus: (status: PropertyStatus | null) => Property[]
@@ -86,27 +87,27 @@ export const usePropertiesStore = create<PropertiesStore>((set, get) => ({
     }
   },
 
-  add: (data) => {
+  // As três escritas eram otimistas e engoliam a falha no console: o imóvel
+  // aparecia "cadastrado" e sumia no próximo carregamento (01/11/2026).
+  add: async (data) => {
     const now = new Date().toISOString()
     const property: Property = { ...data, id: generateId(), createdAt: now, updatedAt: now }
-    set(s => ({ properties: [property, ...s.properties] }))
-    db.properties.upsert(property).catch(err => console.error('[properties] add:', err))
+    await db.properties.upsert(property)
+    set(s => s.properties.some(p => p.id === property.id) ? s : { properties: [property, ...s.properties] })
     return property
   },
 
-  update: (id, data) => {
-    const now = new Date().toISOString()
-    const properties = get().properties.map(p =>
-      p.id === id ? { ...p, ...data, updatedAt: now } : p
-    )
-    set({ properties })
-    const updated = properties.find(p => p.id === id)
-    if (updated) db.properties.upsert(updated).catch(err => console.error('[properties] update:', err))
+  update: async (id, data) => {
+    const atual = get().properties.find(p => p.id === id)
+    if (!atual) throw new Error('Imóvel não encontrado')
+    const updated = { ...atual, ...data, updatedAt: new Date().toISOString() }
+    await db.properties.upsert(updated)
+    set(s => ({ properties: s.properties.map(p => p.id === id ? updated : p) }))
   },
 
-  remove: (id) => {
+  remove: async (id) => {
+    await db.properties.delete(id)
     set(s => ({ properties: s.properties.filter(p => p.id !== id) }))
-    db.properties.delete(id).catch(err => console.error('[properties] remove:', err))
   },
 
   getById: (id) => get().properties.find(p => p.id === id),

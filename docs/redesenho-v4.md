@@ -151,3 +151,13 @@ pixel art).
 - **Base de Leads:** KPIs em `FaixaNumeros`, ordem por `Segmentado`, listas em linhas (score e tamanho à direita); o emoji do score saiu da tela.
 - **Metas:** abas de período no padrão `Abas`; score e indicadores numa faixa só (anel de 60px).
 - **Banco primeiro:** excluir/transferir campanha, criar/editar/pausar/excluir meta, arquivar lista e limpeza de órfãos agora esperam o banco e mostram o erro — antes eram otimistas ou engoliam a falha.
+
+### v10.2 — formulários antigos na folha limpa (01/11/2026)
+
+- **Campanha de disparo:** os 3 passos viraram uma folha só (nome como título, mensagem e variações, listas de marcar; ticket e responsável em "Mais detalhes"). A importação de contatos agora falha alto em vez de criar a campanha pela metade em silêncio.
+- **Campanha de ligação:** mesma folha; ritmo da fila e responsável recolhidos com o padrão visível no botão.
+- **Imóvel:** nome como título e valor logo abaixo; Pronto/Na planta no topo do painel; tipo e preço em pílulas; endereço, condomínio, observações e permuta em "Mais detalhes".
+- **Lançamento:** seções em texto (sem ícone/maiúsculas), fase e regime em pílulas, FGTS e "régua conferida" como interruptores, vigência e observações recolhidas.
+- **MoneyInput** no padrão `campo`.
+- **Banco primeiro:** cadastrar, editar e excluir imóvel esperam o banco (antes eram otimistas e engoliam a falha).
+- Os quatro formulários perguntam antes de descartar o que foi digitado.
