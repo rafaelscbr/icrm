@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { Users, Megaphone, TrendingUp, BarChart3} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { BrokersTab } from './BrokersTab'
 import { CampaignsBaseTab } from './CampaignsBaseTab'
-import { SalesTab } from './SalesTab'
+// Aba com gráfico: o ECharts só baixa quando a aba abre, não junto com a tela.
+const SalesTab = lazy(() => import('./SalesTab').then(m => ({ default: m.SalesTab })))
 
 type Tab = 'corretores' | 'campanhas' | 'vendas'
 
@@ -43,7 +44,7 @@ export function PerformancePage() {
 
       {tab === 'corretores' && <BrokersTab />}
       {tab === 'campanhas'  && <CampaignsBaseTab />}
-      {tab === 'vendas'     && <SalesTab />}
+      {tab === 'vendas'     && <Suspense fallback={<div className="h-64 rounded-[18px] shimmer" aria-hidden />}><SalesTab /></Suspense>}
     </PageLayout>
   )
 }

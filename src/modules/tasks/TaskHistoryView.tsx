@@ -1,13 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CheckCircle2, Circle, Clock, User, Building2,
   ChevronLeft, ChevronRight, CalendarDays
 } from 'lucide-react'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Cell
-} from 'recharts'
+import { Grafico, eixoCategoria, eixoValor, resolverCor } from '../../components/charts/Grafico'
+import type { CoresGrafico } from '../../components/charts/Grafico'
 import { Card } from '../../components/ui/Card'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Task, TaskCategory } from '../../types'
@@ -45,29 +43,6 @@ function fmtLabel(d: string): string {
 function fmtFull(d: string): string {
   const dt = new Date(d + 'T00:00:00')
   return dt.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
-}
-
-// ─── custom tooltip ───────────────────────────────────────────────────────────
-
-/**
- * Forma do que o Recharts entrega ao tooltip. O tipo genérico da biblioteca é
- * incômodo de instanciar aqui; isto descreve exatamente o que consumimos.
- */
-interface FatiaTooltip { name: string; value: number | string; color?: string; fill?: string }
-interface PropsTooltip { active?: boolean; payload?: FatiaTooltip[]; label?: string | number }
-
-function CustomTooltip({ active, payload, label }: PropsTooltip) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-page border border-line rounded-xl px-3 py-2 shadow-xl">
-      <p className="text-xs text-t3 mb-1">{label}</p>
-      {payload.map(p => (
-        <p key={p.name} className="text-xs font-semibold" style={{ color: p.fill }}>
-          {p.name === 'done' ? 'Concluídas' : 'Pendentes'}: {p.value}
-        </p>
-      ))}
-    </div>
-  )
 }
 
 // ─── TaskDayRow ───────────────────────────────────────────────────────────────
@@ -163,6 +138,22 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
       .filter(d => d.total > 0),
     [dayTasks]
   )
+
+  // Concluída = cor cheia da categoria; pendente = a mesma cor bem clara,
+  // empilhada em cima. Lê-se "quanto do que havia foi feito" de relance.
+  const opcaoCategorias = useCallback((t: CoresGrafico) => ({
+    grid: { left: 4, right: 8, top: 12, bottom: 4, containLabel: true },
+    xAxis: eixoCategoria(t, chartData.map(d => d.name)),
+    yAxis: eixoValor(t, undefined, { minInterval: 1 }),
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { show: false },
+    series: [
+      { name: 'Concluídas', type: 'bar', stack: 'a', barMaxWidth: 26,
+        data: chartData.map(d => ({ value: d.done, itemStyle: { color: resolverCor(d.color) } })) },
+      { name: 'Pendentes', type: 'bar', stack: 'a', barMaxWidth: 26,
+        data: chartData.map(d => ({ value: d.open, itemStyle: { color: resolverCor(d.color), opacity: 0.3, borderRadius: [5, 5, 0, 0] } })) },
+    ],
+  }), [chartData])
 
   // Tarefas agrupadas por categoria
   const byCategory = useMemo(() =>
@@ -295,24 +286,11 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
               <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-4">
                 Tarefas por categoria — {isToday ? 'Hoje' : fmtLabel(selectedDate)}
               </p>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }} barSize={22}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--t4)' }} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--t4)' }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-                  <Bar dataKey="done" name="done" stackId="a" radius={[0, 0, 0, 0]}>
-                    {chartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} fillOpacity={0.9} />
-                    ))}
-                  </Bar>
-                  <Bar dataKey="open" name="open" stackId="a" radius={[4, 4, 0, 0]}>
-                    {chartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} fillOpacity={0.25} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <Grafico
+                altura={200}
+                rotulo={'Tarefas do dia por categoria. ' + chartData.map(d => `${d.name}: ${d.done} concluídas, ${d.open} pendentes`).join('; ')}
+                opcao={opcaoCategorias}
+              />
               <div className="flex items-center gap-4 mt-2 justify-center">
                 <span className="flex items-center gap-1.5 text-xs text-t3">
                   <span className="w-2.5 h-2.5 rounded-sm bg-indigo-400" /> Concluídas

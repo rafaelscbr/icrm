@@ -13,11 +13,12 @@ import type { NavLeaf, NavGroupDef } from './navConfig'
  * tempo. Três sinais para dizer uma coisa só, e o dourado do menu competindo
  * com o dourado que significa dinheiro no conteúdo (principios-visuais §2).
  *
- * Agora: a pastilha é NEUTRA (dá o corpo do item), e o dourado aparece em dois
- * traços finos — o filete de 3px na borda e o ícone. O olho acha a página
- * atual pela pastilha; o ouro só confirma.
+ * v4 (Signature): a pastilha ativa "sobe" para o plano da folha — mesma cor da
+ * superfície e sombra curta (`.nav-rail a[aria-current]` no index.css) — e o
+ * dourado fica só no ícone. O filete lateral saiu: com a elevação ele era um
+ * segundo sinal para a mesma coisa.
  */
-const PILL = 'group relative flex items-center rounded-[10px] font-medium transition-colors duration-150'
+const PILL = 'group relative flex items-center rounded-[11px] font-medium transition-[background-color,color,box-shadow] duration-150'
 
 function Marcador() {
   return (
@@ -48,8 +49,7 @@ export function NavItem({ item, collapsed }: { item: NavLeaf; collapsed: boolean
         >
           {({ isActive }) => (
             <>
-              {isActive && <Marcador />}
-              <Icon
+                            <Icon
                 size={18}
                 strokeWidth={isActive ? 2.2 : 1.8}
                 style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }}
@@ -70,7 +70,7 @@ export function NavItem({ item, collapsed }: { item: NavLeaf; collapsed: boolean
       onMouseEnter={() => prefetchRota(to)}
       onFocus={() => prefetchRota(to)}
       className={({ isActive }) =>
-        `${PILL} h-9 gap-2.5 px-2.5 text-[13.5px] ${isActive ? '' : 'hover:bg-nav-hover'}`
+        `${PILL} h-10 gap-3 px-3 text-[14px] ${isActive ? 'font-semibold' : 'hover:bg-nav-hover'}`
       }
       style={({ isActive }) => ({
         background: isActive ? 'var(--nav-active-bg)' : undefined,
@@ -79,8 +79,7 @@ export function NavItem({ item, collapsed }: { item: NavLeaf; collapsed: boolean
     >
       {({ isActive }) => (
         <>
-          {isActive && <Marcador />}
-          <Icon
+                    <Icon
             size={17}
             strokeWidth={isActive ? 2.2 : 1.8}
             style={{ color: isActive ? 'var(--brand)' : 'var(--nav-muted)' }}
@@ -102,7 +101,7 @@ function NavChild({ item }: { item: NavLeaf }) {
       onMouseEnter={() => prefetchRota(item.to)}
       onFocus={() => prefetchRota(item.to)}
       className={({ isActive }) =>
-        `relative flex h-8 items-center gap-2.5 rounded-lg pl-4 pr-2.5 text-[13px] font-medium
+        `relative flex h-9 items-center gap-2.5 rounded-[10px] pl-4 pr-2.5 text-[13.5px] font-medium
          transition-colors duration-150 ${isActive ? '' : 'hover:bg-nav-hover'}`
       }
       style={({ isActive }) => ({
@@ -155,7 +154,7 @@ export function NavGroup({ group, collapsed }: { group: NavGroupDef; collapsed: 
       <button
         onClick={() => setOpen(v => !v)}
         aria-expanded={aberto}
-        className={`${PILL} h-9 w-full cursor-pointer gap-2.5 px-2.5 text-[13.5px] hover:bg-nav-hover`}
+        className={`${PILL} h-10 w-full cursor-pointer gap-3 px-3 text-[14px] hover:bg-nav-hover`}
         style={{ color: algumFilhoAtivo ? 'var(--nav-active-text)' : 'var(--nav-text)' }}
       >
         <group.icon

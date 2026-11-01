@@ -36,11 +36,11 @@ export function Card({
     <div
       {...props}
       className={`
-        relative bg-surface border border-line rounded-xl shadow-card overflow-hidden
+        relative bg-surface border border-line rounded-[16px] shadow-card overflow-hidden
         ${accents[accent]}
         ${paddings[padding]}
         ${hover
-          ? 'transition-all duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-modal cursor-pointer'
+          ? 'transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-dropdown cursor-pointer'
           : ''}
         ${className}
       `}

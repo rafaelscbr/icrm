@@ -104,17 +104,23 @@ export function BottomNav() {
       */}
 
       {/* ── Bottom bar ───────────────────────────────────────────── */}
+      {/*
+        Doca flutuante: descola da borda (onde mora o gesto de "home" do iOS),
+        tem cantos e sombra próprios e deixa o conteúdo aparecer em volta.
+      */}
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40"
+        aria-label="Navegação principal"
+        className="lg:hidden fixed inset-x-2.5 z-40 rounded-[22px]"
         style={{
-          background: 'var(--nav-bg)',
-          borderTop: '1px solid var(--nav-line)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          bottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+          background: 'var(--dock-bg)',
+          border: '1px solid var(--dock-line)',
+          boxShadow: 'var(--dock-shadow)',
+          backdropFilter: 'blur(18px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(18px) saturate(1.4)',
         }}
       >
-        <div className="flex items-center justify-around h-16 px-1">
+        <div className="flex items-center justify-around h-[62px] px-1">
           {barraVisivel.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
@@ -224,16 +230,18 @@ export function BottomNav() {
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
-            className="absolute inset-x-0 rounded-t-[22px] pb-2 animate-in slide-in-from-bottom-4 duration-200
+            className="absolute inset-x-2.5 rounded-[22px] pb-2 animate-in slide-in-from-bottom-4 duration-200
                        flex flex-col overflow-y-auto overscroll-contain"
             style={{
-              bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+              // Acima da doca, com o mesmo respiro lateral dela.
+              bottom: 'calc(78px + env(safe-area-inset-bottom, 0px))',
+              border: '1px solid var(--line)',
+              boxShadow: 'var(--shadow-modal)',
               // Teto de 78% da altura: a gaveta cresceu (todas as telas, por
               // seção) e sem limite ela passava do topo em telas pequenas.
               maxHeight: '78vh',
               background: 'var(--surface)',
               backgroundImage: 'var(--grain), var(--surface-sheen)',
-              borderTop: '1px solid var(--line)',
             }}
           >
             {/* Handle — fica colado no topo enquanto a gaveta rola */}

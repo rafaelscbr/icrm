@@ -215,9 +215,10 @@ function AppRoutes() {
       >
         Pular para o conteúdo
       </a>
-      <div className="flex min-h-screen page-bg">
+      {/* Desktop: moldura + folha flutuante (ver .app-frame/.app-sheet). */}
+      <div className="flex min-h-screen app-frame">
         <Sidebar />
-        <main id="conteudo" className="flex-1 overflow-auto pb-nav-safe lg:!pb-0">
+        <main id="conteudo" className="app-sheet flex-1 min-w-0 overflow-auto pb-nav-safe lg:!pb-0">
           {/* Um erro de render em qualquer tela derrubava a árvore inteira
               para branco. O boundary contém o estrago na área de conteúdo e
               zera quando a rota muda. */}
@@ -305,8 +306,8 @@ export default function App() {
             background: 'var(--surface)',
             color: 'var(--t1)',
             border: '1px solid var(--line)',
-            borderRadius: '8px',
-            fontSize: '13px',
+            borderRadius: '12px',
+            fontSize: '14px',
             padding: '10px 14px',
             boxShadow: 'var(--shadow-dropdown)',
           },

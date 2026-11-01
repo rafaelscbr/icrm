@@ -35,7 +35,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               colorScheme: 'auto',
             }}
             className={`
-              w-full border rounded-lg px-3 py-2.5 pr-9 min-h-[42px]
+              w-full border rounded-[11px] px-3 py-2.5 pr-9 min-h-[44px]
               text-sm
               focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand
               hover:border-line-strong

@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts'
+import { useMemo, useCallback } from 'react'
+import { Grafico, eixoCategoria, eixoValor } from '../../components/charts/Grafico'
+import type { CoresGrafico } from '../../components/charts/Grafico'
 import { Card } from '../../components/ui/Card'
 import { Campaign, CampaignLead } from '../../types'
 import { FUNNEL_STAGES, FUNNEL_COLORS, SITUATION_CONFIG } from './config'
@@ -11,8 +10,6 @@ interface MetricsTabProps {
   leads: CampaignLead[]
   campaign: Campaign
 }
-
-const axisStyle = { fill: 'var(--t4)', fontSize: 11 }
 
 // Funil da campanha vai só até 'scheduled' — a partir daí passa para o funil principal
 const CAMPAIGN_FUNNEL_STAGES = FUNNEL_STAGES.filter(
@@ -359,6 +356,20 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
     })
   }, [funnelLeads])
 
+  const opcaoAcionados = useCallback((t: CoresGrafico) => ({
+    grid: { left: 4, right: 8, top: 12, bottom: 4, containLabel: true },
+    xAxis: eixoCategoria(t, dailyData.map(d => d.date), { boundaryGap: false }),
+    yAxis: eixoValor(t, undefined, { minInterval: 1 }),
+    legend: { show: false },
+    series: [{
+      name: 'Acionados', type: 'line', smooth: 0.3, symbol: 'circle', symbolSize: 6,
+      lineStyle: { color: t.info, width: 2.5 }, itemStyle: { color: t.info },
+      areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+        colorStops: [{ offset: 0, color: t.info }, { offset: 1, color: 'transparent' }] }, opacity: 0.22 },
+      data: dailyData.map(d => d.acionados),
+    }],
+  }), [dailyData])
+
   const situationData = SITUATION_CONFIG.map(s => ({
     ...s,
     count: leads.filter(l => l.situation === s.value).length,
@@ -479,27 +490,11 @@ export function MetricsTab({ leads, campaign }: MetricsTabProps) {
       {/* Leads acionados por dia */}
       <Card>
         <h2 className="text-sm font-semibold text-t2 mb-5">Leads acionados por dia — últimos 21 dias</h2>
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={dailyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="camGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="var(--info)" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="var(--info)" stopOpacity={0}    />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-            <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} interval={2} />
-            <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-            <Tooltip
-              contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12 }}
-              labelStyle={{ color: 'var(--t3)', fontSize: 11 }}
-              itemStyle={{ color: '#93c5fd' }}
-              formatter={(v: number) => [v, 'Acionados']}
-            />
-            <Area type="monotone" dataKey="acionados" stroke="var(--info)" strokeWidth={2}
-              fill="url(#camGrad)" dot={{ fill: 'var(--info)', r: 3 }} activeDot={{ r: 5 }} name="Acionados" />
-          </AreaChart>
-        </ResponsiveContainer>
+        <Grafico
+          altura={200}
+          rotulo={'Leads acionados por dia nos últimos 21 dias. Total: ' + dailyData.reduce((a, d) => a + d.acionados, 0)}
+          opcao={opcaoAcionados}
+        />
       </Card>
 
       {/* Conversão por modelo de mensagem */}

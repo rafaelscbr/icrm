@@ -33,7 +33,7 @@ export function SaleCelebration({ venda, onFim }: {
         startVelocity: 55,
         gravity: 0.9,
         ticks: 260,
-        colors: ['#E4B23C', '#F0CC78', '#4ADE80', '#F6F3EC'],
+        colors: ['#D6B26E', '#E8CD94', '#4ADE80', '#F6F3EC'],
         disableForReducedMotion: true,
       })
     }

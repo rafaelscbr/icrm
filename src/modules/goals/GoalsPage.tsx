@@ -364,7 +364,7 @@ function GoalCard({ goal, progress, onEdit, onDelete, onPause }: {
   useEffect(() => {
     if (done && !firedRef.current) {
       firedRef.current = true
-      confetti({ particleCount: 70, spread: 55, origin: { y: 0.6 }, colors: ['#E4B23C','#C2922A','#34C88A','#F6F3EC'] })
+      confetti({ particleCount: 70, spread: 55, origin: { y: 0.6 }, colors: ['#D6B26E','#B8934F','#34C88A','#F6F3EC'] })
     }
   }, [done])
 

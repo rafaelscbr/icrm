@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import {
   ArrowLeft, Pencil, LayoutGrid, List, BarChart3, Pause, Play, CheckCheck,
   TrendingUp, ListPlus, Check, Loader2, MessageSquare, AlertTriangle, Shuffle,
@@ -8,7 +8,8 @@ import { Button } from '../../components/ui/Button'
 import { CampaignForm } from './CampaignForm'
 import { LeadsTab } from './LeadsTab'
 import { KanbanTab } from './KanbanTab'
-import { MetricsTab } from './MetricsTab'
+// Aba com gráfico: o ECharts só baixa quando a aba abre, não junto com a tela.
+const MetricsTab = lazy(() => import('./MetricsTab').then(m => ({ default: m.MetricsTab })))
 import { ForecastTab } from './ForecastTab'
 import { ActivityTab } from './ActivityTab'
 import { ParticipantsManager } from './ParticipantsManager'
@@ -416,7 +417,7 @@ export function CampaignDetail({ campaignId, onBack }: CampaignDetailProps) {
       <div className="flex-1 p-6">
         {tab === 'leads'    && <LeadsTab    leads={campaignLeads} campaign={campaign} stickyTop={headerH} />}
         {tab === 'kanban'   && <KanbanTab   leads={campaignLeads} campaign={campaign} />}
-        {tab === 'metrics'  && <MetricsTab  leads={campaignLeads} campaign={campaign} />}
+        {tab === 'metrics'  && <Suspense fallback={<div className="h-64 rounded-[18px] shimmer" aria-hidden />}><MetricsTab  leads={campaignLeads} campaign={campaign} /></Suspense>}
         {tab === 'forecast' && <ForecastTab leads={campaignLeads} campaign={campaign} />}
         {tab === 'activity' && <ActivityTab campaignId={campaignId} />}
       </div>

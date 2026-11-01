@@ -165,7 +165,7 @@ export function ProximaAcao({
   return (
     <section
       aria-label="Próxima melhor ação"
-      className={`entrada relative overflow-hidden rounded-[16px] border surface-premium px-5 py-4 mb-8
+      className={`entrada relative overflow-hidden rounded-[18px] border surface-premium px-5 py-4
                   flex flex-col gap-3 ${critica ? 'border-error-line atencao-pulse' : 'border-line'}`}
       style={{ boxShadow: 'var(--shadow-card)' }}
     >
@@ -191,8 +191,8 @@ export function ProximaAcao({
         <button
           onClick={principal.run}
           className="flex items-center gap-2 rounded-[12px] px-4 py-2.5 min-h-[42px] shrink-0
-                     grad-brand font-heading text-[13px] font-bold transition-transform
-                     active:scale-[0.98] cursor-pointer hover:brightness-105
+                     bg-brand-fill text-brand-fill-text hover:bg-brand-fill-hover font-heading text-[13px] font-bold
+                     transition-[background-color,transform] active:scale-[0.98] cursor-pointer
                      focus:outline-none focus:ring-2 focus:ring-brand/40"
         >
           {principal.acao} <ArrowRight size={14} strokeWidth={2.2} aria-hidden />

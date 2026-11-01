@@ -1,8 +1,6 @@
-import { useEffect, useMemo } from 'react'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
-} from 'recharts'
+import { useEffect, useMemo, useCallback } from 'react'
+import { Grafico, eixoCategoria, eixoValor } from '../../components/charts/Grafico'
+import type { CoresGrafico } from '../../components/charts/Grafico'
 import { Trophy, Check } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { CampaignLead } from '../../types'
@@ -15,8 +13,6 @@ import { useDisparosStore } from '../../store/useDisparosStore'
 const DAILY_TARGET   = DAILY_LIMIT          // 50
 const WEEKLY_TARGET  = 250                  // 50 × 5 dias úteis
 const MONTHLY_TARGET = 1000                 // 50 × 20 dias úteis
-
-const axisStyle = { fill: 'var(--t4)', fontSize: 11 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,27 +42,6 @@ function MetaCard({ label, value, target, color }: {
         />
       </div>
       <p className="text-[11px] text-t4">{p}% da meta</p>
-    </div>
-  )
-}
-
-// ─── Tooltip customizado ──────────────────────────────────────────────────────
-
-/**
- * Forma do que o Recharts entrega ao tooltip. O tipo genérico da biblioteca é
- * incômodo de instanciar aqui; isto descreve exatamente o que consumimos.
- */
-interface FatiaTooltip { name: string; value: number | string; color?: string; fill?: string }
-interface PropsTooltip { active?: boolean; payload?: FatiaTooltip[]; label?: string | number }
-
-const CustomTooltip = ({ active, payload, label }: PropsTooltip) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-page border border-line rounded-xl px-3 py-2.5 text-xs space-y-1 shadow-xl">
-      <p className="text-t3 font-semibold mb-1">{label}</p>
-      {payload.map(p => (
-        <p key={p.name} style={{ color: p.color }}>{p.name}: <span className="font-bold">{p.value}</span></p>
-      ))}
     </div>
   )
 }
@@ -102,6 +77,19 @@ export function CampaignPerformanceTab({ leads }: Props) {
     Disparos:     h.count,
     Interessados: intByDay[h.date] ?? 0,
   })), [history, intByDay])
+
+  const opcaoDias = useCallback((t: CoresGrafico) => ({
+    grid: { left: 4, right: 8, top: 36, bottom: 4, containLabel: true },
+    xAxis: eixoCategoria(t, chartData.map(d => d.label)),
+    yAxis: eixoValor(t, undefined, { minInterval: 1 }),
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    series: [
+      { name: 'Disparos', type: 'bar', barMaxWidth: 18, barGap: '15%',
+        itemStyle: { color: t.neutro, borderRadius: [4, 4, 0, 0] }, data: chartData.map(d => d.Disparos) },
+      { name: 'Interessados', type: 'bar', barMaxWidth: 18,
+        itemStyle: { color: t.marca, borderRadius: [4, 4, 0, 0] }, data: chartData.map(d => d.Interessados) },
+    ],
+  }), [chartData])
 
   // Melhor dia (mais interessados)
   const bestDay = useMemo(() => {
@@ -191,17 +179,11 @@ export function CampaignPerformanceTab({ leads }: Props) {
             <p className="text-xs text-t5">Clique em WhatsApp na aba Leads para registrar automaticamente</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={2}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-              <XAxis dataKey="label" tick={axisStyle} axisLine={false} tickLine={false} interval={4} />
-              <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11, color: 'var(--t3)', paddingTop: 12 }} />
-              <Bar dataKey="Disparos"     fill="#7c3aed" radius={[3, 3, 0, 0]} maxBarSize={20} />
-              <Bar dataKey="Interessados" fill="var(--info)" radius={[3, 3, 0, 0]} maxBarSize={20} />
-            </BarChart>
-          </ResponsiveContainer>
+          <Grafico
+            altura={240}
+            rotulo={'Disparos e interessados por dia. ' + chartData.filter(d => d.Disparos > 0).map(d => `${d.label}: ${d.Disparos} disparos, ${d.Interessados} interessados`).join('; ')}
+            opcao={opcaoDias}
+          />
         )}
       </Card>
 

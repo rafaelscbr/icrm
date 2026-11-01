@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -16,7 +16,8 @@ import { EsqueletoLinhas } from '../../components/shared/Esqueleto'
 import { Abas } from '../../components/shared/Abas'
 import { Modal } from '../../components/ui/Modal'
 import { TaskForm } from './TaskForm'
-import { TaskHistoryView } from './TaskHistoryView'
+// Aba com gráfico: o ECharts só baixa quando a aba abre, não junto com a tela.
+const TaskHistoryView = lazy(() => import('./TaskHistoryView').then(m => ({ default: m.TaskHistoryView })))
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
@@ -630,7 +631,7 @@ export function TasksPage() {
       />
 
       {/* ── Aba Histórico ── */}
-      {activeTab === 'history' && <TaskHistoryView tasks={tasks} />}
+      {activeTab === 'history' && <Suspense fallback={<div className="h-64 rounded-[18px] shimmer" aria-hidden />}><TaskHistoryView tasks={tasks} /></Suspense>}
 
       {/* ── Aba Calendário ── */}
       {activeTab === 'calendar' && (

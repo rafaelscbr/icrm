@@ -12,7 +12,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * escurece e o texto fica branco. Ver --grad-brand no index.css.
  */
 const variants = {
-  primary:   'grad-brand hover:brightness-110 shadow-brand active:opacity-95 font-bold font-heading',
+  primary:   'bg-brand-fill text-brand-fill-text hover:bg-brand-fill-hover shadow-[0_8px_22px_-12px_var(--brand-shadow)] font-bold font-heading',
   secondary: 'bg-surface border border-line hover:bg-s2 text-t2 hover:text-t1 hover:border-line-strong',
   ghost:     'hover:bg-s2 text-t3 hover:text-t1',
   danger:    'bg-error-bg hover:bg-error/20 text-error border border-error-line hover:border-error/50',
@@ -41,8 +41,8 @@ export function Button({
       type={type ?? 'button'}
       disabled={disabled}
       className={`
-        inline-flex items-center justify-center font-semibold rounded-lg
-        transition-all duration-150 active:scale-[0.98] cursor-pointer
+        inline-flex items-center justify-center font-semibold rounded-[11px]
+        transition-[background-color,border-color,color,transform,box-shadow] duration-150 active:scale-[0.98] cursor-pointer
         focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
         disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
         ${variants[variant]} ${sizes[size]} ${className}

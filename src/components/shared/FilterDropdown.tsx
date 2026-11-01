@@ -106,7 +106,7 @@ export function FilterDropdown({
         className="inline-flex items-center rounded-[12px] transition-all duration-150"
         style={{
           background: isActive ? 'var(--brand-tint)' : open ? 'var(--s2)' : 'var(--surface)',
-          border: `1px solid ${isActive ? 'rgba(228,178,60,0.4)' : open ? 'var(--line-strong)' : 'var(--line-input)'}`,
+          border: `1px solid ${isActive ? 'rgba(214,178,110,0.4)' : open ? 'var(--line-strong)' : 'var(--line-input)'}`,
           color: isActive ? 'var(--brand-text)' : 'var(--t2)',
         }}
       >

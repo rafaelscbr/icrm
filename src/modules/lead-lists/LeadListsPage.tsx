@@ -284,7 +284,7 @@ export function LeadListsPage() {
                     se ela vale uma campanha: ele domina, e o resto é apoio. */}
                 <div className="flex items-end gap-3">
                   <div className="min-w-0">
-                    <p className="font-heading text-[26px] font-black tabular-nums text-t1 leading-none tracking-[-0.03em]">
+                    <p className="font-heading text-[26px] font-black tabular-nums text-t1 leading-none tracking-[-0.02em]">
                       {list.totalCount.toLocaleString('pt-BR')}
                     </p>
                     <p className="font-label text-[11px] uppercase tracking-[0.12em] text-t4 mt-1">leads</p>

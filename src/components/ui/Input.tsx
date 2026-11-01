@@ -37,11 +37,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-describedby={errorId ?? hintId}
           style={mergedStyle}
           className={`
-            w-full bg-surface border rounded-lg px-3 py-2.5 text-sm text-t1 min-h-[42px]
-            placeholder:text-t3
+            w-full bg-surface border rounded-[11px] px-3.5 py-2.5 text-sm text-t1 min-h-[44px]
+            placeholder:text-t4
             focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand
             hover:border-line-strong
-            transition-all duration-150
+            transition-[border-color,box-shadow] duration-150
             ${error ? 'border-error-line ring-1 ring-error/20' : 'border-line-input'}
             ${className}
           `}

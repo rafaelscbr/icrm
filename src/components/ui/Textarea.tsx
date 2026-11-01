@@ -28,7 +28,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-describedby={errorId ?? hintId}
           style={{ backgroundColor: 'var(--surface)', color: 'var(--t1)' }}
           className={`
-            w-full border rounded-lg px-3 py-2.5 text-sm
+            w-full border rounded-[11px] px-3.5 py-2.5 text-sm
             placeholder:text-t3
             focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand
             hover:border-line-strong

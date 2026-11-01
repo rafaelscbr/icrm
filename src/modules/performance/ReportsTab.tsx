@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { localDateStr } from '../../store/useDailyLogsStore'
 import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
 import { PeriodSelector } from '../../components/shared/PeriodSelector'
-import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
-} from 'recharts'
+import { Grafico, barrasPorPeriodo, eixoCategoria, eixoValor, resolverCor } from '../../components/charts/Grafico'
+import type { CoresGrafico } from '../../components/charts/Grafico'
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
 import { useSalesStore } from '../../store/useSalesStore'
@@ -24,33 +22,8 @@ const PIE_COLORS = {
   above_market: 'var(--error)',
 }
 
-function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-page border border-line rounded-xl px-4 py-3 shadow-xl">
-      <p className="text-xs text-t3 mb-1">{label}</p>
-      <p className="text-sm font-semibold text-slate-100">{formatCurrency(payload[0].value)}</p>
-    </div>
-  )
-}
 
-function ActivityTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-page border border-line rounded-xl px-4 py-3 shadow-xl">
-      <p className="text-xs text-t3 mb-2">{label}</p>
-      {payload.map(p => (
-        <div key={p.name} className="flex items-center gap-2 text-xs">
-          <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-t3">{p.name}:</span>
-          <span className="font-semibold text-t1">{p.value}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
 
-const axisStyle = { fill: 'var(--t4)', fontSize: 11 }
 
 const MONTH_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
@@ -238,6 +211,34 @@ export function ReportsTab() {
   const targetCalls   = weekdaysCount * DAILY_TARGETS.ownerCalls
   const targetFunnel  = monSatCount
 
+  const compacto = useCallback((v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1).replace('.', ',')} mi` : v >= 1_000 ? `${Math.round(v / 1_000)} mil` : String(v), [])
+  const opcaoAtividade = useCallback((t: CoresGrafico) => ({
+    grid: { left: 4, right: 8, top: 36, bottom: 4, containLabel: true },
+    xAxis: eixoCategoria(t, activityChart.map(d => d.date)),
+    yAxis: eixoValor(t, undefined, { minInterval: 1 }),
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    series: [
+      { name: 'Leads', type: 'bar', barMaxWidth: 16, itemStyle: { color: t.marca, borderRadius: [4, 4, 0, 0] }, data: activityChart.map(d => d.Leads) },
+      { name: 'Ligações', type: 'bar', barMaxWidth: 16, itemStyle: { color: t.info, borderRadius: [4, 4, 0, 0] }, data: activityChart.map(d => d['Ligações']) },
+    ],
+  }), [activityChart])
+  const opcaoVgv = useCallback((t: CoresGrafico) =>
+    barrasPorPeriodo(t, monthlySales.map(m => m.name), monthlySales.map(m => m.valor),
+      { nome: 'VGV', formatar: formatCurrency, formatarEixo: compacto }), [monthlySales, compacto])
+  const opcaoQtd = useCallback((t: CoresGrafico) =>
+    barrasPorPeriodo(t, monthlySales.map(m => m.name), monthlySales.map(m => m.qtd),
+      { nome: 'Vendas', cor: t.sucesso }), [monthlySales])
+  const opcaoImoveis = useCallback((t: CoresGrafico) => ({
+    tooltip: { trigger: 'item' },
+    legend: { show: false },
+    series: [{
+      type: 'pie', radius: ['56%', '86%'], padAngle: 3, avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 6, borderColor: t.superficie, borderWidth: 2 },
+      label: { show: false },
+      data: propByStatus.map(p => ({ name: p.name, value: p.value, itemStyle: { color: resolverCor(p.color) } })),
+    }],
+  }), [propByStatus])
+
   return (
     <div className="flex flex-col gap-8">
 
@@ -285,19 +286,8 @@ export function ReportsTab() {
           <h2 className="text-sm font-medium text-t2 mb-6">
             Atividade diária — últimos 14 dias
           </h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={activityChart} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-              <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} interval={1} />
-              <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip content={<ActivityTooltip />} />
-              <Legend
-                wrapperStyle={{ fontSize: 11, color: 'var(--t4)', paddingTop: 12 }}
-              />
-              <Bar dataKey="Leads"    fill="var(--brand)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Ligações" fill="var(--info)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <Grafico altura={240} opcao={opcaoAtividade}
+            rotulo={'Leads e ligações por dia. ' + activityChart.map(d => `${d.date}: ${d.Leads} leads, ${d['Ligações']} ligações`).join('; ')} />
         </Card>
       </section>
 
@@ -341,22 +331,8 @@ export function ReportsTab() {
           <h2 className="text-sm font-medium text-t2 mb-6">
             Volume de vendas — {periodLabel}
           </h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={monthlySales} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="var(--brand)" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="var(--brand)" stopOpacity={0}    />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-              <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => formatCurrency(v)} tick={axisStyle} axisLine={false} tickLine={false} width={70} />
-              <Tooltip content={<SalesTooltip />} />
-              <Area type="monotone" dataKey="valor" stroke="var(--brand)" strokeWidth={2}
-                fill="url(#areaGrad)" dot={{ fill: 'var(--brand)', r: 3 }} activeDot={{ r: 5 }} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <Grafico altura={240} opcao={opcaoVgv}
+            rotulo={'VGV por mês. ' + monthlySales.map(m => `${m.name}: ${formatCurrency(m.valor)}`).join('; ')} />
         </Card>
 
         <SeasonalitySection sales={sales} />
@@ -366,19 +342,8 @@ export function ReportsTab() {
             <h2 className="text-sm font-medium text-t2 mb-6">
               Quantidade de vendas — {periodLabel}
             </h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={monthlySales} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-                <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
-                <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12 }}
-                  labelStyle={{ color: 'var(--t3)', fontSize: 11 }}
-                  itemStyle={{ color: '#a5b4fc' }}
-                />
-                <Bar dataKey="qtd" fill="var(--brand)" radius={[6, 6, 0, 0]} name="Vendas" />
-              </BarChart>
-            </ResponsiveContainer>
+            <Grafico altura={210} opcao={opcaoQtd}
+              rotulo={'Vendas por mês. ' + monthlySales.map(m => `${m.name}: ${m.qtd}`).join('; ')} />
           </Card>
 
           <Card>
@@ -389,13 +354,8 @@ export function ReportsTab() {
               </div>
             ) : (
               <div className="flex items-center gap-8">
-                <ResponsiveContainer width={160} height={160}>
-                  <PieChart>
-                    <Pie data={propByStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                      {propByStatus.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+                <Grafico altura={160} className="!w-[160px]" opcao={opcaoImoveis}
+                  rotulo={'Imóveis por status. ' + propByStatus.map(p => `${p.name}: ${p.value}`).join('; ')} />
                 <div className="flex flex-col gap-3 flex-1">
                   {propByStatus.map(d => (
                     <div key={d.name} className="flex items-center gap-2">

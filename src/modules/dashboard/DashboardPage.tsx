@@ -183,7 +183,10 @@ function HorizonCurve() {
 
 type Health = { label: string; cls: string; dot: string }
 
-function healthOf(coverage: number): Health {
+function healthOf(coverage: number, metaBatida = false): Health {
+  // Meta já batida manda: "pipeline insuficiente" em vermelho ao lado de
+  // "236% da meta" era a tela se contradizendo.
+  if (metaBatida)      return { label: 'Meta batida',           cls: 'text-success bg-success-bg border-success-line', dot: 'bg-success' }
   if (coverage >= 1)   return { label: 'Meta coberta',          cls: 'text-success bg-success-bg border-success-line', dot: 'bg-success' }
   if (coverage >= 0.6) return { label: 'Em construção',         cls: 'text-brand-text bg-brand-tint border-brand/30',  dot: 'bg-brand'   }
   return                      { label: 'Pipeline insuficiente', cls: 'text-error bg-error-bg border-error-line',       dot: 'bg-error'   }
@@ -215,14 +218,19 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
   const falta    = Math.max(target - realizado, 0)
   const coverage = target > 0 ? previsao / target : 0
   const gapPrev  = Math.max(falta - previsao, 0)
-  const health   = healthOf(coverage)
+  const metaBatida = target > 0 && realizado >= target
+  const health   = healthOf(coverage, metaBatida)
   const noRitmo  = pct >= paceFrac
 
   // Ticket médio só existe se houve venda no mês — sem venda, não estimamos.
   const ticketMedio    = vendasMes > 0 ? realizado / vendasMes : null
   const vendasParaMeta = ticketMedio && falta > 0 ? Math.ceil(falta / ticketMedio) : null
 
-  const insight = coverage >= 1
+  const insight = metaBatida
+    ? previsao > 0
+      ? `A meta do mês já foi batida. Os ${formatCurrency(previsao)} em visita e proposta são o que ainda pode somar além dela.`
+      : 'A meta do mês já foi batida. Não há VGV em visita ou proposta agora — bom momento para abastecer o funil do próximo mês.'
+    : coverage >= 1
     ? `A previsão cobre ${Math.round(coverage * 100)}% da meta. O pipeline maduro já é suficiente — o foco agora é fechar o que está em negociação.`
     : `A previsão cobre ${Math.round(coverage * 100)}% da meta. Para fechar o gap, a operação precisa converter ${formatCurrency(gapPrev)} em novas visitas ou propostas.`
 
@@ -285,8 +293,8 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
           </div>
 
           <p
-            className="font-heading text-[clamp(2.5rem,5vw,3.4rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.035em]"
-            style={{ textShadow: '0 1px 24px rgba(228,178,60,0.10)' }}
+            className="font-heading text-[clamp(2.5rem,5vw,3.4rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]"
+            style={{ textShadow: '0 1px 24px rgba(214,178,110,0.10)' }}
           >
             {formatCurrencyFull(target)}
           </p>
@@ -315,7 +323,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
                 style={{
                   width: `${Math.min(pct, 1) * 100}%`,
                   background: 'linear-gradient(90deg, var(--brand-fill-deep), var(--brand-fill) 70%, var(--brand-fill-hover))',
-                  boxShadow: '0 0 16px rgba(228,178,60,0.35)',
+                  boxShadow: '0 0 16px rgba(214,178,110,0.35)',
                 }}
                 aria-hidden
               />
@@ -380,7 +388,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
             </span>
           </div>
 
-          <p className="font-heading text-[clamp(2.1rem,4.2vw,2.9rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.035em]">
+          <p className="font-heading text-[clamp(2.1rem,4.2vw,2.9rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]">
             {formatCurrency(previsao)}
           </p>
           <p className="text-sm text-t3 mt-2.5">
@@ -891,12 +899,14 @@ function RevenueTrend({ points, target, loading }: {
     )
   }
 
-  const W = 720, H = 200, padL = 8, padR = 8, padT = 16, padB = 28
+  // Largura de desenho próxima da real: o SVG escala junto com o texto, e
+  // num viewBox de 720 esticado para 1100px os rótulos ficavam com 17px.
+  const W = 1040, H = 240, padL = 8, padR = 64, padT = 26, padB = 30
   const innerW = W - padL - padR
   const innerH = H - padT - padB
   const scaleMax = Math.max(target, ...points.map(p => Math.max(p.acumulado, p.metaAcum)), 1)
   const bandW = innerW / points.length
-  const barW  = Math.min(bandW * 0.42, 46)
+  const barW  = Math.min(bandW * 0.36, 56)
 
   const y  = (v: number) => padT + innerH - (v / scaleMax) * innerH
   const cx = (i: number) => padL + bandW * i + bandW / 2
@@ -935,15 +945,29 @@ function RevenueTrend({ points, target, loading }: {
           </defs>
 
           {[0.25, 0.5, 0.75, 1].map(f => (
-            <line key={f} x1={padL} x2={W - padR} y1={y(scaleMax * f)} y2={y(scaleMax * f)}
-              stroke="var(--line)" strokeWidth="1" strokeDasharray="3 5" />
+            <g key={f}>
+              <line x1={padL} x2={W - padR} y1={y(scaleMax * f)} y2={y(scaleMax * f)}
+                stroke="var(--line)" strokeWidth="1" strokeDasharray="3 5" />
+              {/* Escala — sem ela as barras não diziam quanto valiam */}
+              <text x={W - 4} y={y(scaleMax * f) + 4} textAnchor="end"
+                className="fill-t4 tabular-nums" fontSize="11" fontFamily="inherit">
+                {formatCurrency(scaleMax * f)}
+              </text>
+            </g>
           ))}
 
           {points.map((p, i) => {
             const h = p.realizado > 0 ? Math.max(innerH - (y(p.realizado) - padT), 3) : 0
             return h > 0 ? (
-              <rect key={p.label} x={cx(i) - barW / 2} y={padT + innerH - h}
-                width={barW} height={h} rx="4" fill="url(#rtBar)" />
+              <g key={p.label}>
+                <rect x={cx(i) - barW / 2} y={padT + innerH - h}
+                  width={barW} height={h} rx="5" fill="url(#rtBar)" />
+                {/* Valor direto na barra: a leitura não depende do tooltip */}
+                <text x={cx(i)} y={padT + innerH - h - 7} textAnchor="middle"
+                  className="fill-t2 tabular-nums" fontSize="12" fontWeight="700" fontFamily="inherit">
+                  {formatCurrency(p.realizado)}
+                </text>
+              </g>
             ) : null
           })}
 
@@ -1281,7 +1305,10 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* ══ Próxima melhor ação ═════════════════════════════════════════ */}
+      {/* ══ Agora — próxima ação + prioridades lado a lado ═══════════════
+          Tudo que pede ação fica numa linha só no desktop. Se não houver
+          sugestão de próxima ação, as prioridades ocupam a linha inteira. */}
+      <div className="grid xl:grid-cols-2 gap-x-6 gap-y-8 mb-8 items-start [&>*:only-child]:xl:col-span-2">
       <ProximaAcao
         leads={activeLeads}
         tasks={inViewTasks(tasks.filter(t => t.status !== 'done'))}
@@ -1291,6 +1318,13 @@ export function DashboardPage() {
         loading={kpiLoading}
         onAbrirLead={setSelectedLead}
       />
+      <div className="min-w-0">
+        <SectionLabel icon={Flame} tom="atencao" hint={priorityItems.length > 0 ? `${priorityItems.length} item${priorityItems.length !== 1 ? 's' : ''} exigindo ação` : undefined}>
+          Prioridades de hoje
+        </SectionLabel>
+        <PriorityFeed items={priorityItems} loading={kpiLoading} coldOverflow={coldOverflow} onSeeAll={() => navigate('/leads')} />
+      </div>
+      </div>
 
       {/* ══ 2. Indicadores ══════════════════════════════════════════════ */}
       <SectionLabel icon={Gauge} tom="marca" hint="Mês corrente">Indicadores</SectionLabel>
@@ -1347,14 +1381,6 @@ export function DashboardPage() {
           value={overviewData?.alertas.tarefasEmAtraso ?? '—'} sub="passaram do prazo"
           onClick={() => navigate('/tarefas')} loading={kpiLoading}
         />
-      </div>
-
-      {/* ══ 3. Prioridades de hoje ══════════════════════════════════════ */}
-      <SectionLabel icon={Flame} tom="atencao" hint={priorityItems.length > 0 ? `${priorityItems.length} item${priorityItems.length !== 1 ? 's' : ''} exigindo ação` : undefined}>
-        Prioridades de hoje
-      </SectionLabel>
-      <div className="mb-8">
-        <PriorityFeed items={priorityItems} loading={kpiLoading} coldOverflow={coldOverflow} onSeeAll={() => navigate('/leads')} />
       </div>
 
       {/* ══ 4. Funil de receita ═════════════════════════════════════════ */}

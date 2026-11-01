@@ -86,8 +86,7 @@ export function Sidebar() {
   return (
     <aside
       className={`nav-rail sticky top-0 hidden h-screen flex-shrink-0 flex-col
-        transition-[width] duration-200 lg:flex ${collapsed ? 'w-[68px]' : 'w-[248px]'}`}
-      style={{ borderRight: '1px solid var(--nav-line)' }}
+        transition-[width] duration-200 lg:flex ${collapsed ? 'w-[72px]' : 'w-[244px]'}`}
       aria-label="Navegação principal"
     >
       {/* ── Marca, avisos e recolher ─────────────────────────────── */}
@@ -98,15 +97,15 @@ export function Sidebar() {
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <div
             className="flex flex-shrink-0 items-center justify-center rounded-[22%]"
-            style={{ width: 32, height: 32, background: '#E4B23C' }}
+            style={{ width: 32, height: 32, background: '#D6B26E' }}
           >
             <span
               style={{
-                fontFamily: "'Sora', system-ui, sans-serif",
+                fontFamily: "'Fraunces', system-ui, sans-serif",
                 // Grafite fixo: o quadrado é sempre dourado vivo, então o "S" não
                 // pode seguir o token de tema (no claro ele viraria branco sobre
                 // ouro — 1.9:1, ilegível).
-                fontWeight: 900, fontSize: 18, color: '#0F1730',
+                fontWeight: 900, fontSize: 18, color: '#0C1430',
                 lineHeight: 1, letterSpacing: '-0.04em', userSelect: 'none',
               }}
             >S</span>
@@ -114,11 +113,11 @@ export function Sidebar() {
           {!collapsed && (
             <div className="flex min-w-0 select-none flex-col leading-none">
               <span style={{
-                fontFamily: "'Sora', system-ui, sans-serif",
+                fontFamily: "'Fraunces', system-ui, sans-serif",
                 fontWeight: 800, fontSize: 14.5, color: 'var(--nav-logo)', letterSpacing: '-0.01em',
               }}>SOUZA</span>
               <span style={{
-                fontFamily: "'Sora', system-ui, sans-serif",
+                fontFamily: "'Fraunces', system-ui, sans-serif",
                 fontWeight: 600, fontSize: 9, color: 'var(--nav-muted)', letterSpacing: '0.14em',
               }}>
                 {/* Ponto final em Areia — exigência do lockup no Brand Guide. */}
@@ -158,7 +157,7 @@ export function Sidebar() {
                 // a chave muda com a contagem: o ponto salta quando chega aviso novo
                 key={unreadCount}
                 className="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full badge-bounce"
-                style={{ background: 'var(--brand)', boxShadow: '0 0 0 2px var(--nav-bg)' }}
+                style={{ background: 'var(--brand)', boxShadow: '0 0 0 2px var(--frame-bg)' }}
                 aria-hidden
               />
             )}
@@ -213,7 +212,7 @@ export function Sidebar() {
       </nav>
 
       {/* ── Conta ────────────────────────────────────────────────── */}
-      <div className="px-2.5 pb-3 pt-2" style={{ borderTop: '1px solid var(--nav-line)' }}>
+      <div className="px-2.5 pb-3 pt-2">
         <AccountMenu
           collapsed={collapsed}
           nome={nome}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import {
   Megaphone, Users, Calendar, Pencil, Trash2, ArrowRight,
   Play, Pause, BarChart3, Zap, ArrowLeftRight, UserCircle2,
@@ -13,7 +13,8 @@ import { EstadoTela } from '../../components/shared/EstadoTela'
 import { EsqueletoCards } from '../../components/shared/Esqueleto'
 import { CampaignForm } from './CampaignForm'
 import { CampaignDetail } from './CampaignDetail'
-import { CampaignPerformanceTab } from './CampaignPerformanceTab'
+// Aba com gráfico: o ECharts só baixa quando a aba abre, não junto com a tela.
+const CampaignPerformanceTab = lazy(() => import('./CampaignPerformanceTab').then(m => ({ default: m.CampaignPerformanceTab })))
 import { DailyLimitBar } from './DailyLimitBar'
 import { useCampaignsStore } from '../../store/useCampaignsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
@@ -118,7 +119,7 @@ export function CampaignsPage() {
 
       {/* ── Aba Performance ── */}
       {pageTab === 'performance' && (
-        <CampaignPerformanceTab leads={leads} />
+        <Suspense fallback={<div className="h-64 rounded-[18px] shimmer" aria-hidden />}><CampaignPerformanceTab leads={leads} /></Suspense>
       )}
 
       {/* ── Aba Campanhas ── */}

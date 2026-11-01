@@ -32,7 +32,7 @@ interface Zona {
  * gerava CSS nos tokens var(); desde `cor()` no tailwind.config.js a classe
  * funcionaria, mas o `style` continua correto e não há motivo para mexer.
  *
- * "Difícil" usa o cinza, não o âmbar: --warning (#E0A030) e --brand (#E4B23C)
+ * "Difícil" usa o cinza, não o âmbar: --warning (#E0A030) e --brand (#D6B26E)
  * são quase a mesma cor, e lado a lado numa barra as duas primeiras zonas
  * viravam uma mancha só.
  */

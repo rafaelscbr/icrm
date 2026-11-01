@@ -2,11 +2,9 @@
  * SalesTab — performance de vendas com gráficos reais.
  * Migrado do antigo ReportsTab, mantendo apenas o que tem dados.
  */
-import { useEffect, useMemo } from 'react'
-import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts'
+import { useEffect, useMemo, useCallback } from 'react'
+import { Grafico, barrasPorPeriodo } from '../../components/charts/Grafico'
+import type { CoresGrafico } from '../../components/charts/Grafico'
 import { Sun, DollarSign, TrendingUp, Users } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { StatCard } from '../../components/shared/StatCard'
@@ -18,17 +16,7 @@ import { Sale, calcSaleCommissions } from '../../types'
 
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const MONTH_FULL  = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-const axisStyle   = { fill: '#6B748A', fontSize: 11 }
 
-function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-surface border border-line rounded-xl px-4 py-3 shadow-xl">
-      <p className="text-xs text-t3 mb-1">{label}</p>
-      <p className="text-sm font-semibold text-t1">{formatCurrency(payload[0].value)}</p>
-    </div>
-  )
-}
 
 function SeasonalitySection({ sales }: { sales: Sale[] }) {
   const data = useMemo(() => {
@@ -125,6 +113,14 @@ export function SalesTab() {
     return Object.entries(map).map(([id, d]) => ({ id, ...d })).sort((a, b) => b.revenue - a.revenue)
   }, [periodSales])
 
+  const compacto = useCallback((v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1).replace('.', ',')} mi` : v >= 1_000 ? `${Math.round(v / 1_000)} mil` : String(v), [])
+  const opcaoVgv = useCallback((t: CoresGrafico) =>
+    barrasPorPeriodo(t, monthlySales.map(m => m.name), monthlySales.map(m => m.valor),
+      { nome: 'VGV', formatar: formatCurrency, formatarEixo: compacto }), [monthlySales, compacto])
+  const opcaoQtd = useCallback((t: CoresGrafico) =>
+    barrasPorPeriodo(t, monthlySales.map(m => m.name), monthlySales.map(m => m.qtd),
+      { nome: 'Vendas', cor: t.sucesso }), [monthlySales])
+
   return (
     <div className="flex flex-col gap-8">
 
@@ -146,22 +142,8 @@ export function SalesTab() {
       {monthlySales.some(m => m.valor > 0) && (
         <Card>
           <h2 className="text-sm font-medium text-t1 mb-6">Volume de vendas — {periodLabel}</h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={monthlySales} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#E4B23C" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#E4B23C" stopOpacity={0}    />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => formatCurrency(v)} tick={axisStyle} axisLine={false} tickLine={false} width={80} />
-              <Tooltip content={<SalesTooltip />} />
-              <Area type="monotone" dataKey="valor" stroke="#E4B23C" strokeWidth={2}
-                fill="url(#salesGrad)" dot={{ fill: '#E4B23C', r: 3 }} activeDot={{ r: 5 }} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <Grafico altura={240} opcao={opcaoVgv}
+            rotulo={'VGV por mês. ' + monthlySales.map(m => `${m.name}: ${formatCurrency(m.valor)}`).join('; ')} />
         </Card>
       )}
 
@@ -170,19 +152,8 @@ export function SalesTab() {
         {monthlySales.some(m => m.qtd > 0) && (
           <Card>
             <h2 className="text-sm font-medium text-t1 mb-6">Quantidade de vendas — {periodLabel}</h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={monthlySales} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
-                <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12 }}
-                  labelStyle={{ color: 'var(--t3)', fontSize: 11 }}
-                  itemStyle={{ color: '#E4B23C' }}
-                />
-                <Bar dataKey="qtd" fill="#E4B23C" radius={[6, 6, 0, 0]} name="Vendas" />
-              </BarChart>
-            </ResponsiveContainer>
+            <Grafico altura={210} opcao={opcaoQtd}
+              rotulo={'Vendas por mês. ' + monthlySales.map(m => `${m.name}: ${m.qtd}`).join('; ')} />
           </Card>
         )}
 

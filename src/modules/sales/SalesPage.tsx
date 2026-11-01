@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign, Wallet, Plus,
   LineChart as LineChartIcon,
 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { Grafico, eixoCategoria, eixoValor } from '../../components/charts/Grafico'
+import type { CoresGrafico } from '../../components/charts/Grafico'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { IconeTom, Rotulo, SecaoTitulo } from '../../components/shared/visual'
@@ -130,11 +131,37 @@ export function SalesPage() {
     })
   }, [sales])
 
-  const formatAxisValue = (v: number) => {
+  const formatAxisValue = useCallback((v: number) => {
     if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
     if (v >= 1_000)     return `${(v / 1_000).toFixed(0)}k`
     return `${v}`
-  }
+  }, [])
+
+  // Mês é período fechado: barra, com o valor escrito em cima. A curva
+  // suavizada de antes desenhava mergulhos entre meses que não existiam.
+  const opcaoMensal = useCallback((t: CoresGrafico) => ({
+    grid: { left: 4, right: 8, top: 28, bottom: 4, containLabel: true },
+    xAxis: eixoCategoria(t, monthlyData.map(m => m.month)),
+    yAxis: eixoValor(t, formatAxisValue),
+    tooltip: {
+      formatter: (ps: Array<{ dataIndex: number }>) => {
+        const m = monthlyData[ps[0].dataIndex]
+        return `<b>${m.month}</b><br/>${formatCurrency(m.value)} · ${m.count} venda${m.count !== 1 ? 's' : ''}`
+      },
+    },
+    series: [{
+      type: 'bar',
+      data: monthlyData.map(m => m.value),
+      barMaxWidth: 34,
+      itemStyle: { color: t.marca, borderRadius: [6, 6, 0, 0] },
+      emphasis: { itemStyle: { color: t.marca, opacity: 0.85 } },
+      label: {
+        show: true, position: 'top', color: t.texto, fontSize: 11, fontWeight: 600,
+        formatter: (p: { value: number }) => (p.value > 0 ? formatAxisValue(p.value) : ''),
+      },
+    }],
+  }), [monthlyData, formatAxisValue])
+
 
   function handleDelete() {
     if (!deleteTarget) return
@@ -172,7 +199,7 @@ export function SalesPage() {
             <IconeTom icon={Wallet} tom="marca" tamanho="sm" />
             <Rotulo>VGV no período</Rotulo>
           </div>
-          <p className="font-heading text-[clamp(1.9rem,3.5vw,2.5rem)] font-black text-t1 tabular-nums leading-none tracking-[-0.03em] mt-3">
+          <p className="font-heading text-[clamp(1.9rem,3.5vw,2.5rem)] font-black text-t1 tabular-nums leading-none tracking-[-0.02em] mt-3">
             {formatCurrency(valueInPeriod)}
           </p>
           <p className="text-xs text-t3 mt-2">
@@ -211,36 +238,11 @@ export function SalesPage() {
           {monthlyData.every(m => m.value === 0) ? (
             <p className="text-[13px] text-t3 py-3">Nenhuma venda fechada nos últimos 12 meses.</p>
           ) : (
-          <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-              <XAxis dataKey="month" tick={{ fill: 'var(--t4)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis
-                tick={{ fill: 'var(--t4)', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={formatAxisValue}
-                width={42}
-              />
-              <Tooltip
-                contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: 'var(--shadow-dropdown)' }}
-                labelStyle={{ color: 'var(--t3)', fontSize: 11 }}
-                formatter={(value: number, _name: string, props: { payload?: { count?: number } }) => [
-                  `${formatCurrency(value)}  ·  ${props.payload?.count ?? 0} venda${(props.payload?.count ?? 0) !== 1 ? 's' : ''}`,
-                  'VGV',
-                ]}
-              />
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke="var(--brand)"
-                strokeWidth={2}
-                dot={{ fill: 'var(--brand)', r: 3 }}
-                activeDot={{ r: 5 }}
-                name="VGV"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <Grafico
+            altura={220}
+            rotulo={'VGV fechado por mês. ' + monthlyData.filter(m => m.value > 0).map(m => `${m.month}: ${formatCurrency(m.value)}`).join('; ')}
+            opcao={opcaoMensal}
+          />
           )}
         </Card>
       )}

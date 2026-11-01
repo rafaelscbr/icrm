@@ -80,12 +80,13 @@ export default {
         'info-line':     cor('--info-line'),
       },
       fontFamily: {
-        // Ver nota de desvio do Brand Guide no topo de src/index.css.
-        sans:     ['Inter', 'system-ui', 'sans-serif'],
-        heading:  ['Sora', 'system-ui', 'sans-serif'],
+        // Signature (31/10/2026): Fraunces nos títulos e números de destaque,
+        // Geist no corpo e nos rótulos. Ver nota no topo de src/index.css.
+        sans:     ['Geist', 'system-ui', 'sans-serif'],
+        heading:  ['Fraunces', 'Georgia', 'serif'],
         // `label` continua existindo como intenção semântica (rótulo/dado),
         // mas usa a mesma família do corpo — a diferença é caixa e tracking.
-        label:    ['Inter', 'system-ui', 'sans-serif'],
+        label:    ['Geist', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         card:    'var(--shadow-card)',

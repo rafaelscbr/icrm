@@ -43,7 +43,7 @@ export function Painel({ children, className = '', dourado = false, as: Tag = 's
 }) {
   return (
     <Tag
-      className={`relative rounded-[14px] border border-line surface-premium shadow-card
+      className={`relative rounded-[18px] border border-line surface-premium shadow-card
                   overflow-hidden ${dourado ? 'gold-edge gold-glow-tl' : ''} ${className}`}
     >
       {children}
@@ -59,7 +59,7 @@ export function PainelTitulo({ icon: Icon, children, extra, tom = 'marca' }: {
   tom?: Tom
 }) {
   return (
-    <header className="flex items-center gap-2 px-4 pt-3.5 pb-2.5">
+    <header className="flex items-center gap-2 px-5 pt-4 pb-3">
       <span className={`w-1 h-3.5 rounded-full ${TOM[tom].ponto}`} aria-hidden />
       <Icon size={15} strokeWidth={1.6} className="text-t3" aria-hidden />
       <h2 className="font-label text-[11px] uppercase tracking-[0.14em] text-t3">{children}</h2>

@@ -106,6 +106,7 @@ export function SidePanel({
         onKeyDown={handleKeyDown}
         className={`relative w-full ${larguras[size]} h-full modal-surface shadow-modal
           overflow-hidden sm:rounded-l-[20px] border-l border-line flex flex-col
+          lg:h-[calc(100%-16px)] lg:my-2 lg:mr-2 lg:rounded-[20px] lg:border
           focus:outline-none
           animate-panel-up sm:animate-panel-right`}
       >
@@ -115,7 +116,7 @@ export function SidePanel({
           style={{ borderBottom: '1px solid var(--line)' }}
         >
           <div className="min-w-0 flex-1">
-            <h2 className="font-heading text-base font-bold text-t1 leading-tight tracking-[-0.01em] truncate">
+            <h2 className="font-heading text-[17px] font-bold text-t1 leading-tight tracking-[-0.01em] truncate">
               {title}
             </h2>
             {subtitle && <p className="text-xs text-t3 mt-0.5 truncate">{subtitle}</p>}

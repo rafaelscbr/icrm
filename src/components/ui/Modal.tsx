@@ -108,7 +108,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
         className={`
           relative w-full ${desktopSizes[size]}
           bg-surface border border-line
-          rounded-t-[18px] lg:rounded-[18px]
+          rounded-t-[22px] lg:rounded-[20px]
           shadow-modal
           max-h-[92vh] flex flex-col
           animate-in
@@ -122,7 +122,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = 'md',
         {/* Header */}
         <div className="flex items-start justify-between px-5 lg:px-6 py-4 border-b border-line flex-shrink-0">
           <div className="min-w-0 pr-4">
-            <h2 id="modal-title" className="text-base font-semibold text-t1 leading-tight">{title}</h2>
+            <h2 id="modal-title" className="font-heading text-[17px] font-bold text-t1 leading-tight tracking-[-0.015em]">{title}</h2>
             {subtitle && <p id="modal-subtitle" className="text-xs text-t3 mt-0.5">{subtitle}</p>}
           </div>
           <button

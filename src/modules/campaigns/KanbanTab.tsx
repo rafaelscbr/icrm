@@ -432,7 +432,7 @@ function LeadCard({
             className="flex-1 flex items-center justify-center gap-1.5 py-1.5 min-h-[32px] font-heading text-xs font-bold
                        text-t3 bg-transparent border border-line rounded-[10px] transition-all duration-150 active:scale-[0.98]
                        group-hover:text-success group-hover:bg-success-bg group-hover:border-success-line
-                       hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)] hover:!border-success
+                       hover:!bg-success hover:!text-[var(--grad-call-text,#0C1430)] hover:!border-success
                        focus-visible:text-success focus-visible:bg-success-bg focus-visible:border-success-line
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
             title="Enviar template e registrar disparo"
@@ -540,7 +540,7 @@ function KanbanColumn({
         <div
           ref={setNodeRef}
           className={`flex-1 min-h-[420px] rounded-b-[18px] px-2.5 pb-2.5 flex flex-col gap-2.5 transition-colors duration-200
-            ${isOver ? 'bg-[rgba(228,178,60,0.05)]' : ''}`}
+            ${isOver ? 'bg-[rgba(214,178,110,0.05)]' : ''}`}
         >
           {leads.length === 0 ? (
             /* Estava centralizado num flex-1 alto: o texto caía abaixo da
