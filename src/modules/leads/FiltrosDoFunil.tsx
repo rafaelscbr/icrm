@@ -164,14 +164,18 @@ export function BarraDeFiltros({
 
   const pilulas = descreverFiltros(filtros, { ...ctx, produtos, corretores })
 
+  // v10: uma linha só. Atalho com zero leads some (a menos que esteja ligado)
+  // — eram seis pílulas, cinco delas com "0", ocupando uma linha inteira.
+  const atalhosVisiveis = ATALHOS.filter(a => a.ativo(filtros) || contagens[a.id] > 0)
+  const controle =
+    'flex items-center gap-1.5 h-9 px-2.5 rounded-[10px] text-[13px] font-medium transition-colors flex-shrink-0 cursor-pointer ' +
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40'
+
   return (
-    <div className="flex flex-col gap-2.5 mb-4">
-      {/* ── Linha 1: busca, painel, ordem e escopo ─────────────────────────
-          No celular é UMA linha rolável: controles quebrando em três linhas
-          empurravam o primeiro lead para fora da tela. */}
-      <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible sm:flex-wrap pb-1 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" aria-hidden />
+    <div className="flex flex-col gap-2 mb-4">
+      <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0">
+        <div className="relative w-[240px] min-w-[180px] flex-shrink-0">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t4" aria-hidden />
           <input
             ref={buscaRef}
             value={filtros.busca}
@@ -182,124 +186,89 @@ export function BarraDeFiltros({
               else e.currentTarget.blur()
             }}
             aria-label="Buscar lead por nome, telefone, e-mail ou produto"
-            placeholder="Buscar nome, telefone, produto..."
-            className="w-full h-10 sm:h-9 bg-surface border border-line-input rounded-[12px] pl-9 pr-9 text-sm text-t1
-                       placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand/50 transition-all"
+            placeholder="Buscar…  /"
+            className="campo w-full h-9 pl-9 pr-8 text-[13.5px]"
           />
-          {filtros.busca ? (
+          {filtros.busca && (
             <button
               onClick={() => { definir({ busca: '' }); buscaRef.current?.focus() }}
               aria-label="Limpar busca"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-t4 hover:text-t2 hover:bg-s2 transition-colors"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-t4 hover:text-t2 hover:bg-s2 transition-colors"
             >
               <X size={13} strokeWidth={2} />
             </button>
-          ) : (
-            <kbd
-              className="hidden sm:flex absolute right-2.5 top-1/2 -translate-y-1/2 h-5 min-w-5 px-1.5 items-center justify-center
-                         rounded-md border border-line bg-s2 font-label text-[11px] text-t4 pointer-events-none"
-              title="Aperte / para buscar"
-            >
-              /
-            </kbd>
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={onAbrirPainel}
-          aria-haspopup="dialog"
-          className={`flex items-center gap-1.5 h-10 sm:h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all flex-shrink-0
-            focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
-            ${nFiltros > 0
-              ? 'bg-brand-tint border-brand/40 text-brand-text'
-              : 'bg-surface border-line-input text-t2 hover:bg-s2 hover:text-t1'}`}
-        >
-          <SlidersHorizontal size={13} strokeWidth={1.6} aria-hidden />
-          Filtros
-          {nFiltros > 0 && (
-            <span className="min-w-5 h-5 px-1 rounded-full bg-brand-fill text-brand-fill-text font-heading text-[11px] font-bold tabular-nums flex items-center justify-center">
-              {nFiltros}
-            </span>
-          )}
-        </button>
+        <span className="w-px h-5 bg-line mx-1 flex-shrink-0" aria-hidden />
 
-        <label className="relative flex items-center flex-shrink-0">
-          <span className="sr-only">Ordenar por</span>
-          <ArrowDownUp size={13} strokeWidth={1.6} className="absolute left-3 text-t3 pointer-events-none" aria-hidden />
-          <select
-            value={ordem}
-            onChange={e => onOrdem(e.target.value as KanbanSort)}
-            title="Ordem dos leads"
-            className="h-10 sm:h-9 appearance-none bg-surface border border-line-input rounded-[12px] pl-8 pr-3 text-xs font-semibold text-t2
-                       cursor-pointer hover:bg-s2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+        <div role="group" aria-label="Atalhos de filtro" className="flex items-center gap-1">
+          {atalhosVisiveis.map(a => {
+            const ativo = a.ativo(filtros)
+            const n = contagens[a.id]
+            const t = TOM[a.tom]
+            return (
+              <button
+                key={a.id}
+                type="button"
+                aria-pressed={ativo}
+                title={a.titulo}
+                onClick={() => definir(a.alternar(!ativo))}
+                className={`${controle} whitespace-nowrap ${ativo ? `${t.fundo} ${t.texto} font-semibold` : 'text-t2 hover:bg-s2'}`}
+              >
+                <a.icon size={13} strokeWidth={1.9} className={ativo ? '' : t.texto}
+                  fill={a.id === 'prioridade' && ativo ? 'currentColor' : 'none'} aria-hidden />
+                {a.label}
+                <span className={`tabular-nums ${ativo ? '' : 'text-t4'}`}>{n}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="ml-auto flex items-center gap-1 flex-shrink-0 pl-2">
+          <button
+            type="button"
+            onClick={onAbrirPainel}
+            aria-haspopup="dialog"
+            className={`${controle} ${nFiltros > 0 ? 'bg-brand-tint text-brand-text font-semibold' : 'text-t2 hover:bg-s2'}`}
           >
-            {opcoesOrdem.map(o => <option key={o} value={o}>{SORT_LABEL[o]}</option>)}
-          </select>
-        </label>
+            <SlidersHorizontal size={14} strokeWidth={1.7} aria-hidden />
+            Filtros
+            {nFiltros > 0 && <span className="tabular-nums">{nFiltros}</span>}
+          </button>
 
-        {/* Ganhos e descartados sempre com rótulo: "6" e "888" soltos ao lado
-            de um ícone não diziam o que eram. */}
-        <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+          <label className={`${controle} relative text-t2 hover:bg-s2 !px-0`}>
+            <span className="sr-only">Ordenar por</span>
+            <ArrowDownUp size={14} strokeWidth={1.7} className="absolute left-2.5 pointer-events-none" aria-hidden />
+            <select
+              value={ordem}
+              onChange={e => onOrdem(e.target.value as KanbanSort)}
+              title="Ordem dos leads"
+              className="h-9 appearance-none bg-transparent rounded-[10px] pl-8 pr-2.5 text-[13px] font-medium text-t2 cursor-pointer focus:outline-none"
+            >
+              {opcoesOrdem.map(o => <option key={o} value={o}>{SORT_LABEL[o]}</option>)}
+            </select>
+          </label>
+
+          <span className="w-px h-5 bg-line mx-1" aria-hidden />
+
           <button
             onClick={() => onEscopo(escopo === 'won' ? 'active' : 'won')}
             aria-pressed={escopo === 'won'}
-            className={`flex items-center gap-1.5 h-10 sm:h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all whitespace-nowrap
-              ${escopo === 'won' ? 'bg-success-bg border-success-line text-success' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
+            className={`${controle} whitespace-nowrap ${escopo === 'won' ? 'bg-success-bg text-success font-semibold' : 'text-t3 hover:bg-s2 hover:text-t1'}`}
           >
-            <Trophy size={13} strokeWidth={1.6} aria-hidden />
-            Ganhos
-            {ganhos > 0 && <span className="font-bold tabular-nums">{ganhos}</span>}
+            <Trophy size={14} strokeWidth={1.7} aria-hidden />
+            Ganhos {ganhos > 0 && <span className="tabular-nums">{ganhos}</span>}
           </button>
           <button
             onClick={() => onEscopo(escopo === 'discarded' ? 'active' : 'discarded')}
             aria-pressed={escopo === 'discarded'}
-            className={`flex items-center gap-1.5 h-10 sm:h-9 px-3 rounded-[12px] border text-xs font-semibold transition-all whitespace-nowrap
-              ${escopo === 'discarded' ? 'bg-error-bg border-error-line text-error' : 'bg-surface border-line-input text-t3 hover:text-t2 hover:bg-s2'}`}
+            className={`${controle} whitespace-nowrap ${escopo === 'discarded' ? 'bg-error-bg text-error font-semibold' : 'text-t3 hover:bg-s2 hover:text-t1'}`}
           >
-            <Trash2 size={13} strokeWidth={1.6} aria-hidden />
-            Descartados
-            {descartados > 0 && <span className="font-bold tabular-nums">{descartados}</span>}
+            <Trash2 size={14} strokeWidth={1.7} aria-hidden />
+            Descartados {descartados > 0 && <span className="tabular-nums">{descartados.toLocaleString('pt-BR')}</span>}
           </button>
         </div>
-      </div>
-
-      {/* ── Linha 2: atalhos ────────────────────────────────────────────── */}
-      <div
-        role="group"
-        aria-label="Atalhos de filtro"
-        className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible sm:pb-0"
-      >
-        {ATALHOS.map(a => {
-          const ativo = a.ativo(filtros)
-          const n = contagens[a.id]
-          const t = TOM[a.tom]
-          return (
-            <button
-              key={a.id}
-              type="button"
-              aria-pressed={ativo}
-              title={a.titulo}
-              onClick={() => definir(a.alternar(!ativo))}
-              className={`group flex items-center gap-1.5 h-10 sm:h-8 pl-2.5 pr-3 rounded-full border text-xs font-semibold
-                          whitespace-nowrap flex-shrink-0 transition-all duration-150 active:scale-[0.98]
-                          focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
-                          ${ativo
-                            ? `${t.fundo} ${t.borda} ${t.texto}`
-                            : `bg-surface border-line text-t2 hover:border-line-strong hover:bg-s2 ${n === 0 ? 'opacity-60' : ''}`}`}
-            >
-              <a.icon
-                size={13}
-                strokeWidth={1.8}
-                className={ativo ? '' : t.texto}
-                fill={a.id === 'prioridade' && ativo ? 'currentColor' : 'none'}
-                aria-hidden
-              />
-              {a.label}
-              <span className={`tabular-nums ${ativo ? 'font-bold' : 'text-t4 font-medium'}`}>{n}</span>
-            </button>
-          )
-        })}
       </div>
 
       {/* ── Linha 3: o que está aplicado ──────────────────────────────────── */}

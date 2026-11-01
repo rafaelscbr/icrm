@@ -749,7 +749,19 @@ html.light {
 .top-icone:hover, .top-icone[aria-expanded="true"] { background-color: var(--bar-hover); color: var(--bar-strong); }
 .top-icone:focus-visible { outline: 2px solid var(--brand-fill); outline-offset: 2px; }
 
-/* Topo de página (v7): faixa azulada que continua a barra de navegação. */
+/* Topo de página v10: uma linha só, liso, com filete embaixo. As abas ficam
+   dentro dela e o indicador encosta no filete. */
+.page-bar {
+  background-color: color-mix(in srgb, var(--page-bg) 90%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+          backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.page-bar-abas [role="tablist"] { border-bottom-width: 0; align-self: stretch; height: 100%; }
+.page-bar-abas [role="tablist"] > button { height: 100%; min-height: 44px; }
+.page-bar-abas > div { align-self: stretch; }
+
+/* Topo de página (v7) — mantido para telas antigas que ainda usem as classes. */
 .page-mast { background: var(--mast-bg); }
 .page-mast-borda { border-bottom: 1px solid var(--line); }
 .page-band {
@@ -1207,8 +1219,8 @@ html.light {
   outline-offset: -2px;
 }
 .kanban-trilho {
-  background-color: color-mix(in srgb, var(--etapa) 7%, transparent);
-  border: 1px dashed color-mix(in srgb, var(--etapa) 35%, transparent);
+  background-color: color-mix(in srgb, var(--etapa) 6%, transparent);
+  border: 0;
 }
 .kanban-trilho:hover { background-color: color-mix(in srgb, var(--etapa) 12%, transparent); }
 .kanban-card:hover { transform: translateY(-1px); }

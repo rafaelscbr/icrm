@@ -7,6 +7,13 @@ Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
 **Progresso: 100%**
 
+## v10 — topo em uma linha (01/11/2026)
+
+- [x] Topo de toda tela numa linha só (título + abas + ação, 56px). Antes: seção, título grande, subtítulo e faixa de abas (~200px)
+- [x] Leads: busca, atalhos, filtros, ordem, ganhos e descartados numa linha; atalho com zero leads some
+- [x] Kanban: a régua de 240px virou uma linha (total + barra fina + controles); cabeçalho de coluna em uma linha (esfriando vira um número com floco); próxima ação sem caixa; trilhos sem borda tracejada
+- [x] Resultado: o primeiro card do Kanban subiu de ~880px para ~370px do topo da janela
+
 ## v9 — "folha limpa": formulários e menos elementos (01/11/2026)
 
 - [x] Causa de "o formulário não mudou": uma regra antiga do tema claro forçava todo campo a fundo branco + borda com !important — removida
