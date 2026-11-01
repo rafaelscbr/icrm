@@ -140,11 +140,13 @@ export function ContactsPage() {
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteTarget) return
-    remove(deleteTarget.id)
-    toast.success('Contato excluído')
-    setDeleteTarget(undefined)
+    try {
+      await remove(deleteTarget.id)
+      toast.success('Contato excluído')
+      setDeleteTarget(undefined)
+    } catch { /* erro já avisado pela camada db — o contato continua na lista */ }
   }
 
   return (

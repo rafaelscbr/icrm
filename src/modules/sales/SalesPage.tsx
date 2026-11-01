@@ -172,11 +172,13 @@ export function SalesPage() {
   }), [monthlyData, formatAxisValue])
 
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteTarget) return
-    remove(deleteTarget.id)
-    toast.success('Venda excluída')
-    setDeleteTarget(undefined)
+    try {
+      await remove(deleteTarget.id)
+      toast.success('Venda excluída')
+      setDeleteTarget(undefined)
+    } catch { /* erro já avisado pela camada db — a venda continua na lista */ }
   }
 
   return (

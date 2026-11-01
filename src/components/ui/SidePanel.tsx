@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
@@ -13,6 +13,9 @@ interface SidePanelProps {
   footer?: ReactNode
   /** Ações no cabeçalho, à esquerda do X. */
   headerActions?: ReactNode
+  /** Há algo digitado e não salvo: fechar (X, Esc, clique fora) pergunta antes
+      de descartar. O botão "Cancelar" do formulário fecha direto. */
+  confirmarSaida?: boolean
 }
 
 const larguras = {
@@ -42,21 +45,35 @@ const FOCUSABLE =
  */
 export function SidePanel({
   isOpen, onClose, title, subtitle, children,
-  size = 'lg', footer, headerActions,
+  size = 'lg', footer, headerActions, confirmarSaida = false,
 }: SidePanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
+  const [perguntando, setPerguntando] = useState(false)
+
+  // Fechar por gesto (X, Esc, clique fora) não pode apagar o que foi digitado
+  // sem perguntar — um clique fora do painel jogava fora um cadastro inteiro.
+  function pedirFechar() {
+    if (confirmarSaida) setPerguntando(true)
+    else onClose()
+  }
+  useEffect(() => { if (!isOpen) setPerguntando(false) }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (perguntando) setPerguntando(false)
+      else if (confirmarSaida) setPerguntando(true)
+      else onClose()
+    }
     document.addEventListener('keydown', handler)
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', handler)
       document.body.style.overflow = ''
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, confirmarSaida, perguntando])
 
   // Foco entra no painel ao abrir e volta para a origem ao fechar.
   // Um dono só do foco — ver a nota em Modal.tsx.
@@ -96,7 +113,7 @@ export function SidePanel({
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
         className="absolute inset-0 bg-black/25 animate-overlay"
-        onClick={onClose}
+        onClick={pedirFechar}
         aria-hidden
       />
 
@@ -127,7 +144,7 @@ export function SidePanel({
           <div className="flex items-center gap-1 flex-shrink-0">
             {headerActions}
             <button
-              onClick={onClose}
+              onClick={pedirFechar}
               aria-label="Fechar painel"
               className="w-8 h-8 flex items-center justify-center rounded-lg text-t3
                          hover:bg-s2 hover:text-t1 transition-colors cursor-pointer"
@@ -141,6 +158,22 @@ export function SidePanel({
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4">
           {children}
         </div>
+
+        {perguntando && (
+          <div role="alertdialog" aria-label="Descartar alterações"
+               className="flex-shrink-0 mx-4 mb-3 flex items-center gap-3 rounded-[12px] bg-warning-bg px-4 py-3 animate-in fade-in duration-150">
+            <p className="flex-1 text-[13.5px] text-t1">Você tem alterações que não foram salvas.</p>
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- a pergunta acabou de aparecer: o foco vai para a opção segura */}
+            <button type="button" onClick={() => setPerguntando(false)} autoFocus
+              className="h-9 px-3 rounded-[10px] text-[13px] font-semibold text-t1 hover:bg-s2 cursor-pointer">
+              Continuar editando
+            </button>
+            <button type="button" onClick={() => { setPerguntando(false); onClose() }}
+              className="h-9 px-3 rounded-[10px] text-[13px] font-semibold text-error hover:bg-error-bg cursor-pointer">
+              Descartar
+            </button>
+          </div>
+        )}
 
         {/* Rodapé fixo: as ações nunca somem no scroll de um formulário longo */}
         {footer && (

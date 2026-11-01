@@ -22,6 +22,7 @@ import { PropertyModal } from '../properties/PropertyModal'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import { ScoreBadge } from '../../components/ui/ScoreBadge'
 import { fetchLeadScore, LeadScoreResult } from '../../lib/leadScore'
+import toast from 'react-hot-toast'
 
 const TAG_LABELS: Record<ContactTag, string> = {
   owner:    'Proprietário',
@@ -109,13 +110,16 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
     setEditingPermuta(true)
   }
 
-  function savePermuta() {
+  async function savePermuta() {
     if (!contact) return
     const filled = permutaItems.filter(it =>
       it.type === 'imovel' ? (it.region || it.value) : (it.carModel || it.carValue)
     )
-    updateContact(contact.id, { permutaItems: filled })
-    setEditingPermuta(false)
+    try {
+      await updateContact(contact.id, { permutaItems: filled })
+      toast.success('Permuta salva')
+      setEditingPermuta(false)
+    } catch { /* erro já avisado pela camada db — a edição continua aberta */ }
   }
 
   function cancelPermuta() {

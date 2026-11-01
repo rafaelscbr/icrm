@@ -87,9 +87,11 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
     return Object.keys(errs).length === 0
   }
 
-  function handleSubmit(e: FormEvent) {
+  const [salvando, setSalvando] = useState(false)
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!validate()) return
+    if (salvando || !validate()) return
 
     const data: Omit<Sale, 'id' | 'createdAt'> = {
       clientId,
@@ -104,15 +106,24 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
       brokerPct:       parseFloat(brokerPct) || 40,
     }
 
-    if (isEditing && sale) {
-      update(sale.id, data)
-      toast.success('Venda atualizada')
-    } else {
-      add(data)
-      toast.success(`Venda registrada — ${formatCurrencyFull(parseVal(value))}`)
+    // Banco primeiro: antes a venda entrava na lista e a falha sumia no
+    // console — a tela dizia "registrada" e a venda não existia.
+    setSalvando(true)
+    try {
+      if (isEditing && sale) {
+        await update(sale.id, data)
+        toast.success('Venda atualizada')
+      } else {
+        await add(data)
+        toast.success(`Venda registrada · ${formatCurrencyFull(parseVal(value))}`)
+      }
+      onClose()
+    } catch { /* erro já avisado pela camada db — o painel fica aberto */ } finally {
+      setSalvando(false)
     }
-    onClose()
   }
+
+  const sujo = !isEditing && Boolean(value || clientId || propertyName.trim() || notes.trim())
 
   const [showNotes, setShowNotes] = useState(Boolean(sale?.notes))
   const pctPresets = ['3', '4', '5', '6', '7']
@@ -132,10 +143,11 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
         isOpen={isOpen}
         onClose={onClose}
         title={isEditing ? 'Editar venda' : 'Nova venda'}
+        confirmarSaida={sujo && !salvando}
         footer={
           <div className="flex items-center justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" form="form-venda">{isEditing ? 'Salvar alterações' : 'Registrar venda'}</Button>
+            <Button type="submit" form="form-venda" carregando={salvando}>{isEditing ? 'Salvar alterações' : 'Registrar venda'}</Button>
           </div>
         }
       >

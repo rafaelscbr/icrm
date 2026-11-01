@@ -265,7 +265,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   async function handleConvert() {
     if (isLinked) return
     try {
-      const c = addContact({ name: lead.name, phone: lead.phone, tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
+      const c = await addContact({ name: lead.name, phone: lead.phone, tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
       await convertToContact(lead.id, c.id)
       toast.success('Lead convertido em contato!')
     } catch { /* erro já toastado */ }

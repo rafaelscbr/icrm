@@ -16,13 +16,14 @@ interface SalesStore {
   erro: string | null
   load:    () => Promise<void>
   subscribe: () => () => void
-  add:     (data: Omit<Sale, 'id' | 'createdAt'>) => Sale
+  /** Banco primeiro: só entra na lista depois de gravada. Falha lança (o erro já foi avisado). */
+  add:     (data: Omit<Sale, 'id' | 'createdAt'>) => Promise<Sale>
   /** Grava no banco e só então entra no estado — para quem vai referenciar a venda em seguida */
   create:  (data: Omit<Sale, 'id' | 'createdAt'>) => Promise<Sale>
   /** Remove do banco e do estado, esperando a confirmação */
   discard: (id: string) => Promise<void>
-  update:  (id: string, data: Partial<Sale>) => void
-  remove:  (id: string) => void
+  update:  (id: string, data: Partial<Sale>) => Promise<void>
+  remove:  (id: string) => Promise<void>
   getByPeriod:      (start: string, end: string) => Sale[]
   getValueByPeriod: (start: string, end: string) => number
   getTotalValue:    () => number
@@ -104,10 +105,12 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
     return () => { supabase.removeChannel(channel) }
   },
 
-  add: (data) => {
+  // Antes: entrava na lista na hora e a falha ia só para o console — a tela
+  // dizia "Venda registrada" e a venda não existia no banco.
+  add: async (data) => {
     const sale: Sale = { ...data, id: generateId(), createdAt: new Date().toISOString() }
-    set(s => ({ sales: sortByDate([sale, ...s.sales]) }))
-    db.sales.upsert(sale).catch(err => console.error('[sales] add:', err))
+    await db.sales.upsert(sale)
+    set(s => s.sales.some(x => x.id === sale.id) ? s : { sales: sortByDate([sale, ...s.sales]) })
     return sale
   },
 
@@ -127,16 +130,17 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
     set(s => ({ sales: s.sales.filter(s => s.id !== id) }))
   },
 
-  update: (id, data) => {
-    const sales = sortByDate(get().sales.map(s => s.id === id ? { ...s, ...data } : s))
-    set({ sales })
-    const updated = sales.find(s => s.id === id)
-    if (updated) db.sales.upsert(updated).catch(err => console.error('[sales] update:', err))
+  update: async (id, data) => {
+    const atual = get().sales.find(s => s.id === id)
+    if (!atual) throw new Error('[sales] update: venda não está carregada')
+    const updated: Sale = { ...atual, ...data }
+    await db.sales.upsert(updated)
+    set(s => ({ sales: sortByDate(s.sales.map(x => x.id === id ? updated : x)) }))
   },
 
-  remove: (id) => {
-    set(s => ({ sales: s.sales.filter(s => s.id !== id) }))
-    db.sales.delete(id).catch(err => console.error('[sales] remove:', err))
+  remove: async (id) => {
+    await db.sales.delete(id)
+    set(s => ({ sales: s.sales.filter(x => x.id !== id) }))
   },
 
   getByPeriod: (start, end) =>

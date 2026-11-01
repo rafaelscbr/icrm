@@ -200,17 +200,27 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     return newName.trim().length > 0 && newPhoneDigits.length >= 10 && !duplicateContact
   }
 
+  const [salvando, setSalvando] = useState(false)
+
   async function handleSubmit() {
+    if (salvando) return
     if (!isEdit && !canAdvanceStep1()) {
       if (contactMode === 'search') toast.error('Escolha um contato da lista ou crie um novo')
       else if (duplicateContact) toast.error('Telefone já cadastrado — use o contato existente')
       else toast.error('Nome e telefone são obrigatórios')
       return
     }
+    setSalvando(true)
     let resolvedContactId = selectedContactId
     if (!isEdit && contactMode === 'create') {
-      const nc = addContact({ name: newName.trim(), phone: newPhone.trim(), tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
-      resolvedContactId = nc.id
+      // O contato precisa existir no banco antes do lead (FK contact_id).
+      try {
+        const nc = await addContact({ name: newName.trim(), phone: newPhone.trim(), tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
+        resolvedContactId = nc.id
+      } catch {
+        setSalvando(false)
+        return  // erro já avisado pela camada db
+      }
     }
 
     const contactRef = resolvedContactId ? getById(resolvedContactId) : undefined
@@ -246,7 +256,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
         else toast.success('Lead criado!')
       }
       onClose()
-    } catch { /* erro já toastado pela camada db — modal permanece aberto */ }
+    } catch { /* erro já toastado pela camada db — modal permanece aberto */ } finally {
+      setSalvando(false)
+    }
   }
 
   if (!isOpen) return null
@@ -265,6 +277,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
         onClick={handleSubmit}
         variant={stage === 'venda' ? 'success' : 'primary'}
         disabled={!isEdit && !canAdvanceStep1()}
+        carregando={salvando}
       >
         {lead ? 'Salvar alterações' : isRetroactive ? 'Registrar lead' : 'Criar lead'}
       </Button>
@@ -278,6 +291,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       title={isEdit ? 'Editar lead' : 'Novo lead'}
       size="md"
       footer={footer}
+      confirmarSaida={!isEdit && !salvando && Boolean(selectedContactId || newName.trim() || newPhone.trim() || averageTicket || notes.trim() || propertyId || freePropertyName)}
     >
       <div className="flex flex-col gap-6">
 

@@ -65,9 +65,11 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
     return Object.keys(errs).length === 0
   }
 
-  function handleSubmit(e: FormEvent) {
+  const [salvando, setSalvando] = useState(false)
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!validate()) return
+    if (salvando || !validate()) return
 
     const data = {
       name:     name.trim(),
@@ -83,16 +85,29 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
       permutaItems:  contact?.permutaItems ?? [],
     }
 
-    if (isEditing && contact) {
-      update(contact.id, data)
-      toast.success('Contato atualizado')
-    } else {
-      const created = add(data)
-      toast.success('Contato salvo')
-      onCreated?.(created)
+    // Banco primeiro: o "salvo" só aparece depois que o banco confirmou. Se
+    // falhar, o aviso de erro já saiu da camada db e o painel fica aberto com
+    // tudo que foi digitado.
+    setSalvando(true)
+    try {
+      if (isEditing && contact) {
+        await update(contact.id, data)
+        toast.success('Contato atualizado')
+      } else {
+        const created = await add(data)
+        toast.success('Contato salvo')
+        onCreated?.(created)
+      }
+      onClose()
+    } catch { /* erro já avisado */ } finally {
+      setSalvando(false)
     }
-    onClose()
   }
+
+  // Algo digitado que ainda não foi salvo — fechar por gesto pergunta antes.
+  const sujo = isEditing
+    ? name !== (contact?.name ?? '') || phone !== (contact?.phone ?? '')
+    : Boolean(name.trim() || phone.trim() || company.trim() || birthdate)
 
   const temDetalhes = showLeadInfo || tags.length > 0 || isMarried || hasChildren
   const [maisDetalhes, setMaisDetalhes] = useState(temDetalhes)
@@ -107,10 +122,11 @@ export function ContactForm({ isOpen, onClose, contact, defaultTags = [], onCrea
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? 'Editar contato' : 'Novo contato'}
+      confirmarSaida={sujo && !salvando}
       footer={
         <div className="flex items-center justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" form="form-contato">
+          <Button type="submit" form="form-contato" carregando={salvando}>
             {isEditing ? 'Salvar alterações' : 'Salvar contato'}
           </Button>
         </div>

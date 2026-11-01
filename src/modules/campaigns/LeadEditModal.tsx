@@ -54,9 +54,11 @@ export function LeadEditModal({ isOpen, onClose, lead }: LeadEditModalProps) {
     if (!lead) return
     const jaExiste = await db.contacts.findByPhone(phone)
     if (jaExiste) { toast.error('Já existe um contato com esse telefone.'); return }
-    addContact({ name: name.trim() || lead.name, phone: phone.trim() || lead.phone, tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
-    toast.success(`${name || lead.name} adicionado aos contatos!`)
-    onClose()
+    try {
+      await addContact({ name: name.trim() || lead.name, phone: phone.trim() || lead.phone, tags: [], hasChildren: false, isMarried: false, permutaItems: [] })
+      toast.success(`${name || lead.name} adicionado aos contatos`)
+      onClose()
+    } catch { /* erro já avisado pela camada db */ }
   }
 
   return (

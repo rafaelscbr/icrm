@@ -1,8 +1,11 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react'
+import { Loader2 } from 'lucide-react'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success'
   size?: 'sm' | 'md' | 'lg'
+  /** Gravando: mostra o giro, bloqueia o segundo clique e avisa o leitor de tela. */
+  carregando?: boolean
   children: ReactNode
 }
 
@@ -32,6 +35,7 @@ export function Button({
   className = '',
   disabled,
   type,
+  carregando = false,
   ...props
 }: ButtonProps) {
   return (
@@ -39,7 +43,8 @@ export function Button({
       {...props}
       // Default seguro: nunca submete um form sem ser explicitamente type="submit"
       type={type ?? 'button'}
-      disabled={disabled}
+      disabled={disabled || carregando}
+      aria-busy={carregando || undefined}
       className={`
         inline-flex items-center justify-center font-semibold rounded-[11px]
         transition-[background-color,border-color,color,transform,box-shadow] duration-150 active:scale-[0.98] cursor-pointer
@@ -48,6 +53,7 @@ export function Button({
         ${variants[variant]} ${sizes[size]} ${className}
       `}
     >
+      {carregando && <Loader2 size={15} className="animate-spin" aria-hidden />}
       {children}
     </button>
   )

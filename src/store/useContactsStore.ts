@@ -19,9 +19,10 @@ interface ContactsStore {
   mergeLocal: (novos: Contact[]) => void
   /** Assina realtime de contacts — eventos disparam sync incremental */
   subscribe: () => () => void
-  add: (data: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>) => Contact
-  update: (id: string, data: Partial<Contact>) => void
-  remove: (id: string) => void
+  /** Banco primeiro: só entra na lista depois de gravado. Falha lança (o erro já foi avisado). */
+  add: (data: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Contact>
+  update: (id: string, data: Partial<Contact>) => Promise<void>
+  remove: (id: string) => Promise<void>
   getById: (id: string) => Contact | undefined
   search: (query: string) => Contact[]
   filterByTag: (tag: ContactTag | null) => Contact[]
@@ -242,7 +243,7 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
     }
   },
 
-  add: (data) => {
+  add: async (data) => {
     const now = new Date().toISOString()
     // Garante brokerId — sem ele a RLS bloqueia o INSERT silenciosamente
     const brokerId = data.brokerId ?? getCurrentUserId() ?? undefined
@@ -251,34 +252,26 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
       throw new Error('[contacts] add: brokerId ausente')
     }
     const contact: Contact = { ...data, brokerId, id: generateId(), createdAt: now, updatedAt: now }
-    set(s => ({ contacts: [contact, ...s.contacts] }))
-    db.contacts.upsert(contact).catch(err => {
-      console.error('[contacts] add:', err)
-      toast.error('Erro ao salvar contato no banco. Tente novamente.')
-      set(s => ({ contacts: s.contacts.filter(c => c.id !== contact.id) }))
-    })
+    // Banco é a fonte de verdade: a tela só mostra o contato depois que ele
+    // existe lá. Antes entrava na lista na hora e o "Contato salvo" aparecia
+    // mesmo quando a gravação falhava.
+    await db.contacts.upsert(contact)
+    // O INSERT do realtime pode chegar antes desta linha
+    set(s => s.contacts.some(c => c.id === contact.id) ? s : { contacts: [contact, ...s.contacts] })
     return contact
   },
 
-  update: (id, data) => {
-    const now = new Date().toISOString()
-    const contacts = get().contacts.map(c =>
-      c.id === id ? { ...c, ...data, updatedAt: now } : c
-    )
-    set({ contacts })
-    const updated = contacts.find(c => c.id === id)
-    if (updated) db.contacts.upsert(updated).catch(err => {
-      console.error('[contacts] update:', err)
-      toast.error('Erro ao salvar alteração do contato.')
-    })
+  update: async (id, data) => {
+    const atual = get().contacts.find(c => c.id === id)
+    if (!atual) throw new Error('[contacts] update: contato não está carregado')
+    const updated: Contact = { ...atual, ...data, updatedAt: new Date().toISOString() }
+    await db.contacts.upsert(updated)
+    set(s => ({ contacts: s.contacts.map(c => c.id === id ? updated : c) }))
   },
 
-  remove: (id) => {
+  remove: async (id) => {
+    await db.contacts.delete(id)
     set(s => ({ contacts: s.contacts.filter(c => c.id !== id) }))
-    db.contacts.delete(id).catch(err => {
-      console.error('[contacts] remove:', err)
-      toast.error('Erro ao excluir contato.')
-    })
   },
 
   getById: (id) => get().contacts.find(c => c.id === id),

@@ -324,7 +324,8 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       lead.contactId = existing.id
       lead.convertedAt = now
     } else {
-      const newContact = addContact({
+      // add() já grava no banco antes de voltar — o lead abaixo depende dele (FK contact_id)
+      const newContact = await addContact({
         name: lead.name,
         phone: lead.phone,
         tags: [],
@@ -333,8 +334,6 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         permutaItems: [],
         brokerId,
       })
-      // Garante o contato persistido antes do lead (FK contact_id)
-      await db.contacts.upsert(newContact)
       lead.contactId = newContact.id
       lead.convertedAt = now
     }
@@ -466,12 +465,11 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       if (existing) {
         contactId = existing.id
       } else {
-        const nc = addContact({
+        const nc = await addContact({
           name: lead.name, phone: lead.phone, tags: [],
           hasChildren: false, isMarried: false, permutaItems: [],
           brokerId: lead.brokerId ?? undefined,
         })
-        await db.contacts.upsert(nc)
         contactId = nc.id
       }
     }
