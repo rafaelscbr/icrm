@@ -198,7 +198,7 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
             <CalendarDays size={15} className="text-brand" />
             <span className="text-sm font-semibold text-slate-100 capitalize">{dateLabel}</span>
             {isToday && (
-              <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-brand-text border border-brand/30">
+              <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-brand-tint text-brand-text border border-brand/30">
                 HOJE
               </span>
             )}
@@ -268,12 +268,12 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
               <p className="text-2xl font-bold text-green-400 tabular-nums">{doneTasks.length}</p>
               <p className="text-xs text-t4">de {total}</p>
             </div>
-            <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-indigo-500/8 border border-brand/25">
+            <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-brand-tint border border-brand/25">
               <p className="text-xs text-t4">Conclusão</p>
               <p className="text-2xl font-bold text-brand tabular-nums">{pct}%</p>
               <div className="w-full h-1.5 bg-s3/70 rounded-full mt-1">
                 <div
-                  className="h-full bg-indigo-400 rounded-full transition-all duration-500"
+                  className="h-full bg-brand-fill rounded-full transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -293,10 +293,10 @@ export function TaskHistoryView({ tasks }: { tasks: Task[] }) {
               />
               <div className="flex items-center gap-4 mt-2 justify-center">
                 <span className="flex items-center gap-1.5 text-xs text-t3">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-indigo-400" /> Concluídas
+                  <span className="w-2.5 h-2.5 rounded-sm bg-t2" /> Concluídas (cor cheia)
                 </span>
                 <span className="flex items-center gap-1.5 text-xs text-t3">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-indigo-400 opacity-30" /> Pendentes
+                  <span className="w-2.5 h-2.5 rounded-sm bg-t2 opacity-30" /> Pendentes (cor clara)
                 </span>
               </div>
             </Card>

@@ -249,9 +249,9 @@ export function LigacoesPage() {
                         <button
                           onClick={() => setSelecionada(c.id)}
                           className="w-full flex items-center justify-center gap-2 rounded-[12px]
-                                     border border-brand/30 bg-brand-tint px-4 py-2.5 min-h-[44px]
-                                     font-heading text-[13px] font-bold text-brand-text
-                                     hover:brightness-115 transition-all cursor-pointer
+                                     border border-line-strong bg-s2 px-4 py-2.5 min-h-[44px]
+                                     font-heading text-[13px] font-semibold text-t1
+                                     hover:bg-s3 transition-colors cursor-pointer
                                      focus:outline-none focus:ring-2 focus:ring-brand/30"
                         >
                           <Phone size={13} strokeWidth={1.8} aria-hidden /> Abrir fila

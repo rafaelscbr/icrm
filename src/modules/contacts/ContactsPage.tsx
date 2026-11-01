@@ -237,8 +237,11 @@ export function ContactsPage() {
                       fica com forma. Etiqueta é classificação estável, e desce
                       para a linha de contexto como texto. */}
                   {emFunil(c.id) && (
-                    <span className="flex-shrink-0 inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-[8px]
-                                     bg-brand-tint text-brand-text border border-brand/30">
+                    // Contexto, não decisão: rótulo discreto em vez de pílula
+                    // dourada (o ouro é para dinheiro e ação).
+                    <span className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md
+                                     bg-s2 text-t3 border border-line">
+                      <span className="w-1.5 h-1.5 rounded-full bg-info" aria-hidden />
                       em funil
                     </span>
                   )}

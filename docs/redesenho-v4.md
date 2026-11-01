@@ -5,7 +5,21 @@ melhores práticas de UX/UI e performance. Este arquivo é o placar.
 
 Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
-**Progresso: 80%**
+**Progresso: 95%**
+
+## Passada tela a tela (01/11/2026)
+
+- [x] Tarefas — legenda do resumo sem roxo (cor cheia = concluída, clara = pendente, escrito)
+- [x] Contatos — "em funil" virou rótulo neutro; avatares sem foto neutros (a paleta sorteava tons de status pela inicial)
+- [x] Imóveis — KPIs compactos (R$ 90,9M, exato no title); valores por região e por imóvel neutros (verde = venda, não estoque)
+- [x] Lançamentos — sem mudança: régua de renda/entrada já clara
+- [x] Base de Leads — "Ver Leads" e responsável sem dourado repetido em 20 cards
+- [x] Ligações — "Abrir fila" vira secundária; o destaque fica em "Ligar agora"
+- [x] Disparos — KPIs neutros com separador de milhar, funil das campanhas sem arco-íris, abas no padrão deslizante
+- [x] Notificações — links de ação neutros (o não lido segue marcado por filete e ponto); piso de 11px
+- [x] Admin — sem mudança: hierarquia e semântica já corretas
+
+Falta (5%): passada de celular tela a tela e conferência fina do tema claro nas telas desta lista.
 
 - [x] Kanban v5: colunas neutras nos dois temas (claro `#F1F1F3`, sem bege), filete e tingimento da cor da etapa no topo (`--etapa`), card levanta 2px no hover e afunda no clique
 - [x] Tabelas/listas: superfície limpa sem grão, cabeçalho em faixa neutra, linha inteira tingida no hover; `<table>` nativa dentro da folha herda o mesmo comportamento

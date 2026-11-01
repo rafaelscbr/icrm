@@ -5,6 +5,7 @@ import {
   Clock, MessageCircle, Flame, CalendarCheck, ArrowUpRight,
   Plus,
 } from 'lucide-react'
+import { Abas } from '../../components/shared/Abas'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -98,24 +99,17 @@ export function CampaignsPage() {
       {/* Conteúdo — oculto durante carregamento */}
       {!isLoading && <>
 
-      {/* Abas principais */}
-      <div className="flex items-center gap-1 mb-6 bg-s2/50 border border-line rounded-xl p-1 w-fit">
-        {([
-          { value: 'campanhas',   label: 'Campanhas',  icon: <Megaphone size={13} /> },
-          { value: 'performance', label: 'Performance', icon: <Zap       size={13} /> },
-        ] as { value: PageTab; label: string; icon: React.ReactNode }[]).map(t => (
-          <button
-            key={t.value}
-            onClick={() => setPageTab(t.value)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all
-              ${pageTab === t.value
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-t3 hover:text-t2'}`}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Abas principais — mesmo componente (e indicador deslizante) do resto do sistema */}
+      <Abas
+        className="mb-6"
+        rotulo="Seções de campanhas"
+        valor={pageTab}
+        onChange={setPageTab}
+        abas={[
+          { value: 'campanhas',   label: 'Campanhas',   icon: Megaphone },
+          { value: 'performance', label: 'Performance', icon: Zap },
+        ]}
+      />
 
       {/* ── Aba Performance ── */}
       {pageTab === 'performance' && (
@@ -128,15 +122,16 @@ export function CampaignsPage() {
       {/* Overview stats */}
       {campaigns.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Número é neutro: cor só quando há estado (venda > 0 = ganho). */}
           {[
-            { label: 'Campanhas ativas',   value: totalActive,    color: 'text-brand'  },
-            { label: 'Leads na base',      value: totalLeads,     color: 'text-info'    },
-            { label: 'Leads acionados',    value: totalContacted, color: 'text-info'    },
-            { label: 'Convertidos (venda)',value: totalSales,     color: 'text-green-400'   },
+            { label: 'Campanhas ativas',    value: totalActive,    color: 'text-t1' },
+            { label: 'Leads na base',       value: totalLeads,     color: 'text-t1' },
+            { label: 'Leads acionados',     value: totalContacted, color: 'text-t1' },
+            { label: 'Convertidos (venda)', value: totalSales,     color: totalSales > 0 ? 'text-success' : 'text-t1' },
           ].map(s => (
             <Card key={s.label} className="!py-4">
-              <p className="text-xs text-t4 mb-1">{s.label}</p>
-              <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-t4 mb-1.5">{s.label}</p>
+              <p className={`font-display text-[26px] font-extrabold tabular-nums leading-none ${s.color}`}>{s.value.toLocaleString('pt-BR')}</p>
             </Card>
           ))}
         </div>
@@ -230,18 +225,20 @@ export function CampaignsPage() {
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-1">
                       {([
-                        { label: 'Pendentes',  value: nPending,    color: 'text-slate-400',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20',  icon: <Clock         size={10} /> },
-                        { label: 'Abordados',  value: nApproached, color: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line',   icon: <MessageCircle size={10} /> },
-                        { label: 'Interesse',  value: nInterested, color: 'text-info',   bg: 'bg-info-bg',   border: 'border-info-line',   icon: <Flame         size={10} /> },
-                        { label: 'Agendados',  value: nScheduled,  color: 'text-brand-text', bg: 'bg-brand-tint', border: 'border-brand/25', icon: <CalendarCheck size={10} /> },
-                        { label: 'Transf.',    value: nTransferred,color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20',  icon: <ArrowUpRight  size={10} /> },
+                        // Funil em tons neutros: a cor fica só no ícone e segue a
+                        // temperatura (neutro → informação → marca → ganho).
+                        { label: 'Pendentes',  value: nPending,    color: 'text-t4',         icon: <Clock         size={11} /> },
+                        { label: 'Abordados',  value: nApproached, color: 'text-info',       icon: <MessageCircle size={11} /> },
+                        { label: 'Interesse',  value: nInterested, color: 'text-info',       icon: <Flame         size={11} /> },
+                        { label: 'Agendados',  value: nScheduled,  color: 'text-brand-text', icon: <CalendarCheck size={11} /> },
+                        { label: 'Transf.',    value: nTransferred,color: 'text-success',    icon: <ArrowUpRight  size={11} /> },
                       ] as const).map(chip => (
                         <div
                           key={chip.label}
-                          className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border flex-1 ${chip.bg} ${chip.border}`}
+                          className="flex flex-col items-center gap-0.5 py-2 rounded-xl border border-line bg-s2/60 flex-1"
                         >
                           <span className={chip.color}>{chip.icon}</span>
-                          <span className={`text-xs font-bold tabular-nums leading-tight ${chip.color}`}>{chip.value}</span>
+                          <span className="text-[13px] font-bold tabular-nums leading-tight text-t1">{chip.value.toLocaleString('pt-BR')}</span>
                           <span className="text-[11px] text-t4 text-center leading-tight">{chip.label}</span>
                         </div>
                       ))}
@@ -258,7 +255,7 @@ export function CampaignsPage() {
                 <div className="flex gap-2 pt-1 border-t border-line">
                   <button
                     onClick={() => setSelectedId(c.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-brand hover:text-brand-text hover:bg-indigo-500/8 transition-all cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-t2 hover:text-t1 hover:bg-s2 transition-colors cursor-pointer"
                   >
                     <Users size={12} /> Ver Leads <ArrowRight size={11} />
                   </button>

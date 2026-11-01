@@ -254,7 +254,7 @@ export function LeadListsPage() {
                         <p className="text-[11px] text-t4 mt-0.5">Sem perfil definido</p>
                       )}
                       {isAdmin && list.brokerId && (
-                        <p className="text-[11px] text-brand-text mt-0.5">
+                        <p className="text-[11px] text-t3 mt-0.5">
                           {allProfiles.find(p => p.id === list.brokerId)?.name ?? 'Corretor'}
                         </p>
                       )}
@@ -326,7 +326,7 @@ export function LeadListsPage() {
                 <div className="flex gap-2 pt-1 border-t border-line">
                   <button
                     onClick={() => setDetailId(list.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-brand hover:text-brand-text hover:bg-indigo-500/8 transition-all cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-t2 hover:text-t1 hover:bg-s2 transition-colors cursor-pointer"
                   >
                     <FolderOpen size={12} /> Ver Leads <ChevronRight size={11} />
                   </button>

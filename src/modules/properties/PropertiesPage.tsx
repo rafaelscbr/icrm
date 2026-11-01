@@ -22,7 +22,7 @@ import { useContactsStore } from '../../store/useContactsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { Property, PropertyStatus } from '../../types'
-import { formatCurrencyFull } from '../../lib/formatters'
+import { formatCurrency, formatCurrencyFull } from '../../lib/formatters'
 import toast from 'react-hot-toast'
 
 const FILTER_OPTIONS: { value: PropertyStatus | null; label: string }[] = [
@@ -84,7 +84,8 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
           },
           {
             label: 'VGV total',
-            value: formatCurrencyFull(vgv),
+            value: formatCurrency(vgv),
+            exato: formatCurrencyFull(vgv),
             sub: 'valor geral de vendas',
             icon: <Landmark size={15} />,
             color: 'text-success',
@@ -92,7 +93,8 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
           },
           {
             label: 'Comissão estimada',
-            value: formatCurrencyFull(commission),
+            value: formatCurrency(commission),
+            exato: formatCurrencyFull(commission),
             sub: '10% do 5% do VGV',
             icon: <BadgePercent size={15} />,
             color: 'text-brand-text',
@@ -100,7 +102,8 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
           },
           {
             label: 'Ticket médio',
-            value: formatCurrencyFull(avgTicket),
+            value: formatCurrency(avgTicket),
+            exato: formatCurrencyFull(avgTicket),
             sub: 'por imóvel',
             icon: <TrendingUp size={15} />,
             color: 'text-info',
@@ -113,8 +116,9 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
                                 flex items-center justify-center shrink-0`}>{kpi.icon}</span>
               <Rotulo className="truncate">{kpi.label}</Rotulo>
             </div>
-            <p className={`font-heading text-[26px] font-extrabold tabular-nums leading-none
-                           tracking-tight text-t1`}>{kpi.value}</p>
+            {/* Valor compacto para leitura rápida; o exato fica no title. */}
+            <p className={`font-display text-[26px] font-extrabold tabular-nums leading-none
+                           tracking-tight text-t1`} title={'exato' in kpi ? kpi.exato : undefined}>{kpi.value}</p>
             <p className="text-[11px] text-t4 mt-1.5">{kpi.sub}</p>
           </Painel>
         ))}
@@ -145,7 +149,7 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
                   </div>
                   <span className="text-xs tabular-nums text-t3 w-5 text-right">{count}</span>
                   <span className="text-[11px] text-t4 w-10 text-right">{pct}%</span>
-                  <span className="text-xs tabular-nums text-emerald-400 w-28 text-right">{formatCurrencyFull(regionVgv)}</span>
+                  <span className="text-xs tabular-nums text-t2 font-semibold w-28 text-right" title={formatCurrencyFull(regionVgv)}>{formatCurrency(regionVgv)}</span>
                 </div>
               )
             })}
@@ -347,7 +351,7 @@ export function PropertiesPage() {
 
                   {/* Valor + condomínio + comissão */}
                   <div>
-                    <p className="text-lg font-bold text-emerald-400">{formatCurrencyFull(p.value)}</p>
+                    <p className="text-lg font-bold text-t1 tabular-nums">{formatCurrencyFull(p.value)}</p>
                     {p.condoFee && (
                       <p className="text-xs text-t3 mt-0.5">
                         Cond: <span className="text-t3">{formatCurrencyFull(p.condoFee)}/mês</span>

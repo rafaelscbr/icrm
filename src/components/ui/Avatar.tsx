@@ -14,20 +14,13 @@ const sizes = {
   lg: 'w-12 h-12 text-base',
 }
 
-const palettes = [
-  'bg-info-bg text-info',
-  'bg-brand-tint text-brand-text',
-  'bg-emerald-500/25 text-emerald-700',
-  'bg-amber-500/25 text-amber-700',
-  'bg-brand-tint text-brand-text',
-  'bg-info-bg text-info',
-  'bg-indigo-500/25 text-indigo-600',
-  'bg-warning-bg text-warning',
-]
-
-function pickColor(name: string) {
-  return palettes[name.charCodeAt(0) % palettes.length]
-}
+/*
+ * Avatar sem foto é NEUTRO (v5). A paleta antiga sorteava pela inicial entre
+ * tons de status — um contato qualquer saía âmbar de "atenção" ou petróleo de
+ * "informação" sem significar nada, e competia com os status de verdade da
+ * linha. Cor é significado; inicial não é.
+ */
+const NEUTRO = 'bg-s3 text-t2 border border-line'
 
 export function Avatar({ name, photoUrl, size = 'md' }: AvatarProps) {
   // Só letras: nome decorativo não pode virar "�" (ver iniciais()).
@@ -45,7 +38,7 @@ export function Avatar({ name, photoUrl, size = 'md' }: AvatarProps) {
 
   return (
     <div
-      className={`${sizes[size]} ${pickColor(name)} rounded-full flex items-center justify-center font-semibold flex-shrink-0 select-none`}
+      className={`${sizes[size]} ${NEUTRO} rounded-full flex items-center justify-center font-semibold flex-shrink-0 select-none`}
       aria-hidden
     >
       {initials || <User size={size === 'xs' ? 11 : size === 'sm' ? 13 : 16} strokeWidth={1.8} />}

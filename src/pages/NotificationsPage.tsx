@@ -150,7 +150,7 @@ function NotificationItem({
           </span>
           {temDestino && (
             <span className={`flex items-center gap-1 font-label text-[11px] font-bold uppercase tracking-[0.08em]
-                              transition-colors ${naoLida ? 'text-brand-text' : 'text-t4'} group-hover:text-brand-text`}>
+                              transition-colors ${naoLida ? 'text-t1' : 'text-t4'} group-hover:text-t1`}>
               {acao} <ArrowRight size={11} strokeWidth={2} aria-hidden />
             </span>
           )}
@@ -199,7 +199,7 @@ function GrupoItem({ grupo, onRead, onReadMany }: {
               {tituloDoGrupo(grupo)}
             </p>
             {naoLida && (
-              <span className="font-label text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-brand-fill text-brand-fill-text tabular-nums leading-none">
+              <span className="font-label text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-brand-fill text-brand-fill-text tabular-nums leading-none">
                 {grupo.naoLidas} nova{grupo.naoLidas !== 1 ? 's' : ''}
               </span>
             )}
@@ -217,7 +217,7 @@ function GrupoItem({ grupo, onRead, onReadMany }: {
               onClick={() => setAberto(v => !v)}
               aria-expanded={aberto}
               className={`flex items-center gap-1 font-label text-[11px] font-bold uppercase tracking-[0.08em]
-                          transition-colors cursor-pointer ${naoLida ? 'text-brand-text' : 'text-t4 hover:text-brand-text'}
+                          transition-colors cursor-pointer ${naoLida ? 'text-t1' : 'text-t4 hover:text-t1'}
                           focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded`}
             >
               {aberto ? 'Recolher' : `Ver os ${n}`}
