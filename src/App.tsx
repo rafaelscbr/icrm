@@ -7,7 +7,6 @@ import { useDensidadeStore, aplicarDensidade } from './store/useDensidadeStore'
 import { useAuthStore } from './store/useAuthStore'
 import { usePresenceStore } from './store/usePresenceStore'
 import { getUserLocation } from './lib/geolocation'
-import { Sidebar } from './components/layout/Sidebar'
 import { ErroDeTela } from './components/shared/ErroDeTela'
 import { NaoEncontrada } from './components/shared/NaoEncontrada'
 import { BottomNav } from './components/layout/BottomNav'
@@ -65,7 +64,7 @@ function RouteLoading() {
 // Re-keyed on every route change so the animation replays on navigation.
 function PageWrapper({ children }: { children: React.ReactNode }) {
   const location = useLocation()
-  // No desktop a rolagem mora dentro da folha (#conteudo), não na janela — e
+  // No desktop a rolagem mora dentro do conteúdo (#conteudo), não na janela — e
   // o React Router só cuida da janela. Sem isto, cada tela abria na altura em
   // que a anterior estava rolada.
   useEffect(() => {
@@ -222,11 +221,10 @@ function AppRoutes() {
       >
         Pular para o conteúdo
       </a>
-      {/* Desktop: moldura + folha flutuante (ver .app-frame/.app-sheet). */}
+      {/* Desktop: barra azul no topo + conteúdo com rolagem própria (ver .app-frame/.app-sheet). */}
       <div className="flex min-h-screen app-frame">
-        <Sidebar />
-        <main id="conteudo" className="app-sheet flex-1 min-w-0 overflow-auto pb-nav-safe lg:!pb-0">
-          <TopBar />
+        <TopBar />
+        <main id="conteudo" className="app-sheet flex-1 min-w-0 pb-nav-safe lg:!pb-0">
           {/* Um erro de render em qualquer tela derrubava a árvore inteira
               para branco. O boundary contém o estrago na área de conteúdo e
               zera quando a rota muda. */}

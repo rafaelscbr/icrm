@@ -18,9 +18,11 @@ import { externalTools } from './navConfig'
  * qualquer pessoa que já usou um SaaS vai procurar.
  */
 export function AccountMenu({
-  collapsed, nome, papel, inicial, isAdmin, theme, onToggleTheme, onBuscar, onSair,
+  collapsed, nome, papel, inicial, isAdmin, theme, onToggleTheme, onBuscar, onSair, lado = 'direita',
 }: {
   collapsed: boolean
+  /** v6: na barra do topo o menu abre para baixo. */
+  lado?: 'direita' | 'abaixo'
   nome: string
   papel: string
   inicial: string
@@ -43,7 +45,8 @@ export function AccountMenu({
           aria-label={`Conta de ${nome} — preferências, ferramentas e sair`}
           // Anel de foco discreto: o contorno dourado de 2px na largura toda do
           // trilho competia com o item ativo. Aqui o foco é linha, não ouro.
-          className={`flex w-full cursor-pointer items-center rounded-xl transition-colors hover:bg-nav-hover
+          className={`flex cursor-pointer items-center rounded-xl transition-colors
+            ${lado === 'abaixo' ? 'hover:bg-white/10' : 'w-full hover:bg-nav-hover'}
             focus:outline-none focus-visible:ring-2 focus-visible:ring-line-strong
             ${collapsed ? 'justify-center py-1.5' : 'gap-2.5 p-1.5'}`}
         >
@@ -75,12 +78,12 @@ export function AccountMenu({
 
       <Popover.Portal>
         <Popover.Content
-          side="right"
+          side={lado === 'abaixo' ? 'bottom' : 'right'}
           align="end"
           sideOffset={10}
           collisionPadding={12}
           className="nav-elev z-[130] w-[248px] rounded-[14px] p-1.5
-                     animate-in fade-in slide-in-from-left-1 duration-150
+                     animate-in fade-in duration-150
                      focus:outline-none"
         >
           <div className="px-2 pb-2 pt-1.5">

@@ -1,4 +1,10 @@
-/* v5.1 (01/11/2026) — a serifa saiu: Plus Jakarta Sans nos títulos e números
+/* v6 "Azul" (01/11/2026) — direção A escolhida pelo Rafael: o menu lateral
+ * saiu, a navegação virou uma barra azul no topo (--bar-*) e o painel virou
+ * um mosaico (bento) com bloco-herói azul (--hero-bg). O grafite deu lugar ao
+ * marinho: escuro em azul profundo (#0B1426/#111D35), claro em branco com
+ * cinzas azulados. O ouro champanhe continua só no destaque.
+ *
+ * v5.1 (01/11/2026) — a serifa saiu: Plus Jakarta Sans nos títulos e números
  * de destaque, Geist na interface. Fraunces e Sora são histórico.
  *
  * v5 "Grafite" (01/11/2026) — Rafael pediu para mudar tudo: o marinho e o
@@ -50,7 +56,7 @@
   --brand-tint:    rgba(214, 178, 110, 0.14);
   --brand-text:    #E8CD94;
   --brand-shadow:  rgba(214, 178, 110, 0.30);
-  --brand-btn-text:#18181B;   /* Marinho sobre Areia — 6.5:1 */
+  --brand-btn-text:#0B1A3A;   /* Marinho sobre Areia — 6.5:1 */
 
   /* Preenchimento de marca — botão, pílula ativa, avatar, FAB, barra.
      É o MESMO ouro nos dois temas: a Areia é a cor da marca e um controle
@@ -60,7 +66,7 @@
   --brand-fill:       #D6B26E;
   --brand-fill-hover: #E8CD94;
   --brand-fill-deep:  #B8934F;
-  --brand-fill-text:  #18181B;
+  --brand-fill-text:  #0B1A3A;
 
   /* Gradientes de ação — ver .grad-* no bloco SUPERFÍCIES.
      Existem como token por tema porque no claro o degradê NÃO é o do escuro
@@ -69,35 +75,35 @@
      (que muda por tema) produz exatamente o barro que apareceu na primeira
      versão das telas de ligação. */
   --grad-brand:      linear-gradient(158deg, #E8CD94 0%, #D6B26E 62%);
-  --grad-brand-text: #18181B;
+  --grad-brand-text: #0B1A3A;
   /* Verde da ação de ligar. Texto MARINHO, não branco: branco sobre verde vivo
      dá 1.9:1 e reprova em qualquer critério. Marinho sobre o tom mais claro do
      degradê dá 9.4:1. */
   --grad-call:       linear-gradient(158deg, #4ADE80 0%, #22C55E 62%);
-  --grad-call-text:  #0A0A0B;
+  --grad-call-text:  #04140B;
   --grad-call-glow:  rgba(74, 222, 128, 0.25);
 
   /* Surfaces — Carvão → Marinho → Marinho Claro */
-  --page-bg:   #111113;
-  --surface:   #18181B;
-  --surface-2: #1F1F23;
-  --surface-3: #29292E;
+  --page-bg:   #0B1426;
+  --surface:   #111D35;
+  --surface-2: #172541;
+  --surface-3: #1F2F4F;
 
   /* Navigation — Carvão
      O fundo do item ativo é NEUTRO de propósito. O ouro do menu ficou todo
      concentrado no ícone e no filete do item ativo — um só sinal dourado por
      vez, em vez dos três que existiam (borda + fundo + ícone). Ver a regra do
      dourado racionado em docs/principios-visuais.md §2. */
-  --nav-bg:          #0A0A0B;
-  --nav-text:        rgba(244, 244, 245, 0.80);
-  --nav-muted:       rgba(244, 244, 245, 0.48);
-  --nav-active-text: #FAFAFA;
-  --nav-active-bg:   rgba(255, 255, 255, 0.07);
-  --nav-hover-bg:    rgba(255, 255, 255, 0.045);
-  --nav-line:        rgba(255, 255, 255, 0.07);
-  --nav-logo:        #FAFAFA;   /* wordmark — acompanha o tema */
+  --nav-bg:          #09111F;
+  --nav-text:        rgba(234, 240, 250, 0.80);
+  --nav-muted:       rgba(234, 240, 250, 0.52);
+  --nav-active-text: #F5F8FD;
+  --nav-active-bg:   rgba(160, 190, 240, 0.10);
+  --nav-hover-bg:    rgba(160, 190, 240, 0.07);
+  --nav-line:        rgba(160, 190, 240, 0.10);
+  --nav-logo:        #F5F8FD;   /* wordmark — acompanha o tema */
   /* Um degrau acima do trilho — painéis flutuantes do menu (conta, visão). */
-  --nav-elev:        #1C1C20;
+  --nav-elev:        #15233F;
   /* Volume do trilho: 158°, o ângulo do sistema. Incolor, não compete com o ouro. */
   --nav-rail-sheen:  none;
 
@@ -105,16 +111,29 @@
      No desktop o app é uma moldura (onde mora a navegação) com o conteúdo
      numa folha arredondada por cima. A folha é o --page-bg; a moldura é um
      degrau mais escura no escuro e um degrau mais "papel 2" no claro. */
-  --frame-bg:          #0A0A0B;
-  --sheet-line:        rgba(255, 255, 255, 0.07);
+  --frame-bg:          #09111F;
+  --sheet-line:        rgba(160, 190, 240, 0.10);
   --sheet-shadow:      0 0 0 1px rgba(0,0,0,0.5), 0 24px 60px -24px rgba(0,0,0,0.7);
   --nav-active-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 3px rgba(0,0,0,0.45);
   /* Barra inferior do celular — doca flutuante de vidro. */
-  --dock-bg:           rgba(24, 24, 27, 0.86);
-  --dock-line:         rgba(255, 255, 255, 0.09);
+  --dock-bg:           rgba(17, 29, 53, 0.88);
+  --dock-line:         rgba(160, 190, 240, 0.12);
   --dock-shadow:       0 12px 32px -8px rgba(0,0,0,0.65);
 
   /* Raios e movimento — escala única do sistema */
+  /* v6 "Azul" — barra de navegação do topo e bloco-herói. Mesmos valores nos
+     dois temas: o azul é a assinatura, não muda com o claro/escuro. */
+  --bar-bg:        #0F2759;
+  --bar-text:      rgba(255, 255, 255, 0.82);
+  --bar-muted:     rgba(255, 255, 255, 0.58);
+  --bar-strong:    #FFFFFF;
+  --bar-hover:     rgba(255, 255, 255, 0.08);
+  --bar-active:    rgba(255, 255, 255, 0.15);
+  --bar-line:      rgba(255, 255, 255, 0.14);
+  --bar-field:     rgba(255, 255, 255, 0.07);
+  --hero-bg:       linear-gradient(140deg, #1A3F8F 0%, #12306E 48%, #0C2153 100%);
+  --hero-line:     rgba(255, 255, 255, 0.10);
+
   --r-sm: 10px;
   --r-md: 14px;
   --r-lg: 18px;
@@ -125,16 +144,16 @@
   --dur-slow: 420ms;
 
   /* Text — Papel sobre Marinho */
-  --t1: #F4F4F5;
-  --t2: #D4D4D8;
-  --t3: #A1A1AA;   /* secundário oficial em fundo escuro */
-  --t4: #8E8E97;   /* ≥4.5:1 sobre surface — pode ser usado em texto pequeno */
-  --t5: #5B5B63;   /* apenas decorativo (separadores, ícones inativos) — nunca texto informativo */
+  --t1: #EEF2F9;
+  --t2: #CAD4E5;
+  --t3: #A3B3CB;   /* secundário oficial em fundo escuro */
+  --t4: #8C9DBA;   /* ≥4.5:1 sobre surface — pode ser usado em texto pequeno */
+  --t5: #4F6182;   /* apenas decorativo (separadores, ícones inativos) — nunca texto informativo */
 
   /* Lines / borders */
-  --line:        rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.15);
-  --line-input:  rgba(255, 255, 255, 0.12);
+  --line:        rgba(160, 190, 240, 0.10);
+  --line-strong: rgba(160, 190, 240, 0.19);
+  --line-input:  rgba(160, 190, 240, 0.15);
 
   /* Status — verde avanço, âmbar atenção, vermelho risco, petróleo informação */
   --success:      #34C88A;
@@ -151,9 +170,9 @@
   --info-line:    rgba(95, 179, 186, 0.28);
 
   /* Shadows */
-  --shadow-card:    0 1px 3px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.45);
-  --shadow-modal:   0 25px 50px rgba(0,0,0,0.80), 0 10px 20px rgba(0,0,0,0.55);
-  --shadow-dropdown:0 10px 30px rgba(0,0,0,0.65), 0 4px 10px rgba(0,0,0,0.50);
+  --shadow-card:    0 1px 3px rgba(2,8,24,0.55), 0 1px 2px rgba(2,8,24,0.40);
+  --shadow-modal:   0 25px 50px rgba(2,8,24,0.75), 0 10px 20px rgba(2,8,24,0.50);
+  --shadow-dropdown:0 10px 30px rgba(2,8,24,0.60), 0 4px 10px rgba(2,8,24,0.45);
 
   /* ── Textura ──────────────────────────────────────────────────────────────
      Grão fractal em SVG inline (data URI): sem requisição de rede, sem imagem
@@ -225,7 +244,7 @@ html.light {
   --brand-tint:    rgba(214, 178, 110, 0.18);
   --brand-text:    #7A5A22;
   --brand-shadow:  rgba(214, 178, 110, 0.30);
-  --brand-btn-text:#18181B;
+  --brand-btn-text:#0B1A3A;
 
   /* O botão primário é Areia viva com Marinho por cima nos DOIS temas.
      A versão anterior escurecia o ouro para #A8791A → #8A6210 com texto
@@ -233,11 +252,11 @@ html.light {
      login. Marinho sobre Areia dá 6.5:1 — mais contraste que o branco sobre
      o marrom (4.6:1) — e devolve ao tema claro a mesma cor do escuro. */
   --grad-brand:      linear-gradient(158deg, #E8CD94 0%, #D6B26E 62%);
-  --grad-brand-text: #18181B;
+  --grad-brand-text: #0B1A3A;
   --brand-fill:       #D6B26E;
   --brand-fill-hover: #CBA55F;
   --brand-fill-deep:  #B8934F;
-  --brand-fill-text:  #18181B;
+  --brand-fill-text:  #0B1A3A;
   --grad-call:       linear-gradient(158deg, #34D07A 0%, #16A34A 62%);
   --grad-call-text:  #06210F;
   --grad-call-glow:  rgba(22, 163, 74, 0.20);
@@ -245,46 +264,46 @@ html.light {
   /* Surfaces — Papel, com Marinho entrando só como tinta muito diluída.
      Papel 2 puro (#ECE7DA) é bege demais e "amarela" a tela; 4% de Marinho
      por cima esfria o creme e amarra a superfície com a marca. */
-  --page-bg:   #FAFAFA;
+  --page-bg:   #F3F6FB;
   --surface:   #FFFFFF;
-  --surface-2: #F4F4F5;
-  --surface-3: #E8E8EB;
+  --surface-2: #EDF1F8;
+  --surface-3: #E0E7F2;
 
   /* ── Navegação — Marinho estilizado ────────────────────────────────────
      O Marinho NÃO é mais uma placa sólida de 240px. Aqui ele age como
      TINTA: a barra é clara, e o Marinho aparece na tipografia, no estado
      ativo e nas linhas. A marca continua estruturando a navegação sem
      pesar a tela — que era exatamente o problema do marinho dominante. */
-  --nav-bg:          #F1F1F3;
-  --nav-text:        #3F3F46;                  /* Marinho médio */
-  --nav-muted:       #71717A;
-  --nav-active-text: #18181B;                  /* Marinho puro no item ativo */
+  --nav-bg:          #EAF0F8;
+  --nav-text:        #2A3A5C;                  /* Marinho médio */
+  --nav-muted:       #5D6E8E;
+  --nav-active-text: #0B1A3A;                  /* Marinho puro no item ativo */
   --nav-active-bg:   #FFFFFF;                  /* o item ativo "sobe" para a folha */
-  --nav-hover-bg:    rgba(24, 24, 27, 0.05);
-  --nav-line:        rgba(24, 24, 27, 0.08);
-  --nav-logo:        #18181B;
+  --nav-hover-bg:    rgba(15, 39, 89, 0.06);
+  --nav-line:        rgba(15, 39, 89, 0.09);
+  --nav-logo:        #0B1A3A;
   --nav-elev:        #FFFFFF;
   --nav-rail-sheen:  none;
 
-  --frame-bg:          #F1F1F3;
-  --sheet-line:        rgba(24, 24, 27, 0.08);
-  --sheet-shadow:      0 1px 2px rgba(24,24,27,0.05), 0 16px 40px -20px rgba(24,24,27,0.18);
-  --nav-active-shadow: 0 1px 2px rgba(24,24,27,0.08), 0 0 0 1px rgba(24,24,27,0.06);
-  --dock-bg:           rgba(255, 255, 255, 0.88);
-  --dock-line:         rgba(24, 24, 27, 0.09);
-  --dock-shadow:       0 12px 32px -10px rgba(24,24,27,0.28);
+  --frame-bg:          #EAF0F8;
+  --sheet-line:        rgba(15, 39, 89, 0.09);
+  --sheet-shadow:      0 1px 2px rgba(15,39,89,0.05), 0 16px 40px -20px rgba(15,39,89,0.18);
+  --nav-active-shadow: 0 1px 2px rgba(15,39,89,0.08), 0 0 0 1px rgba(15,39,89,0.06);
+  --dock-bg:           rgba(255, 255, 255, 0.90);
+  --dock-line:         rgba(15, 39, 89, 0.10);
+  --dock-shadow:       0 12px 32px -10px rgba(15,39,89,0.28);
 
   /* Text — Marinho sobre Papel */
-  --t1: #18181B;
-  --t2: #3F3F46;
-  --t3: #52525B;   /* secundário oficial em fundo claro */
-  --t4: #6B6B74;   /* ≥4.5:1 sobre Papel — pode ser usado em texto pequeno */
-  --t5: #A1A1AA;   /* apenas decorativo — nunca texto informativo */
+  --t1: #0B1A3A;
+  --t2: #2A3A5C;
+  --t3: #44557A;   /* secundário oficial em fundo claro */
+  --t4: #5D6E8E;   /* ≥4.5:1 sobre Papel — pode ser usado em texto pequeno */
+  --t5: #A6B3CB;   /* apenas decorativo — nunca texto informativo */
 
   /* Lines — Marinho diluído no lugar de bege, para não puxar a tela p/ amarelo */
-  --line:        rgba(24, 24, 27, 0.09);
-  --line-strong: rgba(24, 24, 27, 0.16);
-  --line-input:  rgba(24, 24, 27, 0.14);
+  --line:        rgba(15, 39, 89, 0.10);
+  --line-strong: rgba(15, 39, 89, 0.18);
+  --line-input:  rgba(15, 39, 89, 0.15);
 
   /* Status */
   --success:      #1F8A62;
@@ -301,9 +320,9 @@ html.light {
   --info-line:    #A9CFD2;
 
   /* Shadows */
-  --shadow-card:    0 1px 4px rgba(24,24,27,0.08), 0 1px 2px rgba(24,24,27,0.05);
-  --shadow-modal:   0 25px 50px rgba(24,24,27,0.18), 0 10px 20px rgba(24,24,27,0.10);
-  --shadow-dropdown:0 10px 30px rgba(24,24,27,0.12), 0 4px 10px rgba(24,24,27,0.08);
+  --shadow-card:    0 1px 4px rgba(15,39,89,0.08), 0 1px 2px rgba(15,39,89,0.05);
+  --shadow-modal:   0 25px 50px rgba(15,39,89,0.18), 0 10px 20px rgba(15,39,89,0.10);
+  --shadow-dropdown:0 10px 30px rgba(15,39,89,0.12), 0 4px 10px rgba(15,39,89,0.08);
 
   /* Sobre papel o mesmo ouro mancharia a tela — cai para cerca de um terço. */
   --aurora-a: rgba(214, 178, 110, 0.055);
@@ -311,7 +330,7 @@ html.light {
 
   /* No papel o degradê inverte: em vez de luz branca (invisível sobre branco),
      é uma sombra fria de Marinho muito diluída subindo do rodapé do card. */
-  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0) 50%, rgba(24,24,27,0.02) 100%);
+  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0) 50%, rgba(15,39,89,0.02) 100%);
   /* O card premium partia do Papel 2 inteiro e o canto ficava bege demais:
      cinquenta cards com um canto bege viram uma tela "suja". Metade da tinta
      dá o mesmo volume com metade do ruído. */
@@ -668,33 +687,113 @@ html.light {
 .nav-rail a[aria-current="page"] { box-shadow: var(--nav-active-shadow); }
 
 /*
- * MOLDURA E FOLHA (desktop).
+ * MOLDURA (desktop) — v6.
  *
- * A moldura é o fundo da janela; a navegação vive nela, sem borda. O conteúdo
- * é uma folha arredondada flutuando 8px para dentro, com rolagem própria — o
- * cabeçalho da tela fica preso no topo da folha, não da janela. No celular
- * nada disso existe: a tela inteira é a folha.
+ * Barra azul no topo (TopNav) e, embaixo, o conteúdo em largura total com
+ * rolagem própria. A rolagem fica no <main> e não na janela para os
+ * cabeçalhos `sticky top-0` das telas grudarem logo abaixo da barra. No
+ * celular nada disso existe: a janela rola e a doca fica embaixo.
  */
 .app-frame { background-color: var(--page-bg); }
+/* Celular: corta o que vazar para o lado sem virar contêiner de rolagem
+   (overflow:auto aqui quebrava os cabeçalhos sticky, que grudam na janela). */
+@media (max-width: 1023px) {
+  .app-sheet { overflow-x: clip; }
+}
 @media (min-width: 1024px) {
   .app-frame {
     height: 100dvh;
     overflow: hidden;
-    background-color: var(--frame-bg);
-    background-image: var(--grain);
+    flex-direction: column;
   }
   .app-sheet {
     position: relative;
     isolation: isolate;
-    height: calc(100dvh - 16px);
-    margin: 8px 8px 8px 0;
-    border-radius: var(--r-xl);
+    flex: 1 1 auto;
+    min-height: 0;
     background-color: var(--page-bg);
-    border: 1px solid var(--sheet-line);
-    box-shadow: var(--sheet-shadow);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+}
+
+/* Barra do topo */
+.top-bar {
+  background-color: var(--bar-bg);
+  background-image: var(--grain);
+  color: var(--bar-text);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.top-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 12px; border-radius: 999px;
+  font-size: 13.5px; font-weight: 500; white-space: nowrap;
+  color: var(--bar-text);
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease;
+  cursor: pointer;
+}
+.top-pill:hover { background-color: var(--bar-hover); color: var(--bar-strong); }
+.top-pill:focus-visible { outline: 2px solid var(--brand-fill); outline-offset: 2px; }
+.top-pill[data-ativo="true"] {
+  background-color: var(--brand-fill);
+  color: var(--brand-fill-text);
+  font-weight: 600;
+}
+.top-icone {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  height: 36px; width: 36px; border-radius: 10px; color: var(--bar-text);
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease; cursor: pointer;
+}
+.top-icone:hover, .top-icone[aria-expanded="true"] { background-color: var(--bar-hover); color: var(--bar-strong); }
+.top-icone:focus-visible { outline: 2px solid var(--brand-fill); outline-offset: 2px; }
+
+/* Bloco-herói do mosaico (dashboard) — azul nos dois temas */
+.hero-tile {
+  /* Dentro do herói os tokens viram os do fundo azul, nos dois temas: o
+     conteúdo usa as classes de sempre (text-t1, bg-s3, text-brand) e lê certo. */
+  --t1: #FFFFFF;
+  --t2: rgba(255, 255, 255, 0.90);
+  --t3: rgba(255, 255, 255, 0.76);
+  --t4: rgba(255, 255, 255, 0.66);
+  --t5: rgba(255, 255, 255, 0.36);
+  --line: rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(255, 255, 255, 0.24);
+  --surface-2: rgba(255, 255, 255, 0.08);
+  --surface-3: rgba(255, 255, 255, 0.16);
+  --brand: #E2C285;
+  --brand-text: #EBD3A2;
+  --brand-tint: rgba(214, 178, 110, 0.18);
+  --success: #5BE0A6;
+  --success-bg: rgba(52, 200, 138, 0.16);
+  --success-line: rgba(91, 224, 166, 0.40);
+  --warning: #F2BE5C;
+  --warning-bg: rgba(224, 160, 48, 0.18);
+  --warning-line: rgba(242, 190, 92, 0.42);
+  --error: #FF9AA2;
+  --error-bg: rgba(229, 113, 122, 0.18);
+  --error-line: rgba(255, 154, 162, 0.42);
+  position: relative; isolation: isolate; overflow: hidden;
+  background: var(--hero-bg);
+  color: #FFFFFF;
+  border: 1px solid var(--hero-line);
+  border-radius: var(--r-xl);
+  box-shadow: 0 18px 40px -22px rgba(12, 33, 83, 0.65);
+}
+.hero-tile::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    radial-gradient(60% 80% at 100% 0%, rgba(214, 178, 110, 0.20) 0%, transparent 60%),
+    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: auto, 32px 32px, 32px 32px;
+}
+
+/* Bloco comum do mosaico */
+.bento {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-card);
 }
 .nav-elev {
   background-color: var(--nav-elev);
@@ -907,7 +1006,7 @@ html.light .gold-glow-tl::after {
 }
 html.light .list-surface {
   background-color: var(--surface);
-  box-shadow: 0 1px 2px rgba(24,24,27,0.05);
+  box-shadow: 0 1px 2px rgba(15,39,89,0.05);
 }
 
 /*
@@ -959,17 +1058,17 @@ html.light .list-surface {
   --kanban-col-bg:            color-mix(in srgb, var(--surface) 55%, var(--page-bg));
   --kanban-card-bg:           color-mix(in srgb, var(--surface-2) 60%, var(--surface-3));
   --kanban-card-hover:        var(--surface-3);
-  --kanban-card-line:         rgba(255, 255, 255, 0.09);
+  --kanban-card-line:         rgba(160, 190, 240, 0.11);
   --kanban-card-shadow:       inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(0,0,0,0.40);
   --kanban-card-shadow-alerta:inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 14px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.50);
 }
 html.light {
-  --kanban-col-bg:            #F1F1F3;
+  --kanban-col-bg:            #EAF0F8;
   --kanban-card-bg:           #FFFFFF;
   --kanban-card-hover:        #FFFFFF;
-  --kanban-card-line:         rgba(24, 24, 27, 0.09);
-  --kanban-card-shadow:       0 1px 2px rgba(24,24,27,0.06), 0 1px 1px rgba(24,24,27,0.04);
-  --kanban-card-shadow-alerta:0 4px 12px rgba(24,24,27,0.10), 0 1px 3px rgba(24,24,27,0.08);
+  --kanban-card-line:         rgba(15, 39, 89, 0.09);
+  --kanban-card-shadow:       0 1px 2px rgba(15,39,89,0.06), 0 1px 1px rgba(15,39,89,0.04);
+  --kanban-card-shadow-alerta:0 4px 12px rgba(15,39,89,0.10), 0 1px 3px rgba(15,39,89,0.08);
 }
 
 .kanban-col {
@@ -1041,10 +1140,10 @@ html.light {
 
 /* Headers de conteúdo usam page-bg no light mode (nav-bg fica só para sidebar/bottom-nav) */
 
-html.light .text-white\/60 { color: rgba(24,24,27,0.60) !important; }
-html.light .text-white\/70 { color: rgba(24,24,27,0.70) !important; }
-html.light .text-white\/80 { color: rgba(24,24,27,0.80) !important; }
-html.light .text-white\/90 { color: rgba(24,24,27,0.90) !important; }
+html.light .text-white\/60 { color: rgba(15,39,89,0.60) !important; }
+html.light .text-white\/70 { color: rgba(15,39,89,0.70) !important; }
+html.light .text-white\/80 { color: rgba(15,39,89,0.80) !important; }
+html.light .text-white\/90 { color: rgba(15,39,89,0.90) !important; }
 
 html.light input.text-slate-100,
 html.light textarea.text-slate-100,
@@ -1079,21 +1178,21 @@ html.light [class*="bg-\\[\\#1e2130\\]"],
 html.light [class*="bg-\\[\\#20243A\\]"],
 html.light [class*="bg-\\[\\#20243a\\]"] { background-color: var(--surface-2) !important; }
 
-html.light .bg-white\/2  { background-color: rgba(24,24,27,0.02) !important; }
-html.light .bg-white\/3  { background-color: rgba(24,24,27,0.03) !important; }
-html.light .bg-white\/4  { background-color: rgba(24,24,27,0.04) !important; }
-html.light .bg-white\/5  { background-color: rgba(24,24,27,0.04) !important; }
-html.light .bg-white\/6  { background-color: rgba(24,24,27,0.05) !important; }
-html.light .bg-white\/8  { background-color: rgba(24,24,27,0.06) !important; }
-html.light .bg-white\/10 { background-color: rgba(24,24,27,0.07) !important; }
-html.light .bg-white\/12 { background-color: rgba(24,24,27,0.08) !important; }
-html.light .bg-white\/15 { background-color: rgba(24,24,27,0.09) !important; }
+html.light .bg-white\/2  { background-color: rgba(15,39,89,0.02) !important; }
+html.light .bg-white\/3  { background-color: rgba(15,39,89,0.03) !important; }
+html.light .bg-white\/4  { background-color: rgba(15,39,89,0.04) !important; }
+html.light .bg-white\/5  { background-color: rgba(15,39,89,0.04) !important; }
+html.light .bg-white\/6  { background-color: rgba(15,39,89,0.05) !important; }
+html.light .bg-white\/8  { background-color: rgba(15,39,89,0.06) !important; }
+html.light .bg-white\/10 { background-color: rgba(15,39,89,0.07) !important; }
+html.light .bg-white\/12 { background-color: rgba(15,39,89,0.08) !important; }
+html.light .bg-white\/15 { background-color: rgba(15,39,89,0.09) !important; }
 
-html.light .hover\:bg-white\/3:hover  { background-color: rgba(24,24,27,0.03) !important; }
-html.light .hover\:bg-white\/4:hover  { background-color: rgba(24,24,27,0.04) !important; }
-html.light .hover\:bg-white\/5:hover  { background-color: rgba(24,24,27,0.04) !important; }
-html.light .hover\:bg-white\/8:hover  { background-color: rgba(24,24,27,0.06) !important; }
-html.light .hover\:bg-white\/10:hover { background-color: rgba(24,24,27,0.07) !important; }
+html.light .hover\:bg-white\/3:hover  { background-color: rgba(15,39,89,0.03) !important; }
+html.light .hover\:bg-white\/4:hover  { background-color: rgba(15,39,89,0.04) !important; }
+html.light .hover\:bg-white\/5:hover  { background-color: rgba(15,39,89,0.04) !important; }
+html.light .hover\:bg-white\/8:hover  { background-color: rgba(15,39,89,0.06) !important; }
+html.light .hover\:bg-white\/10:hover { background-color: rgba(15,39,89,0.07) !important; }
 
 html.light .border-white\/5  { border-color: var(--line) !important; }
 html.light .border-white\/6  { border-color: var(--line) !important; }
@@ -1131,8 +1230,8 @@ html.light input[type='datetime-local']::-webkit-calendar-picker-indicator {
   filter: none !important; opacity: 0.55 !important;
 }
 
-html.light ::-webkit-scrollbar-thumb { background: rgba(24,24,27,0.18) !important; }
-html.light ::-webkit-scrollbar-thumb:hover { background: rgba(24,24,27,0.30) !important; }
+html.light ::-webkit-scrollbar-thumb { background: rgba(15,39,89,0.18) !important; }
+html.light ::-webkit-scrollbar-thumb:hover { background: rgba(15,39,89,0.30) !important; }
 
 html.light aside.nav-rail {
   background-color: var(--nav-bg) !important;
@@ -1393,7 +1492,7 @@ html.light .shimmer {
 .bg-brand,
 .bg-brand-dark,
 .bg-indigo-600,
-.bg-indigo-500 { color: #18181B !important; }
+.bg-indigo-500 { color: #0B1A3A !important; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    UTILITIES
@@ -1632,15 +1731,15 @@ html.compacta .lista-linha {
 
 .login {
   color-scheme: dark;
-  --page-bg:   #0A0A0B;
-  --surface:   #18181B;
-  --surface-2: #1F1F23;
-  --surface-3: #29292E;
-  --t1: #F4F4F5;
-  --t2: #D4D4D8;
-  --t3: #A1A1AA;
-  --t4: #8E8E97;
-  --t5: #5B5B63;
+  --page-bg:   #08112A;
+  --surface:   #111D35;
+  --surface-2: #172541;
+  --surface-3: #1F2F4F;
+  --t1: #EEF2F9;
+  --t2: #CAD4E5;
+  --t3: #A3B3CB;
+  --t4: #8C9DBA;
+  --t5: #4F6182;
   --line:        rgba(255, 255, 255, 0.10);
   --line-strong: rgba(255, 255, 255, 0.18);
   --line-input:  rgba(255, 255, 255, 0.14);
@@ -1648,7 +1747,7 @@ html.compacta .lista-linha {
   --brand-text: #E8CD94;
   --brand-fill:       #D6B26E;
   --brand-fill-hover: #E8CD94;
-  --brand-fill-text:  #18181B;
+  --brand-fill-text:  #0B1A3A;
   --warning:      #E0A030;
   --warning-bg:   rgba(224, 160, 48, 0.10);
   --warning-line: rgba(224, 160, 48, 0.28);
@@ -1669,7 +1768,7 @@ html.compacta .lista-linha {
   min-height: 100dvh;
   overflow: hidden;
   background:
-    radial-gradient(110% 70% at var(--foco-x) 0%, #1A1A1E 0%, #111113 48%, #0A0A0B 100%);
+    radial-gradient(110% 70% at var(--foco-x) 0%, #12306E 0%, #0B1A3A 48%, #08112A 100%);
 }
 @media (min-width: 1024px) {
   .login {
@@ -1755,7 +1854,7 @@ html.compacta .lista-linha {
 .login-cartao {
   position: relative;
   isolation: isolate;
-  background-color: rgba(24, 24, 27, 0.92);
+  background-color: rgba(17, 29, 53, 0.92);
   background-image: var(--grain), linear-gradient(158deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 58%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;

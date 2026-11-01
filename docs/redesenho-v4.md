@@ -7,6 +7,19 @@ Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
 **Progresso: 100%**
 
+## v6 "Azul" — direção A (01/11/2026)
+
+Rafael achou que a v5 não mudou nada de perceptível: trocou cor e fonte, mas
+o esqueleto (menu lateral + cabeçalho + grade de cards) era o mesmo. Entre
+três esboços escolheu a direção A, com azul no lugar do preto.
+
+- [x] Menu lateral removido; navegação numa barra azul no topo (`TopBar.tsx`) com pílulas, ativo em champanhe, "Mais" para o resto
+- [x] Busca ⌘K, Criar, visão do admin, tema, avisos e conta na mesma barra
+- [x] Paleta azul: escuro marinho (`#0B1426`/`#111D35`), claro branco com cinzas azulados; login azul
+- [x] Conteúdo em largura total com rolagem própria; cabeçalhos `sticky top-0` grudam sob a barra (também corrige o cabeçalho de Disparos/Ligações que passava por baixo da barra antiga)
+- [x] Dashboard em mosaico: meta num bloco-herói azul de duas linhas com barras de VGV por semana, previsão e comissões ao lado, faixa de seis indicadores
+- [x] Celular: `main` deixou de ser contêiner de rolagem — os cabeçalhos sticky passaram a grudar de fato
+
 ## Passada tela a tela (01/11/2026)
 
 - [x] Tarefas — legenda do resumo sem roxo (cor cheia = concluída, clara = pendente, escrito)

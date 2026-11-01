@@ -4,7 +4,7 @@ import {
   Users, TrendingUp, DollarSign, ArrowRight, Sparkles, CheckCircle2,
   AlertTriangle, CalendarCheck, Siren, RefreshCw,
   ChevronDown, ChevronUp, FileText, Flame, Info, BarChart3, Wallet, ArrowDown, LayoutDashboard,
-  Gauge, Filter, MessageCircle,
+  Filter, MessageCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { TOM } from '../../components/shared/visual'
@@ -161,7 +161,7 @@ function InfoHint({ text }: { text: string }) {
 function HorizonCurve() {
   return (
     <svg
-      className="pointer-events-none absolute inset-x-0 bottom-0 h-20 w-full opacity-70"
+      className="pointer-events-none absolute inset-x-0 bottom-0 -z-[1] h-24 w-full opacity-80"
       viewBox="0 0 800 80" preserveAspectRatio="none" aria-hidden
     >
       <defs>
@@ -192,7 +192,17 @@ function healthOf(coverage: number, metaBatida = false): Health {
   return                      { label: 'Pipeline insuficiente', cls: 'text-error bg-error-bg border-error-line',       dot: 'bg-error'   }
 }
 
-function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNavigateLeads }: {
+/**
+ * Meta e previsão de VGV — v6: dois blocos do mosaico em vez de um cartão
+ * dividido ao meio. A meta é o bloco-herói azul (o maior da tela); a previsão
+ * é um bloco comum ao lado. Quem posiciona é o grid da página (`metaClass`,
+ * `previsaoClass`).
+ */
+function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNavigateLeads, metaClass = '', previsaoClass = '', semanas = [] }: {
+  metaClass?: string
+  /** VGV por semana do mês — vira o gráfico de barras dentro do bloco-herói. */
+  semanas?: WeekPoint[]
+  previsaoClass?: string
   data: OverviewData | null
   loading: boolean
   error: string | null
@@ -236,7 +246,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
 
   if (error && !data) {
     return (
-      <div className="rounded-[20px] border border-error-line bg-error-bg px-6 py-6 flex items-center gap-3">
+      <div className={`rounded-[22px] border border-error-line bg-error-bg px-6 py-6 flex items-center gap-3 ${metaClass}`}>
         <AlertTriangle size={20} className="text-error flex-shrink-0" aria-hidden />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-t1">Não foi possível carregar a meta</p>
@@ -251,32 +261,26 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
 
   if (loading && !data) {
     return (
-      <div className="rounded-[20px] border border-line surface-premium p-8 grid lg:grid-cols-2 gap-10">
-        <div className="flex flex-col gap-4">
-          <ShimmerBlock className="w-40 h-3" /><ShimmerBlock className="w-64 h-12" />
+      <>
+        <div className={`hero-tile p-8 flex flex-col gap-4 min-h-[280px] ${metaClass}`}>
+          <ShimmerBlock className="w-40 h-3" /><ShimmerBlock className="w-72 h-14" />
           <ShimmerBlock className="w-full h-3" /><ShimmerBlock className="w-52 h-4" />
         </div>
-        <div className="flex flex-col gap-4">
-          <ShimmerBlock className="w-40 h-3" /><ShimmerBlock className="w-56 h-12" />
+        <div className={`bento p-6 flex flex-col gap-4 ${previsaoClass}`}>
+          <ShimmerBlock className="w-40 h-3" /><ShimmerBlock className="w-56 h-10" />
           <ShimmerBlock className="w-full h-16" />
         </div>
-      </div>
+      </>
     )
   }
 
   if (!data) return null
 
   return (
-    <div
-      className="relative overflow-hidden rounded-[20px] border border-line surface-premium gold-glow-tl gold-edge"
-      style={{ boxShadow: 'var(--shadow-card)' }}
-    >
-      <HorizonCurve />
-
-      <div className="relative grid lg:grid-cols-2">
-
+    <>
         {/* ── Meta de VGV ──────────────────────────────────────────────── */}
-        <section className="p-6 lg:p-8" aria-label="Meta de VGV do mês">
+        <section className={`hero-tile p-6 lg:p-8 flex flex-col ${metaClass}`} aria-label="Meta de VGV do mês">
+          <HorizonCurve />
           <div className="flex items-center gap-2 mb-5">
             <span className="w-1 h-3.5 rounded-full bg-brand" aria-hidden />
             <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.16em] text-t3">
@@ -292,10 +296,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
             </button>
           </div>
 
-          <p
-            className="font-display text-[clamp(2.5rem,5vw,3.4rem)] font-bold text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]"
-            style={{ textShadow: '0 1px 24px rgba(214,178,110,0.10)' }}
-          >
+          <p className="font-display text-[clamp(2.75rem,5.2vw,4.25rem)] font-extrabold text-t1 tabular-nums leading-[0.95] tracking-[-0.03em]">
             {formatCurrencyFull(target)}
           </p>
 
@@ -341,8 +342,59 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
             </div>
           </div>
 
+          {/* Semanas do mês — o bloco-herói ocupa duas linhas do mosaico; o
+              espaço vira leitura: quanto entrou em cada semana contra a fatia
+              semanal da meta (linha tracejada). */}
+          {semanas.length > 0 && (() => {
+            const metaSemana = target > 0 ? target / semanas.length : 0
+            const teto = Math.max(metaSemana, ...semanas.map(w => w.realizado), 1)
+            const hoje = new Date()
+            return (
+              <div className="mt-7 flex-1 min-h-[120px] flex flex-col" aria-label="VGV realizado por semana do mês">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">VGV por semana</span>
+                  {metaSemana > 0 && (
+                    <span className="flex items-center gap-1.5 text-[11px] text-t4">
+                      <span className="w-4 border-t border-dashed border-t3" aria-hidden />
+                      meta semanal {formatCurrency(metaSemana)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 flex items-end gap-3">
+                  {semanas.map((w, i) => {
+                    const futura = i > 0 && Math.ceil(hoje.getDate() / 7) < i + 1 && w.realizado === 0
+                    return (
+                      <div key={w.label} className="flex-1 h-full flex flex-col items-center justify-end gap-1 min-w-0">
+                        <span className="text-[11px] font-semibold tabular-nums text-t2 h-4">
+                          {w.realizado > 0 ? formatCurrency(w.realizado) : ''}
+                        </span>
+                        <div className="relative w-full max-w-[56px] flex items-end rounded-[8px] bg-s2" style={{ height: '82%' }}>
+                          {metaSemana > 0 && (
+                            <span
+                              className="absolute -inset-x-1 border-t border-dashed border-t3 pointer-events-none"
+                              style={{ bottom: `${(metaSemana / teto) * 100}%` }}
+                              aria-hidden
+                            />
+                          )}
+                          <div
+                            className="w-full rounded-[8px] transition-[height] duration-700"
+                            style={{
+                              height: `${Math.max((w.realizado / teto) * 100, w.realizado > 0 ? 4 : 0)}%`,
+                              background: 'linear-gradient(180deg, var(--brand-fill-hover), var(--brand-fill))',
+                            }}
+                          />
+                        </div>
+                        <span className={`text-[11px] tabular-nums ${futura ? 'text-t5' : 'text-t4'}`}>{w.label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Desdobramento */}
-          <div className="mt-6 flex flex-wrap items-stretch gap-x-8 gap-y-4">
+          <div className="mt-auto pt-6 flex flex-wrap items-stretch gap-x-8 gap-y-4">
             <button onClick={onNavigateVendas} className="text-left cursor-pointer group">
               <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t4 block">Falta</span>
               <span className="text-xl font-bold text-t1 tabular-nums block mt-0.5 group-hover:text-brand transition-colors">
@@ -374,10 +426,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
         </section>
 
         {/* ── Previsão de VGV ──────────────────────────────────────────── */}
-        <section
-          className="relative p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-line"
-          aria-label="Previsão de VGV"
-        >
+        <section className={`bento relative p-6 ${previsaoClass}`} aria-label="Previsão de VGV">
           <div className="flex items-center gap-2 mb-5 flex-wrap">
             <span className={`w-1 h-3.5 rounded-full ${health.dot}`} aria-hidden />
             <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.16em] text-t3">Previsão de VGV</h3>
@@ -388,7 +437,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
             </span>
           </div>
 
-          <p className="font-display text-[clamp(2.1rem,4.2vw,2.9rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]">
+          <p className="font-display text-[clamp(2rem,3.4vw,2.6rem)] font-extrabold text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]">
             {formatCurrency(previsao)}
           </p>
           <p className="text-sm text-t3 mt-2.5">
@@ -428,8 +477,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
             <p className="text-[13px] text-t2 leading-relaxed">{insight}</p>
           </div>
         </section>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -473,7 +521,7 @@ function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClic
 
   if (loading) {
     return (
-      <div className={`rounded-[14px] border border-line surface-premium flex flex-col gap-3 ${isLead ? 'p-5' : 'p-4'}`}>
+      <div className={`bento flex flex-col gap-3 ${isLead ? 'p-5' : 'p-4'}`}>
         <ShimmerBlock className="w-24 h-3" />
         <ShimmerBlock className={isLead ? 'w-32 h-8' : 'w-16 h-6'} />
         <ShimmerBlock className="w-20 h-3" />
@@ -486,7 +534,7 @@ function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClic
       type="button"
       onClick={onClick}
       aria-label={`${title}: ${value}${sub ? `. ${sub}` : ''}`}
-      className={`group relative overflow-hidden text-left rounded-[14px] border surface-premium transition-all duration-200 cursor-pointer
+      className={`group relative overflow-hidden text-left rounded-[22px] border bg-surface transition-all duration-200 cursor-pointer
         hover:-translate-y-0.5 hover:shadow-dropdown hover:border-line-strong
         ${t.gold ? 'gold-edge gold-edge-short' : ''}
         ${tone === 'alert' ? 'atencao-pulse' : ''}
@@ -494,12 +542,12 @@ function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClic
       style={{ boxShadow: 'var(--shadow-card)' }}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3 truncate">{title}</span>
+        <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3 leading-tight">{title}</span>
         <span className={`rounded-lg flex items-center justify-center flex-shrink-0 ${t.chip} ${isLead ? 'w-8 h-8' : 'w-7 h-7'}`}>
           <Icon size={isLead ? 15 : 13} className={t.icon} />
         </span>
       </div>
-      <p className={`font-heading font-black tabular-nums leading-none tracking-[-0.02em] ${t.value} ${isLead ? 'text-[30px] mt-3.5' : 'text-[22px] mt-2.5'}`}>
+      <p className={`font-display font-extrabold tabular-nums leading-none tracking-[-0.02em] ${t.value} ${isLead ? 'text-[30px] mt-4' : 'text-[26px] mt-3'}`}>
         {exibido}
       </p>
       {sub && (
@@ -1293,8 +1341,12 @@ export function DashboardPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}
     >
-      {/* ══ 1. Hero executivo ═══════════════════════════════════════════ */}
-      <div className="mb-8">
+      {/* ══ Mosaico (v6) ═══════════════════════════════════════════════
+          Blocos de tamanhos diferentes contam a hierarquia sozinhos: a meta
+          é o bloco-herói azul, ocupando duas linhas; previsão e comissões
+          ficam ao lado; os seis indicadores de operação vêm numa faixa logo
+          abaixo. Abaixo de 1024px tudo empilha na ordem de leitura. */}
+      <div className="grid grid-cols-2 lg:grid-cols-12 gap-4 mb-4">
         <CommandHero
           data={overviewData}
           loading={overviewLoading}
@@ -1302,71 +1354,47 @@ export function DashboardPage() {
           onRetry={loadOverview}
           onNavigateVendas={() => navigate('/vendas')}
           onNavigateLeads={() => navigate('/leads')}
+          metaClass="col-span-2 lg:col-span-7 lg:row-span-2"
+          previsaoClass="col-span-2 lg:col-span-5"
+          semanas={weeklyTrend}
         />
+        <div className="col-span-2 lg:col-span-5 grid grid-cols-2 gap-4">
+          <KpiCard
+            title="Comissão realizada" size="lead" tone="success" icon={Wallet}
+            value={formatCurrency(comissaoRealizada)}
+            sub={`${salesMonth.length} venda${salesMonth.length !== 1 ? 's' : ''} no mês`}
+            onClick={() => navigate('/vendas')} loading={kpiLoading}
+          />
+          <KpiCard
+            title="Comissão prevista" size="lead" tone="revenue" icon={DollarSign}
+            value={formatCurrency(comissaoPrevista)}
+            sub="estimada em 2% do pipeline"
+            onClick={() => navigate('/leads')} loading={kpiLoading}
+          />
+        </div>
       </div>
 
-      {/* ══ Agora — próxima ação + prioridades lado a lado ═══════════════
-          Tudo que pede ação fica numa linha só no desktop. Se não houver
-          sugestão de próxima ação, as prioridades ocupam a linha inteira. */}
-      <div className="grid xl:grid-cols-2 gap-x-6 gap-y-8 mb-8 items-start [&>*:only-child]:xl:col-span-2">
-      <ProximaAcao
-        leads={activeLeads}
-        tasks={inViewTasks(tasks.filter(t => t.status !== 'done'))}
-        slaEstourado={overviewData?.alertas.slaEstourado ?? 0}
-        tarefasVencidas={overviewData?.alertas.tarefasEmAtraso ?? 0}
-        brokerId={isGlobalView ? null : (effectiveBrokerId ?? null)}
-        loading={kpiLoading}
-        onAbrirLead={setSelectedLead}
-      />
-      <div className="min-w-0">
-        <SectionLabel icon={Flame} tom="atencao" hint={priorityItems.length > 0 ? `${priorityItems.length} item${priorityItems.length !== 1 ? 's' : ''} exigindo ação` : undefined}>
-          Prioridades de hoje
-        </SectionLabel>
-        <PriorityFeed items={priorityItems} loading={kpiLoading} coldOverflow={coldOverflow} onSeeAll={() => navigate('/leads')} />
-      </div>
-      </div>
-
-      {/* ══ 2. Indicadores ══════════════════════════════════════════════ */}
-      <SectionLabel icon={Gauge} tom="marca" hint="Mês corrente">Indicadores</SectionLabel>
-
-      {/* Receita — protagonismo */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3 stagger-children">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4 mb-10 stagger-children">
         <KpiCard
-          title="Vendas no mês" size="lead" tone="success" icon={TrendingUp}
+          title="Vendas no mês" tone="success" icon={TrendingUp}
           value={overviewData?.vgl.vendasMes ?? '—'}
           sub={overviewData ? formatCurrency(overviewData.vgl.realizadoMes) : undefined}
           onClick={() => navigate('/vendas')} loading={kpiLoading}
         />
         <KpiCard
-          title="Comissão realizada" size="lead" tone="success" icon={Wallet}
-          value={formatCurrency(comissaoRealizada)}
-          sub={`${salesMonth.length} venda${salesMonth.length !== 1 ? 's' : ''} no mês`}
-          onClick={() => navigate('/vendas')} loading={kpiLoading}
-        />
-        <KpiCard
-          title="Comissão prevista" size="lead" tone="revenue" icon={DollarSign}
-          value={formatCurrency(comissaoPrevista)}
-          sub="estimada em 2% do pipeline"
-          onClick={() => navigate('/leads')} loading={kpiLoading}
-        />
-        <KpiCard
-          title="Propostas abertas" size="lead" tone="brand" icon={FileText}
+          title="Propostas" tone="brand" icon={FileText}
           value={overviewData?.vgl.leadsProposta ?? '—'}
           sub={overviewData ? formatCurrency(overviewData.vgl.expectativaProposta) : undefined}
           onClick={() => navigate('/leads')} loading={kpiLoading}
         />
-      </div>
-
-      {/* Operação e alerta — discretos ou urgentes */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8 stagger-children">
         <KpiCard
           title="Leads ativos" tone="neutral" icon={Users}
           value={overviewData?.leadsAtivos ?? '—'} sub="em aberto no funil"
           onClick={() => navigate('/leads')} loading={kpiLoading}
         />
         <KpiCard
-          title="Visitas agendadas" tone="neutral" icon={CalendarCheck}
-          value={visitasAgendadas} sub="tarefas de visita em aberto"
+          title="Visitas" tone="neutral" icon={CalendarCheck}
+          value={visitasAgendadas} sub="agendadas em aberto"
           onClick={() => navigate('/tarefas')} loading={kpiLoading}
         />
         <KpiCard
@@ -1381,6 +1409,29 @@ export function DashboardPage() {
           value={overviewData?.alertas.tarefasEmAtraso ?? '—'} sub="passaram do prazo"
           onClick={() => navigate('/tarefas')} loading={kpiLoading}
         />
+      </div>
+
+      {/* ══ Agora — próxima ação + prioridades lado a lado ═══════════════
+          Se não houver sugestão de próxima ação, as prioridades ocupam a
+          linha inteira. */}
+      <div className="grid xl:grid-cols-12 gap-x-6 gap-y-8 mb-10 items-start xl:[&:has(>.proxima-slot:empty)>.prioridades-slot]:col-span-12">
+      <div className="proxima-slot xl:col-span-5 min-w-0 empty:hidden">
+      <ProximaAcao
+        leads={activeLeads}
+        tasks={inViewTasks(tasks.filter(t => t.status !== 'done'))}
+        slaEstourado={overviewData?.alertas.slaEstourado ?? 0}
+        tarefasVencidas={overviewData?.alertas.tarefasEmAtraso ?? 0}
+        brokerId={isGlobalView ? null : (effectiveBrokerId ?? null)}
+        loading={kpiLoading}
+        onAbrirLead={setSelectedLead}
+      />
+      </div>
+      <div className="prioridades-slot xl:col-span-7 min-w-0">
+        <SectionLabel icon={Flame} tom="atencao" hint={priorityItems.length > 0 ? `${priorityItems.length} item${priorityItems.length !== 1 ? 's' : ''} exigindo ação` : undefined}>
+          Prioridades de hoje
+        </SectionLabel>
+        <PriorityFeed items={priorityItems} loading={kpiLoading} coldOverflow={coldOverflow} onSeeAll={() => navigate('/leads')} />
+      </div>
       </div>
 
       {/* ══ 4. Funil de receita ═════════════════════════════════════════ */}

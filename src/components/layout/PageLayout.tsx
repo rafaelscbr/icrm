@@ -50,7 +50,7 @@ export function PageLayout({
 
       {/* ── Cabeçalho fixo ──────────────────────────────────────── */}
       <div
-        className="sticky top-0 lg:top-14 z-10 nav-bg-blur pt-safe"
+        className="sticky top-0 z-10 nav-bg-blur pt-safe"
         style={{ borderBottom: '1px solid var(--line)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 lg:py-4 flex items-center justify-between gap-4">

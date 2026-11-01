@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev"],
       "port": 5174,
       "autoPort": true
+    },
+    {
+      "name": "icrm-teste",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "5190", "--strictPort"],
+      "port": 5190
     }
   ]
 }

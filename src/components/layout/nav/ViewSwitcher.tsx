@@ -27,9 +27,11 @@ export interface Visao {
  * botões estava aceso.
  */
 export function ViewSwitcher({
-  collapsed, visoes, atual, onSelect,
+  collapsed, visoes, atual, onSelect, naBarra = false,
 }: {
   collapsed: boolean
+  /** v6: gatilho na barra azul do topo — cores da barra, menu abrindo para baixo. */
+  naBarra?: boolean
   visoes: Visao[]
   atual: string | null
   onSelect: (id: string | null) => void
@@ -39,12 +41,12 @@ export function ViewSwitcher({
 
   const global = vigente.id === null
 
-  const Avatar = ({ v, ativo }: { v: Visao; ativo: boolean }) => (
+  const Avatar = ({ v, ativo, gatilho = false }: { v: Visao; ativo: boolean; gatilho?: boolean }) => (
     <span
       className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
       style={{
-        background: ativo ? 'var(--brand-tint)' : 'var(--nav-hover-bg)',
-        color: ativo ? 'var(--brand)' : 'var(--nav-muted)',
+        background: ativo ? 'var(--brand-tint)' : (gatilho && naBarra ? 'var(--bar-hover)' : 'var(--nav-hover-bg)'),
+        color: ativo ? (gatilho && naBarra ? 'var(--brand-fill)' : 'var(--brand)') : (gatilho && naBarra ? 'var(--bar-text)' : 'var(--nav-muted)'),
         border: `1px solid ${ativo ? 'var(--brand)' : 'transparent'}`,
       }}
       aria-hidden
@@ -59,28 +61,29 @@ export function ViewSwitcher({
         <button
           aria-label={`Visão atual: ${vigente.label}. Trocar de visão`}
           title={collapsed ? `Visão: ${vigente.label}` : undefined}
-          className={`flex w-full cursor-pointer items-center rounded-[10px] transition-colors hover:bg-nav-hover
+          className={`flex cursor-pointer items-center rounded-[10px] transition-colors
+            ${naBarra ? 'hover:bg-white/10' : 'w-full hover:bg-nav-hover'}
             ${collapsed ? 'justify-center py-1.5' : 'gap-2 px-2 py-1.5'}`}
-          style={{ border: '1px solid var(--nav-line)' }}
+          style={{ border: `1px solid ${naBarra ? 'var(--bar-line)' : 'var(--nav-line)'}` }}
         >
-          <Avatar v={vigente} ativo={!global} />
+          <Avatar v={vigente} ativo={!global} gatilho />
           {!collapsed && (
             <>
               <span className="min-w-0 flex-1 text-left">
                 <span
                   className="font-label block text-[10px] font-bold uppercase leading-none tracking-[0.14em]"
-                  style={{ color: 'var(--nav-muted)' }}
+                  style={{ color: naBarra ? 'var(--bar-muted)' : 'var(--nav-muted)' }}
                 >
                   Visão
                 </span>
                 <span
                   className="mt-[3px] block truncate text-[12.5px] font-semibold leading-none"
-                  style={{ color: 'var(--nav-active-text)' }}
+                  style={{ color: naBarra ? 'var(--bar-strong)' : 'var(--nav-active-text)' }}
                 >
                   {vigente.label}
                 </span>
               </span>
-              <ChevronsUpDown size={13} strokeWidth={2} style={{ color: 'var(--nav-muted)' }} className="flex-shrink-0" />
+              <ChevronsUpDown size={13} strokeWidth={2} style={{ color: naBarra ? 'var(--bar-muted)' : 'var(--nav-muted)' }} className="flex-shrink-0" />
             </>
           )}
         </button>
@@ -88,12 +91,12 @@ export function ViewSwitcher({
 
       <Popover.Portal>
         <Popover.Content
-          side="right"
-          align="start"
+          side={naBarra ? 'bottom' : 'right'}
+          align={naBarra ? 'end' : 'start'}
           sideOffset={10}
           collisionPadding={12}
           className="nav-elev z-[130] max-h-[70vh] w-[236px] overflow-y-auto rounded-[14px] p-1.5
-                     animate-in fade-in slide-in-from-left-1 duration-150 focus:outline-none"
+                     animate-in fade-in duration-150 focus:outline-none"
         >
           <p
             className="font-label px-2 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-[0.14em]"
