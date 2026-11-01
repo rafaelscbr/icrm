@@ -246,3 +246,73 @@ export function SecaoTitulo({ icon: _icon, children, descricao, tom: _tom }: {
     </div>
   )
 }
+
+/**
+ * Faixa de números — v10 (01/11/2026).
+ *
+ * Os indicadores de topo das telas eram três ou quatro cartões soltos, cada um
+ * com caixinha de ícone, rótulo, número e nota: ~130px de altura e muito
+ * contorno. Aqui viram uma faixa só, com divisórias finas entre os números. O
+ * primeiro pode ser `destaque` (o número que define a tela).
+ */
+export function FaixaNumeros({ itens, className = '' }: {
+  itens: { rotulo: string; valor: ReactNode; nota?: ReactNode; destaque?: boolean; tom?: string; onClick?: () => void }[]
+  className?: string
+}) {
+  const cols = { 2: 'md:grid-cols-2', 3: 'md:grid-cols-3', 4: 'md:grid-cols-4', 5: 'md:grid-cols-5' }[itens.length] ?? 'md:grid-cols-4'
+  return (
+    <div className={`bento grid grid-cols-2 ${cols} divide-y md:divide-y-0 md:divide-x divide-[color:var(--line)] overflow-hidden ${className}`}>
+      {itens.map(i => {
+        const corpo = (
+          <>
+            <p className="text-[12.5px] text-t4 truncate">{i.rotulo}</p>
+            <p className={`font-display font-extrabold tabular-nums leading-tight tracking-[-0.02em] truncate mt-0.5
+                           ${i.destaque ? 'text-[26px]' : 'text-[20px]'} ${i.tom ?? 'text-t1'}`}>
+              {i.valor}
+            </p>
+            {i.nota && <p className="text-[12px] text-t4 truncate mt-0.5">{i.nota}</p>}
+          </>
+        )
+        return i.onClick ? (
+          <button key={i.rotulo} type="button" onClick={i.onClick}
+            className="flex flex-col justify-start px-5 py-3.5 min-w-0 text-left transition-colors cursor-pointer hover:bg-[color-mix(in_srgb,var(--area,var(--t1))_6%,transparent)]
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40">
+            {corpo}
+          </button>
+        ) : (
+          <div key={i.rotulo} className="px-5 py-3.5 min-w-0">{corpo}</div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Escolha curta (Todas · Pronto · Planta) — texto, sem caixa em cada opção. */
+export function Segmentado<T extends string | null>({ opcoes, valor, onChange, rotulo }: {
+  opcoes: { value: T; label: string }[]
+  valor: T
+  onChange: (v: T) => void
+  rotulo: string
+}) {
+  return (
+    <div role="radiogroup" aria-label={rotulo} className="flex items-center gap-0.5 p-0.5 rounded-[10px] bg-s2 flex-shrink-0">
+      {opcoes.map(o => {
+        const ativo = o.value === valor
+        return (
+          <button
+            key={String(o.value)}
+            type="button"
+            role="radio"
+            aria-checked={ativo}
+            onClick={() => onChange(o.value)}
+            className={`h-8 px-3 rounded-[8px] text-[13px] font-medium transition-colors cursor-pointer
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+              ${ativo ? 'bg-surface text-t1 shadow-card' : 'text-t3 hover:text-t1'}`}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}

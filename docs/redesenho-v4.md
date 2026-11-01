@@ -12,6 +12,9 @@ Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 - [x] Topo de toda tela numa linha só (título + abas + ação, 56px). Antes: seção, título grande, subtítulo e faixa de abas (~200px)
 - [x] Leads: busca, atalhos, filtros, ordem, ganhos e descartados numa linha; atalho com zero leads some
 - [x] Kanban: a régua de 240px virou uma linha (total + barra fina + controles); cabeçalho de coluna em uma linha (esfriando vira um número com floco); próxima ação sem caixa; trilhos sem borda tracejada
+- [x] Painel: meta e previsão lado a lado na mesma altura; oito cartões de indicador viraram duas faixas de números clicáveis (`FaixaNumeros`); herói sem as barras semanais
+- [x] Vendas: faixa de números no lugar de três cartões, gráfico mais baixo sem título duplo, busca e tipo (`Segmentado`) numa linha
+- [x] Imóveis: faixa de números no lugar de quatro cartões, "Por região" recolhido, busca + situação + com tarefas numa linha
 - [x] Resultado: o primeiro card do Kanban subiu de ~880px para ~370px do topo da janela
 
 ## v9 — "folha limpa": formulários e menos elementos (01/11/2026)

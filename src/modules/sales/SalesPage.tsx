@@ -1,14 +1,13 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  TrendingUp, Pencil, Trash2, Search, BadgePercent, DollarSign, Wallet, Plus,
-  LineChart as LineChartIcon,
+  TrendingUp, Pencil, Trash2, Search, Plus,
 } from 'lucide-react'
 import { Grafico, eixoCategoria, eixoValor } from '../../components/charts/Grafico'
 import type { CoresGrafico } from '../../components/charts/Grafico'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/ui/Card'
-import { IconeTom, Rotulo, SecaoTitulo } from '../../components/shared/visual'
+import { FaixaNumeros, Segmentado } from '../../components/shared/visual'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -195,94 +194,52 @@ export function SalesPage() {
       actions={<PeriodSelector />}
     >
 
-      {/* ── KPIs — com hierarquia ──────────────────────────────────────────
-          Eram quatro cards idênticos: mesmo tamanho, mesmo peso, nenhum
-          protagonista. VGV é o número que define o mês, então ele fica grande
-          e sozinho; ticket, comissão gerada e comissão do corretor são apoio
-          e ocupam o porte compacto. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5 lg:mb-6">
-        <div className="lg:col-span-1 relative overflow-hidden rounded-[16px] border border-line
-                        surface-premium shadow-card gold-edge gold-glow-tl p-5">
-          <div className="flex items-center gap-2">
-            <IconeTom icon={Wallet} tom="marca" tamanho="sm" />
-            <Rotulo>VGV no período</Rotulo>
-          </div>
-          <p className="font-heading text-[clamp(1.9rem,3.5vw,2.5rem)] font-black text-t1 tabular-nums leading-none tracking-[-0.02em] mt-3">
-            {formatCurrency(valueInPeriod)}
-          </p>
-          <p className="text-xs text-t3 mt-2">
-            {salesInPeriod.length} venda{salesInPeriod.length !== 1 ? 's' : ''} · ticket médio {formatCurrency(avgTicket)}
-          </p>
-        </div>
-
-        <div className="lg:col-span-2 grid grid-cols-2 gap-3">
-          {[
-            { label: 'Comissão gerada', value: periodComm,   hint: 'negociada no período', icon: BadgePercent, tone: 'text-t1',      tom: 'info'    as const },
-            { label: 'Sua comissão',    value: periodBroker, hint: 'sua parte no período', icon: DollarSign,   tone: 'text-t1',      tom: 'sucesso' as const },
-          ].map(k => (
-            <div key={k.label} className="rounded-[14px] border border-line surface-premium shadow-card p-4 flex flex-col">
-              <div className="flex items-center gap-2">
-                <IconeTom icon={k.icon} tom={k.tom} tamanho="sm" />
-                <Rotulo className="truncate">{k.label}</Rotulo>
-              </div>
-              <p className={`font-heading text-[22px] font-black tabular-nums leading-none mt-3 ${k.tone}`}>
-                {formatCurrency(k.value)}
-              </p>
-              <p className="text-[11px] text-t4 mt-2">{k.hint}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* v10: uma faixa de números no lugar de três cartões com ícone */}
+      <FaixaNumeros
+        className="mb-5"
+        itens={[
+          { rotulo: 'VGV no período', valor: formatCurrency(valueInPeriod), destaque: true,
+            nota: `${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} · ticket médio ${formatCurrency(avgTicket)}` },
+          { rotulo: 'Comissão gerada', valor: formatCurrency(periodComm), nota: 'negociada no período' },
+          { rotulo: 'Sua comissão', valor: formatCurrency(periodBroker), nota: 'sua parte no período', tom: periodBroker > 0 ? 'text-success' : 'text-t1' },
+        ]}
+      />
 
       {/* Gráfico mensal — doze meses sem venda viravam um card de 200 px de
           eixos vazios. O gráfico só aparece quando tem o que desenhar. */}
       {sales.length > 0 && (
-        <Card className="mb-5 lg:mb-6">
-          <div className="mb-4">
-            <SecaoTitulo icon={LineChartIcon} tom="sucesso" descricao="VGV fechado por mês">
-              Evolução mensal
-            </SecaoTitulo>
-          </div>
+        <div className="bento px-5 pt-4 pb-3 mb-5">
+          <p className="text-[13px] font-semibold text-t2 mb-1">VGV fechado por mês</p>
           {monthlyData.every(m => m.value === 0) ? (
             <p className="text-[13px] text-t3 py-3">Nenhuma venda fechada nos últimos 12 meses.</p>
           ) : (
           <Grafico
-            altura={220}
+            altura={180}
             rotulo={'VGV fechado por mês. ' + monthlyData.filter(m => m.value > 0).map(m => `${m.month}: ${formatCurrency(m.value)}`).join('; ')}
             opcao={opcaoMensal}
           />
           )}
-        </Card>
+        </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
+      {/* Busca e tipo numa linha */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t4" aria-hidden />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar por cliente ou imóvel..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all min-h-[44px]"
+            placeholder="Buscar cliente ou imóvel"
+            aria-label="Buscar venda por cliente ou imóvel"
+            className="campo w-full h-9 pl-9 pr-3 text-[13.5px]"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">
-          {FILTER_OPTIONS.map(opt => (
-            <button
-              key={String(opt.value)}
-              onClick={() => setTypeFilter(opt.value)}
-              className={`
-                flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
-                ${typeFilter === opt.value
-                  ? 'bg-brand-tint border-brand/40 text-brand-text'
-                  : 'bg-s3/50 border-line text-t3 hover:text-t2'
-                }
-              `}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <Segmentado
+          rotulo="Tipo de venda"
+          valor={typeFilter}
+          onChange={setTypeFilter}
+          opcoes={FILTER_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+        />
       </div>
 
       {/* Carregando, falhou e vazio pela mesma tríade — ver EstadoTela. */}

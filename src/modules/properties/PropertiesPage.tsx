@@ -2,12 +2,12 @@ import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Search, Building2, Pencil, Trash2, ImageOff,
-  TrendingUp, Landmark, MapPin, BadgePercent, ClipboardList, ListFilter,
+  MapPin, BadgePercent, ClipboardList, ListFilter,
   BedDouble, ShowerHead, Ruler,
   Plus,
 } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
-import { Painel, Rotulo } from '../../components/shared/visual'
+import { FaixaNumeros, Segmentado } from '../../components/shared/visual'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -69,93 +69,41 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
   if (total === 0) return null
 
   return (
-    <div className="mb-8 flex flex-col gap-4">
-      {/* KPI strip — o tom fica no ícone; o número é neutro. Cor em número
-          só quando há estado (risco acima de zero, meta atingida). */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            label: 'Total de imóveis',
-            value: total.toString(),
-            sub: 'no portfólio',
-            icon: <Building2 size={15} />,
-            color: 'text-brand-text',
-            bg: 'bg-brand-tint',
-          },
-          {
-            label: 'VGV total',
-            value: formatCurrency(vgv),
-            exato: formatCurrencyFull(vgv),
-            sub: 'valor geral de vendas',
-            icon: <Landmark size={15} />,
-            color: 'text-success',
-            bg: 'bg-success-bg',
-          },
-          {
-            label: 'Comissão estimada',
-            value: formatCurrency(commission),
-            exato: formatCurrencyFull(commission),
-            sub: '10% do 5% do VGV',
-            icon: <BadgePercent size={15} />,
-            color: 'text-brand-text',
-            bg: 'bg-brand-tint',
-          },
-          {
-            label: 'Ticket médio',
-            value: formatCurrency(avgTicket),
-            exato: formatCurrencyFull(avgTicket),
-            sub: 'por imóvel',
-            icon: <TrendingUp size={15} />,
-            color: 'text-info',
-            bg: 'bg-info-bg',
-          },
-        ].map(kpi => (
-          <Painel key={kpi.label} className="px-4 py-3.5">
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`${kpi.color} ${kpi.bg} w-7 h-7 rounded-[9px] border border-line
-                                flex items-center justify-center shrink-0`}>{kpi.icon}</span>
-              {/* Quebra em vez de cortar: em 2 colunas no celular "Comissão estimada" não cabe numa linha. */}
-              <Rotulo className="leading-tight">{kpi.label}</Rotulo>
-            </div>
-            {/* Valor compacto para leitura rápida; o exato fica no title. */}
-            <p className={`font-display text-[26px] font-extrabold tabular-nums leading-none
-                           tracking-tight text-t1`} title={'exato' in kpi ? kpi.exato : undefined}>{kpi.value}</p>
-            <p className="text-[11px] text-t4 mt-1.5">{kpi.sub}</p>
-          </Painel>
-        ))}
-      </div>
+    <div className="mb-5 flex flex-col gap-3">
+      {/* v10: faixa de números no lugar de quatro cartões; a divisão por
+          região fica recolhida — é consulta, não leitura diária. */}
+      <FaixaNumeros
+        itens={[
+          { rotulo: 'Imóveis', valor: total.toLocaleString('pt-BR'), nota: 'no portfólio' },
+          { rotulo: 'VGV total', valor: <span title={formatCurrencyFull(vgv)}>{formatCurrency(vgv)}</span>, destaque: true },
+          { rotulo: 'Comissão estimada', valor: <span title={formatCurrencyFull(commission)}>{formatCurrency(commission)}</span>, nota: '10% do 5% do VGV' },
+          { rotulo: 'Ticket médio', valor: <span title={formatCurrencyFull(avgTicket)}>{formatCurrency(avgTicket)}</span>, nota: 'por imóvel' },
+        ]}
+      />
 
-      {/* Por região */}
       {byRegion.length > 0 && (
-        <Card>
-          <div className="flex items-center gap-2 mb-4">
-            <MapPin size={13} className="text-t3" />
-            <h2 className="text-sm font-semibold text-t2">Imóveis por região</h2>
-          </div>
-          <div className="flex flex-col gap-2">
+        <details className="group">
+          <summary className="inline-flex items-center gap-1.5 text-[13px] font-medium text-t3 hover:text-t1 cursor-pointer select-none list-none">
+            <MapPin size={13} aria-hidden /> Por região
+            <span className="text-t4 group-open:hidden">· ver</span>
+          </summary>
+          <div className="bento px-5 py-4 mt-2 flex flex-col gap-2">
             {byRegion.map(({ region, count, vgv: regionVgv }) => {
-              const pct = total > 0 ? Math.round((count / total) * 100) : 0
               const maxVgv = byRegion[0].vgv
               const barPct = maxVgv > 0 ? Math.round((regionVgv / maxVgv) * 100) : 0
               return (
                 <div key={region} className="flex items-center gap-3">
-                  <div className="w-32 shrink-0">
-                    <p className="text-xs text-t2 truncate">{region}</p>
+                  <p className="w-36 shrink-0 text-[13px] text-t2 truncate">{region}</p>
+                  <div className="flex-1 h-1.5 bg-s2 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-[var(--area,var(--info))]" style={{ width: `${barPct}%` }} />
                   </div>
-                  <div className="flex-1 h-1.5 bg-s3/50 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-                      style={{ width: `${barPct}%` }}
-                    />
-                  </div>
-                  <span className="text-xs tabular-nums text-t3 w-5 text-right">{count}</span>
-                  <span className="text-[11px] text-t4 w-10 text-right">{pct}%</span>
-                  <span className="text-xs tabular-nums text-t2 font-semibold w-28 text-right" title={formatCurrencyFull(regionVgv)}>{formatCurrency(regionVgv)}</span>
+                  <span className="text-[12.5px] tabular-nums text-t4 w-8 text-right">{count}</span>
+                  <span className="text-[12.5px] tabular-nums text-t2 font-semibold w-24 text-right" title={formatCurrencyFull(regionVgv)}>{formatCurrency(regionVgv)}</span>
                 </div>
               )
             })}
           </div>
-        </Card>
+        </details>
       )}
     </div>
   )
@@ -238,46 +186,32 @@ export function PropertiesPage() {
       {/* Dashboard */}
       <PropertiesDashboard properties={properties} />
 
-      {/* Filters */}
-      {/* No celular a busca ocupa a linha inteira e os filtros descem; lado a
-          lado, a busca encolhia até virar só o ícone. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
-        <div className="relative w-full sm:flex-1 sm:max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
+      {/* Busca, situação e "com tarefas" numa linha */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-5">
+        <div className="relative w-full sm:w-72">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t4" aria-hidden />
           <input
             value={query}
             onChange={e => { setQuery(e.target.value) }}
-            placeholder="Buscar imóvel ou bairro..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 transition-all"
+            placeholder="Buscar imóvel ou bairro"
+            aria-label="Buscar imóvel ou bairro"
+            className="campo w-full h-9 pl-9 pr-3 text-[13.5px]"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {FILTER_OPTIONS.map(opt => (
-            <button
-              key={String(opt.value)}
-              onClick={() => { setActiveStatus(opt.value); setQuery('') }}
-              className={`
-                px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
-                ${activeStatus === opt.value && !query
-                  ? 'bg-brand-tint border-brand/40 text-brand-text'
-                  : 'bg-s3/50 border-line text-t3 hover:text-t2'
-                }
-              `}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <Segmentado
+            rotulo="Situação do imóvel"
+            valor={query ? null : activeStatus}
+            onChange={(v: PropertyStatus | null) => { setActiveStatus(v); setQuery('') }}
+            opcoes={FILTER_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+          />
           <button
             onClick={() => setOnlyWithTasks(v => !v)}
-            className={`
-              flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer
-              ${onlyWithTasks
-                ? 'bg-warning-bg border-warning-line text-warning'
-                : 'bg-s3/50 border-line text-t3 hover:text-t2'
-              }
-            `}
+            aria-pressed={onlyWithTasks}
+            className={`flex items-center gap-1.5 h-9 px-2.5 rounded-[10px] text-[13px] font-medium transition-colors cursor-pointer flex-shrink-0
+              ${onlyWithTasks ? 'bg-warning-bg text-warning' : 'text-t3 hover:bg-s2 hover:text-t1'}`}
           >
-            <ListFilter size={12} /> Com tarefas
+            <ListFilter size={14} aria-hidden /> Com tarefas
           </button>
         </div>
       </div>

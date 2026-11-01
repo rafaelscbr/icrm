@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Users, TrendingUp, DollarSign, ArrowRight, Sparkles, CheckCircle2,
-  AlertTriangle, CalendarCheck, Siren, RefreshCw,
-  ChevronDown, ChevronUp, FileText, Flame, Info, BarChart3, Wallet, ArrowDown, LayoutDashboard,
+  Users, TrendingUp, ArrowRight, Sparkles, CheckCircle2,
+  AlertTriangle, CalendarCheck, RefreshCw,
+  ChevronDown, ChevronUp, Flame, Info, BarChart3, ArrowDown, LayoutDashboard,
   Filter, MessageCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -13,8 +13,8 @@ import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadModal } from '../leads/LeadModal'
 import { PageLayout } from '../../components/layout/PageLayout'
+import { FaixaNumeros } from '../../components/shared/visual'
 import { ProximaAcao } from './ProximaAcao'
-import { useContagem } from '../../hooks/useContagem'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -293,7 +293,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
             </button>
           </div>
 
-          <p className="font-display text-[clamp(2.75rem,5.2vw,4.25rem)] font-extrabold text-t1 tabular-nums leading-[0.95] tracking-[-0.03em]">
+          <p className="font-display text-[clamp(2.25rem,4vw,3.25rem)] font-extrabold text-t1 tabular-nums leading-[0.95] tracking-[-0.03em]">
             {formatCurrencyFull(target)}
           </p>
 
@@ -478,81 +478,6 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
 }
 
 // ─── 2. Indicadores ───────────────────────────────────────────────────────────
-
-type KpiTone = 'revenue' | 'brand' | 'success' | 'neutral' | 'alert'
-
-/*
- * `gold` marca os cards da linha de receita — dinheiro e meta. Operação e
- * alerta ficam sem filete de propósito: se todos tiverem, nenhum destaca.
- */
-const KPI_TONE: Record<KpiTone, { value: string; chip: string; icon: string; card: string; gold: boolean }> = {
-  revenue: { value: 'text-t1',      chip: 'bg-brand-tint', icon: 'text-brand',   card: 'border-line',       gold: true  },
-  brand:   { value: 'text-t1',      chip: 'bg-brand-tint', icon: 'text-brand',   card: 'border-line',       gold: true  },
-  success: { value: 'text-t1',      chip: 'bg-success-bg', icon: 'text-success', card: 'border-line',       gold: true  },
-  neutral: { value: 'text-t1',      chip: 'bg-s3',         icon: 'text-t3',      card: 'border-line',       gold: false },
-  alert:   { value: 'text-error',   chip: 'bg-error-bg',   icon: 'text-error',   card: 'border-error-line', gold: false },
-}
-
-/**
- * Card de indicador com dois portes. `lead` é usado para receita e conversão —
- * número grande, respiro maior. `compact` fica para operação e alerta.
- * A variação é intencional: oito cards idênticos não têm hierarquia nenhuma.
- */
-function KpiCard({ title, value, sub, icon: Icon, tone, size = 'compact', onClick, loading }: {
-  title: string
-  value: string | number
-  sub?: string
-  icon: React.ComponentType<{ size?: number; className?: string }>
-  tone: KpiTone
-  size?: 'lead' | 'compact'
-  onClick?: () => void
-  loading?: boolean
-}) {
-  const t = KPI_TONE[tone]
-  const isLead = size === 'lead'
-  // Contagem só em número puro; valor formatado (R$) aparece pronto.
-  const numero = typeof value === 'number' ? value : null
-  const contado = useContagem(numero ?? 0)
-  const exibido = numero !== null ? contado : value
-
-  if (loading) {
-    return (
-      <div className={`bento flex flex-col gap-3 ${isLead ? 'p-5' : 'p-4'}`}>
-        <ShimmerBlock className="w-24 h-3" />
-        <ShimmerBlock className={isLead ? 'w-32 h-8' : 'w-16 h-6'} />
-        <ShimmerBlock className="w-20 h-3" />
-      </div>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`${title}: ${value}${sub ? `. ${sub}` : ''}`}
-      className={`group relative overflow-hidden text-left rounded-[22px] border bg-surface transition-all duration-200 cursor-pointer
-        hover:-translate-y-0.5 hover:shadow-dropdown hover:border-line-strong
-        ${t.gold ? 'gold-edge gold-edge-short' : ''}
-        ${tone === 'alert' ? 'atencao-pulse' : ''}
-        ${t.card} ${isLead ? 'p-5' : 'p-4'}`}
-      style={{ boxShadow: 'var(--shadow-card)' }}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-label text-[11px] font-bold uppercase tracking-[0.1em] text-t3 leading-tight">{title}</span>
-        <Icon size={15} className={`flex-shrink-0 ${t.icon}`} />
-      </div>
-      <p className={`font-display font-extrabold tabular-nums leading-none tracking-[-0.02em] ${t.value} ${isLead ? 'text-[30px] mt-4' : 'text-[26px] mt-3'}`}>
-        {exibido}
-      </p>
-      {sub && (
-        <p className="flex items-center gap-1 text-[11px] text-t4 mt-2">
-          <span className="truncate">{sub}</span>
-          <ArrowRight size={11} className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-auto" aria-hidden />
-        </p>
-      )}
-    </button>
-  )
-}
 
 // ─── 3. Prioridades de hoje ───────────────────────────────────────────────────
 
@@ -1335,12 +1260,10 @@ export function DashboardPage() {
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}
     >
-      {/* ══ Mosaico (v6) ═══════════════════════════════════════════════
-          Blocos de tamanhos diferentes contam a hierarquia sozinhos: a meta
-          é o bloco-herói azul, ocupando duas linhas; previsão e comissões
-          ficam ao lado; os seis indicadores de operação vêm numa faixa logo
-          abaixo. Abaixo de 1024px tudo empilha na ordem de leitura. */}
-      <div className="grid grid-cols-2 lg:grid-cols-12 gap-4 mb-4">
+      {/* ══ Meta e previsão (v10) ═══════════════════════════════════════
+          Lado a lado, na mesma altura. Os indicadores viraram duas faixas de
+          números logo abaixo — antes eram oito cartões com ícone. */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
         <CommandHero
           data={overviewData}
           loading={overviewLoading}
@@ -1348,62 +1271,42 @@ export function DashboardPage() {
           onRetry={loadOverview}
           onNavigateVendas={() => navigate('/vendas')}
           onNavigateLeads={() => navigate('/leads')}
-          metaClass="col-span-2 lg:col-span-7 lg:row-span-2"
-          previsaoClass="col-span-2 lg:col-span-5"
-          semanas={weeklyTrend}
+          metaClass="lg:col-span-7"
+          previsaoClass="lg:col-span-5"
         />
-        <div className="col-span-2 lg:col-span-5 grid grid-cols-2 gap-4">
-          <KpiCard
-            title="Comissão realizada" size="lead" tone="success" icon={Wallet}
-            value={formatCurrency(comissaoRealizada)}
-            sub={`${salesMonth.length} venda${salesMonth.length !== 1 ? 's' : ''} no mês`}
-            onClick={() => navigate('/vendas')} loading={kpiLoading}
-          />
-          <KpiCard
-            title="Comissão prevista" size="lead" tone="revenue" icon={DollarSign}
-            value={formatCurrency(comissaoPrevista)}
-            sub="estimada em 2% do pipeline"
-            onClick={() => navigate('/leads')} loading={kpiLoading}
-          />
-        </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4 mb-10 stagger-children">
-        <KpiCard
-          title="Vendas no mês" tone="success" icon={TrendingUp}
-          value={overviewData?.vgl.vendasMes ?? '—'}
-          sub={overviewData ? formatCurrency(overviewData.vgl.realizadoMes) : undefined}
-          onClick={() => navigate('/vendas')} loading={kpiLoading}
-        />
-        <KpiCard
-          title="Propostas" tone="brand" icon={FileText}
-          value={overviewData?.vgl.leadsProposta ?? '—'}
-          sub={overviewData ? formatCurrency(overviewData.vgl.expectativaProposta) : undefined}
-          onClick={() => navigate('/leads')} loading={kpiLoading}
-        />
-        <KpiCard
-          title="Leads ativos" tone="neutral" icon={Users}
-          value={overviewData?.leadsAtivos ?? '—'} sub="em aberto no funil"
-          onClick={() => navigate('/leads')} loading={kpiLoading}
-        />
-        <KpiCard
-          title="Visitas" tone="neutral" icon={CalendarCheck}
-          value={visitasAgendadas} sub="agendadas em aberto"
-          onClick={() => navigate('/tarefas')} loading={kpiLoading}
-        />
-        <KpiCard
-          title="SLA estourado" icon={Flame}
-          tone={overviewData && overviewData.alertas.slaEstourado > 0 ? 'alert' : 'neutral'}
-          value={overviewData?.alertas.slaEstourado ?? '—'} sub="sem 1º contato no prazo"
-          onClick={() => navigate('/leads')} loading={kpiLoading}
-        />
-        <KpiCard
-          title="Tarefas vencidas" icon={Siren}
-          tone={overviewData && overviewData.alertas.tarefasEmAtraso > 0 ? 'alert' : 'neutral'}
-          value={overviewData?.alertas.tarefasEmAtraso ?? '—'} sub="passaram do prazo"
-          onClick={() => navigate('/tarefas')} loading={kpiLoading}
-        />
-      </div>
+      {kpiLoading ? (
+        <div className="h-[84px] rounded-[22px] shimmer mb-4" aria-hidden />
+      ) : (
+        <>
+          <FaixaNumeros
+            className="mb-3"
+            itens={[
+              { rotulo: 'Vendas no mês', valor: overviewData?.vgl.vendasMes ?? '—',
+                nota: overviewData ? formatCurrency(overviewData.vgl.realizadoMes) : undefined, onClick: () => navigate('/vendas') },
+              { rotulo: 'Comissão realizada', valor: formatCurrency(comissaoRealizada),
+                tom: comissaoRealizada > 0 ? 'text-success' : 'text-t1', onClick: () => navigate('/vendas') },
+              { rotulo: 'Comissão prevista', valor: formatCurrency(comissaoPrevista), nota: '2% do pipeline', onClick: () => navigate('/leads') },
+              { rotulo: 'Propostas abertas', valor: overviewData?.vgl.leadsProposta ?? '—',
+                nota: overviewData ? formatCurrency(overviewData.vgl.expectativaProposta) : undefined, onClick: () => navigate('/leads') },
+            ]}
+          />
+          <FaixaNumeros
+            className="mb-10"
+            itens={[
+              { rotulo: 'Leads ativos', valor: overviewData?.leadsAtivos ?? '—', onClick: () => navigate('/leads') },
+              { rotulo: 'Visitas agendadas', valor: visitasAgendadas, onClick: () => navigate('/tarefas') },
+              { rotulo: 'SLA estourado', valor: overviewData?.alertas.slaEstourado ?? '—',
+                tom: (overviewData?.alertas.slaEstourado ?? 0) > 0 ? 'text-error' : 'text-t1',
+                nota: 'sem 1º contato no prazo', onClick: () => navigate('/leads') },
+              { rotulo: 'Tarefas vencidas', valor: overviewData?.alertas.tarefasEmAtraso ?? '—',
+                tom: (overviewData?.alertas.tarefasEmAtraso ?? 0) > 0 ? 'text-error' : 'text-t1',
+                onClick: () => navigate('/tarefas') },
+            ]}
+          />
+        </>
+      )}
 
       {/* ══ Agora — próxima ação + prioridades lado a lado ═══════════════
           Se não houver sugestão de próxima ação, as prioridades ocupam a
