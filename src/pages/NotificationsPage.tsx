@@ -300,6 +300,7 @@ export function NotificationsPage() {
           valor={filtro}
           onChange={setFiltro}
           rotulo="Filtro de notificações"
+          variante="sublinhado"
           fim={
             unreadCount > 0 ? (
               <Button variant="secondary" onClick={handleMarkAll} className="gap-2 !text-xs">

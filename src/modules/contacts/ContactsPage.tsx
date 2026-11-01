@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, MessageCircle, Pencil, Trash2, Users, ClipboardList, ListFilter, Cake, Plus} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
+import { Abas } from '../../components/shared/Abas'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
@@ -115,8 +116,20 @@ export function ContactsPage() {
     }
   }, [searchParams, contacts, setSearchParams])
 
+  // Contagem por tipo para as abas — sai da mesma função que filtra a lista.
+  const porTipo = useMemo(() => ({
+    todos: contacts.length,
+    owner: filterByTag('owner').length,
+    investor: filterByTag('investor').length,
+    buyer: filterByTag('buyer').length,
+  }), [contacts, filterByTag])
+
   const filtered = (() => {
-    let result = query.trim() ? search(query) : filterByTag(activeTag)
+    // v7: a busca respeita o tipo escolhido — antes buscar zerava o filtro.
+    const doTipo = activeTag ? new Set(filterByTag(activeTag).map(c => c.id)) : null
+    let result = query.trim()
+      ? search(query).filter(c => !doTipo || doTipo.has(c.id))
+      : filterByTag(activeTag)
     if (onlyWithTasks) {
       result = result.filter(c => tasks.some(t => t.contactId === c.id && t.status !== 'done'))
     }
@@ -147,47 +160,44 @@ export function ContactsPage() {
         : `${contacts.length.toLocaleString('pt-BR')} contatos cadastrados`}
       ctaLabel="Novo Contato"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
+      band={
+        <Abas
+          rotulo="Tipo de contato"
+          variante="sublinhado"
+          valor={(activeTag ?? 'todos') as ContactTag | 'todos'}
+          onChange={v => { setActiveTag(v === 'todos' ? null : v); setPage(1) }}
+          abas={FILTER_OPTIONS.map(o => ({
+            value: (o.value ?? 'todos') as ContactTag | 'todos',
+            label: o.label,
+            badge: erro ? undefined : porTipo[o.value ?? 'todos'],
+          }))}
+        />
+      }
     >
-      {/* Filters */}
+      {/* Barra de ferramentas — busca larga e o recorte "com tarefas" ao lado */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-t4" aria-hidden />
           <input
             value={query}
             onChange={e => { setQuery(e.target.value); setPage(1) }}
-            placeholder="Buscar contato..."
-            className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-4 py-3 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-indigo-500/50 transition-all min-h-[44px]"
+            placeholder="Buscar por nome ou telefone"
+            aria-label="Buscar contato"
+            className="w-full bg-surface border border-line rounded-[12px] pl-10 pr-4 py-3 text-[14px] text-t1 placeholder:text-t4
+                       shadow-card focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand/40 transition-all min-h-[46px]"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-0.5 sm:pb-0">
-          {FILTER_OPTIONS.map(opt => (
-            <button
-              key={String(opt.value)}
-              onClick={() => { setActiveTag(opt.value); setQuery(''); setPage(1) }}
-              className={`
-                flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
-                ${activeTag === opt.value && !query
-                  ? 'bg-brand-tint border-brand/40 text-brand-text'
-                  : 'bg-s3/50 border-line text-t3 hover:text-t2'
-                }
-              `}
-            >
-              {opt.label}
-            </button>
-          ))}
-          <button
-            onClick={() => { setOnlyWithTasks(v => !v); setPage(1) }}
-            className={`
-              flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all duration-150 cursor-pointer min-h-[44px]
-              ${onlyWithTasks
-                ? 'bg-warning-bg border-warning-line text-warning'
-                : 'bg-s3/50 border-line text-t3 hover:text-t2'
-              }
-            `}
-          >
-            <ListFilter size={12} /> Com tarefas
-          </button>
-        </div>
+        <button
+          onClick={() => { setOnlyWithTasks(v => !v); setPage(1) }}
+          aria-pressed={onlyWithTasks}
+          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 rounded-[12px] text-[13px] font-semibold border
+            transition-all duration-150 cursor-pointer min-h-[46px] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+            ${onlyWithTasks
+              ? 'bg-warning-bg border-warning-line text-warning'
+              : 'bg-surface border-line text-t2 hover:border-line-strong shadow-card'}`}
+        >
+          <ListFilter size={14} aria-hidden /> Só com tarefas abertas
+        </button>
       </div>
 
       {/* Lista — carregando, falhou e vazio passam pela mesma tríade. Falha

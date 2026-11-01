@@ -757,7 +757,7 @@ export function GoalsPage() {
       ctaLabel="Nova meta"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
       band={
-        <div className="flex gap-1 p-1 rounded-[14px] border border-line bg-s2/50 w-full sm:w-fit"
+        <div className="flex gap-1 p-1 my-3 rounded-[14px] border border-line bg-s2/50 w-full sm:w-fit"
              role="tablist" aria-label="Período">
           {PERIOD_TABS.map((t, i) => {
             const ativo = tab === t.id

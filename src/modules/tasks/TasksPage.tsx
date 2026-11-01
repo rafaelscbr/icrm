@@ -603,6 +603,26 @@ export function TasksPage() {
   // hoje, "Próximos dias" recolhido deixava 7 pendentes atrás de um chevron e
   // a tela vazia — parecia que não havia nada a fazer.
   const primeiroComTarefa = timeBlocks.find(b => b.tasks.length > 0)?.key
+
+  // ── Trilho "seu dia" ─────────────────────────────────────────────────────
+  const proximaDoDia = [...overdue, ...todayT, ...tomorrowT, ...thisWeek, ...later][0]
+  const semana = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i))
+    const chave = localDateStr(d)
+    return {
+      chave,
+      hoje: i === 6,
+      rotulo: d.toLocaleDateString('pt-BR', { weekday: 'narrow' }).toUpperCase(),
+      n: doneList.filter(t => t.completedAt && localDateStr(new Date(t.completedAt)) === chave).length,
+    }
+  })
+  const tetoSemana = Math.max(...semana.map(d => d.n), 1)
+  const porTipo = Object.entries(
+    pending.reduce<Record<string, number>>((acc, t) => {
+      if (t.category) acc[t.category] = (acc[t.category] ?? 0) + 1
+      return acc
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]).slice(0, 5) as Array<[TaskCategory, number]>
   const proxima = [...tomorrowT, ...thisWeek, ...later][0]
   const emDia = !isEmpty && overdueCount === 0 && todayCount === 0 && focus === null
 
@@ -616,19 +636,20 @@ export function TasksPage() {
         : `${pendingCount} pendente${pendingCount !== 1 ? 's' : ''} · ${doneCount} concluída${doneCount !== 1 ? 's' : ''}`}
       ctaLabel="Nova Tarefa"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
+      band={
+        <Abas
+          abas={[
+            { value: 'tasks',    label: 'Tarefas',        icon: ListTodo,     badge: pendingCount || undefined },
+            { value: 'calendar', label: 'Calendário',     icon: CalendarDays },
+            { value: 'history',  label: 'Resumo por dia', icon: BarChart2    },
+          ]}
+          valor={activeTab}
+          onChange={setActiveTab}
+          rotulo="Seções de tarefas"
+          variante="sublinhado"
+        />
+      }
     >
-      <Abas
-        abas={[
-          { value: 'tasks',    label: 'Tarefas',        icon: ListTodo     },
-          { value: 'calendar', label: 'Calendário',     icon: CalendarDays },
-          { value: 'history',  label: 'Resumo por dia', icon: BarChart2    },
-        ]}
-        valor={activeTab}
-        onChange={setActiveTab}
-        rotulo="Seções de tarefas"
-        variante="sublinhado"
-        className="mb-6"
-      />
 
       {/* ── Aba Histórico ── */}
       {activeTab === 'history' && <Suspense fallback={<div className="h-64 rounded-[18px] shimmer" aria-hidden />}><TaskHistoryView tasks={tasks} /></Suspense>}
@@ -641,15 +662,15 @@ export function TasksPage() {
         />
       )}
 
-      {/* ── Aba Tarefas ── */}
-      {activeTab === 'tasks' && <>
+      {/* ── Aba Tarefas ── v7: lista à esquerda, "seu dia" à direita (xl+).
+          Os filtros viraram quatro blocos grandes no trilho — número e controle
+          no mesmo lugar, alvo de clique maior. Abaixo de 1280px voltam a ser a
+          fileira de pílulas em cima da lista. */}
+      {activeTab === 'tasks' && <div className="grid xl:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
+      <div className="min-w-0">
 
-      {/* ── Foco — a faixa de números virou filtro ──────────────────────────
-          Antes eram quatro caixas que só exibiam contagem, repetindo o que o
-          banner motivacional acima já dizia. Agora cada uma recorta a lista:
-          o número deixa de ser enfeite e vira o controle da tela. */}
       {!isEmpty && (
-        <div className="flex items-center gap-2 mb-6 flex-wrap" role="group" aria-label="Filtrar tarefas">
+        <div className="xl:hidden flex items-center gap-2 mb-6 flex-wrap" role="group" aria-label="Filtrar tarefas">
           {([
             { key: null,       label: 'Tudo',       value: pendingCount,  tone: 'text-t1'      },
             { key: 'overdue',  label: 'Em atraso',  value: overdueCount,  tone: 'text-error'   },
@@ -763,7 +784,108 @@ export function TasksPage() {
         </>
       </EstadoTela>
 
-      </> /* fim aba tasks */}
+      </div>
+
+      {!isEmpty && (
+        <aside className="hidden xl:flex flex-col gap-4 sticky top-[72px]" aria-label="Resumo do seu dia">
+          <div className="bento p-4">
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-3 px-1">Seu dia</p>
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label="Filtrar tarefas">
+              {([
+                { key: null,       label: 'Pendentes', value: pendingCount,  tone: 'text-t1',      icon: ListTodo },
+                { key: 'overdue',  label: 'Em atraso', value: overdueCount,  tone: 'text-error',   icon: AlertTriangle },
+                { key: 'today',    label: 'Hoje',      value: todayCount,    tone: 'text-warning', icon: Flame },
+                { key: 'upcoming', label: 'Próximas',  value: upcomingCount, tone: 'text-t2',      icon: CalendarClock },
+              ] as const).map(f => {
+                const active = focus === f.key
+                const vazio = f.value === 0 && f.key !== null
+                return (
+                  <button
+                    key={f.label}
+                    onClick={() => setFocus(f.key)}
+                    aria-pressed={active}
+                    disabled={vazio}
+                    className={`flex flex-col items-start gap-2 rounded-[14px] border px-3.5 py-3 text-left transition-all cursor-pointer
+                      disabled:opacity-45 disabled:cursor-not-allowed
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+                      ${active ? 'border-brand/50 bg-brand-tint shadow-card' : 'border-line bg-s2/50 hover:border-line-strong hover:bg-s2'}`}
+                  >
+                    <f.icon size={15} strokeWidth={1.9} className={active ? 'text-brand-text' : f.tone} aria-hidden />
+                    <span className="flex flex-col">
+                      <span className={`font-display text-[26px] font-extrabold leading-none tabular-nums ${active ? 'text-brand-text' : (f.value > 0 ? f.tone : 'text-t4')}`}>{f.value}</span>
+                      <span className={`text-[12px] mt-1 ${active ? 'text-t1 font-semibold' : 'text-t3'}`}>{f.label}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {proximaDoDia && (
+            <div className="bento p-4">
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2.5">Próxima</p>
+              <p className="text-[15px] font-semibold text-t1 leading-snug">{proximaDoDia.title}</p>
+              <p className="text-[12.5px] text-t3 mt-1 flex items-center gap-1.5 flex-wrap">
+                {proximaDoDia.dueDate && <><Clock size={12} aria-hidden /> {formatDateLabel(proximaDoDia.dueDate, proximaDoDia.dueTime).label}</>}
+                {proximaDoDia.category && <span className="text-t4">· {CATEGORY_CONFIG[proximaDoDia.category].label}</span>}
+              </p>
+              <div className="flex gap-2 mt-3.5">
+                <button
+                  onClick={() => toggleDone(proximaDoDia.id)}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-[10px] bg-brand-fill text-brand-fill-text
+                             text-[13px] font-semibold hover:bg-brand-fill-hover transition-colors cursor-pointer
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                >
+                  <CheckCircle2 size={14} aria-hidden /> Concluir
+                </button>
+                <button
+                  onClick={() => { setEditing(proximaDoDia); setFormOpen(true) }}
+                  className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-[10px] border border-line text-[13px] font-medium text-t2
+                             hover:bg-s2 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                >
+                  <Pencil size={13} aria-hidden /> Abrir
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="bento p-4">
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Concluídas · 7 dias</p>
+              <span className="font-display text-[18px] font-extrabold tabular-nums text-t1">{semana.reduce((a, d) => a + d.n, 0)}</span>
+            </div>
+            <div className="flex items-end gap-1.5 h-16" aria-label={semana.map(d => `${d.rotulo}: ${d.n}`).join(', ')} role="img">
+              {semana.map(d => (
+                <div key={d.chave} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                  <div className="w-full rounded-[5px] bg-s2 flex items-end overflow-hidden" style={{ height: '78%' }}>
+                    <div className="w-full rounded-[5px] bg-success transition-[height] duration-500" style={{ height: `${(d.n / tetoSemana) * 100}%` }} />
+                  </div>
+                  <span className={`text-[11px] ${d.hoje ? 'text-t1 font-semibold' : 'text-t4'}`}>{d.rotulo}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {porTipo.length > 0 && (
+            <div className="bento p-4">
+              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2.5">Pendentes por tipo</p>
+              <ul className="flex flex-col gap-2">
+                {porTipo.map(([cat, n]) => {
+                  const cfg = CATEGORY_CONFIG[cat]
+                  return (
+                    <li key={cat} className="flex items-center gap-2.5 text-[13px]">
+                      <cfg.icon size={14} className={cfg.color} aria-hidden />
+                      <span className="flex-1 text-t2 truncate">{cfg.label}</span>
+                      <span className="font-semibold tabular-nums text-t1">{n}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
+        </aside>
+      )}
+      </div> /* fim aba tasks */}
 
       <TaskForm key={editing?.id ?? 'new'} isOpen={formOpen} onClose={() => setFormOpen(false)} task={editing} />
 

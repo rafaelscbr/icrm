@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   X, MessageCircle, UserCheck, Building2,
   Trash2, RotateCcw, Edit2, AlertTriangle, CheckCircle2,
@@ -308,7 +309,8 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   const currentIndex = STAGES.indexOf(lead.funnelStage)
 
-  return (
+  // Portal no <body>: dentro da tela o painel ficava abaixo da faixa de abas.
+  return createPortal(
     <>
       {/* ── Painel lateral do lead ───────────────────────────────────────────
           Deixou de ser modal centralizado: o briefing pede que o corretor
@@ -1124,5 +1126,5 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       {showEdit     && <LeadForm isOpen lead={lead} onClose={() => setShowEdit(false)} />}
       {showTaskForm && <TaskForm isOpen={showTaskForm} onClose={() => setShowTaskForm(false)} defaultContactId={lead.contactId} defaultLeadId={lead.id} />}
     </>
-  )
+  , document.body)
 }

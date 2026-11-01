@@ -49,6 +49,7 @@ export function SimuladorPage() {
           valor={modo}
           onChange={setModo}
           rotulo="Tipo de simulação"
+          variante="sublinhado"
         />
       }
     >

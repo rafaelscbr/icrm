@@ -180,12 +180,10 @@ export function SalesPage() {
         : `${salesInPeriod.length} venda${salesInPeriod.length !== 1 ? 's' : ''} · ${periodLabel}`}
       ctaLabel="Nova Venda"
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
+      // v7: o período recorta a tela inteira, então mora no topo, junto da
+      // ação principal — antes ocupava uma linha sozinho acima dos números.
+      actions={<PeriodSelector />}
     >
-      {/* Seletor de período — é ele que recorta tudo abaixo; a frase que
-          explicava isso era uma linha de texto sem função. */}
-      <div className="flex items-center justify-end mb-5">
-        <PeriodSelector />
-      </div>
 
       {/* ── KPIs — com hierarquia ──────────────────────────────────────────
           Eram quatro cards idênticos: mesmo tamanho, mesmo peso, nenhum

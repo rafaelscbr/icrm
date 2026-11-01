@@ -133,6 +133,7 @@
   --bar-field:     rgba(255, 255, 255, 0.07);
   --hero-bg:       linear-gradient(140deg, #1A3F8F 0%, #12306E 48%, #0C2153 100%);
   --hero-line:     rgba(255, 255, 255, 0.10);
+  --mast-bg:       linear-gradient(180deg, #102047 0%, #0D1A36 55%, #0B1426 100%);
 
   --r-sm: 10px;
   --r-md: 14px;
@@ -274,6 +275,7 @@ html.light {
      TINTA: a barra é clara, e o Marinho aparece na tipografia, no estado
      ativo e nas linhas. A marca continua estruturando a navegação sem
      pesar a tela — que era exatamente o problema do marinho dominante. */
+  --mast-bg:         linear-gradient(180deg, #DCE6F5 0%, #E9EFF8 55%, #F3F6FB 100%);
   --nav-bg:          #EAF0F8;
   --nav-text:        #2A3A5C;                  /* Marinho médio */
   --nav-muted:       #5D6E8E;
@@ -747,6 +749,21 @@ html.light {
 .top-icone:hover, .top-icone[aria-expanded="true"] { background-color: var(--bar-hover); color: var(--bar-strong); }
 .top-icone:focus-visible { outline: 2px solid var(--brand-fill); outline-offset: 2px; }
 
+/* Topo de página (v7): faixa azulada que continua a barra de navegação. */
+.page-mast { background: var(--mast-bg); }
+.page-mast-borda { border-bottom: 1px solid var(--line); }
+.page-band {
+  position: relative;
+  background-color: color-mix(in srgb, var(--page-bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+          backdrop-filter: blur(14px);
+}
+@media (max-width: 1023px) {
+  .page-mast { background: color-mix(in srgb, var(--page-bg) 90%, transparent);
+               -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+               border-bottom: 1px solid var(--line); }
+}
+
 /* Bloco-herói do mosaico (dashboard) — azul nos dois temas */
 .hero-tile {
   /* Dentro do herói os tokens viram os do fundo azul, nos dois temas: o
@@ -910,7 +927,7 @@ html.light {
 /* `.sticky` fica de fora: esta regra tem especificidade maior que a classe do
    Tailwind e transformava o cabeçalho fixo da página em `relative` — ele
    nunca grudava, e com o `top` da barra global abria um vão de 56px. */
-.aurora-host > *:not(.aurora):not(.sticky) { position: relative; z-index: 1; }
+.aurora-host > *:not(.aurora):not(.sticky):not(.page-band) { position: relative; z-index: 1; }
 
 .surface-premium {
   background-color: var(--surface);

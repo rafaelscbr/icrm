@@ -7,6 +7,16 @@ Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
 **Progresso: 100%**
 
+## v7 — topo de página, abas e fluxos (01/11/2026)
+
+- [x] Topo de página novo em todas as telas: faixa azulada continuando a barra, seção escrita em cima ("Comercial"), título grande, ação principal à direita; no Kanban fica mais baixo
+- [x] Abas coladas na base do topo (Leads, Tarefas, Disparos, Ligações, Base de Leads, Contatos, Notificações, Simulador); no desktop a faixa de abas gruda sob a barra azul
+- [x] Tarefas: trilho "Seu dia" à direita (filtros em blocos grandes, próxima tarefa com Concluir/Abrir, concluídas nos últimos 7 dias, pendentes por tipo)
+- [x] Contatos: tipos viraram abas com contagem; busca respeita o tipo escolhido (antes buscar zerava o filtro); "Só com tarefas abertas" ao lado da busca
+- [x] Vendas: seletor de período foi para o topo, ao lado de "Nova Venda"
+- [x] Bug: painel lateral (nova tarefa, lead) ficava por baixo da faixa de abas e cortava o primeiro campo — agora abre em portal no <body>
+- [x] Números das abas com separador de milhar
+
 ## v6 "Azul" — direção A (01/11/2026)
 
 Rafael achou que a v5 não mudou nada de perceptível: trocou cor e fonte, mas

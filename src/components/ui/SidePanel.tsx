@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface SidePanelProps {
@@ -88,7 +89,10 @@ export function SidePanel({
 
   if (!isOpen) return null
 
-  return (
+  // Portal no <body>, como o Modal: dentro da tela o painel herdava o
+  // contexto de empilhamento do conteúdo e a faixa de abas (sticky, z-10)
+  // passava por cima dele, cortando o primeiro campo do formulário.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
         className="absolute inset-0 bg-black/25 animate-overlay"
@@ -150,5 +154,5 @@ export function SidePanel({
         )}
       </div>
     </div>
-  )
+  , document.body)
 }

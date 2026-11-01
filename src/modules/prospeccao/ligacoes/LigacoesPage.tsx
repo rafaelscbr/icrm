@@ -81,6 +81,18 @@ export function LigacoesPage() {
       subtitle="Prospecção ativa por telefone — fila compartilhada e cadência automática"
       ctaLabel="Nova campanha"
       onCta={() => setCriarOpen(true)}
+      band={
+        <Abas
+          abas={[
+            { value: 'campanhas'  as PageTab, label: 'Campanhas',  icon: PhoneCall },
+            { value: 'desempenho' as PageTab, label: 'Desempenho', icon: BarChart3 },
+          ]}
+          valor={tab}
+          onChange={setTab}
+          rotulo="Seções de ligações"
+          variante="sublinhado"
+        />
+      }
     >
       {/* ── Meta do dia — o hero da tela ──────────────────────────── */}
       <Painel dourado className="mb-5 px-5 py-4">
@@ -136,16 +148,6 @@ export function LigacoesPage() {
 
       {(!loading || campaigns.length > 0) && (
         <>
-          <Abas
-            abas={[
-              { value: 'campanhas'  as PageTab, label: 'Campanhas',  icon: PhoneCall },
-              { value: 'desempenho' as PageTab, label: 'Desempenho', icon: BarChart3 },
-            ]}
-            valor={tab}
-            onChange={setTab}
-            rotulo="Seções de ligações"
-            className="mb-5"
-          />
 
           {tab === 'desempenho' && <CallPerformanceTab />}
 

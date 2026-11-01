@@ -87,6 +87,18 @@ export function CampaignsPage() {
         : 'Prospecção ativa — listas frias e funil de conversão'}
       ctaLabel="Nova Campanha"
       onCta={() => setCreateOpen(true)}
+      band={
+        <Abas
+          rotulo="Seções de campanhas"
+          valor={pageTab}
+          onChange={setPageTab}
+          variante="sublinhado"
+          abas={[
+            { value: 'campanhas',   label: 'Campanhas',   icon: Megaphone, badge: campaigns.length || undefined },
+            { value: 'performance', label: 'Performance', icon: Zap },
+          ]}
+        />
+      }
     >
       {/* Barra de limite diário de disparos */}
       <div className="mb-4">
@@ -99,17 +111,6 @@ export function CampaignsPage() {
       {/* Conteúdo — oculto durante carregamento */}
       {!isLoading && <>
 
-      {/* Abas principais — mesmo componente (e indicador deslizante) do resto do sistema */}
-      <Abas
-        className="mb-6"
-        rotulo="Seções de campanhas"
-        valor={pageTab}
-        onChange={setPageTab}
-        abas={[
-          { value: 'campanhas',   label: 'Campanhas',   icon: Megaphone },
-          { value: 'performance', label: 'Performance', icon: Zap },
-        ]}
-      />
 
       {/* ── Aba Performance ── */}
       {pageTab === 'performance' && (

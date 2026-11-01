@@ -142,6 +142,18 @@ export function LeadListsPage() {
         : 'Gerencie suas listas de leads frios e conecte-as a campanhas'}
       ctaLabel="Nova Lista"
       onCta={() => setCreateOpen(true)}
+      band={
+        <Abas
+          abas={[
+            { value: 'active'   as const, label: 'Ativas',     icon: Database, badge: lists.filter(l => l.status === 'active').length || undefined },
+            { value: 'archived' as const, label: 'Arquivadas', icon: Archive },
+          ]}
+          valor={tab}
+          onChange={setTab}
+          rotulo="Situação das listas"
+          variante="sublinhado"
+        />
+      }
       actions={
         <div className="flex items-center gap-2">
           {tab === 'active' && (
@@ -181,16 +193,6 @@ export function LeadListsPage() {
         </div>
       )}
 
-      <Abas
-        abas={[
-          { value: 'active'   as const, label: 'Ativas',     icon: Database, badge: lists.filter(l => l.status === 'active').length || undefined },
-          { value: 'archived' as const, label: 'Arquivadas', icon: Archive },
-        ]}
-        valor={tab}
-        onChange={setTab}
-        rotulo="Situação das listas"
-        className="mb-6"
-      />
 
       <EstadoTela
         esqueleto={<EsqueletoCards cards={6} colunas={3} />}

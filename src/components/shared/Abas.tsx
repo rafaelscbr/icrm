@@ -174,7 +174,7 @@ export function Abas<T extends string>({
               {a.badge !== undefined && (
                 <span className={`ml-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full tabular-nums
                   ${ativo ? 'bg-brand-tint text-brand-text' : 'bg-s3/60 text-t3'}`}>
-                  {a.badge}
+                  {a.badge.toLocaleString('pt-BR')}
                 </span>
               )}
             </button>
