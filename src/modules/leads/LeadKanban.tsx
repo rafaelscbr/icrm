@@ -446,7 +446,8 @@ function KanbanColumn({
   const riskPct = leads.length > 0 ? Math.round((coldCount / leads.length) * 100) : 0
 
   return (
-    <div className="flex flex-col w-[19rem] flex-shrink-0">
+    // --etapa alimenta o filete e o tingimento da coluna (ver .kanban-col).
+    <div className="flex flex-col w-[19rem] flex-shrink-0" style={{ ['--etapa' as string]: `var(--stage-${stage})` }}>
       <div className={`flex flex-col flex-1 rounded-[18px] kanban-col transition-shadow duration-200
         ${isOver || isActiveDragTarget ? 'ring-1 ring-inset ring-brand/40' : ''}
       `}>

@@ -72,7 +72,7 @@ export function CabecalhoLista({
 }) {
   return (
     <div
-      className={`flex items-center gap-4 px-6 py-2.5 border-b border-line bg-s3/20 select-none ${className}`}
+      className={`flex items-center gap-4 px-6 py-2.5 border-b border-line bg-s2/70 select-none ${className}`}
       role="presentation"
     >
       {antes && <span className={`${antes} flex-shrink-0`} aria-hidden />}

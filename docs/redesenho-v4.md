@@ -5,7 +5,11 @@ melhores práticas de UX/UI e performance. Este arquivo é o placar.
 
 Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
-**Progresso: 76%**
+**Progresso: 80%**
+
+- [x] Kanban v5: colunas neutras nos dois temas (claro `#F1F1F3`, sem bege), filete e tingimento da cor da etapa no topo (`--etapa`), card levanta 2px no hover e afunda no clique
+- [x] Tabelas/listas: superfície limpa sem grão, cabeçalho em faixa neutra, linha inteira tingida no hover; `<table>` nativa dentro da folha herda o mesmo comportamento
+- [x] Animações: abas com indicador deslizante (pílula neutra elevada ou linha champanhe), troca de tela 280ms com a curva do sistema, paleta padrão da marca no ECharts
 
 - [x] v5.1: a serifa (Fraunces) saiu — títulos e números de destaque em **Plus Jakarta Sans**, interface em **Geist**
 

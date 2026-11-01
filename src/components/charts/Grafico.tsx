@@ -69,7 +69,10 @@ export function resolverCor(c: string): string {
 function base(t: CoresGrafico, animar: boolean): EChartsCoreOption {
   return {
     animation: animar,
+    // Paleta padrão da marca: série sem cor própria nunca cai no azul do ECharts.
+    color: [t.marca, t.info, t.sucesso, t.atencao, t.neutro, t.risco],
     animationDuration: 600,
+    animationDurationUpdate: 400,
     animationEasing: 'cubicOut',
     textStyle: { fontFamily: t.fonte, color: t.textoFraco, fontSize: 12 },
     grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },

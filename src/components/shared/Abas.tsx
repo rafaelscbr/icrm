@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 
 /**
@@ -87,6 +87,21 @@ export function Abas<T extends string>({
   abas, valor, onChange, rotulo, variante = 'pilula', className = '', fim,
 }: Props<T>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
+  const lista = useRef<HTMLDivElement>(null)
+  // Posição do indicador deslizante. Medida do botão ativo; o ResizeObserver
+  // reposiciona quando a fonte carrega, o badge muda ou a tela redimensiona.
+  const [ind, setInd] = useState<{ x: number; w: number } | null>(null)
+  const ativoIdx = abas.findIndex(a => a.value === valor)
+  useLayoutEffect(() => {
+    const medir = () => {
+      const b = refs.current[ativoIdx]
+      if (b) setInd({ x: b.offsetLeft, w: b.offsetWidth })
+    }
+    medir()
+    const ro = new ResizeObserver(medir)
+    if (lista.current) ro.observe(lista.current)
+    return () => ro.disconnect()
+  }, [ativoIdx, abas.length])
 
   function aoTeclar(e: React.KeyboardEvent, i: number) {
     const ultimo = abas.length - 1
@@ -109,12 +124,28 @@ export function Abas<T extends string>({
   return (
     <div className={`flex items-center ${pilula ? 'gap-2' : 'gap-0'} ${className}`}>
       <div
+        ref={lista}
         role="tablist"
         aria-label={rotulo}
         className={pilula
-          ? 'flex items-center gap-1 bg-s2/50 border border-line rounded-[14px] p-1 w-fit'
-          : 'flex gap-0 border-b border-line flex-1 overflow-x-auto'}
+          ? 'relative flex items-center gap-1 bg-s2/70 border border-line rounded-[14px] p-1 w-fit'
+          : 'relative flex gap-0 border-b border-line flex-1 overflow-x-auto'}
       >
+        {/* Indicador deslizante — só transform e largura de UM elemento, e a
+            regra global de reduced-motion zera a transição. */}
+        {ind && (
+          <span
+            aria-hidden
+            className={pilula
+              ? 'absolute top-1 bottom-1 left-0 rounded-[10px] bg-surface border border-line shadow-card'
+              : 'absolute bottom-0 left-0 h-[2px] rounded-full bg-brand-fill'}
+            style={{
+              width: ind.w,
+              transform: `translateX(${ind.x}px)`,
+              transition: 'transform 320ms var(--ease-out), width 320ms var(--ease-out)',
+            }}
+          />
+        )}
         {abas.map((a, i) => {
           const ativo = valor === a.value
           return (
@@ -129,22 +160,20 @@ export function Abas<T extends string>({
               onClick={() => onChange(a.value)}
               onKeyDown={e => aoTeclar(e, i)}
               className={pilula
-                ? `flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-semibold
-                   transition-all cursor-pointer min-h-[40px] whitespace-nowrap
+                ? `relative z-[1] flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-semibold
+                   transition-colors duration-200 cursor-pointer min-h-[40px] whitespace-nowrap
                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
-                   ${ativo ? 'grad-brand' : 'text-t3 hover:text-t1'}`
-                : `flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 -mb-px
-                   transition-all cursor-pointer min-h-[40px] whitespace-nowrap
+                   ${ativo ? 'text-t1' : 'text-t3 hover:text-t1'}`
+                : `relative z-[1] flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold
+                   transition-colors duration-200 cursor-pointer min-h-[40px] whitespace-nowrap
                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
-                   ${ativo
-                     ? 'border-brand text-t1'
-                     : 'border-transparent text-t3 hover:text-t2 hover:border-line-strong'}`}
+                   ${ativo ? 'text-t1' : 'text-t3 hover:text-t2'}`}
             >
               {a.icon && <a.icon size={pilula ? 13 : 12} strokeWidth={1.7} aria-hidden />}
               {a.label}
               {a.badge !== undefined && (
                 <span className={`ml-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full tabular-nums
-                  ${ativo && !pilula ? 'bg-brand/15 text-brand' : ativo ? 'bg-black/10' : 'bg-s3/50 text-t3'}`}>
+                  ${ativo ? 'bg-brand-tint text-brand-text' : 'bg-s3/60 text-t3'}`}>
                   {a.badge}
                 </span>
               )}

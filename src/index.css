@@ -902,18 +902,37 @@ html.light .gold-glow-tl::after {
  * destacamento de borda superior sem sugerir direção nem hierarquia.
  */
 .list-surface {
-  background-color: var(--surface-2);
-  background-image:
-    var(--grain),
-    linear-gradient(to bottom, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0) 96px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), var(--shadow-card);
+  background-color: var(--surface);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), var(--shadow-card);
 }
 html.light .list-surface {
   background-color: var(--surface);
-  background-image:
-    var(--grain),
-    linear-gradient(to bottom, rgba(24,24,27,0.022) 0px, rgba(24,24,27,0) 96px);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 1px 2px rgba(24,24,27,0.05);
+}
+
+/*
+ * Linhas de lista e tabela (v5). Hover tinge a linha inteira — o olho segue a
+ * linha da esquerda até a ação na direita sem perder a altura. Tabela nativa
+ * dentro da folha ganha o mesmo comportamento e um cabeçalho discreto.
+ */
+.lista-linha {
+  transition: background-color var(--dur-fast) ease;
+}
+.lista-linha:hover {
+  background-color: color-mix(in srgb, var(--t1) 4%, transparent);
+}
+.app-sheet table tbody tr {
+  transition: background-color var(--dur-fast) ease;
+}
+.app-sheet table tbody tr:hover {
+  background-color: color-mix(in srgb, var(--t1) 4%, transparent);
+}
+.app-sheet table thead th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t4);
 }
 
 /*
@@ -945,7 +964,7 @@ html.light .list-surface {
   --kanban-card-shadow-alerta:inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 14px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.50);
 }
 html.light {
-  --kanban-col-bg:            #E6E1D5;
+  --kanban-col-bg:            #F1F1F3;
   --kanban-card-bg:           #FFFFFF;
   --kanban-card-hover:        #FFFFFF;
   --kanban-card-line:         rgba(24, 24, 27, 0.09);
@@ -954,23 +973,53 @@ html.light {
 }
 
 .kanban-col {
+  position: relative;
   background-color: var(--kanban-col-bg);
+  /* v5: a coluna carrega a cor da etapa (--etapa, posto pelo LeadKanban) num
+     filete de 2px no topo e num tingimento que some em 160px. Identifica a
+     etapa de longe sem pintar a coluna inteira. Sem --etapa, nada aparece. */
+  background-image: linear-gradient(180deg,
+    color-mix(in srgb, var(--etapa, transparent) 9%, transparent) 0px,
+    transparent 160px);
   border: 1px solid var(--line);
+}
+.kanban-col::before {
+  content: '';
+  position: absolute;
+  left: 14px; right: 14px; top: -1px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--etapa, transparent);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 11;
 }
 /* Só o fundo — para o cabeçalho fixo da coluna, que não pode repetir a borda. */
 .kanban-col-bg {
   background-color: var(--kanban-col-bg);
+  background-image: linear-gradient(180deg,
+    color-mix(in srgb, var(--etapa, transparent) 9%, transparent) 0px,
+    transparent 160px);
 }
 .kanban-card {
   background-color: var(--kanban-card-bg);
-  background-image: var(--grain), var(--surface-sheen);
   border-color: var(--kanban-card-line);
   box-shadow: var(--kanban-card-shadow);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out),
+    border-color var(--dur-fast) ease,
+    background-color var(--dur-fast) ease;
 }
+/* Hover levanta 2px e aprofunda a sombra: diz "isto é pegável/clicável"
+   antes do clique, sem mexer no layout (só transform). */
 .kanban-card:hover {
   background-color: var(--kanban-card-hover);
   border-color: var(--line-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--kanban-card-shadow-alerta);
 }
+.kanban-card:active { transform: translateY(0) scale(0.995); }
 .kanban-card-alerta {
   box-shadow: var(--kanban-card-shadow-alerta);
 }
@@ -1296,7 +1345,7 @@ html.light .card-accent-purple { border-top: 3px solid rgba(88,28,135,0.70);  bo
 html.light .card-accent-yellow { border-top: 3px solid rgba(184,132,30,0.80); box-shadow: var(--shadow-card); }
 
 html.light .shimmer {
-  background: linear-gradient(90deg, #e8e3d8 25%, #f2ede4 50%, #e8e3d8 75%);
+  background: linear-gradient(90deg, #EDEDEF 25%, #F6F6F7 50%, #EDEDEF 75%);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -1399,9 +1448,10 @@ html.light .shimmer {
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .page-fade { animation: pageFade 200ms ease-out; }
+  /* Troca de tela: sobe 8px e aparece, curva de desaceleração do sistema. */
+  .page-fade { animation: pageFade 280ms var(--ease-out); }
   @keyframes pageFade {
-    from { opacity: 0; transform: translateY(5px); }
+    from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
