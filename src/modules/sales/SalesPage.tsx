@@ -259,7 +259,7 @@ export function SalesPage() {
         vazio={filtered.length === 0}
         onTentarDeNovo={() => { void load() }}
         icone={TrendingUp}
-        titulo="Nenhuma venda no período"
+        titulo="Nenhuma *venda* no período"
         descricao="Troque o período no seletor acima ou registre uma venda."
         acao={
           <Button onClick={() => { setEditing(undefined); setFormOpen(true) }} className="gap-2">

@@ -1813,166 +1813,129 @@ html.compacta .lista-linha {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   ENTRADA — "Planta" (LoginPage)
+   ENTRADA — v2 "Folha e marca" (LoginPage, 01/11/2026)
 
-   A tela de entrada é sempre escura, nos dois temas. É o único momento de
-   marca pura do sistema. O fundo é uma planta baixa: a grade de dados do
-   Brand Guide em duas escalas (fina a 24px, mestra a 120px), que só aparece
-   em torno do formulário e some nas bordas. Por cima, duas luzes difusas —
-   uma Areia atrás do cartão, uma Marinho claro no canto oposto — e a vinheta.
+   A entrada segue o tema. Só o painel de marca é sempre Marinho: a planta em
+   grade (fina a 24px, mestra a 120px) aparece em torno do texto e some nas
+   bordas, com uma luz Areia difusa atrás. Os tokens do painel são locais
+   (--m-*) para não depender do tema da folha ao lado.
 
-   Em vez de hex solto no componente, `.login` re-declara os tokens do tema
-   escuro no próprio escopo — assim `text-t1`, `bg-s2`, `border-line-input`
-   etc. funcionam igual com `html.light` ativo.
-
-   Movimento: só as luzes derivam (52s e 71s, não múltiplos), animando
-   `transform`. A grade é parada. Reduced-motion congela tudo.
+   Desktop: duas colunas, marca à esquerda. Celular: a marca vira uma faixa
+   curta no topo, com cantos de baixo arredondados, e o formulário vem embaixo.
+   Movimento: só a luz deriva (52s). Reduced-motion congela.
    ══════════════════════════════════════════════════════════════════════════════ */
 
 .login {
-  color-scheme: dark;
-  --page-bg:   #08112A;
-  --surface:   #111D35;
-  --surface-2: #172541;
-  --surface-3: #1F2F4F;
-  --t1: #EEF2F9;
-  --t2: #CAD4E5;
-  --t3: #A3B3CB;
-  --t4: #8C9DBA;
-  --t5: #4F6182;
-  --line:        rgba(255, 255, 255, 0.10);
-  --line-strong: rgba(255, 255, 255, 0.18);
-  --line-input:  rgba(255, 255, 255, 0.14);
-  --brand:      #D6B26E;
-  --brand-text: #E8CD94;
-  --brand-fill:       #D6B26E;
-  --brand-fill-hover: #E8CD94;
-  --brand-fill-text:  #0B1A3A;
-  --warning:      #E0A030;
-  --warning-bg:   rgba(224, 160, 48, 0.10);
-  --warning-line: rgba(224, 160, 48, 0.28);
-  --error:        #E5717A;
-  --error-bg:     rgba(229, 113, 122, 0.10);
-  --error-line:   rgba(229, 113, 122, 0.28);
-  --info:         #5FB3BA;
-  --info-bg:      rgba(95, 179, 186, 0.10);
-  --info-line:    rgba(95, 179, 186, 0.28);
-  --success:      #34C88A;
-
-  /* Onde a cena se concentra: atrás do cartão. */
-  --foco-x: 50%;
-  --foco-y: 34%;
-
-  position: relative;
-  isolation: isolate;
   min-height: 100dvh;
-  overflow: hidden;
-  background:
-    radial-gradient(110% 70% at var(--foco-x) 0%, #12306E 0%, #0B1A3A 48%, #08112A 100%);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--page-bg);
 }
 @media (min-width: 1024px) {
-  .login {
-    --foco-x: 72%;
-    --foco-y: 46%;
-  }
+  .login { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); grid-template-rows: none; }
 }
 
-.login-cena {
+.login-marca {
+  --m-t1: #F4F7FC;
+  --m-t3: #A9B8D0;
+  --m-t4: #7F91B0;
+  --m-line: rgba(255, 255, 255, 0.16);
+  --foco-x: 30%;
+  --foco-y: 60%;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 30px;
+  border-radius: 0 0 26px 26px;
+  background: radial-gradient(120% 90% at var(--foco-x) 0%, #143474 0%, #0B1A3A 52%, #081230 100%);
+  color: var(--m-t1);
+}
+@media (min-width: 640px) {
+  .login-marca { padding: 28px 40px 40px; }
+}
+@media (min-width: 1024px) {
+  .login-marca {
+    --foco-x: 42%;
+    --foco-y: 46%;
+    justify-content: space-between;
+    gap: 0;
+    padding: 44px clamp(40px, 5vw, 80px);
+    margin: 12px 0 12px 12px;
+    border-radius: 26px;
+    min-height: calc(100dvh - 24px);
+  }
+}
+.login-manifesto { max-width: 34rem; }
+
+.login-marca-cena {
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  overflow: hidden;
 }
-
-/* Planta: grade fina + grade mestra, revelada em torno do foco. */
 .login-grade {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
   background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
   background-position: var(--foco-x) var(--foco-y);
-  -webkit-mask-image: radial-gradient(70% 80% at var(--foco-x) var(--foco-y), #000 0%, rgba(0, 0, 0, 0.5) 55%, transparent 100%);
-          mask-image: radial-gradient(70% 80% at var(--foco-x) var(--foco-y), #000 0%, rgba(0, 0, 0, 0.5) 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(75% 80% at var(--foco-x) var(--foco-y), #000 0%, rgba(0, 0, 0, 0.45) 55%, transparent 100%);
+          mask-image: radial-gradient(75% 80% at var(--foco-x) var(--foco-y), #000 0%, rgba(0, 0, 0, 0.45) 55%, transparent 100%);
 }
-
-/* Luzes difusas. Raio grande + blur pesado = luz ambiente, não bolha. */
-.login-luz {
-  position: absolute;
-  inset: 0;
-}
-.login-luz::before,
-.login-luz::after {
+.login-luz { position: absolute; inset: 0; }
+.login-luz::before {
   content: '';
   position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  will-change: transform;
-}
-.login-luz::before {
-  width: min(70vw, 820px);
+  width: min(90vw, 760px);
   aspect-ratio: 1;
   left: var(--foco-x);
   top: var(--foco-y);
-  margin: calc(min(70vw, 820px) / -2) 0 0 calc(min(70vw, 820px) / -2);
-  background: radial-gradient(circle, rgba(214, 178, 110, 0.24) 0%, rgba(214, 178, 110, 0.09) 40%, transparent 70%);
+  margin: calc(min(90vw, 760px) / -2) 0 0 calc(min(90vw, 760px) / -2);
+  border-radius: 50%;
+  filter: blur(80px);
+  background: radial-gradient(circle, rgba(214, 178, 110, 0.26) 0%, rgba(214, 178, 110, 0.08) 42%, transparent 70%);
   animation: loginLuzA 52s ease-in-out infinite alternate;
-}
-.login-luz::after {
-  width: min(80vw, 900px);
-  aspect-ratio: 1;
-  left: -18vw;
-  bottom: -30vw;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 45%, transparent 70%);
-  animation: loginLuzB 71s ease-in-out infinite alternate;
+  will-change: transform;
 }
 @keyframes loginLuzA {
-  0%   { transform: translate3d(0, 0, 0)        scale(1);    }
-  50%  { transform: translate3d(-6vw, 4vh, 0)   scale(1.12); }
-  100% { transform: translate3d(3vw, -5vh, 0)   scale(1.04); }
+  0%   { transform: translate3d(0, 0, 0)      scale(1);    }
+  50%  { transform: translate3d(-5vw, 4vh, 0) scale(1.12); }
+  100% { transform: translate3d(3vw, -5vh, 0) scale(1.04); }
 }
-@keyframes loginLuzB {
-  0%   { transform: translate3d(0, 0, 0)        scale(1.08); }
-  50%  { transform: translate3d(8vw, -6vh, 0)   scale(1);    }
-  100% { transform: translate3d(3vw, -12vh, 0)  scale(1.15); }
-}
+/* No painel Marinho o dourado do destaque é sempre o claro. */
+.login-marca .destaque { color: #E2C385; }
 
-/* Vinheta + grão por cima de tudo da cena. */
-.login-vinheta {
-  position: absolute;
-  inset: 0;
-  background-image:
-    var(--grain),
-    radial-gradient(130% 100% at var(--foco-x) var(--foco-y), transparent 45%, rgba(3, 5, 12, 0.65) 100%);
+.login-folha {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px));
 }
+@media (min-width: 640px) { .login-folha { padding: 20px 40px 28px; } }
+@media (min-width: 1024px) { .login-folha { padding: 24px clamp(40px, 6vw, 96px) 28px; } }
 
-/* Cartão do formulário */
 .login-cartao {
-  position: relative;
-  isolation: isolate;
-  background-color: rgba(17, 29, 53, 0.92);
-  background-image: var(--grain), linear-gradient(158deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 58%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  -webkit-backdrop-filter: blur(14px);
-          backdrop-filter: blur(14px);
+  padding-top: 8px;
   animation: loginChegada 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes loginChegada {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
+.login .campo { font-size: 15px; }
 
 /* Autopreenchimento do navegador não pode trocar o fundo do campo por amarelo/azul. */
 .login input:-webkit-autofill,
 .login input:-webkit-autofill:hover,
 .login input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 100px var(--surface-2) inset;
+  -webkit-box-shadow: 0 0 0 100px var(--field-bg) inset;
   -webkit-text-fill-color: var(--t1);
   caret-color: var(--t1);
   transition: background-color 9999s;
@@ -2116,3 +2079,106 @@ html.light { --field-bg: #EEF2F8;                  --field-bg-hover: #E6ECF5;   
   .faixa-numeros > * + * { border-left: 1px solid var(--line); }
   .faixa-numeros.faixa-impar > :last-child { grid-column: auto; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   DESTAQUE — Instrument Serif itálica em dourado (01/11/2026)
+
+   Uma palavra por frase, nunca a frase inteira: "Do primeiro contato à
+   *chave* na mão". O contraste de família (serifa itálica no meio da sans)
+   é o que chama o olho; o dourado diz que aquilo é marca/valor.
+
+   A serifa tem olho menor que a Plus Jakarta, por isso sobe ~12%. O dourado
+   do tema claro é escurecido para passar 3:1 sobre o Papel (texto grande).
+   Uso: <Destaque>palavra</Destaque> ou o marcador *palavra* em textos que
+   passam por destacar() — títulos de seção, estados vazios, saudações.
+   ══════════════════════════════════════════════════════════════════════════════ */
+:root            { --destaque: #E2C385; }
+html.light       { --destaque: #9C7430; }
+.destaque {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.12em;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  color: var(--destaque);
+  padding-right: 0.02em; /* a itálica invade o espaço seguinte */
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   NAVEGAÇÃO DO CELULAR — v2 (01/11/2026)
+
+   Doca flutuante com quatro vagas (Início, Leads, Simulador, Mais). O ativo
+   ganha uma pílula atrás do ícone (Material 3) e o rótulo em negrito — cor
+   nunca sozinha. A doca fica ACIMA da folha "Mais" (z-50 > 45): o mesmo botão
+   abre e fecha, no mesmo lugar do polegar.
+   ══════════════════════════════════════════════════════════════════════════════ */
+:root      { --dock-solid: #111D35; }
+html.light { --dock-solid: #FFFFFF; }
+
+.doca {
+  background: var(--dock-bg);
+  border: 1px solid var(--dock-line);
+  box-shadow: var(--dock-shadow);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+          backdrop-filter: blur(18px) saturate(1.4);
+}
+.doca-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; height: 100%; border-radius: 18px;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  cursor: pointer;
+}
+.doca-item:focus-visible { outline: 2px solid var(--brand); outline-offset: -4px; }
+.doca-icone {
+  display: flex; align-items: center; justify-content: center;
+  width: 56px; height: 30px; border-radius: 999px;
+  color: var(--nav-muted);
+  transition: background-color 180ms ease, color 180ms ease, transform 120ms ease;
+}
+.doca-item:active .doca-icone { transform: scale(0.94); }
+.doca-icone[data-ativo="true"] { background: var(--brand-tint); color: var(--brand-text); }
+.doca-rotulo { font-size: 12px; line-height: 1; font-weight: 500; color: var(--nav-muted); }
+.doca-rotulo[data-ativo="true"] { font-weight: 700; color: var(--t1); }
+
+.folha-mais {
+  max-height: 88dvh;
+  background: var(--surface);
+  border-radius: 26px 26px 0 0;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, 0.45);
+}
+.folha-icone {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 999px; color: var(--t2);
+  transition: background-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.folha-icone:active, .folha-icone:hover { background: var(--surface-2); }
+.folha-icone:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.folha-secao {
+  margin: 22px 4px 10px;
+  font-size: 12.5px; font-weight: 600; color: var(--t4);
+}
+.folha-acao {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 4px; border-radius: 16px;
+  -webkit-tap-highlight-color: transparent; transition: background-color 150ms ease;
+}
+.folha-acao:active { background: var(--surface-2); }
+.folha-acao-icone {
+  width: 48px; height: 48px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--brand-tint); color: var(--brand-text);
+}
+.folha-tela {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 7px; min-height: 78px; padding: 10px 6px; border-radius: 16px;
+  background: var(--surface-2);
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease, transform 120ms ease;
+}
+.folha-tela:active { transform: scale(0.97); background: var(--surface-3); }
+.folha-tela[aria-current="page"] { background: var(--brand-tint); }
+.folha-acao:focus-visible, .folha-tela:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }

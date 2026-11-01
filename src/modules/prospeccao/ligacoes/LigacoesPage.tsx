@@ -116,7 +116,7 @@ export function LigacoesPage() {
               vazio={campaigns.length === 0}
               onTentarDeNovo={() => { void load().catch(() => {}) }}
               icone={Phone}
-              titulo="Nenhuma campanha de ligação"
+              titulo="Nenhuma campanha de *ligação*"
               descricao="Crie uma campanha, aponte para uma lista da Base de Leads e a fila monta sozinha — quem nunca foi tocado vem primeiro."
               acao={
                 <Button onClick={() => setCriarOpen(true)} className="gap-2">

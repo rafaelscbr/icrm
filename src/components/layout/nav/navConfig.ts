@@ -2,7 +2,7 @@ import type { ComponentType, CSSProperties } from 'react'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Search, Home, Tv2, UserPlus, Calculator,
-  Target, Database, Package, Rocket, Send, Phone,
+  Target, Database, Package, Rocket, Send, Phone, Trophy,
 } from 'lucide-react'
 
 export type NavIcon = ComponentType<{
@@ -90,6 +90,14 @@ export const navSections: Array<{ label: string; items: NavEntry[] }> = [
       { key: 'performance', to: '/performance', icon: BarChart3, label: 'Análise', end: false },
     ],
   },
+]
+
+/** Ações de criar — o "+ Criar" do topo no desktop e a folha "Mais" no celular. */
+export const acoesCriar = [
+  { label: 'Nova tarefa',  curto: 'Tarefa',  desc: 'Visita, ligação, retorno',  icon: CheckSquare as NavIcon, to: '/tarefas?nova=1' },
+  { label: 'Novo lead',    curto: 'Lead',    desc: 'Entra no funil comercial',  icon: UserPlus    as NavIcon, to: '/leads?novo=1' },
+  { label: 'Novo contato', curto: 'Contato', desc: 'Cliente ou parceiro',       icon: Users       as NavIcon, to: '/contatos?novo=1' },
+  { label: 'Nova venda',   curto: 'Venda',   desc: 'Registrar negócio fechado', icon: Trophy      as NavIcon, to: '/vendas?nova=1' },
 ]
 
 export const externalTools = [

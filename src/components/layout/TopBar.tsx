@@ -2,10 +2,9 @@ import { useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import * as Popover from '@radix-ui/react-popover'
 import {
-  Search, Plus, ChevronDown, Bell, Sun, Moon,
-  CheckSquare, UserPlus, Users, MoreHorizontal, Trophy,
+  Search, Plus, ChevronDown, Bell, Sun, Moon, MoreHorizontal,
 } from 'lucide-react'
-import { filtrarPorPermissao, isGroup } from './nav/navConfig'
+import { filtrarPorPermissao, isGroup, acoesCriar } from './nav/navConfig'
 import type { NavEntry, NavLeaf } from './nav/navConfig'
 import { AccountMenu } from './nav/AccountMenu'
 import { ViewSwitcher, type Visao } from './nav/ViewSwitcher'
@@ -44,12 +43,7 @@ const ROTULO_CURTO: Record<string, string> = {
   escritorio: 'Escritório',
 }
 
-const CRIAR = [
-  { label: 'Nova tarefa',  desc: 'Visita, ligação, retorno',  icon: CheckSquare, to: '/tarefas?nova=1' },
-  { label: 'Novo lead',    desc: 'Entra no funil comercial',  icon: UserPlus,    to: '/leads?novo=1' },
-  { label: 'Novo contato', desc: 'Cliente ou parceiro',       icon: Users,       to: '/contatos?novo=1' },
-  { label: 'Nova venda',   desc: 'Registrar negócio fechado', icon: Trophy,      to: '/vendas?nova=1' },
-]
+const CRIAR = acoesCriar
 
 function folhaAtiva(f: NavLeaf, pathname: string) {
   if (f.end) return pathname === f.to

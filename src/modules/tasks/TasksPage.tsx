@@ -718,7 +718,7 @@ export function TasksPage() {
         onTentarDeNovo={() => { void load() }}
         esqueleto={<EsqueletoLinhas linhas={5} />}
         icone={ListTodo}
-        titulo="Nenhuma tarefa ainda"
+        titulo="Nenhuma *tarefa* ainda"
         descricao="Crie tarefas para organizar seu dia e não perder nenhum follow-up."
         acao={
           <Button onClick={() => { setEditing(undefined); setFormOpen(true) }} className="gap-2">

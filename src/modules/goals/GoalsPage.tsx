@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Destaque, destacar } from '../../components/shared/Destaque'
 import { Link } from 'react-router-dom'
 import {
   Target, Pencil, Trash2, CheckCircle2, TrendingUp,
@@ -273,10 +274,10 @@ function PerformanceHero({ tasks, period, brokerId }: {
   const score = calcScore(kpis)
   const faltando = kpis.filter(k => k.value < k.target).length
 
-  const veredito = score >= 80 ? 'Semana de gente que fecha negócio.'
-                 : score >= 50 ? 'No ritmo — falta pouco para fechar.'
-                 : score >= 25 ? 'Dá para virar, mas precisa acelerar hoje.'
-                 : 'O período mal começou. Comece pelo topo do funil.'
+  const veredito = score >= 80 ? 'Semana de gente que *fecha* negócio.'
+                 : score >= 50 ? 'No *ritmo* — falta pouco para fechar.'
+                 : score >= 25 ? 'Dá para virar, mas precisa *acelerar* hoje.'
+                 : 'O período mal começou. Comece pelo *topo* do funil.'
 
   const PERIODO = {
     hoje:   { titulo: 'Hoje',        sub: new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }) },
@@ -301,7 +302,7 @@ function PerformanceHero({ tasks, period, brokerId }: {
         <ScoreRing score={score} />
         <div className="min-w-0">
           <p className="text-[12.5px] text-t4 truncate">Desempenho · {PERIODO.sub}</p>
-          <p className="text-[14.5px] font-semibold text-t1 leading-snug mt-0.5">{veredito}</p>
+          <p className="text-[14.5px] font-semibold text-t1 leading-snug mt-0.5">{destacar(veredito)}</p>
           <p className={`text-[12px] mt-0.5 ${faltando === 0 ? 'text-success' : 'text-t4'}`}>
             {faltando === 0
               ? 'Todas as metas do período batidas'
@@ -746,7 +747,7 @@ export function GoalsPage() {
       <div className="flex items-center justify-between gap-3 mb-3">
         <SecaoTitulo icon={TrendingUp} tom="marca"
           descricao="Acompanhamento próprio, além dos mínimos da casa">
-          Metas personalizadas
+          Metas *personalizadas*
         </SecaoTitulo>
 
         {snapshots.length > 0 && (
@@ -806,7 +807,7 @@ export function GoalsPage() {
         <Painel className="flex flex-col items-center gap-4 px-6 py-12 text-center mb-8">
           <IconeTom icon={Target} tom="marca" tamanho="lg" />
           <div>
-            <p className="font-heading text-base font-bold text-t1">Nenhuma meta personalizada</p>
+            <p className="font-heading text-base font-bold text-t1">Nenhuma meta <Destaque>personalizada</Destaque></p>
             <p className="text-sm text-t3 mt-1 max-w-sm">
               Os mínimos da casa já aparecem acima. Crie uma meta própria quando quiser
               acompanhar algo além deles — visitas, propostas ou vendas.

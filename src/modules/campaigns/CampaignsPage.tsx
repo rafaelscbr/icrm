@@ -155,7 +155,7 @@ export function CampaignsPage() {
         vazio={campaigns.length === 0}
         onTentarDeNovo={() => { void loadCampaigns() }}
         icone={Megaphone}
-        titulo="Nenhuma campanha criada"
+        titulo="Nenhuma *campanha* criada"
         descricao="Crie sua primeira campanha de prospecção ativa para organizar sua lista fria e acompanhar o funil."
         acao={
           <Button onClick={() => setCreateOpen(true)} className="gap-2">

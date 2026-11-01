@@ -230,7 +230,7 @@ export function PropertiesPage() {
         vazio={filtered.length === 0}
         onTentarDeNovo={() => { void load() }}
         icone={Building2}
-        titulo="Nenhum imóvel encontrado"
+        titulo="Nenhum *imóvel* encontrado"
         descricao="Cadastre imóveis para gerenciar seu portfólio."
         acao={
           <Button onClick={() => { setEditing(undefined); setFormOpen(true) }} className="gap-2">

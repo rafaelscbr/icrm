@@ -2,18 +2,24 @@ import { useState, useEffect, useId, useRef, FormEvent, KeyboardEvent } from 're
 import { useNavigate } from 'react-router-dom'
 import {
   Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, ArrowRight, ArrowUp,
-  WifiOff, ShieldCheck, KeyRound, Info,
+  WifiOff, ShieldCheck, KeyRound, Info, Sun, Moon,
 } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
+import { useThemeStore } from '../store/useThemeStore'
+import { Destaque } from '../components/shared/Destaque'
 
 /**
- * Entrada do iCRM — "Planta".
+ * Entrada do iCRM — v2 "Folha e marca" (01/11/2026).
  *
- * A tela é sempre escura, nos dois temas: é o único momento de marca pura do
- * sistema. O fundo é uma planta baixa (a grade de dados do Brand Guide em duas
- * escalas) com luz difusa atrás do cartão. Os tokens escuros são re-declarados
- * em `.login` no index.css, então as classes de token funcionam mesmo com
- * `html.light`.
+ * Até aqui a entrada era sempre escura, nos dois temas. O Rafael gostou do
+ * claro e quis a entrada nele também: agora a tela segue o tema escolhido
+ * (com o botão de sol/lua no canto, como no resto do sistema) e só o painel
+ * de marca, à esquerda, é sempre Marinho — é ele que carrega a identidade,
+ * com a planta em grade e a palavra "chave" em Instrument Serif dourada.
+ * O formulário mora na folha do tema: Papel no claro, Marinho no escuro.
+ *
+ * No celular o painel de marca vira uma faixa curta no topo e o formulário
+ * vem logo abaixo, sem rolar para achar o botão.
  *
  * O formulário segue o que se espera de uma entrada séria:
  *  - rótulo sempre visível, erro embaixo do campo e ligado por aria-describedby;
@@ -134,80 +140,79 @@ export function LoginPage() {
     }
   }
 
-  const campo =
-    'w-full h-12 rounded-[12px] pl-11 text-[15px] text-t1 bg-s2 border ' +
-    'placeholder:text-t4 transition-[border-color,box-shadow] duration-150 ' +
-    'focus:outline-none focus:ring-[3px] '
-  const campoOk  = 'border-line-input hover:border-line-strong focus:border-brand focus:ring-brand/25'
-  const campoErr = 'border-error focus:border-error focus:ring-error/25'
+  const { theme, toggle } = useThemeStore()
+  const [olaInicio, olaFim] = ola.split(' ')
 
-  const rotulo = 'font-label text-[11px] font-semibold uppercase tracking-[0.14em] text-t3'
+  const campo = 'campo w-full h-12 pl-11 text-[15px] placeholder:text-t4'
 
   return (
-    <div className="login flex flex-col">
-      {/* ── Cena: planta em grade, luzes difusas, vinheta ──────────────────── */}
-      <div className="login-cena" aria-hidden>
-        <div className="login-grade" />
-        <div className="login-luz" />
-        <div className="login-vinheta" />
-      </div>
+    <div className="login">
+      {/* ── Painel de marca — sempre Marinho ─────────────────────────────── */}
+      <aside className="login-marca" aria-label="Sobre o iCRM">
+        <div className="login-marca-cena" aria-hidden>
+          <div className="login-grade" />
+          <div className="login-luz" />
+        </div>
 
-      {/* ── Topo ──────────────────────────────────────────────────────────── */}
-      <header className="w-full max-w-[1240px] mx-auto px-5 sm:px-8 lg:px-12 pt-6 sm:pt-8 flex items-center justify-center lg:justify-between">
         <Lockup />
-        <span className="hidden lg:inline-flex items-center gap-2 rounded-full border border-line px-3 py-1.5 font-label text-[11px] font-semibold uppercase tracking-[0.14em] text-t3">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand" aria-hidden />
-          iCRM · Souza OS
-        </span>
-      </header>
 
-      {/* ── Conteúdo ──────────────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-[1240px] mx-auto px-5 sm:px-8 lg:px-12 py-8 sm:py-10 grid lg:grid-cols-[1fr_minmax(0,440px)] lg:gap-16 xl:gap-24 items-center">
-
-        {/* Manifesto — só em desktop */}
-        <section className="hidden lg:block self-start pt-[6vh] max-w-[34rem]" aria-label="Sobre o iCRM">
-          <p className="font-label text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-text mb-5">
+        <div className="login-manifesto">
+          <p className="hidden lg:block font-label text-[12px] font-semibold uppercase tracking-[0.18em] text-[color:var(--m-t3)] mb-5">
             Sistema comercial da Souza
           </p>
           <p
-            className="font-display font-bold text-t1 tracking-[-0.02em] leading-[1.04] text-[2.75rem] xl:text-[3.4rem]"
+            className="font-display font-bold tracking-[-0.025em] leading-[1.06] text-[1.65rem] sm:text-[2rem] lg:text-[3rem] xl:text-[3.5rem] text-[color:var(--m-t1)]"
             style={{ textWrap: 'balance' } as React.CSSProperties}
           >
-            Do primeiro contato à <span className="text-brand-text">chave na mão</span>.
+            Do primeiro contato à <Destaque>chave</Destaque> na mão.
           </p>
-          <p className="mt-5 text-[16px] leading-relaxed text-t3 max-w-[30rem]">
+          <p className="hidden lg:block mt-5 text-[16px] leading-relaxed max-w-[30rem] text-[color:var(--m-t3)]">
             Lead, atendimento, visita, proposta e venda no mesmo lugar — com
             o tempo de resposta sob controle e a próxima ação sempre à vista.
           </p>
 
           {/* Trilha do funil: diz o que o sistema faz, sem inventar número. */}
-          <ol className="relative mt-12 flex justify-between max-w-[30rem]" aria-label="Etapas do funil">
-            <span className="absolute left-3 right-3 top-[13px] h-px bg-gradient-to-r from-line-strong to-success/50" aria-hidden />
+          <ol className="hidden lg:flex relative mt-12 justify-between max-w-[30rem]" aria-label="Etapas do funil">
+            <span className="absolute left-3 right-3 top-[13px] h-px" style={{ background: 'linear-gradient(90deg, var(--m-line), rgba(52,200,138,0.5))' }} aria-hidden />
             {ETAPAS.map(et => (
               <li key={et} className="relative flex flex-col items-center gap-2.5">
                 <span className="h-[27px] flex items-center" aria-hidden>
-                  <span className="w-[11px] h-[11px] rounded-full border-2 border-t4 bg-page" />
+                  <span className="w-[11px] h-[11px] rounded-full border-2" style={{ borderColor: 'var(--m-t4)', background: '#0B1A3A' }} />
                 </span>
-                <span className="text-[13px] text-t3">{et}</span>
+                <span className="text-[13px] text-[color:var(--m-t3)]">{et}</span>
               </li>
             ))}
             <li className="relative flex flex-col items-center gap-2.5">
-              <span className="w-[27px] h-[27px] rounded-full flex items-center justify-center bg-page border border-success/60 shadow-[0_0_0_4px_rgba(52,200,138,0.10)]" aria-hidden>
-                <KeyRound size={13} strokeWidth={2} className="text-success" />
+              <span className="w-[27px] h-[27px] rounded-full flex items-center justify-center border" style={{ background: '#0B1A3A', borderColor: 'rgba(52,200,138,0.6)', boxShadow: '0 0 0 4px rgba(52,200,138,0.10)' }} aria-hidden>
+                <KeyRound size={13} strokeWidth={2} style={{ color: '#34C88A' }} />
               </span>
-              <span className="text-[13px] font-semibold text-t1">Venda</span>
+              <span className="text-[13px] font-semibold text-[color:var(--m-t1)]">Venda</span>
             </li>
           </ol>
-        </section>
+        </div>
 
-        {/* Cartão de entrada */}
-        <section
-          className="login-cartao gold-edge w-full max-w-[440px] mx-auto px-6 py-8 sm:px-9 sm:py-10"
-          aria-labelledby={ids.titulo}
-        >
-          <p className={`${rotulo} mb-3`}>Acesso da equipe</p>
-          <h1 id={ids.titulo} className="font-display text-[1.9rem] sm:text-[2.1rem] font-extrabold text-t1 tracking-[-0.02em] leading-[1.1]">
-            {ola}.
+        <p className="hidden lg:block text-[12.5px] text-[color:var(--m-t4)]">Itajaí · Santa Catarina</p>
+      </aside>
+
+      {/* ── Folha do formulário — segue o tema ──────────────────────────── */}
+      <main className="login-folha">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}
+            title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+            className="w-11 h-11 flex items-center justify-center rounded-full text-t3 hover:text-t1 hover:bg-s2 transition-colors cursor-pointer
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+          >
+            {theme === 'dark' ? <Sun size={18} strokeWidth={1.8} /> : <Moon size={18} strokeWidth={1.8} />}
+          </button>
+        </div>
+
+        <section className="login-cartao w-full max-w-[400px] mx-auto my-auto" aria-labelledby={ids.titulo}>
+          <p className="text-[13px] font-medium text-t4 mb-2">Acesso da equipe</p>
+          <h1 id={ids.titulo} className="font-display text-[2.2rem] sm:text-[2.5rem] font-bold text-t1 tracking-[-0.025em] leading-[1.05]">
+            {olaInicio} <Destaque>{olaFim}</Destaque>.
           </h1>
           <p className="text-[15px] text-t3 mt-2 mb-8">
             Entre com sua conta para abrir o seu funil.
@@ -215,8 +220,8 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate aria-busy={enviando}>
             {/* E-mail */}
-            <div className="flex flex-col gap-2">
-              <label htmlFor={ids.email} className={rotulo}>E-mail</label>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor={ids.email} className="rotulo-campo">E-mail</label>
               <div className="relative">
                 <Mail size={17} strokeWidth={1.6} className="absolute left-4 top-1/2 -translate-y-1/2 text-t4 pointer-events-none" aria-hidden />
                 <input
@@ -237,16 +242,16 @@ export function LoginPage() {
                   placeholder="nome@empresa.com"
                   aria-invalid={!!errEmail}
                   aria-describedby={errEmail ? ids.emailErr : undefined}
-                  className={`${campo} pr-4 ${errEmail ? campoErr : campoOk}`}
+                  className={`${campo} pr-4`}
                 />
               </div>
               {errEmail && <ErroCampo id={ids.emailErr}>{errEmail}</ErroCampo>}
             </div>
 
             {/* Senha */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between gap-3">
-                <label htmlFor={ids.senha} className={rotulo}>Senha</label>
+                <label htmlFor={ids.senha} className="rotulo-campo">Senha</label>
                 <button
                   type="button"
                   onClick={() => setAjuda(v => !v)}
@@ -275,7 +280,7 @@ export function LoginPage() {
                   placeholder="Sua senha"
                   aria-invalid={!!errSenha}
                   aria-describedby={[errSenha && ids.senhaErr, capsLock && ids.caps].filter(Boolean).join(' ') || undefined}
-                  className={`${campo} pr-14 ${errSenha ? campoErr : campoOk}`}
+                  className={`${campo} pr-14`}
                 />
                 <button
                   type="button"
@@ -283,7 +288,7 @@ export function LoginPage() {
                   aria-label={verSenha ? 'Ocultar senha' : 'Mostrar senha'}
                   aria-pressed={verSenha}
                   aria-controls={ids.senha}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-[10px] text-t4 hover:text-t1 hover:bg-s3 transition-colors cursor-pointer"
+                  className="absolute right-0.5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-[10px] text-t4 hover:text-t1 transition-colors cursor-pointer"
                 >
                   {verSenha ? <EyeOff size={18} strokeWidth={1.6} /> : <Eye size={18} strokeWidth={1.6} />}
                 </button>
@@ -296,7 +301,7 @@ export function LoginPage() {
                 </p>
               )}
               {ajuda && (
-                <div id={ids.ajuda} className="flex items-start gap-2.5 rounded-[12px] border border-info-line bg-info-bg px-3.5 py-3 text-[13px] leading-relaxed text-t2">
+                <div id={ids.ajuda} className="flex items-start gap-2.5 rounded-[12px] bg-info-bg px-3.5 py-3 text-[13px] leading-relaxed text-t2">
                   <Info size={15} strokeWidth={1.8} className="text-info flex-shrink-0 mt-0.5" aria-hidden />
                   <span>
                     A senha é redefinida pelo administrador do iCRM. Peça a ele um
@@ -309,13 +314,13 @@ export function LoginPage() {
             {/* Erro do envio e estado da conexão — anunciados por leitor de tela */}
             <div aria-live="polite" aria-atomic="true" className="empty:hidden flex flex-col gap-2">
               {!online && (
-                <p className="flex items-start gap-2.5 rounded-[12px] border border-warning-line bg-warning-bg px-3.5 py-3 text-[13px] text-t2">
+                <p className="flex items-start gap-2.5 rounded-[12px] bg-warning-bg px-3.5 py-3 text-[13px] text-t2">
                   <WifiOff size={15} strokeWidth={1.8} className="text-warning flex-shrink-0 mt-0.5" aria-hidden />
                   <span>Você está sem internet. Assim que a conexão voltar, é só entrar.</span>
                 </p>
               )}
               {erro && (
-                <p role="alert" className="flex items-start gap-2.5 rounded-[12px] border border-error-line bg-error-bg px-3.5 py-3 text-[13px] text-t1">
+                <p role="alert" className="flex items-start gap-2.5 rounded-[12px] bg-error-bg px-3.5 py-3 text-[13px] text-t1">
                   <AlertCircle size={15} strokeWidth={1.8} className="text-error flex-shrink-0 mt-0.5" aria-hidden />
                   <span>{erro}</span>
                 </p>
@@ -327,8 +332,9 @@ export function LoginPage() {
               disabled={enviando}
               className="group mt-1 w-full h-[52px] flex items-center justify-center gap-2 rounded-[12px] text-[15px] font-bold
                 bg-brand-fill text-brand-fill-text hover:bg-brand-fill-hover
-                shadow-[0_10px_30px_-10px_rgba(214,178,110,0.55)]
+                shadow-[0_10px_30px_-12px_rgba(214,178,110,0.6)]
                 transition-[background-color,transform] duration-150 active:scale-[0.985] cursor-pointer
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand/50
                 disabled:opacity-70 disabled:cursor-wait"
             >
               {enviando ? (
@@ -344,19 +350,16 @@ export function LoginPage() {
               )}
             </button>
           </form>
-
-          <p className="mt-8 pt-6 border-t border-line flex items-center justify-center gap-2 text-[13px] text-t4">
-            <ShieldCheck size={15} strokeWidth={1.6} aria-hidden />
-            Acesso restrito à equipe Souza Imobiliária.
-          </p>
         </section>
-      </main>
 
-      {/* ── Rodapé ────────────────────────────────────────────────────────── */}
-      <footer className="w-full max-w-[1240px] mx-auto px-5 sm:px-8 lg:px-12 pb-6 flex flex-col sm:flex-row items-center justify-between gap-1 text-xs text-t4">
-        <span>Itajaí · Santa Catarina</span>
-        <span>© {ano} Souza Imobiliária</span>
-      </footer>
+        <footer className="flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[12.5px] text-t4 pt-8">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck size={14} strokeWidth={1.6} aria-hidden />
+            Acesso restrito à equipe Souza Imobiliária
+          </span>
+          <span>© {ano}</span>
+        </footer>
+      </main>
     </div>
   )
 }
@@ -384,8 +387,8 @@ function Lockup() {
         </span>
       </div>
       <div className="flex flex-col leading-none" aria-hidden>
-        <span className="font-heading text-t1" style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em' }}>SOUZA</span>
-        <span className="font-heading text-t3 mt-1" style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.16em' }}>
+        <span className="font-heading" style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em', color: 'var(--m-t1)' }}>SOUZA</span>
+        <span className="font-heading mt-1" style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.16em', color: 'var(--m-t3)' }}>
           IMOBILIÁRIA<span className="text-brand">.</span>
         </span>
       </div>

@@ -1,9 +1,12 @@
 import { ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { Plus, Search, Bell } from 'lucide-react'
+import { useSearchStore } from '../../store/useSearchStore'
+import { useUnreadCount } from '../../store/useNotificationsStore'
 import type { LucideIcon } from 'lucide-react'
 import type { Tom } from '../shared/visual'
 import { navSections, isGroup } from './nav/navConfig'
+import { destacar, semMarcador } from '../shared/Destaque'
 
 interface PageLayoutProps {
   title: string
@@ -72,14 +75,17 @@ export function PageLayout({
   const caixa = largura === 'total' ? 'max-w-none' : 'max-w-7xl'
   // A cor da área continua no indicador das abas e no hover das tabelas.
   const area = corDaArea(secaoDa(useLocation().pathname))
+  const abrirBusca = useSearchStore(st => st.setOpen)
+  const naoLidas = useUnreadCount()
 
   return (
     <div className="flex-1 min-h-full bg-page aurora-host" style={{ ['--area' as string]: area, ['--aba-cor' as string]: area }}>
       <header className="page-bar sticky top-0 z-10 pt-safe">
         <div className={`${caixa} mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-5`}>
-          <div className="flex items-baseline gap-2.5 min-w-0 shrink-0 max-w-[60%] lg:max-w-none" title={subtitle}>
-            <h1 className="font-display text-[18px] lg:text-[19px] font-bold text-t1 leading-none tracking-[-0.02em] truncate">
-              {title}
+          <div className="flex items-baseline gap-2.5 min-w-0 flex-1 lg:flex-none lg:shrink-0" title={subtitle}>
+            <h1 className="font-display text-[18px] lg:text-[19px] font-bold text-t1 leading-none tracking-[-0.02em] truncate"
+                aria-label={semMarcador(title)}>
+              {destacar(title)}
             </h1>
             {subtitle && (
               <span className={`text-[13px] text-t4 truncate ${band ? 'hidden sm:inline lg:hidden' : 'hidden sm:inline'}`}>
@@ -93,6 +99,22 @@ export function PageLayout({
           )}
 
           <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+            {/* Celular: busca e avisos no topo, onde o olho procura primeiro.
+                No desktop eles moram na barra azul. */}
+            <div className="lg:hidden flex items-center -mr-1">
+              <button type="button" onClick={() => abrirBusca(true)} className="folha-icone" aria-label="Buscar">
+                <Search size={20} strokeWidth={1.9} aria-hidden />
+              </button>
+              <Link to="/notificacoes" className="folha-icone relative"
+                aria-label={naoLidas > 0 ? `Avisos — ${naoLidas} não lido${naoLidas !== 1 ? 's' : ''}` : 'Avisos'}>
+                <Bell size={20} strokeWidth={1.9} aria-hidden />
+                {naoLidas > 0 && (
+                  <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-brand-fill text-brand-fill-text text-[10.5px] font-bold flex items-center justify-center tabular-nums" aria-hidden>
+                    {naoLidas > 9 ? '9+' : naoLidas}
+                  </span>
+                )}
+              </Link>
+            </div>
             {actions}
             {ctaLabel && onCta && (
               <button

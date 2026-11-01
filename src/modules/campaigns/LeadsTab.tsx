@@ -802,7 +802,7 @@ export function LeadsTab({ leads, campaign, stickyTop = 0 }: LeadsTabProps) {
         vazio={leads.length === 0}
         onTentarDeNovo={() => { void load() }}
         icone={MessageCircle}
-        titulo="Nenhum lead importado"
+        titulo="Nenhum *lead* importado"
         descricao="Importe uma lista XLSX para começar a disparar."
       >
         <>

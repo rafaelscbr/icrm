@@ -91,6 +91,9 @@ export default {
         // `label` continua existindo como intenção semântica (rótulo/dado),
         // mas usa a mesma família do corpo — a diferença é caixa e tracking.
         label:    ['Geist', 'system-ui', 'sans-serif'],
+        // 01/11/2026: Instrument Serif itálica volta SÓ como destaque — uma
+        // palavra por frase, sempre em dourado. Ver <Destaque> e .destaque.
+        destaque: ['"Instrument Serif"', 'Georgia', 'serif'],
       },
       boxShadow: {
         card:    'var(--shadow-card)',

@@ -268,7 +268,7 @@ export function WeekHistoryPage() {
         onTentarDeNovo={() => { if (visaoGlobal) void loadTodos(); else void loadSnapshots(effectiveBrokerId) }}
         esqueleto={<EsqueletoCards cards={3} colunas={3} />}
         icone={History}
-        titulo="Nenhuma semana registrada ainda"
+        titulo="Nenhuma *semana* registrada ainda"
         descricao="O histórico é gerado automaticamente ao virar a semana. Complete uma semana com atividades e volte aqui."
       >
         <>

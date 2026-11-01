@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { destacar } from './Destaque'
 import { AlertTriangle, RefreshCw, Loader2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Painel, IconeTom } from './visual'
@@ -101,7 +102,7 @@ export function EstadoTela({
       <Painel className="px-6 py-14 flex flex-col items-center gap-4 text-center">
         {icone && <IconeTom icon={icone} tom="neutro" tamanho="lg" />}
         <div>
-          <p className="font-heading text-base font-bold text-t1">{titulo}</p>
+          <p className="font-heading text-base font-bold text-t1">{destacar(titulo)}</p>
           {descricao && <p className="text-sm text-t3 mt-1.5 max-w-md">{descricao}</p>}
         </div>
         {acao}

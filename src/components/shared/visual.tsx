@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useContagem } from '../../hooks/useContagem'
 import type { LucideIcon } from 'lucide-react'
 import { Lightbulb } from 'lucide-react'
+import { destacar } from './Destaque'
 
 /**
  * Vocabulário visual do Souza OS.
@@ -241,7 +242,7 @@ export function SecaoTitulo({ icon: _icon, children, descricao, tom: _tom }: {
   return (
     // v9: título de seção é só texto — filete e ícone saíram.
     <div className="mb-3">
-      <h3 className="text-[15px] font-semibold text-t1 tracking-[-0.01em]">{children}</h3>
+      <h3 className="text-[15px] font-semibold text-t1 tracking-[-0.01em]">{destacar(children)}</h3>
       {descricao && <p className="text-[12.5px] text-t4 mt-0.5">{descricao}</p>}
     </div>
   )

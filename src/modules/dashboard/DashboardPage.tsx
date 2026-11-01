@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, ReactNode } from 'react'
+import { destacar } from '../../components/shared/Destaque'
 import { useNavigate } from 'react-router-dom'
 import {
   Users, TrendingUp, ArrowRight, Sparkles, CheckCircle2,
@@ -114,7 +115,7 @@ function SectionLabel({ children, hint, icon: _icon, tom: _tom }: {
   return (
     // v9: só o título e a dica — filete e ícone saíram.
     <div className="flex items-baseline gap-2.5 mb-3.5 px-0.5">
-      <h2 className="font-display text-[18px] font-bold text-t1 tracking-[-0.02em]">{children}</h2>
+      <h2 className="font-display text-[18px] font-bold text-t1 tracking-[-0.02em]">{destacar(children)}</h2>
       {hint && <span className="text-[12px] text-t4 truncate">{hint}</span>}
     </div>
   )
@@ -1255,7 +1256,7 @@ export function DashboardPage() {
     <PageLayout
       icon={LayoutDashboard}
       iconTom="marca"
-      title={`${greeting()}, ${firstName}`}
+      title={`${greeting()}, *${firstName}*`}
       subtitle={todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1)}
       ctaLabel="Nova Tarefa"
       onCta={() => setTaskFormOpen(true)}
@@ -1325,14 +1326,14 @@ export function DashboardPage() {
       </div>
       <div className="prioridades-slot xl:col-span-7 min-w-0">
         <SectionLabel icon={Flame} tom="atencao" hint={priorityItems.length > 0 ? `${priorityItems.length} item${priorityItems.length !== 1 ? 's' : ''} exigindo ação` : undefined}>
-          Prioridades de hoje
+          Prioridades de *hoje*
         </SectionLabel>
         <PriorityFeed items={priorityItems} loading={kpiLoading} coldOverflow={coldOverflow} onSeeAll={() => navigate('/leads')} />
       </div>
       </div>
 
       {/* ══ 4. Funil de receita ═════════════════════════════════════════ */}
-      <SectionLabel icon={Filter} tom="info" hint="Volume, receita e tempo por etapa">Funil de receita</SectionLabel>
+      <SectionLabel icon={Filter} tom="info" hint="Volume, receita e tempo por etapa">Funil de *receita*</SectionLabel>
       <div className="mb-8">
         <RevenueFunnel
           data={overviewData} analytics={analytics} detail={funnelDetail}
@@ -1342,7 +1343,7 @@ export function DashboardPage() {
       </div>
 
       {/* ══ 5. Evolução de receita ══════════════════════════════════════ */}
-      <SectionLabel icon={TrendingUp} tom="sucesso" hint="VGV por semana contra a meta acumulada">Evolução de receita</SectionLabel>
+      <SectionLabel icon={TrendingUp} tom="sucesso" hint="VGV por semana contra a meta acumulada">Evolução da *receita*</SectionLabel>
       <div className="mb-8">
         <RevenueTrend points={weeklyTrend} target={overviewData?.vgl.target ?? 0} loading={kpiLoading} />
       </div>

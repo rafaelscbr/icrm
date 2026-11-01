@@ -176,3 +176,10 @@ pixel art).
 - **Metas:** abaixo de 1280px o score ocupa a linha de cima e os indicadores descem (o veredito quebrava em 4 linhas).
 - **FaixaNumeros:** filetes por CSS (`.faixa-numeros`) conforme o arranjo; com número ímpar de itens o último ocupa a fileira toda no celular.
 - **Listas (Disparos, Base de Leads, Ligações) no celular:** o botão "Abrir" vira uma seta — a linha inteira já abre e o nome deixa de ser cortado.
+
+### v11 — login no tema, destaque em serifa e celular (01/11/2026)
+
+- **Login "Folha e marca":** a entrada segue o tema (botão de sol/lua no canto). Painel de marca sempre Marinho, com a planta em grade e luz Areia; formulário na folha do tema, com os campos `.campo`. No celular a marca vira faixa curta no topo.
+- **Instrument Serif itálica, em dourado, numa palavra por frase.** `<Destaque>` ou `*palavra*` em textos que passam por `destacar()` — título da tela (PageLayout), SecaoTitulo, EstadoTela e títulos de seção do Painel. Token `--destaque` (claro escurecido para 3:1). Usado na saudação ("Bom dia, *Rafael*"), seções do Painel, veredito e seções de Metas e estados vazios.
+- **Celular:** doca com 4 vagas — Início, Leads, Simulador e Mais — com pílula atrás do ícone ativo e rótulo em negrito. "Mais" abre uma folha de baixo: conta, avisos, tema e fechar; busca; Criar (tarefa, lead, contato, venda); todas as outras telas em grade de três por seção; ferramentas; Sair separado. A doca fica acima da folha (o mesmo botão fecha). Busca e avisos também no topo de cada tela.
+- `acoesCriar` passou para `navConfig` (topo e celular usam a mesma lista).
