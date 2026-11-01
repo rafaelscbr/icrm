@@ -96,7 +96,7 @@ export function Sidebar() {
           >
             <span
               style={{
-                fontFamily: "'Fraunces', system-ui, sans-serif",
+                fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
                 // Grafite fixo: o quadrado é sempre dourado vivo, então o "S" não
                 // pode seguir o token de tema (no claro ele viraria branco sobre
                 // ouro — 1.9:1, ilegível).
@@ -108,11 +108,11 @@ export function Sidebar() {
           {!collapsed && (
             <div className="flex min-w-0 select-none flex-col leading-none">
               <span style={{
-                fontFamily: "'Fraunces', system-ui, sans-serif",
+                fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
                 fontWeight: 800, fontSize: 14.5, color: 'var(--nav-logo)', letterSpacing: '-0.01em',
               }}>SOUZA</span>
               <span style={{
-                fontFamily: "'Fraunces', system-ui, sans-serif",
+                fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
                 fontWeight: 600, fontSize: 9, color: 'var(--nav-muted)', letterSpacing: '0.14em',
               }}>
                 {/* Ponto final em Areia — exigência do lockup no Brand Guide. */}

@@ -116,7 +116,7 @@ function SectionLabel({ children, hint, icon: Icon, tom = 'marca' }: {
     <div className="flex items-center gap-2.5 mb-3.5 px-0.5">
       <span className={`w-1 h-4 rounded-full ${TOM[tom].ponto}`} aria-hidden />
       {Icon && <Icon size={15} strokeWidth={1.7} className={TOM[tom].texto} aria-hidden />}
-      <h2 className="font-display text-[17px] font-semibold text-t1 tracking-[-0.02em]">{children}</h2>
+      <h2 className="font-display text-[17px] font-bold text-t1 tracking-[-0.02em]">{children}</h2>
       {hint && <span className="text-[11px] text-t4 truncate">{hint}</span>}
     </div>
   )

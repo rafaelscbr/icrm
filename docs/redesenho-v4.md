@@ -5,7 +5,9 @@ melhores práticas de UX/UI e performance. Este arquivo é o placar.
 
 Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
-**Progresso: 74%**
+**Progresso: 76%**
+
+- [x] v5.1: a serifa (Fraunces) saiu — títulos e números de destaque em **Plus Jakarta Sans**, interface em **Geist**
 
 ## v5 "Grafite" (01/11/2026) — "muda tudo"
 

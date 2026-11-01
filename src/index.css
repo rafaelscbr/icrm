@@ -1,4 +1,7 @@
-/* v5 "Grafite" (01/11/2026) — Rafael pediu para mudar tudo: o marinho e o
+/* v5.1 (01/11/2026) — a serifa saiu: Plus Jakarta Sans nos títulos e números
+ * de destaque, Geist na interface. Fraunces e Sora são histórico.
+ *
+ * v5 "Grafite" (01/11/2026) — Rafael pediu para mudar tudo: o marinho e o
  * bege saíram das superfícies. Escuro = grafite neutro (#111113/#18181B),
  * claro = branco com cinzas neutros. O ouro champanhe ficou só para marca,
  * dinheiro, meta e ação principal. Fraunces + Geist mantidas.
@@ -365,12 +368,12 @@ html.light {
 
   /* Títulos — Sora. Tracking mais fechado que o da Schibsted porque a Sora
      é naturalmente mais aberta; sem isso os títulos ficam frouxos. */
-  /* v5: serifa só no título da tela (h1). h2/h3 vivem dentro de cards e
+  /* v5.1: display (Plus Jakarta) só no título da tela (h1). h2/h3 vivem dentro de cards e
      painéis, onde a leitura é de interface — ficam na Geist. */
   h1 {
-    font-family: 'Fraunces', Georgia, serif;
-    font-weight: 600;
-    letter-spacing: -0.018em;
+    font-family: 'Plus Jakarta Sans', 'Geist', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
   }
   h2, h3 {
     font-family: 'Geist', system-ui, sans-serif;

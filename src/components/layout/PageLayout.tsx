@@ -57,7 +57,7 @@ export function PageLayout({
           <div className="flex items-center gap-3 min-w-0">
             {icon && <IconeTom icon={icon} tom={iconTom} tamanho="lg" />}
             <div className="min-w-0">
-              <h1 className="font-display text-[20px] lg:text-[24px] font-semibold text-t1 leading-tight
+              <h1 className="font-display text-[20px] lg:text-[24px] font-bold text-t1 leading-tight
                              tracking-[-0.025em] truncate">
                 {title}
               </h1>
