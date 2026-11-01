@@ -7,12 +7,13 @@ import {
 import { useAuthStore } from '../store/useAuthStore'
 
 /**
- * Entrada do iCRM — "Horizonte".
+ * Entrada do iCRM — "Planta".
  *
  * A tela é sempre escura, nos dois temas: é o único momento de marca pura do
- * sistema, desenhado com os grafismos do Brand Guide (grade de dados, horizonte
- * e sol em Areia). Os tokens escuros são re-declarados em `.login` no
- * index.css, então as classes de token funcionam mesmo com `html.light`.
+ * sistema. O fundo é uma planta baixa (a grade de dados do Brand Guide em duas
+ * escalas) com luz difusa atrás do cartão. Os tokens escuros são re-declarados
+ * em `.login` no index.css, então as classes de token funcionam mesmo com
+ * `html.light`.
  *
  * O formulário segue o que se espera de uma entrada séria:
  *  - rótulo sempre visível, erro embaixo do campo e ligado por aria-describedby;
@@ -144,12 +145,10 @@ export function LoginPage() {
 
   return (
     <div className="login flex flex-col">
-      {/* ── Cena: céu, sol, horizonte, chão em grade, vinheta ─────────────── */}
+      {/* ── Cena: planta em grade, luzes difusas, vinheta ──────────────────── */}
       <div className="login-cena" aria-hidden>
-        <div className="login-ceu" />
-        <div className="login-sol-caixa"><div className="login-sol" /></div>
-        <div className="login-chao" />
-        <div className="login-horizonte" />
+        <div className="login-grade" />
+        <div className="login-luz" />
         <div className="login-vinheta" />
       </div>
 

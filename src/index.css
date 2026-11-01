@@ -1467,19 +1467,20 @@ html.compacta .lista-linha {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   ENTRADA — "Horizonte" (LoginPage)
+   ENTRADA — "Planta" (LoginPage)
 
    A tela de entrada é sempre escura, nos dois temas. É o único momento de
-   marca pura do sistema, e é desenhada com os grafismos do Brand Guide: grade
-   de dados em branco 5% sobre Marinho, horizonte e sol em Areia, vinheta.
+   marca pura do sistema. O fundo é uma planta baixa: a grade de dados do
+   Brand Guide em duas escalas (fina a 24px, mestra a 120px), que só aparece
+   em torno do formulário e some nas bordas. Por cima, duas luzes difusas —
+   uma Areia atrás do cartão, uma Marinho claro no canto oposto — e a vinheta.
 
    Em vez de hex solto no componente, `.login` re-declara os tokens do tema
    escuro no próprio escopo — assim `text-t1`, `bg-s2`, `border-line-input`
    etc. funcionam igual com `html.light` ativo.
 
-   Movimento: o sol "respira" (14s) e a grade desliza em direção a quem olha
-   (18s por célula). Só `transform`, e a regra global de reduced-motion congela
-   os dois.
+   Movimento: só as luzes derivam (52s e 71s, não múltiplos), animando
+   `transform`. A grade é parada. Reduced-motion congela tudo.
    ══════════════════════════════════════════════════════════════════════════════ */
 
 .login {
@@ -1512,20 +1513,21 @@ html.compacta .lista-linha {
   --info-line:    rgba(95, 179, 186, 0.28);
   --success:      #34C88A;
 
-  /* Geometria da cena: onde fica a linha do horizonte e o centro do sol. */
-  --horizonte: 21%;
-  --sol-x: 50%;
+  /* Onde a cena se concentra: atrás do cartão. */
+  --foco-x: 50%;
+  --foco-y: 34%;
 
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
   overflow: hidden;
-  background: linear-gradient(180deg, #070B1A 0%, #0B1226 var(--horizonte), #0F1730 100%);
+  background:
+    radial-gradient(110% 70% at var(--foco-x) 0%, #101935 0%, #0A1024 48%, #070B1A 100%);
 }
 @media (min-width: 1024px) {
   .login {
-    --horizonte: 62%;
-    --sol-x: 51%;
+    --foco-x: 72%;
+    --foco-y: 46%;
   }
 }
 
@@ -1537,100 +1539,60 @@ html.compacta .lista-linha {
   overflow: hidden;
 }
 
-/* Céu: grade plana, quase invisível, que só aparece perto do sol. */
-.login-ceu {
+/* Planta: grade fina + grade mestra, revelada em torno do foco. */
+.login-grade {
   position: absolute;
-  inset: 0 0 calc(100% - var(--horizonte)) 0;
+  inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
-  background-size: 64px 64px;
-  background-position: var(--sol-x) 100%;
-  -webkit-mask-image: radial-gradient(60% 90% at var(--sol-x) 100%, #000 0%, transparent 75%);
-          mask-image: radial-gradient(60% 90% at var(--sol-x) 100%, #000 0%, transparent 75%);
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+  background-position: var(--foco-x) var(--foco-y);
+  -webkit-mask-image: radial-gradient(70% 80% at var(--foco-x) var(--foco-y), #000 0%, rgba(0, 0, 0, 0.5) 55%, transparent 100%);
+          mask-image: radial-gradient(70% 80% at var(--foco-x) var(--foco-y), #000 0%, rgba(0, 0, 0, 0.5) 55%, transparent 100%);
 }
 
-/* Sol: halo largo + disco que nasce atrás do horizonte (cortado pela caixa). */
-.login-sol-caixa {
+/* Luzes difusas. Raio grande + blur pesado = luz ambiente, não bolha. */
+.login-luz {
   position: absolute;
-  inset: 0 0 calc(100% - var(--horizonte)) 0;
-  overflow: hidden;
+  inset: 0;
 }
-.login-sol {
+.login-luz::before,
+.login-luz::after {
+  content: '';
   position: absolute;
-  left: var(--sol-x);
-  bottom: 0;
-  width: min(150vw, 1500px);
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+.login-luz::before {
+  width: min(70vw, 820px);
   aspect-ratio: 1;
-  transform: translate(-50%, 50%);
-  border-radius: 50%;
-  background: radial-gradient(circle,
-    rgba(240, 204, 120, 0.50) 0%,
-    rgba(228, 178, 60, 0.26) 14%,
-    rgba(228, 178, 60, 0.10) 32%,
-    rgba(228, 178, 60, 0.03) 50%,
-    transparent 66%);
-  animation: loginSol 14s ease-in-out infinite alternate;
-  will-change: transform;
+  left: var(--foco-x);
+  top: var(--foco-y);
+  margin: calc(min(70vw, 820px) / -2) 0 0 calc(min(70vw, 820px) / -2);
+  background: radial-gradient(circle, rgba(228, 178, 60, 0.24) 0%, rgba(228, 178, 60, 0.09) 40%, transparent 70%);
+  animation: loginLuzA 52s ease-in-out infinite alternate;
 }
-.login-sol::after {
-  content: '';
-  position: absolute;
-  inset: 41%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(246, 214, 140, 0.55) 0%, rgba(228, 178, 60, 0.28) 55%, rgba(228, 178, 60, 0) 72%);
+.login-luz::after {
+  width: min(80vw, 900px);
+  aspect-ratio: 1;
+  left: -18vw;
+  bottom: -30vw;
+  background: radial-gradient(circle, rgba(72, 96, 186, 0.32) 0%, rgba(72, 96, 186, 0.10) 45%, transparent 70%);
+  animation: loginLuzB 71s ease-in-out infinite alternate;
 }
-@keyframes loginSol {
-  from { transform: translate(-50%, 50%) scale(1);    }
-  to   { transform: translate(-50%, 50%) scale(1.06); }
+@keyframes loginLuzA {
+  0%   { transform: translate3d(0, 0, 0)        scale(1);    }
+  50%  { transform: translate3d(-6vw, 4vh, 0)   scale(1.12); }
+  100% { transform: translate3d(3vw, -5vh, 0)   scale(1.04); }
 }
-
-/* Linha do horizonte — mais forte embaixo do sol, some nas bordas. */
-.login-horizonte {
-  position: absolute;
-  left: 0; right: 0;
-  top: var(--horizonte);
-  height: 1px;
-  background: radial-gradient(45% 100% at var(--sol-x) 50%, rgba(246, 214, 140, 0.95), rgba(228, 178, 60, 0.22) 60%, rgba(228, 178, 60, 0.04) 100%);
-}
-/* Reflexo do sol no chão — sem ele o horizonte vira um corte seco. */
-.login-horizonte::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; top: 1px;
-  height: 34vh;
-  background: radial-gradient(28% 55% at var(--sol-x) 0%, rgba(228, 178, 60, 0.16), rgba(228, 178, 60, 0.04) 55%, transparent 80%);
-}
-
-/* Chão: a grade de dados em perspectiva, convergindo para o sol. */
-.login-chao {
-  position: absolute;
-  top: var(--horizonte);
-  left: 0; right: 0; bottom: 0;
-  overflow: hidden;
-  perspective: 420px;
-  perspective-origin: var(--sol-x) 0;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 70%, transparent 100%);
-          mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 70%, transparent 100%);
-}
-.login-chao::before {
-  content: '';
-  position: absolute;
-  left: -150%; right: -150%;
-  top: 0;
-  height: 300%;
-  transform-origin: 50% 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-  background-size: 72px 72px;
-  background-position: center 0;
-  animation: loginChao 18s linear infinite;
-  will-change: transform;
-}
-@keyframes loginChao {
-  from { transform: rotateX(72deg) translateY(-72px); }
-  to   { transform: rotateX(72deg) translateY(0);     }
+@keyframes loginLuzB {
+  0%   { transform: translate3d(0, 0, 0)        scale(1.08); }
+  50%  { transform: translate3d(8vw, -6vh, 0)   scale(1);    }
+  100% { transform: translate3d(3vw, -12vh, 0)  scale(1.15); }
 }
 
 /* Vinheta + grão por cima de tudo da cena. */
@@ -1639,7 +1601,7 @@ html.compacta .lista-linha {
   inset: 0;
   background-image:
     var(--grain),
-    radial-gradient(120% 90% at var(--sol-x) var(--horizonte), transparent 40%, rgba(3, 5, 12, 0.72) 100%);
+    radial-gradient(130% 100% at var(--foco-x) var(--foco-y), transparent 45%, rgba(3, 5, 12, 0.65) 100%);
 }
 
 /* Cartão do formulário */
