@@ -28,6 +28,7 @@ import { useCallQueueStore } from '../../store/useCallQueueStore'
 import { Goal, GoalCategory, Task, Sale } from '../../types'
 import { iniciais } from '../../lib/formatters'
 import { useContagem } from '../../hooks/useContagem'
+import { avisarComDesfazer } from '../../lib/desfazer'
 
 /**
  * Metas — o painel de esforço do corretor.
@@ -641,7 +642,7 @@ function GrupoDoCorretor({ grupo, tasks, sales, disparos, onEdit, onDelete, onPa
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export function GoalsPage() {
-  const { goals, load, loadForBroker, remove, update } = useGoalsStore()
+  const { goals, load, loadForBroker, remove, update, restaurar } = useGoalsStore()
   const [excluindo, setExcluindo] = useState(false)
 
   // Pausar e reativar esperam o banco; a falha já vira toast na camada do
@@ -898,10 +899,12 @@ export function GoalsPage() {
             variant="danger" className="flex-1" carregando={excluindo}
             onClick={async () => {
               if (!deleteTarget) return
+              const meta = deleteTarget
               setExcluindo(true)
               try {
-                await remove(deleteTarget.id)
+                await remove(meta.id)
                 setDeleteTarget(undefined)
+                avisarComDesfazer('Meta excluída', () => restaurar(meta))
               } catch {
                 // deleteOne já mostrou o erro; a meta continua na tela.
               } finally {

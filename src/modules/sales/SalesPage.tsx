@@ -24,7 +24,8 @@ import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { Sale, SaleType, calcSaleCommissions } from '../../types'
 import { formatCurrency, formatCurrencyFull, formatDateShort } from '../../lib/formatters'
-import toast from 'react-hot-toast'
+import { useLeadsStore } from '../../store/useLeadsStore'
+import { avisarComDesfazer } from '../../lib/desfazer'
 
 const TYPE_CONFIG: Record<SaleType, { label: string; variant: 'indigo' | 'purple' }> = {
   ready:    { label: 'Pronto', variant: 'indigo'  },
@@ -56,7 +57,7 @@ const FILTER_OPTIONS: { value: SaleType | null; label: string }[] = [
 ]
 
 export function SalesPage() {
-  const { sales: allSales, load, remove, loading, erro } = useSalesStore()
+  const { sales: allSales, load, remove, restaurar, loading, erro } = useSalesStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
   const sales = isAdmin && viewAsBrokerId ? allSales.filter(s => s.brokerId === viewAsBrokerId) : allSales
   const { contacts, loadByIds: loadContactsByIds } = useContactsStore()
@@ -174,10 +175,17 @@ export function SalesPage() {
 
   async function handleDelete() {
     if (!deleteTarget) return
+    const venda = deleteTarget
+    // O banco solta o vínculo do lead ganho (leads.sale_id ON DELETE SET NULL).
+    // Guardado aqui para o Desfazer religar a venda ao lead.
+    const leadsLigados = useLeadsStore.getState().leads.filter(l => l.saleId === venda.id).map(l => l.id)
     try {
-      await remove(deleteTarget.id)
-      toast.success('Venda excluída')
+      await remove(venda.id)
       setDeleteTarget(undefined)
+      avisarComDesfazer('Venda excluída', async () => {
+        await restaurar(venda)
+        for (const id of leadsLigados) await useLeadsStore.getState().update(id, { saleId: venda.id })
+      })
     } catch { /* erro já avisado pela camada db — a venda continua na lista */ }
   }
 

@@ -26,7 +26,7 @@ import { Task, TaskPriority, TaskCategory, Contact, Property } from '../../types
 import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
 import { localDateStr } from '../../lib/formatters'
 import { ChecklistBadge } from '../../components/shared/ChecklistBadge'
-import toast from 'react-hot-toast'
+import { avisarComDesfazer } from '../../lib/desfazer'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -461,7 +461,7 @@ function CalendarView({
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function TasksPage() {
-  const { tasks: allTasks, load, remove, toggleDone, loading, erro } = useTasksStore()
+  const { tasks: allTasks, load, remove, restaurar, toggleDone, loading, erro } = useTasksStore()
   const { contacts, loadByIds: loadContactsByIds }    = useContactsStore()
   const { properties, load: loadProperties }          = usePropertiesStore()
   const { isAdmin, viewAsBrokerId, profile, allProfiles } = useAuthStore()
@@ -549,11 +549,20 @@ export function TasksPage() {
   const todayCount    = todayT.length
   const upcomingCount = tomorrowT.length + thisWeek.length + later.length
 
-  function handleDelete() {
+  const [excluindo, setExcluindo] = useState(false)
+  async function handleDelete() {
     if (!deleteTarget) return
-    remove(deleteTarget.id)
-    toast.success('Tarefa excluída')
-    setDeleteTarget(undefined)
+    const tarefa = deleteTarget
+    setExcluindo(true)
+    try {
+      await remove(tarefa.id)
+      setDeleteTarget(undefined)
+      avisarComDesfazer('Tarefa excluída', () => restaurar(tarefa))
+    } catch {
+      // deleteOne já mostrou o erro; a tarefa continua na lista.
+    } finally {
+      setExcluindo(false)
+    }
   }
 
   function openCalendar(t: Task) {
@@ -895,7 +904,7 @@ export function TasksPage() {
         </p>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => setDeleteTarget(undefined)}>Cancelar</Button>
-          <Button variant="danger"    className="flex-1" onClick={handleDelete}>Excluir</Button>
+          <Button variant="danger"    className="flex-1" onClick={handleDelete} carregando={excluindo}>Excluir</Button>
         </div>
       </Modal>
     </PageLayout>

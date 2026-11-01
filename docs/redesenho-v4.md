@@ -161,3 +161,10 @@ pixel art).
 - **MoneyInput** no padrão `campo`.
 - **Banco primeiro:** cadastrar, editar e excluir imóvel esperam o banco (antes eram otimistas e engoliam a falha).
 - Os quatro formulários perguntam antes de descartar o que foi digitado.
+
+### v10.3 — Desfazer exclusão (01/11/2026)
+
+- `lib/desfazer.tsx`: aviso "X excluída · Desfazer" (7 s). A exclusão já aconteceu no banco; desfazer é gravar de novo com o mesmo id, e o registro só volta à tela depois do upsert.
+- Entra em **tarefa** (participantes voltam junto), **meta** e **venda** (religa o lead ganho, que o banco solta com `ON DELETE SET NULL`).
+- Fica de fora onde o banco apaga em cascata: contato, imóvel, campanha, lista — desfazer devolveria registro pela metade.
+- Excluir tarefa agora espera o banco (era otimista e engolia a falha).

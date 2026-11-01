@@ -24,6 +24,8 @@ interface SalesStore {
   discard: (id: string) => Promise<void>
   update:  (id: string, data: Partial<Sale>) => Promise<void>
   remove:  (id: string) => Promise<void>
+  /** Desfazer exclusão: grava de novo com o mesmo id; só volta à tela depois do banco. */
+  restaurar: (sale: Sale) => Promise<void>
   getByPeriod:      (start: string, end: string) => Sale[]
   getValueByPeriod: (start: string, end: string) => number
   getTotalValue:    () => number
@@ -141,6 +143,11 @@ export const useSalesStore = create<SalesStore>((set, get) => ({
   remove: async (id) => {
     await db.sales.delete(id)
     set(s => ({ sales: s.sales.filter(x => x.id !== id) }))
+  },
+
+  restaurar: async (sale) => {
+    await db.sales.upsert(sale)
+    set(s => s.sales.some(x => x.id === sale.id) ? s : { sales: sortByDate([sale, ...s.sales]) })
   },
 
   getByPeriod: (start, end) =>

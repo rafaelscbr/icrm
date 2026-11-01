@@ -17,7 +17,10 @@ interface TasksStore {
   subscribe: () => () => void
   add: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Task
   update: (id: string, data: Partial<Task>) => void
-  remove: (id: string) => void
+  /** Banco primeiro: só sai da tela depois do delete confirmado. Lança se falhar. */
+  remove: (id: string) => Promise<void>
+  /** Desfazer exclusão: grava a tarefa e os participantes de novo; só então volta à tela. */
+  restaurar: (task: Task) => Promise<void>
   toggleDone: (id: string) => void
   getByStatus: (status: TaskStatus) => Task[]
   getOverdue: () => Task[]
@@ -146,9 +149,19 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
       .catch(err => console.error('[tasks] update:', err))
   },
 
-  remove: (id) => {
+  // Antes tirava da tela e apagava em segundo plano, engolindo a falha: a
+  // tarefa "excluída" voltava no próximo carregamento (01/11/2026).
+  remove: async (id) => {
+    await db.tasks.delete(id)
     set(s => ({ tasks: s.tasks.filter(t => t.id !== id) }))
-    db.tasks.delete(id).catch(err => console.error('[tasks] remove:', err))
+  },
+
+  // Os participantes saem em cascata com a tarefa (task_participants ON
+  // DELETE CASCADE) — por isso voltam junto.
+  restaurar: async (task) => {
+    await db.tasks.upsert(task)
+    if (task.participants?.length) await db.tasks.setParticipants(task.id, task.participants)
+    set(s => s.tasks.some(t => t.id === task.id) ? s : { tasks: [...s.tasks, task] })
   },
 
   toggleDone: (id) => {

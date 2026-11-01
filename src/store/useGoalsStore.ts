@@ -31,6 +31,8 @@ interface GoalsStore {
   add: (data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>, brokerId?: string) => Promise<Goal>
   update: (id: string, data: Partial<Goal>) => Promise<void>
   remove: (id: string) => Promise<void>
+  /** Desfazer exclusão: grava de novo com o mesmo id; só volta à tela depois do banco. */
+  restaurar: (goal: Goal) => Promise<void>
 }
 
 export const useGoalsStore = create<GoalsStore>((set, get) => ({
@@ -136,6 +138,11 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
   remove: async (id) => {
     await db.goals.delete(id)
     set(s => ({ goals: s.goals.filter(g => g.id !== id) }))
+  },
+
+  restaurar: async (goal) => {
+    await db.goals.upsert(goal, goal.brokerId)
+    set(s => s.goals.some(g => g.id === goal.id) ? s : { goals: [...s.goals, goal] })
   },
 }))
 

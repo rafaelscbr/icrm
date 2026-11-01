@@ -21,6 +21,7 @@ const db = {
   contacts: { upsert: vi.fn(), delete: vi.fn() },
   sales:    { upsert: vi.fn(), delete: vi.fn() },
   goals:    { upsert: vi.fn(), delete: vi.fn() },
+  tasks:    { upsert: vi.fn(), delete: vi.fn(), setParticipants: vi.fn() },
   campaigns: { delete: vi.fn() },
   properties: { upsert: vi.fn(), delete: vi.fn() },
 }
@@ -33,15 +34,17 @@ async function stores() {
   const { useGoalsStore } = await import('../store/useGoalsStore')
   const { useCampaignsStore } = await import('../store/useCampaignsStore')
   const { usePropertiesStore } = await import('../store/usePropertiesStore')
-  return { useContactsStore, useSalesStore, useGoalsStore, useCampaignsStore, usePropertiesStore }
+  const { useTasksStore } = await import('../store/useTasksStore')
+  return { useContactsStore, useSalesStore, useGoalsStore, useCampaignsStore, usePropertiesStore, useTasksStore }
 }
 
 const contatoBase = { name: 'Ana Lima', phone: '47999990000', tags: [], hasChildren: false, isMarried: false, permutaItems: [] }
 const vendaBase = { clientId: 'c1', propertyName: 'Residencial Atlântico', date: '2026-11-01', value: 2450000, type: 'ready' as const }
 
 beforeEach(() => {
-  for (const t of [db.contacts, db.sales, db.goals, db.properties]) { t.upsert.mockReset(); t.delete.mockReset() }
+  for (const t of [db.contacts, db.sales, db.goals, db.properties, db.tasks]) { t.upsert.mockReset(); t.delete.mockReset() }
   db.campaigns.delete.mockReset()
+  db.tasks.setParticipants.mockReset()
 })
 
 describe('contatos: banco primeiro', () => {
@@ -162,5 +165,40 @@ describe('imóveis: banco primeiro', () => {
 
     await expect(usePropertiesStore.getState().remove(p.id)).rejects.toThrow()
     expect(usePropertiesStore.getState().properties).toHaveLength(1)
+  })
+})
+
+describe('desfazer exclusão: restaura pelo banco', () => {
+  const tarefa = { id: 't1', title: 'Ligar para Ana', type: 'ligacao', status: 'pending', participants: ['u2'] } as never
+
+  it('exclusão de tarefa que falha mantém a tarefa', async () => {
+    const { useTasksStore } = await stores()
+    useTasksStore.setState({ tasks: [tarefa] })
+    db.tasks.delete.mockRejectedValue(new Error('rls'))
+
+    await expect(useTasksStore.getState().remove('t1')).rejects.toThrow()
+    expect(useTasksStore.getState().tasks).toHaveLength(1)
+  })
+
+  it('restaurar tarefa grava ela e os participantes antes de voltar à tela', async () => {
+    const { useTasksStore } = await stores()
+    let liberar!: () => void
+    db.tasks.upsert.mockReturnValue(new Promise<void>(r => { liberar = r }))
+    db.tasks.setParticipants.mockResolvedValue(undefined)
+
+    const pendente = useTasksStore.getState().restaurar(tarefa)
+    expect(useTasksStore.getState().tasks).toHaveLength(0)
+    liberar()
+    await pendente
+    expect(db.tasks.setParticipants).toHaveBeenCalledWith('t1', ['u2'])
+    expect(useTasksStore.getState().tasks).toHaveLength(1)
+  })
+
+  it('restaurar meta que falha não mostra a meta', async () => {
+    const { useGoalsStore } = await stores()
+    db.goals.upsert.mockRejectedValue(new Error('rede'))
+
+    await expect(useGoalsStore.getState().restaurar({ ...metaBase, id: 'g1', createdAt: '', updatedAt: '' })).rejects.toThrow()
+    expect(useGoalsStore.getState().goals).toHaveLength(0)
   })
 })
