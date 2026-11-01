@@ -1466,6 +1466,210 @@ html.compacta .lista-linha {
   padding-bottom: 0.5rem;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   ENTRADA — "Horizonte" (LoginPage)
+
+   A tela de entrada é sempre escura, nos dois temas. É o único momento de
+   marca pura do sistema, e é desenhada com os grafismos do Brand Guide: grade
+   de dados em branco 5% sobre Marinho, horizonte e sol em Areia, vinheta.
+
+   Em vez de hex solto no componente, `.login` re-declara os tokens do tema
+   escuro no próprio escopo — assim `text-t1`, `bg-s2`, `border-line-input`
+   etc. funcionam igual com `html.light` ativo.
+
+   Movimento: o sol "respira" (14s) e a grade desliza em direção a quem olha
+   (18s por célula). Só `transform`, e a regra global de reduced-motion congela
+   os dois.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.login {
+  color-scheme: dark;
+  --page-bg:   #070B1A;
+  --surface:   #0F1730;
+  --surface-2: #18224A;
+  --surface-3: #1F2A55;
+  --t1: #F6F3EC;
+  --t2: #CFC9BC;
+  --t3: #8A90A6;
+  --t4: #7A829B;
+  --t5: #5F6880;
+  --line:        rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --line-input:  rgba(255, 255, 255, 0.14);
+  --brand:      #E4B23C;
+  --brand-text: #F0CC78;
+  --brand-fill:       #E4B23C;
+  --brand-fill-hover: #F0CC78;
+  --brand-fill-text:  #0F1730;
+  --warning:      #E0A030;
+  --warning-bg:   rgba(224, 160, 48, 0.10);
+  --warning-line: rgba(224, 160, 48, 0.28);
+  --error:        #E5717A;
+  --error-bg:     rgba(229, 113, 122, 0.10);
+  --error-line:   rgba(229, 113, 122, 0.28);
+  --info:         #5FB3BA;
+  --info-bg:      rgba(95, 179, 186, 0.10);
+  --info-line:    rgba(95, 179, 186, 0.28);
+  --success:      #34C88A;
+
+  /* Geometria da cena: onde fica a linha do horizonte e o centro do sol. */
+  --horizonte: 21%;
+  --sol-x: 50%;
+
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(180deg, #070B1A 0%, #0B1226 var(--horizonte), #0F1730 100%);
+}
+@media (min-width: 1024px) {
+  .login {
+    --horizonte: 62%;
+    --sol-x: 51%;
+  }
+}
+
+.login-cena {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Céu: grade plana, quase invisível, que só aparece perto do sol. */
+.login-ceu {
+  position: absolute;
+  inset: 0 0 calc(100% - var(--horizonte)) 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  background-position: var(--sol-x) 100%;
+  -webkit-mask-image: radial-gradient(60% 90% at var(--sol-x) 100%, #000 0%, transparent 75%);
+          mask-image: radial-gradient(60% 90% at var(--sol-x) 100%, #000 0%, transparent 75%);
+}
+
+/* Sol: halo largo + disco que nasce atrás do horizonte (cortado pela caixa). */
+.login-sol-caixa {
+  position: absolute;
+  inset: 0 0 calc(100% - var(--horizonte)) 0;
+  overflow: hidden;
+}
+.login-sol {
+  position: absolute;
+  left: var(--sol-x);
+  bottom: 0;
+  width: min(150vw, 1500px);
+  aspect-ratio: 1;
+  transform: translate(-50%, 50%);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(240, 204, 120, 0.50) 0%,
+    rgba(228, 178, 60, 0.26) 14%,
+    rgba(228, 178, 60, 0.10) 32%,
+    rgba(228, 178, 60, 0.03) 50%,
+    transparent 66%);
+  animation: loginSol 14s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.login-sol::after {
+  content: '';
+  position: absolute;
+  inset: 41%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(246, 214, 140, 0.55) 0%, rgba(228, 178, 60, 0.28) 55%, rgba(228, 178, 60, 0) 72%);
+}
+@keyframes loginSol {
+  from { transform: translate(-50%, 50%) scale(1);    }
+  to   { transform: translate(-50%, 50%) scale(1.06); }
+}
+
+/* Linha do horizonte — mais forte embaixo do sol, some nas bordas. */
+.login-horizonte {
+  position: absolute;
+  left: 0; right: 0;
+  top: var(--horizonte);
+  height: 1px;
+  background: radial-gradient(45% 100% at var(--sol-x) 50%, rgba(246, 214, 140, 0.95), rgba(228, 178, 60, 0.22) 60%, rgba(228, 178, 60, 0.04) 100%);
+}
+/* Reflexo do sol no chão — sem ele o horizonte vira um corte seco. */
+.login-horizonte::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 1px;
+  height: 34vh;
+  background: radial-gradient(28% 55% at var(--sol-x) 0%, rgba(228, 178, 60, 0.16), rgba(228, 178, 60, 0.04) 55%, transparent 80%);
+}
+
+/* Chão: a grade de dados em perspectiva, convergindo para o sol. */
+.login-chao {
+  position: absolute;
+  top: var(--horizonte);
+  left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+  perspective: 420px;
+  perspective-origin: var(--sol-x) 0;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 70%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 70%, transparent 100%);
+}
+.login-chao::before {
+  content: '';
+  position: absolute;
+  left: -150%; right: -150%;
+  top: 0;
+  height: 300%;
+  transform-origin: 50% 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-position: center 0;
+  animation: loginChao 18s linear infinite;
+  will-change: transform;
+}
+@keyframes loginChao {
+  from { transform: rotateX(72deg) translateY(-72px); }
+  to   { transform: rotateX(72deg) translateY(0);     }
+}
+
+/* Vinheta + grão por cima de tudo da cena. */
+.login-vinheta {
+  position: absolute;
+  inset: 0;
+  background-image:
+    var(--grain),
+    radial-gradient(120% 90% at var(--sol-x) var(--horizonte), transparent 40%, rgba(3, 5, 12, 0.72) 100%);
+}
+
+/* Cartão do formulário */
+.login-cartao {
+  position: relative;
+  isolation: isolate;
+  background-color: rgba(15, 23, 48, 0.92);
+  background-image: var(--grain), linear-gradient(158deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 58%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(14px);
+          backdrop-filter: blur(14px);
+  animation: loginChegada 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes loginChegada {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Autopreenchimento do navegador não pode trocar o fundo do campo por amarelo/azul. */
+.login input:-webkit-autofill,
+.login input:-webkit-autofill:hover,
+.login input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px var(--surface-2) inset;
+  -webkit-text-fill-color: var(--t1);
+  caret-color: var(--t1);
+  transition: background-color 9999s;
+}
+
 /* ── Acessibilidade: respeita preferência do sistema por menos movimento ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
