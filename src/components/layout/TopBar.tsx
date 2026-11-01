@@ -189,7 +189,7 @@ export function TopBar() {
       {/* Destinos */}
       <nav aria-label="Telas" className="flex items-center gap-1 min-w-0">
         {fixas.map(e => pilula(e))}
-        {largas.map(e => pilula(e, 'hidden xl:inline-flex'))}
+        {largas.map(e => pilula(e, 'top-pill-larga'))}
 
         {(secoesMais.length > 0 || largas.length > 0) && (
           <Popover.Root>

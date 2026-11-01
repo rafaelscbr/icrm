@@ -168,3 +168,11 @@ pixel art).
 - Entra em **tarefa** (participantes voltam junto), **meta** e **venda** (religa o lead ganho, que o banco solta com `ON DELETE SET NULL`).
 - Fica de fora onde o banco apaga em cascata: contato, imóvel, campanha, lista — desfazer devolveria registro pela metade.
 - Excluir tarefa agora espera o banco (era otimista e engolia a falha).
+
+### v10.4 — conferência no tema escuro e no celular (01/11/2026)
+
+- **Barra do topo (1024–1279px):** `.top-pill` (fora de @layer) vencia o `hidden` do Tailwind; Contatos/Produtos/Prospecção apareciam por baixo da busca. Agora `.top-pill-larga` some por media query e esses destinos ficam em "Mais".
+- **Barras de rolagem visíveis** nas abas e na linha de filtros: classe `.rolagem-limpa`.
+- **Metas:** abaixo de 1280px o score ocupa a linha de cima e os indicadores descem (o veredito quebrava em 4 linhas).
+- **FaixaNumeros:** filetes por CSS (`.faixa-numeros`) conforme o arranjo; com número ímpar de itens o último ocupa a fileira toda no celular.
+- **Listas (Disparos, Base de Leads, Ligações) no celular:** o botão "Abrir" vira uma seta — a linha inteira já abre e o nome deixa de ser cortado.

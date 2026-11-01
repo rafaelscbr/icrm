@@ -734,6 +734,10 @@ html.light {
   transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease;
   cursor: pointer;
 }
+/* Pílulas que só cabem na barra a partir de 1280px. O `hidden xl:inline-flex`
+   do Tailwind perdia para o display desta classe (fora de @layer) e, em telas
+   de 1024–1279px, Contatos/Produtos/Prospecção ficavam por baixo da busca. */
+@media (max-width: 1279.98px) { .top-pill.top-pill-larga { display: none; } }
 .top-pill:hover { background-color: var(--bar-hover); color: var(--bar-strong); }
 .top-pill:focus-visible { outline: 2px solid var(--brand-fill); outline-offset: 2px; }
 .top-pill[data-ativo="true"] {
@@ -2078,4 +2082,37 @@ html.light { --field-bg: #EEF2F8;                  --field-bg-hover: #E6ECF5;   
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Faixa que rola na horizontal sem mostrar a barra — o conteúdo cortado na
+   borda já diz que há mais. Usada em linhas de filtro e de abas. */
+.rolagem-limpa { scrollbar-width: none; }
+.rolagem-limpa::-webkit-scrollbar { display: none; }
+
+/* Faixa de Metas: o score ocupa a linha de cima até 1280px; daí em diante
+   tudo vai para uma linha só. Os filetes seguem o arranjo. */
+.faixa-metas > .kpi-celula { border-top: 1px solid var(--line); }
+.faixa-metas > .kpi-celula:nth-child(odd of .kpi-celula) { border-left: 0; }
+.faixa-metas > .kpi-celula:nth-child(even of .kpi-celula) { border-left: 1px solid var(--line); }
+@media (min-width: 768px) {
+  .faixa-metas > .kpi-celula { border-left: 1px solid var(--line); }
+  .faixa-metas > .kpi-celula:nth-child(2) { border-left: 0; }
+}
+@media (min-width: 1280px) {
+  .faixa-metas > .kpi-celula { border-top: 0; }
+  .faixa-metas > .kpi-celula:nth-child(2) { border-left: 1px solid var(--line); }
+}
+
+/* FaixaNumeros: filetes pelo arranjo real. No celular são 2 colunas — linha
+   em cima a partir da 2ª fileira, filete à esquerda na coluna da direita; com
+   número ímpar de itens o último ocupa a fileira toda. A partir de 768px é
+   uma linha só, com filete entre as células. */
+.faixa-numeros > * + * { border-color: var(--line); }
+.faixa-numeros > :nth-child(n+3) { border-top: 1px solid var(--line); }
+.faixa-numeros > :nth-child(even) { border-left: 1px solid var(--line); }
+.faixa-numeros.faixa-impar > :last-child { grid-column: span 2 / span 2; }
+@media (min-width: 768px) {
+  .faixa-numeros > * { border-top: 0 !important; }
+  .faixa-numeros > * + * { border-left: 1px solid var(--line); }
+  .faixa-numeros.faixa-impar > :last-child { grid-column: auto; }
 }

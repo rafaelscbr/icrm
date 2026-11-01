@@ -261,7 +261,7 @@ export function FaixaNumeros({ itens, className = '' }: {
 }) {
   const cols = { 2: 'md:grid-cols-2', 3: 'md:grid-cols-3', 4: 'md:grid-cols-4', 5: 'md:grid-cols-5' }[itens.length] ?? 'md:grid-cols-4'
   return (
-    <div className={`bento grid grid-cols-2 ${cols} divide-y md:divide-y-0 md:divide-x divide-[color:var(--line)] overflow-hidden ${className}`}>
+    <div className={`bento faixa-numeros grid grid-cols-2 ${cols} overflow-hidden ${itens.length % 2 ? 'faixa-impar' : ''} ${className}`}>
       {itens.map(i => {
         const corpo = (
           <>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Database, Archive, Pencil, Trash2, ArrowRight, Sparkles, AlertTriangle,
-  Trophy, Plus,
+  Trophy, Plus, ChevronRight,
 } from 'lucide-react'
 import { PageLayout }    from '../../components/layout/PageLayout'
 import { FaixaNumeros, Segmentado } from '../../components/shared/visual'
@@ -276,9 +276,10 @@ export function LeadListsPage() {
                   </button>
                 </div>
 
-                <Button variant="secondary" size="sm" onClick={() => setDetailId(list.id)} className="gap-1.5 shrink-0">
+                <Button variant="secondary" size="sm" onClick={() => setDetailId(list.id)} className="gap-1.5 shrink-0 !hidden sm:!inline-flex">
                   Abrir <ArrowRight size={13} strokeWidth={1.8} aria-hidden />
                 </Button>
+                <ChevronRight size={16} strokeWidth={1.8} className="sm:hidden text-t4 shrink-0" aria-hidden />
               </div>
             )
           })}

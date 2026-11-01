@@ -227,7 +227,7 @@ function KpiCelula({ label, value, target, note }: {
   const contado = useContagem(value)
 
   return (
-    <div className="px-5 py-3.5 min-w-0 flex flex-col gap-1.5" title={note}>
+    <div className="kpi-celula px-5 py-3.5 min-w-0 flex flex-col gap-1.5" title={note}>
       <p className="text-[12.5px] text-t4 truncate">{label}</p>
       <p className="flex items-baseline gap-1.5">
         <span className={`font-display font-extrabold tabular-nums leading-none text-[22px] tracking-[-0.02em]
@@ -287,15 +287,17 @@ function PerformanceHero({ tasks, period, brokerId }: {
   // v10 (01/11/2026): score e indicadores numa faixa só. Antes era um painel
   // dourado com anel de 128px e frase de 22px, mais uma grade de cards — ~350px
   // antes da primeira meta personalizada.
+  // Abaixo de 1280px o score ganha a linha toda e os indicadores descem para
+  // a de baixo: espremido numa coluna, o veredito quebrava em quatro linhas.
   const colunas = {
-    3: 'md:grid-cols-[minmax(220px,1.3fr)_repeat(3,minmax(0,1fr))]',
-    4: 'md:grid-cols-[minmax(220px,1.3fr)_repeat(4,minmax(0,1fr))]',
-    5: 'md:grid-cols-[minmax(220px,1.3fr)_repeat(5,minmax(0,1fr))]',
+    3: 'md:grid-cols-3 xl:grid-cols-[minmax(240px,1.3fr)_repeat(3,minmax(0,1fr))]',
+    4: 'md:grid-cols-4 xl:grid-cols-[minmax(240px,1.3fr)_repeat(4,minmax(0,1fr))]',
+    5: 'md:grid-cols-5 xl:grid-cols-[minmax(240px,1.3fr)_repeat(5,minmax(0,1fr))]',
   }[kpis.length] ?? 'md:grid-cols-4'
 
   return (
-    <div className={`bento grid grid-cols-2 ${colunas} divide-y md:divide-y-0 md:divide-x divide-[color:var(--line)] overflow-hidden mb-7`}>
-      <div className="col-span-2 md:col-span-1 flex items-center gap-3.5 px-5 py-3.5 min-w-0">
+    <div className={`bento faixa-metas grid grid-cols-2 ${colunas} overflow-hidden mb-7`}>
+      <div className="col-span-full xl:col-span-1 flex items-center gap-3.5 px-5 py-3.5 min-w-0">
         <ScoreRing score={score} />
         <div className="min-w-0">
           <p className="text-[12.5px] text-t4 truncate">Desempenho · {PERIODO.sub}</p>

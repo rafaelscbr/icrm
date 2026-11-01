@@ -129,7 +129,7 @@ export function Abas<T extends string>({
         aria-label={rotulo}
         className={pilula
           ? 'relative flex items-center gap-1 bg-s2/70 border border-line rounded-[14px] p-1 w-fit'
-          : 'relative flex gap-0 border-b border-line flex-1 overflow-x-auto'}
+          : 'relative flex gap-0 border-b border-line flex-1 overflow-x-auto rolagem-limpa'}
       >
         {/* Indicador deslizante — só transform e largura de UM elemento, e a
             regra global de reduced-motion zera a transição. */}

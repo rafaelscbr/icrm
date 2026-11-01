@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import {
   Megaphone, Pencil, Trash2, ArrowRight,
-  Play, Pause, Zap, ArrowLeftRight, Plus,
+  Play, Pause, Zap, ArrowLeftRight, Plus, ChevronRight,
 } from 'lucide-react'
 import { Abas } from '../../components/shared/Abas'
 import { PageLayout } from '../../components/layout/PageLayout'
@@ -232,9 +232,10 @@ export function CampaignsPage() {
                   </button>
                 </div>
 
-                <Button variant="secondary" size="sm" onClick={() => setSelectedId(c.id)} className="gap-1.5 shrink-0">
+                <Button variant="secondary" size="sm" onClick={() => setSelectedId(c.id)} className="gap-1.5 shrink-0 !hidden sm:!inline-flex">
                   Abrir <ArrowRight size={13} strokeWidth={1.8} aria-hidden />
                 </Button>
+                <ChevronRight size={16} strokeWidth={1.8} className="sm:hidden text-t4 shrink-0" aria-hidden />
               </div>
             )
           })}

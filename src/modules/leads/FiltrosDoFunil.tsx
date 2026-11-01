@@ -173,7 +173,7 @@ export function BarraDeFiltros({
 
   return (
     <div className="flex flex-col gap-2 mb-4">
-      <div className="flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0">
+      <div className="flex items-center gap-1.5 overflow-x-auto rolagem-limpa -mx-4 px-4 sm:mx-0 sm:px-0">
         <div className="relative w-[240px] min-w-[180px] flex-shrink-0">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t4" aria-hidden />
           <input

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Phone, PhoneCall, BarChart3, Pause, Play, Pencil, Trash2, ArrowRight,
-  AlertTriangle, Plus,
+  AlertTriangle, Plus, ChevronRight,
 } from 'lucide-react'
 import { PageLayout } from '../../../components/layout/PageLayout'
 import { Button } from '../../../components/ui/Button'
@@ -183,9 +183,10 @@ export function LigacoesPage() {
                         </div>
                       )}
 
-                      <Button variant="secondary" size="sm" onClick={() => setSelecionada(c.id)} className="gap-1.5 shrink-0">
+                      <Button variant="secondary" size="sm" onClick={() => setSelecionada(c.id)} className="gap-1.5 shrink-0 !hidden sm:!inline-flex">
                         Abrir fila <ArrowRight size={13} strokeWidth={1.8} aria-hidden />
                       </Button>
+                      <ChevronRight size={16} strokeWidth={1.8} className="sm:hidden text-t4 shrink-0" aria-hidden />
                     </div>
                   )
                 })}

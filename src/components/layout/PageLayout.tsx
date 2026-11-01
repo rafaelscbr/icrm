@@ -89,7 +89,7 @@ export function PageLayout({
           </div>
 
           {band && (
-            <div className="hidden lg:flex self-stretch min-w-0 overflow-x-auto page-bar-abas">{band}</div>
+            <div className="hidden lg:flex self-stretch min-w-0 overflow-x-auto rolagem-limpa page-bar-abas">{band}</div>
           )}
 
           <div className="ml-auto flex items-center gap-2 flex-shrink-0">
@@ -112,7 +112,7 @@ export function PageLayout({
 
         {/* Celular e tablet: as abas descem para uma faixa rolável. */}
         {band && (
-          <div className={`lg:hidden ${caixa} mx-auto px-4 sm:px-6 overflow-x-auto page-bar-abas`}>{band}</div>
+          <div className={`lg:hidden ${caixa} mx-auto px-4 sm:px-6 overflow-x-auto rolagem-limpa page-bar-abas`}>{band}</div>
         )}
       </header>
 
