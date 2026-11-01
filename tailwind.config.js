@@ -83,7 +83,10 @@ export default {
         // Signature (31/10/2026): Fraunces nos títulos e números de destaque,
         // Geist no corpo e nos rótulos. Ver nota no topo de src/index.css.
         sans:     ['Geist', 'system-ui', 'sans-serif'],
-        heading:  ['Fraunces', 'Georgia', 'serif'],
+        // v5: `heading` é sans (dado, card, número de lista); a serifa ficou
+        // só em `display` — título da tela, número-herói, título de seção.
+        heading:  ['Geist', 'system-ui', 'sans-serif'],
+        display:  ['Fraunces', 'Georgia', 'serif'],
         // `label` continua existindo como intenção semântica (rótulo/dado),
         // mas usa a mesma família do corpo — a diferença é caixa e tracking.
         label:    ['Geist', 'system-ui', 'sans-serif'],

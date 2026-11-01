@@ -1,12 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSidebarStore } from '../../store/useSidebarStore'
-import { useUnreadCount } from '../../store/useNotificationsStore'
 import { useSearchStore } from '../../store/useSearchStore'
-import { NotificationsPopover } from './NotificationsPopover'
 import { filtrarPorPermissao, isGroup } from './nav/navConfig'
 import { NavItem, NavGroup, SectionLabel } from './nav/NavItems'
 import { AccountMenu } from './nav/AccountMenu'
@@ -32,13 +30,10 @@ import { iniciais } from '../../lib/formatters'
  * Sobrou o que interessa: as seções, os destinos, e o item onde você está.
  */
 export function Sidebar() {
-  const [notifOpen, setNotifOpen] = useState(false)
-  const bellRef = useRef<HTMLButtonElement>(null)
   const { theme, toggle } = useThemeStore()
   const { collapsed, toggle: toggleCollapsed } = useSidebarStore()
   const { profile, isAdmin, logout, allProfiles, viewAsBrokerId, setViewAsBroker } = useAuthStore()
   const setSearchOpen = useSearchStore(s => s.setOpen)
-  const unreadCount = useUnreadCount()
   const navigate = useNavigate()
 
   function handleLogout() {
@@ -105,7 +100,7 @@ export function Sidebar() {
                 // Grafite fixo: o quadrado é sempre dourado vivo, então o "S" não
                 // pode seguir o token de tema (no claro ele viraria branco sobre
                 // ouro — 1.9:1, ilegível).
-                fontWeight: 900, fontSize: 18, color: '#0C1430',
+                fontWeight: 900, fontSize: 18, color: '#18181B',
                 lineHeight: 1, letterSpacing: '-0.04em', userSelect: 'none',
               }}
             >S</span>
@@ -128,41 +123,15 @@ export function Sidebar() {
         </div>
 
         {/*
-          Sino e recolher ficam lado a lado, SEMPRE visíveis.
+          v5: o sino foi para a barra do topo (TopBar), junto da busca e do
+          criar. Aqui fica só o recolher.
+          Recolher fica SEMPRE visível.
           O recolher chegou a ser uma alça na borda que aparecia no hover: some
           da leitura, mas um controle que não se vê não se descobre, e a alça
           ainda ficava metade por cima do conteúdo. Um controle permanente de
           30px no cabeçalho custa quase nada de espaço e não exige adivinhar.
         */}
         <div className={`flex flex-shrink-0 items-center gap-1 ${collapsed ? 'flex-col' : ''}`}>
-          <button
-            ref={bellRef}
-            onClick={() => setNotifOpen(v => !v)}
-            aria-haspopup="dialog"
-            aria-expanded={notifOpen}
-            aria-label={unreadCount > 0
-              ? `Notificações — ${unreadCount} não lida${unreadCount !== 1 ? 's' : ''}`
-              : 'Notificações'}
-            className="sf-icon-btn relative"
-            style={{ background: notifOpen ? 'var(--nav-active-bg)' : undefined }}
-          >
-            <Bell
-              size={16}
-              strokeWidth={1.9}
-              style={{ color: notifOpen || unreadCount > 0 ? 'var(--brand)' : 'var(--nav-muted)' }}
-              className="transition-colors"
-            />
-            {unreadCount > 0 && (
-              <span
-                // a chave muda com a contagem: o ponto salta quando chega aviso novo
-                key={unreadCount}
-                className="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full badge-bounce"
-                style={{ background: 'var(--brand)', boxShadow: '0 0 0 2px var(--frame-bg)' }}
-                aria-hidden
-              />
-            )}
-          </button>
-
           <button
             onClick={toggleCollapsed}
             aria-label={collapsed ? 'Expandir navegação' : 'Recolher navegação'}
@@ -176,11 +145,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <NotificationsPopover
-          isOpen={notifOpen}
-          onClose={() => setNotifOpen(false)}
-          anchorEl={bellRef.current}
-        />
+
       </div>
 
       {/* ── Visão do admin ───────────────────────────────────────── */}

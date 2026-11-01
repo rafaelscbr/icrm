@@ -170,7 +170,7 @@ export function LoginPage() {
             Sistema comercial da Souza
           </p>
           <p
-            className="font-heading font-extrabold text-t1 tracking-[-0.02em] leading-[1.04] text-[2.75rem] xl:text-[3.4rem]"
+            className="font-display font-bold text-t1 tracking-[-0.02em] leading-[1.04] text-[2.75rem] xl:text-[3.4rem]"
             style={{ textWrap: 'balance' } as React.CSSProperties}
           >
             Do primeiro contato à <span className="text-brand-text">chave na mão</span>.
@@ -206,7 +206,7 @@ export function LoginPage() {
           aria-labelledby={ids.titulo}
         >
           <p className={`${rotulo} mb-3`}>Acesso da equipe</p>
-          <h1 id={ids.titulo} className="font-heading text-[1.9rem] sm:text-[2.1rem] font-extrabold text-t1 tracking-[-0.02em] leading-[1.1]">
+          <h1 id={ids.titulo} className="font-display text-[1.9rem] sm:text-[2.1rem] font-extrabold text-t1 tracking-[-0.02em] leading-[1.1]">
             {ola}.
           </h1>
           <p className="text-[15px] text-t3 mt-2 mb-8">

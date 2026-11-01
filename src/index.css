@@ -1,4 +1,9 @@
-/* v4 "Signature" (31/10/2026) — Fraunces + Geist, Marinho profundo e
+/* v5 "Grafite" (01/11/2026) — Rafael pediu para mudar tudo: o marinho e o
+ * bege saíram das superfícies. Escuro = grafite neutro (#111113/#18181B),
+ * claro = branco com cinzas neutros. O ouro champanhe ficou só para marca,
+ * dinheiro, meta e ação principal. Fraunces + Geist mantidas.
+ *
+ * v4 "Signature" (31/10/2026) — Fraunces + Geist, Marinho profundo e
  * ouro champanhe. Rebranding pedido pelo Rafael: Fraunces (serifa editorial)
  * em títulos e números de destaque; Geist no corpo, rótulos e tabelas. A
  * Areia #E4B23C virou champanhe #D6B26E. O histórico abaixo fica como registro.
@@ -42,7 +47,7 @@
   --brand-tint:    rgba(214, 178, 110, 0.14);
   --brand-text:    #E8CD94;
   --brand-shadow:  rgba(214, 178, 110, 0.30);
-  --brand-btn-text:#0C1430;   /* Marinho sobre Areia — 6.5:1 */
+  --brand-btn-text:#18181B;   /* Marinho sobre Areia — 6.5:1 */
 
   /* Preenchimento de marca — botão, pílula ativa, avatar, FAB, barra.
      É o MESMO ouro nos dois temas: a Areia é a cor da marca e um controle
@@ -52,7 +57,7 @@
   --brand-fill:       #D6B26E;
   --brand-fill-hover: #E8CD94;
   --brand-fill-deep:  #B8934F;
-  --brand-fill-text:  #0C1430;
+  --brand-fill-text:  #18181B;
 
   /* Gradientes de ação — ver .grad-* no bloco SUPERFÍCIES.
      Existem como token por tema porque no claro o degradê NÃO é o do escuro
@@ -61,48 +66,48 @@
      (que muda por tema) produz exatamente o barro que apareceu na primeira
      versão das telas de ligação. */
   --grad-brand:      linear-gradient(158deg, #E8CD94 0%, #D6B26E 62%);
-  --grad-brand-text: #0C1430;
+  --grad-brand-text: #18181B;
   /* Verde da ação de ligar. Texto MARINHO, não branco: branco sobre verde vivo
      dá 1.9:1 e reprova em qualquer critério. Marinho sobre o tom mais claro do
      degradê dá 9.4:1. */
   --grad-call:       linear-gradient(158deg, #4ADE80 0%, #22C55E 62%);
-  --grad-call-text:  #0C1430;
+  --grad-call-text:  #0A0A0B;
   --grad-call-glow:  rgba(74, 222, 128, 0.25);
 
   /* Surfaces — Carvão → Marinho → Marinho Claro */
-  --page-bg:   #0A1024;
-  --surface:   #0F1836;
-  --surface-2: #16214A;
-  --surface-3: #1E2A5A;
+  --page-bg:   #111113;
+  --surface:   #18181B;
+  --surface-2: #1F1F23;
+  --surface-3: #29292E;
 
   /* Navigation — Carvão
      O fundo do item ativo é NEUTRO de propósito. O ouro do menu ficou todo
      concentrado no ícone e no filete do item ativo — um só sinal dourado por
      vez, em vez dos três que existiam (borda + fundo + ícone). Ver a regra do
      dourado racionado em docs/principios-visuais.md §2. */
-  --nav-bg:          #05070F;
-  --nav-text:        rgba(246, 243, 236, 0.78);
-  --nav-muted:       rgba(246, 243, 236, 0.46);
-  --nav-active-text: #F6F3EC;
-  --nav-active-bg:   rgba(255, 255, 255, 0.085);
-  --nav-hover-bg:    rgba(255, 255, 255, 0.05);
-  --nav-line:        rgba(255, 255, 255, 0.08);
-  --nav-logo:        #F6F3EC;   /* wordmark — acompanha o tema */
+  --nav-bg:          #0A0A0B;
+  --nav-text:        rgba(244, 244, 245, 0.80);
+  --nav-muted:       rgba(244, 244, 245, 0.48);
+  --nav-active-text: #FAFAFA;
+  --nav-active-bg:   rgba(255, 255, 255, 0.07);
+  --nav-hover-bg:    rgba(255, 255, 255, 0.045);
+  --nav-line:        rgba(255, 255, 255, 0.07);
+  --nav-logo:        #FAFAFA;   /* wordmark — acompanha o tema */
   /* Um degrau acima do trilho — painéis flutuantes do menu (conta, visão). */
-  --nav-elev:        #101935;
+  --nav-elev:        #1C1C20;
   /* Volume do trilho: 158°, o ângulo do sistema. Incolor, não compete com o ouro. */
-  --nav-rail-sheen:  linear-gradient(158deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 46%);
+  --nav-rail-sheen:  none;
 
   /* ── Moldura v4 — "folha flutuante" ──────────────────────────────────────
      No desktop o app é uma moldura (onde mora a navegação) com o conteúdo
      numa folha arredondada por cima. A folha é o --page-bg; a moldura é um
      degrau mais escura no escuro e um degrau mais "papel 2" no claro. */
-  --frame-bg:          #05070F;
+  --frame-bg:          #0A0A0B;
   --sheet-line:        rgba(255, 255, 255, 0.07);
-  --sheet-shadow:      0 0 0 1px rgba(0,0,0,0.35), 0 24px 60px -20px rgba(0,0,0,0.6);
+  --sheet-shadow:      0 0 0 1px rgba(0,0,0,0.5), 0 24px 60px -24px rgba(0,0,0,0.7);
   --nav-active-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 3px rgba(0,0,0,0.45);
   /* Barra inferior do celular — doca flutuante de vidro. */
-  --dock-bg:           rgba(12, 18, 40, 0.82);
+  --dock-bg:           rgba(24, 24, 27, 0.86);
   --dock-line:         rgba(255, 255, 255, 0.09);
   --dock-shadow:       0 12px 32px -8px rgba(0,0,0,0.65);
 
@@ -117,16 +122,16 @@
   --dur-slow: 420ms;
 
   /* Text — Papel sobre Marinho */
-  --t1: #F4EFE4;
-  --t2: #D2CCC0;
-  --t3: #939AB3;   /* secundário oficial em fundo escuro */
-  --t4: #7A829B;   /* ≥4.5:1 sobre surface — pode ser usado em texto pequeno */
-  --t5: #5F6880;   /* apenas decorativo (separadores, ícones inativos) — nunca texto informativo */
+  --t1: #F4F4F5;
+  --t2: #D4D4D8;
+  --t3: #A1A1AA;   /* secundário oficial em fundo escuro */
+  --t4: #8E8E97;   /* ≥4.5:1 sobre surface — pode ser usado em texto pequeno */
+  --t5: #5B5B63;   /* apenas decorativo (separadores, ícones inativos) — nunca texto informativo */
 
   /* Lines / borders */
-  --line:        rgba(255, 255, 255, 0.10);
-  --line-strong: rgba(255, 255, 255, 0.18);
-  --line-input:  rgba(255, 255, 255, 0.14);
+  --line:        rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.15);
+  --line-input:  rgba(255, 255, 255, 0.12);
 
   /* Status — verde avanço, âmbar atenção, vermelho risco, petróleo informação */
   --success:      #34C88A;
@@ -157,7 +162,7 @@
 
   /* Brilho diagonal das superfícies — o "gradiente dos cards".
      No escuro precisa ser mais forte: sobre Marinho um degradê sutil some. */
-  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0) 58%);
+  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0) 55%);
   /* Ponto de partida do degradê do .surface-premium. */
   --sheen-start: var(--surface-2);
 
@@ -217,7 +222,7 @@ html.light {
   --brand-tint:    rgba(214, 178, 110, 0.18);
   --brand-text:    #7A5A22;
   --brand-shadow:  rgba(214, 178, 110, 0.30);
-  --brand-btn-text:#0C1430;
+  --brand-btn-text:#18181B;
 
   /* O botão primário é Areia viva com Marinho por cima nos DOIS temas.
      A versão anterior escurecia o ouro para #A8791A → #8A6210 com texto
@@ -225,11 +230,11 @@ html.light {
      login. Marinho sobre Areia dá 6.5:1 — mais contraste que o branco sobre
      o marrom (4.6:1) — e devolve ao tema claro a mesma cor do escuro. */
   --grad-brand:      linear-gradient(158deg, #E8CD94 0%, #D6B26E 62%);
-  --grad-brand-text: #0C1430;
+  --grad-brand-text: #18181B;
   --brand-fill:       #D6B26E;
   --brand-fill-hover: #CBA55F;
   --brand-fill-deep:  #B8934F;
-  --brand-fill-text:  #0C1430;
+  --brand-fill-text:  #18181B;
   --grad-call:       linear-gradient(158deg, #34D07A 0%, #16A34A 62%);
   --grad-call-text:  #06210F;
   --grad-call-glow:  rgba(22, 163, 74, 0.20);
@@ -237,46 +242,46 @@ html.light {
   /* Surfaces — Papel, com Marinho entrando só como tinta muito diluída.
      Papel 2 puro (#ECE7DA) é bege demais e "amarela" a tela; 4% de Marinho
      por cima esfria o creme e amarra a superfície com a marca. */
-  --page-bg:   #FBF8F2;
+  --page-bg:   #FAFAFA;
   --surface:   #FFFFFF;
-  --surface-2: #F4EFE6;
-  --surface-3: #E9E2D5;
+  --surface-2: #F4F4F5;
+  --surface-3: #E8E8EB;
 
   /* ── Navegação — Marinho estilizado ────────────────────────────────────
      O Marinho NÃO é mais uma placa sólida de 240px. Aqui ele age como
      TINTA: a barra é clara, e o Marinho aparece na tipografia, no estado
      ativo e nas linhas. A marca continua estruturando a navegação sem
      pesar a tela — que era exatamente o problema do marinho dominante. */
-  --nav-bg:          #EAE4D6;
-  --nav-text:        #2A3660;                  /* Marinho médio */
-  --nav-muted:       #5A6480;
-  --nav-active-text: #0C1430;                  /* Marinho puro no item ativo */
+  --nav-bg:          #F1F1F3;
+  --nav-text:        #3F3F46;                  /* Marinho médio */
+  --nav-muted:       #71717A;
+  --nav-active-text: #18181B;                  /* Marinho puro no item ativo */
   --nav-active-bg:   #FFFFFF;                  /* o item ativo "sobe" para a folha */
-  --nav-hover-bg:    rgba(12, 20, 48, 0.05);
-  --nav-line:        rgba(12, 20, 48, 0.10);
-  --nav-logo:        #0C1430;
+  --nav-hover-bg:    rgba(24, 24, 27, 0.05);
+  --nav-line:        rgba(24, 24, 27, 0.08);
+  --nav-logo:        #18181B;
   --nav-elev:        #FFFFFF;
   --nav-rail-sheen:  none;
 
-  --frame-bg:          #EAE4D6;
-  --sheet-line:        rgba(12, 20, 48, 0.08);
-  --sheet-shadow:      0 1px 2px rgba(12,20,48,0.05), 0 18px 48px -18px rgba(12,20,48,0.16);
-  --nav-active-shadow: 0 1px 2px rgba(12,20,48,0.08), 0 0 0 1px rgba(12,20,48,0.05);
-  --dock-bg:           rgba(255, 255, 255, 0.86);
-  --dock-line:         rgba(12, 20, 48, 0.09);
-  --dock-shadow:       0 12px 32px -10px rgba(12,20,48,0.28);
+  --frame-bg:          #F1F1F3;
+  --sheet-line:        rgba(24, 24, 27, 0.08);
+  --sheet-shadow:      0 1px 2px rgba(24,24,27,0.05), 0 16px 40px -20px rgba(24,24,27,0.18);
+  --nav-active-shadow: 0 1px 2px rgba(24,24,27,0.08), 0 0 0 1px rgba(24,24,27,0.06);
+  --dock-bg:           rgba(255, 255, 255, 0.88);
+  --dock-line:         rgba(24, 24, 27, 0.09);
+  --dock-shadow:       0 12px 32px -10px rgba(24,24,27,0.28);
 
   /* Text — Marinho sobre Papel */
-  --t1: #0C1430;
-  --t2: #2A3660;
-  --t3: #4A5573;   /* secundário oficial em fundo claro */
-  --t4: #5A6480;   /* ≥4.5:1 sobre Papel — pode ser usado em texto pequeno */
-  --t5: #9AA0AE;   /* apenas decorativo — nunca texto informativo */
+  --t1: #18181B;
+  --t2: #3F3F46;
+  --t3: #52525B;   /* secundário oficial em fundo claro */
+  --t4: #6B6B74;   /* ≥4.5:1 sobre Papel — pode ser usado em texto pequeno */
+  --t5: #A1A1AA;   /* apenas decorativo — nunca texto informativo */
 
   /* Lines — Marinho diluído no lugar de bege, para não puxar a tela p/ amarelo */
-  --line:        rgba(12, 20, 48, 0.10);
-  --line-strong: rgba(12, 20, 48, 0.18);
-  --line-input:  rgba(12, 20, 48, 0.15);
+  --line:        rgba(24, 24, 27, 0.09);
+  --line-strong: rgba(24, 24, 27, 0.16);
+  --line-input:  rgba(24, 24, 27, 0.14);
 
   /* Status */
   --success:      #1F8A62;
@@ -293,9 +298,9 @@ html.light {
   --info-line:    #A9CFD2;
 
   /* Shadows */
-  --shadow-card:    0 1px 4px rgba(12,20,48,0.08), 0 1px 2px rgba(12,20,48,0.05);
-  --shadow-modal:   0 25px 50px rgba(12,20,48,0.18), 0 10px 20px rgba(12,20,48,0.10);
-  --shadow-dropdown:0 10px 30px rgba(12,20,48,0.12), 0 4px 10px rgba(12,20,48,0.08);
+  --shadow-card:    0 1px 4px rgba(24,24,27,0.08), 0 1px 2px rgba(24,24,27,0.05);
+  --shadow-modal:   0 25px 50px rgba(24,24,27,0.18), 0 10px 20px rgba(24,24,27,0.10);
+  --shadow-dropdown:0 10px 30px rgba(24,24,27,0.12), 0 4px 10px rgba(24,24,27,0.08);
 
   /* Sobre papel o mesmo ouro mancharia a tela — cai para cerca de um terço. */
   --aurora-a: rgba(214, 178, 110, 0.055);
@@ -303,11 +308,11 @@ html.light {
 
   /* No papel o degradê inverte: em vez de luz branca (invisível sobre branco),
      é uma sombra fria de Marinho muito diluída subindo do rodapé do card. */
-  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0) 45%, rgba(12,20,48,0.030) 100%);
+  --surface-sheen: linear-gradient(158deg, rgba(255,255,255,0) 50%, rgba(24,24,27,0.02) 100%);
   /* O card premium partia do Papel 2 inteiro e o canto ficava bege demais:
      cinquenta cards com um canto bege viram uma tela "suja". Metade da tinta
      dá o mesmo volume com metade do ruído. */
-  --sheen-start: color-mix(in srgb, var(--surface-2) 50%, var(--surface));
+  --sheen-start: var(--surface);
 
   /* Grão no papel quase na mesma intensidade do escuro: a 0.04 a textura
      praticamente desaparecia sobre fundo claro. */
@@ -360,13 +365,20 @@ html.light {
 
   /* Títulos — Sora. Tracking mais fechado que o da Schibsted porque a Sora
      é naturalmente mais aberta; sem isso os títulos ficam frouxos. */
-  h1, h2, h3 {
+  /* v5: serifa só no título da tela (h1). h2/h3 vivem dentro de cards e
+     painéis, onde a leitura é de interface — ficam na Geist. */
+  h1 {
     font-family: 'Fraunces', Georgia, serif;
-    font-weight: 650;
+    font-weight: 600;
     letter-spacing: -0.018em;
   }
+  h2, h3 {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-weight: 650;
+    letter-spacing: -0.012em;
+  }
   h4, h5, h6 {
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Geist', system-ui, sans-serif;
     font-weight: 600;
     letter-spacing: -0.02em;
   }
@@ -793,7 +805,10 @@ html.light {
 
 /* O conteúdo da página precisa ficar acima da aurora. */
 .aurora-host { position: relative; }
-.aurora-host > *:not(.aurora) { position: relative; z-index: 1; }
+/* `.sticky` fica de fora: esta regra tem especificidade maior que a classe do
+   Tailwind e transformava o cabeçalho fixo da página em `relative` — ele
+   nunca grudava, e com o `top` da barra global abria um vão de 56px. */
+.aurora-host > *:not(.aurora):not(.sticky) { position: relative; z-index: 1; }
 
 .surface-premium {
   background-color: var(--surface);
@@ -894,7 +909,7 @@ html.light .list-surface {
   background-color: var(--surface);
   background-image:
     var(--grain),
-    linear-gradient(to bottom, rgba(12,20,48,0.022) 0px, rgba(12,20,48,0) 96px);
+    linear-gradient(to bottom, rgba(24,24,27,0.022) 0px, rgba(24,24,27,0) 96px);
   box-shadow: var(--shadow-card);
 }
 
@@ -930,9 +945,9 @@ html.light {
   --kanban-col-bg:            #E6E1D5;
   --kanban-card-bg:           #FFFFFF;
   --kanban-card-hover:        #FFFFFF;
-  --kanban-card-line:         rgba(12, 20, 48, 0.09);
-  --kanban-card-shadow:       0 1px 2px rgba(12,20,48,0.06), 0 1px 1px rgba(12,20,48,0.04);
-  --kanban-card-shadow-alerta:0 4px 12px rgba(12,20,48,0.10), 0 1px 3px rgba(12,20,48,0.08);
+  --kanban-card-line:         rgba(24, 24, 27, 0.09);
+  --kanban-card-shadow:       0 1px 2px rgba(24,24,27,0.06), 0 1px 1px rgba(24,24,27,0.04);
+  --kanban-card-shadow-alerta:0 4px 12px rgba(24,24,27,0.10), 0 1px 3px rgba(24,24,27,0.08);
 }
 
 .kanban-col {
@@ -974,10 +989,10 @@ html.light {
 
 /* Headers de conteúdo usam page-bg no light mode (nav-bg fica só para sidebar/bottom-nav) */
 
-html.light .text-white\/60 { color: rgba(12,20,48,0.60) !important; }
-html.light .text-white\/70 { color: rgba(12,20,48,0.70) !important; }
-html.light .text-white\/80 { color: rgba(12,20,48,0.80) !important; }
-html.light .text-white\/90 { color: rgba(12,20,48,0.90) !important; }
+html.light .text-white\/60 { color: rgba(24,24,27,0.60) !important; }
+html.light .text-white\/70 { color: rgba(24,24,27,0.70) !important; }
+html.light .text-white\/80 { color: rgba(24,24,27,0.80) !important; }
+html.light .text-white\/90 { color: rgba(24,24,27,0.90) !important; }
 
 html.light input.text-slate-100,
 html.light textarea.text-slate-100,
@@ -1012,21 +1027,21 @@ html.light [class*="bg-\\[\\#1e2130\\]"],
 html.light [class*="bg-\\[\\#20243A\\]"],
 html.light [class*="bg-\\[\\#20243a\\]"] { background-color: var(--surface-2) !important; }
 
-html.light .bg-white\/2  { background-color: rgba(12,20,48,0.02) !important; }
-html.light .bg-white\/3  { background-color: rgba(12,20,48,0.03) !important; }
-html.light .bg-white\/4  { background-color: rgba(12,20,48,0.04) !important; }
-html.light .bg-white\/5  { background-color: rgba(12,20,48,0.04) !important; }
-html.light .bg-white\/6  { background-color: rgba(12,20,48,0.05) !important; }
-html.light .bg-white\/8  { background-color: rgba(12,20,48,0.06) !important; }
-html.light .bg-white\/10 { background-color: rgba(12,20,48,0.07) !important; }
-html.light .bg-white\/12 { background-color: rgba(12,20,48,0.08) !important; }
-html.light .bg-white\/15 { background-color: rgba(12,20,48,0.09) !important; }
+html.light .bg-white\/2  { background-color: rgba(24,24,27,0.02) !important; }
+html.light .bg-white\/3  { background-color: rgba(24,24,27,0.03) !important; }
+html.light .bg-white\/4  { background-color: rgba(24,24,27,0.04) !important; }
+html.light .bg-white\/5  { background-color: rgba(24,24,27,0.04) !important; }
+html.light .bg-white\/6  { background-color: rgba(24,24,27,0.05) !important; }
+html.light .bg-white\/8  { background-color: rgba(24,24,27,0.06) !important; }
+html.light .bg-white\/10 { background-color: rgba(24,24,27,0.07) !important; }
+html.light .bg-white\/12 { background-color: rgba(24,24,27,0.08) !important; }
+html.light .bg-white\/15 { background-color: rgba(24,24,27,0.09) !important; }
 
-html.light .hover\:bg-white\/3:hover  { background-color: rgba(12,20,48,0.03) !important; }
-html.light .hover\:bg-white\/4:hover  { background-color: rgba(12,20,48,0.04) !important; }
-html.light .hover\:bg-white\/5:hover  { background-color: rgba(12,20,48,0.04) !important; }
-html.light .hover\:bg-white\/8:hover  { background-color: rgba(12,20,48,0.06) !important; }
-html.light .hover\:bg-white\/10:hover { background-color: rgba(12,20,48,0.07) !important; }
+html.light .hover\:bg-white\/3:hover  { background-color: rgba(24,24,27,0.03) !important; }
+html.light .hover\:bg-white\/4:hover  { background-color: rgba(24,24,27,0.04) !important; }
+html.light .hover\:bg-white\/5:hover  { background-color: rgba(24,24,27,0.04) !important; }
+html.light .hover\:bg-white\/8:hover  { background-color: rgba(24,24,27,0.06) !important; }
+html.light .hover\:bg-white\/10:hover { background-color: rgba(24,24,27,0.07) !important; }
 
 html.light .border-white\/5  { border-color: var(--line) !important; }
 html.light .border-white\/6  { border-color: var(--line) !important; }
@@ -1064,8 +1079,8 @@ html.light input[type='datetime-local']::-webkit-calendar-picker-indicator {
   filter: none !important; opacity: 0.55 !important;
 }
 
-html.light ::-webkit-scrollbar-thumb { background: rgba(12,20,48,0.18) !important; }
-html.light ::-webkit-scrollbar-thumb:hover { background: rgba(12,20,48,0.30) !important; }
+html.light ::-webkit-scrollbar-thumb { background: rgba(24,24,27,0.18) !important; }
+html.light ::-webkit-scrollbar-thumb:hover { background: rgba(24,24,27,0.30) !important; }
 
 html.light aside.nav-rail {
   background-color: var(--nav-bg) !important;
@@ -1326,7 +1341,7 @@ html.light .shimmer {
 .bg-brand,
 .bg-brand-dark,
 .bg-indigo-600,
-.bg-indigo-500 { color: #0C1430 !important; }
+.bg-indigo-500 { color: #18181B !important; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    UTILITIES
@@ -1564,15 +1579,15 @@ html.compacta .lista-linha {
 
 .login {
   color-scheme: dark;
-  --page-bg:   #070B1A;
-  --surface:   #0C1430;
-  --surface-2: #18224A;
-  --surface-3: #1F2A55;
-  --t1: #F6F3EC;
-  --t2: #CFC9BC;
-  --t3: #8A90A6;
-  --t4: #7A829B;
-  --t5: #5F6880;
+  --page-bg:   #0A0A0B;
+  --surface:   #18181B;
+  --surface-2: #1F1F23;
+  --surface-3: #29292E;
+  --t1: #F4F4F5;
+  --t2: #D4D4D8;
+  --t3: #A1A1AA;
+  --t4: #8E8E97;
+  --t5: #5B5B63;
   --line:        rgba(255, 255, 255, 0.10);
   --line-strong: rgba(255, 255, 255, 0.18);
   --line-input:  rgba(255, 255, 255, 0.14);
@@ -1580,7 +1595,7 @@ html.compacta .lista-linha {
   --brand-text: #E8CD94;
   --brand-fill:       #D6B26E;
   --brand-fill-hover: #E8CD94;
-  --brand-fill-text:  #0C1430;
+  --brand-fill-text:  #18181B;
   --warning:      #E0A030;
   --warning-bg:   rgba(224, 160, 48, 0.10);
   --warning-line: rgba(224, 160, 48, 0.28);
@@ -1601,7 +1616,7 @@ html.compacta .lista-linha {
   min-height: 100dvh;
   overflow: hidden;
   background:
-    radial-gradient(110% 70% at var(--foco-x) 0%, #101935 0%, #0A1024 48%, #070B1A 100%);
+    radial-gradient(110% 70% at var(--foco-x) 0%, #1A1A1E 0%, #111113 48%, #0A0A0B 100%);
 }
 @media (min-width: 1024px) {
   .login {
@@ -1660,7 +1675,7 @@ html.compacta .lista-linha {
   aspect-ratio: 1;
   left: -18vw;
   bottom: -30vw;
-  background: radial-gradient(circle, rgba(72, 96, 186, 0.32) 0%, rgba(72, 96, 186, 0.10) 45%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 45%, transparent 70%);
   animation: loginLuzB 71s ease-in-out infinite alternate;
 }
 @keyframes loginLuzA {
@@ -1687,7 +1702,7 @@ html.compacta .lista-linha {
 .login-cartao {
   position: relative;
   isolation: isolate;
-  background-color: rgba(12, 20, 48, 0.92);
+  background-color: rgba(24, 24, 27, 0.92);
   background-image: var(--grain), linear-gradient(158deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 58%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;

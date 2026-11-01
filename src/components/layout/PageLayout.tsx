@@ -1,9 +1,8 @@
 import { ReactNode } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { IconeTom } from '../shared/visual'
 import type { Tom } from '../shared/visual'
-import { useSearchStore } from '../../store/useSearchStore'
 
 interface PageLayoutProps {
   title: string
@@ -40,8 +39,6 @@ export function PageLayout({
   ctaLabel, onCta, actions, band, largura = 'padrao', children,
 }: PageLayoutProps) {
   const caixa = largura === 'total' ? 'max-w-none' : 'max-w-7xl'
-  const abrirBusca = useSearchStore(s => s.setOpen)
-  const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
   return (
     <div className="flex-1 min-h-full bg-page texture-grain aurora-host">
       {/*
@@ -53,14 +50,14 @@ export function PageLayout({
 
       {/* ── Cabeçalho fixo ──────────────────────────────────────── */}
       <div
-        className="sticky top-0 z-10 nav-bg-blur pt-safe"
+        className="sticky top-0 lg:top-14 z-10 nav-bg-blur pt-safe"
         style={{ borderBottom: '1px solid var(--line)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 lg:py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             {icon && <IconeTom icon={icon} tom={iconTom} tamanho="lg" />}
             <div className="min-w-0">
-              <h1 className="font-heading text-[19px] lg:text-[22px] font-bold text-t1 leading-tight
+              <h1 className="font-display text-[20px] lg:text-[24px] font-semibold text-t1 leading-tight
                              tracking-[-0.025em] truncate">
                 {title}
               </h1>
@@ -71,24 +68,6 @@ export function PageLayout({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/*
-              Busca e comandos sempre à vista no desktop. O ⌘K já existia, mas
-              atalho que não aparece na tela não se descobre — a pílula ensina
-              o atalho e serve de alvo para quem prefere o mouse.
-            */}
-            <button
-              type="button"
-              onClick={() => abrirBusca(true)}
-              className="hidden xl:inline-flex items-center gap-2.5 h-10 w-[240px] rounded-[12px] border border-line
-                         bg-surface/70 px-3 text-[13px] text-t4 hover:text-t2 hover:border-line-strong
-                         transition-colors cursor-pointer"
-            >
-              <Search size={15} strokeWidth={1.8} aria-hidden />
-              <span className="flex-1 text-left">Buscar ou ir para…</span>
-              <kbd className="font-label text-[11px] font-semibold text-t4 border border-line rounded-md px-1.5 py-0.5 bg-s2">
-                {mac ? '⌘' : 'Ctrl'} K
-              </kbd>
-            </button>
             {actions}
             {ctaLabel && onCta && (
               <button

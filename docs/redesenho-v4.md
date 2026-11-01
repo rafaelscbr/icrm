@@ -5,7 +5,18 @@ melhores práticas de UX/UI e performance. Este arquivo é o placar.
 
 Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
-**Progresso: 62%**
+**Progresso: 74%**
+
+## v5 "Grafite" (01/11/2026) — "muda tudo"
+
+- [x] Temas novos: escuro grafite neutro (`#111113`/`#18181B`), claro branco + cinzas neutros; marinho e bege fora das superfícies (login incluso)
+- [x] Ouro champanhe só em marca, dinheiro, meta e ação principal
+- [x] Barra global no topo (`components/layout/TopBar.tsx`): trilha "Seção › Tela", busca ⌘K, Criar (tarefa/lead/contato), tema e avisos
+- [x] Menu lateral só navega (sino saiu para o topo); cabeçalho da tela só com título e ações dela
+- [x] Tipografia por papel: `font-display` (Fraunces) só em título de tela, número-herói e título de seção; `font-heading` virou Geist — cards e listas em sans
+- [x] Correção: o cabeçalho da tela nunca grudava (regra `.aurora-host > *` forçava `relative`); agora gruda sob a barra global
+- [x] Correção: cada tela abria na rolagem da anterior — rolagem da folha zera ao trocar de rota
+- [x] Kanban de Leads verificado (carregou nesta sessão)
 
 Escopo ampliado em 31/10: rebranding geral, layout geral novo, hierarquia de
 informação, dashboards e biblioteca de gráficos. Direção escolhida: **Signature**

@@ -116,7 +116,7 @@ function SectionLabel({ children, hint, icon: Icon, tom = 'marca' }: {
     <div className="flex items-center gap-2.5 mb-3.5 px-0.5">
       <span className={`w-1 h-4 rounded-full ${TOM[tom].ponto}`} aria-hidden />
       {Icon && <Icon size={15} strokeWidth={1.7} className={TOM[tom].texto} aria-hidden />}
-      <h2 className="font-heading text-[15px] font-extrabold text-t1 tracking-[-0.02em]">{children}</h2>
+      <h2 className="font-display text-[17px] font-semibold text-t1 tracking-[-0.02em]">{children}</h2>
       {hint && <span className="text-[11px] text-t4 truncate">{hint}</span>}
     </div>
   )
@@ -293,7 +293,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
           </div>
 
           <p
-            className="font-heading text-[clamp(2.5rem,5vw,3.4rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]"
+            className="font-display text-[clamp(2.5rem,5vw,3.4rem)] font-bold text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]"
             style={{ textShadow: '0 1px 24px rgba(214,178,110,0.10)' }}
           >
             {formatCurrencyFull(target)}
@@ -388,7 +388,7 @@ function CommandHero({ data, loading, error, onRetry, onNavigateVendas, onNaviga
             </span>
           </div>
 
-          <p className="font-heading text-[clamp(2.1rem,4.2vw,2.9rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]">
+          <p className="font-display text-[clamp(2.1rem,4.2vw,2.9rem)] font-black text-t1 tabular-nums leading-[0.95] tracking-[-0.02em]">
             {formatCurrency(previsao)}
           </p>
           <p className="text-sm text-t3 mt-2.5">

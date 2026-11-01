@@ -28,6 +28,8 @@ interface Props {
   isOpen:  boolean
   onClose: () => void
   anchorEl: HTMLElement | null
+  /** `abaixo` para gatilho na barra do topo; `direita` para o trilho lateral. */
+  lado?: 'direita' | 'abaixo'
 }
 
 /**
@@ -35,7 +37,7 @@ interface Props {
  * Renderizado via portal no <body> — escapa dos stacking contexts dos
  * headers das páginas (sticky + backdrop-blur), que antes o cobriam.
  */
-export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
+export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direita' }: Props) {
   const navigate   = useNavigate()
   const { user }   = useAuthStore()
   const { notifications, erro, load, markRead, markAllRead } = useNotificationsStore()
@@ -75,8 +77,12 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl }: Props) {
    * até o rodapé funciona nas duas posições — e em qualquer outra.
    */
   const rect = anchorEl.getBoundingClientRect()
-  const left = Math.min(rect.right + 12, window.innerWidth - PANEL_WIDTH - 12)
-  const top  = Math.max(12, Math.min(rect.top, window.innerHeight - MIN_HEIGHT - 12))
+  const left = lado === 'abaixo'
+    ? Math.max(12, Math.min(rect.right - PANEL_WIDTH, window.innerWidth - PANEL_WIDTH - 12))
+    : Math.min(rect.right + 12, window.innerWidth - PANEL_WIDTH - 12)
+  const top  = lado === 'abaixo'
+    ? rect.bottom + 8
+    : Math.max(12, Math.min(rect.top, window.innerHeight - MIN_HEIGHT - 12))
   const maxHeight = window.innerHeight - top - 12
 
   function notifIcon(n: AppNotification) {
