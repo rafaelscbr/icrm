@@ -135,19 +135,19 @@ export function LeadTimeline({ leadId }: Props) {
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="w-full flex items-center justify-center gap-2.5 py-3 text-sm font-medium text-info hover:text-info hover:bg-s3/60 border border-info-line hover:border-info-line border-dashed rounded-xl transition-all duration-200"
+          className="w-full flex items-center gap-2.5 h-11 px-3.5 rounded-[12px] bg-s2 text-[14px] text-t4 hover:text-t2 transition-colors text-left"
         >
           <Plus size={15} />
-          Registrar nova interação
+          Registrar contato, visita ou reunião…
         </button>
       ) : (
 
         /* ── Form ────────────────────────────────────────────────────────── */
-        <div className="rounded-xl border border-line overflow-hidden">
+        <div className="rounded-[16px] bg-s2 overflow-hidden">
 
           {/* Form header */}
-          <div className="px-4 py-3 bg-s2/50 border-b border-line flex items-center justify-between">
-            <span className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Nova Interação</span>
+          <div className="px-4 pt-3.5 flex items-center justify-between">
+            <span className="text-[14px] font-semibold text-t1">Nova interação</span>
             <button
               onClick={() => setShowForm(false)}
               className="text-xs text-t3 hover:text-t2 transition-colors"
@@ -160,7 +160,7 @@ export function LeadTimeline({ leadId }: Props) {
 
             {/* Tipo */}
             <div>
-              <p className="text-xs font-semibold text-t3 uppercase tracking-widest mb-2.5">Tipo de contato</p>
+              <p className="rotulo-campo mb-2">Tipo de contato</p>
               <div className="grid grid-cols-3 gap-2">
                 {TYPES.map(t => {
                   const c = TYPE_CONFIG[t]
@@ -185,14 +185,14 @@ export function LeadTimeline({ leadId }: Props) {
 
             {/* Data e hora */}
             <div>
-              <p className="text-xs font-semibold text-t3 uppercase tracking-widest mb-2">Data e hora</p>
+              <p className="rotulo-campo mb-2">Data e hora</p>
               <div className="relative">
                 <Clock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-t3 pointer-events-none" />
                 <input
                   type="datetime-local"
                   value={datetime}
                   onChange={e => setDatetime(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 bg-s3/50 border border-line rounded-xl text-sm text-t1 focus:outline-none focus:ring-2 focus:ring-info-line focus:border-info-line transition-all [color-scheme:dark]"
+                  className="campo w-full pl-10 pr-3 py-2.5 min-h-[44px]"
                 />
               </div>
             </div>
@@ -200,7 +200,7 @@ export function LeadTimeline({ leadId }: Props) {
             {/* Resultado */}
             <div>
               <div className="flex items-baseline gap-2 mb-2.5">
-                <p className="text-xs font-semibold text-t3 uppercase tracking-widest">Resultado</p>
+                <p className="rotulo-campo">Resultado</p>
                 <span className="text-xs text-t4">(opcional)</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -227,7 +227,7 @@ export function LeadTimeline({ leadId }: Props) {
             {/* Observações */}
             <div>
               <div className="flex items-baseline gap-2 mb-2">
-                <p className="text-xs font-semibold text-t3 uppercase tracking-widest">Observações</p>
+                <p className="rotulo-campo">Observações</p>
                 <span className="text-xs text-t4">(opcional)</span>
               </div>
               <textarea
@@ -235,7 +235,7 @@ export function LeadTimeline({ leadId }: Props) {
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
                 placeholder={`Detalhes sobre a ${selectedType.label.toLowerCase()}…`}
-                className="w-full bg-s3/50 border border-line rounded-xl px-3.5 py-3 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-info-line focus:border-info-line resize-none transition-all leading-relaxed"
+                className="campo w-full px-3.5 py-2.5 resize-none leading-relaxed"
               />
             </div>
 
@@ -243,7 +243,7 @@ export function LeadTimeline({ leadId }: Props) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-white bg-info hover:bg-info disabled:opacity-50 rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-[0.99]"
+              className="w-full flex items-center justify-center gap-2 h-11 text-[14px] font-semibold bg-brand-fill text-brand-fill-text hover:bg-brand-fill-hover disabled:opacity-50 rounded-[12px] transition-colors active:scale-[0.99]"
             >
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
               Registrar interação
@@ -268,45 +268,46 @@ export function LeadTimeline({ leadId }: Props) {
         </div>
       ) : (
         <div>
-          <p className="text-xs font-semibold text-t4 uppercase tracking-widest mb-4 px-0.5">
-            {interactions.length} {interactions.length === 1 ? 'interação' : 'interações'}
-          </p>
+          <h3 className="text-[15px] font-semibold text-t1 mb-3">
+            {interactions.length} {interactions.length === 1 ? 'registro' : 'registros'}
+          </h3>
 
           <div className="relative">
             {/* Linha da timeline */}
-            <div className="absolute left-[17px] top-4 bottom-4 w-px bg-line" />
+            <div className="absolute left-[13px] top-3 bottom-3 w-px bg-line" />
 
-            <div className="space-y-3">
+            <div className="space-y-1">
               {interactions.map(item => {
                 const tc = TYPE_CONFIG[item.type]
                 const oc = item.outcome ? OUTCOME_CONFIG[item.outcome] : null
                 return (
-                  <div key={item.id} className="flex gap-4 group">
+                  <div key={item.id} className="flex gap-3.5 group">
 
                     {/* Ícone */}
-                    <div className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 z-10 shadow-sm ${tc.bg} ${tc.border}`}>
-                      <tc.Icon size={14} className={tc.color} />
+                    <div className="w-7 h-7 rounded-full bg-surface flex items-center justify-center flex-shrink-0 z-10 mt-1.5">
+                      <tc.Icon size={15} strokeWidth={1.9} className={tc.color} aria-hidden />
                     </div>
 
                     {/* Card */}
-                    <div className="flex-1 min-w-0 bg-s2/50 hover:bg-s3/50 border border-line hover:border-line-strong rounded-xl p-3.5 transition-all">
+                    <div className="flex-1 min-w-0 rounded-[12px] px-3 py-2.5 -mx-1 hover:bg-s2 transition-colors">
 
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div className="flex items-start justify-between gap-2 mb-0.5">
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
-                          <span className={`text-xs font-semibold ${tc.color}`}>{tc.label}</span>
+                          <span className="text-[13px] font-semibold text-t1">{tc.label}</span>
                           {oc && (
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${oc.bg} ${oc.border} ${oc.color}`}>
+                            <span className={`text-[12.5px] font-medium ${oc.color}`}>
                               {oc.label}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className="text-xs text-t4 whitespace-nowrap">
+                          <span className="text-[12.5px] text-t4 whitespace-nowrap tabular-nums">
                             {formatInteractionDate(item.interactedAt)}
                           </span>
                           <button
                             onClick={() => handleRemove(item.id)}
-                            className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-t4 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            aria-label="Apagar este registro"
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-7 h-7 flex items-center justify-center text-t4 hover:text-error hover:bg-error-bg rounded-lg transition-all"
                           >
                             <Trash2 size={11} />
                           </button>
@@ -314,7 +315,7 @@ export function LeadTimeline({ leadId }: Props) {
                       </div>
 
                       {item.description && (
-                        <p className="text-sm text-t2 leading-relaxed">{item.description}</p>
+                        <p className="text-[14px] text-t2 leading-relaxed">{item.description}</p>
                       )}
                     </div>
                   </div>

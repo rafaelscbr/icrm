@@ -183,3 +183,12 @@ pixel art).
 - **Instrument Serif itálica, em dourado, numa palavra por frase.** `<Destaque>` ou `*palavra*` em textos que passam por `destacar()` — título da tela (PageLayout), SecaoTitulo, EstadoTela e títulos de seção do Painel. Token `--destaque` (claro escurecido para 3:1). Usado na saudação ("Bom dia, *Rafael*"), seções do Painel, veredito e seções de Metas e estados vazios.
 - **Celular:** doca com 4 vagas — Início, Leads, Simulador e Mais — com pílula atrás do ícone ativo e rótulo em negrito. "Mais" abre uma folha de baixo: conta, avisos, tema e fechar; busca; Criar (tarefa, lead, contato, venda); todas as outras telas em grade de três por seção; ferramentas; Sair separado. A doca fica acima da folha (o mesmo botão fecha). Busca e avisos também no topo de cada tela.
 - `acoesCriar` passou para `navConfig` (topo e celular usam a mesma lista).
+
+### v11.1 — Ficha do lead "Folha" (01/11/2026)
+
+- A ficha responde três perguntas, nesta ordem: **quem é** (nome em 26–28px, telefone, corretor), **em que pé está** (régua de etapas com pontos — a cor é a da etapa atual; clique move) e **o que fazer agora** (bloco "Agora").
+- **Agora** junta o que eram até quatro faixas (SLA, tarefa agendada, sugestão, tentativas) e os três botões soltos: rótulo e prazo no tom do momento (filete à esquerda), a frase do que fazer, as tentativas como barras e WhatsApp/Ligar/Tarefa no mesmo bloco.
+- **Ticket · Comissão · Último contato** numa faixa de três. Último contato usa `lastContactAt` (mesma fonte do Kanban) — antes a ficha dizia "Nunca" quando o card dizia "há 5 dias".
+- Resto em **abas**: Resumo (Agora, números, imóvel, últimos toques, nota rápida, observações), Perfil (leitura do lead + perfil declarado + texto original do Meta) e Histórico (linha do tempo + listas e campanhas).
+- Linha do tempo, Inteligência e Perfil sem caixa com borda. Corrigido o contorno do encaixe no produto: `var(--warning)` + `'55'` virava cor inválida (borda branca).
+- Celular: tela cheia, só a etapa atual mostra o nome na régua, tentativas encolhem para caber.

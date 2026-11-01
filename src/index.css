@@ -2182,3 +2182,112 @@ html.light { --dock-solid: #FFFFFF; }
 .folha-tela:active { transform: scale(0.97); background: var(--surface-3); }
 .folha-tela[aria-current="page"] { background: var(--brand-tint); }
 .folha-acao:focus-visible, .folha-tela:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   FICHA DO LEAD — v2 "Folha" (01/11/2026)
+
+   Três perguntas, nesta ordem: quem é (nome grande), em que pé está (régua de
+   etapas) e o que fazer agora (bloco Agora com os botões). O resto vai para
+   abas. Nada de caixa com borda dentro de caixa: separação por espaço, por
+   tom do fundo e por um filete de cor só onde há julgamento (o tom do Agora).
+   ══════════════════════════════════════════════════════════════════════════════ */
+.ficha {
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: -24px 0 60px -24px rgba(0, 0, 0, 0.45);
+}
+.ficha-icone {
+  width: 40px; height: 40px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; color: var(--t3);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.ficha-icone:hover { background: var(--surface-2); color: var(--t1); }
+.ficha-icone:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+/* Régua de etapas: trilho contínuo, ponto por etapa; a cor é a da etapa atual. */
+.ficha-regua { display: flex; }
+.ficha-etapa {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding-bottom: 2px; cursor: pointer; border-radius: 10px;
+}
+.ficha-etapa:disabled { cursor: not-allowed; opacity: 0.5; }
+.ficha-etapa:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ficha-etapa-trilho { position: relative; width: 100%; height: 16px; display: flex; align-items: center; justify-content: center; }
+.ficha-etapa-trilho::before, .ficha-etapa-trilho::after {
+  content: ''; position: absolute; top: 50%; height: 2px; margin-top: -1px; width: 50%;
+  background: var(--line-strong);
+}
+.ficha-etapa-trilho::before { left: 0; }
+.ficha-etapa-trilho::after  { right: 0; }
+li:first-child > .ficha-etapa .ficha-etapa-trilho::before,
+li:last-child  > .ficha-etapa .ficha-etapa-trilho::after { display: none; }
+.ficha-etapa[data-estado="feita"] .ficha-etapa-trilho::before,
+.ficha-etapa[data-estado="feita"] .ficha-etapa-trilho::after,
+.ficha-etapa[data-estado="atual"] .ficha-etapa-trilho::before { background: var(--etapa); }
+.ficha-etapa-ponto {
+  position: relative; z-index: 1;
+  width: 8px; height: 8px; border-radius: 999px; background: var(--line-strong);
+  transition: transform 150ms ease;
+}
+.ficha-etapa[data-estado="feita"] .ficha-etapa-ponto { background: var(--etapa); }
+.ficha-etapa[data-estado="atual"] .ficha-etapa-ponto {
+  width: 16px; height: 16px; background: var(--surface);
+  border: 4px solid var(--etapa);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--etapa) 20%, transparent);
+}
+.ficha-etapa:not(:disabled):hover .ficha-etapa-ponto { transform: scale(1.25); }
+.ficha-etapa-nome {
+  font-size: 12px; line-height: 1; color: var(--t4); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.ficha-etapa[data-estado="feita"] .ficha-etapa-nome { color: var(--t3); }
+.ficha-etapa[data-estado="atual"] .ficha-etapa-nome { color: var(--t1); font-weight: 700; }
+.ficha-etapa:not(:disabled):hover .ficha-etapa-nome { color: var(--t1); }
+/* Celular: seis nomes não cabem lado a lado — só a etapa atual mostra o nome
+   (os outros continuam no title e no leitor de tela via aria). */
+@media (max-width: 479.98px) {
+  .ficha-etapa:not([data-estado="atual"]) .ficha-etapa-nome { visibility: hidden; }
+  .ficha-etapa[data-estado="atual"] .ficha-etapa-nome { overflow: visible; }
+  li:first-child > .ficha-etapa[data-estado="atual"] .ficha-etapa-nome { align-self: flex-start; }
+  li:last-child  > .ficha-etapa[data-estado="atual"] .ficha-etapa-nome { align-self: flex-end; }
+}
+
+/* Agora: fundo tingido pelo tom e filete à esquerda. */
+.ficha-agora {
+  padding: 16px 18px 18px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--tom) 7%, var(--surface-2));
+  box-shadow: inset 3px 0 0 var(--tom);
+}
+.ficha-acao {
+  height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--t1);
+  background: var(--surface); border: 1px solid var(--line);
+  transition: background-color 150ms ease, transform 120ms ease;
+}
+.ficha-acao:hover { background: var(--surface-3); }
+.ficha-acao:active { transform: scale(0.98); }
+.ficha-acao:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ficha-acao-zap { background: #1FAE5B; border-color: transparent; color: #FFFFFF; }
+.ficha-acao-zap:hover { background: #1A9A50; }
+.ficha-tentativa {
+  flex: 1 1 0; min-width: 0; max-width: 28px; height: 24px; border-radius: 999px; cursor: pointer;
+  background: linear-gradient(var(--line-strong), var(--line-strong)) center / 100% 6px no-repeat;
+}
+.ficha-tentativa[data-feita="true"] {
+  background: linear-gradient(var(--tom), var(--tom)) center / 100% 6px no-repeat;
+}
+.ficha-tentativa:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+/* Números do negócio: três colunas com filete fino entre elas. */
+.ficha-numeros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ficha-numeros > div { padding: 2px 14px; min-width: 0; }
+.ficha-numeros > div:first-child { padding-left: 0; }
+.ficha-numeros > div + div { border-left: 1px solid var(--line); }
+.ficha-numeros dt { font-size: 12.5px; color: var(--t4); }
+.ficha-numeros dd {
+  margin-top: 3px; font-family: "Plus Jakarta Sans", Geist, system-ui, sans-serif;
+  font-size: 17px; font-weight: 700; letter-spacing: -0.01em; /* cor vem da classe (text-t1/success/warning) */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

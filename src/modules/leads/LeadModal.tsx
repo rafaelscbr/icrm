@@ -3,10 +3,10 @@ import { createPortal } from 'react-dom'
 import {
   X, MessageCircle, UserCheck, Building2,
   Trash2, RotateCcw, Edit2, AlertTriangle, CheckCircle2,
-  ClipboardList, Star, Search, Check, Zap,
-  ChevronDown, History, StickyNote, PhoneCall,
-  Database, ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
-  Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight, Timer,
+  ClipboardList, Star, Search, Check,
+  ChevronDown, StickyNote, PhoneCall,
+  ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
+  Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight,
   RefreshCw, BadgeCheck,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
@@ -20,7 +20,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
-import { formatPhone, formatCurrency, formatCurrencyFull, whatsappUrl, iniciais } from '../../lib/formatters'
+import { formatPhone, formatCurrency, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
@@ -30,6 +30,8 @@ import { LeadIntelPanel } from './LeadIntelPanel'
 import { useSlaInfo } from './SlaBadge'
 import { avisoReentrada } from './reentrada'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
+import { Abas } from '../../components/shared/Abas'
+import { Destaque } from '../../components/shared/Destaque'
 import toast from 'react-hot-toast'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -64,6 +66,14 @@ function relativeTime(iso: string): string {
   const d = Math.floor(h / 24)
   if (d === 1) return 'ontem'
   return `${d}d`
+}
+
+/** "hoje", "ontem", "há 5 dias" — para o número do último contato. */
+function haQuanto(iso: string): string {
+  const dias = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+  if (dias <= 0) return 'Hoje'
+  if (dias === 1) return 'Ontem'
+  return `Há ${dias} dias`
 }
 
 // ─── Próxima ação ─────────────────────────────────────────────────────────────
@@ -126,9 +136,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEdit,          setShowEdit]          = useState(false)
   const [showTaskForm,      setShowTaskForm]      = useState(false)
-  const [showHistory,       setShowHistory]       = useState(false)
   const [showRawNotes,      setShowRawNotes]      = useState(false)
-  const [showBaseCamp,      setShowBaseCamp]      = useState(false)
   const [showAddToList,     setShowAddToList]     = useState(false)
   const [selectedListId,    setSelectedListId]    = useState('')
   const [addingToList,      setAddingToList]      = useState(false)
@@ -137,6 +145,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showBrokerMenu,    setShowBrokerMenu]    = useState(false)
   // Ciclo interação → tarefa: tipo da última interação registrada nesta sessão
   const [nextStepFor,       setNextStepFor]       = useState<LeadInteractionType | null>(null)
+  const [aba,               setAba]               = useState<'resumo' | 'perfil' | 'historico'>('resumo')
 
   const { lists, load: loadLists } = useLeadListsStore()
   const activeLists = lists.filter(l => l.status === 'active')
@@ -171,7 +180,14 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   // Interactions
   const interactions  = getForLead(lead.id)
   const lastReal      = interactions.find(i => REAL_INTERACTION_TYPES.has(i.type))
-  const daysSince     = (Date.now() - new Date(lastReal?.interactedAt ?? lead.createdAt).getTime()) / 86_400_000
+  // Último contato: o mais recente entre o histórico carregado e o
+  // `lastContactAt` do lead (trigger 074) — a mesma fonte do Kanban. Só o
+  // histórico deixava a ficha dizendo "Nunca" quando o card dizia "há 5 dias".
+  const ultimoContatoIso = [lastReal?.interactedAt, lead.lastContactAt]
+    .filter((d): d is string => !!d)
+    .sort()
+    .slice(-1)[0]
+  const daysSince     = (Date.now() - new Date(ultimoContatoIso ?? lead.createdAt).getTime()) / 86_400_000
   const recentItems   = interactions.slice(0, 3)
   const { message: nextMsg, urgent: nextUrgent } = lead.funnelStage !== 'venda'
     ? getNextAction(lead.funnelStage, lead.followupStep, daysSince)
@@ -308,728 +324,476 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   }
 
   const currentIndex = STAGES.indexOf(lead.funnelStage)
+  const telefone     = contact?.phone ?? lead.phone
+  const entrouEm     = new Date(lead.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+  const ultimoToque  = ultimoContatoIso ? haQuanto(ultimoContatoIso) : null
+  const diasParado   = Math.floor(daysSince)
+
+  // ── "Agora": um bloco só, com o que fazer e o tom do momento ─────────────
+  // Antes eram até quatro faixas empilhadas (reentrada, SLA, tarefa ou
+  // sugestão, tentativas) e os três botões soltos embaixo. Agora o que fazer
+  // e o botão que faz moram juntos, e o tom pinta só o filete à esquerda.
+  type Tom = 'risco' | 'atencao' | 'sucesso' | 'neutro'
+  const agora: { rotulo: string; texto: string; tom: Tom; prazo?: string } =
+    lead.funnelStage === 'venda'
+      ? { rotulo: 'Venda realizada', texto: 'Manter o relacionamento — indicação vem daqui.', tom: 'sucesso' }
+      : slaInfo
+        ? { rotulo: slaInfo.overdue ? 'SLA vencido' : '1º contato Meta Ads',
+            texto: slaInfo.overdue
+              ? 'Transferência iminente. Chame no WhatsApp para registrar o contato.'
+              : `Chame no WhatsApp para parar o relógio. Prazo: ${slaInfo.deadline}.`,
+            tom: slaInfo.urgent ? 'risco' : 'atencao', prazo: slaInfo.overdue ? undefined : slaInfo.text }
+        : pendingTask
+          ? { rotulo: 'Próximo passo agendado', texto: pendingTask.title,
+              tom: taskDue?.overdue ? 'risco' : taskDue?.today ? 'atencao' : 'neutro', prazo: taskDue?.text }
+          : { rotulo: nextUrgent ? 'Agir agora' : 'Próximo passo', texto: nextMsg, tom: nextUrgent ? 'atencao' : 'neutro' }
+
+  const corTom: Record<Tom, string> = {
+    risco: 'var(--error)', atencao: 'var(--warning)', sucesso: 'var(--success)', neutro: 'var(--brand)',
+  }
 
   // Portal no <body>: dentro da tela o painel ficava abaixo da faixa de abas.
   return createPortal(
     <>
-      {/* ── Painel lateral do lead ───────────────────────────────────────────
-          Deixou de ser modal centralizado: o briefing pede que o corretor
-          continue vendo o Kanban enquanto trabalha o lead. Em desktop entra
-          pela direita e preserva a coluna atrás; em telas pequenas ocupa a
-          tela inteira, onde dividir espaço não faz sentido.
-          O overlay é bem mais leve que o do modal (25% vs 65%) justamente
-          para o quadro continuar legível ao lado. */}
+      {/* ── Ficha do lead — v2 "Folha" (01/11/2026) ─────────────────────────
+          Painel à direita no desktop (o Kanban continua visível ao lado) e
+          tela cheia no celular. A ficha responde três perguntas, nesta ordem:
+          quem é (cabeçalho), em que pé está (régua de etapas) e o que fazer
+          agora (bloco Agora, com os botões). O resto — perfil, inteligência,
+          histórico, listas — fica em abas, em vez de doze caixas empilhadas. */}
       <div className="fixed inset-0 z-50 flex justify-end">
-        <div className="absolute inset-0 bg-black/25 sm:bg-black/25" onClick={onClose} aria-hidden />
+        <div className="absolute inset-0 bg-black/25" onClick={onClose} aria-hidden />
 
         <div
           role="dialog"
           aria-modal="true"
           aria-label={`Lead ${lead.name}`}
-          className="relative w-full sm:max-w-[38rem] h-full modal-surface shadow-modal overflow-hidden
-            sm:rounded-l-[20px] border-l border-line
+          className="ficha relative w-full sm:max-w-[36rem] h-full overflow-hidden sm:rounded-l-[22px]
             animate-in fade-in slide-in-from-right-4 duration-200 flex flex-col"
         >
 
           {/* ── Cabeçalho ──────────────────────────────────────────────────── */}
-          <div className={`flex-shrink-0 px-5 pt-5 pb-4 ${isDiscarded ? 'bg-error-bg/40' : ''}`}>
-
-            {/* Linha 1: Avatar + info + ações */}
-            <div className="flex items-start gap-3 mb-4">
-              <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-heading text-base font-bold flex-shrink-0 border
-                ${isDiscarded
-                  ? 'bg-error-bg text-error border-error-line'
-                  : lead.flagged
-                    ? 'bg-brand-tint text-brand-text border-brand/40'
-                    : 'bg-s2 text-t1 border-line'}`}>
-                {iniciais(lead.name) || '?'}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-heading text-base font-bold text-t1 leading-tight tracking-[-0.01em]">{lead.name}</h2>
-                  {lead.flagged && !isDiscarded && (
-                    <span className="inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/40">
-                      <Star size={8} strokeWidth={1.6} fill="currentColor" /> Prioridade
-                    </span>
-                  )}
-                  {isLinked && (
-                    <span className="inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full text-t3 border border-line">
-                      <UserCheck size={8} strokeWidth={1.6} /> CRM
-                    </span>
-                  )}
-                  {isDiscarded && (
-                    <span className="inline-flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full bg-error-bg text-error border border-error-line">
-                      <AlertTriangle size={8} strokeWidth={1.6} /> Descartado
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <a
-                    href={`tel:${contact?.phone ?? lead.phone}`}
-                    className="font-label text-xs text-t2 hover:text-success transition-colors tabular-nums tracking-wide"
-                    aria-label={`Ligar para ${lead.name}`}
-                  >
-                    {formatPhone(contact?.phone ?? lead.phone)}
-                  </a>
-                  <span className="text-t5" aria-hidden="true">·</span>
-                  <span className="flex items-center gap-1 text-xs text-t3">
-                    <originConf.icon size={11} strokeWidth={1.6} className="text-t4" />
-                    {originConf.label}
-                  </span>
-                  <span className="text-t5" aria-hidden="true">·</span>
-                  <span
-                    className="flex items-center gap-1 font-label text-xs text-t4 tabular-nums"
-                    title="Entrou no funil (cadastro no formulário)"
-                  >
-                    <Timer size={11} strokeWidth={1.6} className="text-t4" aria-hidden="true" />
-                    {new Date(lead.createdAt).toLocaleString('pt-BR', {
-                      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                    })}
-                  </span>
-
-                  {/* Corretor responsável — sempre visível; admin ou dono transfere em 1 clique */}
-                  {(brokerName || isAdmin) && (
-                    <>
-                      <span className="text-t5" aria-hidden="true">·</span>
-                      <div className="relative">
-                        <button
-                          onClick={() => {
-                            if (!canTransfer) return
-                            if (allProfiles.length === 0) fetchAllProfiles()
-                            setShowBrokerMenu(v => !v)
-                          }}
-                          disabled={!canTransfer}
-                          title={canTransfer ? 'Transferir lead para outro corretor' : `Corretor responsável: ${brokerName}`}
-                          aria-haspopup={canTransfer ? 'listbox' : undefined}
-                          aria-expanded={canTransfer ? showBrokerMenu : undefined}
-                          className={`flex items-center gap-1.5 pl-1 pr-2 py-0.5 rounded-full bg-brand-tint border border-brand/25 transition-all duration-150
-                            ${canTransfer ? 'cursor-pointer hover:border-brand/50' : 'cursor-default'}`}
-                        >
-                          <span className="w-4 h-4 rounded-full bg-brand-fill flex items-center justify-center font-heading text-[10px] font-bold text-brand-fill-text">
-                            {(brokerName ?? '?').charAt(0).toUpperCase()}
-                          </span>
-                          <span className="font-label text-[11px] text-brand-text truncate max-w-[120px]">
-                            {brokerName ? brokerName.split(' ')[0] : 'Atribuir'}
-                          </span>
-                          {canTransfer && <ChevronDown size={10} strokeWidth={1.6} className="text-brand-text" aria-hidden="true" />}
-                        </button>
-                        {canTransfer && showBrokerMenu && (
-                          <>
-                            <div className="fixed inset-0 z-10" onClick={() => setShowBrokerMenu(false)} aria-hidden="true" />
-                            <div
-                              className="absolute left-0 top-full mt-1 z-20 min-w-[200px] bg-surface border border-line rounded-[14px] shadow-dropdown overflow-hidden py-1"
-                              role="listbox"
-                              aria-label="Transferir lead para"
-                            >
-                              {allProfiles.filter(p => p.active).map(p => (
-                                <button
-                                  key={p.id}
-                                  role="option"
-                                  aria-selected={p.id === lead.brokerId}
-                                  onClick={() => handleReassignBroker(p.id, p.name)}
-                                  className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors
-                                    ${p.id === lead.brokerId ? 'text-brand-text bg-brand-tint' : 'text-t2 hover:bg-s2 hover:text-t1'}`}
-                                >
-                                  <span className="w-5 h-5 rounded-full bg-s3 border border-line flex items-center justify-center font-heading text-[10px] font-bold text-t2">
-                                    {p.name.charAt(0).toUpperCase()}
-                                  </span>
-                                  <span className="flex-1 truncate">{p.name}</span>
-                                  {p.id === lead.brokerId && <Check size={11} className="text-brand flex-shrink-0" />}
-                                </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Ações do header */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+          <header className="flex-shrink-0 px-6" style={{ paddingTop: 'calc(18px + env(safe-area-inset-top, 0px))' }}>
+            <div className="flex items-center justify-between gap-2 -mr-2 mb-3">
+              <span className="text-[12.5px] text-t4 flex items-center gap-1.5 min-w-0">
+                <originConf.icon size={13} strokeWidth={1.8} aria-hidden />
+                <span className="truncate">{originConf.label} · entrou em {entrouEm}</span>
+              </span>
+              <div className="flex items-center flex-shrink-0">
                 <button
                   onClick={async () => {
                     try {
                       await toggleFlag(lead.id)
-                      toast.success(lead.flagged ? 'Prioridade removida' : 'Prioridade máxima')
+                      toast.success(lead.flagged ? 'Prioridade removida' : 'Marcado como prioridade')
                     } catch { /* erro já toastado */ }
                   }}
-                  className={`w-7 h-7 flex items-center justify-center rounded-[10px] transition-all duration-150
-                    ${lead.flagged ? 'text-brand bg-brand-tint border border-brand/40' : 'text-t4 hover:text-brand hover:bg-brand-tint'}`}
-                  title={lead.flagged ? 'Remover prioridade' : 'Prioridade máxima'}
-                  aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+                  className={`ficha-icone ${lead.flagged ? 'text-brand-text' : ''}`}
+                  title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade'}
+                  aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade'}
                   aria-pressed={!!lead.flagged}
                 >
-                  <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
+                  <Star size={17} strokeWidth={1.8} fill={lead.flagged ? 'currentColor' : 'none'} />
                 </button>
-                <button
-                  onClick={() => setShowEdit(true)}
-                  className="w-7 h-7 flex items-center justify-center rounded-[10px] text-t4 hover:text-t1 hover:bg-s3 transition-all duration-150"
-                  title="Editar informações"
-                  aria-label="Editar informações do lead"
-                >
-                  <Edit2 size={13} strokeWidth={1.6} />
+                <button onClick={() => setShowEdit(true)} className="ficha-icone" title="Editar" aria-label="Editar informações do lead">
+                  <Edit2 size={16} strokeWidth={1.8} />
                 </button>
-                <button
-                  onClick={onClose}
-                  className="w-7 h-7 flex items-center justify-center rounded-[10px] text-t3 hover:text-t1 hover:bg-s3 transition-all duration-150"
-                  aria-label="Fechar"
-                >
-                  <X size={15} strokeWidth={1.6} />
+                <button onClick={onClose} className="ficha-icone" aria-label="Fechar">
+                  <X size={19} strokeWidth={1.8} />
                 </button>
               </div>
             </div>
 
-            {/* Linha 2: Pipeline de etapas — clicável */}
-            <div className="flex items-center gap-1" role="group" aria-label="Etapa do funil">
-              {STAGES.map((stage, i) => {
-                const meta      = STAGE_META[stage]
-                const isCurrent = stage === lead.funnelStage
-                const isPast    = i < currentIndex
-                return (
+            <h2 className="font-display text-[26px] sm:text-[28px] font-bold text-t1 leading-[1.1] tracking-[-0.025em]"
+                style={{ textWrap: 'balance' } as React.CSSProperties}>
+              {lead.name}
+            </h2>
+
+            <div className="flex items-center gap-x-3 gap-y-1.5 mt-2 flex-wrap">
+              <a href={`tel:${telefone}`} className="text-[14px] text-t2 hover:text-t1 tabular-nums" aria-label={`Ligar para ${lead.name}`}>
+                {formatPhone(telefone)}
+              </a>
+
+              {/* Corretor — admin ou dono transfere em um clique */}
+              {(brokerName || isAdmin) && (
+                <div className="relative">
                   <button
-                    key={stage}
-                    onClick={() => handleSetStage(stage)}
-                    disabled={isDiscarded}
-                    title={`Mover para ${meta.label}`}
-                    aria-current={isCurrent ? 'step' : undefined}
-                    className={`flex-1 py-2 rounded-[10px] font-label text-[11px] font-medium uppercase tracking-[0.04em] transition-all duration-150 text-center border leading-tight
-                      ${isCurrent
-                        ? `${meta.activeBg} ${meta.color} ${meta.border} shadow-sm`
-                        : isPast
-                          ? 'bg-s3/50 text-t3 border-transparent hover:bg-s3 hover:text-t2'
-                          : 'bg-transparent text-t4 border-transparent hover:bg-s3/50 hover:text-t3'
-                      } ${isDiscarded ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => {
+                      if (!canTransfer) return
+                      if (allProfiles.length === 0) fetchAllProfiles()
+                      setShowBrokerMenu(v => !v)
+                    }}
+                    disabled={!canTransfer}
+                    title={canTransfer ? 'Transferir para outro corretor' : `Corretor: ${brokerName}`}
+                    aria-haspopup={canTransfer ? 'listbox' : undefined}
+                    aria-expanded={canTransfer ? showBrokerMenu : undefined}
+                    className={`inline-flex items-center gap-1.5 h-7 pl-1 pr-2.5 rounded-full bg-s2 text-[13px] text-t2
+                      ${canTransfer ? 'hover:bg-s3 cursor-pointer' : 'cursor-default'}`}
                   >
-                    {meta.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* ── Corpo (scrollável) ──────────────────────────────────────────── */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-
-            {/* O lead voltou sozinho — o fato que trouxe o corretor até aqui.
-                Vem antes de tudo porque muda a abertura da conversa: não é
-                "estou retomando o contato", é "vi que você se cadastrou de
-                novo". Azul: é informação e oportunidade, não risco nem meta. */}
-            {avisoAoAbrir && (
-              <div className="flex items-start gap-2.5 rounded-[14px] p-3 border bg-info-bg border-info-line">
-                <div className="w-6 h-6 rounded-[8px] bg-info-bg flex items-center justify-center flex-shrink-0 mt-0.5">
-                  {avisoAoAbrir.tipo === 'cliente'
-                    ? <BadgeCheck size={12} strokeWidth={1.6} className="text-info" />
-                    : <RefreshCw  size={12} strokeWidth={1.6} className="text-info" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-info">
-                    {avisoAoAbrir.texto}
-                  </p>
-                  <p className="text-[13px] text-t1 mt-0.5 leading-relaxed">{avisoAoAbrir.detalhe}</p>
-                  {lead.reentryAt && (
-                    <p className="font-label text-[11px] text-t4 mt-1 tabular-nums">
-                      {new Date(lead.reentryAt).toLocaleString('pt-BR', {
-                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-                      })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* SLA Meta Ads — prazo de 1º contato gerenciado pelo banco.
-                Sem registro no prazo, o lead transfere para o outro corretor. */}
-            {slaInfo && (
-              <div className={`flex items-start gap-2.5 rounded-[14px] p-3 border
-                ${slaInfo.urgent ? 'bg-error-bg border-error-line' : 'bg-warning-bg border-warning-line'}`}>
-                <div className={`w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5
-                  ${slaInfo.urgent ? 'bg-error-bg' : 'bg-warning-bg'}`}>
-                  <Timer size={12} strokeWidth={1.6} className={`${slaInfo.urgent ? 'text-error' : 'text-warning'} ${slaInfo.overdue ? 'animate-pulse' : ''}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`font-label text-[11px] font-medium uppercase tracking-[0.12em] ${slaInfo.urgent ? 'text-error' : 'text-warning'}`}>
-                    {slaInfo.overdue ? 'SLA vencido — transferência iminente' : `1º contato Meta Ads · ${slaInfo.text}`}
-                  </p>
-                  <p className="text-[13px] text-t1 mt-0.5 leading-relaxed">
-                    Clique em <strong>WhatsApp</strong> para registrar o 1º contato e parar o relógio.
-                    Prazo: {slaInfo.deadline}.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Banner próxima ação — a informação nº 1 da tela.
-                Com tarefa pendente: mostra o compromisso real (e o prazo).
-                Sem tarefa: cai na sugestão heurística por etapa.
-                Com SLA ativo e sem tarefa: o banner de SLA já diz o que fazer — não duplica. */}
-            {!isDiscarded && (pendingTask || !slaInfo) && (
-              pendingTask && lead.funnelStage !== 'venda' ? (
-                <div className={`flex items-start gap-2.5 rounded-[14px] p-3 border
-                  ${taskDue?.overdue ? 'bg-error-bg border-error-line' : taskDue?.today ? 'bg-warning-bg border-warning-line' : 'bg-s2 border-line'}`}>
-                  <div className={`w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5
-                    ${taskDue?.overdue ? 'bg-error-bg' : taskDue?.today ? 'bg-warning-bg' : 'bg-s3'}`}>
-                    <ClipboardList size={12} strokeWidth={1.6} className={taskDue?.overdue ? 'text-error' : taskDue?.today ? 'text-warning' : 'text-info'} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-label text-[11px] font-medium uppercase tracking-[0.12em]
-                      ${taskDue?.overdue ? 'text-error' : taskDue?.today ? 'text-warning' : 'text-info'}`}>
-                      Próximo passo agendado
-                    </p>
-                    <p className="text-[13px] text-t1 mt-0.5 leading-relaxed truncate">{pendingTask.title}</p>
-                  </div>
-                  {taskDue && (
-                    <span className={`flex-shrink-0 font-label text-[11px] font-medium uppercase tracking-[0.06em] px-2 py-0.5 rounded-full border tabular-nums
-                      ${taskDue.overdue
-                        ? 'text-error bg-error-bg border-error-line'
-                        : taskDue.today
-                          ? 'text-warning bg-warning-bg border-warning-line'
-                          : 'text-t3 bg-s2 border-line'}`}>
-                      {taskDue.text}
+                    <span className="w-5 h-5 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[10.5px] font-bold" aria-hidden>
+                      {(brokerName ?? '?').charAt(0).toUpperCase()}
                     </span>
-                  )}
-                </div>
-              ) : (
-                <div className={`flex items-start gap-2.5 rounded-[14px] p-3 border
-                  ${lead.funnelStage === 'venda'
-                    ? 'bg-success-bg border-success-line'
-                    : nextUrgent
-                      ? 'bg-warning-bg border-warning-line'
-                      : 'bg-s2 border-line'
-                  }`}>
-                  <div className={`w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5
-                    ${lead.funnelStage === 'venda' ? 'bg-success-bg' : nextUrgent ? 'bg-warning-bg' : 'bg-s3'}`}>
-                    {lead.funnelStage === 'venda'
-                      ? <CheckCircle2 size={12} strokeWidth={1.6} className="text-success" />
-                      : <Zap size={12} strokeWidth={1.6} className={nextUrgent ? 'text-warning' : 'text-info'} />
-                    }
-                  </div>
-                  <div>
-                    <p className={`font-label text-[11px] font-medium uppercase tracking-[0.12em]
-                      ${lead.funnelStage === 'venda' ? 'text-success' : nextUrgent ? 'text-warning' : 'text-info'}`}>
-                      {lead.funnelStage === 'venda' ? 'Venda realizada' : nextUrgent ? 'Ação urgente' : 'Sugestão de próximo passo'}
-                    </p>
-                    <p className="text-[13px] text-t1 mt-0.5 leading-relaxed">{nextMsg}</p>
-                  </div>
-                </div>
-              )
-            )}
-
-            {/* Tentativas de follow-up */}
-            {lead.funnelStage === 'followup' && (
-              <div className="bg-s2 border border-line rounded-[14px] p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3">Tentativas de contato</p>
-                  <span className="text-[11px] text-t4">clique para marcar</span>
-                </div>
-                <div className="flex items-center gap-1.5" role="group" aria-label="Tentativas de contato">
-                  {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
-                    <button
-                      key={step}
-                      onClick={async () => {
-                        const next = lead.followupStep === step ? step - 1 : step
-                        try {
-                          await update(lead.id, { followupStep: next })
-                          toast.success(`${next}ª tentativa marcada`)
-                        } catch { /* erro já toastado */ }
-                      }}
-                      aria-label={`Marcar ${step}ª tentativa`}
-                      aria-pressed={step <= lead.followupStep}
-                      className={`flex-1 h-8 rounded-[10px] font-label text-xs font-medium tabular-nums transition-all duration-150 border
-                        ${step <= lead.followupStep
-                          ? 'bg-info-bg border-info-line text-info'
-                          : 'bg-s3/50 border-line text-t4 hover:bg-s3 hover:text-t2'
-                        }`}
-                    >
-                      {step}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-t4 mt-1.5">
-                  {lead.followupStep === 0 ? 'Nenhuma tentativa registrada' : `${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas realizadas`}
-                </p>
-              </div>
-            )}
-
-            {/* Ações rápidas — logo após a próxima ação, é o que o corretor faz */}
-            {!isDiscarded && (
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={handleWhatsApp}
-                  className="flex flex-col items-center gap-1 py-3 bg-success hover:opacity-90 text-white rounded-[14px] transition-all duration-150 active:scale-[0.98]"
-                  aria-label="Abrir WhatsApp e registrar contato"
-                >
-                  <MessageCircle size={16} strokeWidth={1.6} />
-                  <span className="font-heading text-xs font-bold">WhatsApp</span>
-                </button>
-
-                <button
-                  onClick={handleCall}
-                  className="flex flex-col items-center gap-1 py-3 bg-s2 hover:bg-s3 border border-line text-t2 rounded-[14px] transition-all duration-150 active:scale-[0.98]"
-                  aria-label="Ligar e registrar contato"
-                >
-                  <PhoneCall size={16} strokeWidth={1.6} />
-                  <span className="font-heading text-xs font-bold">Ligar</span>
-                </button>
-
-                <button
-                  onClick={() => setShowTaskForm(true)}
-                  className="flex flex-col items-center gap-1 py-3 bg-s2 hover:bg-s3 border border-line text-t2 rounded-[14px] transition-all duration-150 active:scale-[0.98]"
-                  aria-label="Criar tarefa para este lead"
-                >
-                  <ClipboardList size={16} strokeWidth={1.6} />
-                  <span className="font-heading text-xs font-bold">Tarefa</span>
-                </button>
-              </div>
-            )}
-
-            {/* Sugestão de próximo passo — aparece após registrar contato */}
-            {!isDiscarded && nextStepFor && (
-              <NextStepSuggestion
-                lead={lead}
-                interactionType={nextStepFor}
-                onDone={() => setNextStepFor(null)}
-              />
-            )}
-
-            {/* Imóvel + ticket + comissão */}
-            {(property || lead.propertyName || ticket) && (
-              <div className="bg-s2 border border-line rounded-[14px] p-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[10px] bg-brand-tint flex items-center justify-center flex-shrink-0">
-                  <Building2 size={14} strokeWidth={1.6} className="text-brand" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-t1 truncate">
-                    {property?.name ?? lead.propertyName ?? 'Sem imóvel vinculado'}
-                  </p>
-                  {property && (
-                    <p className="flex items-center gap-1 text-xs text-t3">
-                      <MapPin size={10} strokeWidth={1.6} className="text-brand" />
-                      {property.neighborhood} · {property.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}
-                    </p>
-                  )}
-                </div>
-                {ticket && (
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-label text-sm font-semibold text-t1 tabular-nums">{formatCurrencyFull(ticket)}</p>
-                    {commission > 0 && (
-                      <p className="font-label text-[11px] uppercase tracking-[0.06em] text-success tabular-nums">
-                        Com. {formatCurrency(commission)}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Nota rápida */}
-            {!isDiscarded && (
-              <div>
-                {showNoteInput ? (
-                  <div className="bg-s2 border border-line rounded-[14px] p-3 space-y-2">
-                    <label htmlFor="lead-quick-note" className="sr-only">Nota rápida</label>
-                    {/* eslint-disable-next-line jsx-a11y/no-autofocus -- a nota é aberta por clique DENTRO do modal já aberto; o foco de abertura do diálogo já correu */}
-                    <textarea autoFocus
-                      id="lead-quick-note"
-                      value={noteText}
-                      onChange={e => setNoteText(e.target.value)}
-                      placeholder="Escreva sua observação…"
-                      rows={3}
-                      className="w-full bg-transparent text-sm text-t1 placeholder:text-t4 resize-none focus:outline-none leading-relaxed"
-                    />
-                    <div className="flex gap-2">
-                      <button onClick={handleSaveNote} className="flex-1 py-1.5 bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-text font-heading text-xs font-bold rounded-[10px] transition-all duration-150">
-                        Salvar nota
-                      </button>
-                      <button onClick={() => { setShowNoteInput(false); setNoteText('') }} className="px-3 py-1.5 bg-s3/50 text-t2 text-xs rounded-[10px] hover:bg-s3 transition-all duration-150">
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowNoteInput(true)}
-                    className="w-full flex items-center gap-2 py-2 px-3 rounded-[14px] text-xs text-t3 hover:text-t2 bg-s2/50 hover:bg-s2 border border-dashed border-line transition-all duration-150"
-                  >
-                    <StickyNote size={12} strokeWidth={1.6} /> Adicionar nota rápida
+                    {brokerName ? brokerName.split(' ')[0] : 'Atribuir'}
+                    {canTransfer && <ChevronDown size={12} strokeWidth={1.8} className="text-t4" aria-hidden />}
                   </button>
-                )}
-              </div>
-            )}
-
-            {/*
-              Perfil declarado — vem ANTES do histórico de propósito: o corretor
-              precisa saber com quem está falando antes de ler o que já foi
-              feito. Carrega sozinho, numa chamada só (RPC lead_profile).
-            */}
-            <LeadIntelPanel lead={lead} />
-
-            <LeadProfilePanel leadId={lead.id} />
-
-            {/* Histórico de interações inline */}
-            <div>
-              <button
-                onClick={() => setShowHistory(v => !v)}
-                className="flex items-center justify-between w-full mb-2 group"
-              >
-                <div className="flex items-center gap-1.5">
-                  <History size={12} strokeWidth={1.6} className="text-t4" />
-                  <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 group-hover:text-t2 transition-colors">
-                    Histórico
-                  </span>
-                  {interactions.length > 0 && (
-                    <span className="font-label text-[11px] bg-s3 text-t3 px-1.5 py-0.5 rounded-full tabular-nums">{interactions.length}</span>
-                  )}
-                </div>
-                <ChevronDown size={12} strokeWidth={1.6} aria-hidden="true" className={`text-t4 transition-transform duration-200 ${showHistory ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showHistory ? (
-                <LeadTimeline leadId={lead.id} />
-              ) : (
-                <div className="space-y-1.5">
-                  {recentItems.length === 0 ? (
-                    <p className="text-xs text-t4 py-1">Nenhuma interação registrada</p>
-                  ) : recentItems.map(i => {
-                    const ItemIcon = INTERACTION_ICON[i.type] ?? StickyNote
-                    return (
-                      <div key={i.id} className="flex items-center gap-2 py-1">
-                        <span className="w-5 h-5 rounded-[6px] bg-s2 border border-line flex items-center justify-center flex-shrink-0">
-                          <ItemIcon size={10} strokeWidth={1.6} className="text-t3" />
-                        </span>
-                        <p className="flex-1 text-xs text-t2 truncate">{i.description ?? i.type}</p>
-                        <span className="font-label text-[11px] text-t4 flex-shrink-0 tabular-nums">{relativeTime(i.interactedAt)}</span>
+                  {canTransfer && showBrokerMenu && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowBrokerMenu(false)} aria-hidden />
+                      <div className="absolute left-0 top-full mt-1.5 z-20 min-w-[210px] bg-surface border border-line rounded-[14px] shadow-dropdown overflow-hidden py-1"
+                           role="listbox" aria-label="Transferir lead para">
+                        {allProfiles.filter(p => p.active).map(p => (
+                          <button
+                            key={p.id}
+                            role="option"
+                            aria-selected={p.id === lead.brokerId}
+                            onClick={() => handleReassignBroker(p.id, p.name)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-[13.5px] transition-colors
+                              ${p.id === lead.brokerId ? 'text-t1 bg-s2' : 'text-t2 hover:bg-s2'}`}
+                          >
+                            <span className="flex-1 truncate">{p.name}</span>
+                            {p.id === lead.brokerId && <Check size={14} className="text-brand-text flex-shrink-0" />}
+                          </button>
+                        ))}
                       </div>
-                    )
-                  })}
-                  {interactions.length > 3 && (
-                    <button onClick={() => setShowHistory(true)} className="flex items-center gap-1 text-xs text-brand-text hover:text-brand transition-colors">
-                      Ver todo histórico ({interactions.length}) <ArrowRight size={10} strokeWidth={1.6} />
-                    </button>
+                    </>
                   )}
                 </div>
               )}
+
+              {lead.flagged && !isDiscarded && <span className="text-[13px] font-medium text-brand-text">Prioridade</span>}
+              {isLinked && <span className="text-[13px] text-t4">No CRM</span>}
+              {isDiscarded && <span className="text-[13px] font-medium text-error">Descartado</span>}
             </div>
 
-            {/*
-              REMOVIDO em 01/08/2026, com aprovação do Rafael:
-                · "Radar de interesse" (LeadRadarTab)
-                · "Permuta"
-              Nenhum dos dois levava a uma decisão sobre o lead, e ambos já
-              nasciam colapsados — ocupavam espaço sem serem usados. O
-              componente LeadRadarTab continua no repositório (sem import), caso
-              se queira reaproveitar a lógica de casamento imóvel↔lead numa aba
-              própria de Imóveis no futuro.
-            */}
-            <div className="space-y-2">
-              {/* ── Listas & Campanhas ─────────────────────────────────────── */}
-              {/*
-                Os dois controles são IRMÃOS, não aninhados. Antes o botão
-                "Adicionar à lista" ficava dentro do botão que expande a seção —
-                HTML inválido (<button> dentro de <button>), que o React
-                reclamava em runtime e que quebra a navegação por teclado:
-                o botão interno não recebia foco próprio.
-              */}
-              <div className="rounded-[14px] border border-line bg-s2 overflow-hidden">
-                <div className="flex items-center gap-2 pr-3">
-                  <button
-                    onClick={() => {
-                      setShowBaseCamp(v => !v)
-                      if (activeLists.length === 0) loadLists()
-                    }}
-                    aria-expanded={showBaseCamp}
-                    className="flex items-center justify-between flex-1 min-w-0 px-3 py-2.5 hover:bg-s3 transition-all duration-150"
-                  >
-                    <span className="flex items-center gap-2 text-xs font-medium text-t2">
-                      <Database size={12} strokeWidth={1.6} className="text-t4" />
-                      Listas &amp; Campanhas
-                    </span>
-                    <ChevronDown size={12} strokeWidth={1.6} aria-hidden="true" className={`text-t4 transition-transform duration-200 ${showBaseCamp ? 'rotate-180' : ''}`} />
-                  </button>
-                  {lead.contactId && (
+            {/* Régua de etapas — clique para mover */}
+            <ol className="ficha-regua mt-6" aria-label="Etapa do funil">
+              {STAGES.map((stage, i) => {
+                const meta  = STAGE_META[stage]
+                const atual = i === currentIndex
+                const feita = i < currentIndex
+                return (
+                  <li key={stage} className="flex-1 min-w-0">
                     <button
-                      onClick={() => {
-                        if (activeLists.length === 0) loadLists()
-                        setShowAddToList(v => !v)
-                      }}
-                      aria-expanded={showAddToList}
-                      className="flex items-center gap-1 font-label text-[11px] uppercase tracking-[0.06em] text-brand-text bg-brand-tint border border-brand/25 px-2 py-1 rounded-full transition-all duration-150 hover:border-brand/40 flex-shrink-0"
-                      title="Adicionar a uma lista"
+                      onClick={() => handleSetStage(stage)}
+                      disabled={isDiscarded}
+                      aria-current={atual ? 'step' : undefined}
+                      title={atual ? meta.label : `Mover para ${meta.label}`}
+                      className="ficha-etapa"
+                      aria-label={atual ? `Etapa atual: ${meta.label}` : `Mover para ${meta.label}`}
+                      data-estado={atual ? 'atual' : feita ? 'feita' : 'futura'}
+                      style={{ ['--etapa' as string]: STAGE_META[STAGES[Math.max(currentIndex, 0)]].solidVar }}
                     >
-                      <ListPlus size={10} strokeWidth={1.6} /> Adicionar à lista
+                      <span className="ficha-etapa-trilho" aria-hidden><span className="ficha-etapa-ponto" /></span>
+                      <span className="ficha-etapa-nome">{meta.label}</span>
                     </button>
-                  )}
-                </div>
+                  </li>
+                )
+              })}
+            </ol>
+          </header>
 
-                {/* Seletor de lista — "Adicionar à lista" */}
-                {showAddToList && lead.contactId && (
-                  <div className="px-3 py-3 border-t border-line bg-s2/80">
-                    <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 mb-2">Lista destino</p>
-                    <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-0.5 mb-3">
-                      {activeLists.length === 0 ? (
-                        <p className="text-xs text-t4 py-2 text-center">Nenhuma lista ativa</p>
-                      ) : activeLists.map(l => (
-                        <button
-                          key={l.id}
-                          onClick={() => setSelectedListId(l.id)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-all cursor-pointer border
-                            ${selectedListId === l.id
-                              ? 'bg-brand/15 border-brand/40 text-t1'
-                              : 'bg-s3/40 border-line text-t2 hover:bg-s3/70 hover:border-line-strong'
-                            }`}
-                        >
-                          <Database size={11} className={selectedListId === l.id ? 'text-brand' : 'text-t4'} />
-                          <span className="flex-1 truncate">{l.name}</span>
-                          <span className="text-t4 tabular-nums flex-shrink-0">{l.totalCount.toLocaleString()} leads</span>
-                          {selectedListId === l.id && <Check size={11} className="text-brand flex-shrink-0" />}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setShowAddToList(false); setSelectedListId('') }}
-                        className="flex-1 py-1.5 text-xs text-t3 hover:text-t1 bg-s3/50 hover:bg-s3 border border-line rounded-lg transition-all"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={handleAddToList}
-                        disabled={!selectedListId || addingToList}
-                        className="flex-1 py-1.5 text-xs font-semibold bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-text rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                      >
-                        {addingToList
-                          ? <><Loader2 size={11} className="animate-spin" /> Adicionando…</>
-                          : 'Confirmar'
-                        }
-                      </button>
-                    </div>
-                  </div>
+          {/* ── Abas ──────────────────────────────────────────────────────── */}
+          <div className="flex-shrink-0 px-6 mt-4 border-b border-line">
+            <Abas
+              rotulo="Seções do lead"
+              variante="sublinhado"
+              valor={aba}
+              onChange={setAba}
+              abas={[
+                { value: 'resumo'    as const, label: 'Resumo' },
+                { value: 'perfil'    as const, label: 'Perfil' },
+                { value: 'historico' as const, label: 'Histórico', badge: interactions.length || undefined },
+              ]}
+            />
+          </div>
+
+          {/* ── Corpo ─────────────────────────────────────────────────────── */}
+          <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5">
+
+            {aba === 'resumo' && (
+              <div className="flex flex-col gap-6">
+                {/* O lead voltou sozinho — muda a abertura da conversa. */}
+                {avisoAoAbrir && (
+                  <p className="flex items-start gap-2.5 text-[13.5px] text-t2 leading-relaxed">
+                    {avisoAoAbrir.tipo === 'cliente'
+                      ? <BadgeCheck size={16} strokeWidth={1.8} className="text-info flex-shrink-0 mt-0.5" aria-hidden />
+                      : <RefreshCw  size={16} strokeWidth={1.8} className="text-info flex-shrink-0 mt-0.5" aria-hidden />}
+                    <span><span className="font-semibold text-info">{avisoAoAbrir.texto}.</span> {avisoAoAbrir.detalhe}</span>
+                  </p>
                 )}
 
-                {/* Histórico de listas & campanhas */}
-                {showBaseCamp && (
-                  <div className="px-3 py-3 border-t border-line">
-                    {lead.contactId ? (
-                      <ContactCampaignHistory contactId={lead.contactId} />
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 py-4 text-center">
-                        <Database size={20} strokeWidth={1.6} className="text-t4/50" />
-                        <p className="text-xs text-t3 font-medium">Converta em contato para ver o histórico completo</p>
-                        <p className="text-xs text-t4">Listas, campanhas e vendas serão vinculadas ao contato</p>
-                        {!isDiscarded && !isLinked && (
-                          <button
-                            onClick={handleConvert}
-                            className="mt-1 flex items-center gap-1.5 px-3 py-1.5 font-heading text-xs font-bold text-t2 bg-s3 hover:bg-s3/70 border border-line-strong rounded-[10px] transition-all duration-150"
-                          >
-                            <UserCheck size={11} strokeWidth={1.6} /> Converter em contato
-                          </button>
-                        )}
+                {/* Agora */}
+                {!isDiscarded && (
+                  <section className="ficha-agora" style={{ ['--tom' as string]: corTom[agora.tom] }} aria-label="O que fazer agora">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-[12.5px] font-semibold" style={{ color: agora.tom === 'neutro' ? 'var(--t3)' : 'var(--tom)' }}>
+                        {agora.rotulo}
+                      </p>
+                      {agora.prazo && (
+                        <span className="text-[12.5px] font-semibold tabular-nums flex-shrink-0"
+                              style={{ color: agora.tom === 'neutro' ? 'var(--t3)' : 'var(--tom)' }}>
+                          {agora.prazo}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[16px] font-semibold text-t1 leading-snug mt-1">{agora.texto}</p>
+
+                    {lead.funnelStage === 'followup' && (
+                      <div className="flex items-center gap-3 mt-3">
+                        <div className="flex flex-1 min-w-0 gap-1" role="group" aria-label="Tentativas de contato">
+                          {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
+                            <button
+                              key={step}
+                              onClick={async () => {
+                                const next = lead.followupStep === step ? step - 1 : step
+                                try {
+                                  await update(lead.id, { followupStep: next })
+                                  toast.success(`${next}ª tentativa marcada`)
+                                } catch { /* erro já toastado */ }
+                              }}
+                              aria-label={`Marcar ${step}ª tentativa`}
+                              aria-pressed={step <= lead.followupStep}
+                              className="ficha-tentativa"
+                              data-feita={step <= lead.followupStep}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[12.5px] text-t4 tabular-nums flex-shrink-0">
+                          {lead.followupStep}/{MAX_TENTATIVAS_FOLLOWUP}<span className="hidden sm:inline"> tentativas</span>
+                        </span>
                       </div>
                     )}
+
+                    <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 mt-4">
+                      <button onClick={handleWhatsApp} className="ficha-acao ficha-acao-zap" aria-label="Abrir WhatsApp e registrar contato">
+                        <MessageCircle size={17} strokeWidth={2} aria-hidden /> WhatsApp
+                      </button>
+                      <button onClick={handleCall} className="ficha-acao" aria-label="Ligar e registrar contato">
+                        <PhoneCall size={16} strokeWidth={1.9} aria-hidden /> Ligar
+                      </button>
+                      <button onClick={() => setShowTaskForm(true)} className="ficha-acao" aria-label="Criar tarefa para este lead">
+                        <ClipboardList size={16} strokeWidth={1.9} aria-hidden /> Tarefa
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {!isDiscarded && nextStepFor && (
+                  <NextStepSuggestion lead={lead} interactionType={nextStepFor} onDone={() => setNextStepFor(null)} />
+                )}
+
+                {/* Descarte */}
+                {isDiscarded && lead.discardReason && (() => {
+                  const r = discardReasons.find(r => r.slug === lead.discardReason)
+                  return (
+                    <section className="ficha-agora" style={{ ['--tom' as string]: 'var(--error)' }}>
+                      <p className="text-[12.5px] font-semibold text-error">
+                        Descartado{lead.discardedAt ? ` em ${new Date(lead.discardedAt).toLocaleDateString('pt-BR')}` : ''}
+                      </p>
+                      <p className="text-[16px] font-semibold text-t1 mt-1">{r?.label ?? lead.discardReason}</p>
+                    </section>
+                  )
+                })()}
+
+                {/* Números do negócio */}
+                <dl className="ficha-numeros">
+                  <div>
+                    <dt>Ticket</dt>
+                    <dd className="tabular-nums text-t1">{ticket ? formatCurrency(ticket) : '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>Comissão</dt>
+                    <dd className={`tabular-nums ${commission > 0 ? 'text-success' : 'text-t1'}`}>{commission > 0 ? formatCurrency(commission) : '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>Último contato</dt>
+                    <dd className={!ultimoToque || diasParado > 2 ? 'text-warning' : 'text-t1'}>
+                      {ultimoToque ?? 'Nunca'}
+                    </dd>
+                  </div>
+                </dl>
+
+                {/* Imóvel */}
+                {(property || lead.propertyName) && (
+                  <div className="flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-[12px] bg-s2 flex items-center justify-center flex-shrink-0" aria-hidden>
+                      <Building2 size={17} strokeWidth={1.8} className="text-t3" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[14.5px] font-semibold text-t1 truncate">{property?.name ?? lead.propertyName}</p>
+                      <p className="text-[13px] text-t4 truncate">
+                        {property
+                          ? `${property.neighborhood} · ${property.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}${ticket ? ` · ${formatCurrencyFull(ticket)}` : ''}`
+                          : 'Imóvel de interesse'}
+                      </p>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/*
-              Notas salvas.
-
-              Quando o texto é o bloco automático do Meta ("Meta Ads — …
-              Respostas do formulário: …"), ele repete linha por linha o que o
-              Perfil declarado já mostra logo acima — ocupando meia tela com a
-              mesma informação em pior formato. Nesse caso entra recolhido, com
-              o original a um clique. Nota escrita por gente aparece inteira,
-              sempre.
-            */}
-            {lead.notes && (
-              (() => {
-                const soDoMeta = /^Meta Ads —/.test(lead.notes.trim())
-                return (
-                  <div className="bg-s2 border border-line rounded-[14px] p-3">
-                    <button
-                      onClick={() => soDoMeta && setShowRawNotes(v => !v)}
-                      disabled={!soDoMeta}
-                      aria-expanded={soDoMeta ? showRawNotes : undefined}
-                      className={`flex items-center justify-between w-full group ${soDoMeta ? 'cursor-pointer' : 'cursor-default'}`}
-                    >
-                      <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 group-hover:text-t2 transition-colors">
-                        {soDoMeta ? 'Texto original do formulário' : 'Observações'}
-                      </span>
-                      {soDoMeta && (
-                        <ChevronDown
-                          size={12} strokeWidth={1.6} aria-hidden
-                          className={`text-t4 transition-transform duration-200 ${showRawNotes ? 'rotate-180' : ''}`}
-                        />
-                      )}
-                    </button>
-                    {(!soDoMeta || showRawNotes) && (
-                      <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap mt-1.5">{lead.notes}</p>
+                {/* Últimos toques */}
+                <section>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <h3 className="text-[15px] font-semibold text-t1">Últimos <Destaque>toques</Destaque></h3>
+                    {interactions.length > 3 && (
+                      <button onClick={() => setAba('historico')} className="text-[13px] font-medium text-t3 hover:text-t1">
+                        Ver todos
+                      </button>
                     )}
                   </div>
-                )
-              })()
+                  {recentItems.length === 0 ? (
+                    <p className="text-[13.5px] text-t4">Nenhum contato registrado ainda.</p>
+                  ) : (
+                    <ul className="flex flex-col">
+                      {recentItems.map(i => {
+                        const ItemIcon = INTERACTION_ICON[i.type] ?? StickyNote
+                        return (
+                          <li key={i.id} className="flex items-center gap-3 py-2">
+                            <ItemIcon size={15} strokeWidth={1.8} className="text-t4 flex-shrink-0" aria-hidden />
+                            <p className="flex-1 text-[14px] text-t2 truncate">{i.description ?? i.type}</p>
+                            <span className="text-[12.5px] text-t4 flex-shrink-0 tabular-nums">{relativeTime(i.interactedAt)}</span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+
+                  {/* Nota rápida — sempre à mão, sem abrir nada */}
+                  {!isDiscarded && (
+                    showNoteInput ? (
+                      <div className="mt-2 flex flex-col gap-2">
+                        <label htmlFor="lead-quick-note" className="sr-only">Nota rápida</label>
+                        {/* eslint-disable-next-line jsx-a11y/no-autofocus -- aberta por clique dentro do painel já aberto */}
+                        <textarea autoFocus id="lead-quick-note" value={noteText} onChange={e => setNoteText(e.target.value)}
+                          placeholder="O que aconteceu? O que ficou combinado?" rows={3}
+                          className="campo w-full px-3.5 py-2.5 resize-none leading-relaxed" />
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => { setShowNoteInput(false); setNoteText('') }} className="h-9 px-3 rounded-[10px] text-[13.5px] text-t3 hover:text-t1 hover:bg-s2">
+                            Cancelar
+                          </button>
+                          <button onClick={handleSaveNote} disabled={!noteText.trim()} className="h-9 px-4 rounded-[10px] text-[13.5px] font-semibold bg-brand-fill text-brand-fill-text hover:bg-brand-fill-hover disabled:opacity-50">
+                            Salvar nota
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setShowNoteInput(true)}
+                        className="mt-2 w-full flex items-center gap-2.5 h-11 px-3.5 rounded-[12px] bg-s2 text-[14px] text-t4 hover:text-t2 text-left transition-colors">
+                        <StickyNote size={15} strokeWidth={1.8} aria-hidden /> Escrever uma nota…
+                      </button>
+                    )
+                  )}
+                </section>
+
+                {/* Observações escritas por gente — o bloco automático do Meta vai para Perfil */}
+                {lead.notes && !/^Meta Ads —/.test(lead.notes.trim()) && (
+                  <section>
+                    <h3 className="text-[15px] font-semibold text-t1 mb-1.5">Observações</h3>
+                    <p className="text-[14px] text-t2 leading-relaxed whitespace-pre-wrap">{lead.notes}</p>
+                  </section>
+                )}
+              </div>
             )}
 
-            {/* Descarte info */}
-            {isDiscarded && lead.discardReason && (() => {
-              const r = discardReasons.find(r => r.slug === lead.discardReason)
-              return (
-                <div className="bg-error-bg border border-error-line rounded-[14px] p-3 flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-[10px] bg-error-bg border border-error-line flex items-center justify-center flex-shrink-0">
-                    {r?.emoji
-                      ? <span className="text-base">{r.emoji}</span>
-                      : <Trash2 size={14} strokeWidth={1.6} className="text-error" />
-                    }
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-label text-[11px] font-medium text-error uppercase tracking-[0.12em] mb-0.5">Descartado</p>
-                    <p className="text-sm font-medium text-t1">{r?.label ?? lead.discardReason}</p>
-                    {lead.discardedAt && <p className="font-label text-xs text-t4 mt-0.5 tabular-nums">{new Date(lead.discardedAt).toLocaleDateString('pt-BR')}</p>}
+            {aba === 'perfil' && (
+              <div className="flex flex-col gap-6">
+                <LeadIntelPanel lead={lead} />
+                <LeadProfilePanel leadId={lead.id} />
+                {lead.notes && /^Meta Ads —/.test(lead.notes.trim()) && (
+                  <section>
+                    <button onClick={() => setShowRawNotes(v => !v)} aria-expanded={showRawNotes}
+                      className="flex items-center gap-1.5 text-[13px] font-medium text-t3 hover:text-t1">
+                      Texto original do formulário
+                      <ChevronDown size={14} strokeWidth={1.8} aria-hidden className={`transition-transform ${showRawNotes ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showRawNotes && <p className="text-[13.5px] text-t2 leading-relaxed whitespace-pre-wrap mt-2">{lead.notes}</p>}
+                  </section>
+                )}
+              </div>
+            )}
+
+            {aba === 'historico' && (
+              <div className="flex flex-col gap-8">
+                <LeadTimeline leadId={lead.id} />
+
+                <section>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <h3 className="text-[15px] font-semibold text-t1">Listas e campanhas</h3>
+                    {lead.contactId && (
+                      <button
+                        onClick={() => { if (activeLists.length === 0) loadLists(); setShowAddToList(v => !v) }}
+                        aria-expanded={showAddToList}
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-s2 text-[13px] font-medium text-t2 hover:bg-s3"
+                      >
+                        <ListPlus size={14} strokeWidth={1.8} aria-hidden /> Adicionar à lista
+                      </button>
+                    )}
                   </div>
-                </div>
-              )
-            })()}
+
+                  {showAddToList && lead.contactId && (
+                    <div className="mb-3 flex flex-col gap-2">
+                      <div className="rounded-[12px] bg-s2 max-h-48 overflow-y-auto" role="radiogroup" aria-label="Lista de destino">
+                        {activeLists.length === 0 ? (
+                          <p className="text-[13px] text-t4 px-3.5 py-3">Nenhuma lista ativa.</p>
+                        ) : activeLists.map(l => (
+                          <button key={l.id} role="radio" aria-checked={selectedListId === l.id}
+                            onClick={() => setSelectedListId(l.id)}
+                            className="w-full flex items-center gap-3 px-3.5 min-h-[44px] text-left hover:bg-s3/60">
+                            <span className={`w-4 h-4 rounded-full flex-shrink-0 ${selectedListId === l.id ? 'border-[5px] border-[color:var(--brand-fill)]' : 'border-[1.5px] border-line-strong'}`} aria-hidden />
+                            <span className="flex-1 truncate text-[14px] text-t2">{l.name}</span>
+                            <span className="text-[12.5px] text-t4 tabular-nums">{l.totalCount.toLocaleString('pt-BR')}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => { setShowAddToList(false); setSelectedListId('') }} className="h-9 px-3 rounded-[10px] text-[13.5px] text-t3 hover:text-t1 hover:bg-s2">Cancelar</button>
+                        <button onClick={handleAddToList} disabled={!selectedListId || addingToList}
+                          className="h-9 px-4 rounded-[10px] text-[13.5px] font-semibold bg-brand-fill text-brand-fill-text hover:bg-brand-fill-hover disabled:opacity-50 inline-flex items-center gap-1.5">
+                          {addingToList && <Loader2 size={14} className="animate-spin" aria-hidden />} Adicionar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {lead.contactId ? (
+                    <ContactCampaignHistory contactId={lead.contactId} />
+                  ) : (
+                    <p className="text-[13.5px] text-t4">
+                      Converta em contato para ver listas, campanhas e vendas ligadas a esta pessoa.
+                    </p>
+                  )}
+                </section>
+              </div>
+            )}
           </div>
 
-          {/* ── Footer ─────────────────────────────────────────────────────── */}
-          <div className="flex-shrink-0 px-5 py-3 border-t border-line flex items-center gap-2">
+          {/* ── Rodapé ─────────────────────────────────────────────────────── */}
+          <footer className="flex-shrink-0 px-6 pt-3 border-t border-line flex items-center gap-2" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
             {!isLinked && !isDiscarded && (
-              <button onClick={handleConvert} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-t2 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150">
-                <UserCheck size={12} strokeWidth={1.6} /> Criar contato
+              <button onClick={handleConvert} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-[13.5px] font-medium text-t2 hover:text-t1 hover:bg-s2">
+                <UserCheck size={15} strokeWidth={1.8} aria-hidden /> Criar contato
               </button>
             )}
-
             <div className="flex-1" />
-
             {isDiscarded ? (
-              <button onClick={handleRestore} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-t2 hover:text-t1 bg-s2 hover:bg-s3 border border-line rounded-[10px] transition-all duration-150">
-                <RotateCcw size={12} strokeWidth={1.6} /> Restaurar
+              <button onClick={handleRestore} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-[13.5px] font-medium text-t2 hover:text-t1 hover:bg-s2">
+                <RotateCcw size={15} strokeWidth={1.8} aria-hidden /> Restaurar
               </button>
             ) : (
-              <button onClick={() => setShowDiscard(true)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-error bg-error-bg hover:opacity-80 border border-error-line rounded-[10px] transition-all duration-150">
-                <Trash2 size={12} strokeWidth={1.6} /> Descartar
+              <button onClick={() => setShowDiscard(true)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-[13.5px] font-medium text-error hover:bg-error-bg">
+                Descartar
               </button>
             )}
-
             {showDeleteConfirm ? (
-              <div className="flex items-center gap-1" role="alertdialog" aria-label="Confirmar exclusão definitiva">
-                <span className="text-xs text-error">Excluir definitivamente?</span>
-                <button onClick={handleDelete} className="px-2.5 py-1.5 font-heading text-xs font-bold bg-error text-white rounded-[10px]">Sim</button>
-                <button onClick={() => setShowDeleteConfirm(false)} className="px-2.5 py-1.5 text-xs bg-s3 text-t2 rounded-[10px]">Não</button>
+              <div className="flex items-center gap-1.5" role="alertdialog" aria-label="Confirmar exclusão definitiva">
+                <span className="text-[13px] text-error">Excluir de vez?</span>
+                <button onClick={handleDelete} className="h-8 px-3 rounded-[10px] text-[13px] font-semibold bg-error text-white">Excluir</button>
+                <button onClick={() => setShowDeleteConfirm(false)} className="h-8 px-3 rounded-[10px] text-[13px] text-t2 hover:bg-s2">Não</button>
               </div>
             ) : (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="w-8 h-8 flex items-center justify-center text-t4 hover:text-error hover:bg-error-bg rounded-[10px] transition-all duration-150"
-                title="Excluir lead"
-                aria-label="Excluir lead definitivamente"
-              >
-                <Trash2 size={13} strokeWidth={1.6} />
+              <button onClick={() => setShowDeleteConfirm(true)} className="ficha-icone hover:!text-error" title="Excluir lead" aria-label="Excluir lead definitivamente">
+                <Trash2 size={16} strokeWidth={1.8} />
               </button>
             )}
-          </div>
+          </footer>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Target, Wallet, Banknote, Landmark, Clock, BedDouble,
-  Database, ChevronDown, HelpCircle, Loader2, FileText, CheckCircle2,
+  Database, ChevronDown, HelpCircle, Loader2, CheckCircle2,
   Pencil, Plus, UserCheck, MapPin, Home,
 } from 'lucide-react'
 import { LeadProfileEditor } from './LeadProfileEditor'
@@ -236,24 +236,17 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
         className="flex items-center justify-between w-full mb-2 group"
         aria-expanded={aberto}
       >
-        <div className="flex items-center gap-1.5">
-          <FileText size={12} strokeWidth={1.6} className="text-t4" />
-          <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3 group-hover:text-t2 transition-colors">
-            Perfil declarado
-          </span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-[15px] font-semibold text-t1">Perfil declarado</span>
           {data.formCount > 0 && (
-            <span className="font-label text-[11px] bg-s3 text-t3 px-1.5 py-0.5 rounded-full tabular-nums">
-              {data.formCount}
+            <span className="text-[12.5px] text-t4 tabular-nums">
+              {data.formCount} formulário{data.formCount !== 1 ? 's' : ''}
             </span>
           )}
-          {data.isKnown && (
-            <span className="font-label text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/30">
-              já era da base
-            </span>
-          )}
+          {data.isKnown && <span className="text-[12.5px] font-medium text-brand-text">já era da base</span>}
         </div>
         <ChevronDown
-          size={12} strokeWidth={1.6} aria-hidden
+          size={15} strokeWidth={1.8} aria-hidden
           className={`text-t4 transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`}
         />
       </button>
@@ -262,7 +255,7 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
         <div className="space-y-3">
           {/* ── Campos ─────────────────────────────────────────────── */}
           {campos.length > 0 && (
-            <div className="rounded-[14px] bg-s2/50 border border-line px-3 py-1.5">
+            <div className="rounded-[14px] bg-s2 px-3 py-1.5">
               {campos.map(c => (
                 editando === c ? (
                   <div key={c} className="py-2">
@@ -292,7 +285,7 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
               Sem um lugar para anotar, o que o corretor ouve na conversa morre
               no WhatsApp — e é justamente isso que cruza o lead com os
               lançamentos. */}
-          <div className="rounded-[14px] bg-s2/50 border border-line px-3 py-2 space-y-1">
+          <div className="rounded-[14px] bg-s2 px-3 py-2 space-y-1">
             {([
               { key: 'regioes'    as const, Icon: MapPin, label: 'Regiões',    vazio: 'Onde ele procura?' },
               { key: 'tipologias' as const, Icon: Home,   label: 'Tipologias', vazio: 'Quantos dormitórios?' },
@@ -385,7 +378,7 @@ export function LeadProfilePanel({ leadId }: { leadId: string }) {
                 Já procurava imóvel — {data.lists.length}{' '}
                 {data.lists.length === 1 ? 'lista' : 'listas'}
               </p>
-              <div className="rounded-[14px] bg-s2/50 border border-line px-3 py-1">
+              <div className="rounded-[14px] bg-s2 px-3 py-1">
                 {data.lists.slice(0, 4).map(l => <ListaConhecida key={l.listId} lista={l} />)}
                 {data.lists.length > 4 && (
                   <p className="text-[11px] text-t4 py-1">

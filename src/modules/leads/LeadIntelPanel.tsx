@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Gauge, Lightbulb } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
+import { Destaque } from '../../components/shared/Destaque'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { TemperatureBadge, FitBadge } from '../../components/shared/IntelBadges'
 import {
@@ -32,11 +33,8 @@ export function LeadIntelPanel({ lead }: { lead: Lead }) {
 
   return (
     <div>
-      <div className="flex items-center gap-1.5 mb-2">
-        <Gauge size={12} strokeWidth={1.6} className="text-t4" />
-        <span className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-t3">
-          Inteligência
-        </span>
+      <div className="flex items-center gap-2 mb-2.5">
+        <h3 className="text-[15px] font-semibold text-t1">Leitura do <Destaque>lead</Destaque></h3>
         {p && (
           <span className="font-label text-[10px] font-bold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full bg-s3 text-t2">
             P{p}
@@ -46,7 +44,7 @@ export function LeadIntelPanel({ lead }: { lead: Lead }) {
 
       <div className="space-y-3">
         {/* ── Temperatura e o porquê ──────────────────────────────── */}
-        <div className="rounded-[14px] bg-s2/50 border border-line p-3">
+        <div className="rounded-[14px] bg-s2 p-3">
           <div className="flex items-center justify-between gap-2 mb-2">
             <TemperatureBadge temp={intel.temperature} score={intel.tempScore} />
             <span className="font-label text-[11px] text-t4 tabular-nums">
@@ -74,8 +72,8 @@ export function LeadIntelPanel({ lead }: { lead: Lead }) {
         {/* ── Encaixe com o produto de origem ─────────────────────── */}
         {intel.fitOrigin && (
           <div
-            className="rounded-[14px] border p-3"
-            style={{ borderColor: FIT_COLOR[intel.fitOrigin.fit] + '55' }}
+            className="rounded-[14px] bg-s2 p-3"
+            style={{ boxShadow: `inset 3px 0 0 ${FIT_COLOR[intel.fitOrigin.fit]}` }}
           >
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-sm font-medium text-t1 truncate">{intel.fitOrigin.name}</span>
@@ -104,7 +102,7 @@ export function LeadIntelPanel({ lead }: { lead: Lead }) {
             <p className="font-label text-[11px] uppercase tracking-[0.1em] text-t4 mb-1.5">
               Outros produtos
             </p>
-            <div className="rounded-[14px] bg-s2/50 border border-line px-3 py-1">
+            <div className="rounded-[14px] bg-s2 px-3 py-1">
               {outros.map(f => (
                 <div key={f.developmentId} className="flex items-center gap-2 py-1.5">
                   <span
