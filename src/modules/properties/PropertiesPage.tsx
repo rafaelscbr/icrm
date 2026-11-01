@@ -114,7 +114,8 @@ function PropertiesDashboard({ properties }: { properties: Property[] }) {
             <div className="flex items-center gap-2 mb-2">
               <span className={`${kpi.color} ${kpi.bg} w-7 h-7 rounded-[9px] border border-line
                                 flex items-center justify-center shrink-0`}>{kpi.icon}</span>
-              <Rotulo className="truncate">{kpi.label}</Rotulo>
+              {/* Quebra em vez de cortar: em 2 colunas no celular "Comissão estimada" não cabe numa linha. */}
+              <Rotulo className="leading-tight">{kpi.label}</Rotulo>
             </div>
             {/* Valor compacto para leitura rápida; o exato fica no title. */}
             <p className={`font-display text-[26px] font-extrabold tabular-nums leading-none
@@ -238,8 +239,10 @@ export function PropertiesPage() {
       <PropertiesDashboard properties={properties} />
 
       {/* Filters */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
+      {/* No celular a busca ocupa a linha inteira e os filtros descem; lado a
+          lado, a busca encolhia até virar só o ícone. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
+        <div className="relative w-full sm:flex-1 sm:max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
           <input
             value={query}

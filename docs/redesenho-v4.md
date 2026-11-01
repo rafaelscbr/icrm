@@ -5,7 +5,7 @@ melhores práticas de UX/UI e performance. Este arquivo é o placar.
 
 Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 
-**Progresso: 95%**
+**Progresso: 100%**
 
 ## Passada tela a tela (01/11/2026)
 
@@ -19,7 +19,8 @@ Pesos: fundação 35% · 18 telas ~3,5% cada (63%) · verificação final 2%.
 - [x] Notificações — links de ação neutros (o não lido segue marcado por filete e ponto); piso de 11px
 - [x] Admin — sem mudança: hierarquia e semântica já corretas
 
-Falta (5%): passada de celular tela a tela e conferência fina do tema claro nas telas desta lista.
+- [x] Conferência final: tema claro (Disparos, Contatos, Imóveis, Notificações) e celular (Disparos, Imóveis) — sem rolagem lateral
+- [x] Imóveis no celular: rótulos de KPI quebram linha em vez de cortar; busca ocupa a linha inteira e os filtros descem
 
 - [x] Kanban v5: colunas neutras nos dois temas (claro `#F1F1F3`, sem bege), filete e tingimento da cor da etapa no topo (`--etapa`), card levanta 2px no hover e afunda no clique
 - [x] Tabelas/listas: superfície limpa sem grão, cabeçalho em faixa neutra, linha inteira tingida no hover; `<table>` nativa dentro da folha herda o mesmo comportamento
