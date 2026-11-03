@@ -112,7 +112,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
 
   const { add: addContact, getById }       = useContactsStore()
-  const { add: addInteraction, getForLead } = useLeadInteractionsStore()
+  const { add: addInteraction, getForLead, loadForLead } = useLeadInteractionsStore()
   const { properties }                      = usePropertiesStore()
   const { getByType }                       = useLeadConfigStore()
   const { profile, isAdmin, allProfiles, fetchAllProfiles } = useAuthStore()
@@ -167,6 +167,10 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   // no Kanban e na lista. Só o dono baixa — a RPC ignora os outros.
   const [avisoAoAbrir] = useState(() => avisoReentrada(initialLead))
   useEffect(() => { void ackReentry(initialLead.id) }, [initialLead.id, ackReentry])
+
+  // O histórico só era baixado quando a aba Histórico abria — até lá o Resumo
+  // dizia "Nenhum contato registrado" para um lead com oito registros.
+  useEffect(() => { void loadForLead(initialLead.id) }, [initialLead.id, loadForLead])
 
   const slaInfo    = useSlaInfo(lead)
   const property   = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
