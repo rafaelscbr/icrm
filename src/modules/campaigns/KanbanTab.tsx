@@ -119,10 +119,11 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
   const [title,   setTitle]   = useState(`Follow-up: ${lead.name}`)
   const [dueDate, setDueDate] = useState(tomorrow)
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!title.trim()) return
     const now = new Date().toISOString()
-    add({
+    try {
+    await add({
       title: title.trim(),
       dueDate,
       status:    'pending',
@@ -132,6 +133,7 @@ function QuickTaskModal({ lead, onClose }: { lead: CampaignLead; onClose: () => 
       createdAt: now,
       updatedAt: now,
     } as Omit<Task, 'id'>)
+    } catch { return /* erro já exibido; o modal continua aberto */ }
     toast.success('Tarefa criada!')
     onClose()
   }

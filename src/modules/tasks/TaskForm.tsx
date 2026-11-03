@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Calendar, User, Building2, Plus, ExternalLink,
   CheckCircle2, ListChecks, X, UserCheck, ChevronRight, ChevronLeft,
-  Clock, Flag, FileText, Zap, Users,
+  Clock, Flag, FileText, Zap, Users, Loader2,
   Handshake, Search, Radar, Megaphone, Settings, DollarSign, MessageCircle,
 } from 'lucide-react'
 import { SidePanel } from '../../components/ui/SidePanel'
@@ -174,7 +174,10 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
   function handleBack() { if (step > 0) goTo(step - 1) }
 
   // ── Submit ────────────────────────────────────────────────────────────────
-  function handleSubmit() {
+  const [salvando, setSalvando] = useState(false)
+
+  async function handleSubmit() {
+    if (salvando) return
     if (!title.trim()) { setTitleError('Dê um nome para a tarefa'); goTo(0); return }
 
     const data = {
@@ -194,9 +197,18 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
       participants:  participantIds.length > 0 ? participantIds : [],
     }
 
-    if (isEditing && task) { update(task.id, data); toast.success('Tarefa atualizada') }
-    else                   { add(data);              toast.success('Tarefa criada')     }
-    onClose()
+    // Banco primeiro: "criada" só depois do upsert. Se falhar, a camada do
+    // banco mostra o erro e o painel continua aberto com o que foi digitado.
+    setSalvando(true)
+    try {
+      if (isEditing && task) { await update(task.id, data); toast.success('Tarefa atualizada') }
+      else                   { await add(data);              toast.success('Tarefa criada')     }
+      onClose()
+    } catch {
+      // erro já exibido
+    } finally {
+      setSalvando(false)
+    }
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -720,8 +732,8 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
 
       {/* Criar rápido — só no step 1 */}
       {step === 1 && (
-        <button type="button" onClick={handleSubmit}
-          className="flex items-center gap-1.5 px-3 min-h-[48px] rounded-xl text-sm text-t3 hover:text-t1 border border-line hover:border-line-strong transition-all cursor-pointer"
+        <button type="button" onClick={handleSubmit} disabled={salvando} aria-busy={salvando}
+          className="flex items-center gap-1.5 px-3 min-h-[48px] rounded-xl text-sm text-t3 hover:text-t1 border border-line hover:border-line-strong transition-all cursor-pointer disabled:opacity-60"
         >
           <Zap size={14} />
           <span className="hidden sm:inline">Criar rápido</span>
@@ -731,15 +743,16 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
       {/* Próximo / Salvar */}
       {step < 2 ? (
         <button type="button" onClick={handleNext}
-          className="flex items-center gap-1.5 px-5 min-h-[48px] rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+          className="flex items-center gap-1.5 px-5 min-h-[48px] rounded-xl text-sm font-semibold bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-text transition-all cursor-pointer"
         >
           Próximo <ChevronRight size={15} />
         </button>
       ) : (
-        <button type="button" onClick={handleSubmit}
-          className="flex items-center gap-1.5 px-5 min-h-[48px] rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+        <button type="button" onClick={handleSubmit} disabled={salvando} aria-busy={salvando}
+          className="flex items-center gap-1.5 px-5 min-h-[48px] rounded-xl text-sm font-semibold bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-text transition-all cursor-pointer disabled:opacity-70"
         >
-          {isEditing ? 'Salvar' : 'Criar tarefa'} ✓
+          {salvando && <Loader2 size={15} className="animate-spin" aria-hidden />}
+          {salvando ? 'Salvando…' : isEditing ? 'Salvar' : 'Criar tarefa'}
         </button>
       )}
     </div>

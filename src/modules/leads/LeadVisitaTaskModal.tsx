@@ -42,8 +42,14 @@ export function LeadVisitaTaskModal({ lead, onClose }: Props) {
     return lines.join('\n')
   })
 
-  function handleCreate() {
-    const task = addTask({
+  const [salvando, setSalvando] = useState(false)
+
+  async function handleCreate() {
+    if (salvando) return
+    setSalvando(true)
+    let task
+    try {
+      task = await addTask({
       title: `Visita — ${lead.name}`,
       description: [
         lead.phone ? `Tel: ${formatPhone(lead.phone)}` : '',
@@ -58,6 +64,11 @@ export function LeadVisitaTaskModal({ lead, onClose }: Props) {
       propertyId: lead.propertyId,
       brokerId:   lead.brokerId ?? getCurrentUserId() ?? undefined,
     })
+    } catch {
+      // erro já exibido pela camada do banco; o modal continua aberto
+      setSalvando(false)
+      return
+    }
     // Vincula a tarefa ao lead (não sugere de novo nas próximas vezes)
     updateLead(lead.id, { visitaTaskId: task.id }).catch(() => { /* erro já tratado no store */ })
     toast.success('Tarefa de visita agendada!')

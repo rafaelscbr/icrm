@@ -65,9 +65,9 @@ export function NextStepSuggestion({ lead, interactionType, outcome, onDone }: P
 
   if (!suggestion || hasPendingTask) return null
 
-  function createTask(dueDate: string, label: string) {
+  async function createTask(dueDate: string, label: string) {
     try {
-      addTask({
+      await addTask({
         title:     suggestion!.title,
         dueDate,
         status:    'pending',

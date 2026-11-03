@@ -782,7 +782,7 @@ export function TasksPage() {
                       allProfiles={allProfiles}
                       currentUserId={profile?.id}
                       isLast={i === doneList.length - 1}
-                      onToggle={() => toggleDone(t.id)}
+                      onToggle={() => { toggleDone(t.id).catch(() => { /* a camada db já avisou; a tarefa fica como estava */ }) }}
                       onEdit={() => { setEditing(t); setFormOpen(true) }}
                       onDelete={() => setDeleteTarget(t)}
                       onCalendar={() => openCalendar(t)}
@@ -847,7 +847,7 @@ export function TasksPage() {
                 texto={proximaDoDia.title}
               >
                 <div className="grid grid-cols-[1.4fr_1fr] gap-2">
-                  <button onClick={() => toggleDone(proximaDoDia.id)} className="ficha-acao !bg-brand-fill !text-brand-fill-text !border-transparent">
+                  <button onClick={() => { toggleDone(proximaDoDia.id).catch(() => {}) }} className="ficha-acao !bg-brand-fill !text-brand-fill-text !border-transparent">
                     <CheckCircle2 size={15} aria-hidden /> Concluir
                   </button>
                   <button onClick={() => { setEditing(proximaDoDia); setFormOpen(true) }} className="ficha-acao">

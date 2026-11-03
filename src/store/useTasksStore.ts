@@ -4,6 +4,7 @@ import { generateId, localDateStr } from '../lib/formatters'
 import { db } from '../lib/db'
 import { mensagemDeErro } from '../lib/erros'
 import { supabase } from '../lib/supabase'
+import toast from 'react-hot-toast'
 // Import circular com useLeadsStore é seguro: o uso é deferido (getState em runtime)
 import { useLeadsStore } from './useLeadsStore'
 import { useLeadInteractionsStore } from './useLeadInteractionsStore'
@@ -15,13 +16,16 @@ interface TasksStore {
   erro: string | null
   load: () => Promise<void>
   subscribe: () => () => void
-  add: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Task
-  update: (id: string, data: Partial<Task>) => void
+  /** Banco primeiro: a tarefa só entra na tela depois do upsert. Lança se falhar. */
+  add: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Task>
+  /** Banco primeiro: a tela só muda depois do upsert. Lança se falhar. */
+  update: (id: string, data: Partial<Task>) => Promise<void>
   /** Banco primeiro: só sai da tela depois do delete confirmado. Lança se falhar. */
   remove: (id: string) => Promise<void>
   /** Desfazer exclusão: grava a tarefa e os participantes de novo; só então volta à tela. */
   restaurar: (task: Task) => Promise<void>
-  toggleDone: (id: string) => void
+  /** Concluir/reabrir — espera o banco. Lança se falhar. */
+  toggleDone: (id: string) => Promise<void>
   getByStatus: (status: TaskStatus) => Task[]
   getOverdue: () => Task[]
   getUpcoming: () => Task[]
@@ -118,35 +122,49 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
     return () => { supabase.removeChannel(channel) }
   },
 
-  add: (data) => {
+  // add/update/toggleDone eram otimistas e engoliam a falha no console: a
+  // tarefa aparecia "criada" ou "concluída" e voltava ao estado antigo no
+  // próximo carregamento (02/11/2026). Agora a tela só muda depois do banco.
+  //
+  // Participantes ficam numa tabela à parte. Se a tarefa gravou e só os
+  // participantes falharam, a tarefa EXISTE no banco — então ela entra na
+  // tela (sem os participantes) e o erro aparece, em vez de fingir que nada
+  // foi criado e o corretor tentar de novo, duplicando.
+  add: async (data) => {
     const now = new Date().toISOString()
     const task: Task = { ...data, id: generateId(), createdAt: now, updatedAt: now }
-    set(s => ({ tasks: [task, ...s.tasks] }))
-    db.tasks.upsert(task)
-      .then(() => {
-        const parts = data.participants ?? []
-        if (parts.length > 0) return db.tasks.setParticipants(task.id, parts)
-      })
-      .catch(err => console.error('[tasks] add:', err))
-    return task
+    await db.tasks.upsert(task)
+    let gravada = task
+    const parts = data.participants ?? []
+    if (parts.length > 0) {
+      try {
+        await db.tasks.setParticipants(task.id, parts)
+      } catch (err) {
+        gravada = { ...task, participants: [] }
+        toast.error(`Tarefa criada, mas não foi possível compartilhar: ${mensagemDeErro(err)}`)
+      }
+    }
+    set(s => s.tasks.some(t => t.id === gravada.id) ? s : { tasks: [gravada, ...s.tasks] })
+    return gravada
   },
 
-  update: (id, data) => {
-    const now = new Date().toISOString()
-    const tasks = get().tasks.map(t =>
-      t.id === id ? { ...t, ...data, updatedAt: now } : t
-    )
-    set({ tasks })
-    const updated = tasks.find(t => t.id === id)
-    if (!updated) return
-    db.tasks.upsert(updated)
-      .then(() => {
-        // Só atualiza participantes se o campo foi explicitamente incluído no patch
-        if ('participants' in data) {
-          return db.tasks.setParticipants(id, data.participants ?? [])
-        }
-      })
-      .catch(err => console.error('[tasks] update:', err))
+  update: async (id, data) => {
+    const atual = get().tasks.find(t => t.id === id)
+    if (!atual) throw new Error('Tarefa não encontrada')
+    const { participants, ...resto } = data
+    const updated: Task = { ...atual, ...resto, updatedAt: new Date().toISOString() }
+    await db.tasks.upsert(updated)
+    let final = updated
+    // Só mexe nos participantes se o campo veio no patch
+    if ('participants' in data) {
+      try {
+        await db.tasks.setParticipants(id, participants ?? [])
+        final = { ...updated, participants: participants ?? [] }
+      } catch (err) {
+        toast.error(`Tarefa salva, mas o compartilhamento não mudou: ${mensagemDeErro(err)}`)
+      }
+    }
+    set(s => ({ tasks: s.tasks.map(t => t.id === id ? final : t) }))
   },
 
   // Antes tirava da tela e apagava em segundo plano, engolindo a falha: a
@@ -164,17 +182,18 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
     set(s => s.tasks.some(t => t.id === task.id) ? s : { tasks: [...s.tasks, task] })
   },
 
-  toggleDone: (id) => {
+  toggleDone: async (id) => {
     const task = get().tasks.find(t => t.id === id)
     if (!task) return
     const next: TaskStatus = task.status === 'done' ? 'pending' : 'done'
-    get().update(id, {
+    await get().update(id, {
       status: next,
       completedAt: next === 'done' ? new Date().toISOString() : undefined,
     })
 
     // Ciclo tarefa → histórico: concluir tarefa vinculada a um lead registra
     // a interação automaticamente na timeline (fonte única do que aconteceu).
+    // Só depois de a conclusão estar gravada.
     if (next === 'done' && task.contactId) {
       const lead = useLeadsStore.getState().leads.find(
         l => l.contactId === task.contactId && !l.discardReason
@@ -185,7 +204,7 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
           type: 'tarefa',
           description: `Tarefa concluída: ${task.title}`,
           interactedAt: new Date().toISOString(),
-        }).catch(err => console.error('[tasks] toggleDone interaction:', err))
+        }).catch(() => { /* a camada db já avisou; a tarefa está concluída */ })
       }
     }
   },

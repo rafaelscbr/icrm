@@ -22,8 +22,9 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
   const [time,  setTime]  = useState('10:00')
   const [notes, setNotes] = useState('')
 
-  function handleCreate() {
-    add({
+  async function handleCreate() {
+    try {
+    await add({
       title:      `Visita: ${lead.name}`,
       description: [
         lead.phone ? `Tel: ${formatPhone(lead.phone)}` : '',
@@ -37,6 +38,7 @@ export function VisitaTaskModal({ isOpen, onClose, lead }: Props) {
       propertyId: lead.propertyId,
       contactId:  lead.contactId,
     })
+    } catch { return /* erro já exibido; o modal continua aberto */ }
     toast.success('Tarefa de visita criada!')
     onClose()
   }

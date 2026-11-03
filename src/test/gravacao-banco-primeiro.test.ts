@@ -202,3 +202,46 @@ describe('desfazer exclusão: restaura pelo banco', () => {
     expect(useGoalsStore.getState().goals).toHaveLength(0)
   })
 })
+
+describe('tarefas: criar, editar e concluir esperam o banco', () => {
+  const base = { title: 'Ligar para Ana', status: 'pending' as const, priority: 'medium' as const }
+
+  it('criar que falha não mostra a tarefa', async () => {
+    const { useTasksStore } = await stores()
+    db.tasks.upsert.mockRejectedValue(new Error('rede'))
+
+    await expect(useTasksStore.getState().add(base as never)).rejects.toThrow('rede')
+    expect(useTasksStore.getState().tasks).toHaveLength(0)
+  })
+
+  it('só aparece depois do banco gravar', async () => {
+    const { useTasksStore } = await stores()
+    let liberar!: () => void
+    db.tasks.upsert.mockReturnValue(new Promise<void>(r => { liberar = r }))
+
+    const pendente = useTasksStore.getState().add(base as never)
+    expect(useTasksStore.getState().tasks).toHaveLength(0)
+    liberar()
+    await pendente
+    expect(useTasksStore.getState().tasks).toHaveLength(1)
+  })
+
+  it('concluir que falha mantém a tarefa pendente', async () => {
+    const { useTasksStore } = await stores()
+    useTasksStore.setState({ tasks: [{ ...base, id: 't9', createdAt: '', updatedAt: '' } as never] })
+    db.tasks.upsert.mockRejectedValue(new Error('rls'))
+
+    await expect(useTasksStore.getState().toggleDone('t9')).rejects.toThrow()
+    expect(useTasksStore.getState().tasks[0].status).toBe('pending')
+  })
+
+  it('tarefa gravada com participantes que falham entra na tela sem eles', async () => {
+    const { useTasksStore } = await stores()
+    db.tasks.upsert.mockResolvedValue(undefined)
+    db.tasks.setParticipants.mockRejectedValue(new Error('rls'))
+
+    const t = await useTasksStore.getState().add({ ...base, participants: ['u2'] } as never)
+    expect(useTasksStore.getState().tasks.map(x => x.id)).toEqual([t.id])
+    expect(useTasksStore.getState().tasks[0].participants).toEqual([])
+  })
+})
