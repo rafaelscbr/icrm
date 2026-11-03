@@ -1,15 +1,13 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  TrendingUp, Pencil, Trash2, Search, Plus,
+  TrendingUp, Pencil, Trash2, Search, Plus, ChevronRight,
 } from 'lucide-react'
 import { Grafico, eixoCategoria, eixoValor } from '../../components/charts/Grafico'
 import type { CoresGrafico } from '../../components/charts/Grafico'
 import { PageLayout } from '../../components/layout/PageLayout'
-import { Card } from '../../components/ui/Card'
 import { FaixaNumeros, Segmentado } from '../../components/shared/visual'
 import { ListContainer } from '../../components/ui/ListContainer'
-import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
 import { EstadoTela } from '../../components/shared/EstadoTela'
@@ -18,6 +16,7 @@ import type { Coluna } from '../../components/shared/lista'
 import { Modal } from '../../components/ui/Modal'
 import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import { SaleForm } from './SaleForm'
+import { SaleFicha } from './SaleFicha'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
@@ -67,6 +66,7 @@ export function SalesPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Sale | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Sale | undefined>()
+  const [vendoId, setVendoId] = useState<string | null>(null)
 
   // `?nova=1` abre o formulário — é o atalho do "Criar" da barra do topo.
   const [searchParams, setSearchParams] = useSearchParams()
@@ -268,72 +268,37 @@ export function SalesPage() {
         }
       >
         <>
-          {/* ── Mobile cards ───────────────────────────────────────────── */}
-          <div className="flex flex-col gap-3 lg:hidden">
+          {/* ── Celular: linhas — toque abre a ficha da venda ───────────── */}
+          <ListContainer className="lg:hidden">
             {filtered.map(s => {
               const client = contacts.find(c => c.id === s.clientId)
-              const { label, variant } = TYPE_CONFIG[s.type]
-              const { totalCommission: tc, brokerCommission: bc } = calcSaleCommissions(s)
-              const hasComm = tc > 0
-              const isRetro = lancadaRetroativamente(s)
+              const { brokerCommission: bc } = calcSaleCommissions(s)
               return (
-                <Card key={s.id} className="!p-4">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Avatar name={client?.name ?? '?'} size="sm" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-100 truncate">{client?.name ?? '—'}</p>
-                        {isRetro && (
-                          <span className="text-[11px] font-semibold text-amber-500/80 uppercase tracking-wide">retroativo</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => { setEditing(s); setFormOpen(true) }}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-s3/70 text-t3 hover:text-t2 transition-colors cursor-pointer"
-                      ><Pencil size={15} /></button>
-                      <button
-                        onClick={() => setDeleteTarget(s)}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-t3 hover:text-red-400 transition-colors cursor-pointer"
-                      ><Trash2 size={15} /></button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-t3 truncate flex-1 mr-2">{s.propertyName}</p>
-                      <Badge variant={variant}>{label}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-line">
-                      <span className="text-xs text-t3">{formatDateShort(s.date)}</span>
-                      <span className="text-sm font-bold text-green-400 tabular-nums">{formatCurrencyFull(s.value)}</span>
-                    </div>
-                    {hasComm && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-t4">Comissão</span>
-                        <div className="text-right">
-                          <p className="text-xs text-brand-text tabular-nums font-medium">{formatCurrencyFull(tc)}</p>
-                          <p className="text-xs text-emerald-400 tabular-nums">Corretor: {formatCurrencyFull(bc)}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </Card>
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setVendoId(s.id)}
+                  className="lista-linha w-full flex items-center gap-3 px-4 py-3.5 text-left border-b border-line last:border-0"
+                >
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[14.5px] font-semibold text-t1 truncate">{client?.name ?? '—'}</span>
+                    <span className="block text-[12.5px] text-t4 truncate">{s.propertyName} · {formatDateShort(s.date)}</span>
+                  </span>
+                  <span className="text-right flex-shrink-0">
+                    <span className="block text-[14px] font-semibold text-t1 tabular-nums">{formatCurrency(s.value)}</span>
+                    {bc > 0 && <span className="block text-[12px] text-success tabular-nums">{formatCurrency(bc)}</span>}
+                  </span>
+                  <ChevronRight size={16} strokeWidth={1.8} className="text-t4 flex-shrink-0" aria-hidden />
+                </button>
               )
             })}
-            {/* Mobile footer */}
-            <div className="flex items-center justify-between px-4 py-3 bg-s2/50 rounded-xl border border-line">
-              <p className="text-xs text-t3">{filtered.length} venda{filtered.length !== 1 ? 's' : ''}</p>
-              <div className="text-right">
-                <p className="text-sm font-bold text-slate-100 tabular-nums">
-                  {formatCurrencyFull(filtered.reduce((acc, s) => acc + s.value, 0))}
-                </p>
-                <p className="text-xs text-brand-text tabular-nums">
-                  {formatCurrencyFull(filtered.reduce((acc, s) => acc + calcSaleCommissions(s).totalCommission, 0))}
-                </p>
-              </div>
+            <div className="flex items-center justify-between px-4 py-3 bg-s2">
+              <p className="text-[12.5px] text-t4">{filtered.length} venda{filtered.length !== 1 ? 's' : ''}</p>
+              <p className="text-[14px] font-semibold text-t1 tabular-nums">
+                {formatCurrencyFull(filtered.reduce((acc, s) => acc + s.value, 0))}
+              </p>
             </div>
-          </div>
+          </ListContainer>
 
           {/* ── Desktop table ──────────────────────────────────────────── */}
           <ListContainer className="hidden lg:block">
@@ -352,12 +317,13 @@ export function SalesPage() {
                 >
                   <Avatar name={client?.name ?? '?'} size="sm" />
 
-                  <div className={celula(COLUNAS[0])}>
+                  <button type="button" onClick={() => setVendoId(s.id)}
+                    className={celula(COLUNAS[0], 'text-left cursor-pointer focus:outline-none focus-visible:underline')}>
                     <p className="text-sm font-medium text-t1 truncate">{client?.name ?? '—'}</p>
                     {/* "retroativo" é contexto, não estado comparável: texto,
                         não pílula. */}
                     <ContextoLinha itens={[isRetro && <span key="r">lançada em outro mês</span>]} />
-                  </div>
+                  </button>
 
                   <div className={celula(COLUNAS[1])}>
                     <p className="text-sm text-t2 truncate">{s.propertyName}</p>
@@ -440,6 +406,18 @@ export function SalesPage() {
         onClose={() => setFormOpen(false)}
         sale={editing}
       />
+
+      {vendoId && (() => {
+        const venda = allSales.find(x => x.id === vendoId)
+        return venda ? (
+          <SaleFicha
+            sale={venda}
+            onClose={() => setVendoId(null)}
+            onEdit={() => { setVendoId(null); setEditing(venda); setFormOpen(true) }}
+            onDelete={() => { setVendoId(null); setDeleteTarget(venda) }}
+          />
+        ) : null
+      })()}
 
       <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} title="Excluir venda" size="sm">
         <p className="text-sm text-t3 mb-6">

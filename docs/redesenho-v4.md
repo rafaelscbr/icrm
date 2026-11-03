@@ -192,3 +192,10 @@ pixel art).
 - Resto em **abas**: Resumo (Agora, números, imóvel, últimos toques, nota rápida, observações), Perfil (leitura do lead + perfil declarado + texto original do Meta) e Histórico (linha do tempo + listas e campanhas).
 - Linha do tempo, Inteligência e Perfil sem caixa com borda. Corrigido o contorno do encaixe no produto: `var(--warning)` + `'55'` virava cor inválida (borda branca).
 - Celular: tela cheia, só a etapa atual mostra o nome na régua, tentativas encolhem para caber.
+
+### v12.1 — padrão Folha em Lançamentos, Vendas e Tarefas (02/11/2026)
+
+- `FichaRegua` entra em `components/shared/Ficha.tsx` (régua de etapas reutilizável).
+- **Lançamento:** ficha com régua de fases (Lançamento → Em obra → Pronto), Agora ("Régua conferida" ou "Ainda não classifica lead" com o que falta e o botão para conferir), faixa Unidades · Renda mínima · Entrada mínima, régua de qualificação, fluxos, tipologias, quem da base cabe, vigência.
+- **Venda:** nova ficha (antes o clique abria direto a edição) — cliente como título, Agora "Quem compra indica" com WhatsApp do cliente, faixa Valor · Comissão · Sua parte, detalhes e observação; Editar e Excluir no rodapé. No celular a lista de vendas virou linhas.
+- **Tarefas:** a "Próxima" do painel Seu dia virou o bloco Agora (tom pelo prazo), títulos do painel em texto com destaque.

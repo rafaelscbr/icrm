@@ -148,3 +148,55 @@ export function FichaSecao({ titulo, acao, children }: { titulo: ReactNode; acao
     </section>
   )
 }
+
+/**
+ * Régua de etapas — "em que pé está". Pontos ligados por um trilho; a cor é a
+ * da etapa atual. Com `onEscolher`, cada ponto é um botão que move a etapa.
+ */
+export function FichaRegua({ etapas, atual, cor, onEscolher, desabilitada = false, rotulo = 'Etapa' }: {
+  etapas: { chave: string; rotulo: string }[]
+  atual: string
+  /** Cor da etapa atual (CSS: var(--stage-x), hex…). */
+  cor: string
+  onEscolher?: (chave: string) => void
+  desabilitada?: boolean
+  rotulo?: string
+}) {
+  const indice = etapas.findIndex(e => e.chave === atual)
+  return (
+    <ol className="ficha-regua" aria-label={rotulo}>
+      {etapas.map((e, i) => {
+        const estado = i === indice ? 'atual' : i < indice ? 'feita' : 'futura'
+        const conteudo = (
+          <>
+            <span className="ficha-etapa-trilho" aria-hidden><span className="ficha-etapa-ponto" /></span>
+            <span className="ficha-etapa-nome">{e.rotulo}</span>
+          </>
+        )
+        return (
+          <li key={e.chave} className="flex-1 min-w-0">
+            {onEscolher ? (
+              <button
+                type="button"
+                onClick={() => onEscolher(e.chave)}
+                disabled={desabilitada}
+                aria-current={estado === 'atual' ? 'step' : undefined}
+                aria-label={estado === 'atual' ? `${rotulo} atual: ${e.rotulo}` : `Mover para ${e.rotulo}`}
+                className="ficha-etapa"
+                data-estado={estado}
+                style={{ ['--etapa' as string]: cor }}
+              >
+                {conteudo}
+              </button>
+            ) : (
+              <span className="ficha-etapa !cursor-default" data-estado={estado} style={{ ['--etapa' as string]: cor }}
+                    aria-current={estado === 'atual' ? 'step' : undefined}>
+                {conteudo}
+              </span>
+            )}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}

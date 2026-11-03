@@ -1,5 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { Destaque } from '../../components/shared/Destaque'
+import { FichaAgora } from '../../components/shared/Ficha'
 import { useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -818,7 +819,7 @@ export function TasksPage() {
                     className={`flex flex-col items-start gap-2 rounded-[14px] border px-3.5 py-3 text-left transition-all cursor-pointer
                       disabled:opacity-45 disabled:cursor-not-allowed
                       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
-                      ${active ? 'border-brand/50 bg-brand-tint shadow-card' : 'border-line bg-s2/50 hover:border-line-strong hover:bg-s2'}`}
+                      ${active ? 'border-transparent bg-brand-tint' : 'border-transparent bg-s2 hover:bg-s3'}`}
                   >
                     <f.icon size={15} strokeWidth={1.9} className={active ? 'text-brand-text' : f.tone} aria-hidden />
                     <span className="flex flex-col">
@@ -831,37 +832,35 @@ export function TasksPage() {
             </div>
           </div>
 
-          {proximaDoDia && (
-            <div className="bento p-4">
-              <p className="text-[13px] font-semibold text-t3 mb-2">Próxima</p>
-              <p className="text-[15px] font-semibold text-t1 leading-snug">{proximaDoDia.title}</p>
-              <p className="text-[12.5px] text-t3 mt-1 flex items-center gap-1.5 flex-wrap">
-                {proximaDoDia.dueDate && <><Clock size={12} aria-hidden /> {formatDateLabel(proximaDoDia.dueDate, proximaDoDia.dueTime).label}</>}
-                {proximaDoDia.category && <span className="text-t4">· {CATEGORY_CONFIG[proximaDoDia.category].label}</span>}
-              </p>
-              <div className="flex gap-2 mt-3.5">
-                <button
-                  onClick={() => toggleDone(proximaDoDia.id)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-[10px] bg-brand-fill text-brand-fill-text
-                             text-[13px] font-semibold hover:bg-brand-fill-hover transition-colors cursor-pointer
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-                >
-                  <CheckCircle2 size={14} aria-hidden /> Concluir
-                </button>
-                <button
-                  onClick={() => { setEditing(proximaDoDia); setFormOpen(true) }}
-                  className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-[10px] border border-line text-[13px] font-medium text-t2
-                             hover:bg-s2 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-                >
-                  <Pencil size={13} aria-hidden /> Abrir
-                </button>
-              </div>
-            </div>
-          )}
+          {proximaDoDia && (() => {
+            // Mesmo bloco "Agora" das fichas: o tom vem do prazo.
+            const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+            const dias = proximaDoDia.dueDate
+              ? Math.round((new Date(proximaDoDia.dueDate + 'T00:00:00').getTime() - hoje.getTime()) / 86_400_000)
+              : null
+            const tom = dias !== null && dias < 0 ? 'risco' : dias === 0 ? 'atencao' : 'neutro'
+            return (
+              <FichaAgora
+                tom={tom}
+                rotulo={proximaDoDia.category ? `Próxima · ${CATEGORY_CONFIG[proximaDoDia.category].label}` : 'Próxima'}
+                prazo={proximaDoDia.dueDate ? formatDateLabel(proximaDoDia.dueDate, proximaDoDia.dueTime).label : undefined}
+                texto={proximaDoDia.title}
+              >
+                <div className="grid grid-cols-[1.4fr_1fr] gap-2">
+                  <button onClick={() => toggleDone(proximaDoDia.id)} className="ficha-acao !bg-brand-fill !text-brand-fill-text !border-transparent">
+                    <CheckCircle2 size={15} aria-hidden /> Concluir
+                  </button>
+                  <button onClick={() => { setEditing(proximaDoDia); setFormOpen(true) }} className="ficha-acao">
+                    <Pencil size={14} aria-hidden /> Abrir
+                  </button>
+                </div>
+              </FichaAgora>
+            )
+          })()}
 
           <div className="bento p-4">
             <div className="flex items-baseline justify-between mb-3">
-              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Concluídas · 7 dias</p>
+              <p className="text-[15px] font-semibold text-t1">Concluídas na <Destaque>semana</Destaque></p>
               <span className="font-display text-[18px] font-extrabold tabular-nums text-t1">{semana.reduce((a, d) => a + d.n, 0)}</span>
             </div>
             <div className="flex items-end gap-1.5 h-16" aria-label={semana.map(d => `${d.rotulo}: ${d.n}`).join(', ')} role="img">
@@ -878,7 +877,7 @@ export function TasksPage() {
 
           {porTipo.length > 0 && (
             <div className="bento p-4">
-              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2.5">Pendentes por tipo</p>
+              <p className="text-[15px] font-semibold text-t1 mb-2.5">Pendentes por tipo</p>
               <ul className="flex flex-col gap-2">
                 {porTipo.map(([cat, n]) => {
                   const cfg = CATEGORY_CONFIG[cat]

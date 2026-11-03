@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import {
-  Pencil, AlertTriangle, CheckCircle2, Wallet, Layers, MapPin,
-  Megaphone, CalendarClock, Info, Building2, Trash2,
-} from 'lucide-react'
+import { Pencil, Building2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { SidePanel } from '../../components/ui/SidePanel'
 import { Button } from '../../components/ui/Button'
+import {
+  FichaPainel, FichaBarraTopo, FichaNome, FichaAgora, FichaNumeros, FichaSecao, FichaRegua,
+} from '../../components/shared/Ficha'
+import { Destaque } from '../../components/shared/Destaque'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { QualificationScale } from './QualificationScale'
 import { DevelopmentMatches } from './DevelopmentMatches'
@@ -14,7 +14,7 @@ import { pendenciasDaRegua, fgtsIsCriterion } from './qualification'
 import {
   Development, DEVELOPMENT_STATUS_LABEL, DEVELOPMENT_REGIME_LABEL,
 } from '../../types'
-import { formatCurrencyRound, formatDate, formatMonthYear } from '../../lib/formatters'
+import { formatCurrency, formatCurrencyRound, formatDate, formatMonthYear } from '../../lib/formatters'
 import { resolvePaymentPlan } from '../../types'
 
 interface DevelopmentModalProps {
@@ -23,16 +23,6 @@ interface DevelopmentModalProps {
   development: Development
   onEdit: () => void
   canEdit: boolean
-}
-
-/** Par rótulo/valor — a unidade de leitura de toda a ficha. */
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">{label}</p>
-      <p className="text-sm text-t1 mt-0.5 truncate">{value}</p>
-    </div>
-  )
 }
 
 export function DevelopmentModal({
@@ -78,226 +68,151 @@ export function DevelopmentModal({
       : d.valueMax != null ? `até ${formatCurrencyRound(d.valueMax)}`
       : 'Não informada'
 
+  if (!isOpen) return null
+
+  const fases = (Object.keys(DEVELOPMENT_STATUS_LABEL) as (keyof typeof DEVELOPMENT_STATUS_LABEL)[])
+    .map(k => ({ chave: k, rotulo: DEVELOPMENT_STATUS_LABEL[k] }))
+
   return (
-    <SidePanel
-      isOpen={isOpen}
+    <FichaPainel
+      rotulo={`Lançamento ${d.name}`}
       onClose={onClose}
-      title={d.name}
-      subtitle={[d.builder, d.region, d.city].filter(Boolean).join(' · ')}
-      size="lg"
-      footer={
-        <div className="flex items-center justify-between gap-3 w-full">
-          <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${d.confirmed ? 'text-success' : 'text-warning'}`}>
-            {d.confirmed ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
-            {d.confirmed ? 'Régua confirmada' : 'Régua a confirmar'}
-          </span>
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                variant="ghost"
-                onClick={() => setConfirmandoExclusao(true)}
-                aria-label={`Excluir ${d.name}`}
-                className="!text-t4 hover:!text-error hover:!bg-error-bg"
-              >
-                <Trash2 size={13} />
-                <span className="hidden sm:inline">Excluir</span>
-              </Button>
-            )}
-            <Button variant="secondary" onClick={onClose}>Fechar</Button>
-            {canEdit && (
-              <Button onClick={onEdit}>
-                <Pencil size={13} /> Editar
-              </Button>
-            )}
-          </div>
-        </div>
-      }
-    >
-      <div className="flex flex-col gap-6">
-
-        {/* Confirmação de exclusão — inline, não abre modal em cima de modal */}
-        {confirmandoExclusao && (
-          <div className="flex flex-col gap-3 p-4 rounded-xl border border-error-line bg-error-bg">
-            <div className="flex items-start gap-3">
-              <Trash2 size={15} className="text-error flex-shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-error">Excluir {d.name}?</p>
-                <p className="text-xs text-t2 mt-1 leading-relaxed">
-                  Sai da lista de lançamentos e deixa de qualificar lead.
-                  {d.metaFormIds.length > 0 && (
-                    <> Os {d.metaFormIds.length} formulário(s) do Meta ligados a ele continuam
-                    trazendo lead — só que sem produto associado.</>
-                  )}
-                  {' '}O histórico é preservado: leads que entraram por este produto continuam
-                  com a referência intacta.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="secondary" size="sm" onClick={() => setConfirmandoExclusao(false)} disabled={excluindo}>
-                Cancelar
-              </Button>
-              <Button variant="danger" size="sm" onClick={handleExcluir} disabled={excluindo}>
-                {excluindo ? 'Excluindo…' : 'Excluir'}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Aviso de régua não confirmada — o mais importante da tela */}
-        {!d.confirmed && (
-          <div className="flex items-start gap-3 p-4 rounded-xl border border-warning-line bg-warning-bg">
-            <AlertTriangle size={15} className="text-warning flex-shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-warning">Ainda não classifica lead</p>
-              <p className="text-xs text-t2 mt-1 leading-relaxed">
-                {pendencias.length > 0
-                  ? <>Falta definir: <span className="text-t1 font-medium">{pendencias.join(', ')}</span>.</>
-                  : 'Confira os valores e marque “Régua conferida” na edição.'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Ficha */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <Fact label="Fase" value={DEVELOPMENT_STATUS_LABEL[d.status]} />
-          <Fact label="Regime" value={DEVELOPMENT_REGIME_LABEL[d.regime]} />
-          <Fact label="Entrega" value={d.deliveryEstimate ? formatMonthYear(d.deliveryEstimate) : 'Não informada'} />
-          <Fact label="Valor das unidades" value={faixaValor} />
-          <Fact label="Aceita" value={publico || 'Não definido'} />
-          <Fact
-            label="Tipologias"
-            value={d.unitTypes.length > 0 ? `${d.unitTypes.join(', ')} dorm` : 'Não informadas'}
+      topo={
+        <>
+          <FichaBarraTopo
+            onClose={onClose}
+            contexto={<><Building2 size={13} strokeWidth={1.8} aria-hidden />
+              <span className="truncate">{[d.builder, DEVELOPMENT_REGIME_LABEL[d.regime]].filter(Boolean).join(' · ')}</span></>}
+            acoes={canEdit ? (
+              <button onClick={onEdit} className="ficha-icone" aria-label={`Editar ${d.name}`} title="Editar">
+                <Pencil size={16} strokeWidth={1.8} />
+              </button>
+            ) : undefined}
           />
-        </section>
-
-        {/* Régua */}
-        <section className="flex flex-col gap-4 p-4 rounded-xl bg-s2 border border-line">
-          <div className="flex items-center gap-2">
-            <Wallet size={13} className="text-brand" />
-            <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t2">
-              Régua de qualificação
-            </h3>
+          <FichaNome>{d.name}</FichaNome>
+          <div className="flex items-center gap-x-3 gap-y-1 mt-2 flex-wrap text-[14px]">
+            <span className="text-t2">{[d.region, d.city].filter(Boolean).join(', ') || 'Local não informado'}</span>
+            <span className="text-t4">Entrega {d.deliveryEstimate ? formatMonthYear(d.deliveryEstimate) : 'a definir'}</span>
           </div>
-          <QualificationScale label="Renda familiar" min={d.incomeMin} ideal={d.incomeIdeal} suffix="/mês" />
-          <QualificationScale label="Entrada" min={d.downPaymentMin} ideal={d.downPaymentIdeal} />
+          <div className="mt-6 mb-5">
+            <FichaRegua rotulo="Fase da obra" etapas={fases} atual={d.status} cor="var(--area-produtos)" />
+          </div>
+        </>
+      }
+      rodape={canEdit ? (
+        confirmandoExclusao ? (
+          <div className="flex items-center gap-2 w-full" role="alertdialog" aria-label={`Excluir ${d.name}`}>
+            <span className="text-[13px] text-error flex-1">Excluir? Sai da lista e deixa de qualificar lead; o histórico fica.</span>
+            <Button variant="ghost" size="sm" onClick={() => setConfirmandoExclusao(false)} disabled={excluindo}>Não</Button>
+            <Button variant="danger" size="sm" onClick={handleExcluir} carregando={excluindo}>Excluir</Button>
+          </div>
+        ) : (
+          <>
+            <button onClick={() => setConfirmandoExclusao(true)} className="inline-flex items-center h-9 px-3 rounded-[10px] text-[13.5px] font-medium text-error hover:bg-error-bg">
+              Excluir
+            </button>
+            <div className="flex-1" />
+            <Button onClick={onEdit} className="gap-1.5"><Pencil size={14} aria-hidden /> Editar</Button>
+          </>
+        )
+      ) : undefined}
+    >
+      <div className="flex flex-col gap-7">
+        <FichaAgora
+          tom={d.confirmed ? 'sucesso' : 'atencao'}
+          rotulo={d.confirmed ? 'Régua conferida' : 'Ainda não classifica lead'}
+          texto={d.confirmed
+            ? 'Já qualifica lead. Veja abaixo quem da base cabe neste produto.'
+            : pendencias.length > 0
+              ? `Falta definir: ${pendencias.join(', ')}.`
+              : 'Confira os valores e marque “Régua conferida” na edição.'}
+        >
+          {!d.confirmed && canEdit && (
+            <button onClick={onEdit} className="ficha-acao w-full">
+              <Pencil size={15} strokeWidth={1.9} aria-hidden /> Conferir a régua
+            </button>
+          )}
+        </FichaAgora>
 
-          {/* FGTS — o texto muda conforme o regime, e é isso que evita o alerta falso */}
-          <div className="flex items-start gap-2 pt-1">
-            <Info size={12} className="text-t4 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-t3 leading-relaxed">
+        <FichaNumeros itens={[
+          { rotulo: 'Unidades', valor: d.valueMin != null && d.valueMax != null
+              ? `${formatCurrency(d.valueMin)} – ${formatCurrency(d.valueMax)}`
+              : faixaValor },
+          { rotulo: 'Renda mínima', valor: d.incomeMin != null ? formatCurrencyRound(d.incomeMin) : '—' },
+          { rotulo: 'Entrada mínima', valor: d.downPaymentMin != null ? formatCurrencyRound(d.downPaymentMin) : '—' },
+        ]} />
+
+        <p className="text-[14px] text-t2 leading-relaxed -mt-2">
+          Aceita {publico || 'público não definido'}
+          {d.unitTypes.length > 0 && <> · {d.unitTypes.join(', ')} dorm</>}
+        </p>
+
+        <FichaSecao titulo={<>Régua de <Destaque>qualificação</Destaque></>}>
+          <div className="flex flex-col gap-4 rounded-[16px] bg-s2 p-4">
+            <QualificationScale label="Renda familiar" min={d.incomeMin} ideal={d.incomeIdeal} suffix="/mês" />
+            <QualificationScale label="Entrada" min={d.downPaymentMin} ideal={d.downPaymentIdeal} />
+            <p className="text-[13px] text-t3 leading-relaxed">
               {d.regime === 'pos_chaves'
                 ? 'Pós-chaves: o FGTS não entra na qualificação. Lead sem essa resposta não fica incompleto.'
                 : fgtsConta
                   ? 'Associativo: o FGTS compõe a entrada e conta na qualificação.'
-                  : 'Associativo, mas o FGTS não compõe a entrada — fica no perfil como informação, sem afetar a régua.'}
+                  : 'Associativo, mas o FGTS não compõe a entrada — fica no perfil como informação.'}
             </p>
           </div>
-        </section>
+        </FichaSecao>
 
-        {/* Fluxos de pagamento */}
         {d.paymentPlans.length > 0 && (
-          <section className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Layers size={13} className="text-brand" />
-              <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t2">
-                Fluxos de pagamento
-              </h3>
-            </div>
-            <div className="flex flex-col gap-2">
-              {d.paymentPlans.map((p, i) => (
-                <div key={i} className="p-3 rounded-xl border border-line bg-surface">
-                  <p className="text-sm font-semibold text-t1">{p.name}</p>
-                  {/*
-                    `!= null` cobre null E undefined de propósito: o JSON vindo
-                    do banco traz `months: null`, e um teste só por `undefined`
-                    deixava passar um "+ nullx" na tela.
-                  */}
-                  {/* Resolve o percentual sobre o menor valor do produto: o
-                      fluxo é guardado em % (vale para qualquer unidade) e aqui
-                      vira dinheiro, que é como se fala com o cliente. */}
-                  {(() => {
-                    const r = resolvePaymentPlan(p, d.valueMin)
-                    return (
-                      <p className="text-xs text-t3 mt-1 tabular-nums">
-                        {[
-                          r.downPayment != null
-                            ? `${(r.downPayments ?? 1) > 1 ? `${r.downPayments}× ` : ''}${formatCurrencyRound(r.downPayment)} de entrada`
-                            : null,
-                          r.installment != null && r.months != null
-                            ? `${r.months}× ${formatCurrencyRound(r.installment)}` : null,
-                          r.reinforcement != null
-                            ? `${r.reinforcements ?? 1}× ${formatCurrencyRound(r.reinforcement)}`
-                              + (r.reinforcementPeriod ? ` ${r.reinforcementPeriod}` : '') : null,
-                          r.financing != null ? `${formatCurrencyRound(r.financing)} financiado` : null,
-                        ].filter(Boolean).join(' + ') || 'Sem valores definidos'}
-                      </p>
-                    )
-                  })()}
-                  {p.notes && <p className="text-xs text-t4 mt-1">{p.notes}</p>}
-                </div>
-              ))}
-            </div>
-          </section>
+          <FichaSecao titulo="Fluxos de pagamento">
+            <ul className="flex flex-col">
+              {d.paymentPlans.map((p, i) => {
+                // Resolve o percentual sobre o menor valor do produto: o fluxo é
+                // guardado em % e aqui vira dinheiro, que é como se fala com o
+                // cliente. `!= null` cobre o null que vem do banco.
+                const r = resolvePaymentPlan(p, d.valueMin)
+                return (
+                  <li key={i} className="py-2.5 border-b border-line last:border-0">
+                    <p className="text-[14.5px] font-semibold text-t1">{p.name}</p>
+                    <p className="text-[13px] text-t3 mt-0.5 tabular-nums">
+                      {[
+                        r.downPayment != null
+                          ? `${(r.downPayments ?? 1) > 1 ? `${r.downPayments}× ` : ''}${formatCurrencyRound(r.downPayment)} de entrada`
+                          : null,
+                        r.installment != null && r.months != null ? `${r.months}× ${formatCurrencyRound(r.installment)}` : null,
+                        r.reinforcement != null
+                          ? `${r.reinforcements ?? 1}× ${formatCurrencyRound(r.reinforcement)}` + (r.reinforcementPeriod ? ` ${r.reinforcementPeriod}` : '')
+                          : null,
+                        r.financing != null ? `${formatCurrencyRound(r.financing)} financiado` : null,
+                      ].filter(Boolean).join(' + ') || 'Sem valores definidos'}
+                    </p>
+                    {p.notes && <p className="text-[12.5px] text-t4 mt-0.5">{p.notes}</p>}
+                  </li>
+                )
+              })}
+            </ul>
+          </FichaSecao>
         )}
 
-        {/* Vigência e origem */}
-        <section className="grid sm:grid-cols-2 gap-4">
-          <div className="flex items-start gap-2">
-            <CalendarClock size={13} className="text-t4 mt-0.5 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Vigência</p>
-              <p className="text-sm text-t1 mt-0.5">
-                Desde {formatDate(d.validFrom)}
-                {d.validUntil ? ` até ${formatDate(d.validUntil)}` : ''}
-              </p>
-              <p className="text-xs text-t4 mt-0.5">
-                O lead é qualificado pela condição da data em que entrou
-              </p>
-            </div>
-          </div>
-
-          {d.metaFormIds.length > 0 && (
-            <div className="flex items-start gap-2">
-              <Megaphone size={13} className="text-t4 mt-0.5 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Formulários do Meta</p>
-                <p className="text-sm text-t1 mt-0.5">
-                  {d.metaFormIds.length} {d.metaFormIds.length === 1 ? 'formulário traz' : 'formulários trazem'} lead para cá
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Tipologias com o fluxo em reais */}
         <DevelopmentUnits development={d} />
 
-        {/* Matching reverso — quem da base cabe aqui */}
         {d.confirmed && <DevelopmentMatches development={d} />}
 
-        {/* Observações */}
-        {d.notes && (
-          <section className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Building2 size={13} className="text-brand" />
-              <h3 className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t2">
-                Observações
-              </h3>
-            </div>
-            <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap">{d.notes}</p>
-          </section>
-        )}
-
-        {/* Histórico da régua */}
-        {(d.conditionHistory?.length ?? 0) > 0 && (
-          <p className="text-xs text-t4 inline-flex items-center gap-1.5">
-            <MapPin size={11} />
-            {d.conditionHistory!.length} versão(ões) anterior(es) da régua guardada(s) para auditoria
+        <FichaSecao titulo="Vigência">
+          <p className="text-[14px] text-t2">
+            Desde {formatDate(d.validFrom)}{d.validUntil ? ` até ${formatDate(d.validUntil)}` : ', sem prazo'}
           </p>
+          <p className="text-[12.5px] text-t4 mt-0.5">
+            O lead é qualificado pela condição da data em que entrou
+            {d.metaFormIds.length > 0 && <> · {d.metaFormIds.length} formulário{d.metaFormIds.length !== 1 ? 's' : ''} do Meta trazem lead para cá</>}
+            {(d.conditionHistory?.length ?? 0) > 0 && <> · {d.conditionHistory!.length} versão(ões) anterior(es) guardada(s)</>}
+          </p>
+        </FichaSecao>
+
+        {d.notes && (
+          <FichaSecao titulo="Observações">
+            <p className="text-[14px] text-t2 leading-relaxed whitespace-pre-wrap">{d.notes}</p>
+          </FichaSecao>
         )}
       </div>
-    </SidePanel>
+    </FichaPainel>
   )
 }
