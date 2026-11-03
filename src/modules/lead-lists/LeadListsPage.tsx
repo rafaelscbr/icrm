@@ -146,7 +146,7 @@ export function LeadListsPage() {
 
   return (
     <PageLayout
-      title="Base de Leads"
+      title="Base de *Leads*"
       subtitle={erro
         ? 'não foi possível ler as listas'
         : 'Gerencie suas listas de leads frios e conecte-as a campanhas'}

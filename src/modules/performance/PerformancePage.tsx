@@ -21,7 +21,7 @@ export function PerformancePage() {
     <PageLayout
       icon={BarChart3}
       iconTom="info"
-      title="Análise Comercial"
+      title="Análise *Comercial*"
       subtitle="Performance de corretores, campanhas e vendas"
     >
       {/* Tab bar */}

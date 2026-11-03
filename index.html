@@ -9,7 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
     <!-- PWA — Android / Chrome -->
-    <meta name="theme-color" content="#05070F" />
+    <meta name="theme-color" content="#0F2759" />
 
     <!-- Fontes Souza Imobiliária -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -41,15 +41,14 @@
       (function () {
         try {
           var raw = localStorage.getItem('icrm-theme')
-          // Padrão da casa é o Marinho escuro, que já é o valor de :root —
-          // sem nada gravado, não precisa fazer nada.
-          if (!raw) return
+          // v3 (02/11/2026): o padrão da casa passou a ser o CLARO — a
+          // identidade Souza nasce dele. Sem nada gravado, ou gravado antes da
+          // v3, entra claro. Espelha a migração do useThemeStore.
+          if (!raw) { document.documentElement.classList.add('light'); return }
           var saved = JSON.parse(raw)
-          // Espelha a migração do useThemeStore (v2 = volta ao escuro). Sem
-          // isto a tela pisca no tema errado antes do React montar.
-          var theme = (saved.version || 0) < 2 ? 'dark' : (saved.state || {}).theme
+          var theme = (saved.version || 0) < 3 ? 'light' : (saved.state || {}).theme
           if (theme !== 'dark') document.documentElement.classList.add('light')
-        } catch (e) { /* mantém o escuro de :root */ }
+        } catch (e) { document.documentElement.classList.add('light') }
       })()
     </script>
   </head>

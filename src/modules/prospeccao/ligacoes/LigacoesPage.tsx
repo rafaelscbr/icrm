@@ -73,7 +73,7 @@ export function LigacoesPage() {
 
   return (
     <PageLayout
-      title="Ligações WhatsApp"
+      title="Ligações *WhatsApp*"
       subtitle="Prospecção ativa por telefone — fila compartilhada e cadência automática"
       ctaLabel="Nova campanha"
       onCta={() => setCriarOpen(true)}

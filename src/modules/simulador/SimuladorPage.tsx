@@ -41,7 +41,7 @@ export function SimuladorPage() {
     <PageLayout
       icon={Calculator}
       iconTom="marca"
-      title="Simulador de fluxo de pagamento"
+      title="Simulador de *fluxo*"
       subtitle="Preencha os campos: a proposta sai em imagem e em texto pronto para o WhatsApp"
       band={
         <Abas

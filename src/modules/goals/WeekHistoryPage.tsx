@@ -249,7 +249,7 @@ export function WeekHistoryPage() {
     <PageLayout
       icon={History}
       iconTom="info"
-      title="Histórico Semanal"
+      title="Histórico *Semanal*"
       subtitle={erro
         ? 'não foi possível ler o histórico'
         : `${total} semana${total !== 1 ? 's' : ''} registrada${total !== 1 ? 's' : ''}${visaoGlobal ? ' · equipe inteira' : ''}`}

@@ -25,6 +25,8 @@ interface TaskFormProps {
   defaultContactId?: string
   /** Vincula a tarefa ao lead de origem (tasks.lead_id, migração 058). */
   defaultLeadId?: string
+  /** Abre já vinculada a um imóvel (ficha do imóvel). */
+  defaultPropertyId?: string
 }
 
 const CATEGORY_OPTIONS: { value: TaskCategory; label: string; icon: typeof FileText }[] = [
@@ -59,7 +61,7 @@ function fmtDate(iso: string) {
 
 const STEP_LABELS = ['O que?', 'Quando?', 'Detalhes']
 
-export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadId }: TaskFormProps) {
+export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadId, defaultPropertyId }: TaskFormProps) {
   const { add, update }                              = useTasksStore()
   const { getById: getContact, mergeLocal }          = useContactsStore()
   const { properties }                               = usePropertiesStore()
@@ -80,7 +82,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
   const [priority,    setPriority]    = useState<TaskPriority>(task?.priority ?? 'medium')
   const [category,    setCategory]    = useState<TaskCategory | ''>(task?.category ?? '')
   const [contactId,   setContactId]   = useState(task?.contactId ?? defaultContactId ?? '')
-  const [propertyId,  setPropertyId]  = useState(task?.propertyId ?? '')
+  const [propertyId,  setPropertyId]  = useState(task?.propertyId ?? defaultPropertyId ?? '')
   const [assignedToId,   setAssignedToId]   = useState(task?.assignedToId ?? '')
   const [participantIds, setParticipantIds] = useState<string[]>(task?.participants ?? [])
   const [markDone,    setMarkDone]    = useState(task?.status === 'done')
@@ -94,7 +96,7 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
   )
   const [showPropertyDrop, setShowPropertyDrop] = useState(false)
   const [propertySearch,   setPropertySearch]   = useState(
-    task?.propertyId ? (properties.find(p => p.id === task.propertyId)?.name ?? '') : ''
+    (task?.propertyId ?? defaultPropertyId) ? (properties.find(p => p.id === (task?.propertyId ?? defaultPropertyId))?.name ?? '') : ''
   )
   const [showCustomDate,   setShowCustomDate]   = useState(false)
   const [showDesc,         setShowDesc]         = useState(Boolean(task?.description))
@@ -136,9 +138,9 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
     setCategory(task?.category ?? '')
     const resolvedContactId = task?.contactId ?? defaultContactId ?? ''
     setContactId(resolvedContactId)
-    setPropertyId(task?.propertyId ?? '')
+    setPropertyId(task?.propertyId ?? defaultPropertyId ?? '')
     setContactSearch(resolvedContactId ? (getContact(resolvedContactId)?.name ?? '') : '')
-    setPropertySearch(task?.propertyId ? (properties.find(p => p.id === task.propertyId)?.name ?? '') : '')
+    setPropertySearch((task?.propertyId ?? defaultPropertyId) ? (properties.find(p => p.id === (task?.propertyId ?? defaultPropertyId))?.name ?? '') : '')
     setAssignedToId(task?.assignedToId ?? '')
     setParticipantIds(task?.participants ?? [])
     setMarkDone(task?.status === 'done')

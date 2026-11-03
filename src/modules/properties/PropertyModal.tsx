@@ -1,17 +1,18 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
-  MapPin, Bed, Bath, Square, DollarSign, BadgePercent,
-  CheckCircle2, Circle, AlertTriangle, Clock, Building2, ImageOff, User, MessageCircle,
+  CheckCircle2, Circle, AlertTriangle, Building2, MessageCircle, ClipboardList,
 } from 'lucide-react'
-import { Modal } from '../../components/ui/Modal'
-import { StatusBadge } from '../../components/shared/StatusBadge'
+import { FichaPainel, FichaBarraTopo, FichaNome, FichaAgora, FichaNumeros, FichaSecao } from '../../components/shared/Ficha'
+import type { TomFicha } from '../../components/shared/Ficha'
+import { Destaque } from '../../components/shared/Destaque'
+import { TaskForm } from '../tasks/TaskForm'
 import { Property } from '../../types'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
-import { formatCurrencyFull, formatDate, formatPhone, whatsappUrl } from '../../lib/formatters'
+import { formatCurrency, formatCurrencyFull, formatDate, formatPhone, whatsappUrl } from '../../lib/formatters'
 import { calcSaleCommissions } from '../../types'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -36,9 +37,15 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const STATUS_CONFIG = {
-  pending:   { icon: Circle,        color: 'text-brand', label: 'Pendente'  },
-  done:      { icon: CheckCircle2,  color: 'text-green-400',  label: 'Concluída' },
-  cancelled: { icon: AlertTriangle, color: 'text-t3',  label: 'Cancelada' },
+  pending:   { icon: Circle,        color: 'text-t3',      label: 'Pendente'  },
+  done:      { icon: CheckCircle2,  color: 'text-success', label: 'Concluída' },
+  cancelled: { icon: AlertTriangle, color: 'text-t4',      label: 'Cancelada' },
+}
+
+const PRECO: Record<string, { label: string; cor: string }> = {
+  opportunity:  { label: 'Oportunidade',     cor: 'text-success' },
+  market_price: { label: 'Preço de mercado', cor: 'text-t3' },
+  above_market: { label: 'Acima do mercado', cor: 'text-error' },
 }
 
 function calcCommission(value: number) { return value * 0.05 * 0.10 }
@@ -55,6 +62,7 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
   const { sales }    = useSalesStore()
   const { isAdmin }  = useAuthStore()
   const loadImages   = usePropertiesStore(s => s.loadImages)
+  const [novaTarefa, setNovaTarefa] = useState(false)
   // A listagem baixa só a thumbnail — as fotos completas vêm sob demanda ao
   // abrir o detalhe. Lê do store (não do prop) para re-renderizar quando chegam.
   const fullImages   = usePropertiesStore(
@@ -91,223 +99,160 @@ export function PropertyModal({ property, isOpen, onClose }: PropertyModalProps)
 
   const owner = property?.ownerId ? contacts.find(c => c.id === property.ownerId) : undefined
 
-  if (!property) return null
+  if (!property || !isOpen) return null
 
-  const commission = calcCommission(property.value)
+  const commission   = calcCommission(property.value)
   const pendingTasks = linkedTasks.filter(t => t.status === 'pending')
-  const doneTasks    = linkedTasks.filter(t => t.status === 'done')
+  const foto         = fullImages?.[0] ?? property.thumbnail
+  const preco        = PRECO[property.status]
+
+  // ── O que fazer agora ─────────────────────────────────────────────────────
+  const proxima = pendingTasks[0]
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+  const diasAte = proxima?.dueDate
+    ? Math.round((new Date(proxima.dueDate + 'T00:00:00').getTime() - hoje.getTime()) / 86_400_000)
+    : null
+  const agora: { tom: TomFicha; rotulo: string; texto: string; prazo?: string } =
+    linkedSales.length > 0
+      ? { tom: 'sucesso', rotulo: 'Imóvel vendido',
+          texto: `Vendido em ${formatDate(linkedSales[0].date)}. Peça indicação ao comprador.` }
+      : proxima
+        ? { tom: diasAte !== null && diasAte < 0 ? 'risco' : diasAte === 0 ? 'atencao' : 'neutro',
+            rotulo: 'Próxima tarefa', texto: proxima.title,
+            prazo: diasAte === null ? undefined : diasAte < 0 ? `Atrasada ${-diasAte}d` : diasAte === 0 ? 'Hoje' : formatDate(proxima.dueDate!) }
+        : property.status === 'opportunity'
+          ? { tom: 'info', rotulo: 'Sem próximo passo', texto: 'Preço de oportunidade — apresente aos leads com esse perfil.' }
+          : property.status === 'above_market'
+            ? { tom: 'atencao', rotulo: 'Sem próximo passo', texto: 'Acima do mercado — alinhe o valor com o proprietário.' }
+            : { tom: 'atencao', rotulo: 'Sem próximo passo', texto: 'Agende uma visita ou divulgação para o imóvel girar.' }
+
+  const specs = [
+    property.bedrooms ? `${property.bedrooms} dorm${property.bedrooms > 1 ? 's' : ''}` : null,
+    property.suites ? `${property.suites} suíte${property.suites > 1 ? 's' : ''}` : null,
+    property.areaSqm ? `${property.areaSqm} m²` : null,
+  ].filter(Boolean).join(' · ')
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do imóvel" size="lg">
-      <div className="flex flex-col gap-6">
-
-        {/* Imagem + header — thumbnail na hora, foto completa quando carregar */}
-        {(fullImages?.[0] ?? property.thumbnail) ? (
-          <div className="w-full h-40 rounded-xl overflow-hidden -mt-1">
-            <img
-              src={fullImages?.[0] ?? property.thumbnail}
-              alt={property.name}
-              className="w-full h-full object-cover"
+    <>
+      <FichaPainel
+        rotulo={`Imóvel ${property.name}`}
+        onClose={onClose}
+        pausarEsc={novaTarefa}
+        topo={
+          <>
+            <FichaBarraTopo
+              onClose={onClose}
+              contexto={<><Building2 size={13} strokeWidth={1.8} aria-hidden />
+                <span className="truncate">{TYPE_LABELS[property.type] ?? property.type} · {property.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}</span></>}
             />
-          </div>
-        ) : (
-          <div className="w-full h-28 rounded-xl bg-s2/50 border border-line flex items-center justify-center -mt-1">
-            <ImageOff size={24} className="text-t4" />
-          </div>
-        )}
-
-        <div className="flex items-start gap-3 -mt-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-bold text-slate-100">{property.name}</h2>
-              {property.unit && (
-                <span className="text-xs text-brand bg-indigo-500/10 px-2 py-0.5 rounded-md font-medium">
-                  {property.unit}
-                </span>
-              )}
+            <FichaNome>{property.name}</FichaNome>
+            <div className="flex items-center gap-x-3 gap-y-1 mt-2 flex-wrap text-[14px]">
+              <span className="text-t2">{property.neighborhood}{property.city ? `, ${property.city}` : ''}</span>
+              {property.unit && <span className="text-t4">{property.unit}</span>}
+              {preco && <span className={`font-semibold ${preco.cor}`}>{preco.label}</span>}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-t3 mt-1">
-              <MapPin size={11} />
-              <span>{TYPE_LABELS[property.type] ?? property.type} · {property.neighborhood}{property.city ? ` · ${property.city}` : ''}</span>
-            </div>
-            {property.address && (
-              <p className="text-xs text-t3 mt-0.5">{property.address}{property.complement ? `, ${property.complement}` : ''}</p>
-            )}
-          </div>
-          <StatusBadge status={property.status} />
-        </div>
-
-        {/* Specs + financeiro */}
-        <div className="grid grid-cols-2 gap-3">
-          {(property.bedrooms || property.suites || property.areaSqm) && (
-            <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
-              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Características</p>
-              <div className="flex flex-col gap-1">
-                {property.bedrooms && (
-                  <div className="flex items-center gap-1.5 text-xs text-t2">
-                    <Bed size={11} className="text-t3" />
-                    {property.bedrooms} dormitório{property.bedrooms > 1 ? 's' : ''}
-                  </div>
-                )}
-                {property.suites && (
-                  <div className="flex items-center gap-1.5 text-xs text-t2">
-                    <Bath size={11} className="text-t3" />
-                    {property.suites} suíte{property.suites > 1 ? 's' : ''}
-                  </div>
-                )}
-                {property.areaSqm && (
-                  <div className="flex items-center gap-1.5 text-xs text-t2">
-                    <Square size={11} className="text-t3" />
-                    {property.areaSqm} m²
-                  </div>
-                )}
-              </div>
+            <div className="h-5" />
+          </>
+        }
+      >
+        <div className="flex flex-col gap-6">
+          {foto && (
+            <div className="rounded-[16px] overflow-hidden bg-s2 aspect-[16/9]">
+              <img src={foto} alt={property.name} className="w-full h-full object-cover" />
             </div>
           )}
 
-          <div className="flex flex-col gap-2 px-3 py-3 bg-s2/50 rounded-xl border border-line">
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Financeiro</p>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-xs">
-                <DollarSign size={11} className="text-emerald-400" />
-                <span className="font-bold text-emerald-400">{formatCurrencyFull(property.value)}</span>
-              </div>
-              {property.condoFee && (
-                <p className="text-xs text-t3">Cond: {formatCurrencyFull(property.condoFee)}/mês</p>
-              )}
-              <div className="flex items-center gap-1.5 text-xs text-brand-text">
-                <BadgePercent size={11} />
-                <span>Comissão: {formatCurrencyFull(commission)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Proprietário — visível apenas para admin */}
-        {isAdmin && owner && (
-          <div className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-            <User size={13} className="text-brand flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-t3">Proprietário</p>
-              <p className="text-xs font-medium text-t1">{owner.name}</p>
-              {owner.phone && (
-                <p className="text-[11px] text-t3 mt-0.5">{formatPhone(owner.phone)}</p>
-              )}
-            </div>
-            {owner.phone && (
-              <button
-                type="button"
-                onClick={() => window.open(whatsappUrl(owner.phone), '_blank')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-green-500/15 border border-green-500/30 text-green-300 hover:bg-green-500/25 transition-colors cursor-pointer flex-shrink-0"
-              >
-                <MessageCircle size={13} strokeWidth={1.6} /> WhatsApp
+          <FichaAgora tom={agora.tom} rotulo={agora.rotulo} prazo={agora.prazo} texto={agora.texto}>
+            <div className={`grid gap-2 ${isAdmin && owner?.phone ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <button onClick={() => setNovaTarefa(true)} className="ficha-acao">
+                <ClipboardList size={16} strokeWidth={1.9} aria-hidden /> Nova tarefa
               </button>
-            )}
-          </div>
-        )}
-
-        {/* Notas */}
-        {property.notes && (
-          <div className="px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-            <p className="text-[11px] text-t3 mb-1">Observações</p>
-            <p className="text-xs text-t2 leading-relaxed">{property.notes}</p>
-          </div>
-        )}
-
-        {/* Vendas vinculadas */}
-        {linkedSales.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Building2 size={13} className="text-green-400" />
-              <h3 className="text-sm font-semibold text-t2">Vendas realizadas</h3>
-              <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/15">
-                {linkedSales.length}
-              </span>
-            </div>
-            <div className="flex flex-col gap-2">
-              {linkedSales.map(sale => {
-                const client = contacts.find(c => c.id === sale.clientId)
-                const { brokerCommission } = calcSaleCommissions(sale)
-                return (
-                  <div key={sale.id} className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-t1">{client?.name ?? '—'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-green-400">{formatCurrencyFull(sale.value)}</p>
-                      {brokerCommission > 0 && (
-                        <p className="text-[11px] text-brand-text">{formatCurrencyFull(brokerCommission)}</p>
-                      )}
-                      <p className="text-[11px] text-t4">{formatDate(sale.date)}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Histórico de tarefas */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Clock size={13} className="text-brand" />
-              <h3 className="text-sm font-semibold text-t2">Tarefas vinculadas</h3>
-            </div>
-            <div className="flex gap-2 text-[11px]">
-              {pendingTasks.length > 0 && (
-                <span className="bg-brand-tint text-brand px-2 py-0.5 rounded-full font-medium border border-brand/25">
-                  {pendingTasks.length} pendente{pendingTasks.length > 1 ? 's' : ''}
-                </span>
-              )}
-              {doneTasks.length > 0 && (
-                <span className="bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full font-medium border border-green-500/15">
-                  {doneTasks.length} concluída{doneTasks.length > 1 ? 's' : ''}
-                </span>
+              {isAdmin && owner?.phone && (
+                <button onClick={() => window.open(whatsappUrl(owner.phone), '_blank')} className="ficha-acao ficha-acao-zap">
+                  <MessageCircle size={17} strokeWidth={2} aria-hidden /> Proprietário
+                </button>
               )}
             </div>
-          </div>
+          </FichaAgora>
 
-          {linkedTasks.length === 0 ? (
-            <p className="text-xs text-t4 text-center py-4">Nenhuma tarefa vinculada ainda</p>
-          ) : (
-            <div className="flex flex-col gap-1.5 max-h-56 overflow-y-auto pr-1">
-              {linkedTasks.map(task => {
-                const cfg = STATUS_CONFIG[task.status]
-                const Icon = cfg.icon
-                return (
-                  <div
-                    key={task.id}
-                    className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border transition-all
-                      ${task.status === 'done' ? 'bg-s2/30 border-line opacity-60' : 'bg-s2/50 border-line'}
-                    `}
-                  >
-                    <Icon size={13} className={`${cfg.color} flex-shrink-0 mt-0.5`} />
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium truncate ${task.status === 'done' ? 'line-through text-t3' : 'text-t1'}`}>
-                        {task.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {task.category && (
-                          <span className="text-[11px] text-t4">
-                            {CATEGORY_LABELS[task.category] ?? task.category}
-                          </span>
-                        )}
-                        {task.dueDate && (
-                          <span className="text-[11px] text-t4 flex items-center gap-0.5">
-                            <Clock size={8} /> {formatDate(task.dueDate)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+          <FichaNumeros itens={[
+            { rotulo: property.kind === 'off_plan' ? 'Ticket médio' : 'Valor', valor: formatCurrency(property.value) },
+            { rotulo: 'Comissão', valor: formatCurrency(commission), tom: 'sucesso' },
+            property.condoFee
+              ? { rotulo: 'Condomínio', valor: formatCurrency(property.condoFee) }
+              : { rotulo: 'Área', valor: property.areaSqm ? `${property.areaSqm} m²` : '—' },
+          ]} />
+
+          {(specs || property.address) && (
+            <div className="text-[14px] text-t2 leading-relaxed">
+              {specs && <p>{specs}</p>}
+              {property.address && <p className="text-t4">{property.address}{property.complement ? `, ${property.complement}` : ''}</p>}
             </div>
           )}
-        </div>
 
-      </div>
-    </Modal>
+          {isAdmin && owner && (
+            <FichaSecao titulo="Proprietário">
+              <p className="text-[14.5px] font-semibold text-t1">{owner.name}</p>
+              {owner.phone && <p className="text-[13.5px] text-t4 tabular-nums">{formatPhone(owner.phone)}</p>}
+            </FichaSecao>
+          )}
+
+          {property.notes && (
+            <FichaSecao titulo="Observações">
+              <p className="text-[14px] text-t2 leading-relaxed whitespace-pre-wrap">{property.notes}</p>
+            </FichaSecao>
+          )}
+
+          {linkedSales.length > 0 && (
+            <FichaSecao titulo={<>Vendas <Destaque>fechadas</Destaque></>}>
+              <ul className="flex flex-col">
+                {linkedSales.map(sale => {
+                  const client = contacts.find(c => c.id === sale.clientId)
+                  const { brokerCommission } = calcSaleCommissions(sale)
+                  return (
+                    <li key={sale.id} className="flex items-center gap-3 py-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] text-t1 truncate">{client?.name ?? '—'}</p>
+                        <p className="text-[12.5px] text-t4">{formatDate(sale.date)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[14px] font-semibold text-t1 tabular-nums">{formatCurrencyFull(sale.value)}</p>
+                        {brokerCommission > 0 && <p className="text-[12.5px] text-success tabular-nums">{formatCurrencyFull(brokerCommission)}</p>}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </FichaSecao>
+          )}
+
+          <FichaSecao titulo={<>Tarefas <span className="text-t4 font-normal">{linkedTasks.length || ''}</span></>}>
+            {linkedTasks.length === 0 ? (
+              <p className="text-[13.5px] text-t4">Nenhuma tarefa ligada a este imóvel.</p>
+            ) : (
+              <ul className="flex flex-col">
+                {linkedTasks.map(task => {
+                  const cfg = STATUS_CONFIG[task.status]
+                  const Icon = cfg.icon
+                  return (
+                    <li key={task.id} className={`flex items-start gap-3 py-2 ${task.status === 'done' ? 'opacity-60' : ''}`}>
+                      <Icon size={16} strokeWidth={1.8} className={`${cfg.color} flex-shrink-0 mt-0.5`} aria-label={cfg.label} />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[14px] truncate ${task.status === 'done' ? 'line-through text-t3' : 'text-t1'}`}>{task.title}</p>
+                        <p className="text-[12.5px] text-t4">
+                          {[task.category ? (CATEGORY_LABELS[task.category] ?? task.category) : null, task.dueDate ? formatDate(task.dueDate) : null].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </FichaSecao>
+        </div>
+      </FichaPainel>
+
+      {novaTarefa && <TaskForm isOpen onClose={() => setNovaTarefa(false)} defaultPropertyId={property.id} />}
+    </>
   )
 }

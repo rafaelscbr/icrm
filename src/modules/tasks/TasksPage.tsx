@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
+import { Destaque } from '../../components/shared/Destaque'
 import { useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -798,7 +799,7 @@ export function TasksPage() {
       {!isEmpty && (
         <aside className="hidden xl:flex flex-col gap-4 sticky top-[72px]" aria-label="Resumo do seu dia">
           <div className="bento p-4">
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-3 px-1">Seu dia</p>
+            <p className="text-[17px] font-semibold text-t1 mb-3 px-1">Seu <Destaque>dia</Destaque></p>
             <div className="grid grid-cols-2 gap-2" role="group" aria-label="Filtrar tarefas">
               {([
                 { key: null,       label: 'Pendentes', value: pendingCount,  tone: 'text-t1',      icon: ListTodo },
@@ -832,7 +833,7 @@ export function TasksPage() {
 
           {proximaDoDia && (
             <div className="bento p-4">
-              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-2.5">Próxima</p>
+              <p className="text-[13px] font-semibold text-t3 mb-2">Próxima</p>
               <p className="text-[15px] font-semibold text-t1 leading-snug">{proximaDoDia.title}</p>
               <p className="text-[12.5px] text-t3 mt-1 flex items-center gap-1.5 flex-wrap">
                 {proximaDoDia.dueDate && <><Clock size={12} aria-hidden /> {formatDateLabel(proximaDoDia.dueDate, proximaDoDia.dueTime).label}</>}

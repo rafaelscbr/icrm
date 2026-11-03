@@ -12,7 +12,8 @@ interface ThemeStore {
 /**
  * Tema persistido em localStorage.
  *
- * O padrão da casa é o Marinho escuro.
+ * O padrão da casa é o CLARO (v3, 02/11/2026) — a identidade visual Souza
+ * passou a nascer do tema claro; o escuro continua completo no botão.
  *
  * O `version` existe porque trocar o valor inicial NÃO basta: estado persistido
  * sempre vence o default. Quando o Souza OS mudou o padrão, quem já usava o
@@ -21,7 +22,8 @@ interface ThemeStore {
  *
  * Histórico das migrações:
  *   v1 — levou todo mundo para o tema claro
- *   v2 — traz de volta para o escuro, que é o padrão definido pelo Rafael
+ *   v2 — traz de volta para o escuro, que era o padrão definido pelo Rafael
+ *   v3 — leva todo mundo para o claro: a identidade passa a girar em torno dele
  *
  * Cada migração roda UMA vez por navegador. Depois dela o botão de tema volta
  * a mandar: quem preferir claro troca, e a escolha é respeitada para sempre.
@@ -35,7 +37,7 @@ interface ThemeStore {
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
-      theme: 'dark',
+      theme: 'light',
       toggle: () => {
         const next = get().theme === 'dark' ? 'light' : 'dark'
         set({ theme: next })
@@ -48,14 +50,15 @@ export const useThemeStore = create<ThemeStore>()(
     }),
     {
       name: 'icrm-theme',
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         const state = persisted as Partial<ThemeStore> | undefined
         // v1: Souza OS levou todo mundo para o claro.
         // v2: Rafael definiu o Marinho escuro como padrão da casa — a migração
         //     traz de volta quem a v1 tinha movido. Depois disso o botão de
         //     tema manda e a escolha de cada um é respeitada.
-        if (version < 2) return { ...state, theme: 'dark' as Theme }
+        // v3: o Rafael definiu o claro como padrão e base da identidade.
+        if (version < 3) return { ...state, theme: 'light' as Theme }
         return state as ThemeStore
       },
     }

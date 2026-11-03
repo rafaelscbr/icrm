@@ -1,13 +1,13 @@
 import { useMemo, useState, useEffect } from 'react'
 import {
-  Phone, Building2, Cake, Heart, Baby, Tag, CheckCircle2,
-  Clock, Circle, AlertTriangle, TrendingUp, MessageCircle,
-  UserPlus, ArrowLeftRight, Pencil, Plus, X, Home, Bed, Square, Megaphone, Car,
+  Building2, CheckCircle2, Circle, AlertTriangle, MessageCircle, PhoneCall, ClipboardList,
+  Plus, X, Home, Car, ChevronRight, UserRound,
 } from 'lucide-react'
-import { Modal } from '../../components/ui/Modal'
-import { Badge } from '../../components/ui/Badge'
-import { Avatar } from '../../components/ui/Avatar'
-import { StatusBadge } from '../../components/shared/StatusBadge'
+import { FichaPainel, FichaBarraTopo, FichaNome, FichaAgora, FichaNumeros, FichaSecao } from '../../components/shared/Ficha'
+import type { TomFicha } from '../../components/shared/Ficha'
+import { Abas } from '../../components/shared/Abas'
+import { Destaque } from '../../components/shared/Destaque'
+import { TaskForm } from '../tasks/TaskForm'
 import { Contact, ContactTag, PermutaItem } from '../../types'
 import { STAGE_THEME } from '../../lib/stageTheme'
 import { useTasksStore } from '../../store/useTasksStore'
@@ -15,7 +15,7 @@ import { useSalesStore } from '../../store/useSalesStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
-import { formatPhone, formatDate, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
+import { formatPhone, formatDate, formatCurrency, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { calcSaleCommissions } from '../../types'
 import { LeadModal } from '../leads/LeadModal'
 import { PropertyModal } from '../properties/PropertyModal'
@@ -28,11 +28,6 @@ const TAG_LABELS: Record<ContactTag, string> = {
   owner:    'Proprietário',
   investor: 'Investidor',
   buyer:    'Já comprou',
-}
-const TAG_VARIANTS: Record<ContactTag, 'indigo' | 'purple' | 'green'> = {
-  owner:    'indigo',
-  investor: 'purple',
-  buyer:    'green',
 }
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
@@ -57,9 +52,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const STATUS_CONFIG = {
-  pending:   { icon: Circle,       color: 'text-brand',  label: 'Pendente'   },
-  done:      { icon: CheckCircle2, color: 'text-green-400',   label: 'Concluída'  },
-  cancelled: { icon: AlertTriangle,color: 'text-t3',   label: 'Cancelada'  },
+  pending:   { icon: Circle,        color: 'text-t3',      label: 'Pendente'  },
+  done:      { icon: CheckCircle2,  color: 'text-success', label: 'Concluída' },
+  cancelled: { icon: AlertTriangle, color: 'text-t4',      label: 'Cancelada' },
 }
 
 function daysAgo(dateStr?: string): string | null {
@@ -88,6 +83,8 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
   const [selectedLead, setSelectedLead] = useState<string | null>(null)
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
   const [score, setScore] = useState<LeadScoreResult | null>(null)
+  const [aba, setAba] = useState<'resumo' | 'negocios' | 'historico'>('resumo')
+  const [novaTarefa, setNovaTarefa] = useState(false)
 
   useEffect(() => {
     if (!contact || !isOpen) return
@@ -168,504 +165,330 @@ export function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
   const totalSalesValue = linkedSales.reduce((a, s) => a + s.value, 0)
   const totalCommission = linkedSales.reduce((a, s) => a + calcSaleCommissions(s).brokerCommission, 0)
 
-  if (!contact) return null
+  if (!contact || !isOpen) return null
 
   const pendingTasks   = linkedTasks.filter(t => t.status === 'pending')
-  const doneTasks      = linkedTasks.filter(t => t.status === 'done')
   const cancelledTasks = linkedTasks.filter(t => t.status === 'cancelled')
+  const visiveis       = linkedTasks.filter(t => t.status !== 'cancelled')
+
+  // ── O que fazer agora ─────────────────────────────────────────────────────
+  const proxima = pendingTasks[0]
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+  const diasAte = proxima?.dueDate
+    ? Math.round((new Date(proxima.dueDate + 'T00:00:00').getTime() - hoje.getTime()) / 86_400_000)
+    : null
+  const leadPrincipal = activeLeads[0]
+  const agora: { tom: TomFicha; rotulo: string; texto: string; prazo?: string } =
+    proxima
+      ? { tom: diasAte !== null && diasAte < 0 ? 'risco' : diasAte === 0 ? 'atencao' : 'neutro',
+          rotulo: 'Próxima tarefa', texto: proxima.title,
+          prazo: diasAte === null ? undefined : diasAte < 0 ? `Atrasada ${-diasAte}d` : diasAte === 0 ? 'Hoje' : formatDate(proxima.dueDate!) }
+      : leadPrincipal
+        ? { tom: 'info', rotulo: `Lead em ${LEAD_STAGE_CONFIG[leadPrincipal.funnelStage].label}`,
+            texto: 'Abra o lead para seguir o funil — a próxima ação está lá.' }
+        : linkedSales.length > 0
+          ? { tom: 'sucesso', rotulo: 'Cliente que já comprou', texto: 'Peça uma indicação ou apresente um produto novo.' }
+          : { tom: 'atencao', rotulo: 'Sem próximo passo', texto: 'Mande uma mensagem para retomar o contato.' }
+
+  const familia = [
+    contact.birthdate ? `Aniversário em ${formatDate(contact.birthdate)}` : null,
+    contact.isMarried ? (contact.spouseName ? `Casado(a) com ${contact.spouseName}` : 'Casado(a)') : null,
+    contact.hasChildren ? (contact.childrenNames ? `Filhos: ${contact.childrenNames}` : 'Tem filhos') : null,
+  ].filter(Boolean) as string[]
+
+  const campoPermuta = 'campo w-full px-3.5 py-2.5 min-h-[44px]'
 
   return (
     <>
-    <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do contato" size="lg">
-      <div className="flex flex-col gap-6">
-
-        {/* Header do contato */}
-        <div className="flex items-start gap-4 pb-4 border-b border-line">
-          <Avatar name={contact.name} photoUrl={contact.photoUrl} size="lg" />
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-slate-100">{contact.name}</h2>
-            {contact.company && (
-              <div className="flex items-center gap-1.5 text-sm text-t3 mt-0.5">
-                <Building2 size={12} />
-                <span>{contact.company}</span>
+      <FichaPainel
+        rotulo={`Contato ${contact.name}`}
+        onClose={onClose}
+        pausarEsc={novaTarefa || !!selectedLead || !!selectedPropertyId}
+        topo={
+          <>
+            <FichaBarraTopo
+              onClose={onClose}
+              contexto={<><UserRound size={13} strokeWidth={1.8} aria-hidden />
+                <span className="truncate">{contact.tags.length ? contact.tags.map(t => TAG_LABELS[t]).join(' · ') : 'Contato'}</span></>}
+              acoes={score ? <span className="mr-1"><ScoreBadge size="sm" {...score} /></span> : undefined}
+            />
+            <FichaNome>{contact.name}</FichaNome>
+            <div className="flex items-center gap-x-3 gap-y-1 mt-2 flex-wrap text-[14px]">
+              <a href={`tel:${contact.phone}`} className="text-t2 hover:text-t1 tabular-nums">{formatPhone(contact.phone)}</a>
+              {contact.company && <span className="text-t4">{contact.company}</span>}
+            </div>
+            <div className="mt-4 -mx-0 border-b border-line">
+              <Abas
+                rotulo="Seções do contato"
+                variante="sublinhado"
+                valor={aba}
+                onChange={setAba}
+                abas={[
+                  { value: 'resumo'    as const, label: 'Resumo' },
+                  { value: 'negocios'  as const, label: 'Negócios', badge: (activeLeads.length + ownedProperties.length + linkedSales.length) || undefined },
+                  { value: 'historico' as const, label: 'Histórico', badge: visiveis.length || undefined },
+                ]}
+              />
+            </div>
+          </>
+        }
+      >
+        {aba === 'resumo' && (
+          <div className="flex flex-col gap-6">
+            <FichaAgora tom={agora.tom} rotulo={agora.rotulo} prazo={agora.prazo} texto={agora.texto}>
+              <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2">
+                <a href={whatsappUrl(contact.phone)} target="_blank" rel="noopener noreferrer" className="ficha-acao ficha-acao-zap">
+                  <MessageCircle size={17} strokeWidth={2} aria-hidden /> WhatsApp
+                </a>
+                <a href={`tel:${contact.phone}`} className="ficha-acao">
+                  <PhoneCall size={16} strokeWidth={1.9} aria-hidden /> Ligar
+                </a>
+                <button onClick={() => setNovaTarefa(true)} className="ficha-acao">
+                  <ClipboardList size={16} strokeWidth={1.9} aria-hidden /> Tarefa
+                </button>
               </div>
+              {leadPrincipal && !proxima && (
+                <button onClick={() => setSelectedLead(leadPrincipal.id)}
+                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 h-10 rounded-[12px] text-[13.5px] font-semibold text-t1 hover:bg-surface">
+                  Abrir o lead <ChevronRight size={15} strokeWidth={2} aria-hidden />
+                </button>
+              )}
+            </FichaAgora>
+
+            {linkedSales.length > 0 ? (
+              <FichaNumeros itens={[
+                { rotulo: 'Compras', valor: linkedSales.length },
+                { rotulo: 'VGV', valor: formatCurrency(totalSalesValue) },
+                { rotulo: 'Sua comissão', valor: formatCurrency(totalCommission), tom: 'sucesso' },
+              ]} />
+            ) : (
+              <FichaNumeros itens={[
+                { rotulo: 'Leads ativos', valor: activeLeads.length },
+                { rotulo: 'Imóveis', valor: ownedProperties.length },
+                { rotulo: 'Tarefas abertas', valor: pendingTasks.length, tom: pendingTasks.length > 0 ? 'atencao' : undefined },
+              ]} />
             )}
-            <div className="flex items-center gap-1.5 text-sm text-t3 mt-0.5">
-              <Phone size={12} />
-              <span className="font-mono">{formatPhone(contact.phone)}</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {contact.tags.map(tag => (
-                <Badge key={tag} variant={TAG_VARIANTS[tag]}>{TAG_LABELS[tag]}</Badge>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            {score && <ScoreBadge size="md" {...score} />}
-            <a
-              href={whatsappUrl(contact.phone)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-400 text-xs font-medium border border-green-500/25 transition-all"
+
+            {familia.length > 0 && (
+              <FichaSecao titulo={<>Para lembrar na <Destaque>conversa</Destaque></>}>
+                <ul className="flex flex-col gap-1 text-[14px] text-t2">
+                  {familia.map(f => <li key={f}>{f}</li>)}
+                </ul>
+              </FichaSecao>
+            )}
+
+            {/* Permuta */}
+            <FichaSecao
+              titulo="Permuta"
+              acao={!editingPermuta && (
+                <button onClick={openPermutaEdit} className="text-[13px] font-medium text-t3 hover:text-t1">
+                  {(contact.permutaItems?.length ?? 0) > 0 ? 'Editar' : 'Adicionar'}
+                </button>
+              )}
             >
-              <MessageCircle size={13} /> WhatsApp
-            </a>
-          </div>
-        </div>
-
-        {/* Info pessoal */}
-        {(contact.birthdate || contact.isMarried || contact.hasChildren) && (
-          <div className="grid grid-cols-2 gap-3">
-            {contact.birthdate && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                <Cake size={13} className="text-yellow-400 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[11px] text-t3">Aniversário</p>
-                  <p className="text-xs text-t1 font-medium">{formatDate(contact.birthdate)}</p>
-                </div>
-              </div>
-            )}
-            {contact.isMarried && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                <Heart size={13} className="text-brand-text flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[11px] text-t3">Cônjuge</p>
-                  <p className="text-xs text-t1 font-medium truncate">{contact.spouseName ?? 'Sim'}</p>
-                </div>
-              </div>
-            )}
-            {contact.hasChildren && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                <Baby size={13} className="text-info flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[11px] text-t3">Filhos</p>
-                  <p className="text-xs text-t1 font-medium truncate">{contact.childrenNames ?? 'Sim'}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Imóveis cadastrados */}
-        {ownedProperties.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Home size={13} className="text-indigo-400" />
-              <h3 className="text-sm font-semibold text-t2">Imóveis cadastrados</h3>
-              <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/20 font-medium">
-                {ownedProperties.length} imóvel{ownedProperties.length > 1 ? 'is' : ''}
-              </span>
-            </div>
-            <div className="flex flex-col gap-2">
-              {ownedProperties.map(prop => (
-                <button
-                  key={prop.id}
-                  onClick={() => setSelectedPropertyId(prop.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 bg-s2/50 hover:bg-s3/50 border border-line hover:border-indigo-500/30 rounded-xl transition-all text-left group"
-                >
-                  {/* Thumbnail */}
-                  <div className="w-14 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-s3/60 border border-line">
-                    {prop.thumbnail ? (
-                      <img src={prop.thumbnail} alt={prop.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Building2 size={18} className="text-t4" />
+              {!editingPermuta && (contact.permutaItems?.length ?? 0) === 0 && (
+                <p className="text-[13.5px] text-t4">Sem bens para permuta.</p>
+              )}
+              {!editingPermuta && (contact.permutaItems?.length ?? 0) > 0 && (
+                <ul className="flex flex-col">
+                  {contact.permutaItems.map(item => (
+                    <li key={item.id} className="flex items-center gap-3 py-2">
+                      {item.type === 'imovel'
+                        ? <Home size={16} strokeWidth={1.8} className="text-t4 flex-shrink-0" aria-label="Imóvel" />
+                        : <Car size={16} strokeWidth={1.8} className="text-t4 flex-shrink-0" aria-label="Carro" />}
+                      <span className="flex-1 min-w-0 text-[14px] text-t2 truncate">
+                        {item.type === 'imovel' ? (item.region ?? 'Imóvel') : (item.carModel ?? 'Carro')}
+                      </span>
+                      {(item.type === 'imovel' ? item.value : item.carValue) && (
+                        <span className="text-[14px] font-semibold text-t1 tabular-nums">
+                          {formatCurrencyFull((item.type === 'imovel' ? item.value : item.carValue)!)}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {editingPermuta && (
+                <div className="flex flex-col gap-4">
+                  {permutaItems.map(item => (
+                    <div key={item.id} className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1.5 flex-1" role="radiogroup" aria-label="Tipo do bem">
+                          {(['imovel', 'carro'] as const).map(t => (
+                            <button key={t} type="button" role="radio" aria-checked={item.type === t}
+                              onClick={() => updatePermutaItem(item.id, { type: t, region: undefined, value: undefined, carModel: undefined, carValue: undefined })}
+                              className={`px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors ${item.type === t ? 'bg-brand-fill text-brand-fill-text' : 'bg-s2 text-t2 hover:bg-s3'}`}>
+                              {t === 'imovel' ? 'Imóvel' : 'Carro'}
+                            </button>
+                          ))}
+                        </div>
+                        {permutaItems.length > 1 && (
+                          <button onClick={() => removePermutaItem(item.id)} aria-label="Remover este bem"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-t4 hover:text-error hover:bg-error-bg">
+                            <X size={15} />
+                          </button>
+                        )}
                       </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-t1 truncate group-hover:text-white transition-colors">
-                      {prop.name}
-                    </p>
-                    <p className="text-[11px] text-t3 truncate mt-0.5">
-                      {PROPERTY_TYPE_LABELS[prop.type] ?? prop.type} · {prop.neighborhood}{prop.city ? ` · ${prop.city}` : ''}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {prop.bedrooms != null && (
-                        <span className="flex items-center gap-0.5 text-[11px] text-t3">
-                          <Bed size={9} /> {prop.bedrooms} dorm{prop.bedrooms !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                      {prop.areaSqm != null && (
-                        <span className="flex items-center gap-0.5 text-[11px] text-t3">
-                          <Square size={9} /> {prop.areaSqm}m²
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Valor + status */}
-                  <div className="text-right flex-shrink-0 space-y-1">
-                    <p className="text-xs font-bold text-slate-100 tabular-nums">{formatCurrencyFull(prop.value)}</p>
-                    <StatusBadge status={prop.status} />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Resumo financeiro (se tiver vendas) */}
-        {linkedSales.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            <div className="flex flex-col gap-1 px-3 py-2.5 bg-green-500/8 rounded-xl border border-green-500/20">
-              <p className="text-[11px] text-t3">Vendas</p>
-              <p className="text-lg font-bold text-green-400 tabular-nums">{linkedSales.length}</p>
-            </div>
-            <div className="flex flex-col gap-1 px-3 py-2.5 bg-s3/50 rounded-xl border border-info-line">
-              <p className="text-[11px] text-t3">VGV gerado</p>
-              <p className="text-sm font-bold text-info tabular-nums">{formatCurrencyFull(totalSalesValue)}</p>
-            </div>
-            <div className="flex flex-col gap-1 px-3 py-2.5 bg-brand-tint rounded-xl border border-brand/25">
-              <p className="text-[11px] text-t3">Sua comissão</p>
-              <p className="text-sm font-bold text-brand-text tabular-nums">{formatCurrencyFull(totalCommission)}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Histórico de vendas */}
-        {linkedSales.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp size={13} className="text-green-400" />
-              <h3 className="text-sm font-semibold text-t2">Histórico de vendas</h3>
-            </div>
-            <div className="flex flex-col gap-2">
-              {linkedSales.map(sale => {
-                const prop = properties.find(p => p.id === sale.propertyId)
-                const { brokerCommission } = calcSaleCommissions(sale)
-                return (
-                  <div key={sale.id} className="flex items-center gap-3 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-t1 truncate">{sale.propertyName}</p>
-                      {prop && <p className="text-[11px] text-t3 truncate">{prop.neighborhood}{prop.city ? ` · ${prop.city}` : ''}</p>}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-xs font-bold text-green-400">{formatCurrencyFull(sale.value)}</p>
-                      {brokerCommission > 0 && (
-                        <p className="text-[11px] text-brand-text">Comissão: {formatCurrencyFull(brokerCommission)}</p>
-                      )}
-                      <p className="text-[11px] text-t4">{formatDate(sale.date)}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Leads no Funil */}
-        {activeLeads.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <UserPlus size={13} className="text-brand-text" />
-              <h3 className="text-sm font-semibold text-t2">Leads no Funil</h3>
-              <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-brand-tint text-brand-text border border-brand/25 font-medium">
-                {activeLeads.length} ativo{activeLeads.length > 1 ? 's' : ''}
-              </span>
-            </div>
-            <div className="flex flex-col gap-2">
-              {activeLeads.map(lead => {
-                const conf = LEAD_STAGE_CONFIG[lead.funnelStage]
-                const prop = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
-                return (
-                  <button
-                    key={lead.id}
-                    onClick={() => setSelectedLead(lead.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 bg-s2/50 hover:bg-s3/50 border border-line rounded-xl transition-all text-left"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`inline-flex text-[11px] font-medium px-1.5 py-0.5 rounded-full border ${conf.bg} ${conf.color} ${conf.border}`}>
-                          {conf.label}
-                          {lead.funnelStage === 'followup' && lead.followupStep > 0 && ` · ${lead.followupStep}ª msg`}
-                        </span>
-                      </div>
-                      {prop && (
-                        <p className="text-[11px] text-t3 mt-0.5 truncate flex items-center gap-1"><Home size={10} className="flex-shrink-0" /> {prop.name}</p>
-                      )}
-                      {lead.averageTicket && !prop && (
-                        <p className="text-[11px] text-brand-text mt-0.5">{formatCurrencyFull(lead.averageTicket)}</p>
+                      {item.type === 'imovel' ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" aria-label="Região do imóvel de permuta" value={item.region ?? ''}
+                            onChange={e => updatePermutaItem(item.id, { region: e.target.value || undefined })}
+                            placeholder="Região" className={campoPermuta} />
+                          <input type="text" inputMode="numeric" aria-label="Valor do imóvel de permuta"
+                            value={item.value ? `R$ ${item.value.toLocaleString('pt-BR')}` : ''}
+                            onChange={e => updatePermutaItem(item.id, { value: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
+                            placeholder="R$ valor" className={`${campoPermuta} tabular-nums`} />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" aria-label="Modelo do carro de permuta" value={item.carModel ?? ''}
+                            onChange={e => updatePermutaItem(item.id, { carModel: e.target.value || undefined })}
+                            placeholder="Modelo" className={campoPermuta} />
+                          <input type="text" inputMode="numeric" aria-label="Valor de entrada do carro de permuta"
+                            value={item.carValue ? `R$ ${item.carValue.toLocaleString('pt-BR')}` : ''}
+                            onChange={e => updatePermutaItem(item.id, { carValue: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
+                            placeholder="R$ entrada" className={`${campoPermuta} tabular-nums`} />
+                        </div>
                       )}
                     </div>
-                    <p className="text-[11px] text-t4 flex-shrink-0">{formatDate(lead.createdAt)}</p>
+                  ))}
+                  <button onClick={addPermutaItem} className="self-start inline-flex items-center gap-1.5 text-[13px] font-medium text-t3 hover:text-t1">
+                    <Plus size={13} strokeWidth={2} aria-hidden /> Outro bem
                   </button>
-                )
-              })}
-            </div>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={cancelPermuta} className="h-9 px-3 rounded-[10px] text-[13.5px] text-t3 hover:text-t1 hover:bg-s2">Cancelar</button>
+                    <button onClick={savePermuta} className="h-9 px-4 rounded-[10px] text-[13.5px] font-semibold bg-brand-fill text-brand-fill-text hover:bg-brand-fill-hover">Salvar permuta</button>
+                  </div>
+                </div>
+              )}
+            </FichaSecao>
           </div>
         )}
 
-        {/* Permuta */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <ArrowLeftRight size={13} className="text-amber-400" />
-            <h3 className="text-sm font-semibold text-t2">Permuta</h3>
-            {!editingPermuta && (
-              (contact?.permutaItems?.length ?? 0) > 0 ? (
-                <button
-                  onClick={openPermutaEdit}
-                  className="ml-auto flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg bg-s3/50 hover:bg-s3/70 border border-line text-t3 hover:text-t1 transition-all"
-                >
-                  <Pencil size={9} /> Editar
-                </button>
+        {aba === 'negocios' && (
+          <div className="flex flex-col gap-8">
+            <FichaSecao titulo={<>Leads no <Destaque>funil</Destaque></>}>
+              {activeLeads.length === 0 ? (
+                <p className="text-[13.5px] text-t4">Nenhum lead ativo para este contato.</p>
               ) : (
-                <button
-                  onClick={openPermutaEdit}
-                  className="ml-auto flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 text-amber-400 hover:text-amber-300 transition-all"
-                >
-                  <Plus size={9} /> Adicionar
-                </button>
-              )
+                <ul className="flex flex-col">
+                  {activeLeads.map(lead => {
+                    const conf = LEAD_STAGE_CONFIG[lead.funnelStage]
+                    const prop = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
+                    return (
+                      <li key={lead.id}>
+                        <button onClick={() => setSelectedLead(lead.id)} className="w-full flex items-center gap-3 py-2.5 text-left rounded-[10px] hover:bg-s2 -mx-2 px-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: conf.solidVar }} aria-hidden />
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-[14px] font-semibold text-t1">{conf.label}{lead.funnelStage === 'followup' && lead.followupStep > 0 ? ` · ${lead.followupStep}ª msg` : ''}</span>
+                            <span className="block text-[12.5px] text-t4 truncate">{prop?.name ?? (lead.averageTicket ? formatCurrencyFull(lead.averageTicket) : 'Sem imóvel')} · desde {formatDate(lead.createdAt)}</span>
+                          </span>
+                          <ChevronRight size={16} strokeWidth={1.8} className="text-t4" aria-hidden />
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </FichaSecao>
+
+            {ownedProperties.length > 0 && (
+              <FichaSecao titulo="Imóveis dele">
+                <ul className="flex flex-col">
+                  {ownedProperties.map(prop => (
+                    <li key={prop.id}>
+                      <button onClick={() => setSelectedPropertyId(prop.id)} className="w-full flex items-center gap-3 py-2 text-left rounded-[10px] hover:bg-s2 -mx-2 px-2">
+                        <span className="w-12 h-10 rounded-[10px] overflow-hidden bg-s2 flex-shrink-0 flex items-center justify-center">
+                          {prop.thumbnail ? <img src={prop.thumbnail} alt="" className="w-full h-full object-cover" /> : <Building2 size={16} className="text-t4" />}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-[14px] font-semibold text-t1 truncate">{prop.name}</span>
+                          <span className="block text-[12.5px] text-t4 truncate">{PROPERTY_TYPE_LABELS[prop.type] ?? prop.type} · {prop.neighborhood}</span>
+                        </span>
+                        <span className="text-[14px] font-semibold text-t1 tabular-nums">{formatCurrency(prop.value)}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </FichaSecao>
+            )}
+
+            {linkedSales.length > 0 && (
+              <FichaSecao titulo={<>Compras <Destaque>fechadas</Destaque></>}>
+                <ul className="flex flex-col">
+                  {linkedSales.map(sale => {
+                    const prop = properties.find(p => p.id === sale.propertyId)
+                    const { brokerCommission } = calcSaleCommissions(sale)
+                    return (
+                      <li key={sale.id} className="flex items-center gap-3 py-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] text-t1 truncate">{sale.propertyName}</p>
+                          <p className="text-[12.5px] text-t4 truncate">{formatDate(sale.date)}{prop ? ` · ${prop.neighborhood}` : ''}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[14px] font-semibold text-t1 tabular-nums">{formatCurrencyFull(sale.value)}</p>
+                          {brokerCommission > 0 && <p className="text-[12.5px] text-success tabular-nums">{formatCurrencyFull(brokerCommission)}</p>}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </FichaSecao>
             )}
           </div>
+        )}
 
-          {/* Visualização dos itens */}
-          {!editingPermuta && (contact?.permutaItems?.length ?? 0) === 0 && (
-            <p className="text-xs text-t4 text-center py-3">Sem informação de permuta</p>
-          )}
-
-          {!editingPermuta && (contact?.permutaItems?.length ?? 0) > 0 && (
-            <div className="flex flex-col gap-2">
-              {contact!.permutaItems.map(item => (
-                <div key={item.id} className="flex items-start gap-2 px-3 py-2.5 bg-s2/50 rounded-xl border border-line">
-                  <span className={`inline-flex self-start text-[11px] font-medium px-2 py-0.5 rounded-full border flex-shrink-0 ${
-                    item.type === 'imovel'
-                      ? 'bg-brand-tint text-brand-text border-indigo-500/25'
-                      : 'bg-amber-500/15 text-amber-300 border-amber-500/25'
-                  }`}>
-                    {item.type === 'imovel'
-                      ? <span className="flex items-center gap-1"><Home size={11} /> Imóvel</span>
-                      : <span className="flex items-center gap-1"><Car size={11} /> Carro</span>}
-                  </span>
-                  <div className="flex-1 min-w-0 space-y-0.5">
-                    {item.type === 'imovel' && (
-                      <>
-                        {item.region && <p className="text-xs text-t3">Região: <span className="text-t1">{item.region}</span></p>}
-                        {item.value && <p className="text-xs text-t3">Valor: <span className="text-t1 font-medium">{formatCurrencyFull(item.value)}</span></p>}
-                      </>
-                    )}
-                    {item.type === 'carro' && (
-                      <>
-                        {item.carModel && <p className="text-xs text-t3">Modelo: <span className="text-t1">{item.carModel}</span></p>}
-                        {item.carValue && <p className="text-xs text-t3">Valor: <span className="text-t1 font-medium">{formatCurrencyFull(item.carValue)}</span></p>}
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Formulário de edição */}
-          {editingPermuta && (
-            <div className="space-y-3">
-              {permutaItems.map((item, idx) => (
-                <div key={item.id} className="bg-s2/50 border border-line rounded-xl p-3 space-y-2">
-                  {/* Tipo */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1.5 flex-1">
-                      {(['imovel', 'carro'] as const).map(t => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => updatePermutaItem(item.id, { type: t, region: undefined, value: undefined, carModel: undefined, carValue: undefined })}
-                          className={`flex-1 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                            item.type === t
-                              ? 'bg-brand-tint border-brand/40 text-brand-text'
-                              : 'bg-s3/50 border-line text-t3 hover:text-t2'
-                          }`}
-                        >
-                          {t === 'imovel'
-                            ? <span className="flex items-center gap-1"><Home size={12} /> Imóvel</span>
-                            : <span className="flex items-center gap-1"><Car size={12} /> Carro</span>}
-                        </button>
-                      ))}
-                    </div>
-                    {permutaItems.length > 1 && (
-                      <button
-                        onClick={() => removePermutaItem(item.id)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/8 hover:bg-red-500/15 border border-red-500/20 text-red-400 hover:text-red-300 transition-all flex-shrink-0"
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-
-                  {item.type === 'imovel' ? (
-                    <div className="space-y-1.5">
-                      <input
-                        type="text"
-                        aria-label="Região do imóvel de permuta"
-                        value={item.region ?? ''}
-                        onChange={e => updatePermutaItem(item.id, { region: e.target.value || undefined })}
-                        placeholder="Região (ex: Balneário Camboriú)"
-                        className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
-                      />
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-t3 pointer-events-none">R$</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          aria-label="Valor do imóvel de permuta"
-                          value={item.value ? item.value.toLocaleString('pt-BR') : ''}
-                          onChange={e => updatePermutaItem(item.id, { value: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
-                          placeholder="Valor do imóvel"
-                          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5">
-                      <input
-                        type="text"
-                        aria-label="Modelo do carro de permuta"
-                        value={item.carModel ?? ''}
-                        onChange={e => updatePermutaItem(item.id, { carModel: e.target.value || undefined })}
-                        placeholder="Modelo (ex: Toyota Corolla 2022)"
-                        className="w-full bg-s3/50 border border-line rounded-xl px-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
-                      />
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-t3 pointer-events-none">R$</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          aria-label="Valor de entrada do carro de permuta"
-                          value={item.carValue ? item.carValue.toLocaleString('pt-BR') : ''}
-                          onChange={e => updatePermutaItem(item.id, { carValue: e.target.value.replace(/\D/g, '') ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
-                          placeholder="Valor de entrada"
-                          className="w-full bg-s3/50 border border-line rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/25"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {idx === permutaItems.length - 1 && (
-                    <button
-                      onClick={addPermutaItem}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-t3 hover:text-t2 border border-dashed border-line hover:border-white/22 rounded-lg transition-all"
-                    >
-                      <Plus size={10} /> Adicionar outro bem
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={cancelPermuta}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-t3 hover:text-t1 bg-s3/50 rounded-lg border border-line transition-all"
-                >
-                  <X size={11} /> Cancelar
-                </button>
-                <button
-                  onClick={savePermuta}
-                  className="flex-1 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-all"
-                >
-                  Salvar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Histórico de tarefas */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Tag size={13} className="text-brand" />
-              <h3 className="text-sm font-semibold text-t2">Tarefas vinculadas</h3>
-            </div>
-            <div className="flex gap-2 text-[11px]">
-              {pendingTasks.length > 0 && (
-                <span className="bg-brand-tint text-brand px-2 py-0.5 rounded-full font-medium border border-brand/25">
-                  {pendingTasks.length} pendente{pendingTasks.length > 1 ? 's' : ''}
-                </span>
+        {aba === 'historico' && (
+          <div className="flex flex-col gap-8">
+            <FichaSecao titulo="Tarefas">
+              {visiveis.length === 0 ? (
+                <p className="text-[13.5px] text-t4">Nenhuma tarefa ligada a este contato.</p>
+              ) : (
+                <ul className="flex flex-col">
+                  {visiveis.map(task => {
+                    const cfg = STATUS_CONFIG[task.status]
+                    const Icon = cfg.icon
+                    const ago = task.status === 'done' ? daysAgo(task.completedAt) : daysAgo(task.dueDate ? task.dueDate + 'T23:59:59' : undefined)
+                    return (
+                      <li key={task.id} className={`flex items-start gap-3 py-2 ${task.status === 'done' ? 'opacity-60' : ''}`}>
+                        <Icon size={16} strokeWidth={1.8} className={`${cfg.color} flex-shrink-0 mt-0.5`} aria-label={cfg.label} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[14px] truncate ${task.status === 'done' ? 'line-through text-t3' : 'text-t1'}`}>{task.title}</p>
+                          <p className="text-[12.5px] text-t4">
+                            {[task.category ? (CATEGORY_LABELS[task.category] ?? task.category) : null, task.dueDate ? formatDate(task.dueDate) : null].filter(Boolean).join(' · ')}
+                          </p>
+                        </div>
+                        {ago && <span className="text-[12.5px] text-t4 flex-shrink-0">{ago}</span>}
+                      </li>
+                    )
+                  })}
+                </ul>
               )}
-              {doneTasks.length > 0 && (
-                <span className="bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full font-medium border border-green-500/15">
-                  {doneTasks.length} concluída{doneTasks.length > 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {linkedTasks.length === 0 ? (
-            <p className="text-xs text-t4 text-center py-4">Nenhuma tarefa vinculada ainda</p>
-          ) : (
-            <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto pr-1">
-              {linkedTasks.map(task => {
-                const cfg = STATUS_CONFIG[task.status]
-                const Icon = cfg.icon
-                const ago = task.status === 'done' ? daysAgo(task.completedAt) : daysAgo(task.dueDate ? task.dueDate + 'T23:59:59' : undefined)
-                return (
-                  <div
-                    key={task.id}
-                    className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border transition-all
-                      ${task.status === 'done' ? 'bg-s2/30 border-line opacity-60' : 'bg-s2/50 border-line'}
-                    `}
-                  >
-                    <Icon size={13} className={`${cfg.color} flex-shrink-0 mt-0.5`} />
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium truncate ${task.status === 'done' ? 'line-through text-t3' : 'text-t1'}`}>
-                        {task.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {task.category && (
-                          <span className="text-[11px] text-t4">
-                            {CATEGORY_LABELS[task.category] ?? task.category}
-                          </span>
-                        )}
-                        {task.dueDate && (
-                          <span className="text-[11px] text-t4 flex items-center gap-0.5">
-                            <Clock size={8} /> {formatDate(task.dueDate)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {ago && (
-                      <span className="text-[11px] text-t4 flex-shrink-0">{ago}</span>
-                    )}
-                  </div>
-                )
-              })}
               {cancelledTasks.length > 0 && (
-                <p className="text-[11px] text-t5 text-center mt-1">
-                  + {cancelledTasks.length} cancelada{cancelledTasks.length > 1 ? 's' : ''} (oculta{cancelledTasks.length > 1 ? 's' : ''})
-                </p>
+                <p className="text-[12.5px] text-t4 mt-1">+ {cancelledTasks.length} cancelada{cancelledTasks.length > 1 ? 's' : ''}</p>
               )}
-            </div>
-          )}
-        </div>
+            </FichaSecao>
 
-        {/* ── Base de Leads & Campanhas ── */}
-        <div>
-          <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 mb-3 flex items-center gap-1.5">
-            <Megaphone size={11} /> Base de Leads & Campanhas
-          </p>
-          <ContactCampaignHistory contactId={contact.id} />
-        </div>
+            <FichaSecao titulo="Listas e campanhas">
+              <ContactCampaignHistory contactId={contact.id} />
+            </FichaSecao>
+          </div>
+        )}
+      </FichaPainel>
 
-      </div>
-    </Modal>
+      {novaTarefa && <TaskForm isOpen onClose={() => setNovaTarefa(false)} defaultContactId={contact.id} />}
 
-    {selectedLead && (() => {
-      const lead = leads.find(l => l.id === selectedLead)
-      return lead ? <LeadModal lead={lead} onClose={() => setSelectedLead(null)} /> : null
-    })()}
+      {selectedLead && (() => {
+        const lead = leads.find(l => l.id === selectedLead)
+        return lead ? <LeadModal lead={lead} onClose={() => setSelectedLead(null)} /> : null
+      })()}
 
-    {selectedPropertyId && (() => {
-      const prop = properties.find(p => p.id === selectedPropertyId)
-      return prop ? (
-        <PropertyModal
-          property={prop}
-          isOpen={true}
-          onClose={() => setSelectedPropertyId(null)}
-        />
-      ) : null
-    })()}
+      {selectedPropertyId && (() => {
+        const prop = properties.find(p => p.id === selectedPropertyId)
+        return prop ? (
+          <PropertyModal property={prop} isOpen={true} onClose={() => setSelectedPropertyId(null)} />
+        ) : null
+      })()}
     </>
   )
 }
