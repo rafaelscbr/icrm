@@ -9,31 +9,27 @@ export default defineConfig({
       // 'prompt': a versão nova espera e a tela avisa (src/lib/atualizacao.ts).
       // 'autoUpdate' trocava em silêncio e a tela aberta seguia com o código velho.
       registerType: 'prompt',
-      includeAssets: ['icon.svg', 'icon-maskable.svg'],
+      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'badge-96.png'],
       manifest: {
         name: 'Souza Imobiliária',
         short_name: 'Souza Imob',
         description: 'CRM imobiliário para gestão de contatos, vendas e performance',
-        theme_color: '#0F1730',
-        background_color: '#0F1730',
+        // Barra Marinho no topo; abertura do app na Folha clara (tema padrão).
+        theme_color: '#0F2759',
+        background_color: '#F3F6FB',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
         lang: 'pt-BR',
+        // "S." Champanhe sobre Marinho — identidade Folha Clara (03/11/2026).
+        // PNG primeiro: o Android e a instalação no Chrome escolhem por tamanho.
         icons: [
-          {
-            src: '/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any',
-          },
-          {
-            src: '/icon-maskable.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'maskable',
-          },
+          { src: '/icon-192.png',          sizes: '192x192', type: 'image/png',     purpose: 'any' },
+          { src: '/icon-512.png',          sizes: '512x512', type: 'image/png',     purpose: 'any' },
+          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png',     purpose: 'maskable' },
+          { src: '/icon.svg',              sizes: 'any',     type: 'image/svg+xml', purpose: 'any' },
+          { src: '/icon-maskable.svg',     sizes: 'any',     type: 'image/svg+xml', purpose: 'maskable' },
         ],
       },
       workbox: {

@@ -8,8 +8,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(d.title || 'iCRM', {
       body: d.body || '',
-      icon: '/icon-192x192.svg',
-      badge: '/icon-128x128.svg',
+      icon: '/icon-192.png',
+      badge: '/badge-96.png',
       tag: d.tag,
       vibrate: [200, 100, 200],
       data: { url: d.url || '/' },

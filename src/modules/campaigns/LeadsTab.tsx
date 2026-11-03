@@ -83,8 +83,8 @@ async function fireReadyNotification() {
 
   const opts = {
     body,
-    icon:               '/icon-192x192.png',
-    badge:              '/icon-192x192.png',
+    icon:               '/icon-192.png',
+    badge:              '/badge-96.png',
     tag:                'cooldown-ready',
     requireInteraction: true,   // fica na tela até clicar ou fechar
     renotify:           true,   // força reaparecer mesmo com tag igual
