@@ -1,6 +1,6 @@
 # Identidade visual Souza Imobiliária — "Folha Clara"
 
-Versão 1 · 02/11/2026 · nasce do iCRM (tema claro, padrão "Folha").
+Versão 1.1 · 02/11/2026 (espaçamento, layout, estados, movimento e regras de UX) · nasce do iCRM (tema claro, padrão "Folha").
 
 A identidade da Souza deixa de girar em torno do azul escuro e passa a girar em
 torno do **claro**: uma folha limpa, levemente azulada, com tinta Marinho, uma
@@ -150,13 +150,145 @@ O resto em abas.
 **Movimento.** Entradas de 150–420ms com desaceleração; nada que pisque;
 respeitar "reduzir movimento".
 
-## 5. Tema escuro (alternativa)
+## 5. Espaçamento
+
+Tudo em múltiplos de **4px**; o ritmo de leitura vem dos múltiplos de 8.
+
+| Token | Valor | Uso |
+|---|---|---|
+| `esp-1` | 4px | Entre ícone e texto colado, entre linhas de um mesmo dado. |
+| `esp-2` | 8px | Entre botões vizinhos, entre pílulas, entre rótulo e campo (6–8). |
+| `esp-3` | 12px | Entre itens de uma lista compacta, padding de chip. |
+| `esp-4` | 16px | Padding interno de bloco pequeno, margem lateral no celular. |
+| `esp-5` | 20px | Padding interno de bloco médio, distância entre campos de formulário. |
+| `esp-6` | 24px | Margem lateral no tablet e dentro de painéis, entre seções de formulário. |
+| `esp-8` | 32px | Margem lateral no computador, entre seções de uma tela. |
+| `esp-12` | 48px | Entre grandes blocos de uma página de marca. |
+| `esp-16` | 64px | Entre seções de site/apresentação. |
+
+**Regras**
+- Agrupar por proximidade: coisas da mesma família ficam a 4–8px; grupos diferentes a 24–32px. A distância é o que separa — não a borda.
+- Espaço interno de bloco: 16–20px no celular, 20–24px no computador.
+- Linha de lista: 14px em cima e embaixo (altura ~56–64px) — confortável para o dedo.
+- Nunca colar texto na borda de um bloco colorido: mínimo 16px.
+
+## 6. Layout
+
+| Medida | Valor |
+|---|---|
+| Largura máxima do conteúdo | 1280px (`max-w-7xl`), centralizado; telas de quadro (Kanban) usam a largura toda. |
+| Margem lateral | 16px celular · 24px tablet · 32px computador. |
+| Barra do topo (computador) | 60px de altura. |
+| Topo de cada tela | 56px, uma linha: título + abas + ação principal. Gruda no topo ao rolar. |
+| Barra de baixo (celular) | 64px, flutuando 8px acima da borda, 4 destinos. |
+| Painel lateral (ficha/formulário) | 544–576px de largura no computador; tela cheia no celular. |
+| Pontos de quebra | 640 (celular grande) · 768 (tablet) · 1024 (computador: barra do topo aparece) · 1280 (tela larga: painéis extras) · 1536. |
+| Altura de linha do texto | 1.5–1.6 no corpo; 1.05–1.2 em títulos. |
+| Largura de leitura | até ~65 caracteres por linha em textos corridos. |
+
+**Hierarquia de uma tela, de cima para baixo**
+1. Topo de uma linha (o que é a tela e a ação principal).
+2. Faixa de números — só se os números forem o assunto da tela.
+3. Uma linha de filtros (busca + atalhos + seletor).
+4. O conteúdo (lista em linhas, quadro, ficha).
+Nada de faixas, banners ou resumos grandes antes do conteúdo.
+
+## 7. Elevação e superfícies
+
+| Nível | Como | Uso |
+|---|---|---|
+| 0 · Folha | `#F3F6FB`, sem sombra | Fundo da página. |
+| 1 · Cartão | Papel + `0 1px 4px rgba(15,39,89,.08)` | Listas, faixas de números, blocos. |
+| 2 · Flutuante | Papel + `0 10px 30px rgba(15,39,89,.12)` | Menus, popovers, seletores. |
+| 3 · Painel | Papel + `0 25px 50px rgba(15,39,89,.18)` | Ficha lateral, modal, folha de baixo. |
+
+Fundo escurecido atrás de painel: preto 25% (painel lateral) a 45% (folha do celular). Sombras sempre em Marinho diluído; desfoque só para indicar que o fundo está em segundo plano.
+
+## 8. Ícones
+
+- Família única: **Lucide** (contorno), traço **1.8** (2.0–2.3 no item ativo).
+- Tamanhos: **13–15px** ao lado de texto pequeno · **16–17px** em botões · **20–22px** na navegação e em ações de toque.
+- Ícone ao lado de texto é decorativo (escondido do leitor de tela); ícone sozinho precisa de nome acessível.
+- Ícone não carrega cor sozinho — a cor vem do estado (ativo, risco, sucesso).
+- Nunca emoji como ícone.
+
+## 9. Estados
+
+| Estado | Como aparece |
+|---|---|
+| Normal | Como descrito nos componentes. |
+| Passar o mouse | Superfície um degrau acima (Névoa → Névoa forte; Papel → Névoa). Botão principal: `#CBA55F`. Linha de lista: fundo levemente tingido pela cor da área (7%). |
+| Pressionar | Escala 0.98 por 120ms, sem mover o resto da tela. |
+| Foco (teclado) | Anel de 2px na cor da marca ou azul `#2563EB`, afastado 2px. Nunca remover. |
+| Selecionado / ativo | Champanhe com texto Marinho (pílulas, item de navegação) ou sublinhado de 2.5px na cor da área (abas). Sempre com texto em negrito — cor nunca sozinha. |
+| Desabilitado | Opacidade 40–50%, cursor de proibido, sem resposta ao toque. |
+| Carregando (botão) | Giro de 15px à esquerda do texto, texto vira "Salvando…", botão travado. |
+| Carregando (tela) | Esqueleto com o formato do conteúdo (linhas para lista, blocos para cartões). Nunca tela branca com giro. |
+| Vazio | Ícone discreto + título com palavra de destaque ("Nenhuma *venda* no período") + uma frase do que fazer + o botão que faz. |
+| Erro de campo | Borda e halo vermelhos, mensagem embaixo do campo com a causa e como resolver. |
+| Erro de gravação | Aviso com a causa; o formulário continua aberto com o que foi digitado. |
+| Sucesso | Aviso curto ("Venda registrada"), 3–5s, sem roubar o foco. |
+
+## 10. Movimento
+
+| Token | Valor | Uso |
+|---|---|---|
+| Rápido | 140ms | Cor, fundo e borda no passar do mouse; pressionar. |
+| Padrão | 220ms | Abrir menu, trocar aba, mostrar/ocultar seção. |
+| Lento | 420ms | Painel entrando, tela chegando, barras de progresso enchendo. |
+| Curva | `cubic-bezier(0.16, 1, 0.3, 1)` | Desaceleração ao chegar. Sair é mais rápido que entrar. |
+
+- Animar só posição/escala/opacidade — nunca largura ou altura.
+- No máximo 1–2 elementos animados por tela.
+- Painéis entram de onde vieram (lateral pela direita, folha de baixo por baixo).
+- Com "reduzir movimento" ligado no aparelho, tudo fica instantâneo.
+
+## 11. Regras de UX
+
+**Ação e hierarquia**
+- Cada tela responde primeiro à pergunta principal dela; o resto vem depois ou em abas.
+- **Um** botão principal por tela/painel. Secundários em contorno ou fantasma.
+- Toda tela de detalhe é uma **ficha orientada à ação**: quem é → em que pé está → o que fazer agora (com os botões ali).
+- Revelação progressiva: o que é opcional fica em "+ Mais detalhes".
+
+**Toque e acesso**
+- Área de toque mínima **44×44px**, com 8px entre alvos.
+- Contraste mínimo **4.5:1** para texto normal e **3:1** para texto grande e ícones que informam.
+- Tudo funciona pelo teclado, na ordem visual; Esc fecha painéis.
+- Cor nunca é a única pista: sempre com texto ou ícone.
+- Celular: barra de baixo com no máximo 4 destinos; busca e avisos no topo; nada de rolagem lateral; texto de corpo ≥ 14px (campos 16px para o iPhone não dar zoom).
+
+**Formulários**
+- Rótulo sempre visível em cima do campo (placeholder não é rótulo).
+- Validar ao sair do campo e ao enviar, nunca a cada tecla.
+- Erro embaixo do campo, com causa e saída; o foco vai para o primeiro campo com problema.
+- Teclado certo para cada campo (telefone, e-mail, número).
+- Valores em dinheiro sempre em R$ com separador brasileiro, digitados como texto mascarado.
+- Fechar com algo digitado pergunta antes de descartar.
+
+**Dados e confiança**
+- O banco é a fonte da verdade: a tela só mostra "salvo" depois que o banco confirma. Se falhar, o erro aparece e nada some ou muda.
+- Exclusão pede confirmação; quando não apaga nada em cascata, oferece **Desfazer**.
+- Números: tabulares, abreviados em faixas (R$ 1,2M) e completos no detalhe (R$ 1.200.000,00).
+- Datas em português ("19 de out."), relativas quando ajudam ("há 6 dias").
+- Nunca mostrar número inventado; sem dado, mostrar "—".
+
+## 12. Como escrever
+
+- Falar como o corretor fala: "Ligar", "Registrar venda", "Agendar visita" — verbo no botão, dizendo exatamente o que acontece.
+- Avisos curtos e no passado depois da ação: "Venda registrada", "Tarefa criada".
+- Erro diz o que houve e o que fazer: "Não foi possível salvar. Verifique a internet e tente de novo."
+- Tela vazia diz o que vai aparecer ali e como começar.
+- Sem jargão de sistema, sem MAIÚSCULAS, sem exclamação em excesso, sem emoji.
+- A palavra de destaque em serifa vai na palavra que carrega o sentido.
+
+## 13. Tema escuro (alternativa)
 
 Fundo `#0B1426`, superfície `#111D35`, texto `#EEF2F9`, a mesma barra Marinho
 e o mesmo Champanhe; destaque em `#E2C385`. Existe para quem prefere — não é a
 referência da marca.
 
-## 6. Não fazer
+## 14. Não fazer
 
 - Fundo branco puro de página ou bege/creme.
 - Dourado em tudo (se tudo é dourado, nada é destaque).
@@ -166,7 +298,7 @@ referência da marca.
 - Preto puro em texto ou sombra.
 - Cor sem significado (diferenciar itens por matiz à toa).
 
-## 7. Tokens prontos (CSS)
+## 15. Tokens prontos (CSS)
 
 ```css
 :root {
@@ -188,6 +320,21 @@ referência da marca.
   --font-display: "Plus Jakarta Sans", Geist, system-ui, sans-serif;
   --font-body: Geist, system-ui, sans-serif;
   --font-destaque: "Instrument Serif", Georgia, serif;
+  /* espaço */
+  --esp-1: 4px; --esp-2: 8px; --esp-3: 12px; --esp-4: 16px; --esp-5: 20px;
+  --esp-6: 24px; --esp-8: 32px; --esp-12: 48px; --esp-16: 64px;
+  /* raio */
+  --r-campo: 10px; --r-botao: 12px; --r-lista: 14px; --r-bloco: 18px; --r-painel: 22px;
+  /* sombra */
+  --sombra-cartao: 0 1px 4px rgba(15,39,89,.08), 0 1px 2px rgba(15,39,89,.05);
+  --sombra-flutuante: 0 10px 30px rgba(15,39,89,.12), 0 4px 10px rgba(15,39,89,.08);
+  --sombra-painel: 0 25px 50px rgba(15,39,89,.18), 0 10px 20px rgba(15,39,89,.10);
+  /* movimento */
+  --dur-rapido: 140ms; --dur: 220ms; --dur-lento: 420ms;
+  --curva: cubic-bezier(0.16, 1, 0.3, 1);
+  /* medidas */
+  --largura-max: 1280px; --altura-barra: 60px; --altura-topo-tela: 56px;
+  --altura-doca: 64px; --toque-min: 44px;
 }
 .destaque { font-family: var(--font-destaque); font-style: italic; font-weight: 400;
             font-size: 1.12em; color: var(--destaque); }

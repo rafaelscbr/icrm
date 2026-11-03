@@ -80,7 +80,18 @@ não grave nada no banco para testar.
 12. **Dados:** o banco é a fonte da verdade — a tela só muda depois que o
     banco confirma; erro sempre visível; nada de atualização otimista.
 
-## 3. Como entregar
+## 3. Medidas, estados e regras de UX
+
+- **Espaço** em múltiplos de 4 (4 · 8 · 12 · 16 · 20 · 24 · 32 · 48 · 64). Mesma família a 4–8px, grupos diferentes a 24–32px; a distância separa, não a borda.
+- **Layout:** conteúdo até 1280px; margem lateral 16 / 24 / 32px (celular / tablet / computador); barra do topo 60px; topo de tela 56px; barra de baixo 64px; painel lateral 544–576px; quebras 640 · 768 · 1024 · 1280.
+- **Raios:** 10 (campo) · 12 (botão) · 14 (lista) · 18 (bloco) · 22–26 (painel). **Sombras** em Marinho diluído, 4 níveis (folha, cartão, flutuante, painel).
+- **Ícones:** Lucide em contorno, traço 1.8; 13–15px com texto pequeno, 16–17px em botão, 20–22px na navegação.
+- **Estados:** hover um degrau de superfície; pressionar escala 0.98; foco com anel de 2px (nunca remover); desabilitado 45%; botão carregando com giro e "Salvando…"; tela carregando com esqueleto; vazio com título + frase + botão; erro de campo embaixo do campo com causa e saída; sucesso em aviso curto de 3–5s.
+- **Movimento:** 140ms (hover) · 220ms (menus, abas) · 420ms (painéis); curva `cubic-bezier(0.16,1,0.3,1)`; só posição/escala/opacidade; respeitar "reduzir movimento".
+- **UX:** toque mínimo 44×44px; contraste 4.5:1 (3:1 em texto grande e ícones); tudo pelo teclado, Esc fecha; rótulo sempre visível; validar ao sair do campo; dinheiro em R$ com máscara; confirmar antes de descartar ou excluir e oferecer Desfazer quando possível; número abreviado na faixa e completo no detalhe; sem dado, "—".
+- **Escrita:** verbo no botão dizendo o que acontece ("Registrar venda"); aviso curto no passado ("Tarefa criada"); erro com causa e o que fazer; sem jargão, MAIÚSCULAS ou emoji.
+
+## 4. Como entregar
 
 - Faça em etapas (tokens/tema → layout global → listas → formulários → fichas
   → celular → login), conferindo cada etapa no navegador.
