@@ -599,13 +599,13 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   // modal sempre ler a versão atual do store.
   const [concludeId, setConcludeId] = useState<string | null>(null)
   // Colunas vazias que o corretor abriu à mão (por padrão viram trilho).
-  const [abertas, setAbertas] = useState<Set<LeadFunnelStage>>(new Set())
+  // Ficam salvas por usuário — ver useKanbanPrefs.
+  const userId = useAuthStore(s => s.user?.id ?? '')
+  const abertasSalvas = useKanbanPrefs(s => s.colunasAbertas[userId])
+  const alternarSalva = useKanbanPrefs(s => s.alternarColuna)
+  const abertas = useMemo(() => new Set(abertasSalvas ?? []), [abertasSalvas])
   function alternarColuna(stage: LeadFunnelStage) {
-    setAbertas(prev => {
-      const n = new Set(prev)
-      if (n.has(stage)) n.delete(stage); else n.add(stage)
-      return n
-    })
+    if (userId) alternarSalva(userId, stage)
   }
   function irParaColuna(stage: LeadFunnelStage) {
     document.getElementById(`coluna-${stage}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
