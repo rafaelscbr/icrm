@@ -26,17 +26,20 @@ import { iniciais } from '../../lib/formatters'
  *   direita  → busca ⌘K, Criar, visão do admin, tema, avisos e conta
  *
  * Doze destinos não cabem numa linha em 1024px. As pílulas seguem a
- * frequência de uso: as quatro do dia inteiro sempre aparecem, mais três a
- * partir de 1280px, e o resto mora em "Mais" — que repete as três do meio
+ * frequência de uso: as cinco do dia inteiro sempre aparecem, mais duas a
+ * partir de 1280px, e o resto mora em "Mais" — que repete as duas do meio
  * enquanto elas estiverem escondidas, para nenhum destino sumir.
+ *
+ * 11/11/2026: Simulador subiu para o lado de Leads (o corretor simula no meio
+ * do atendimento) e Contatos desceu para "Mais".
  *
  * No celular a barra não existe: a doca de baixo e o cabeçalho cumprem o papel.
  */
 
 /** Sempre na barra. */
-const FIXAS = ['dashboard', 'leads', 'tarefas', 'vendas']
+const FIXAS = ['dashboard', 'leads', 'simulador', 'tarefas', 'vendas']
 /** Na barra a partir de xl (1280px); abaixo disso, dentro de "Mais". */
-const LARGAS = ['contatos', 'produtos', 'prospeccao']
+const LARGAS = ['produtos', 'prospeccao']
 
 const ROTULO_CURTO: Record<string, string> = {
   prospeccao: 'Prospecção',
