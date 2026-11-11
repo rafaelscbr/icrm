@@ -6,3 +6,6 @@ dev-dist
 e2e-report/
 test-results/
 .vercel
+
+# Planilhas com dados de clientes — nunca versionar
+exports/
