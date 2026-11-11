@@ -199,3 +199,13 @@ pixel art).
 - **Lançamento:** ficha com régua de fases (Lançamento → Em obra → Pronto), Agora ("Régua conferida" ou "Ainda não classifica lead" com o que falta e o botão para conferir), faixa Unidades · Renda mínima · Entrada mínima, régua de qualificação, fluxos, tipologias, quem da base cabe, vigência.
 - **Venda:** nova ficha (antes o clique abria direto a edição) — cliente como título, Agora "Quem compra indica" com WhatsApp do cliente, faixa Valor · Comissão · Sua parte, detalhes e observação; Editar e Excluir no rodapé. No celular a lista de vendas virou linhas.
 - **Tarefas:** a "Próxima" do painel Seu dia virou o bloco Agora (tom pelo prazo), títulos do painel em texto com destaque.
+
+### v12.2 — "Quem é o cliente" no Resumo do lead (11/11/2026)
+
+- **O perfil declarado sobe para o Resumo**, logo depois do imóvel: o corretor abre o lead para ligar e já vê objetivo, prazo, renda, entrada, FGTS e tipologia sem trocar de aba.
+- **Quadro de duas colunas** (`.perfil-quadro`): o valor é o que se lê primeiro (grande, faixas em R$ curtas como "R$ 17k – R$ 30k"), o rótulo fica pequeno em cima e o texto exato do formulário embaixo, discreto. Prazo mostra a urgência em pontos; o que o corretor apurou na conversa leva "· apurado". Toda célula editável abre o editor no próprio quadro. Logo abaixo: "Procura em", "Tipologias" e "Falta descobrir".
+- **Leitura do lead continua no Resumo**, enxuta: temperatura, pontos, prioridade, encaixe com o produto de origem (leva à aba Produtos) e até três motivos.
+- **A aba Perfil virou Produtos:** a jogada, o produto de origem com os motivos do encaixe, os outros produtos e as listas em que a pessoa já estava.
+- **Formulários preenchidos e o texto original do Meta** foram para o Histórico, recolhidos.
+- O perfil é lido uma vez por ficha (`useLeadProfile`) e repartido entre as abas.
+- Celular: o quadro vira uma coluna abaixo de 380px e o editor ocupa a linha inteira (`col-span-full`).

@@ -25,8 +25,9 @@ import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
-import { LeadProfilePanel } from './LeadProfilePanel'
-import { LeadIntelPanel } from './LeadIntelPanel'
+import { PerfilDeclarado, BaseConhecida, FormulariosPreenchidos } from './LeadProfilePanel'
+import { LeituraDoLead, ProdutosDoLead } from './LeadIntelPanel'
+import { useLeadProfile } from './useLeadProfile'
 import { useSlaInfo } from './SlaBadge'
 import { avisoReentrada } from './reentrada'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
@@ -136,7 +137,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEdit,          setShowEdit]          = useState(false)
   const [showTaskForm,      setShowTaskForm]      = useState(false)
-  const [showRawNotes,      setShowRawNotes]      = useState(false)
   const [showAddToList,     setShowAddToList]     = useState(false)
   const [selectedListId,    setSelectedListId]    = useState('')
   const [addingToList,      setAddingToList]      = useState(false)
@@ -145,7 +145,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showBrokerMenu,    setShowBrokerMenu]    = useState(false)
   // Ciclo interação → tarefa: tipo da última interação registrada nesta sessão
   const [nextStepFor,       setNextStepFor]       = useState<LeadInteractionType | null>(null)
-  const [aba,               setAba]               = useState<'resumo' | 'perfil' | 'historico'>('resumo')
+  const [aba,               setAba]               = useState<'resumo' | 'produtos' | 'historico'>('resumo')
 
   const { lists, load: loadLists } = useLeadListsStore()
   const activeLists = lists.filter(l => l.status === 'active')
@@ -173,6 +173,8 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   useEffect(() => { void loadForLead(initialLead.id) }, [initialLead.id, loadForLead])
 
   const slaInfo    = useSlaInfo(lead)
+  // Perfil declarado: uma leitura por ficha — Resumo, Produtos e Histórico usam a mesma.
+  const perfil     = useLeadProfile(initialLead.id)
   const property   = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
   const contact    = lead.contactId  ? getById(lead.contactId) : undefined
   const originConf = ORIGIN_CONFIG[lead.origin] ?? { label: lead.origin, icon: MapPin }
@@ -504,7 +506,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               onChange={setAba}
               abas={[
                 { value: 'resumo'    as const, label: 'Resumo' },
-                { value: 'perfil'    as const, label: 'Perfil' },
+                { value: 'produtos'  as const, label: 'Produtos' },
                 { value: 'historico' as const, label: 'Histórico', badge: interactions.length || undefined },
               ]}
             />
@@ -633,6 +635,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   </div>
                 )}
 
+                {/* Quem é o cliente — o que ele declarou no formulário (ou o corretor apurou) */}
+                <PerfilDeclarado leadId={lead.id} perfil={perfil} />
+
+                {/* Leitura do lead — temperatura, prioridade e o porquê */}
+                <LeituraDoLead lead={lead} onVerProdutos={() => setAba('produtos')} />
+
                 {/* Últimos toques */}
                 <section>
                   <div className="flex items-baseline justify-between mb-2">
@@ -687,7 +695,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   )}
                 </section>
 
-                {/* Observações escritas por gente — o bloco automático do Meta vai para Perfil */}
+                {/* Observações escritas por gente — o texto automático do Meta fica no Histórico */}
                 {lead.notes && !/^Meta Ads —/.test(lead.notes.trim()) && (
                   <section>
                     <h3 className="text-[15px] font-semibold text-t1 mb-1.5">Observações</h3>
@@ -697,26 +705,21 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               </div>
             )}
 
-            {aba === 'perfil' && (
-              <div className="flex flex-col gap-6">
-                <LeadIntelPanel lead={lead} />
-                <LeadProfilePanel leadId={lead.id} />
-                {lead.notes && /^Meta Ads —/.test(lead.notes.trim()) && (
-                  <section>
-                    <button onClick={() => setShowRawNotes(v => !v)} aria-expanded={showRawNotes}
-                      className="flex items-center gap-1.5 text-[13px] font-medium text-t3 hover:text-t1">
-                      Texto original do formulário
-                      <ChevronDown size={14} strokeWidth={1.8} aria-hidden className={`transition-transform ${showRawNotes ? 'rotate-180' : ''}`} />
-                    </button>
-                    {showRawNotes && <p className="text-[13.5px] text-t2 leading-relaxed whitespace-pre-wrap mt-2">{lead.notes}</p>}
-                  </section>
-                )}
+            {aba === 'produtos' && (
+              <div className="flex flex-col gap-8">
+                <ProdutosDoLead lead={lead} />
+                {perfil.data && <BaseConhecida lists={perfil.data.lists} />}
               </div>
             )}
 
             {aba === 'historico' && (
               <div className="flex flex-col gap-8">
                 <LeadTimeline leadId={lead.id} />
+
+                <FormulariosPreenchidos
+                  forms={perfil.data?.forms ?? []}
+                  textoOriginal={lead.notes && /^Meta Ads —/.test(lead.notes.trim()) ? lead.notes : undefined}
+                />
 
                 <section>
                   <div className="flex items-center justify-between gap-3 mb-2">

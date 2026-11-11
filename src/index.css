@@ -2291,3 +2291,47 @@ li:last-child  > .ficha-etapa .ficha-etapa-trilho::after { display: none; }
   font-size: 17px; font-weight: 700; letter-spacing: -0.01em; /* cor vem da classe (text-t1/success/warning) */
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   QUEM É O CLIENTE — perfil declarado no Resumo da ficha (11/11/2026)
+
+   Um quadro de duas colunas com filetes de 1px entre as células (o fundo do
+   quadro aparece nas frestas). O valor é o que se lê primeiro; o rótulo é
+   pequeno em cima e o texto que a pessoa marcou fica embaixo. Cada célula
+   editável mostra o lápis só no passar do mouse (sempre visível no toque).
+   ══════════════════════════════════════════════════════════════════════════════ */
+.perfil-quadro {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.perfil-celula {
+  position: relative;
+  display: block;
+  min-width: 0;
+  min-height: 76px;
+  padding: 13px 34px 14px 16px;
+  background: var(--surface-2);
+  transition: background-color 140ms ease;
+}
+button.perfil-celula { cursor: pointer; }
+button.perfil-celula:hover { background: var(--surface-3); }
+button.perfil-celula:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.perfil-vazia { min-height: 0; }
+.perfil-lapis { opacity: 0; transition: opacity 140ms ease; }
+.perfil-celula:hover .perfil-lapis,
+.perfil-celula:focus-visible .perfil-lapis,
+.perfil-pref:hover .perfil-lapis,
+.perfil-pref:focus-visible .perfil-lapis { opacity: 1; }
+@media (hover: none) { .perfil-lapis { opacity: .6; } }
+.perfil-pref { border-radius: 10px; padding: 2px 6px; margin: 0 -6px; transition: background-color 140ms ease; }
+.perfil-pref:hover { background: var(--surface-2); }
+.perfil-pref:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+@media (max-width: 380px) {
+  .perfil-quadro { grid-template-columns: 1fr; }
+  .perfil-vazia { display: none; }
+}
