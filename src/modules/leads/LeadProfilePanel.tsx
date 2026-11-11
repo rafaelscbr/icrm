@@ -289,9 +289,11 @@ export function FormulariosPreenchidos({ forms, textoOriginal }: { forms: LeadFo
                 <span className="text-[12.5px] text-t4 tabular-nums flex-shrink-0">{formatDateShort(f.at)}</span>
               </p>
               <dl className="mt-1 grid grid-cols-[110px_1fr] gap-x-3 gap-y-1 text-[13px]">
-                {f.answers?.filter(a => a.field).map((a, i) => (
+                {/* Toda resposta aparece — inclusive pergunta nova que ainda não tem
+                    campo canônico (lead_field_map): nesse caso o rótulo é a própria pergunta. */}
+                {f.answers?.filter(a => a.raw).map((a, i) => (
                   <div key={i} className="contents">
-                    <dt className="text-t4">{ROTULO[a.field!] ?? a.field}</dt>
+                    <dt className="text-t4">{a.field ? (ROTULO[a.field] ?? a.field) : a.question}</dt>
                     <dd className="text-t2">{a.raw}</dd>
                   </div>
                 ))}
