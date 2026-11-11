@@ -27,14 +27,6 @@ import { mensagemAssociativo } from './mensagem'
 
 type BlocoModo = 'valor' | 'pct'
 
-/** "YYYY-MM" do mês atual + delta meses */
-function mesAnoDaqui(deltaMeses: number): MesAno {
-  const d = new Date()
-  d.setDate(1)
-  d.setMonth(d.getMonth() + deltaMeses)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
-
 interface Cfg {
   entradaQtd: number; entradaModo: BlocoModo; entradaValor: number; entradaPct: number
   parcelasQtd: number; parcelasModo: BlocoModo; parcelaValor: number; parcelasPct: number
@@ -46,15 +38,18 @@ interface Cfg {
   taxaBancoAnual: number; prazoMeses: number; sistema: Sistema
 }
 
+// Tudo começa vazio: as condições mudam de produto para produto e o corretor
+// preenche com as do empreendimento que está simulando. Só ficam escolhidos os
+// seletores, que precisam de uma opção marcada.
 const DEFAULT: Cfg = {
-  entradaQtd: 1,  entradaModo: 'pct',  entradaValor: 0, entradaPct: 12,
-  parcelasQtd: 36, parcelasModo: 'pct', parcelaValor: 0, parcelasPct: 8,
-  balaoQtd: 3,    balaoModo: 'pct',    balaoValor: 0,  balaoPct: 5,
+  entradaQtd: 1,  entradaModo: 'valor', entradaValor: 0, entradaPct: 0,
+  parcelasQtd: 0, parcelasModo: 'valor', parcelaValor: 0, parcelasPct: 0,
+  balaoQtd: 0,    balaoModo: 'valor',    balaoValor: 0,  balaoPct: 0,
   balaoForma: 'periodico', baloesAvulsos: [],
-  indice: 'incc', taxaIndiceAnual: 5, aplicarCorrecao: true,
-  inicioParcelas: mesAnoDaqui(1), financiamento: mesAnoDaqui(13), entrega: mesAnoDaqui(37),
-  jurosObraMensal: 0.83, taxaAdm: 25, seguro: 79, pctObraAssinatura: 0,
-  taxaBancoAnual: 10, prazoMeses: 420, sistema: 'price',
+  indice: 'incc', taxaIndiceAnual: 0, aplicarCorrecao: true,
+  inicioParcelas: '', financiamento: '', entrega: '',
+  jurosObraMensal: 0, taxaAdm: 0, seguro: 0, pctObraAssinatura: 0,
+  taxaBancoAnual: 0, prazoMeses: 0, sistema: 'price',
 }
 
 // ── Bloco híbrido %↔R$ (entrada / parcelas / balões) ──────────────────────────

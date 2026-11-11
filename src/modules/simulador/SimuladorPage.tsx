@@ -28,12 +28,13 @@ export function SimuladorPage() {
   const { profile } = useAuthStore()
   const [modo, setModo] = useState<SimuladorModo>('pos_chaves')
 
-  // Identificação e valor sobrevivem à troca de modo
+  // Identificação e valor sobrevivem à troca de modo. Tudo começa vazio: o
+  // corretor preenche com os dados do produto que está simulando.
   const [shared, setShared] = useState<SharedFields>({
-    empreendimento: 'Porto Velas 3D',
+    empreendimento: '',
     cliente: '',
     telefone: '',
-    valorTotal: 758584.61,
+    valorTotal: 0,
   })
   const onShared = (patch: Partial<SharedFields>) => setShared(prev => ({ ...prev, ...patch }))
 

@@ -95,7 +95,7 @@ export function IdentificacaoSection({ shared, onShared }: {
             label="Empreendimento / Unidade"
             value={shared.empreendimento}
             onChange={e => onShared({ empreendimento: e.target.value })}
-            placeholder="Ex: Porto Velas 3D"
+            placeholder="Nome do empreendimento e unidade"
           />
         </div>
         <Input

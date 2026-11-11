@@ -5,6 +5,11 @@ import { AssociativoSimulator } from '../modules/simulador/associativo/Simulator
 
 it('modo individual: converte, adiciona com +, remove e recalcula', () => {
   render(<DiretoSimulator shared={{ empreendimento: 'X', cliente: '', telefone: '', valorTotal: 600000 }} onShared={() => {}} corretor="R" />)
+  // O simulador abre vazio: o corretor monta 9 reforços semestrais de R$ 8.000 e 56 parcelas
+  const [, qtdReforco, qtdParcelas] = screen.getAllByLabelText('Quantidade')
+  fireEvent.change(qtdReforco, { target: { value: '9' } })
+  fireEvent.change(screen.getByLabelText('Valor por reforço'), { target: { value: '800000' } })
+  fireEvent.change(qtdParcelas, { target: { value: '56' } })
   fireEvent.click(screen.getByRole('button', { name: 'Individual' }))
   // 9 reforços semestrais viram 9 linhas editáveis
   expect(screen.getAllByText(/^Reforço \d+$/).length).toBe(9)
@@ -28,13 +33,16 @@ it('modo individual: converte, adiciona com +, remove e recalcula', () => {
 
 it('associativo: balões individuais com + e remoção', () => {
   render(<AssociativoSimulator shared={{ empreendimento: 'X', cliente: '', telefone: '', valorTotal: 480000 }} onShared={() => {}} corretor="R" />)
+  // O simulador abre vazio: o corretor monta 3 balões anuais
+  const qtds = screen.getAllByLabelText('Quantidade')
+  fireEvent.change(qtds[1], { target: { value: '36' } })
+  fireEvent.change(qtds[2], { target: { value: '3' } })
   fireEvent.click(screen.getByRole('button', { name: 'Individuais' }))
   expect(screen.getAllByText(/^Balão \d+$/).length).toBe(3)
   fireEvent.click(screen.getByRole('button', { name: /Adicionar balão/ }))
   expect(screen.getAllByText(/^Balão \d+$/).length).toBe(4)
   fireEvent.click(screen.getByRole('button', { name: 'Remover balão 4' }))
   expect(screen.getAllByText(/^Balão \d+$/).length).toBe(3)
-  // 3 × 5% de 480.000 / 3 = 24.000 em balões
   expect(screen.getByText('3 balões')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Anuais' }))
   expect(screen.queryByText(/^Balão \d+$/)).toBeNull()

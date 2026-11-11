@@ -11,11 +11,11 @@ import { mensagemDireto } from './mensagem'
 
 const DEFAULT: PagamentoBase = {
   entradaQtd:   1,
-  entradaValor: 36412.06,
-  reforcoQtd:   9,
-  reforcoValor: 8000,
+  entradaValor: 0,
+  reforcoQtd:   0,
+  reforcoValor: 0,
   reforcoPeriodo: 'semestral',
-  parcelasQtd:  56,
+  parcelasQtd:  0,
 }
 
 interface Props {
@@ -27,7 +27,7 @@ interface Props {
 export function DiretoSimulator({ shared, onShared, corretor }: Props) {
   const [base, setBase] = useState<PagamentoBase>(DEFAULT)
   const [entradaModo, setEntradaModo] = useState<EntradaModo>('valor')
-  const [entradaPct,  setEntradaPct]  = useState(5)
+  const [entradaPct,  setEntradaPct]  = useState(0)
 
   // Em modo %, o valor da entrada é derivado do valor total do imóvel
   const entradaValorEfetivo = entradaModo === 'pct'

@@ -29,6 +29,14 @@ export function calcularPosChaves(input: PosChavesInput): PosChavesResult {
   const reforcoTotal   = totalReforcos(input)
   const restoParcelas  = valorAteChaves - entradaTotal - reforcoTotal
 
+  if (valorTotal <= 0) {
+    return { valorAteChaves, saldoDevedor, entradaTotal, reforcoTotal, parcelaValor: 0, valido: false, erro: 'Informe o valor total do imóvel.' }
+  }
+
+  if (pctChaves <= 0) {
+    return { valorAteChaves, saldoDevedor, entradaTotal, reforcoTotal, parcelaValor: 0, valido: false, erro: 'Informe a porcentagem até as chaves.' }
+  }
+
   if (parcelasQtd <= 0) {
     return { valorAteChaves, saldoDevedor, entradaTotal, reforcoTotal, parcelaValor: 0, valido: false, erro: 'Número de parcelas deve ser maior que zero.' }
   }

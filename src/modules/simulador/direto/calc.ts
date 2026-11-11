@@ -25,6 +25,10 @@ export function calcularDireto(input: DiretoInput): DiretoResult {
   const reforcoTotal   = totalReforcos(input)
   const totalParcelado = valorTotal - entradaTotal - reforcoTotal
 
+  if (valorTotal <= 0) {
+    return { entradaTotal, reforcoTotal, totalParcelado, parcelaValor: 0, valido: false, erro: 'Informe o valor total do imóvel.' }
+  }
+
   if (parcelasQtd <= 0) {
     return { entradaTotal, reforcoTotal, totalParcelado, parcelaValor: 0, valido: false, erro: 'Número de parcelas deve ser maior que zero.' }
   }

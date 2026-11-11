@@ -11,13 +11,13 @@ import { PosChavesCard } from './Card'
 import { mensagemPosChaves } from './mensagem'
 
 const DEFAULT: Omit<PosChavesInput, 'valorTotal'> = {
-  pctChaves:    33,
+  pctChaves:    0,
   entradaQtd:   1,
-  entradaValor: 36412.06,
-  reforcoQtd:   9,
-  reforcoValor: 8000,
+  entradaValor: 0,
+  reforcoQtd:   0,
+  reforcoValor: 0,
   reforcoPeriodo: 'semestral',
-  parcelasQtd:  56,
+  parcelasQtd:  0,
 }
 
 interface Props {
@@ -37,7 +37,7 @@ export function PosChavesSimulator({ shared, onShared, corretor }: Props) {
     parcelasQtd:  DEFAULT.parcelasQtd,
   })
   const [entradaModo, setEntradaModo] = useState<EntradaModo>('valor')
-  const [entradaPct,  setEntradaPct]  = useState(5)
+  const [entradaPct,  setEntradaPct]  = useState(0)
 
   // Em modo %, o valor da entrada é derivado do valor total do imóvel
   const entradaValorEfetivo = entradaModo === 'pct'
@@ -77,7 +77,7 @@ export function PosChavesSimulator({ shared, onShared, corretor }: Props) {
                 const v = parseFloat(e.target.value)
                 setPctChaves(isNaN(v) ? 0 : v)
               }}
-              placeholder="33"
+              placeholder="Ex: 30"
             />
           </div>
 
