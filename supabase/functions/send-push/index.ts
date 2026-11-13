@@ -97,12 +97,19 @@ Deno.serve(async (req: Request) => {
     return new Response('Erro interno', { status: 500 })
   }
 
+  // urgency 'high': sem isso o push sai como 'normal' e, no Android em repouso
+  // (Doze), o FCM segura a mensagem até o aparelho acordar — o corretor só via
+  // o lead ao abrir o app. Lead novo tem SLA de 5 min: tem que tocar na hora.
+  // TTL 24h: aparelho desligado por dias não recebe uma enxurrada de avisos velhos.
+  const pushOptions = { urgency: 'high' as const, TTL: 24 * 60 * 60 }
+
   let sent = 0
   for (const s of subs ?? []) {
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
         payload,
+        pushOptions,
       )
       sent++
     } catch (err) {
