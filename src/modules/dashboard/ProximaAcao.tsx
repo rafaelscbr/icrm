@@ -80,7 +80,7 @@ export function ProximaAcao({
       out.push({
         id: 'sla', tom: 'risco', icon: Siren,
         titulo: `${nSla} lead${nSla !== 1 ? 's' : ''} com SLA de 1º contato estourado`,
-        porque: 'O Meta Ads cobra o primeiro contato em 5 minutos úteis. Cada hora a mais derruba a taxa de resposta, e o lead volta para o rodízio.',
+        porque: 'O Meta Ads cobra o primeiro contato em 5 minutos úteis. Cada hora a mais derruba a taxa de resposta.',
         acao: comSla[0] ? 'Abrir o mais antigo' : 'Abrir o funil',
         run: () => comSla[0] ? onAbrirLead(comSla[0]) : navigate('/leads'),
       })
