@@ -169,7 +169,7 @@ export function TopBar() {
   }
 
   return (
-    <header className="top-bar hidden lg:flex flex-shrink-0 relative z-30 h-[60px] items-center gap-3 px-5" aria-label="Navegação principal">
+    <header className="top-bar hidden lg:flex flex-shrink-0 relative z-30 items-center gap-3" aria-label="Navegação principal">
       {/* Marca */}
       <Link to="/" className="flex items-center gap-2.5 pr-3 mr-1 flex-shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-fill" aria-label="Souza Imobiliária — início">
         <span className="flex h-8 w-8 items-center justify-center rounded-[9px]" style={{ background: 'var(--brand-fill)' }} aria-hidden>

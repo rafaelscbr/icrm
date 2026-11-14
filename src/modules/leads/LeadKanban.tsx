@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   DndContext, DragOverlay, closestCenter,
   DragEndEvent, DragOverEvent, DragStartEvent,
-  PointerSensor, KeyboardSensor, useSensor, useSensors,
+  MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
   useDroppable,
 } from '@dnd-kit/core'
 import {
@@ -619,7 +619,11 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   // Essa data agora vem no próprio lead (`lastContactAt`, migração 074).
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // Mouse: arrasta ao mover 8px. Toque (iPad/celular): segurar 250ms para
+    // pegar o card — o arrasto imediato brigava com a rolagem do quadro, e o
+    // dedo que só queria rolar acabava movendo lead de etapa.
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     // Acessibilidade: mover cards por teclado (Espaço pega/solta, setas movem)
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )

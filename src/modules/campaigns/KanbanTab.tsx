@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
-  closestCenter, DragEndEvent, PointerSensor, KeyboardSensor, useSensor, useSensors,
+  closestCenter, DragEndEvent, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
 } from '@dnd-kit/core'
 import { LeadParecerModal } from './LeadParecerModal'
 import { TransferToFunnelModal } from './TransferToFunnelModal'
@@ -593,7 +593,9 @@ export function KanbanTab({ leads, campaign }: KanbanTabProps) {
   const [visitaLead,      setVisitaLead]         = useState<Lead | undefined>()
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // Mouse arrasta ao mover 8px; toque (iPad) segura 250ms — não briga com a rolagem.
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     // Acessibilidade: mover cards por teclado (Espaço pega/solta, setas movem)
     useSensor(KeyboardSensor),
   )

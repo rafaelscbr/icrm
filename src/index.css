@@ -719,8 +719,16 @@ html.light {
   }
 }
 
-/* Barra do topo */
+/* Barra do topo.
+   iPad na horizontal (≥1024px) usa esta barra, e o PWA abre com a barra de
+   status do iOS translúcida (black-translucent): sem reservar a área segura,
+   hora e bateria ficavam por cima das pílulas e o toque ia para o iOS (Ryan,
+   14/11/2026). No computador env() vale 0 e a barra segue com 60px. */
 .top-bar {
+  height: calc(60px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left:  max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
   background-color: var(--bar-bg);
   background-image: var(--grain);
   color: var(--bar-text);
@@ -752,6 +760,12 @@ html.light {
 }
 .top-icone:hover, .top-icone[aria-expanded="true"] { background-color: var(--bar-hover); color: var(--bar-strong); }
 .top-icone:focus-visible { outline: 2px solid var(--brand-fill); outline-offset: 2px; }
+/* Tela de toque (iPad): alvo de 44px, o mínimo para o dedo acertar de primeira.
+   O mouse segue com a barra compacta. */
+@media (pointer: coarse) {
+  .top-pill  { height: 44px; padding: 0 14px; }
+  .top-icone { height: 44px; width: 44px; }
+}
 
 /* Topo de página v10: uma linha só, liso, com filete embaixo. As abas ficam
    dentro dela e o indicador encosta no filete. */
@@ -1163,6 +1177,11 @@ html.light {
     box-shadow var(--dur) var(--ease-out),
     border-color var(--dur-fast) ease,
     background-color var(--dur-fast) ease;
+}
+/* Toque: segurar o card é o gesto de arrastar (TouchSensor, 250ms). Sem isto o
+   iOS selecionava o nome do lead ou abria o menu de copiar no lugar. */
+@media (pointer: coarse) {
+  .kanban-card { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 }
 /* Hover levanta 2px e aprofunda a sombra: diz "isto é pegável/clicável"
    antes do clique, sem mexer no layout (só transform). */

@@ -80,7 +80,9 @@ export function PageLayout({
 
   return (
     <div className="flex-1 min-h-full bg-page aurora-host" style={{ ['--area' as string]: area, ['--aba-cor' as string]: area }}>
-      <header className="page-bar sticky top-0 z-10 pt-safe">
+      {/* pt-safe só no celular: a partir de lg a barra do topo (TopBar) já
+          reserva a área da barra de status do iOS — aqui dobraria o vão. */}
+      <header className="page-bar sticky top-0 z-10 pt-safe lg:pt-0">
         <div className={`${caixa} mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-5`}>
           <div className="flex items-baseline gap-2.5 min-w-0 flex-1 lg:flex-none lg:shrink-0" title={subtitle}>
             <h1 className="font-display text-[18px] lg:text-[19px] font-bold text-t1 leading-none tracking-[-0.02em] truncate"
