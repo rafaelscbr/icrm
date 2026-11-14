@@ -20,7 +20,6 @@ import { Lead, LeadFunnelStage, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { useAuthStore } from '../../store/useAuthStore'
-import { useContactsStore } from '../../store/useContactsStore'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
@@ -72,7 +71,6 @@ function LeadCard({
 }) {
   const { advanceFollowup, toggleFlag, update } = useLeadsStore()
   const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
-  const { getById } = useContactsStore()
   const { properties } = usePropertiesStore()
   const { tasks } = useTasksStore()
   const { add: addInteraction } = useLeadInteractionsStore()
@@ -93,9 +91,12 @@ function LeadCard({
   }
 
   const property = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
-  const contact = lead.contactId ? getById(lead.contactId) : undefined
-  const displayName = contact?.name ?? lead.name
-  const displayPhone = contact?.phone ?? lead.phone
+  // Nome e telefone do LEAD, como no modal, na lista, no push e nas notificações.
+  // O card preferia o nome do contato vinculado: lead do Meta que casava por
+  // telefone com um contato antigo aparecia com outro nome só aqui ("Junior" no
+  // aviso, "Gilberto" no funil — 14/11/2026).
+  const displayName = lead.name
+  const displayPhone = lead.phone
   const stageDays = isOverlay ? 0 : daysInStage(lead.stageChangedAt, lead.createdAt)
   const originMeta = ORIGEM_META[lead.origin]
 
