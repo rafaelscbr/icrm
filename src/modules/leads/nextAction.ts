@@ -2,6 +2,7 @@ import { AlertTriangle, Clock, CalendarClock, CircleDashed } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Lead, Task } from '../../types'
 import { slaActive } from './SlaBadge'
+import { rodizioLigado } from '../../store/useSlaConfigStore'
 import { nivelContato, fraseContato } from './contato'
 
 /**
@@ -54,7 +55,10 @@ export function computeNextAction(lead: Lead, tasks: Task[]): NextAction {
   if (slaActive(lead)) {
     const msLeft = new Date(lead.slaDueAt!).getTime() - Date.now()
     if (msLeft <= 0) {
-      return { text: 'SLA de 1º contato vencido', urgency: 'critical', hint: 'O lead pode ser transferido para outro corretor.' }
+      return {
+        text: 'SLA de 1º contato vencido', urgency: 'critical',
+        hint: rodizioLigado() ? 'O lead vai para o próximo corretor do rodízio.' : undefined,
+      }
     }
     const min = Math.ceil(msLeft / 60_000)
     if (min <= 60) {

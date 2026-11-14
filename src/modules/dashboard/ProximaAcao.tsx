@@ -8,6 +8,7 @@ import { IconeTom, Rotulo } from '../../components/shared/visual'
 import type { Tom } from '../../components/shared/visual'
 import { useCallQueueStore } from '../../store/useCallQueueStore'
 import { useUnreadCount } from '../../store/useNotificationsStore'
+import { useSlaConfigStore } from '../../store/useSlaConfigStore'
 import { DAILY_TARGETS } from '../../lib/metasConfig'
 import type { Lead, Task } from '../../types'
 
@@ -69,6 +70,10 @@ export function ProximaAcao({
     return () => { vivo = false }
   }, [brokerId, contarLigacoes])
 
+  // Prazo e liga/desliga do rodízio por SLA — o texto do alerta segue o banco.
+  const slaCfg = useSlaConfigStore(s => s.config)
+  useEffect(() => { void useSlaConfigStore.getState().load() }, [])
+
   const sugestoes = useMemo<Sugestao[]>(() => {
     const out: Sugestao[] = []
     const agora = Date.now()
@@ -80,7 +85,9 @@ export function ProximaAcao({
       out.push({
         id: 'sla', tom: 'risco', icon: Siren,
         titulo: `${nSla} lead${nSla !== 1 ? 's' : ''} com SLA de 1º contato estourado`,
-        porque: 'O Meta Ads cobra o primeiro contato em 5 minutos úteis. Cada hora a mais derruba a taxa de resposta.',
+        porque: slaCfg?.enabled
+          ? `O prazo do 1º contato é de ${slaCfg.minutes} min — depois disso o lead vai para o próximo corretor do rodízio.`
+          : 'Lead do Meta Ads esfria rápido. Cada hora sem resposta derruba a chance de conversa.',
         acao: comSla[0] ? 'Abrir o mais antigo' : 'Abrir o funil',
         run: () => comSla[0] ? onAbrirLead(comSla[0]) : navigate('/leads'),
       })
@@ -155,7 +162,7 @@ export function ProximaAcao({
       })
     }
     return out
-  }, [leads, tasks, slaEstourado, tarefasVencidas, brokerId, ligacoesHoje, avisos, navigate, onAbrirLead])
+  }, [leads, tasks, slaEstourado, tarefasVencidas, brokerId, ligacoesHoje, avisos, navigate, onAbrirLead, slaCfg])
 
   if (loading) return null
 

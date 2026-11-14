@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Timer } from 'lucide-react'
 import { Lead } from '../../types'
+import { useSlaConfigStore } from '../../store/useSlaConfigStore'
 
 /**
  * Relógio do SLA Meta Ads — exibe o prazo de 1º contato enquanto ele não for
@@ -14,7 +15,7 @@ export function slaActive(lead: Lead): boolean {
 
 export interface SlaInfo {
   overdue:  boolean
-  urgent:   boolean   // ≤ 5 min — janela do SLA
+  urgent:   boolean   // ≤ 5 min para vencer
   text:     string    // ex.: "SLA 3 min" | "SLA vencido" | "SLA sáb 09:05"
   deadline: string    // data/hora completa para tooltip
 }
@@ -45,6 +46,8 @@ function computeSlaInfo(lead: Lead): SlaInfo | null {
 export function useSlaInfo(lead: Lead): SlaInfo | null {
   const active = slaActive(lead)
   const [, setTick] = useState(0)
+  // A config do rodízio diz se o prazo vencido transfere — carrega uma vez.
+  useEffect(() => { if (active) void useSlaConfigStore.getState().load() }, [active])
   useEffect(() => {
     if (!active) return
     const id = setInterval(() => setTick(t => t + 1), 15_000)
@@ -55,6 +58,7 @@ export function useSlaInfo(lead: Lead): SlaInfo | null {
 
 export function SlaBadge({ lead }: { lead: Lead }) {
   const info = useSlaInfo(lead)
+  const rodizio = useSlaConfigStore(s => s.config?.enabled)
   if (!info) return null
 
   const cls = info.overdue
@@ -65,7 +69,7 @@ export function SlaBadge({ lead }: { lead: Lead }) {
 
   return (
     <span
-      title={`Lead Meta Ads — registrar 1º contato até ${info.deadline}.`}
+      title={`Lead Meta Ads — registrar 1º contato até ${info.deadline}.${rodizio ? ' Depois disso o lead passa para o próximo corretor do rodízio.' : ''}`}
       className={`inline-flex items-center gap-1 font-label text-[11px] font-semibold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border tabular-nums flex-shrink-0 ${cls}`}
     >
       <Timer size={9} strokeWidth={1.6} />

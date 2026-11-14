@@ -7,6 +7,7 @@ import { LeadConfigEntry, LeadConfigType } from '../../types'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { CampaignRoutingSettings } from './CampaignRoutingSettings'
+import { SlaRodizioSettings } from './SlaRodizioSettings'
 import toast from 'react-hot-toast'
 
 // ── SQL setup ─────────────────────────────────────────────────────────────────
@@ -466,7 +467,8 @@ export function LeadSettings() {
         />
       </div>
 
-      {/* Distribuição de campanhas Meta — só admin gerencia */}
+      {/* Rodízio por SLA e distribuição de campanhas Meta — só admin gerencia */}
+      {isAdmin && <SlaRodizioSettings />}
       {isAdmin && <CampaignRoutingSettings />}
 
       {/* Footer info */}

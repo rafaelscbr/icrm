@@ -6,11 +6,25 @@ import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
   LeadInteraction, LeadInteractionType, LeadInteractionOutcome,
-  LeadConfigEntry, LeadConfigType, PermutaItem, MetaFormRouting,
+  LeadConfigEntry, LeadConfigType, PermutaItem, MetaFormRouting, LeadSlaConfig, SlaDia,
   AppNotification, NotificationType,
   LeadList, LeadListMember, CampaignList, LeadCampaignDispatch, BaseLeadProfile,
   CampaignParticipant, CampaignParticipantRole, CampaignActivity, CampaignActivityType,
 } from '../types'
+
+// ─── Rodízio por SLA ──────────────────────────────────────────────────────────
+
+interface LeadSlaConfigRow {
+  enabled: boolean; minutes: number; schedule: SlaDia[]
+  enabled_at: string | null; updated_at: string
+}
+
+function mapLeadSlaConfig(r: LeadSlaConfigRow): LeadSlaConfig {
+  return {
+    enabled: r.enabled, minutes: r.minutes, schedule: r.schedule,
+    enabledAt: r.enabled_at ?? undefined, updatedAt: r.updated_at,
+  }
+}
 
 // ─── Row types — Base de Leads ────────────────────────────────────────────────
 
@@ -1246,6 +1260,27 @@ export const db = {
         .update({ active, updated_at: new Date().toISOString() })
         .eq('form_id', formId)
       if (error) { toast.error(`Erro ao atualizar campanha: ${error.message}`); throw error }
+    },
+  },
+
+  // Rodízio por SLA — linha única. Leitura para todos; gravação só pela RPC
+  // set_lead_sla_config (exige admin e valida a agenda no banco).
+  leadSlaConfig: {
+    fetch: async (): Promise<LeadSlaConfig> => {
+      const { data, error } = await supabase
+        .from('lead_sla_config')
+        .select('*')
+        .eq('id', 1)
+        .single()
+      if (error) { toast.error(`Erro ao carregar o rodízio por SLA: ${error.message}`); throw error }
+      return mapLeadSlaConfig(data as LeadSlaConfigRow)
+    },
+    save: async (enabled: boolean, minutes: number, schedule: SlaDia[]): Promise<LeadSlaConfig> => {
+      const { data, error } = await supabase.rpc('set_lead_sla_config', {
+        p_enabled: enabled, p_minutes: minutes, p_schedule: schedule,
+      })
+      if (error) { toast.error(`Rodízio não foi salvo: ${error.message}`); throw error }
+      return mapLeadSlaConfig(data as LeadSlaConfigRow)
     },
   },
 

@@ -34,6 +34,7 @@ import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import { Abas } from '../../components/shared/Abas'
 import { Destaque } from '../../components/shared/Destaque'
 import toast from 'react-hot-toast'
+import { useSlaConfigStore } from '../../store/useSlaConfigStore'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -173,6 +174,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   useEffect(() => { void loadForLead(initialLead.id) }, [initialLead.id, loadForLead])
 
   const slaInfo    = useSlaInfo(lead)
+  const rodizio    = useSlaConfigStore(s => s.config?.enabled)
   // Perfil declarado: uma leitura por ficha — Resumo, Produtos e Histórico usam a mesma.
   const perfil     = useLeadProfile(initialLead.id)
   const property   = lead.propertyId ? properties.find(p => p.id === lead.propertyId) : undefined
@@ -346,7 +348,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       : slaInfo
         ? { rotulo: slaInfo.overdue ? 'SLA vencido' : '1º contato Meta Ads',
             texto: slaInfo.overdue
-              ? 'Transferência iminente. Chame no WhatsApp para registrar o contato.'
+              ? (rodizio
+                  ? 'Vai para o próximo corretor do rodízio. Chame no WhatsApp para registrar o contato.'
+                  : 'Prazo passou. Chame no WhatsApp para registrar o contato.')
               : `Chame no WhatsApp para parar o relógio. Prazo: ${slaInfo.deadline}.`,
             tom: slaInfo.urgent ? 'risco' : 'atencao', prazo: slaInfo.overdue ? undefined : slaInfo.text }
         : pendingTask

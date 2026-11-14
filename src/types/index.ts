@@ -610,6 +610,23 @@ export interface MetaFormRouting {
   updatedAt: string
 }
 
+// ─── Rodízio por SLA (lead_sla_config, linha única) ──────────────────────────
+
+/** Janela de um dia da semana. Horários "HH:MM", fuso de São Paulo. */
+export interface SlaDia {
+  on:    boolean
+  start: string
+  end:   string
+}
+
+export interface LeadSlaConfig {
+  enabled:    boolean    // transferência automática ligada
+  minutes:    number     // prazo do 1º contato, contado só dentro da agenda
+  schedule:   SlaDia[]   // 7 posições, índice = dia da semana (0 = domingo)
+  enabledAt?: string     // quando foi ligado — prazos vencidos antes não transferem
+  updatedAt:  string
+}
+
 // ─── Configuração de leads (motivos de descarte + origens) ───────────────────
 
 export type LeadConfigType = 'discard_reason' | 'origin'
