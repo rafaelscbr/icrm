@@ -1,6 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast'
 import { AvisoDeAtualizacao } from './components/shared/AvisoDeAtualizacao'
 import { useThemeStore, applyTheme } from './store/useThemeStore'
 import { useDensidadeStore, aplicarDensidade } from './store/useDensidadeStore'
@@ -131,8 +131,15 @@ function AppRoutes() {
     loadNotifications(user.id)
     const unsubNotifications  = subscribeNotifications(user.id)
 
-    // Web Push: renova a inscrição do dispositivo se a permissão já foi dada
-    syncPushSubscription(user.id)
+    // Web Push: renova a inscrição do dispositivo se a permissão já foi dada.
+    // Falha aqui = avisos de lead param de chegar neste aparelho: tem que aparecer.
+    void syncPushSubscription(user.id).then(result => {
+      if (result === 'error') {
+        toast.error('Os avisos de lead não foram ativados neste aparelho — abra Notificações e toque em Reativar', {
+          id: 'push-sync-erro', duration: 8000,
+        })
+      }
+    })
 
     // Entidades operacionais — RLS garante que cada usuário vê apenas o que tem permissão
     const unsubLeads         = subscribeLeads()

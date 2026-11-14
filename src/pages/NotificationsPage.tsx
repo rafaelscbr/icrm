@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
-  BadgeCheck, ChevronRight, AlertTriangle,
+  BadgeCheck, ChevronRight, AlertTriangle, Smartphone,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { enablePush, pushPermission } from '../lib/push'
+import { enablePush, pushDeviceState, type PushDeviceState } from '../lib/push'
 import { PageLayout } from '../components/layout/PageLayout'
 import { Abas } from '../components/shared/Abas'
 import { EstadoTela } from '../components/shared/EstadoTela'
@@ -251,20 +251,35 @@ function GrupoItem({ grupo, onRead, onReadMany }: {
 // ─── Página ──────────────────────────────────────────────────────────────────
 
 type Filtro = 'all' | 'unread'
+type EstadoPush = PushDeviceState | 'checking' | 'check-error'
 
 export function NotificationsPage() {
   const { user } = useAuthStore()
   const { notifications, loading, erro, load, markRead, markAllRead, markManyRead } = useNotificationsStore()
   const [filtro, setFiltro] = useState<Filtro>('all')
-  const [pushState, setPushState] = useState<NotificationPermission | 'unsupported'>(pushPermission())
+  const [pushState, setPushState] = useState<EstadoPush>('checking')
   const [enabling,  setEnabling]  = useState(false)
+
+  // Confere no banco se ESTE aparelho está inscrito — a permissão do navegador
+  // sozinha dizia "ativos" para um iPhone que tinha parado de receber.
+  async function checarPush() {
+    setPushState('checking')
+    try {
+      setPushState(await pushDeviceState())
+    } catch (err) {
+      console.error('[push] checagem:', err)
+      setPushState('check-error')
+    }
+  }
+
+  useEffect(() => { void checarPush() }, [])
 
   async function handleEnablePush() {
     if (!user) return
     setEnabling(true)
     const result = await enablePush(user.id)
     setEnabling(false)
-    setPushState(pushPermission())
+    await checarPush()
     if (result === 'ok')          toast.success('Notificações ativadas neste dispositivo')
     else if (result === 'denied') toast.error('Permissão negada — habilite nas configurações do navegador')
     else if (result === 'error')  toast.error('Não foi possível ativar — tente novamente')
@@ -329,8 +344,49 @@ export function NotificationsPage() {
             </Button>
           </div>
         )}
-        {pushState === 'granted' && (
+        {pushState === 'active' && (
           <Chip icon={BellRing} tom="sucesso">Avisos ativos neste dispositivo</Chip>
+        )}
+        {pushState === 'missing' && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-warning-line bg-warning-bg px-4 py-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <IconeTom icon={BellOff} tom="atencao" tamanho="sm" />
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-warning">Este aparelho não está recebendo avisos</p>
+                <p className="text-xs text-t3">
+                  A permissão está dada, mas o aparelho saiu da lista de envio — comum depois de atualizar o iPhone.
+                </p>
+              </div>
+            </div>
+            <Button variant="secondary" onClick={handleEnablePush} disabled={enabling} className="gap-2 !text-xs">
+              <BellRing size={13} /> {enabling ? 'Reativando…' : 'Reativar'}
+            </Button>
+          </div>
+        )}
+        {pushState === 'ios-browser' && (
+          <div className="flex items-center gap-3 rounded-[14px] border border-warning-line bg-warning-bg px-4 py-3">
+            <IconeTom icon={Smartphone} tom="atencao" tamanho="sm" />
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-warning">No iPhone, os avisos só chegam pelo app instalado</p>
+              <p className="text-xs text-t3">
+                Abra o Souza Imob pelo ícone na tela de início. Se ainda não tem: no Safari, Compartilhar → Adicionar à Tela de Início.
+              </p>
+            </div>
+          </div>
+        )}
+        {pushState === 'unsupported' && (
+          <Chip icon={BellOff} tom="neutro">Este navegador não recebe avisos</Chip>
+        )}
+        {pushState === 'check-error' && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-warning-line bg-warning-bg px-4 py-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <IconeTom icon={AlertTriangle} tom="atencao" tamanho="sm" />
+              <p className="text-[13px] font-semibold text-warning">Não foi possível conferir os avisos deste aparelho</p>
+            </div>
+            <Button variant="secondary" onClick={() => void checarPush()} className="gap-2 !text-xs">
+              <RefreshCw size={13} /> Tentar de novo
+            </Button>
+          </div>
         )}
         {pushState === 'denied' && (
           <div className="flex items-center gap-3 rounded-[14px] border border-warning-line bg-warning-bg px-4 py-3">
