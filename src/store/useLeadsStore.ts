@@ -37,6 +37,8 @@ interface LeadsStore {
   transfer: (id: string, toBrokerId: string) => Promise<void>
   // Baixa o destaque de reentrada — chamado quando o dono abre o lead
   ackReentry: (id: string) => Promise<void>
+  // Qualifica/desfaz — o banco grava quem e quando e avisa o Meta se couber
+  setQualified: (id: string, qualified: boolean) => Promise<void>
   toggleFlag: (id: string) => Promise<void>
   reorder: (id: string, kanbanOrder: number) => Promise<void>
   search: (query: string) => Lead[]
@@ -213,6 +215,8 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             reentryCount: (incoming.reentry_count as number | null) ?? undefined,
             reentrySeenAt: (incoming.reentry_seen_at as string | null) ?? undefined,
             returningFromLeadId: (incoming.returning_from_lead_id as string | null) ?? undefined,
+            qualifiedAt: (incoming.qualified_at as string | null) ?? undefined,
+            qualifiedBy: (incoming.qualified_by as string | null) ?? undefined,
             closedAt: (incoming.closed_at as string | null) ?? undefined,
             wonValue: (incoming.won_value as number | null) ?? undefined,
             saleId: (incoming.sale_id as string | null) ?? undefined,
@@ -259,6 +263,8 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             reentryCount: (r.reentry_count as number | null) ?? undefined,
             reentrySeenAt: (r.reentry_seen_at as string | null) ?? undefined,
             returningFromLeadId: (r.returning_from_lead_id as string | null) ?? undefined,
+            qualifiedAt: (r.qualified_at as string | null) ?? undefined,
+            qualifiedBy: (r.qualified_by as string | null) ?? undefined,
             closedAt: (r.closed_at as string | null) ?? undefined,
             wonValue: (r.won_value as number | null) ?? undefined,
             saleId: (r.sale_id as string | null) ?? undefined,
@@ -621,6 +627,17 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     } catch (err) {
       console.error('[leads] ackReentry:', err)
     }
+  },
+
+  // Banco primeiro: a tela só muda com o que a RPC devolveu.
+  setQualified: async (id, qualified) => {
+    const r = await db.leads.setQualified(id, qualified)   // erro já toastado; propaga
+    const now = new Date().toISOString()
+    set(s => ({
+      leads: s.leads.map(l => l.id === id
+        ? { ...l, qualifiedAt: r.qualifiedAt, qualifiedBy: r.qualifiedBy, updatedAt: now }
+        : l),
+    }))
   },
 
   toggleFlag: async (id) => {

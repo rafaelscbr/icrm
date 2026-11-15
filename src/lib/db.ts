@@ -616,6 +616,10 @@ interface LeadRow {
   reentry_count?: number | null
   reentry_seen_at?: string | null
   returning_from_lead_id?: string | null
+  // Qualificação: gravada só pela RPC set_lead_qualified. Entra em `toLead`,
+  // NÃO entra em `fromLead` — o upsert do front não pode apagar.
+  qualified_at?: string | null
+  qualified_by?: string | null
   closed_at?: string | null
   won_value?: number | null
   sale_id?: string | null
@@ -656,6 +660,8 @@ function toLead(r: LeadRow): Lead {
     reentryCount: r.reentry_count ?? undefined,
     reentrySeenAt: r.reentry_seen_at ?? undefined,
     returningFromLeadId: r.returning_from_lead_id ?? undefined,
+    qualifiedAt: r.qualified_at ?? undefined,
+    qualifiedBy: r.qualified_by ?? undefined,
     closedAt: r.closed_at ?? undefined,
     wonValue: r.won_value ?? undefined,
     saleId: r.sale_id ?? undefined,
@@ -1204,6 +1210,21 @@ export const db = {
       const { error } = await supabase.rpc('ack_lead_reentry', { p_lead_id: leadId })
       if (error) throw error
     },
+    /**
+     * Qualifica o lead ou desfaz. O banco grava quem e quando, e é ele que
+     * enfileira o evento para o Meta (migração 086). Devolve o que ficou gravado.
+     */
+    setQualified: async (leadId: string, qualified: boolean): Promise<{ qualifiedAt?: string; qualifiedBy?: string }> => {
+      const { data, error } = await supabase.rpc('set_lead_qualified', {
+        p_lead_id: leadId, p_qualified: qualified,
+      })
+      if (error) {
+        toast.error(`${qualified ? 'Lead não foi qualificado' : 'Qualificação não foi desfeita'}: ${error.message}`)
+        throw error
+      }
+      const r = (data ?? {}) as { qualified_at?: string | null; qualified_by?: string | null }
+      return { qualifiedAt: r.qualified_at ?? undefined, qualifiedBy: r.qualified_by ?? undefined }
+    },
     // Transferência manual — RPC SECURITY DEFINER valida dono/admin e grava
     // auditoria (lead_assignments), interação e notificação numa transação
     transfer: async (leadId: string, toBrokerId: string): Promise<void> => {
@@ -1281,6 +1302,20 @@ export const db = {
       })
       if (error) { toast.error(`Rodízio não foi salvo: ${error.message}`); throw error }
       return mapLeadSlaConfig(data as LeadSlaConfigRow)
+    },
+  },
+
+  // Eventos devolvidos ao Meta (API de Conversões) — só admin, tudo por RPC.
+  metaConversions: {
+    summary: async (): Promise<import('../types').MetaConversionSummary> => {
+      const { data, error } = await supabase.rpc('meta_conv_summary')
+      if (error) { toast.error(`Erro ao carregar os eventos do Meta: ${error.message}`); throw error }
+      return data as import('../types').MetaConversionSummary
+    },
+    retry: async (id?: string): Promise<number> => {
+      const { data, error } = await supabase.rpc('meta_conv_retry', { p_id: id ?? null })
+      if (error) { toast.error(`Não foi possível reenviar: ${error.message}`); throw error }
+      return (data as number) ?? 0
     },
   },
 

@@ -110,7 +110,7 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
-  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, setStage, transfer, ackReentry, leads } = useLeadsStore()
+  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, setStage, transfer, ackReentry, setQualified, leads } = useLeadsStore()
   const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
 
   const { add: addContact, getById }       = useContactsStore()
@@ -121,6 +121,15 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   // Transferência: admin transfere qualquer lead; corretor transfere os seus
   const canTransfer = isAdmin || (!!profile && lead.brokerId === profile.id)
+  // Qualificar segue a mesma regra (validada de novo no banco)
+  const canQualify = canTransfer
+  const [qualificando, setQualificando] = useState(false)
+  const qualificadoPor = lead.qualifiedBy
+    ? (lead.qualifiedBy === profile?.id ? profile?.name : allProfiles.find(p => p.id === lead.qualifiedBy)?.name)
+    : undefined
+  const qualificadoTitulo = lead.qualifiedAt
+    ? `Qualificado${qualificadoPor ? ` por ${qualificadoPor}` : ''} em ${new Date(lead.qualifiedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    : undefined
 
   const discardReasons = useMemo(() => getByType('discard_reason'), [getByType])
 
@@ -274,6 +283,23 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       await setStage(lead.id, stage)
       toast.success(`Movido para ${STAGE_META[stage].label}`)
     } catch { /* erro já toastado */ }
+  }
+
+  // Qualificar / desfazer — o banco grava quem e quando. Lead de formulário do
+  // Meta: o banco também enfileira o evento "lead_qualificado" (migração 086).
+  // Desfazer não avisa o Meta; só para de contar aqui.
+  async function handleQualify(qualified: boolean) {
+    if (qualificando) return
+    setQualificando(true)
+    try {
+      await setQualified(lead.id, qualified)
+      toast.success(
+        !qualified ? 'Qualificação desfeita'
+          : lead.origin === 'meta_ads' ? 'Lead qualificado — o Meta será avisado'
+          : 'Lead qualificado',
+      )
+    } catch { /* erro já toastado */ }
+    finally { setQualificando(false) }
   }
 
   async function handleDiscard() {
@@ -470,6 +496,11 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               )}
 
               {lead.flagged && !isDiscarded && <span className="text-[13px] font-medium text-brand-text">Prioridade</span>}
+              {lead.qualifiedAt && (
+                <span className="inline-flex items-center gap-1 text-[13px] font-medium text-success" title={qualificadoTitulo}>
+                  <BadgeCheck size={14} strokeWidth={1.8} aria-hidden /> Qualificado
+                </span>
+              )}
               {isLinked && <span className="text-[13px] text-t4">No CRM</span>}
               {isDiscarded && <span className="text-[13px] font-medium text-error">Descartado</span>}
             </div>
@@ -783,6 +814,20 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 <UserCheck size={15} strokeWidth={1.8} aria-hidden /> Criar contato
               </button>
             )}
+            {canQualify && (lead.qualifiedAt ? (
+              <button onClick={() => handleQualify(false)} disabled={qualificando} title={qualificadoTitulo}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-[13.5px] font-medium text-t2 hover:text-t1 hover:bg-s2 disabled:opacity-50">
+                {qualificando ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <RotateCcw size={15} strokeWidth={1.8} aria-hidden />}
+                Desfazer qualificação
+              </button>
+            ) : !isDiscarded && (
+              <button onClick={() => handleQualify(true)} disabled={qualificando}
+                title={lead.origin === 'meta_ads' ? 'Marca como qualificado e avisa o Meta Ads' : 'Marca como qualificado'}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-[13.5px] font-medium text-t2 hover:text-t1 hover:bg-s2 disabled:opacity-50">
+                {qualificando ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <BadgeCheck size={15} strokeWidth={1.8} aria-hidden />}
+                Qualificar lead
+              </button>
+            ))}
             <div className="flex-1" />
             {isDiscarded ? (
               <button onClick={handleRestore} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-[13.5px] font-medium text-t2 hover:text-t1 hover:bg-s2">

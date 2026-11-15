@@ -271,6 +271,12 @@ function LeadCard({
                 Prioridade
               </span>
             )}
+            {lead.qualifiedAt && (
+              <span className="inline-flex items-center gap-0.5 font-label text-[11px] font-semibold uppercase tracking-[0.08em] text-success flex-shrink-0"
+                    title="Lead qualificado">
+                <BadgeCheck size={11} strokeWidth={2} aria-hidden /> Qualificado
+              </span>
+            )}
             {brokerName && (
               <span className="font-label text-[11px] text-t3 truncate" title={`Corretor responsável: ${brokerName}`}>
                 {brokerName.split(' ')[0]}

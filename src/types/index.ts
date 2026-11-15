@@ -592,6 +592,9 @@ export interface Lead {
   reentryCount?: number     // quantas vezes voltou
   reentrySeenAt?: string    // quando o corretor viu; menor que reentryAt = destaque aceso
   returningFromLeadId?: string // lead ganho anterior — cliente que já comprou e voltou
+  // Qualificação — gravada só pelo banco (set_lead_qualified); a tela lê.
+  qualifiedAt?: string      // quando foi marcado como qualificado
+  qualifiedBy?: string      // quem qualificou (profiles.id)
   brokerId?:      string | null
   createdAt: string
   updatedAt: string
@@ -989,4 +992,30 @@ export interface DevelopmentMatches {
   novos: number
   byFit: { ideal: number; possivel: number; dificil: number; sem_dados: number }
   leads: DevelopmentMatch[]
+}
+
+// ─── Eventos devolvidos ao Meta (API de Conversões para CRM) ─────────────────
+export type MetaConversionStatus = 'pendente' | 'enviando' | 'enviado' | 'erro' | 'expirado' | 'cancelado'
+
+export interface MetaConversionProblem {
+  id: string
+  lead_id: string | null
+  lead_name: string | null
+  event_name: string
+  status: MetaConversionStatus
+  event_time: string
+  attempts: number
+  http_status: number | null
+  last_error: string | null
+  fbtrace_id: string | null
+  updated_at: string
+}
+
+export interface MetaConversionSummary {
+  state: { last_run_at: string | null; last_run_note: string | null; test_mode: boolean } | null
+  totals: Partial<Record<MetaConversionStatus, number>>
+  retrying: number
+  sent_by_event: Record<string, number>
+  last_sent_at: string | null
+  problems: MetaConversionProblem[]
 }
