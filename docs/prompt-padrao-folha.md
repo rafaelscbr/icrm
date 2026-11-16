@@ -83,7 +83,7 @@ não grave nada no banco para testar.
 ## 3. Medidas, estados e regras de UX
 
 - **Espaço** em múltiplos de 4 (4 · 8 · 12 · 16 · 20 · 24 · 32 · 48 · 64). Mesma família a 4–8px, grupos diferentes a 24–32px; a distância separa, não a borda.
-- **Layout:** conteúdo até 1280px; margem lateral 16 / 24 / 32px (celular / tablet / computador); barra do topo 60px; topo de tela 56px; barra de baixo 64px; painel lateral 544–576px; quebras 640 · 768 · 1024 · 1280.
+- **Layout:** conteúdo até 1760px, a mesma largura em todas as telas; margem lateral 16 / 24 / 32px (celular / tablet / computador); barra do topo 60px; topo de tela 56px; barra de baixo 64px; painel lateral 544–576px; quebras 640 · 768 · 1024 · 1280.
 - **Raios:** 10 (campo) · 12 (botão) · 14 (lista) · 18 (bloco) · 22–26 (painel). **Sombras** em Marinho diluído, 4 níveis (folha, cartão, flutuante, painel).
 - **Ícones:** Lucide em contorno, traço 1.8; 13–15px com texto pequeno, 16–17px em botão, 20–22px na navegação.
 - **Estados:** hover um degrau de superfície; pressionar escala 0.98; foco com anel de 2px (nunca remover); desabilitado 45%; botão carregando com giro e "Salvando…"; tela carregando com esqueleto; vazio com título + frase + botão; erro de campo embaixo do campo com causa e saída; sucesso em aviso curto de 3–5s.

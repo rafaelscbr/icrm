@@ -42,7 +42,7 @@ export function DiretoSimulator({ shared, onShared, corretor }: Props) {
   const result = calcularDireto(input)
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-8 items-start max-w-6xl mx-auto">
+    <div className="grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-8 items-start max-w-6xl">
 
       {/* ── Formulário ── */}
       <div className="space-y-5">
