@@ -1305,6 +1305,21 @@ export const db = {
     },
   },
 
+  // Relatório de conversão do funil (migração 088). Sem toast: a tela mostra a
+  // falha de forma permanente (EstadoTela), e um aviso que some não basta.
+  leadConversion: {
+    report: async (p: {
+      brokerId: string | null; start: string | null; end: string | null
+      mode: 'atividade' | 'safra'; bucket: 'day' | 'week' | 'month'
+    }): Promise<import('../modules/leads/conversao').RelatorioConversao> => {
+      const { data, error } = await supabase.rpc('lead_conversion_report', {
+        p_broker_id: p.brokerId, p_start: p.start, p_end: p.end, p_mode: p.mode, p_bucket: p.bucket,
+      })
+      if (error) throw error
+      return data as import('../modules/leads/conversao').RelatorioConversao
+    },
+  },
+
   // Eventos devolvidos ao Meta (API de Conversões) — só admin, tudo por RPC.
   metaConversions: {
     summary: async (): Promise<import('../types').MetaConversionSummary> => {
