@@ -71,14 +71,15 @@ descrever('dashboard de leads · atenção', () => {
     expect(textoDoPrazo(em(15, 18), agora)).toBe('prazo até 18:00')
     expect(textoDoPrazo(em(16, 9), agora)).toBe('prazo até seg 09:00')
   })
-  it('esfriando: só etapas quentes, 3 dias ou mais sem contato, o mais antigo primeiro', () => {
+  it('esfriando: só etapas quentes, 2 dias ou mais sem contato, o mais antigo primeiro', () => {
     const a = atencao([
       lead({ id: 'frio', funnelStage: 'visita', lastContactAt: em(11) }),
       lead({ id: 'mais-frio', funnelStage: 'proposta', lastContactAt: em(5) }),
       lead({ id: 'quente', funnelStage: 'atendimento', lastContactAt: em(14) }),
+      lead({ id: 'dois-dias', funnelStage: 'atendimento', lastContactAt: em(13, 14) }),
       lead({ id: 'followup', funnelStage: 'followup', lastContactAt: em(1) }),
     ], agora)
-    expect(a.esfriando.map(l => l.id)).toEqual(['mais-frio', 'frio'])
+    expect(a.esfriando.map(l => l.id)).toEqual(['mais-frio', 'frio', 'dois-dias'])
   })
   it('reentrada não vista', () => {
     const a = atencao([

@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, BarChart3,
   MessageCircle, Users, UserPlus, UserX, ChevronRight, RefreshCw, Settings2,
-  Percent, Home, BadgeCheck, Snowflake, SearchX,
+  Percent, Home, BadgeCheck, Snowflake, SearchX, Hourglass,
 } from 'lucide-react'
 import { avisoReentrada } from './reentrada'
 import toast from 'react-hot-toast'
@@ -32,6 +32,7 @@ import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadVisitaTaskModal } from './LeadVisitaTaskModal'
 import { LeadsDashboard } from './LeadsDashboard'
 import { LeadConversionTab } from './LeadConversionTab'
+import { LeadFollowupTab } from './LeadFollowupTab'
 import { SlaBadge } from './SlaBadge'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { LeadSettings } from './LeadSettings'
@@ -47,7 +48,7 @@ const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 
 const ORDENS_LISTA: OrdemLista[] = ['criacao', 'sem_contato', 'prioridade', 'valor', 'etapa', 'antigos']
 const ORDENS_KANBAN: KanbanSort[] = ['manual', ...ORDENS_LISTA]
 
-type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'configuracoes'
+type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'followup' | 'configuracoes'
 
 /**
  * Relógio de minuto. Os filtros de tempo ("sem contato há mais de 2 dias",
@@ -354,6 +355,7 @@ export function LeadsPage() {
   const isKanbanTab      = tab === 'kanban'
   const isDashTab        = tab === 'dashboard'
   const isConvTab        = tab === 'conversao'
+  const isFollowTab      = tab === 'followup'
   const isConfigTab      = tab === 'configuracoes'
 
   // Contexto dos filtros: a busca procura pelo nome que a tela MOSTRA (o do
@@ -449,6 +451,7 @@ export function LeadsPage() {
     { value: 'leads',          label: 'Leads',          icon: List,        badge: erro ? undefined : active.length },
     { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                         },
     { value: 'conversao',      label: 'Conversão',       icon: Percent                           },
+    { value: 'followup',       label: 'Followup',        icon: Hourglass                         },
     { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                         },
   ]
 
@@ -475,6 +478,7 @@ export function LeadsPage() {
     >
       {isDashTab && <LeadsDashboard leads={leads} onOpenLead={setSelectedLead} />}
       {isConvTab && <LeadConversionTab />}
+      {isFollowTab && <LeadFollowupTab leads={leads} onOpenLead={setSelectedLead} />}
       {isConfigTab && <LeadSettings />}
 
       {(isListTab || isKanbanTab) && (

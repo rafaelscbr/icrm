@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, ChevronRight, RefreshCw, Snowflake, Timer, Undo2 } from 'lucide-react'
+import { AlertTriangle, ChevronRight, RefreshCw, Snowflake, Timer } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Lead, LeadFunnelStage } from '../../types'
 import { STAGE_THEME } from '../../lib/stageTheme'
@@ -56,6 +56,7 @@ const TOM_DISCO: Record<PulseTone, string> = {
 /** Snapshot mais velho que isto é refeito ao abrir a aba (fora dela não há escuta). */
 const SNAPSHOT_FRESCO_MS = 60_000
 const LINHAS_POR_CORRETOR = 40
+const LINHAS_DE_ATENCAO = 6
 
 export function LeadsDashboard({ leads, onOpenLead }: Props) {
   const { effectiveBrokerId, isGlobalView } = useAdminView()
@@ -419,20 +420,15 @@ function PedeAtencao({ alerta, agora, onOpenLead, nomeCorretor }: {
       chave: 'frio', icon: Snowflake, disco: 'bg-info-bg text-info',
       titulo: `Sem contato há ${DIAS_ESFRIANDO} dias ou mais`, vazio: 'Nenhuma negociação esfriando.',
       leads: alerta.esfriando,
-      nota: l => `${STAGE_THEME[l.funnelStage].label} · último contato ${haQuanto(l.lastContactAt ?? l.stageChangedAt ?? l.createdAt, agora)}`,
-    },
-    {
-      chave: 'volta', icon: Undo2, disco: 'bg-success-bg text-success',
-      titulo: 'Voltaram a se cadastrar', vazio: 'Nenhuma reentrada sem ver.',
-      leads: alerta.voltaram,
-      nota: l => `preencheu de novo ${haQuanto(l.reentryAt!, agora)}`,
+      nota: l => `${STAGE_THEME[l.funnelStage].label} · ${produtoECorretor(l)}`,
+      lado: l => `último contato ${haQuanto(l.lastContactAt ?? l.stageChangedAt ?? l.createdAt, agora)}`,
     },
   ]
 
   return (
     <section className="mt-3">
       <Titulo descricao="Toque em um lead para abrir.">Pede *atenção*</Titulo>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {grupos.map(g => (
           <article key={g.chave} className="bento min-w-0 overflow-hidden flex flex-col">
             <header className="flex items-center gap-3 px-5 pt-4 pb-3">
@@ -448,7 +444,7 @@ function PedeAtencao({ alerta, agora, onOpenLead, nomeCorretor }: {
               <p className="text-[13px] text-t4 px-5 pb-5">{g.vazio}</p>
             ) : (
               <ul className="border-t border-line divide-y divide-line">
-                {g.leads.slice(0, 4).map(l => {
+                {g.leads.slice(0, LINHAS_DE_ATENCAO).map(l => {
                   const urgente = g.alerta?.(l) ?? false
                   return (
                     <li key={l.id}>
@@ -469,7 +465,7 @@ function PedeAtencao({ alerta, agora, onOpenLead, nomeCorretor }: {
                 })}
               </ul>
             )}
-            {g.leads.length > 4 && <p className="text-[12.5px] text-t4 px-5 py-2.5 border-t border-line">e mais {g.leads.length - 4}</p>}
+            {g.leads.length > LINHAS_DE_ATENCAO && <p className="text-[12.5px] text-t4 px-5 py-2.5 border-t border-line">e mais {g.leads.length - LINHAS_DE_ATENCAO}</p>}
           </article>
         ))}
       </div>

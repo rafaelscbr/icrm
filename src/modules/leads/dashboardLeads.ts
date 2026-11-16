@@ -92,7 +92,7 @@ export interface Atencao<T> {
    * lead que chegou fora do expediente e vence na manhã seguinte.
    */
   aguardandoPrimeiroContato: T[]
-  /** em atendimento, visita ou proposta sem contato há 3 dias ou mais */
+  /** em atendimento, visita ou proposta sem contato há DIAS_ESFRIANDO dias ou mais */
   esfriando: T[]
   /** preencheu o formulário de novo e o corretor ainda não viu */
   voltaram: T[]
@@ -102,7 +102,7 @@ type LeadAtencao = Pick<Lead,
   'funnelStage' | 'discardReason' | 'closedAt' | 'slaDueAt' | 'firstContactAt' | 'lastContactAt'
   | 'stageChangedAt' | 'createdAt' | 'reentryAt' | 'reentrySeenAt'>
 
-export const DIAS_ESFRIANDO = 3
+export const DIAS_ESFRIANDO = 2
 
 export function atencao<T extends LeadAtencao>(leads: T[], agora: number = Date.now()): Atencao<T> {
   const out: Atencao<T> = { aguardandoPrimeiroContato: [], esfriando: [], voltaram: [] }
