@@ -109,13 +109,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
     supabase.auth.signOut({ scope: 'local' }).catch(() => {})
   },
 
+  // A conta nasce numa função do servidor que só atende admin (admin-create-user).
+  // Antes era o cadastro público do Supabase, chamado daqui do navegador — o que
+  // obrigava a deixar o cadastro aberto para qualquer pessoa de fora.
   createBroker: async (email, password, name) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name, role: 'broker' } },
+    const { error } = await supabase.functions.invoke('admin-create-user', {
+      body: { email, password, name },
     })
-    return error ? error.message : null
+    if (!error) return null
+    // A função responde o motivo em português; sem ele, fica a mensagem técnica.
+    try {
+      const resposta = await (error as { context?: Response }).context?.json()
+      if (resposta?.error) return String(resposta.error)
+    } catch { /* resposta sem corpo legível */ }
+    return error.message || 'A conta não foi criada'
   },
 
   fetchAllProfiles: async () => {
