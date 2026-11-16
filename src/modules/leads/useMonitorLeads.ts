@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { db } from '../../lib/db'
 import type { Lead } from '../../types'
-import type { Atribuicao } from './monitorLeads'
+import type { Atribuicao, EventoDoDia } from './monitorLeads'
 
 const DIA_MS = 86_400_000
 /** Janela da trilha de distribuição: cobre o maior período da tela (30 dias). */
@@ -84,4 +84,24 @@ export function useMonitorLeads(leads: Lead[]) {
   }, [assinatura, carregar])
 
   return { atribuicoes, erro, atualizando, recarregar: carregar }
+}
+
+/**
+ * Os registros de ONTEM, com a hora de cada um — uma leitura por sessão, quando
+ * a tela já carregou. `null` enquanto não chegou ou se falhou: nesse caso a
+ * tela compara com o dia inteiro de ontem e diz isso, em vez de inventar.
+ */
+export function useRegistrosDeOntem(pronto: boolean): EventoDoDia[] | null {
+  const [eventos, setEventos] = useState<EventoDoDia[] | null>(null)
+  const pedido = useRef(false)
+  useEffect(() => {
+    if (!pronto || pedido.current) return
+    pedido.current = true
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+    const ontem = new Date(hoje); ontem.setDate(ontem.getDate() - 1)
+    db.leadMonitor.eventosDoDia(ontem.toISOString(), hoje.toISOString())
+      .then(setEventos)
+      .catch(e => { console.error('[dashboard] registros de ontem:', e); setEventos(null) })
+  }, [pronto])
+  return eventos
 }

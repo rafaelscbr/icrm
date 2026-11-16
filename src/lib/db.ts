@@ -2,7 +2,7 @@ import toast from 'react-hot-toast'
 import { supabase } from './supabase'
 import { getCurrentUserId, requireBrokerId } from './auth'
 import { generateId } from './formatters'
-import type { Atribuicao } from '../modules/leads/monitorLeads'
+import type { Atribuicao, EventoDoDia } from '../modules/leads/monitorLeads'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
@@ -1347,6 +1347,45 @@ export const db = {
         if (linhas.length < PAGINA) break
       }
       return out
+    },
+    /**
+     * Os registros de produção de um dia (atendimento, avanço, visita, ligação),
+     * com a hora de cada um — para dizer quanto cada corretor tinha feito "ontem
+     * a esta hora". As MESMAS regras de `pulse_resumo_dia` (migração 069): se
+     * elas mudarem lá, mudam aqui. A tela confere a soma do dia inteiro contra
+     * o número do banco antes de confiar nesta leitura.
+     */
+    eventosDoDia: async (inicio: string, fim: string): Promise<EventoDoDia[]> => {
+      const PAGINA = 1000
+      type Resposta = { data: unknown; error: { message: string } | null }
+      const ler = async <T,>(consulta: (de: number, ate: number) => PromiseLike<Resposta>): Promise<T[]> => {
+        const out: T[] = []
+        for (let pg = 0; pg < 10; pg++) {
+          const { data, error } = await consulta(pg * PAGINA, pg * PAGINA + PAGINA - 1)
+          if (error) throw error
+          const linhas = (data ?? []) as T[]
+          out.push(...linhas)
+          if (linhas.length < PAGINA) break
+        }
+        return out
+      }
+      const [interacoes, visitas, ligacoes] = await Promise.all([
+        ler<{ broker_id: string | null; type: string; interacted_at: string }>((de, ate) => supabase
+          .from('lead_interactions').select('broker_id, type, interacted_at')
+          .gte('interacted_at', inicio).lt('interacted_at', fim).not('broker_id', 'is', null)
+          .order('interacted_at').range(de, ate)),
+        ler<{ assigned_to_id: string | null; created_at: string }>((de, ate) => supabase
+          .from('tasks').select('assigned_to_id, created_at').eq('category', 'visita')
+          .gte('created_at', inicio).lt('created_at', fim).order('created_at').range(de, ate)),
+        ler<{ broker_id: string | null; called_at: string }>((de, ate) => supabase
+          .from('call_logs').select('broker_id, called_at')
+          .gte('called_at', inicio).lt('called_at', fim).order('called_at').range(de, ate)),
+      ])
+      return [
+        ...interacoes.map(r => ({ brokerId: r.broker_id, tipo: r.type === 'stage_change' ? 'avanco' as const : 'interacao' as const, at: r.interacted_at })),
+        ...visitas.map(r => ({ brokerId: r.assigned_to_id, tipo: 'visita' as const, at: r.created_at })),
+        ...ligacoes.map(r => ({ brokerId: r.broker_id, tipo: 'ligacao' as const, at: r.called_at })),
+      ]
     },
   },
 

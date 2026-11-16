@@ -311,6 +311,126 @@ export function posicaoNoDia(instante: number | string, de: number, ate: number,
   return ((t - inicio) / (fim - inicio)) * 100
 }
 
+// ── Ontem até esta hora ───────────────────────────────────────────────────────
+
+/** Um registro de produção de um dia: quem, o quê e quando. */
+export interface EventoDoDia {
+  brokerId: string | null
+  tipo: 'interacao' | 'avanco' | 'visita' | 'ligacao'
+  at: string
+}
+
+export interface Producao { interacoes: number; ligacoes: number; avancos: number; visitas: number }
+
+/**
+ * Quanto cada corretor tinha produzido ATÉ `limiteMs`. Serve para comparar o
+ * hoje com "ontem a esta mesma hora" — comparar meio dia com o dia inteiro de
+ * ontem faz qualquer um parecer mal às 11h da manhã.
+ */
+export function producaoAte(eventos: EventoDoDia[], limiteMs: number): Map<string, Producao> {
+  const mapa = new Map<string, Producao>()
+  for (const e of eventos) {
+    if (!e.brokerId || new Date(e.at).getTime() > limiteMs) continue
+    const p = mapa.get(e.brokerId) ?? { interacoes: 0, ligacoes: 0, avancos: 0, visitas: 0 }
+    if (e.tipo === 'interacao') p.interacoes++
+    else if (e.tipo === 'ligacao') p.ligacoes++
+    else if (e.tipo === 'avanco') p.avancos++
+    else p.visitas++
+    mapa.set(e.brokerId, p)
+  }
+  return mapa
+}
+
+// ── Alertas por exceção ───────────────────────────────────────────────────────
+
+/** Sem registro por este tempo, dentro do expediente, vira alerta. 90 e não 60: uma hora de almoço não é notícia. */
+export const PARADO_MIN = 90
+/** Prazo de 1º contato que vence dentro destes minutos entra como "vai vencer". */
+export const VAI_VENCER_MIN = 5
+
+export interface AlertaSala {
+  chave: string
+  gravidade: 'risco' | 'atencao'
+  texto: string
+  /** quando o alerta é sobre um lead: abre o card dele */
+  leadId?: string
+}
+
+/** O expediente de hoje pela agenda do rodízio; null se hoje não tem ou a agenda não carregou. */
+export function expedienteDeHoje(agora: Date, agenda: SlaDia[] | null): { inicio: number; fim: number } | null {
+  const j = agenda?.[agora.getDay()]
+  if (!j?.on) return null
+  const [hi, mi] = j.start.split(':').map(Number)
+  const [hf, mf] = j.end.split(':').map(Number)
+  const inicio = new Date(agora); inicio.setHours(hi, mi, 0, 0)
+  const fim = new Date(agora); fim.setHours(hf, mf, 0, 0)
+  return { inicio: inicio.getTime(), fim: fim.getTime() }
+}
+
+/**
+ * O que pede olho AGORA — e só isso. Lista vazia é o estado normal: a faixa de
+ * alertas some da tela. Nada aqui é lista de trabalho (isso mora no Kanban e
+ * no Followup); é o sinal de que algo saiu do esperado neste momento.
+ */
+export function alertasDaSala(p: {
+  agora: number
+  agenda: SlaDia[] | null
+  corretores: { id: string; nome: string; ultimaAtividadeAt: string | null; emPausa: boolean }[]
+  /** leads sem 1º contato com o relógio do prazo correndo */
+  esperando: { id: string; nome: string; corretor?: string; slaDueAt: string }[]
+}): AlertaSala[] {
+  const out: AlertaSala[] = []
+  const primeiro = (nome: string) => nome.split(' ')[0]
+
+  // 1. Prazo de 1º contato vencido
+  const vencidos = p.esperando.filter(l => new Date(l.slaDueAt).getTime() < p.agora)
+  if (vencidos.length === 1) {
+    const l = vencidos[0]
+    const ha = textoDeMinutos((p.agora - new Date(l.slaDueAt).getTime()) / 60_000)
+    out.push({
+      chave: `vencido-${l.id}`, gravidade: 'risco', leadId: l.id,
+      texto: `${l.nome} está com o prazo de 1º contato vencido há ${ha}${l.corretor ? ` — com ${primeiro(l.corretor)}` : ''}`,
+    })
+  } else if (vencidos.length > 1) {
+    out.push({ chave: 'vencidos', gravidade: 'risco', texto: `${vencidos.length} leads com o prazo de 1º contato vencido` })
+  }
+
+  // 2. Prazo que vence nos próximos minutos
+  for (const l of p.esperando) {
+    const falta = (new Date(l.slaDueAt).getTime() - p.agora) / 60_000
+    if (falta < 0 || falta > VAI_VENCER_MIN) continue
+    out.push({
+      chave: `vence-${l.id}`, gravidade: 'atencao', leadId: l.id,
+      texto: `${l.nome} vence o prazo de 1º contato em ${textoDeMinutos(falta)}${l.corretor ? ` — com ${primeiro(l.corretor)}` : ''}`,
+    })
+  }
+
+  // 3. Corretor sem registro dentro do expediente (quem está em pausa não entra)
+  const exp = expedienteDeHoje(new Date(p.agora), p.agenda)
+  if (exp && p.agora >= exp.inicio && p.agora <= exp.fim) {
+    for (const c of p.corretores) {
+      if (c.emPausa) continue
+      const ultima = c.ultimaAtividadeAt ? new Date(c.ultimaAtividadeAt).getTime() : null
+      const hoje = ultima !== null && ultima >= exp.inicio
+      const parado = (p.agora - (hoje ? ultima! : exp.inicio)) / 60_000
+      if (parado < PARADO_MIN) continue
+      out.push({
+        chave: `parado-${c.id}`, gravidade: 'atencao',
+        texto: hoje
+          ? `${primeiro(c.nome)} está sem registro há ${textoDeMinutos(parado)}`
+          : `${primeiro(c.nome)} ainda não registrou nada hoje`,
+      })
+    }
+  }
+
+  // 4. Ninguém recebendo lead
+  if (p.corretores.length > 0 && p.corretores.every(c => c.emPausa)) {
+    out.push({ chave: 'todos-em-pausa', gravidade: 'atencao', texto: 'Todos os corretores estão em pausa — lead novo entra pela ordem normal da roleta' })
+  }
+
+  return out.sort((a, b) => Number(b.gravidade === 'risco') - Number(a.gravidade === 'risco'))
+}
+
 // ── Períodos ──────────────────────────────────────────────────────────────────
 
 export type PeriodoMonitor = 'hoje' | '7' | '30'

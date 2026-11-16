@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import {
   recebidosHoje, minutosUteis, mediana,
   velocidadeDeResposta, qualidadePorOrigem, atividadePorHora, janelaDoDia,
-  inicioDoPeriodo, posicaoNoDia, textoDeMinutos,
+  inicioDoPeriodo, posicaoNoDia, textoDeMinutos, producaoAte, alertasDaSala, expedienteDeHoje,
 } from '../modules/leads/monitorLeads'
-import type { Atribuicao } from '../modules/leads/monitorLeads'
+import type { Atribuicao, EventoDoDia } from '../modules/leads/monitorLeads'
 import type { SlaDia } from '../types'
 
 // Segunda, 16/11/2026, 14:00 (horário local)
@@ -226,5 +226,103 @@ describe('ritmo do dia e períodos', () => {
     expect(new Date(inicioDoPeriodo('hoje', AGORA))).toEqual(new Date(2026, 10, 16))
     expect(new Date(inicioDoPeriodo('7', AGORA))).toEqual(new Date(2026, 10, 10))
     expect(new Date(inicioDoPeriodo('30', AGORA))).toEqual(new Date(2026, 9, 18))
+  })
+})
+
+describe('ontem até esta hora', () => {
+  const ev = (brokerId: string | null, tipo: EventoDoDia['tipo'], h: number, m = 0): EventoDoDia =>
+    ({ brokerId, tipo, at: t(h, m, 15) })
+  const eventos = [
+    ev('dio', 'interacao', 9), ev('dio', 'interacao', 10), ev('dio', 'interacao', 16),
+    ev('dio', 'avanco', 11), ev('dio', 'ligacao', 15), ev('rya', 'visita', 13),
+    ev(null, 'interacao', 9),
+  ]
+
+  it('conta só o que já tinha acontecido até a mesma hora', () => {
+    const ate14 = producaoAte(eventos, new Date(2026, 10, 15, 14, 0).getTime())
+    expect(ate14.get('dio')).toEqual({ interacoes: 2, ligacoes: 0, avancos: 1, visitas: 0 })
+    expect(ate14.get('rya')).toEqual({ interacoes: 0, ligacoes: 0, avancos: 0, visitas: 1 })
+  })
+
+  it('até o fim do dia é o dia inteiro', () => {
+    const tudo = producaoAte(eventos, new Date(2026, 10, 16, 0, 0).getTime())
+    expect(tudo.get('dio')).toEqual({ interacoes: 3, ligacoes: 1, avancos: 1, visitas: 0 })
+    expect(tudo.size).toBe(2)          // registro sem corretor não entra
+  })
+})
+
+describe('alertas da sala', () => {
+  const agora = AGORA.getTime()       // segunda, 14:00 — dentro do expediente 9h–18h
+  const corretor = (id: string, nome: string, ultima: string | null, emPausa = false) =>
+    ({ id, nome, ultimaAtividadeAt: ultima, emPausa })
+
+  it('sem nada fora do esperado, não há alerta', () => {
+    const r = alertasDaSala({
+      agora, agenda: AGENDA,
+      corretores: [corretor('dio', 'Dionata Alves', t(13, 30)), corretor('rya', 'Ryan Maciel', t(12, 45))],
+      esperando: [{ id: 'l1', nome: 'Ana', slaDueAt: t(14, 20) }],
+    })
+    expect(r).toEqual([])
+  })
+
+  it('prazo vencido vem primeiro, em vermelho, e abre o lead', () => {
+    const r = alertasDaSala({
+      agora, agenda: AGENDA,
+      corretores: [corretor('dio', 'Dionata Alves', t(13, 55))],
+      esperando: [
+        { id: 'l2', nome: 'Bia', corretor: 'Dionata Alves', slaDueAt: t(14, 3) },
+        { id: 'l1', nome: 'Ana', corretor: 'Ryan Maciel', slaDueAt: t(13, 40) },
+      ],
+    })
+    expect(r[0]).toMatchObject({ gravidade: 'risco', leadId: 'l1', texto: 'Ana está com o prazo de 1º contato vencido há 20 min — com Ryan' })
+    expect(r[1]).toMatchObject({ gravidade: 'atencao', leadId: 'l2', texto: 'Bia vence o prazo de 1º contato em 3 min — com Dionata' })
+  })
+
+  it('vários vencidos viram um alerta só', () => {
+    const r = alertasDaSala({
+      agora, agenda: AGENDA, corretores: [],
+      esperando: [{ id: 'a', nome: 'A', slaDueAt: t(13) }, { id: 'b', nome: 'B', slaDueAt: t(13, 30) }],
+    })
+    expect(r).toHaveLength(1)
+    expect(r[0].texto).toBe('2 leads com o prazo de 1º contato vencido')
+  })
+
+  it('corretor parado há 90 min no expediente vira alerta; em pausa, não', () => {
+    const r = alertasDaSala({
+      agora, agenda: AGENDA,
+      corretores: [
+        corretor('dio', 'Dionata Alves', t(12, 20)),          // 1h40 parado
+        corretor('rya', 'Ryan Maciel', t(12, 40)),            // 1h20: ainda não
+        corretor('ana', 'Ana Lima', null),                    // nada hoje, 5h de expediente
+        corretor('leo', 'Leo Paz', t(11), true),              // em pausa
+        corretor('bia', 'Bia Reis', t(17, 0, 15)),            // último registro foi ontem
+      ],
+      esperando: [],
+    })
+    expect(r.map(a => a.texto)).toEqual([
+      'Dionata está sem registro há 1h40',
+      'Ana ainda não registrou nada hoje',
+      'Bia ainda não registrou nada hoje',
+    ])
+  })
+
+  it('fora do expediente ninguém está "parado"', () => {
+    const noite = new Date(2026, 10, 16, 21, 0).getTime()
+    const domingo = new Date(2026, 10, 15, 11, 0).getTime()
+    const corretores = [corretor('dio', 'Dionata Alves', t(12))]
+    expect(alertasDaSala({ agora: noite, agenda: AGENDA, corretores, esperando: [] })).toEqual([])
+    expect(alertasDaSala({ agora: domingo, agenda: AGENDA, corretores, esperando: [] })).toEqual([])
+    expect(alertasDaSala({ agora, agenda: null, corretores, esperando: [] })).toEqual([])   // agenda não carregou
+    expect(expedienteDeHoje(new Date(domingo), AGENDA)).toBeNull()
+  })
+
+  it('avisa quando todos estão em pausa', () => {
+    const r = alertasDaSala({
+      agora, agenda: AGENDA,
+      corretores: [corretor('dio', 'Dionata Alves', t(13), true), corretor('rya', 'Ryan Maciel', t(13), true)],
+      esperando: [],
+    })
+    expect(r).toHaveLength(1)
+    expect(r[0].chave).toBe('todos-em-pausa')
   })
 })

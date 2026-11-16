@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type React from 'react'
+import { Link } from 'react-router-dom'
+import { AlertTriangle, ChevronRight } from 'lucide-react'
 import type { LeadPause } from '../../types'
 import { Barra } from '../../components/shared/visual'
 import { horaDaVolta } from '../../lib/pausaLeads'
 import type { PulseTone } from '../pulse/pulseEvents'
 import { posicaoNoDia, textoDeMinutos } from './monitorLeads'
-import type { LinhaOrigem, LinhaVelocidade } from './monitorLeads'
+import type { AlertaSala, LinhaOrigem, LinhaVelocidade } from './monitorLeads'
 
 /**
  * Leads › Dashboard — as peças da sala de comando (16/11/2026).
@@ -31,6 +33,39 @@ export function NumeroVivo({ valor, className = '' }: { valor: number | string; 
     <span key={pulo} className={`inline-block tabular-nums ${pulo > 0 ? 'badge-bounce' : ''} ${className}`}>
       {typeof valor === 'number' ? n(valor) : valor}
     </span>
+  )
+}
+
+// ─── Alertas por exceção ──────────────────────────────────────────────────────
+
+/**
+ * O que saiu do esperado AGORA. Sem alerta, a faixa não existe — silêncio é o
+ * estado normal, e é por isso que ela chama o olho quando aparece.
+ */
+export function AlertasDaSala({ alertas }: { alertas: AlertaSala[] }) {
+  if (alertas.length === 0) return null
+  return (
+    <ul className="flex flex-wrap gap-2" aria-label="Alertas" aria-live="polite">
+      {alertas.map(a => {
+        const cor = a.gravidade === 'risco' ? 'border-error-line bg-error-bg' : 'border-warning-line bg-warning-bg'
+        const icone = a.gravidade === 'risco' ? 'text-error' : 'text-warning'
+        const corpo = (
+          <>
+            <AlertTriangle size={14} strokeWidth={2} className={`flex-shrink-0 ${icone}`} aria-hidden />
+            <span className="min-w-0 text-[13px] font-medium text-t1">{a.texto}</span>
+            {a.leadId && <ChevronRight size={13} strokeWidth={2} className="flex-shrink-0 text-t4" aria-hidden />}
+          </>
+        )
+        const caixa = `pulse-item-in inline-flex max-w-full items-center gap-2 rounded-full border px-3.5 py-1.5 ${cor}`
+        return (
+          <li key={a.chave} className="max-w-full">
+            {a.leadId
+              ? <Link to={`/leads?lead=${a.leadId}`} className={`${caixa} hover:brightness-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40`}>{corpo}</Link>
+              : <span className={caixa}>{corpo}</span>}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -109,8 +144,8 @@ export interface LinhaEquipe {
   status: string
   pausa?: LeadPause
   marcas: { t: number; tom: PulseTone }[]
-  /** atendimentos, ligações, avanços, visitas */
-  producao: { rotulo: string; hoje: number; ontem?: number }[]
+  /** atendimentos, ligações, avanços, visitas — `meta` só onde existe meta diária */
+  producao: { rotulo: string; hoje: number; ontem?: number; meta?: number }[]
   /** null enquanto a trilha de distribuição não carregou */
   leadsNovos: number | null
   herdados: number
@@ -169,12 +204,20 @@ export function PainelDaEquipe({ linhas, de, ate, agora }: {
               <LinhaDoDia marcas={l.marcas} de={de} ate={ate} agora={agora} nome={l.nome} />
             </div>
 
-            {l.producao.map(p => (
-              <Celula key={p.rotulo} rotulo={p.rotulo}
-                      valor={<NumeroVivo valor={p.hoje} className={p.hoje === 0 ? 'text-t4' : 'text-t1'} />}
-                      nota={p.ontem === undefined ? undefined : `ontem ${n(p.ontem)}`}
-                      notaTom={p.ontem !== undefined && p.hoje > p.ontem ? 'text-success' : 'text-t4'} />
-            ))}
+            {l.producao.map(p => {
+              const bateu = p.meta !== undefined && p.hoje >= p.meta
+              return (
+                <Celula key={p.rotulo} rotulo={p.rotulo}
+                        valor={<>
+                          <NumeroVivo valor={p.hoje} className={bateu ? 'text-success' : p.hoje === 0 ? 'text-t4' : 'text-t1'} />
+                          {/* a meta do dia, ao lado: número sem meta não diz se está bom */}
+                          {p.meta !== undefined && <span className="text-[12px] font-semibold text-t4 tabular-nums">/{n(p.meta)}</span>}
+                        </>}
+                        nota={p.ontem === undefined ? undefined : `ontem ${n(p.ontem)}`}
+                        notaTom={p.ontem !== undefined && p.hoje > p.ontem ? 'text-success' : 'text-t4'}
+                        dica={p.meta !== undefined ? `Meta do dia: ${n(p.meta)} por corretor` : undefined} />
+              )
+            })}
 
             <Celula rotulo="Leads novos"
                     valor={l.leadsNovos === null ? '—' : <NumeroVivo valor={l.leadsNovos} className={l.leadsNovos === 0 ? 'text-t4' : 'text-t1'} />}

@@ -21,25 +21,32 @@ import {
   mediaSemHoje, prazoVencido, rotuloDia, DIAS_ESFRIANDO,
 } from './dashboardLeads'
 import {
-  atividadePorHora, inicioDoPeriodo, janelaDoDia, qualidadePorOrigem, recebidosHoje, velocidadeDeResposta,
+  alertasDaSala, atividadePorHora, inicioDoPeriodo, janelaDoDia, producaoAte, qualidadePorOrigem,
+  recebidosHoje, velocidadeDeResposta,
 } from './monitorLeads'
-import type { PeriodoMonitor } from './monitorLeads'
-import { useMonitorLeads } from './useMonitorLeads'
-import { NumeroVivo, PainelDaEquipe, QualidadePorOrigem, Relogio, VelocidadeDeResposta } from './PainelMonitor'
+import type { PeriodoMonitor, Producao } from './monitorLeads'
+import { useMonitorLeads, useRegistrosDeOntem } from './useMonitorLeads'
+import {
+  AlertasDaSala, NumeroVivo, PainelDaEquipe, QualidadePorOrigem, Relogio, VelocidadeDeResposta,
+} from './PainelMonitor'
+import { DAILY_TARGETS } from '../../lib/metasConfig'
 import type { LinhaEquipe } from './PainelMonitor'
 
 /**
  * Leads › Dashboard — enxuto em 16/11/2026.
  *
  * Sala de comando: o que está acontecendo AGORA, sem precisar rolar nem abrir
- * nada. Quatro partes, de cima para baixo, e nada repetido entre elas:
+ * nada. De cima para baixo, e nada repetido entre as partes:
  *   1. Agora      — cinco números do momento (chegada, espera, produção, prazo).
- *   2. Chegada    — leads por dia e o funil.
+ *   2. Alertas    — só o que saiu do esperado agora (prazo vencido, corretor
+ *                   parado no expediente); sem alerta, a faixa não existe.
  *   3. Equipe     — um PAINEL, uma linha por corretor: luz de estado (ativo,
  *                   parado, em pausa), a linha do dia (cada registro na hora em
  *                   que aconteceu, com o cursor do agora) e os números lado a
- *                   lado, com ontem embaixo. Depois, a linha do tempo de cada um.
- *   4. Análise    — velocidade de resposta e qualidade por origem, por período.
+ *                   lado, com a meta (onde existe) e ontem ATÉ ESTA HORA.
+ *   4. Ao vivo    — os registros da equipe num feed só, com filtro por
+ *                   corretor; ao lado, compactos, leads por dia e o funil.
+ *   5. Análise    — velocidade de resposta e qualidade por origem, por período.
  *
  * O que saiu, a pedido do Rafael: "próximo lead de" (e a leitura das roletas que
  * só existia para isso), o bloco separado "Roleta ao vivo" (o estado de cada
@@ -78,7 +85,8 @@ const TOM_DISCO: Record<PulseTone, string> = {
 
 /** Snapshot mais velho que isto é refeito ao abrir a aba (fora dela não há escuta). */
 const SNAPSHOT_FRESCO_MS = 60_000
-const LINHAS_POR_CORRETOR = 40
+const LINHAS_AO_VIVO = 80
+const DIA_MS = 86_400_000
 
 export function LeadsDashboard({ leads }: Props) {
   const { effectiveBrokerId, isGlobalView } = useAdminView()
@@ -143,7 +151,32 @@ export function LeadsDashboard({ leads }: Props) {
     [allProfiles, brokerNames, profile],
   )
 
-  // Quem aparece nos quadros de atividade
+  // ── Ontem ATÉ ESTA HORA ───────────────────────────────────────────────────
+  // Comparar meio dia de hoje com o dia inteiro de ontem é injusto. A tela lê os
+  // registros de ontem uma vez e conta só o que já tinha acontecido até esta
+  // mesma hora. Prova antes de usar: a soma do dia inteiro contada aqui tem de
+  // bater com o que o banco calculou (pulse_resumo_dia). Se não bater — regra
+  // mudou no banco, leitura parcial —, volta para o dia inteiro e a legenda diz.
+  const registrosDeOntem = useRegistrosDeOntem(carregado)
+  const ontemAteAgora = useMemo<Map<string, Producao> | null>(() => {
+    if (!registrosDeOntem || !resumoOntem) return null
+    const cheio = producaoAte(registrosDeOntem, Infinity)
+    const confere = resumoOntem.corretores.every(c => {
+      const p = cheio.get(c.brokerId)
+      return (p?.interacoes ?? 0) === c.interacoesHoje && (p?.ligacoes ?? 0) === c.ligacoesHoje
+        && (p?.avancos ?? 0) === (c.avancosHoje ?? 0) && (p?.visitas ?? 0) === c.visitasHoje
+    })
+    return confere ? producaoAte(registrosDeOntem, agora - DIA_MS) : null
+  }, [registrosDeOntem, resumoOntem, agora])
+
+  /** A régua de ontem para um corretor: até esta hora se a prova passou, senão o dia inteiro. */
+  const ontemDe = useCallback((id: string): Producao | undefined => {
+    if (ontemAteAgora) return ontemAteAgora.get(id) ?? { interacoes: 0, ligacoes: 0, avancos: 0, visitas: 0 }
+    const c = resumoOntem?.corretores.find(x => x.brokerId === id)
+    return c ? { interacoes: c.interacoesHoje, ligacoes: c.ligacoesHoje, avancos: c.avancosHoje ?? 0, visitas: c.visitasHoje } : undefined
+  }, [ontemAteAgora, resumoOntem])
+
+  // Quem aparece no painel
   const quadros = useMemo(() => {
     const nome = (id: string) => nomeCorretor(id) ?? 'Corretor'
     let ids: string[]
@@ -160,12 +193,12 @@ export function LeadsDashboard({ leads }: Props) {
     return ids.map(id => ({
       id, nome: nome(id),
       resumo: corretores.find(c => c.brokerId === id),
-      eventos: agruparFeed(feed.filter(e => e.brokerId === id)).slice(0, LINHAS_POR_CORRETOR),
+      ultimaAt: feed.find(e => e.brokerId === id)?.at ?? corretores.find(c => c.brokerId === id)?.ultimaAtividadeAt ?? null,
       // um traço por registro, na hora exata — a linha do dia
       marcas: feed.filter(e => e.brokerId === id).map(e => ({ t: new Date(e.at).getTime(), tom: fraseDoCorretor(e).tone })),
-      ontem: resumoOntem?.corretores.find(c => c.brokerId === id),
+      ontem: ontemDe(id),
     }))
-  }, [isGlobalView, effectiveBrokerId, allProfiles, nomeCorretor, feed, corretores, resumoOntem])
+  }, [isGlobalView, effectiveBrokerId, allProfiles, nomeCorretor, feed, corretores, ontemDe])
 
   // A mesma janela de horas para todas as linhas: do expediente até agora,
   // esticando se alguém trabalhou antes ou depois.
@@ -191,7 +224,7 @@ export function LeadsDashboard({ leads }: Props) {
   }, [alerta, agora])
 
   const linhasEquipe = useMemo<LinhaEquipe[]>(() => quadros.map(q => {
-    const ultima = q.eventos[0]?.at ?? q.resumo?.ultimaAtividadeAt ?? null
+    const ultima = q.ultimaAt
     const ativo = estaAtivo(ultima, agora)
     const rec = hoje.recebidos?.get(q.id)
     const v = hoje.velocidade?.linhas.find(l => l.brokerId === q.id)
@@ -202,10 +235,11 @@ export function LeadsDashboard({ leads }: Props) {
       pausa: pausaDe(pausas, q.id, agora),
       marcas: q.marcas,
       producao: [
-        { rotulo: 'Atend.',   hoje: q.resumo?.interacoesHoje ?? 0, ontem: q.ontem?.interacoesHoje },
-        { rotulo: 'Ligações', hoje: q.resumo?.ligacoesHoje ?? 0,   ontem: q.ontem?.ligacoesHoje },
-        { rotulo: 'Avanços',  hoje: q.resumo?.avancosHoje ?? 0,    ontem: q.ontem?.avancosHoje },
-        { rotulo: 'Visitas',  hoje: q.resumo?.visitasHoje ?? 0,    ontem: q.ontem?.visitasHoje },
+        { rotulo: 'Atend.',   hoje: q.resumo?.interacoesHoje ?? 0, ontem: q.ontem?.interacoes },
+        // a única meta diária por corretor que a casa tem combinada (metasConfig)
+        { rotulo: 'Ligações', hoje: q.resumo?.ligacoesHoje ?? 0,   ontem: q.ontem?.ligacoes, meta: DAILY_TARGETS.ligacoes },
+        { rotulo: 'Avanços',  hoje: q.resumo?.avancosHoje ?? 0,    ontem: q.ontem?.avancos },
+        { rotulo: 'Visitas',  hoje: q.resumo?.visitasHoje ?? 0,    ontem: q.ontem?.visitas },
       ],
       leadsNovos: hoje.recebidos ? rec?.daRoleta ?? 0 : null,
       herdados: (rec?.porTransferencia ?? 0) + (rec?.manual ?? 0),
@@ -244,11 +278,19 @@ export function LeadsDashboard({ leads }: Props) {
   const ultimoEv = feed.find(e => e.brokerId && idsNaTela.has(e.brokerId))
   const ultimoSinal = ultimoEv ? { id: ultimoEv.id, at: ultimoEv.at, quem: nomeCorretor(ultimoEv.brokerId)?.split(' ')[0] } : null
 
+  // ── Alertas por exceção ──────────────────────────────────────────────────
+  const alertas = alertasDaSala({
+    agora, agenda: slaConfig?.schedule ?? null,
+    corretores: carregado ? quadros.map(q => ({ id: q.id, nome: q.nome, ultimaAtividadeAt: q.ultimaAt, emPausa: !!pausaDe(pausas, q.id, agora) })) : [],
+    esperando: alerta.aguardandoPrimeiroContato.map(l => ({ id: l.id, nome: l.name, corretor: nomeCorretor(l.brokerId), slaDueAt: l.slaDueAt! })),
+  })
+
   // ── Faixa do topo: o momento em cinco números ────────────────────────────
   const leadsHoje = serie[serie.length - 1]?.n ?? 0
   const vencidosAgora = alerta.aguardandoPrimeiroContato.filter(l => prazoVencido(l.slaDueAt!, agora)).length
   const atendimentosHoje = quadros.reduce((t, q) => t + (q.resumo?.interacoesHoje ?? 0), 0)
-  const atendimentosOntem = resumoOntem ? quadros.reduce((t, q) => t + (q.ontem?.interacoesHoje ?? 0), 0) : null
+  const atendimentosOntem = resumoOntem ? quadros.reduce((t, q) => t + (q.ontem?.interacoes ?? 0), 0) : null
+  const rotuloOntem = ontemAteAgora ? 'ontem a esta hora' : 'ontem, o dia todo'
   const prazoHoje = !hoje.velocidade ? null
     : isGlobalView ? hoje.velocidade.total
     : hoje.velocidade.linhas.find(l => l.brokerId === effectiveBrokerId) ?? null
@@ -270,6 +312,8 @@ export function LeadsDashboard({ leads }: Props) {
         )}
       </div>
 
+      <AlertasDaSala alertas={alertas} />
+
       <FaixaNumeros itens={[
         {
           rotulo: 'Leads hoje',
@@ -286,7 +330,7 @@ export function LeadsDashboard({ leads }: Props) {
         {
           rotulo: 'Atendimentos hoje',
           valor: carregado ? <NumeroVivo valor={atendimentosHoje} /> : '—',
-          nota: atendimentosOntem === null ? undefined : `ontem ${atendimentosOntem.toLocaleString('pt-BR')}`,
+          nota: atendimentosOntem === null ? undefined : `${rotuloOntem}: ${atendimentosOntem.toLocaleString('pt-BR')}`,
         },
         {
           rotulo: 'No prazo hoje',
@@ -310,7 +354,7 @@ export function LeadsDashboard({ leads }: Props) {
       <section>
         <div className="flex items-end justify-between gap-x-4 gap-y-1 flex-wrap">
           <Titulo>Equipe *agora*</Titulo>
-          <LegendaDaLinha />
+          <LegendaDaLinha ontem={!resumoOntem ? null : ontemAteAgora ? '"ontem" conta até esta hora' : '"ontem" é o dia todo'} />
         </div>
 
         {erroPulso && !carregado ? (
@@ -334,44 +378,34 @@ export function LeadsDashboard({ leads }: Props) {
         )}
       </section>
 
-      {/* ── Gráfico grande + funil ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-5">
-        <section className="bento p-5 lg:p-6 min-w-0">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <Titulo descricao="Todo lead que entrou, inclusive os já descartados.">
-              Leads recebidos por *dia*
-            </Titulo>
-            <Segmentado
-              rotulo="Janela do gráfico"
-              valor={janela}
-              onChange={setJanela}
-              opcoes={[
-                { value: '14' as const, label: '14 dias' },
-                { value: '30' as const, label: '30 dias' },
-                { value: '90' as const, label: '90 dias' },
-              ]}
-            />
-          </div>
-          <GraficoLeads serie={serie} media={media} />
-        </section>
+      {/* ── Ao vivo (feed único) + chegada compacta (leads por dia e funil) ──── */}
+      <div className="mt-3 grid grid-cols-1 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] gap-5">
+        <RegistrosAoVivo corretores={quadros} feed={feed} carregado={carregado} />
 
-        <section className="bento p-5 lg:p-6 min-w-0 flex flex-col">
-          <Titulo descricao={`${funil.ativos.toLocaleString('pt-BR')} leads ativos no funil.`}>
-            Funil *agora*
-          </Titulo>
-          <FunilDesenhado porEtapa={funil.porEtapa} vendasNoMes={funil.vendasNoMes} />
-        </section>
+        <div className="flex flex-col gap-5 min-w-0">
+          <section className="bento p-5 min-w-0">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <Titulo>Leads por *dia*</Titulo>
+              <Segmentado
+                rotulo="Janela do gráfico"
+                valor={janela}
+                onChange={setJanela}
+                opcoes={[
+                  { value: '14' as const, label: '14 dias' },
+                  { value: '30' as const, label: '30 dias' },
+                  { value: '90' as const, label: '90 dias' },
+                ]}
+              />
+            </div>
+            <GraficoLeads serie={serie} media={media} altura={176} />
+          </section>
+
+          <section className="bento p-5 min-w-0 flex flex-col">
+            <Titulo descricao={`${funil.ativos.toLocaleString('pt-BR')} leads ativos.`}>Funil *agora*</Titulo>
+            <FunilDesenhado porEtapa={funil.porEtapa} vendasNoMes={funil.vendasNoMes} />
+          </section>
+        </div>
       </div>
-
-      {/* ── Ao vivo: a linha do tempo de cada corretor ──────────────────────── */}
-      {carregado && quadros.length > 0 && (
-        <section className="mt-3">
-          <Titulo>Registros *ao vivo*</Titulo>
-          <div className={`grid grid-cols-1 gap-5 ${quadros.length === 2 ? 'md:grid-cols-2' : quadros.length >= 3 ? 'md:grid-cols-2 xl:grid-cols-3' : ''}`}>
-            {quadros.map(q => <LinhaDoTempo key={q.id} nome={q.nome} eventos={q.eventos} />)}
-          </div>
-        </section>
-      )}
 
       {/* ── Velocidade de resposta + qualidade por origem ───────────────────── */}
       <section className="mt-3">
@@ -461,7 +495,7 @@ function Conexao({ estado, carregado }: { estado: string; carregado: boolean }) 
 
 // ─── Gráfico de leads por dia ─────────────────────────────────────────────────
 
-function GraficoLeads({ serie, media }: { serie: { data: string; n: number }[]; media: number | null }) {
+function GraficoLeads({ serie, media, altura }: { serie: { data: string; n: number }[]; media: number | null; altura: number }) {
   const opcao = useCallback((t: CoresGrafico) => {
     const ultimo = serie.length - 1
     const neutro = resolverCor('var(--stage-lead)')
@@ -482,7 +516,7 @@ function GraficoLeads({ serie, media }: { serie: { data: string; n: number }[]; 
           itemStyle: { color: i === ultimo ? t.marca : neutro, opacity: i === ultimo ? 1 : 0.42, borderRadius: [6, 6, 0, 0] },
         })),
         label: {
-          show: serie.length <= 31, position: 'top', color: t.texto, fontSize: 11, fontWeight: 600,
+          show: serie.length <= 16, position: 'top', color: t.texto, fontSize: 11, fontWeight: 600,
           formatter: (p: { value: number }) => (p.value > 0 ? String(p.value) : ''),
         },
         markLine: media === null ? undefined : {
@@ -498,7 +532,7 @@ function GraficoLeads({ serie, media }: { serie: { data: string; n: number }[]; 
   const total = serie.reduce((s, p) => s + p.n, 0)
   return (
     <Grafico
-      altura={308}
+      altura={altura}
       opcao={opcao}
       rotulo={`Leads recebidos por dia nos últimos ${serie.length} dias: ${total} no total, ${serie[serie.length - 1]?.n ?? 0} hoje.`}
     />
@@ -525,7 +559,7 @@ function FunilDesenhado({ porEtapa, vendasNoMes }: { porEtapa: Record<LeadFunnel
 
   return (
     <div className="flex justify-center my-auto">
-      <svg viewBox={`0 0 ${L} ${altura}`} className="w-full max-w-[360px] h-auto" role="img"
+      <svg viewBox={`0 0 ${L} ${altura}`} className="w-full max-w-[290px] h-auto" role="img"
            aria-label={`Funil agora: ${linhas.map(l => `${l.nome} ${l.n}`).join(', ')}.`}>
         {linhas.map((l, i) => {
           const y = i * (H + VAO)
@@ -552,56 +586,76 @@ function FunilDesenhado({ porEtapa, vendasNoMes }: { porEtapa: Record<LeadFunnel
 
 // ─── Quadro de atividade de um corretor ───────────────────────────────────────
 
-// ─── Linha do tempo de um corretor ────────────────────────────────────────────
+// ─── Registros ao vivo ────────────────────────────────────────────────────────
 
 /**
- * O que o corretor fez hoje, do mais recente para o mais antigo. As linhas
- * novas entram sozinhas, com a animação de chegada. Os números dele estão no
- * painel da equipe — aqui é só o relato.
+ * Tudo que a equipe registrou hoje, num feed só, do mais recente para o mais
+ * antigo — para saber "o que acabou de acontecer" sem varrer uma coluna por
+ * corretor. O filtro mostra um corretor de cada vez. Linha nova entra sozinha.
  */
-function LinhaDoTempo({ nome, eventos }: { nome: string; eventos: PulseEvent[] }) {
+function RegistrosAoVivo({ corretores, feed, carregado }: {
+  corretores: { id: string; nome: string }[]
+  feed: PulseEvent[]
+  carregado: boolean
+}) {
+  const [filtro, setFiltro] = useState<string | null>(null)
+  const ativo = corretores.some(c => c.id === filtro) ? filtro : null
+  const nomes = useMemo(() => new Map(corretores.map(c => [c.id, c.nome.split(' ')[0]])), [corretores])
+  const eventos = useMemo(
+    () => agruparFeed(feed.filter(e => e.brokerId && (ativo ? e.brokerId === ativo : nomes.has(e.brokerId)))).slice(0, LINHAS_AO_VIVO),
+    [feed, ativo, nomes],
+  )
+
   return (
-    <article className="bento flex flex-col min-w-0 overflow-hidden">
-      <header className="flex items-baseline justify-between gap-3 px-5 lg:px-6 pt-4 pb-3 border-b border-line">
-        <h4 className="font-display text-[14.5px] font-bold tracking-[-0.015em] text-t1 truncate">{nome}</h4>
-        <p className="text-[12px] text-t4 tabular-nums flex-shrink-0">
-          {eventos.length === 0 ? 'sem registros hoje' : `últimos ${eventos.length} registros`}
-        </p>
+    <section className="bento flex flex-col min-w-0 overflow-hidden">
+      <header className="flex items-center justify-between gap-3 flex-wrap px-5 lg:px-6 pt-4 pb-3 border-b border-line">
+        <h3 className="font-display text-[16px] font-bold tracking-[-0.015em] text-t1">{destacar('Registros *ao vivo*')}</h3>
+        {corretores.length > 1 && (
+          <Segmentado
+            rotulo="Filtrar registros por corretor"
+            valor={ativo}
+            onChange={setFiltro}
+            opcoes={[{ value: null, label: 'Todos' }, ...corretores.map(c => ({ value: c.id as string | null, label: nomes.get(c.id) ?? c.nome }))]}
+          />
+        )}
       </header>
-      <div className="h-[320px] overflow-y-auto overscroll-contain">
-        {eventos.length === 0 ? (
-          <p className="text-[13.5px] text-t4 px-5 py-10 text-center">Nenhuma atividade registrada hoje ainda.</p>
+
+      {/* ocupa a altura da coluna ao lado; no celular, uma janela fixa */}
+      <div className="flex-1 basis-0 min-h-[420px] overflow-y-auto overscroll-contain">
+        {!carregado ? (
+          <div className="m-5 h-40 rounded-[12px] shimmer" aria-busy="true" />
+        ) : eventos.length === 0 ? (
+          <p className="text-[13.5px] text-t4 px-5 py-12 text-center">Nenhum registro hoje ainda.</p>
         ) : (
-          <ul className="py-2" aria-live="polite" aria-label={`Atividade de ${nome} hoje`}>
-            {eventos.map((ev, i) => {
+          <ul className="py-2" aria-live="polite" aria-label="Registros da equipe hoje">
+            {eventos.map(ev => {
               const v = fraseDoCorretor(ev)
               const Icone = v.icon
               return (
-                <li key={ev.id} className="relative flex items-start gap-3.5 px-5 lg:px-6 py-2.5 pulse-item-in">
-                  {/* Fio da linha do tempo, ligando um evento ao seguinte */}
-                  {i < eventos.length - 1 && (
-                    <span className="absolute left-[33px] lg:left-[37px] top-[38px] -bottom-[10px] w-px bg-line" aria-hidden />
-                  )}
-                  <span className={`relative w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${TOM_DISCO[v.tone]}`} aria-hidden>
+                <li key={ev.id} className="flex items-start gap-3 px-5 lg:px-6 py-2 pulse-item-in">
+                  <span className="w-[42px] flex-shrink-0 pt-[5px] text-[12px] text-t4 tabular-nums">{horaCurta(ev.at)}</span>
+                  <span className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${TOM_DISCO[v.tone]}`} aria-hidden>
                     <Icone size={14} strokeWidth={1.8} />
                   </span>
                   <span className="min-w-0 flex-1 pt-[3px]">
-                    <span className="block text-[14px] text-t1 leading-snug">{v.texto}</span>
+                    <span className="block text-[14px] text-t1 leading-snug">
+                      {!ativo && ev.brokerId && <span className="font-semibold">{nomes.get(ev.brokerId)} · </span>}
+                      {v.texto}
+                    </span>
                     {v.detalhe && <span className="block text-[12.5px] text-t3 truncate mt-0.5">{v.detalhe}</span>}
                   </span>
-                  <span className="text-[12px] text-t4 tabular-nums flex-shrink-0 pt-[5px]">{horaCurta(ev.at)}</span>
                 </li>
               )
             })}
           </ul>
         )}
       </div>
-    </article>
+    </section>
   )
 }
 
 /** O que cada cor de traço quer dizer na linha do dia — quatro palavras, sem caixa. */
-function LegendaDaLinha() {
+function LegendaDaLinha({ ontem }: { ontem: string | null }) {
   const itens: [string, string][] = [
     ['var(--info)', 'contato'],
     ['var(--success)', 'interesse ou visita'],
@@ -615,6 +669,8 @@ function LegendaDaLinha() {
           <span className="h-3 w-[3px] rounded-full" style={{ background: cor }} aria-hidden /> {nome}
         </li>
       ))}
+      {/* qual é a régua do "ontem" embaixo de cada número */}
+      {ontem && <li className="pl-4 border-l border-line text-t4">{ontem}</li>}
     </ul>
   )
 }
