@@ -8,6 +8,8 @@ export interface Profile {
   active: boolean
   avatarUrl?: string
   allowedMenus: string[] | null  // null = todos os menus liberados
+  /** Gestor: corretor que pode ver, somente leitura, o funil dos colegas (migração 091) */
+  isManager: boolean
 }
 
 interface AuthStore {
@@ -23,7 +25,7 @@ interface AuthStore {
   logout: () => void
   createBroker: (email: string, password: string, name: string) => Promise<string | null>
   fetchAllProfiles: () => Promise<Profile[]>
-  updateProfile: (id: string, data: Partial<Pick<Profile, 'name' | 'role' | 'active'>>) => Promise<void>
+  updateProfile: (id: string, data: Partial<Pick<Profile, 'name' | 'role' | 'active' | 'isManager'>>) => Promise<void>
   updateBrokerMenus: (brokerId: string, menus: string[] | null) => Promise<void>
 }
 
@@ -35,6 +37,7 @@ function mapProfile(r: Record<string, unknown>): Profile {
     active: r.active as boolean,
     avatarUrl: (r.avatar_url as string | null) ?? undefined,
     allowedMenus: (r.allowed_menus as string[] | null) ?? null,
+    isManager: r.is_manager === true,
   }
 }
 
@@ -128,6 +131,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         ...(data.name     !== undefined && { name:       data.name     }),
         ...(data.role     !== undefined && { role:       data.role     }),
         ...(data.active   !== undefined && { active:     data.active   }),
+        ...(data.isManager !== undefined && { is_manager: data.isManager }),
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

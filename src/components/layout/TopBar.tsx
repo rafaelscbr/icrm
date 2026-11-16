@@ -142,7 +142,7 @@ export function TopBar() {
 
   const nome = profile?.name ?? 'Usuário'
   const inicial = iniciais(nome) || 'U'
-  const papel = isAdmin ? 'Admin · Corretor' : 'Corretor'
+  const papel = isAdmin ? 'Admin · Corretor' : profile?.isManager ? 'Gestor · Corretor' : 'Corretor'
   const visoes: Visao[] = isAdmin
     ? [
         { id: null, inicial: 'G', label: 'Visão Global' },

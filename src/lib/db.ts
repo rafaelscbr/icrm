@@ -1236,6 +1236,16 @@ export const db = {
       const r = (data ?? {}) as { qualified_at?: string | null; qualified_by?: string | null }
       return { qualifiedAt: r.qualified_at ?? undefined, qualifiedBy: r.qualified_by ?? undefined }
     },
+    /**
+     * O funil ABERTO de outro corretor, para o gestor ver (migração 091). O
+     * banco só responde a gestor ou admin, e devolve sem telefone, e-mail,
+     * anotações e respostas do formulário. Sem toast: a tela mostra a falha.
+     */
+    funilDaEquipe: async (brokerId: string): Promise<Lead[]> => {
+      const { data, error } = await supabase.rpc('team_funnel_leads', { p_broker_id: brokerId })
+      if (error) throw error
+      return ((data ?? []) as LeadRow[]).map(toLead)
+    },
     // Transferência manual — RPC SECURITY DEFINER valida dono/admin e grava
     // auditoria (lead_assignments), interação e notificação numa transação
     transfer: async (leadId: string, toBrokerId: string): Promise<void> => {

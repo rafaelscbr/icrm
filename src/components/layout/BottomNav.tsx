@@ -176,7 +176,7 @@ export function BottomNav() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[15px] font-semibold text-t1 truncate">{profile?.name ?? 'Usuário'}</p>
-                  <p className="text-[12.5px] text-t4">{isAdmin ? 'Administrador' : 'Corretor'}</p>
+                  <p className="text-[12.5px] text-t4">{isAdmin ? 'Administrador' : profile?.isManager ? 'Gestor · Corretor' : 'Corretor'}</p>
                 </div>
                 <Link to="/notificacoes" className="folha-icone relative"
                   aria-label={naoLidas > 0 ? `Avisos — ${naoLidas} não lido${naoLidas !== 1 ? 's' : ''}` : 'Avisos'}>

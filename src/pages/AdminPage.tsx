@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Users, Shield, UserCheck, UserX, Pencil, LayoutGrid, Plus, EyeOff, Lock,
+  Users, Shield, UserCheck, UserX, Pencil, LayoutGrid, Plus, EyeOff, Lock, Eye,
 } from 'lucide-react'
 import { PageLayout } from '../components/layout/PageLayout'
 import { SidePanel } from '../components/ui/SidePanel'
@@ -57,6 +57,7 @@ export function AdminPage() {
   const [editTarget,  setEditTarget]  = useState<Profile | null>(null)
   const [editName,    setEditName]    = useState('')
   const [editRole,    setEditRole]    = useState<'admin' | 'broker'>('broker')
+  const [editGestor,  setEditGestor]  = useState(false)
   const [newOpen,     setNewOpen]     = useState(false)
   const [newName,     setNewName]     = useState('')
   const [newEmail,    setNewEmail]    = useState('')
@@ -86,6 +87,7 @@ export function AdminPage() {
     setEditTarget(p)
     setEditName(p.name)
     setEditRole(p.role)
+    setEditGestor(p.isManager)
   }
 
   function openMenuManager(p: Profile) {
@@ -98,7 +100,8 @@ export function AdminPage() {
     if (!editTarget) return
     setSaving(true)
     try {
-      await updateProfile(editTarget.id, { name: editName, role: editRole })
+      // Gestor só existe para corretor: o admin já vê tudo.
+      await updateProfile(editTarget.id, { name: editName, role: editRole, isManager: editRole === 'broker' && editGestor })
       toast.success('Perfil atualizado')
       setEditTarget(null)
       await reload()
@@ -269,6 +272,24 @@ export function AdminPage() {
               ))}
             </div>
           </fieldset>
+
+          {/* Gestor: um atributo do corretor, não um terceiro papel. Ele continua
+              corretor em tudo — recebe lead, tem funil — e ganha só a leitura
+              do funil dos colegas. */}
+          {editRole === 'broker' && (
+            <label className={`flex items-start gap-3 py-3 px-3 rounded-[14px] border cursor-pointer transition-all
+                               has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/40
+                               ${editGestor ? 'bg-brand/15 border-brand/40' : 'bg-s3/50 border-line hover:border-line-strong'}`}>
+              <input type="checkbox" checked={editGestor} onChange={e => setEditGestor(e.target.checked)}
+                     className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[color:var(--brand)]" />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-bold text-t1">Gestor</span>
+                <span className="block text-[12px] text-t3 mt-0.5">
+                  Pode abrir o Kanban dos outros corretores, somente leitura: não move, não edita, não transfere e não vê telefone nem anotações.
+                </span>
+              </span>
+            </label>
+          )}
         </div>
       </SidePanel>
 
@@ -435,6 +456,7 @@ function ProfileRow({
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-bold text-t1 truncate">{profile.name}</p>
             {profile.role === 'admin' && <Chip icon={Shield} tom="marca">Admin</Chip>}
+            {profile.role === 'broker' && profile.isManager && <Chip icon={Eye} tom="info">Gestor</Chip>}
             {!profile.active && <Chip icon={Lock} tom="risco">Desativado</Chip>}
           </div>
           {profile.role === 'broker' && (

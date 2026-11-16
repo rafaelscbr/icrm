@@ -31,6 +31,8 @@ import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadVisitaTaskModal } from './LeadVisitaTaskModal'
 import { LeadsDashboard } from './LeadsDashboard'
+import { Segmentado } from '../../components/shared/visual'
+import { FunilSomenteLeitura } from './FunilSomenteLeitura'
 import { LeadConversionTab } from './LeadConversionTab'
 import { LeadFollowupTab } from './LeadFollowupTab'
 import { SlaBadge } from './SlaBadge'
@@ -284,6 +286,20 @@ export function LeadsPage() {
   const { load: loadConfig }   = useLeadConfigStore()
   const { load: loadIntel, intel } = useIntelligenceStore()
 
+  // ── Gestor: pode abrir o funil de um colega, somente leitura (migração 091) ─
+  // O admin não precisa disto: ele já tem a troca de visão na barra do topo.
+  const { profile: meuPerfil, fetchAllProfiles } = useAuthStore()
+  const souGestor = !isAdmin && meuPerfil?.isManager === true
+  const [funilDe, setFunilDe] = useState<string | null>(null)
+  useEffect(() => {
+    if (souGestor && allProfiles.length === 0) void fetchAllProfiles()
+  }, [souGestor, allProfiles.length, fetchAllProfiles])
+  const colegas = useMemo(
+    () => (souGestor ? allProfiles.filter(p => p.active && p.role === 'broker' && p.id !== meuPerfil?.id) : []),
+    [souGestor, allProfiles, meuPerfil],
+  )
+  const colega = colegas.find(c => c.id === funilDe) ?? null
+
   // Filtro por corretor só faz sentido na visão admin global (sem corretor fixado)
   const showBrokerFilter = isAdmin && !viewAsBrokerId
 
@@ -478,7 +494,24 @@ export function LeadsPage() {
       {isFollowTab && <LeadFollowupTab leads={leads} onOpenLead={setSelectedLead} />}
       {isConfigTab && <LeadSettings />}
 
-      {(isListTab || isKanbanTab) && (
+      {/* Gestor: escolhe de quem é o funil. O do colega abre somente leitura. */}
+      {isKanbanTab && colegas.length > 0 && (
+        <div className="mb-4 flex items-center gap-3 flex-wrap">
+          <span className="text-[13px] text-t3">Funil de</span>
+          <Segmentado
+            rotulo="De quem é o funil"
+            valor={colega?.id ?? null}
+            onChange={setFunilDe}
+            opcoes={[
+              { value: null, label: 'Meu funil' },
+              ...colegas.map(c => ({ value: c.id as string | null, label: c.name.split(' ')[0] })),
+            ]}
+          />
+        </div>
+      )}
+      {isKanbanTab && colega && <FunilSomenteLeitura brokerId={colega.id} nome={colega.name} />}
+
+      {(isListTab || (isKanbanTab && !colega)) && (
         <>
           <BarraDeFiltros
             vista={isKanbanTab ? 'kanban' : 'lista'}
