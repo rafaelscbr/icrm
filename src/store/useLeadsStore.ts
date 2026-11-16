@@ -282,15 +282,21 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     // refaz o subscribe e recarrega do banco para recuperar eventos perdidos.
     const connect = (isReconnect: boolean) => {
       if (disposed) return
-      channel = buildChannel()
-      channel.subscribe((status) => {
+      const atual = buildChannel()
+      channel = atual
+      atual.subscribe((status) => {
+        // Só o canal em uso decide alguma coisa. `removeChannel` dispara CLOSED
+        // de volta nesta mesma função; sem esta linha, a cada queda o fechamento
+        // chamava a si mesmo até estourar a pilha (16/11/2026).
+        if (channel !== atual) return
         if (status === 'SUBSCRIBED') {
           useRealtimeStatusStore.getState().setConnected(true)
           if (isReconnect) get().reload() // reconciliação silenciosa — banco é a fonte de verdade
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           useRealtimeStatusStore.getState().setConnected(false)
           if (disposed) return
-          if (channel) { supabase.removeChannel(channel); channel = null }
+          channel = null
+          void supabase.removeChannel(atual)
           if (retryTimer) clearTimeout(retryTimer)
           retryTimer = setTimeout(() => connect(true), 4000)
         }

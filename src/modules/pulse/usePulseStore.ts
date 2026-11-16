@@ -432,8 +432,13 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     // Reconexão com backoff fixo — mesmo padrão de useLeadsStore.subscribe().
     const connect = (isReconnect: boolean) => {
       if (disposed) return
-      channel = buildChannel()
-      channel.subscribe(status => {
+      const atual = buildChannel()
+      channel = atual
+      atual.subscribe(status => {
+        // Só o canal em uso decide alguma coisa. `removeChannel` dispara CLOSED
+        // de volta nesta mesma função; sem esta linha, a cada queda o fechamento
+        // chamava a si mesmo até estourar a pilha (16/11/2026).
+        if (channel !== atual) return
         if (status === 'SUBSCRIBED') {
           set({ connection: 'live', desconectadoDesde: null })
           if (isReconnect) get().bootstrap('reconexao')   // respeita o cooldown
@@ -443,7 +448,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
             connection: 'reconnecting',
             desconectadoDesde: s.desconectadoDesde ?? Date.now(),
           }))
-          if (channel) { supabase.removeChannel(channel); channel = null }
+          channel = null
+          void supabase.removeChannel(atual)
           if (retryTimer) clearTimeout(retryTimer)
           retryTimer = setTimeout(() => connect(true), RECONNECT_DELAY_MS)
         }
