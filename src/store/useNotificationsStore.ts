@@ -107,6 +107,8 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
       lead_returning_client: 'var(--info)',
       // Admin: o rodízio desistiu do lead — vermelho, é o único aviso que pede decisão
       lead_sla_exhausted:    'var(--error)',
+      // Admin: lead chegou com todos os corretores em pausa (migração 089)
+      lead_all_paused:       'var(--warning)',
     }
     const tarja = AVISOS_DE_LEAD[n.type]
     if (tarja) {

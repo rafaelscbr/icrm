@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ChevronRight, RefreshCw, Snowflake, Timer } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { Lead, LeadFunnelStage } from '../../types'
+import type { Lead, LeadFunnelStage, LeadPause } from '../../types'
 import { STAGE_THEME } from '../../lib/stageTheme'
 import { useAdminView } from '../../hooks/useAdminView'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePulseStore } from '../pulse/usePulseStore'
+import { useLeadPauseStore } from '../../store/useLeadPauseStore'
+import { horaDaVolta, pausaDe } from '../../lib/pausaLeads'
 import { agruparFeed, horaCurta } from '../pulse/pulseEvents'
 import type { PulseTone } from '../pulse/pulseEvents'
 import type { PulseBroker, PulseEvent } from '../pulse/types'
@@ -62,6 +64,11 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   const { effectiveBrokerId, isGlobalView } = useAdminView()
   const { isAdmin, profile, allProfiles, fetchAllProfiles } = useAuthStore()
 
+  // Quem pausou o recebimento de leads: o admin recebe a de todos, o corretor
+  // só a própria. Uma leitura pequena ao abrir a tela.
+  const pausas         = useLeadPauseStore(s => s.pausas)
+  const carregarPausas = useLeadPauseStore(s => s.carregar)
+  useEffect(() => { void carregarPausas() }, [carregarPausas])
   const connection  = usePulseStore(s => s.connection)
   const erroPulso   = usePulseStore(s => s.erro)
   const carregado   = usePulseStore(s => s.ultimoSnapshotAt !== null)
@@ -185,7 +192,8 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         ) : (
           <div className={`grid grid-cols-1 gap-5 ${quadros.length === 2 ? 'md:grid-cols-2' : quadros.length >= 3 ? 'md:grid-cols-2 xl:grid-cols-3' : ''}`}>
             {quadros.map(q => (
-              <QuadroCorretor key={q.id} nome={q.nome} resumo={q.resumo} eventos={q.eventos} agora={agora} />
+              <QuadroCorretor key={q.id} nome={q.nome} resumo={q.resumo} eventos={q.eventos} agora={agora}
+                              pausa={pausaDe(pausas, q.id, agora)} />
             ))}
           </div>
         )}
@@ -314,11 +322,13 @@ function FunilDesenhado({ porEtapa, vendasNoMes }: { porEtapa: Record<LeadFunnel
 
 // ─── Quadro de atividade de um corretor ───────────────────────────────────────
 
-function QuadroCorretor({ nome, resumo, eventos, agora }: {
+function QuadroCorretor({ nome, resumo, eventos, agora, pausa }: {
   nome: string
   resumo?: PulseBroker
   eventos: PulseEvent[]
   agora: number
+  /** recebimento de leads pausado (migração 089) */
+  pausa?: LeadPause
 }) {
   const ultima = eventos[0]?.at ?? resumo?.ultimaAtividadeAt ?? null
   const ativo = estaAtivo(ultima, agora)
@@ -346,6 +356,12 @@ function QuadroCorretor({ nome, resumo, eventos, agora }: {
               : 'Sem atividade hoje'}
           </p>
         </div>
+        {pausa && (
+          <span className="flex-shrink-0 rounded-full border border-warning-line bg-warning-bg px-2.5 py-1 text-[12px] font-semibold text-warning tabular-nums"
+                title="Pausou o recebimento de leads — a roleta pula a vez dele até a volta">
+            Em pausa · volta {horaDaVolta(pausa.untilAt, agora)}
+          </span>
+        )}
       </header>
 
       <dl className="grid grid-cols-4 border-y border-line bg-s2/50">

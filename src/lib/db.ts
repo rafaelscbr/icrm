@@ -7,6 +7,7 @@ import {
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
   LeadInteraction, LeadInteractionType, LeadInteractionOutcome,
   LeadConfigEntry, LeadConfigType, PermutaItem, MetaFormRouting, LeadSlaConfig, SlaDia,
+  LeadPause, LeadPausePreset,
   AppNotification, NotificationType,
   LeadList, LeadListMember, CampaignList, LeadCampaignDispatch, BaseLeadProfile,
   CampaignParticipant, CampaignParticipantRole, CampaignActivity, CampaignActivityType,
@@ -17,6 +18,15 @@ import {
 interface LeadSlaConfigRow {
   enabled: boolean; minutes: number; schedule: SlaDia[]
   enabled_at: string | null; updated_at: string
+}
+
+interface LeadPauseRow {
+  id: string; broker_id: string; preset: LeadPausePreset
+  started_at: string; until_at: string
+}
+
+function mapLeadPause(r: LeadPauseRow): LeadPause {
+  return { id: r.id, brokerId: r.broker_id, preset: r.preset, startedAt: r.started_at, untilAt: r.until_at }
 }
 
 function mapLeadSlaConfig(r: LeadSlaConfigRow): LeadSlaConfig {
@@ -1302,6 +1312,27 @@ export const db = {
       })
       if (error) { toast.error(`Rodízio não foi salvo: ${error.message}`); throw error }
       return mapLeadSlaConfig(data as LeadSlaConfigRow)
+    },
+  },
+
+  // Pausa no recebimento de leads (migração 089). O banco decide o que está em
+  // vigor (relógio dele, não o do navegador) e só ele grava: pausar e retomar
+  // são funções. O corretor enxerga a própria pausa; o admin, a de todos.
+  leadPauses: {
+    // Sem toast: o menu mostra a falha no lugar do estado, com "Tentar de novo".
+    ativas: async (): Promise<LeadPause[]> => {
+      const { data, error } = await supabase.rpc('active_lead_pauses')
+      if (error) throw error
+      return ((data ?? []) as LeadPauseRow[]).map(mapLeadPause)
+    },
+    pausar: async (preset: LeadPausePreset): Promise<LeadPause> => {
+      const { data, error } = await supabase.rpc('pause_lead_intake', { p_preset: preset })
+      if (error) { toast.error(`O recebimento não foi pausado: ${error.message}`); throw error }
+      return mapLeadPause(data as LeadPauseRow)
+    },
+    retomar: async (brokerId?: string): Promise<void> => {
+      const { error } = await supabase.rpc('resume_lead_intake', { p_broker_id: brokerId ?? null })
+      if (error) { toast.error(`O recebimento não foi retomado: ${error.message}`); throw error }
     },
   },
 

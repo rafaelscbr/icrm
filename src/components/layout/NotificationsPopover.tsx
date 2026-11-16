@@ -92,6 +92,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
     if (n.type === 'lead_reentry')          return <RefreshCw  size={14} strokeWidth={1.6} className={cls} />
     if (n.type === 'lead_returning_client') return <BadgeCheck size={14} strokeWidth={1.6} className={cls} />
     if (n.type === 'lead_sla_exhausted')    return <AlertTriangle size={14} strokeWidth={1.6} className={!n.read ? 'text-error' : 'text-t4'} />
+    if (n.type === 'lead_all_paused')       return <AlertTriangle size={14} strokeWidth={1.6} className={!n.read ? 'text-warning' : 'text-t4'} />
     return <ClipboardList size={14} strokeWidth={1.6} className={cls} />
   }
 

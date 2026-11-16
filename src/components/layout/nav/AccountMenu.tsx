@@ -1,9 +1,13 @@
+import { useEffect } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { Link } from 'react-router-dom'
 import {
   ChevronsUpDown, Search, Sun, Moon, ShieldCheck, LogOut, ExternalLink, Rows3, Rows4,
 } from 'lucide-react'
 import { useDensidadeStore } from '../../../store/useDensidadeStore'
+import { useLeadPauseStore } from '../../../store/useLeadPauseStore'
+import { horaDaVolta } from '../../../lib/pausaLeads'
+import { PausaLeads, useMinhaPausa } from './PausaLeads'
 import { externalTools } from './navConfig'
 
 /**
@@ -34,6 +38,12 @@ export function AccountMenu({
 }) {
   const { compacta, setCompacta } = useDensidadeStore()
 
+  // Pausa no recebimento de leads: uma leitura ao montar a barra, para o
+  // avatar já avisar que o corretor está fora da roleta sem abrir o menu.
+  const carregarPausas = useLeadPauseStore(s => s.carregar)
+  useEffect(() => { void carregarPausas() }, [carregarPausas])
+  const { pausa, agora } = useMinhaPausa()
+
   const linhaClasse =
     'flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium ' +
     'transition-colors cursor-pointer hover:bg-nav-hover text-left'
@@ -42,7 +52,10 @@ export function AccountMenu({
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
-          aria-label={`Conta de ${nome} — preferências, ferramentas e sair`}
+          aria-label={pausa
+            ? `Conta de ${nome} — recebimento de leads em pausa, volta ${horaDaVolta(pausa.untilAt, agora)}`
+            : `Conta de ${nome} — preferências, ferramentas e sair`}
+          title={pausa ? `Recebimento de leads em pausa — volta ${horaDaVolta(pausa.untilAt, agora)}` : undefined}
           // Anel de foco discreto: o contorno dourado de 2px na largura toda do
           // trilho competia com o item ativo. Aqui o foco é linha, não ouro.
           className={`flex cursor-pointer items-center rounded-xl transition-colors
@@ -50,12 +63,20 @@ export function AccountMenu({
             focus:outline-none focus-visible:ring-2 focus-visible:ring-line-strong
             ${collapsed ? 'justify-center py-1.5' : 'gap-2.5 p-1.5'}`}
         >
-          <span
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
-            style={{ background: 'var(--brand-fill)', color: 'var(--brand-fill-text)' }}
-            aria-hidden
-          >
-            {inicial}
+          <span className="relative flex-shrink-0" aria-hidden>
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold"
+              style={{ background: 'var(--brand-fill)', color: 'var(--brand-fill-text)' }}
+            >
+              {inicial}
+            </span>
+            {/* Fora da roleta: o ponto âmbar fica visível sem abrir o menu. */}
+            {pausa && (
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full"
+                    style={{ background: lado === 'abaixo' ? 'var(--bar-bg)' : 'var(--nav-bg)' }}>
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#F2BE5C' }} />
+              </span>
+            )}
           </span>
           {!collapsed && (
             <>
@@ -82,7 +103,7 @@ export function AccountMenu({
           align="end"
           sideOffset={10}
           collisionPadding={12}
-          className="nav-elev z-[130] w-[248px] rounded-[14px] p-1.5
+          className="nav-elev z-[130] w-[280px] rounded-[14px] p-1.5
                      animate-in fade-in duration-150
                      focus:outline-none"
         >
@@ -94,6 +115,12 @@ export function AccountMenu({
           </div>
 
           <div className="mx-1 mb-1.5 h-px" style={{ background: 'var(--nav-line)' }} />
+
+          {/* Recebimento de leads — a única coisa do menu que muda o dia do
+              corretor, por isso vem primeiro. */}
+          <PausaLeads tema="menu" />
+
+          <div className="mx-1 my-1.5 h-px" style={{ background: 'var(--nav-line)' }} />
 
           {/*
             A barra de busca saiu do trilho: ocupava uma faixa permanente para

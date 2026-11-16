@@ -630,6 +630,19 @@ export interface LeadSlaConfig {
   updatedAt:  string
 }
 
+// ─── Pausa no recebimento de leads (migração 089) ────────────────────────────
+
+export type LeadPausePreset = '30min' | '1h' | '2h' | '3h' | 'dia'
+
+/** Pausa em vigor: enquanto `untilAt` não chega, nenhum rodízio entrega lead ao corretor. */
+export interface LeadPause {
+  id:        string
+  brokerId:  string
+  preset:    LeadPausePreset
+  startedAt: string
+  untilAt:   string
+}
+
 // ─── Configuração de leads (motivos de descarte + origens) ───────────────────
 
 export type LeadConfigType = 'discard_reason' | 'origin'
@@ -914,6 +927,7 @@ export type NotificationType =
   | 'lead_reentry'            // lead que já estava no funil preencheu o formulário de novo
   | 'lead_returning_client'   // cliente que já comprou voltou a se cadastrar
   | 'lead_sla_exhausted'      // admin: lead girou 20x no rodízio do SLA sem 1º contato (migração 076)
+  | 'lead_all_paused'         // admin: lead chegou com todos os corretores em pausa (migração 089)
 
 export interface AppNotification {
   id: string

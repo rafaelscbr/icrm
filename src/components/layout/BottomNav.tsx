@@ -11,6 +11,7 @@ import { useUnreadCount } from '../../store/useNotificationsStore'
 import { externalTools as tools, secoesDaGaveta, isGroup, navSections, acoesCriar } from './nav/navConfig'
 import type { NavLeaf } from './nav/navConfig'
 import { iniciais } from '../../lib/formatters'
+import { PausaLeads } from './nav/PausaLeads'
 
 /*
  * Navegação do celular — v2 (01/11/2026).
@@ -194,6 +195,9 @@ export function BottomNav() {
                   <X size={20} strokeWidth={2} aria-hidden />
                 </button>
               </div>
+
+              {/* Recebimento de leads — pausar e voltar para a roleta */}
+              <PausaLeads tema="folha" />
 
               {/* Busca */}
               <button

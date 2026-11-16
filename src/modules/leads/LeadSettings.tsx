@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { CampaignRoutingSettings } from './CampaignRoutingSettings'
 import { SlaRodizioSettings } from './SlaRodizioSettings'
 import { MetaConversoesSettings } from './MetaConversoesSettings'
+import { PausasDaEquipe } from './PausasDaEquipe'
 import { CAMPO, Interruptor, SecaoConfig } from './SecaoConfig'
 import toast from 'react-hot-toast'
 
@@ -64,6 +65,8 @@ export function LeadSettings() {
       )}
 
       <div className="min-w-0 flex-1 max-w-[920px]">
+        {/* Quem pausou o recebimento: muda o resultado das duas roletas abaixo. */}
+        {(atual === 'rodizio' || atual === 'campanhas') && <PausasDaEquipe />}
         {atual === 'rodizio'   && <SlaRodizioSettings />}
         {atual === 'campanhas' && <CampaignRoutingSettings />}
         {atual === 'meta'      && <MetaConversoesSettings />}
