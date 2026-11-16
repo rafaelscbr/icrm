@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
-  BadgeCheck, ChevronRight, AlertTriangle, Smartphone,
+  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushDeviceState, type PushDeviceState } from '../lib/push'
@@ -90,6 +90,10 @@ function aparencia(n: AppNotification) {
   if (n.type === 'lead_returning_client') return { icon: BadgeCheck,    tom: 'info'    as const, acao: 'Abrir lead'   }
   // Rodízio do SLA esgotado: ninguém atendeu em 20 voltas — decisão do admin.
   if (n.type === 'lead_sla_exhausted')    return { icon: AlertTriangle, tom: 'risco'   as const, acao: 'Abrir lead'   }
+  // Lead entregue com a roleta inteira em pausa (089) e corretor que pausou o
+  // recebimento (090): avisos do admin, em âmbar — pedem atenção, não socorro.
+  if (n.type === 'lead_all_paused')       return { icon: AlertTriangle, tom: 'atencao' as const, acao: 'Abrir lead'   }
+  if (n.type === 'lead_intake_paused')    return { icon: PauseCircle,   tom: 'atencao' as const, acao: 'Abrir Leads'  }
   return                                         { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
 }
 

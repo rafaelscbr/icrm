@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle, BadgeCheck } from 'lucide-react'
+import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle, BadgeCheck, PauseCircle } from 'lucide-react'
 import { useNotificationsStore } from '../../store/useNotificationsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { AppNotification } from '../../types'
@@ -93,6 +93,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
     if (n.type === 'lead_returning_client') return <BadgeCheck size={14} strokeWidth={1.6} className={cls} />
     if (n.type === 'lead_sla_exhausted')    return <AlertTriangle size={14} strokeWidth={1.6} className={!n.read ? 'text-error' : 'text-t4'} />
     if (n.type === 'lead_all_paused')       return <AlertTriangle size={14} strokeWidth={1.6} className={!n.read ? 'text-warning' : 'text-t4'} />
+    if (n.type === 'lead_intake_paused')    return <PauseCircle   size={14} strokeWidth={1.6} className={!n.read ? 'text-warning' : 'text-t4'} />
     return <ClipboardList size={14} strokeWidth={1.6} className={cls} />
   }
 
@@ -232,7 +233,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
                     {varios && (
                       <span className="font-label text-[10px] text-brand-text">· Ver os {g.itens.length}</span>
                     )}
-                    {!varios && n.resourceType === 'lead' && (
+                    {!varios && n.resourceType === 'lead' && n.resourceId && (
                       <span className="font-label text-[10px] text-brand-text">· Abrir lead</span>
                     )}
                     {!varios && n.resourceType === 'task' && (

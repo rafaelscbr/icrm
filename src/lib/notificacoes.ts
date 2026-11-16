@@ -64,6 +64,7 @@ export function tituloDoGrupo(g: GrupoNotificacao): string {
     case 'lead_returning_client': return `${n} clientes antigos voltaram`
     case 'lead_sla_exhausted':    return `${n} leads saíram do rodízio sem 1º contato`
     case 'lead_all_paused':       return `${n} leads chegaram com todos em pausa`
+    case 'lead_intake_paused':    return `${n}× ${g.titulo}`
     default:                      return `${n}× ${g.titulo}`
   }
 }
