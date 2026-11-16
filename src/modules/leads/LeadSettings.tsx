@@ -41,7 +41,7 @@ export function LeadSettings() {
   const atual = secoes.some(s => s.value === secao) ? secao : secoes[0].value
 
   return (
-    <div className="flex flex-col lg:flex-row gap-x-12 gap-y-5 pb-10">
+    <div className="flex flex-col lg:flex-row gap-x-12 gap-y-5 pb-10 max-w-[1190px] mx-auto">
       {secoes.length > 1 && (
         <nav aria-label="Seções das configurações" className="lg:w-[220px] lg:flex-shrink-0">
           <ul className="flex lg:flex-col gap-1 overflow-x-auto rolagem-limpa -mx-1 px-1 lg:mx-0 lg:px-0 lg:sticky lg:top-[84px]">

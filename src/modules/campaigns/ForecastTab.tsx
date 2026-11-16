@@ -233,7 +233,7 @@ export function ForecastTab({ leads, campaign }: ForecastTabProps) {
   ]
 
   return (
-    <div className="max-w-4xl space-y-5">
+    <div className="max-w-4xl mx-auto space-y-5">
 
       {/* ── Hero cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-4">

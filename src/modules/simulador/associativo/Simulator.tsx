@@ -291,7 +291,7 @@ export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_500px] gap-8 items-start max-w-6xl">
+    <div className="grid grid-cols-1 xl:grid-cols-[1fr_500px] gap-8 items-start max-w-6xl mx-auto">
 
       {/* ── Formulário ── */}
       <div className="space-y-5">

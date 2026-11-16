@@ -117,6 +117,10 @@ export function CampaignsPage() {
         />
       }
     >
+      {/* Coluna de leitura (16/11/2026): na largura única de 1760px a linha da
+          campanha ficava com o nome numa ponta e os números na outra. Lista e
+          números cabem numa medida menor, centralizada na tela. */}
+      <div className="max-w-[1120px] mx-auto">
       {/* Barra de limite diário de disparos */}
       <div className="mb-4">
         <DailyLimitBar />
@@ -245,6 +249,7 @@ export function CampaignsPage() {
       </> /* fim aba campanhas */}
 
       </> /* fim !isLoading */}
+      </div>
 
       <CampaignForm isOpen={createOpen}        onClose={() => setCreateOpen(false)}    />
       <CampaignForm isOpen={Boolean(editCampaign)} onClose={() => setEditCampaign(undefined)} campaign={editCampaign} />
