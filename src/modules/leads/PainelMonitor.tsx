@@ -61,13 +61,18 @@ export function RoletaAoVivo({ cartoes, agora }: { cartoes: CartaoRoleta[]; agor
 
 function CartaoDaRoleta({ c, agora }: { c: CartaoRoleta; agora: number }) {
   const proximoGeral = c.proximoEm?.includes('Roleta geral') ?? false
+  // Lead NOVO é o que a roleta entregou hoje — é esse número que conversa com
+  // o gráfico de leads por dia. O que veio de outro corretor (prazo vencido ou
+  // repasse do admin) é lead antigo trocando de mão: aparece embaixo, à parte.
+  // Somar os dois fazia o cartão dizer "6 recebidos" num dia em que chegou 1.
   const rec = c.recebidos
-  const detalhe = !rec || rec.total === 0 ? 'nenhum até agora'
-    : [
-        rec.daRoleta > 0 && `${n(rec.daRoleta)} da roleta`,
-        rec.porTransferencia > 0 && `${n(rec.porTransferencia)} por transferência`,
-        rec.manual > 0 && `${n(rec.manual)} ${rec.manual === 1 ? 'repassado' : 'repassados'}`,
-      ].filter(Boolean).join(' · ')
+  const novos = rec?.daRoleta ?? 0
+  const herdados = rec?.porTransferencia ?? 0
+  const repassados = rec?.manual ?? 0
+  const detalhe = [
+    herdados > 0 && `+ ${n(herdados)} ${herdados === 1 ? 'herdado' : 'herdados'} por prazo vencido`,
+    repassados > 0 && `+ ${n(repassados)} ${repassados === 1 ? 'repassado' : 'repassados'} pelo admin`,
+  ].filter(Boolean).join(' · ') || (novos > 0 ? 'entregues pela roleta' : 'nenhum até agora')
   const esperando = c.aguardando + c.vencidos
 
   return (
@@ -95,11 +100,11 @@ function CartaoDaRoleta({ c, agora }: { c: CartaoRoleta; agora: number }) {
 
       <dl className="grid grid-cols-2 border-y border-line bg-s2/50">
         <div className="px-5 py-3 min-w-0">
-          <dt className="text-[12px] text-t3">Recebidos hoje</dt>
+          <dt className="text-[12px] text-t3">Leads novos hoje</dt>
           <dd className="font-display text-[24px] font-extrabold leading-tight text-t1 mt-0.5">
-            <NumeroVivo valor={rec?.total ?? 0} className={(rec?.total ?? 0) === 0 ? 'text-t4' : ''} />
+            <NumeroVivo valor={novos} className={novos === 0 ? 'text-t4' : ''} />
           </dd>
-          <dd className="text-[12px] text-t4 truncate">{detalhe}</dd>
+          <dd className={`text-[12px] truncate ${herdados + repassados > 0 ? 'text-t2' : 'text-t4'}`} title={detalhe}>{detalhe}</dd>
         </div>
         <div className="px-5 py-3 min-w-0 border-l border-line">
           <dt className="text-[12px] text-t3">Aguardando 1º contato</dt>

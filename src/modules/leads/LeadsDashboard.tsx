@@ -275,7 +275,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <Titulo descricao={
             !isAdmin ? 'Seu recebimento de leads hoje.'
-            : proximoGeral ? `O próximo lead sem formulário próprio vai para ${proximoGeral.nome.split(' ')[0]}. Os selos mostram quem é o próximo em cada formulário.`
+            : proximoGeral ? `O próximo lead sem formulário próprio vai para ${proximoGeral.nome.split(' ')[0]}. Os selos mostram quem é o próximo em cada formulário. "Herdado" é lead antigo que veio de outro corretor.`
             : 'Quem está recebendo, quem está em pausa e para quem vai o próximo lead.'
           }>
             Roleta *ao vivo*
