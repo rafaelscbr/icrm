@@ -20,9 +20,15 @@ interface PageLayoutProps {
   actions?: ReactNode
   /** Abas da tela — no desktop ficam na mesma linha do título. */
   band?: ReactNode
-  /** `total` libera o conteúdo da largura máxima — só para quadros que rolam
-      na horizontal, como o Kanban. */
-  largura?: 'padrao' | 'total'
+  /**
+   * `padrao` — 1280px, o da maioria das telas.
+   * `larga`  — até 1760px: para áreas que têm quadro largo (Kanban) E telas de
+   *            dados nas abas. Todas as abas usam a MESMA largura, senão o
+   *            título e as abas pulam de lugar a cada troca. O teto existe para
+   *            monitor muito largo não esticar gráfico e lista até a borda.
+   * `total`  — sem limite; só para quadro que precisa da tela inteira.
+   */
+  largura?: 'padrao' | 'larga' | 'total'
   children: ReactNode
 }
 
@@ -72,7 +78,7 @@ export function PageLayout({
   title, subtitle, icon: _icon, iconTom: _iconTom,
   ctaLabel, onCta, actions, band, largura = 'padrao', children,
 }: PageLayoutProps) {
-  const caixa = largura === 'total' ? 'max-w-none' : 'max-w-7xl'
+  const caixa = largura === 'total' ? 'max-w-none' : largura === 'larga' ? 'max-w-[1760px]' : 'max-w-7xl'
   // A cor da área continua no indicador das abas e no hover das tabelas.
   const area = corDaArea(secaoDa(useLocation().pathname))
   const abrirBusca = useSearchStore(st => st.setOpen)

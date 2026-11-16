@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { LeadConfigEntry, LeadConfigType } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
+import toast from 'react-hot-toast'
 
 // Configuração estática — visível imediatamente, substituída pelo banco se disponível
 export const STATIC_DISCARD_REASONS: LeadConfigEntry[] = [
@@ -21,6 +22,24 @@ export const STATIC_ORIGINS: LeadConfigEntry[] = [
 ]
 
 const STATIC_ALL = [...STATIC_DISCARD_REASONS, ...STATIC_ORIGINS]
+
+/** Sem a leitura do banco, o que está na tela é só o padrão: editar seria fingir. */
+function exigirBanco(disponivel: boolean): void {
+  if (disponivel) return
+  const msg = 'As listas não foram lidas do banco — a edição fica bloqueada até a leitura voltar'
+  toast.error(msg)
+  throw new Error(msg)
+}
+
+/** Grava e, se falhar, avisa na tela e propaga — nada de erro só no console. */
+async function gravar(fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn()
+  } catch (err) {
+    toast.error(`Não foi salvo: ${(err as { message?: string })?.message ?? 'erro desconhecido'}`)
+    throw err
+  }
+}
 
 interface LeadConfigStore {
   items:       LeadConfigEntry[]
@@ -76,28 +95,26 @@ export const useLeadConfigStore = create<LeadConfigStore>((set, get) => ({
       createdAt: now,
       updatedAt: now,
     }
+    // Banco primeiro: a lista só muda depois que o banco confirma. Antes o
+    // item aparecia na tela e a falha ia só para o console — "Item adicionado"
+    // sem ter sido gravado.
+    exigirBanco(get().dbAvailable)
+    await gravar(() => db.leadConfig.upsert(entry))
     set(s => ({ items: [...s.items, entry] }))
-    if (get().dbAvailable) {
-      await db.leadConfig.upsert(entry).catch(err => console.error('[leadConfig] add:', err))
-    }
   },
 
   update: async (id, data) => {
-    set(s => ({
-      items: s.items.map(i =>
-        i.id === id ? { ...i, ...data, updatedAt: new Date().toISOString() } : i
-      ),
-    }))
-    const item = get().items.find(i => i.id === id)
-    if (item && get().dbAvailable) {
-      await db.leadConfig.upsert(item).catch(err => console.error('[leadConfig] update:', err))
-    }
+    const atual = get().items.find(i => i.id === id)
+    if (!atual) return
+    exigirBanco(get().dbAvailable)
+    const novo = { ...atual, ...data, updatedAt: new Date().toISOString() }
+    await gravar(() => db.leadConfig.upsert(novo))
+    set(s => ({ items: s.items.map(i => (i.id === id ? novo : i)) }))
   },
 
   remove: async (id) => {
+    exigirBanco(get().dbAvailable)
+    await db.leadConfig.delete(id)   // já avisa e lança em caso de erro
     set(s => ({ items: s.items.filter(i => i.id !== id) }))
-    if (get().dbAvailable) {
-      await db.leadConfig.delete(id).catch(err => console.error('[leadConfig] remove:', err))
-    }
   },
 }))

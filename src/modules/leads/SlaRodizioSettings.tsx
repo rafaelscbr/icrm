@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Timer, Loader2, Info, RotateCcw } from 'lucide-react'
+import { Loader2, Info, RotateCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useSlaConfigStore } from '../../store/useSlaConfigStore'
 import { SlaDia } from '../../types'
+import { Interruptor, SecaoConfig } from './SecaoConfig'
 
 /**
  * Rodízio por tempo de resposta (o "ping-pong" do lead Meta).
@@ -91,41 +92,23 @@ export function SlaRodizioSettings() {
   const ligado = config?.enabled ?? false
 
   return (
-    <section className="rounded-[14px] border border-line bg-s2/40 overflow-hidden" aria-labelledby="sla-rodizio-titulo">
-      <div className="flex items-start gap-3 px-4 py-3.5 border-b border-line">
-        <div className="w-9 h-9 rounded-[10px] bg-brand-tint border border-brand/25 flex items-center justify-center flex-shrink-0">
-          <Timer size={15} strokeWidth={1.6} className="text-brand" aria-hidden />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 id="sla-rodizio-titulo" className="font-heading text-sm font-bold text-t1">Rodízio por tempo de resposta</h3>
-          <p className="text-xs text-t3 mt-0.5">
-            Se o corretor não chamar o lead no WhatsApp dentro do prazo, o lead passa para o próximo corretor do rodízio.
-          </p>
-        </div>
-
-        {config && (
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            <span className={`text-xs font-semibold ${ligado ? 'text-success' : 'text-t3'}`}>
-              {salvando === 'toggle' ? <Loader2 size={12} className="animate-spin inline" aria-hidden /> : ligado ? 'Ligado' : 'Desligado'}
-            </span>
-            <button
-              type="button"
-              onClick={alternar}
-              disabled={salvando !== null || alterado}
-              title={alterado ? 'Salve ou desfaça o prazo e a agenda antes de ligar/desligar' : undefined}
-              role="switch"
-              aria-checked={ligado}
-              aria-label={ligado ? 'Desligar rodízio por tempo de resposta' : 'Ligar rodízio por tempo de resposta'}
-              className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0 disabled:opacity-60 cursor-pointer"
-              style={{ background: ligado ? 'var(--brand)' : 'var(--line-strong)' }}
-            >
-              <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
-                style={{ left: ligado ? '1.375rem' : '2px' }} />
-            </button>
-          </div>
-        )}
-      </div>
-
+    <SecaoConfig
+      id="sla-rodizio-titulo"
+      titulo="Rodízio por tempo de *resposta*"
+      descricao="Se o corretor não chamar o lead no WhatsApp dentro do prazo, o lead passa para o próximo corretor do rodízio. O relógio só corre nos dias e horários marcados abaixo."
+      lado={config && (
+        <Interruptor
+          comTexto
+          ligado={ligado}
+          onChange={() => void alternar()}
+          carregando={salvando === 'toggle'}
+          disabled={salvando !== null || alterado}
+          title={alterado ? 'Salve ou desfaça o prazo e a agenda antes de ligar/desligar' : undefined}
+          rotulo={ligado ? 'Desligar rodízio por tempo de resposta' : 'Ligar rodízio por tempo de resposta'}
+        />
+      )}
+    >
+      <div className="bento overflow-hidden">
       {loading && !config ? (
         <div className="flex items-center justify-center py-10">
           <Loader2 size={18} className="animate-spin text-brand" strokeWidth={1.6} aria-label="Carregando" />
@@ -158,7 +141,7 @@ export function SlaRodizioSettings() {
 
           {/* Agenda */}
           <div>
-            <p className="font-label text-[11px] uppercase tracking-wide text-t4 mb-2">Quando o relógio corre</p>
+            <p className="text-[12.5px] text-t4 mb-2">Quando o relógio corre</p>
             <ul className="flex flex-col divide-y divide-line rounded-[12px] border border-line bg-s2/60">
               {DIAS.map(d => {
                 const dia = agenda[d.idx]
@@ -221,6 +204,7 @@ export function SlaRodizioSettings() {
           )}
         </div>
       )}
-    </section>
+      </div>
+    </SecaoConfig>
   )
 }

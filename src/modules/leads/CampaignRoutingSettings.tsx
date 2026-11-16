@@ -1,31 +1,61 @@
-import { useEffect, useState } from 'react'
-import { Megaphone, Check, Users, Loader2, Info } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AlertTriangle, Check, Info, Loader2, RefreshCw } from 'lucide-react'
 import { db } from '../../lib/db'
 import { useAuthStore } from '../../store/useAuthStore'
 import { MetaFormRouting } from '../../types'
+import { CAMPO, Interruptor, SecaoConfig } from './SecaoConfig'
 import toast from 'react-hot-toast'
 
 /**
  * Distribuição de leads por campanha (formulário Meta → corretores).
- * Admin escolhe quem recebe os leads de cada formulário. Sem corretores
- * marcados, o formulário cai no rodízio global (fallback). Auto-descoberta:
- * cada formulário que recebe lead aparece sozinho na lista.
+ *
+ * O admin escolhe quem recebe os leads de cada formulário. Sem corretores
+ * marcados, o formulário cai no rodízio geral. Cada formulário que recebe um
+ * lead aparece sozinho na lista. Produto e ticket são herdados pelo lead que
+ * entrar por aquele formulário.
+ *
+ * Banco primeiro: o chip, o interruptor e os campos só mudam depois que o
+ * banco confirma. Falha de leitura aparece como falha — antes a lista vazia
+ * dizia "nenhuma campanha detectada" mesmo quando a consulta tinha dado erro.
  */
+
+const chave = (r: MetaFormRouting) => `${r.productName?.trim() ?? ''}|${r.productTicket ?? ''}`
+
 export function CampaignRoutingSettings() {
   const { allProfiles, fetchAllProfiles } = useAuthStore()
-  const [rules,   setRules]   = useState<MetaFormRouting[]>([])
+  const [rules, setRules] = useState<MetaFormRouting[]>([])
   const [loading, setLoading] = useState(true)
+  const [erro, setErro] = useState(false)
   const [savingId, setSavingId] = useState<string | null>(null)
+  /** produto|ticket como está no banco — para o blur não salvar o que não mudou */
+  const salvos = useRef<Record<string, string>>({})
+
+  const carregar = useCallback(async () => {
+    setLoading(true)
+    setErro(false)
+    try {
+      const lista = await db.metaFormRouting.fetchAll()
+      salvos.current = Object.fromEntries(lista.map(r => [r.formId, chave(r)]))
+      setRules(lista)
+    } catch {
+      setErro(true)   // aviso já disparado pela camada db
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    if (allProfiles.length === 0) fetchAllProfiles()
-    db.metaFormRouting.fetchAll()
-      .then(setRules)
-      .catch(() => { /* erro já toastado */ })
-      .finally(() => setLoading(false))
+    if (allProfiles.length === 0) void fetchAllProfiles()
+    void carregar()
   }, [])  // eslint-disable-line react-hooks/exhaustive-deps -- carga única na montagem; allProfiles.length nas dependências recarregaria em cada chegada de perfil
 
   const brokers = allProfiles.filter(p => p.active)
+  // Ativas primeiro; dentro de cada grupo, a que mais recebe lead em cima.
+  const ordenadas = useMemo(
+    () => [...rules].sort((a, b) => Number(b.active) - Number(a.active) || b.leadCount - a.leadCount),
+    [rules],
+  )
+  const ativas = rules.filter(r => r.active).length
 
   async function toggleBroker(rule: MetaFormRouting, brokerId: string) {
     const next = rule.brokerIds.includes(brokerId)
@@ -49,13 +79,13 @@ export function CampaignRoutingSettings() {
     finally { setSavingId(null) }
   }
 
-  // Atualiza localmente os campos de produto enquanto o admin digita
+  // O campo acompanha a digitação; o que vale é o que foi salvo ao sair dele.
   function updateLocal(formId: string, patch: Partial<MetaFormRouting>) {
     setRules(rs => rs.map(r => r.formId === formId ? { ...r, ...patch } : r))
   }
 
-  // Salva produto + ticket no blur (idempotente — herdados pelo lead que entrar)
   async function saveProduct(rule: MetaFormRouting) {
+    if (salvos.current[rule.formId] === chave(rule)) return   // nada mudou: não salva nem avisa
     setSavingId(rule.formId)
     try {
       await db.metaFormRouting.setProduct(
@@ -63,139 +93,137 @@ export function CampaignRoutingSettings() {
         rule.productName?.trim() || null,
         rule.productTicket != null && !Number.isNaN(rule.productTicket) ? rule.productTicket : null,
       )
-      toast.success('Produto salvo')
+      salvos.current[rule.formId] = chave(rule)
+      toast.success('Produto e ticket salvos')
     } catch { /* erro já toastado */ }
     finally { setSavingId(null) }
   }
 
   return (
-    <div className="rounded-[14px] border border-line bg-s2/40 overflow-hidden">
-      <div className="flex items-start gap-3 px-4 py-3.5 border-b border-line">
-        <div className="w-9 h-9 rounded-[10px] bg-brand-tint border border-brand/25 flex items-center justify-center flex-shrink-0">
-          <Megaphone size={15} strokeWidth={1.6} className="text-brand" />
-        </div>
-        <div className="min-w-0">
-          <h3 className="font-heading text-sm font-bold text-t1">Distribuição de campanhas</h3>
-          <p className="text-xs text-t3 mt-0.5">
-            Quem recebe os leads de cada formulário. Vários corretores = rodízio entre eles.
-          </p>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-10">
-          <Loader2 size={18} className="animate-spin text-brand" strokeWidth={1.6} />
-        </div>
-      ) : rules.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-center px-4">
-          <Megaphone size={22} strokeWidth={1.6} className="text-t4" />
-          <p className="text-sm font-medium text-t2">Nenhuma campanha detectada ainda</p>
-          <p className="text-xs text-t4">Os formulários aparecem aqui assim que o primeiro lead chega</p>
-        </div>
-      ) : (
-        <div className="divide-y divide-line">
-          {rules.map(rule => {
-            const empty  = rule.brokerIds.length === 0
-            const saving = savingId === rule.formId
-            return (
-              <div key={rule.formId} className={`px-4 py-3.5 ${!rule.active ? 'opacity-55' : ''}`}>
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span className="font-heading text-sm font-bold text-t1 truncate">
-                    {rule.formName ?? `Formulário ${rule.formId.slice(0, 8)}…`}
-                  </span>
-                  <span className="flex items-center gap-1 font-label text-[10px] text-t4 tabular-nums flex-shrink-0">
-                    <Users size={10} strokeWidth={1.6} /> {rule.leadCount}
-                  </span>
-                  {saving && <Loader2 size={12} className="animate-spin text-brand flex-shrink-0" strokeWidth={1.6} />}
-
-                  {/* Toggle ativo/pausado */}
-                  <button
-                    onClick={() => toggleActive(rule)}
-                    role="switch"
-                    aria-checked={rule.active}
-                    aria-label={rule.active ? 'Pausar campanha' : 'Ativar campanha'}
-                    title={rule.active ? 'Campanha ativa — clique para pausar' : 'Campanha pausada — clique para ativar'}
-                    className="ml-auto relative w-9 h-5 rounded-full transition-colors flex-shrink-0"
-                    style={{ background: rule.active ? 'var(--brand)' : 'var(--line-strong)' }}
-                  >
-                    <span className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all"
-                      style={{ left: rule.active ? '1.125rem' : '2px' }} />
-                  </button>
-                </div>
-
-                {/* Chips de corretores */}
-                <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Corretores de ${rule.formName ?? 'formulário'}`}>
-                  {brokers.map(b => {
-                    const on = rule.brokerIds.includes(b.id)
-                    return (
-                      <button
-                        key={b.id}
-                        onClick={() => toggleBroker(rule, b.id)}
-                        disabled={saving || !rule.active}
-                        aria-pressed={on}
-                        className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border text-xs font-medium transition-all duration-150 disabled:cursor-not-allowed
-                          ${on
-                            ? 'bg-brand-tint border-brand/40 text-brand-text'
-                            : 'bg-s2 border-line text-t3 hover:border-line-strong hover:text-t2'}`}
-                      >
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center font-heading text-[10px] font-bold flex-shrink-0
-                          ${on ? 'bg-brand-fill text-brand-fill-text' : 'bg-s3 text-t3'}`}>
-                          {on ? <Check size={11} strokeWidth={2.5} /> : b.name.charAt(0).toUpperCase()}
-                        </span>
-                        {b.name.split(' ')[0]}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {/* Produto + ticket do formulário — herdados pelo lead que entrar */}
-                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 mt-2.5">
-                  <label className="flex flex-col gap-1">
-                    <span className="font-label text-[10px] uppercase tracking-wide text-t4">Produto deste formulário</span>
-                    <input
-                      type="text"
-                      value={rule.productName ?? ''}
-                      onChange={e => updateLocal(rule.formId, { productName: e.target.value })}
-                      onBlur={() => saveProduct(rule)}
-                      placeholder="Ex.: Residencial Aurora"
-                      className="w-full bg-s2 border border-line rounded-[10px] px-3 py-2 text-sm text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/40"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="font-label text-[10px] uppercase tracking-wide text-t4">Ticket</span>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-3 text-xs text-t3 font-medium select-none">R$</span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={rule.productTicket != null ? rule.productTicket.toLocaleString('pt-BR') : ''}
-                        onChange={e => {
-                          const digits = e.target.value.replace(/\D/g, '')
-                          updateLocal(rule.formId, { productTicket: digits ? Number(digits) : undefined })
-                        }}
-                        onBlur={() => saveProduct(rule)}
-                        placeholder="500.000"
-                        className="w-full sm:w-40 bg-s2 border border-line rounded-[10px] pl-9 pr-3 py-2 text-sm text-t1 tabular-nums placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/40"
-                      />
+    <SecaoConfig
+      id="config-campanhas-titulo"
+      titulo="Distribuição de *campanhas*"
+      descricao="Quem recebe os leads de cada formulário do Meta. Com mais de um corretor marcado, os leads alternam entre eles. Produto e ticket já entram preenchidos em cada lead do formulário."
+      lado={!loading && !erro && rules.length > 0
+        ? <span className="text-[13px] text-t3 tabular-nums">{ativas} de {rules.length} ativas</span>
+        : undefined}
+    >
+      <div className="bento overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={18} className="animate-spin text-brand" strokeWidth={1.6} aria-label="Carregando" />
+          </div>
+        ) : erro ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center px-5" role="alert">
+            <AlertTriangle size={20} strokeWidth={1.6} className="text-error" aria-hidden />
+            <p className="text-[14px] font-semibold text-t1">Não foi possível carregar as campanhas</p>
+            <button type="button" onClick={() => void carregar()}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] bg-s2 hover:bg-s3 text-[13.5px] font-semibold text-t1 cursor-pointer">
+              <RefreshCw size={14} strokeWidth={1.8} aria-hidden /> Tentar de novo
+            </button>
+          </div>
+        ) : rules.length === 0 ? (
+          <div className="py-12 text-center px-5">
+            <p className="text-[14px] font-semibold text-t1">Nenhuma campanha por aqui ainda</p>
+            <p className="text-[13px] text-t3 mt-1">Cada formulário aparece sozinho assim que o primeiro lead chega.</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-line">
+            {ordenadas.map(rule => {
+              const nome = rule.formName ?? `Formulário ${rule.formId.slice(0, 8)}…`
+              const saving = savingId === rule.formId
+              const semCorretor = rule.brokerIds.length === 0
+              return (
+                <li key={rule.formId} className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`min-w-0 flex-1 ${rule.active ? '' : 'opacity-55'}`}>
+                      <p className="text-[15px] font-semibold text-t1 truncate">{nome}</p>
+                      <p className="text-[12.5px] text-t3 tabular-nums">
+                        {rule.leadCount.toLocaleString('pt-BR')} {rule.leadCount === 1 ? 'lead recebido' : 'leads recebidos'}
+                        {!rule.active && ' · pausada'}
+                      </p>
                     </div>
-                  </label>
-                </div>
-                <p className="text-[11px] text-t4 mt-1.5">
-                  Quando um lead entrar por este formulário, o produto e o ticket já vêm preenchidos (alimenta a previsão de VGL).
-                </p>
+                    <Interruptor
+                      ligado={rule.active} onChange={() => void toggleActive(rule)} carregando={saving}
+                      rotulo={`${nome}: ${rule.active ? 'ativa. Pausar' : 'pausada. Ativar'}`}
+                    />
+                  </div>
 
-                {/* Aviso de fallback */}
-                {empty && rule.active && (
-                  <p className="flex items-center gap-1.5 mt-2 text-[11px] text-warning">
-                    <Info size={11} strokeWidth={1.6} className="flex-shrink-0" />
-                    Sem corretores definidos — cai no rodízio global (Dionata ↔ Rafael)
-                  </p>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
+                  {rule.active && (
+                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,230px)_150px] gap-x-4 gap-y-3 mt-3.5 items-end">
+                      <div className="min-w-0">
+                        <p className="text-[12.5px] text-t4 mb-1.5">Quem recebe</p>
+                        <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Corretores de ${nome}`}>
+                          {brokers.map(b => {
+                            const on = rule.brokerIds.includes(b.id)
+                            return (
+                              <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => void toggleBroker(rule, b.id)}
+                                disabled={saving}
+                                aria-pressed={on}
+                                className={`inline-flex items-center gap-1.5 h-9 pl-1.5 pr-3 rounded-full text-[13px] font-medium cursor-pointer transition-colors
+                                  disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+                                  ${on ? 'bg-brand-tint text-brand-text' : 'bg-s2 text-t3 hover:text-t1 hover:bg-s3'}`}
+                              >
+                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0
+                                  ${on ? 'bg-brand-fill text-brand-fill-text' : 'bg-surface text-t3'}`} aria-hidden>
+                                  {on ? <Check size={12} strokeWidth={2.6} /> : b.name.charAt(0).toUpperCase()}
+                                </span>
+                                {b.name.split(' ')[0]}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      <label className="flex flex-col gap-1.5 min-w-0">
+                        <span className="text-[12.5px] text-t4">Produto</span>
+                        <input
+                          type="text"
+                          value={rule.productName ?? ''}
+                          onChange={e => updateLocal(rule.formId, { productName: e.target.value })}
+                          onBlur={() => void saveProduct(rule)}
+                          placeholder="Ex.: Greenview"
+                          className={`${CAMPO} w-full`}
+                        />
+                      </label>
+
+                      <label className="flex flex-col gap-1.5 min-w-0">
+                        <span className="text-[12.5px] text-t4">Ticket</span>
+                        <span className="relative flex items-center">
+                          <span className="absolute left-3 text-[13px] text-t3 select-none" aria-hidden>R$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={rule.productTicket != null ? rule.productTicket.toLocaleString('pt-BR') : ''}
+                            onChange={e => {
+                              const digits = e.target.value.replace(/\D/g, '')
+                              updateLocal(rule.formId, { productTicket: digits ? Number(digits) : undefined })
+                            }}
+                            onBlur={() => void saveProduct(rule)}
+                            placeholder="500.000"
+                            aria-label={`Ticket de ${nome}, em reais`}
+                            className={`${CAMPO} w-full pl-9 tabular-nums`}
+                          />
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {rule.active && semCorretor && (
+                    <p className="flex items-center gap-1.5 mt-3 text-[12.5px] text-warning">
+                      <Info size={13} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />
+                      Sem corretor marcado: os leads deste formulário caem no rodízio geral.
+                    </p>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+    </SecaoConfig>
   )
 }

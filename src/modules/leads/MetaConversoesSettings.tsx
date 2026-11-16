@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Send, Loader2, RefreshCw, FlaskConical, AlertTriangle } from 'lucide-react'
+import { Loader2, RefreshCw, FlaskConical, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { db } from '../../lib/db'
 import { MetaConversionSummary } from '../../types'
+import { SecaoConfig } from './SecaoConfig'
 
 /**
  * Eventos devolvidos ao Meta Ads (API de Conversões para CRM).
@@ -63,24 +64,19 @@ export function MetaConversoesSettings() {
   const problemas = dados?.problems ?? []
 
   return (
-    <section className="bg-surface border border-line rounded-[14px] overflow-hidden" aria-labelledby="meta-conv-titulo">
-      <div className="flex items-start gap-3 px-4 py-3.5 border-b border-line">
-        <div className="w-9 h-9 rounded-[10px] bg-brand-tint border border-brand/25 flex items-center justify-center flex-shrink-0">
-          <Send size={15} strokeWidth={1.6} className="text-brand" aria-hidden />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 id="meta-conv-titulo" className="font-heading text-sm font-bold text-t1">Retorno ao Meta Ads</h3>
-          <p className="text-xs text-t3 mt-0.5">
-            O que acontece com cada lead de formulário volta para o Meta, para a campanha aprender quem vira cliente.
-          </p>
-        </div>
+    <SecaoConfig
+      id="meta-conv-titulo"
+      titulo="Retorno ao *Meta Ads*"
+      descricao="O que acontece com cada lead de formulário volta para o Meta, para a campanha aprender quem vira cliente. O envio é automático, a cada 5 minutos."
+      lado={
         <button type="button" onClick={() => void carregar()} disabled={carregando}
-          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-xs font-semibold text-t2 hover:bg-s2 cursor-pointer disabled:opacity-50 flex-shrink-0"
-          aria-label="Atualizar os números">
-          <RefreshCw size={13} strokeWidth={1.8} className={carregando ? 'animate-spin' : ''} aria-hidden /> Atualizar
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] bg-s2 hover:bg-s3 text-[13.5px] font-semibold text-t1 cursor-pointer disabled:opacity-50
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40">
+          <RefreshCw size={14} strokeWidth={1.8} className={carregando ? 'animate-spin' : ''} aria-hidden /> Atualizar
         </button>
-      </div>
-
+      }
+    >
+      <div className="bento overflow-hidden">
       {carregando && !dados ? (
         <div className="flex items-center justify-center py-10">
           <Loader2 size={18} className="animate-spin text-brand" strokeWidth={1.6} aria-label="Carregando" />
@@ -113,14 +109,14 @@ export function MetaConversoesSettings() {
               { rotulo: 'Com erro',  valor: comErro,        cor: comErro > 0 ? 'text-error' : 'text-t1' },
             ].map(n => (
               <div key={n.rotulo} className="rounded-[12px] border border-line bg-s2/60 px-3 py-2.5">
-                <dt className="font-label text-[11px] uppercase tracking-wide text-t4">{n.rotulo}</dt>
+                <dt className="text-[12.5px] text-t4">{n.rotulo}</dt>
                 <dd className={`font-heading text-xl font-bold tabular-nums ${n.cor}`}>{n.valor}</dd>
               </div>
             ))}
           </dl>
 
           <div>
-            <p className="font-label text-[11px] uppercase tracking-wide text-t4 mb-2">Enviados nos últimos 30 dias</p>
+            <p className="text-[12.5px] text-t4 mb-2">Enviados nos últimos 30 dias</p>
             <ul className="flex flex-col divide-y divide-line rounded-[12px] border border-line bg-s2/60">
               {EVENTOS.map(e => (
                 <li key={e.nome} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
@@ -143,7 +139,7 @@ export function MetaConversoesSettings() {
           {problemas.length > 0 && (
             <div>
               <div className="flex items-center justify-between gap-3 mb-2">
-                <p className="font-label text-[11px] uppercase tracking-wide text-t4">
+                <p className="text-[12.5px] text-t4">
                   Falhas{dados.retrying > 0 ? ` · ${dados.retrying} em nova tentativa automática` : ''}
                 </p>
                 <button type="button" onClick={reenviar} disabled={reenviando}
@@ -173,6 +169,7 @@ export function MetaConversoesSettings() {
           )}
         </div>
       )}
-    </section>
+      </div>
+    </SecaoConfig>
   )
 }

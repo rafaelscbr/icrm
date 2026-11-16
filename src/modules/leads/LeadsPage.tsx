@@ -463,9 +463,9 @@ export function LeadsPage() {
       subtitle={erro ? 'não foi possível ler o funil' : `Funil de prospecção · ${active.length} ativos`}
       ctaLabel="Novo Lead"
       onCta={() => setShowForm(true)}
-      // O Kanban rola na horizontal e merece a largura toda; as outras visões
-      // ficam no mesmo contêiner das demais telas.
-      largura={isKanbanTab ? 'total' : 'padrao'}
+      // Uma largura só para todas as abas: antes o Kanban era 100% e as outras
+      // 1280px, e o título com as abas pulava de lugar a cada troca.
+      largura="larga"
       band={
         <Abas
           abas={TABS.map(t => ({ value: t.value, label: t.label, icon: t.icon, badge: t.badge }))}
