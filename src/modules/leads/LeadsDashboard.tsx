@@ -3,14 +3,13 @@ import { AlertTriangle, ChevronRight, RefreshCw, Snowflake, Timer, Undo2 } from 
 import type { LucideIcon } from 'lucide-react'
 import type { Lead, LeadFunnelStage } from '../../types'
 import { STAGE_THEME } from '../../lib/stageTheme'
-import { formatCurrency } from '../../lib/formatters'
 import { useAdminView } from '../../hooks/useAdminView'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePulseStore } from '../pulse/usePulseStore'
 import { agruparFeed, horaCurta } from '../pulse/pulseEvents'
 import type { PulseTone } from '../pulse/pulseEvents'
 import type { PulseBroker, PulseEvent } from '../pulse/types'
-import { Destaque, destacar } from '../../components/shared/Destaque'
+import { destacar } from '../../components/shared/Destaque'
 import { Segmentado } from '../../components/shared/visual'
 import { Grafico, eixoCategoria, eixoValor, resolverCor } from '../../components/charts/Grafico'
 import type { CoresGrafico } from '../../components/charts/Grafico'
@@ -22,9 +21,9 @@ import {
 /**
  * Leads › Dashboard — refeito em 15/11/2026.
  *
- * A tela responde, nesta ordem: como está o dia (bloco azul), quanto está
- * chegando e onde os leads estão (gráfico + funil), o que a equipe está fazendo
- * neste momento (atividade por corretor, ao vivo) e o que não pode esperar.
+ * A tela responde, nesta ordem: quanto está chegando e onde os leads estão
+ * (gráfico + funil), o que a equipe está fazendo neste momento (atividade por
+ * corretor, ao vivo) e o que não pode esperar.
  *
  * De onde vem cada coisa — e por que isso não pesa no banco:
  *   • Gráfico, funil e atenção: dos leads que o `useLeadsStore` JÁ tem em
@@ -92,14 +91,18 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   const funil  = useMemo(() => funilAgora(leads, new Date(agora)), [leads, agora])
   const alerta = useMemo(() => atencao(leads, agora), [leads, agora])
 
-  const hoje  = serie[serie.length - 1]?.n ?? 0
-  const ontem = serie[serie.length - 2]?.n ?? 0
   const media = mediaSemHoje(serie)
+
+  const nomeCorretor = useCallback(
+    (id?: string | null) => (id
+      ? allProfiles.find(p => p.id === id)?.name ?? brokerNames[id] ?? (id === profile?.id ? profile.name : undefined)
+      : undefined),
+    [allProfiles, brokerNames, profile],
+  )
 
   // Quem aparece nos quadros de atividade
   const quadros = useMemo(() => {
-    const nome = (id: string) => allProfiles.find(p => p.id === id)?.name ?? brokerNames[id]
-      ?? (id === profile?.id ? profile.name : 'Corretor')
+    const nome = (id: string) => nomeCorretor(id) ?? 'Corretor'
     let ids: string[]
     if (!isGlobalView) {
       ids = effectiveBrokerId ? [effectiveBrokerId] : []
@@ -116,45 +119,11 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       resumo: corretores.find(c => c.brokerId === id),
       eventos: agruparFeed(feed.filter(e => e.brokerId === id)).slice(0, LINHAS_POR_CORRETOR),
     }))
-  }, [isGlobalView, effectiveBrokerId, allProfiles, brokerNames, profile, feed, corretores])
+  }, [isGlobalView, effectiveBrokerId, allProfiles, nomeCorretor, feed, corretores])
 
-  const noEscopo = (c: PulseBroker) => isGlobalView || c.brokerId === effectiveBrokerId
-  const atendimentosHoje = corretores.filter(noEscopo).reduce((s, c) => s + c.interacoesHoje, 0)
-  const ligacoesHoje     = corretores.filter(noEscopo).reduce((s, c) => s + c.ligacoesHoje, 0)
-  const visitasHoje      = corretores.filter(noEscopo).reduce((s, c) => s + c.visitasHoje, 0)
-  const semPulso = !carregado
 
   return (
     <div className="flex flex-col gap-5 pb-10">
-
-      {/* ── O dia, num bloco só ─────────────────────────────────────────────── */}
-      <section className="hero-tile px-6 py-6 lg:px-8 lg:py-7" aria-label="Resumo de hoje">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h2 className="font-display text-[18px] font-bold tracking-[-0.02em] text-t1" style={{ ['--destaque' as string]: '#E2C385' }}>
-            Leads <Destaque>ao vivo</Destaque>
-          </h2>
-          <Conexao estado={connection} carregado={carregado} />
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 lg:grid-cols-[1.25fr_1fr_1fr_1fr] gap-x-6 gap-y-6">
-          <div className="col-span-2 lg:col-span-1">
-            <p className="text-[13px] text-t3">Leads hoje</p>
-            <p className="font-display text-[56px] font-extrabold leading-[0.95] tracking-[-0.03em] tabular-nums text-t1 mt-1">
-              {hoje.toLocaleString('pt-BR')}
-            </p>
-            <p className="text-[13px] text-t3 mt-2">
-              ontem {ontem.toLocaleString('pt-BR')}
-              {media !== null && <> · média {media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por dia</>}
-            </p>
-          </div>
-          <NumeroHeroi rotulo="Atendimentos hoje" valor={semPulso ? '—' : atendimentosHoje.toLocaleString('pt-BR')}
-            nota={semPulso ? 'carregando' : `${ligacoesHoje.toLocaleString('pt-BR')} ligações de prospecção`} />
-          <NumeroHeroi rotulo="Visitas marcadas hoje" valor={semPulso ? '—' : visitasHoje.toLocaleString('pt-BR')}
-            nota={`${funil.porEtapa.visita.toLocaleString('pt-BR')} em visita agora`} />
-          <NumeroHeroi rotulo="Em negociação" valor={formatCurrency(funil.emNegociacao)} dourado
-            nota={`${funil.leadsEmNegociacao.toLocaleString('pt-BR')} em visita e proposta`} />
-        </div>
-      </section>
 
       {/* ── Gráfico grande + funil ──────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-5">
@@ -187,9 +156,12 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
 
       {/* ── Atividade por corretor, ao vivo ─────────────────────────────────── */}
       <section className="mt-3">
-        <Titulo descricao="O que cada corretor fez hoje no sistema. As linhas novas entram sozinhas, sem recarregar.">
-          Atividade da *equipe*
-        </Titulo>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <Titulo descricao="O que cada corretor fez hoje no sistema. As linhas novas entram sozinhas, sem recarregar.">
+            Atividade da *equipe*
+          </Titulo>
+          <Conexao estado={connection} carregado={carregado} />
+        </div>
 
         {erroPulso && !carregado ? (
           <div className="flex items-start gap-3 rounded-[14px] border border-error-line bg-error-bg px-4 py-3.5" role="alert">
@@ -218,7 +190,7 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         )}
       </section>
 
-      <PedeAtencao alerta={alerta} agora={agora} onOpenLead={onOpenLead} />
+      <PedeAtencao alerta={alerta} agora={agora} onOpenLead={onOpenLead} nomeCorretor={nomeCorretor} />
     </div>
   )
 }
@@ -230,19 +202,6 @@ function Titulo({ children, descricao }: { children: string; descricao?: string 
     <div className="mb-4 min-w-0">
       <h3 className="font-display text-[16px] font-bold tracking-[-0.015em] text-t1">{destacar(children)}</h3>
       {descricao && <p className="text-[13px] text-t3 mt-0.5">{descricao}</p>}
-    </div>
-  )
-}
-
-function NumeroHeroi({ rotulo, valor, nota, dourado = false }: { rotulo: string; valor: string; nota: string; dourado?: boolean }) {
-  return (
-    <div className="lg:border-l lg:border-line lg:pl-6 min-w-0">
-      <p className="text-[13px] text-t3 truncate">{rotulo}</p>
-      {/* O único dourado da tela: é dinheiro. */}
-      <p className={`font-display text-[28px] font-extrabold leading-none tracking-[-0.025em] tabular-nums mt-2 truncate ${dourado ? 'text-brand-text' : 'text-t1'}`}>
-        {valor}
-      </p>
-      <p className="text-[12.5px] text-t4 mt-2 truncate">{nota}</p>
     </div>
   )
 }
@@ -312,10 +271,11 @@ function GraficoLeads({ serie, media }: { serie: { data: string; n: number }[]; 
 /**
  * O funil é uma FORMA, não um gráfico de proporção: com 105 leads em followup
  * e 1 em proposta, barras proporcionais virariam um traço. A silhueta afunila
- * por posição, a cor é a da etapa e o número fica ao lado, alinhado à fatia.
+ * por posição; cada fatia leva a cor da etapa, o nome e o número DENTRO dela.
+ * Preenchimento tingido (não sólido) para o texto ler igual nos dois temas.
  */
 function FunilDesenhado({ porEtapa, vendasNoMes }: { porEtapa: Record<LeadFunnelStage, number>; vendasNoMes: number }) {
-  const L = 200, H = 46, VAO = 5, PASSO = 25
+  const L = 300, H = 52, VAO = 5, PASSO = 32
   const linhas = ETAPAS_FUNIL.map(e => ({
     etapa: e,
     nome: e === 'venda' ? 'Vendas no mês' : STAGE_THEME[e].columnLabel,
@@ -325,9 +285,9 @@ function FunilDesenhado({ porEtapa, vendasNoMes }: { porEtapa: Record<LeadFunnel
   const altura = linhas.length * (H + VAO) - VAO
 
   return (
-    <div className="flex items-stretch gap-5 my-auto">
-      <svg viewBox={`0 0 ${L} ${altura}`} preserveAspectRatio="none" aria-hidden
-           className="w-[44%] max-w-[190px] flex-shrink-0" style={{ height: altura }}>
+    <div className="flex justify-center my-auto">
+      <svg viewBox={`0 0 ${L} ${altura}`} className="w-full max-w-[360px] h-auto" role="img"
+           aria-label={`Funil agora: ${linhas.map(l => `${l.nome} ${l.n}`).join(', ')}.`}>
         {linhas.map((l, i) => {
           const y = i * (H + VAO)
           const topo = L - i * PASSO, base = L - (i + 1) * PASSO
@@ -335,21 +295,18 @@ function FunilDesenhado({ porEtapa, vendasNoMes }: { porEtapa: Record<LeadFunnel
             [(L - topo) / 2, y], [(L + topo) / 2, y], [(L + base) / 2, y + H], [(L - base) / 2, y + H],
           ].map(p => p.join(',')).join(' ')
           return (
-            <polygon key={l.etapa} points={pontos} strokeWidth={3} strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke" style={{ fill: l.cor, stroke: l.cor, opacity: 0.92 }} />
+            <g key={l.etapa}>
+              <polygon points={pontos} strokeWidth={1.5} strokeLinejoin="round"
+                style={{ fill: `color-mix(in srgb, ${l.cor} 22%, transparent)`, stroke: l.cor }} />
+              <text x={L / 2} y={y + 21} textAnchor="middle" style={{ fill: 'var(--t2)', fontSize: 11.5 }}>{l.nome}</text>
+              <text x={L / 2} y={y + 41} textAnchor="middle" className="font-display tabular-nums"
+                style={{ fill: 'var(--t1)', fontSize: 18, fontWeight: 800 }}>
+                {l.n.toLocaleString('pt-BR')}
+              </text>
+            </g>
           )
         })}
       </svg>
-      <ul className="flex-1 min-w-0 flex flex-col" style={{ gap: VAO }} aria-label="Leads ativos por etapa">
-        {linhas.map(l => (
-          <li key={l.etapa} className="flex items-center justify-between gap-3 border-b border-line last:border-0" style={{ height: H }}>
-            <span className="text-[13.5px] text-t2 truncate">{l.nome}</span>
-            <span className={`font-display text-[19px] font-extrabold tabular-nums ${l.n === 0 ? 'text-t4' : 'text-t1'}`}>
-              {l.n.toLocaleString('pt-BR')}
-            </span>
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
@@ -435,21 +392,27 @@ function QuadroCorretor({ nome, resumo, eventos, agora }: {
 
 // ─── O que pede atenção ───────────────────────────────────────────────────────
 
-function PedeAtencao({ alerta, agora, onOpenLead }: {
+function PedeAtencao({ alerta, agora, onOpenLead, nomeCorretor }: {
   alerta: ReturnType<typeof atencao<Lead>>
   agora: number
   onOpenLead: (lead: Lead) => void
+  nomeCorretor: (id?: string | null) => string | undefined
 }) {
+  // Produto e corretor: quem olha a lista precisa saber DE QUE produto é o
+  // lead e COM QUEM ele está, sem abrir um por um.
+  const produtoECorretor = (l: Lead) =>
+    [l.propertyName ?? 'Sem produto', nomeCorretor(l.brokerId)?.split(' ')[0] ?? 'Sem corretor'].join(' · ')
   const vencidos = alerta.aguardandoPrimeiroContato.filter(l => prazoVencido(l.slaDueAt!, agora)).length
   const grupos: {
     chave: string; icon: LucideIcon; disco: string; titulo: string; vazio: string
-    leads: Lead[]; nota: (l: Lead) => string; alerta?: (l: Lead) => boolean
+    leads: Lead[]; nota: (l: Lead) => string; lado?: (l: Lead) => string; alerta?: (l: Lead) => boolean
   }[] = [
     {
       chave: 'sla', icon: Timer, disco: vencidos > 0 ? 'bg-error-bg text-error' : 'bg-warning-bg text-warning',
       titulo: 'Aguardando 1º contato', vazio: 'Todo lead novo já foi chamado.',
       leads: alerta.aguardandoPrimeiroContato,
-      nota: l => textoDoPrazo(l.slaDueAt!, agora),
+      nota: produtoECorretor,
+      lado: l => textoDoPrazo(l.slaDueAt!, agora),
       alerta: l => prazoVencido(l.slaDueAt!, agora),
     },
     {
@@ -494,7 +457,10 @@ function PedeAtencao({ alerta, agora, onOpenLead }: {
                                    focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40">
                         <span className="min-w-0 flex-1">
                           <span className="block text-[14px] font-medium text-t1 truncate">{l.name}</span>
-                          <span className={`block text-[12.5px] truncate ${urgente ? 'text-error font-medium' : 'text-t3'}`}>{g.nota(l)}</span>
+                          <span className="block text-[12.5px] text-t3 truncate">{g.nota(l)}</span>
+                          {g.lado && (
+                            <span className={`block text-[12.5px] truncate ${urgente ? 'text-error font-medium' : 'text-t4'}`}>{g.lado(l)}</span>
+                          )}
                         </span>
                         <ChevronRight size={14} strokeWidth={1.8} className="text-t4 flex-shrink-0" aria-hidden />
                       </button>
