@@ -143,7 +143,7 @@ export function textoDoPrazo(slaDueAt: string, agora: number = Date.now()): stri
 
 // ── Atividade do corretor ─────────────────────────────────────────────────────
 
-const ORIGEM: Record<string, string> = {
+export const ORIGEM: Record<string, string> = {
   felicita: 'Felicità', meta_ads: 'Meta Ads', portal: 'Portal', offline: 'Offline', campanha: 'Campanha',
   indicacao: 'Indicação', prospeccao_ligacao: 'Ligação ativa', site: 'Site',
 }

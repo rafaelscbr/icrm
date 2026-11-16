@@ -2,6 +2,7 @@ import toast from 'react-hot-toast'
 import { supabase } from './supabase'
 import { getCurrentUserId, requireBrokerId } from './auth'
 import { generateId } from './formatters'
+import type { Atribuicao, EstadoRoleta } from '../modules/leads/monitorLeads'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
@@ -1312,6 +1313,61 @@ export const db = {
       })
       if (error) { toast.error(`Rodízio não foi salvo: ${error.message}`); throw error }
       return mapLeadSlaConfig(data as LeadSlaConfigRow)
+    },
+  },
+
+  // Monitoramento ao vivo do Dashboard de leads. Só leitura, e leve de
+  // propósito: a trilha de distribuição é lida UMA vez (30 dias) e depois só o
+  // que entrou de novo (`depoisDe`) — `lead_assignments` nunca é alterada, só
+  // cresce. Sem toast: a tela mostra a falha no próprio bloco.
+  leadMonitor: {
+    atribuicoes: async (p: { desde: string; depoisDe?: string }): Promise<Atribuicao[]> => {
+      const PAGINA = 1000   // teto de linhas por resposta do PostgREST
+      const out: Atribuicao[] = []
+      for (let pagina = 0; pagina < 20; pagina++) {
+        let q = supabase
+          .from('lead_assignments')
+          .select('id, lead_id, from_broker_id, to_broker_id, reason, sla_due_at, created_at')
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(pagina * PAGINA, pagina * PAGINA + PAGINA - 1)
+        q = p.depoisDe ? q.gt('created_at', p.depoisDe) : q.gte('created_at', p.desde)
+        const { data, error } = await q
+        if (error) throw error
+        const linhas = (data ?? []) as Array<{
+          id: string; lead_id: string; from_broker_id: string | null; to_broker_id: string | null
+          reason: string; sla_due_at: string | null; created_at: string
+        }>
+        for (const r of linhas) {
+          out.push({
+            id: r.id, leadId: r.lead_id, fromBrokerId: r.from_broker_id, toBrokerId: r.to_broker_id,
+            reason: r.reason, slaDueAt: r.sla_due_at, createdAt: r.created_at,
+          })
+        }
+        if (linhas.length < PAGINA) break
+      }
+      return out
+    },
+    // Só o admin enxerga as roletas (RLS): duas leituras de poucas linhas.
+    roleta: async (): Promise<EstadoRoleta> => {
+      const [geral, forms] = await Promise.all([
+        supabase.from('lead_distribution').select('broker_ids, last_index').eq('id', 1).single(),
+        supabase.from('meta_form_routing').select('form_id, form_name, product_name, broker_ids, last_index, active'),
+      ])
+      if (geral.error) throw geral.error
+      if (forms.error) throw forms.error
+      const g = geral.data as { broker_ids: string[] | null; last_index: number | null }
+      return {
+        geral: { brokerIds: g.broker_ids ?? [], lastIndex: g.last_index ?? -1 },
+        formularios: ((forms.data ?? []) as Array<{
+          form_id: string; form_name: string | null; product_name: string | null
+          broker_ids: string[] | null; last_index: number | null; active: boolean
+        }>).map(f => ({
+          formId: f.form_id,
+          nome: f.product_name?.trim() || f.form_name?.trim() || 'Formulário sem nome',
+          brokerIds: f.broker_ids ?? [], lastIndex: f.last_index ?? -1, active: f.active,
+        })),
+      }
     },
   },
 

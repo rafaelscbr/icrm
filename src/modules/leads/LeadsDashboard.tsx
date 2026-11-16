@@ -7,6 +7,8 @@ import { useAdminView } from '../../hooks/useAdminView'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePulseStore } from '../pulse/usePulseStore'
 import { useLeadPauseStore } from '../../store/useLeadPauseStore'
+import { useSlaConfigStore } from '../../store/useSlaConfigStore'
+import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { horaDaVolta, pausaDe } from '../../lib/pausaLeads'
 import { agruparFeed, horaCurta } from '../pulse/pulseEvents'
 import type { PulseTone } from '../pulse/pulseEvents'
@@ -16,9 +18,19 @@ import { Segmentado } from '../../components/shared/visual'
 import { Grafico, eixoCategoria, eixoValor, resolverCor } from '../../components/charts/Grafico'
 import type { CoresGrafico } from '../../components/charts/Grafico'
 import {
-  ETAPAS_FUNIL, atencao, estaAtivo, fraseDoCorretor, funilAgora, haQuanto, leadsPorDia,
+  ETAPAS_FUNIL, ORIGEM, atencao, estaAtivo, fraseDoCorretor, funilAgora, haQuanto, leadsPorDia,
   mediaSemHoje, prazoVencido, rotuloDia, textoDoPrazo, DIAS_ESFRIANDO,
 } from './dashboardLeads'
+import {
+  atividadePorHora, inicioDoPeriodo, proximoDeCadaRoleta, qualidadePorOrigem, recebidosHoje,
+  velocidadeDeResposta,
+} from './monitorLeads'
+import type { PeriodoMonitor } from './monitorLeads'
+import { useMonitorLeads } from './useMonitorLeads'
+import {
+  LegendaVelocidade, NumeroVivo, QualidadePorOrigem, RitmoDoDia, RoletaAoVivo, VelocidadeDeResposta,
+} from './PainelMonitor'
+import type { CartaoRoleta } from './PainelMonitor'
 
 /**
  * Leads › Dashboard — refeito em 15/11/2026.
@@ -27,7 +39,15 @@ import {
  * (gráfico + funil), o que a equipe está fazendo neste momento (atividade por
  * corretor, ao vivo) e o que não pode esperar.
  *
+ * 16/11/2026 — monitoramento ao vivo: roleta (para quem vai o próximo lead e
+ * quem está em pausa), velocidade de resposta por corretor, qualidade por
+ * origem, ritmo do dia e a comparação com ontem em cada quadro de atividade.
+ *
  * De onde vem cada coisa — e por que isso não pesa no banco:
+ *   • Roleta e velocidade: `useMonitorLeads` — uma leitura ao abrir e depois só
+ *     as linhas novas da trilha de distribuição, quando um lead muda de mão.
+ *   • Qualidade por origem e ritmo do dia: dos dados já em memória.
+ *   • Ontem: uma chamada por sessão (`pulse_resumo_dia`).
  *   • Gráfico, funil e atenção: dos leads que o `useLeadsStore` JÁ tem em
  *     memória (uma carga por sessão + realtime). Zero requisição nova.
  *   • Atividade dos corretores: do `usePulseStore` — UMA leitura agregada ao
@@ -76,8 +96,23 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
   const corretores  = usePulseStore(s => s.corretores)
   const brokerNames = usePulseStore(s => s.brokerNames)
 
+  const resumoOntem = usePulseStore(s => s.resumoOntem)
+
   const [janela, setJanela] = useState<Janela>('30')
+  const [periodo, setPeriodo] = useState<PeriodoMonitor>('hoje')
   const [agora, setAgora] = useState(() => Date.now())
+
+  // Trilha de distribuição e roletas (só o admin lê as roletas).
+  const monitor = useMonitorLeads(leads, isAdmin)
+  const slaConfig = useSlaConfigStore(s => s.config)
+  const carregarSla = useSlaConfigStore(s => s.load)
+  useEffect(() => { void carregarSla() }, [carregarSla])
+  const itensConfig = useLeadConfigStore(s => s.items)
+
+  // Ontem, para comparar a produção: uma chamada por sessão, depois do snapshot.
+  useEffect(() => {
+    if (carregado) void usePulseStore.getState().carregarResumoOntem()
+  }, [carregado])
 
   // Uma leitura ao abrir + escuta só de INSERT enquanto a aba está aberta.
   useEffect(() => {
@@ -126,8 +161,81 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
       id, nome: nome(id),
       resumo: corretores.find(c => c.brokerId === id),
       eventos: agruparFeed(feed.filter(e => e.brokerId === id)).slice(0, LINHAS_POR_CORRETOR),
+      horas: atividadePorHora(feed.filter(e => e.brokerId === id), new Date(agora)),
+      ontem: resumoOntem?.corretores.find(c => c.brokerId === id),
     }))
-  }, [isGlobalView, effectiveBrokerId, allProfiles, nomeCorretor, feed, corretores])
+  }, [isGlobalView, effectiveBrokerId, allProfiles, nomeCorretor, feed, corretores, resumoOntem, agora])
+
+  // ── Roleta ao vivo ────────────────────────────────────────────────────────
+  const cartoesRoleta = useMemo<CartaoRoleta[]>(() => {
+    const { atribuicoes, roleta } = monitor
+    if (!atribuicoes) return []
+    const ativo = (id: string) => allProfiles.find(p => p.id === id)?.active ?? id === profile?.id
+    const emPausa = (id: string) => !!pausaDe(pausas, id, agora)
+    const recebidos = recebidosHoje(atribuicoes, new Date(agora))
+
+    const naRoleta = new Set<string>()
+    const proximoEm = new Map<string, Set<string>>()
+    if (roleta) {
+      for (const id of roleta.geral.brokerIds) naRoleta.add(id)
+      for (const f of roleta.formularios) if (f.active) for (const id of f.brokerIds) naRoleta.add(id)
+      for (const p of proximoDeCadaRoleta(roleta, ativo, emPausa)) {
+        if (!p.brokerId) continue
+        // Vários formulários levam o mesmo nome de produto: o selo aparece uma vez.
+        const s = proximoEm.get(p.brokerId) ?? new Set<string>()
+        s.add(p.nome)
+        proximoEm.set(p.brokerId, s)
+      }
+    }
+
+    let ids: string[]
+    if (!isGlobalView) ids = effectiveBrokerId ? [effectiveBrokerId] : []
+    else if (roleta) {
+      const daEquipe = allProfiles.filter(p => p.active && p.role === 'broker').map(p => p.id)
+      ids = [...new Set([...roleta.geral.brokerIds, ...naRoleta, ...daEquipe])].filter(ativo)
+    } else ids = []
+
+    return ids.map(id => {
+      const esperando = alerta.aguardandoPrimeiroContato.filter(l => l.brokerId === id)
+      const vencidos = esperando.filter(l => prazoVencido(l.slaDueAt!, agora)).length
+      return {
+        id, nome: nomeCorretor(id) ?? 'Corretor',
+        naRoleta: naRoleta.has(id),
+        pausa: pausaDe(pausas, id, agora),
+        recebidos: recebidos.get(id),
+        aguardando: esperando.length - vencidos,
+        vencidos,
+        // "Roleta geral" primeiro: é a que decide o próximo lead sem formulário.
+        proximoEm: roleta ? [...(proximoEm.get(id) ?? [])].sort((a, b) => Number(b === 'Roleta geral') - Number(a === 'Roleta geral')) : null,
+      }
+    })
+  }, [monitor, allProfiles, profile, pausas, agora, isGlobalView, effectiveBrokerId, alerta, nomeCorretor])
+
+  const proximoGeral = cartoesRoleta.find(c => c.proximoEm?.includes('Roleta geral'))
+
+  // ── Velocidade de resposta e qualidade por origem ─────────────────────────
+  const desde = useMemo(() => inicioDoPeriodo(periodo, new Date(agora)), [periodo, agora])
+  const velocidade = useMemo(() => {
+    if (!monitor.atribuicoes) return null
+    const porId = new Map(leads.map(l => [l.id, l]))
+    const v = velocidadeDeResposta(monitor.atribuicoes, porId, desde, agora, slaConfig?.schedule ?? null)
+    // Fora da visão global, só a linha de quem está sendo olhado.
+    if (!isGlobalView) {
+      const minha = v.linhas.filter(l => l.brokerId === effectiveBrokerId)
+      return { linhas: minha, total: minha[0] ?? v.total }
+    }
+    return v
+  }, [monitor.atribuicoes, leads, desde, agora, slaConfig, isGlobalView, effectiveBrokerId])
+
+  const origens = useMemo(() => qualidadePorOrigem(leads, desde), [leads, desde])
+  const rotuloOrigem = useCallback(
+    (slug: string) => itensConfig.find(i => i.type === 'origin' && i.slug === slug)?.label ?? ORIGEM[slug] ?? slug,
+    [itensConfig],
+  )
+  const rotuloMotivo = useCallback(
+    (slug: string) => itensConfig.find(i => i.type === 'discard_reason' && i.slug === slug)?.label ?? slug.replace(/_/g, ' '),
+    [itensConfig],
+  )
 
 
   return (
@@ -162,13 +270,36 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
         </section>
       </div>
 
+      {/* ── Roleta ao vivo ──────────────────────────────────────────────────── */}
+      <section className="mt-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <Titulo descricao={
+            !isAdmin ? 'Seu recebimento de leads hoje.'
+            : proximoGeral ? `O próximo lead sem formulário próprio vai para ${proximoGeral.nome.split(' ')[0]}. Os selos mostram quem é o próximo em cada formulário.`
+            : 'Quem está recebendo, quem está em pausa e para quem vai o próximo lead.'
+          }>
+            Roleta *ao vivo*
+          </Titulo>
+          <Conexao estado={connection} carregado={carregado} />
+        </div>
+        {monitor.erro && <AvisoDeAtraso erro={monitor.erro} temDados={monitor.atribuicoes !== null} onTentar={() => void monitor.recarregar()} />}
+        {monitor.atribuicoes === null ? (
+          !monitor.erro && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" aria-busy="true">
+            {[0, 1, 2].map(i => <div key={i} className="bento h-[190px] animate-pulse" />)}
+          </div>
+        ) : cartoesRoleta.length === 0 ? (
+          <p className="text-[14px] text-t3 py-4">Nenhum corretor ativo nas roletas.</p>
+        ) : (
+          <RoletaAoVivo cartoes={cartoesRoleta} agora={agora} />
+        )}
+      </section>
+
       {/* ── Atividade por corretor, ao vivo ─────────────────────────────────── */}
       <section className="mt-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <Titulo descricao="O que cada corretor fez hoje no sistema. As linhas novas entram sozinhas, sem recarregar.">
+          <Titulo descricao="O que cada corretor fez hoje no sistema, hora a hora, e como está em relação a ontem. As linhas novas entram sozinhas.">
             Atividade da *equipe*
           </Titulo>
-          <Conexao estado={connection} carregado={carregado} />
         </div>
 
         {erroPulso && !carregado ? (
@@ -193,13 +324,75 @@ export function LeadsDashboard({ leads, onOpenLead }: Props) {
           <div className={`grid grid-cols-1 gap-5 ${quadros.length === 2 ? 'md:grid-cols-2' : quadros.length >= 3 ? 'md:grid-cols-2 xl:grid-cols-3' : ''}`}>
             {quadros.map(q => (
               <QuadroCorretor key={q.id} nome={q.nome} resumo={q.resumo} eventos={q.eventos} agora={agora}
-                              pausa={pausaDe(pausas, q.id, agora)} />
+                              pausa={pausaDe(pausas, q.id, agora)} horas={q.horas} ontem={q.ontem} />
             ))}
           </div>
         )}
       </section>
 
+      {/* ── Velocidade de resposta + qualidade por origem ───────────────────── */}
+      <section className="mt-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <Titulo descricao="Quem atende no prazo e de onde vêm os leads que avançam. Muda sozinho a cada lead e a cada contato.">
+            Resposta e *qualidade*
+          </Titulo>
+          <Segmentado
+            rotulo="Período da resposta e da qualidade"
+            valor={periodo}
+            onChange={setPeriodo}
+            opcoes={[
+              { value: 'hoje' as const, label: 'Hoje' },
+              { value: '7' as const,    label: '7 dias' },
+              { value: '30' as const,   label: '30 dias' },
+            ]}
+          />
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <article className="bento p-5 lg:p-6 min-w-0">
+            <h4 className="text-[14.5px] font-semibold text-t1">Velocidade de resposta</h4>
+            <p className="text-[12.5px] text-t3 mt-0.5 mb-4">Do momento em que o corretor recebe o lead até o 1º contato no WhatsApp.</p>
+            {velocidade === null ? (
+              monitor.erro
+                ? <p className="text-[13.5px] text-t4 py-6">Sem dados para mostrar — veja o aviso acima.</p>
+                : <div className="h-[160px] rounded-[12px] shimmer" aria-busy="true" />
+            ) : (
+              <>
+                <VelocidadeDeResposta linhas={velocidade.linhas} total={velocidade.total}
+                                      nome={id => nomeCorretor(id) ?? 'Corretor'}
+                                      minutosPrazo={slaConfig?.minutes ?? null} />
+                {velocidade.total.recebidos > 0 && <LegendaVelocidade />}
+              </>
+            )}
+          </article>
+
+          <article className="bento p-5 lg:p-6 min-w-0">
+            <h4 className="text-[14.5px] font-semibold text-t1">Qualidade por origem</h4>
+            <p className="text-[12.5px] text-t3 mt-0.5 mb-4">Onde está hoje cada lead que chegou no período, por produto e origem.</p>
+            <QualidadePorOrigem linhas={origens} rotuloOrigem={rotuloOrigem} rotuloMotivo={rotuloMotivo} />
+          </article>
+        </div>
+      </section>
+
       <PedeAtencao alerta={alerta} agora={agora} onOpenLead={onOpenLead} nomeCorretor={nomeCorretor} />
+    </div>
+  )
+}
+
+/** A leitura do banco falhou: diz isso e, se há números na tela, que podem estar atrasados. */
+function AvisoDeAtraso({ erro, temDados, onTentar }: { erro: string; temDados: boolean; onTentar: () => void }) {
+  return (
+    <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-error-line bg-error-bg px-4 py-3" role="alert">
+      <AlertTriangle size={16} strokeWidth={1.8} className="text-error flex-shrink-0 mt-0.5" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-semibold text-error">
+          {temDados ? 'A roleta e a velocidade de resposta podem estar atrasadas' : 'Não foi possível ler a distribuição dos leads'}
+        </p>
+        <p className="text-[13px] text-t2 mt-0.5 break-words">{erro}</p>
+      </div>
+      <button type="button" onClick={onTentar}
+        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-[13px] font-semibold text-error hover:bg-surface cursor-pointer flex-shrink-0">
+        <RefreshCw size={14} strokeWidth={1.8} aria-hidden /> Tentar de novo
+      </button>
     </div>
   )
 }
@@ -322,21 +515,25 @@ function FunilDesenhado({ porEtapa, vendasNoMes }: { porEtapa: Record<LeadFunnel
 
 // ─── Quadro de atividade de um corretor ───────────────────────────────────────
 
-function QuadroCorretor({ nome, resumo, eventos, agora, pausa }: {
+function QuadroCorretor({ nome, resumo, eventos, agora, pausa, horas, ontem }: {
   nome: string
   resumo?: PulseBroker
   eventos: PulseEvent[]
   agora: number
   /** recebimento de leads pausado (migração 089) */
   pausa?: LeadPause
+  /** registros de hoje por hora (0–23) */
+  horas: number[]
+  /** o dia de ontem inteiro, para comparar; undefined enquanto não carregou */
+  ontem?: PulseBroker
 }) {
   const ultima = eventos[0]?.at ?? resumo?.ultimaAtividadeAt ?? null
   const ativo = estaAtivo(ultima, agora)
-  const numeros: [number, string][] = [
-    [resumo?.interacoesHoje ?? 0, 'Atendimentos'],
-    [resumo?.ligacoesHoje ?? 0, 'Ligações'],
-    [resumo?.avancosHoje ?? 0, 'Avanços'],
-    [resumo?.visitasHoje ?? 0, 'Visitas'],
+  const numeros: [number, string, number | undefined][] = [
+    [resumo?.interacoesHoje ?? 0, 'Atendimentos', ontem?.interacoesHoje],
+    [resumo?.ligacoesHoje ?? 0, 'Ligações', ontem?.ligacoesHoje],
+    [resumo?.avancosHoje ?? 0, 'Avanços', ontem?.avancosHoje],
+    [resumo?.visitasHoje ?? 0, 'Visitas', ontem?.visitasHoje],
   ]
 
   return (
@@ -365,15 +562,23 @@ function QuadroCorretor({ nome, resumo, eventos, agora, pausa }: {
       </header>
 
       <dl className="grid grid-cols-4 border-y border-line bg-s2/50">
-        {numeros.map(([n, rotulo], i) => (
+        {numeros.map(([n, rotulo, antes], i) => (
           <div key={rotulo} className={`px-3 py-3 text-center min-w-0 ${i > 0 ? 'border-l border-line' : ''}`}>
-            <dd className={`font-display text-[19px] font-extrabold tabular-nums leading-none ${n === 0 ? 'text-t4' : 'text-t1'}`}>
-              {n.toLocaleString('pt-BR')}
+            <dd className={`font-display text-[19px] font-extrabold leading-none ${n === 0 ? 'text-t4' : 'text-t1'}`}>
+              <NumeroVivo valor={n} />
             </dd>
             <dt className="text-[11.5px] text-t3 mt-1.5 truncate">{rotulo}</dt>
+            {/* O dia de ontem INTEIRO: serve de régua, não de placar da mesma hora. */}
+            {antes !== undefined && (
+              <dd className={`text-[11px] mt-0.5 tabular-nums truncate ${n > antes ? 'text-success' : 'text-t4'}`}>
+                ontem {antes.toLocaleString('pt-BR')}
+              </dd>
+            )}
           </div>
         ))}
       </dl>
+
+      <RitmoDoDia horas={horas} agora={agora} nome={nome} />
 
       <div className="h-[360px] overflow-y-auto overscroll-contain">
         {eventos.length === 0 ? (
