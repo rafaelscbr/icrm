@@ -1,789 +1,459 @@
-import { useMemo, useEffect } from 'react'
-import {
-  Flame, DollarSign, TrendingDown, Activity,
-  AlertTriangle, Clock, Crown, ChevronRight,
-  MessageCircle, XCircle, Zap, Thermometer, BarChart2, Timer,
-  Sparkles, Smartphone, Globe, Handshake, Megaphone, CheckCircle2, Filter,
-} from 'lucide-react'
-import { SlaBadge, slaActive } from './SlaBadge'
-import { Lead, LeadFunnelStage, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertTriangle, ChevronRight, Radio, RefreshCw, Snowflake, Timer, Undo2 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { Lead, LeadFunnelStage } from '../../types'
+import { STAGE_THEME } from '../../lib/stageTheme'
 import { formatCurrency } from '../../lib/formatters'
-import { STAGE_CONFIG } from './LeadKanban'
-import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
+import { useAdminView } from '../../hooks/useAdminView'
+import { useAuthStore } from '../../store/useAuthStore'
+import { usePulseStore } from '../pulse/usePulseStore'
+import { agruparFeed, horaCurta } from '../pulse/pulseEvents'
+import type { PulseTone } from '../pulse/pulseEvents'
+import type { PulseBroker, PulseEvent } from '../pulse/types'
+import { Destaque } from '../../components/shared/Destaque'
+import { FaixaNumeros, Segmentado, SecaoTitulo } from '../../components/shared/visual'
+import { Grafico, eixoCategoria, eixoValor, resolverCor } from '../../components/charts/Grafico'
+import type { CoresGrafico } from '../../components/charts/Grafico'
+import {
+  ETAPAS_FUNIL, atencao, estaAtivo, fraseDoCorretor, funilAgora, haQuanto, leadsPorDia,
+  mediaSemHoje, rotuloDia, DIAS_ESFRIANDO,
+} from './dashboardLeads'
 
-// ── Config ────────────────────────────────────────────────────────────────────
-
-const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
-
-const ORIGIN_LABEL: Record<string, string> = {
-  felicita: 'Felicità', meta_ads: 'Meta ADS', portal: 'Portal', offline: 'Offline', campanha: 'Campanha',
-}
-const ORIGIN_COLOR: Record<string, string> = {
-  felicita: '#f43f5e', meta_ads: 'var(--info)', portal: 'var(--info)', offline: 'var(--warning)', campanha: 'var(--brand)',
-}
-const ORIGIN_ICON: Record<string, typeof Sparkles> = {
-  felicita: Sparkles, meta_ads: Smartphone, portal: Globe, offline: Handshake, campanha: Megaphone,
-}
-const DISCARD_LABELS: Record<string, string> = {
-  sem_condicao: 'Sem condição financeira',
-  fora_de_nicho: 'Fora do nicho',
-  parou_de_responder: 'Parou de responder',
-  nunca_respondeu: 'Nunca respondeu',
-  telefone_invalido: 'Telefone inválido',
-}
-
-// Peso de prioridade por etapa (não inclui venda — já fechou)
-const STAGE_WEIGHT: Record<LeadFunnelStage, number> = {
-  proposta: 100, visita: 80, atendimento: 55,
-  followup: 25,  lead: 10,   venda: 0,
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function daysAgo(iso: string): number {
-  return (Date.now() - new Date(iso).getTime()) / 86_400_000
-}
-
-function priorityScore(lead: Lead): number {
-  const base    = STAGE_WEIGHT[lead.funnelStage]
-  const ticket  = Math.min(40, ((lead.averageTicket ?? 0) / 1_000_000) * 20)
-  const stale   = Math.min(25, daysAgo(lead.updatedAt) * 1.5)
-  return base + ticket - stale
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
+/**
+ * Leads › Dashboard — refeito em 15/11/2026.
+ *
+ * A tela responde, nesta ordem: quanto está chegando (leads por dia), onde os
+ * leads estão (funil agora), o que não pode esperar (atenção) e o que a equipe
+ * está fazendo neste momento (atividade por corretor, ao vivo).
+ *
+ * De onde vem cada coisa — e por que isso não pesa no banco:
+ *   • Gráfico, funil e atenção: dos leads que o `useLeadsStore` JÁ tem em
+ *     memória (uma carga por sessão + realtime). Zero requisição nova.
+ *   • Atividade dos corretores: do `usePulseStore` — UMA leitura agregada ao
+ *     abrir (pulse_snapshot) e depois só INSERT pelo realtime, com listas de
+ *     teto fixo. É a mesma estrutura do Pulse, que roda 12 h por dia.
+ *   • Nenhum setInterval toca a rede: o único relógio da tela só reescreve
+ *     "há 3 min" a cada 30 s, em JS puro.
+ *
+ * Escopo: o modelo de visão do admin (imobiliária · meu desempenho · corretor);
+ * corretor comum vê só o próprio — a RPC e o realtime já respeitam a RLS.
+ */
 
 interface Props {
   leads: Lead[]
   onOpenLead: (lead: Lead) => void
 }
 
+type Janela = '14' | '30' | '90'
+
+const TOM_COR: Record<PulseTone, string> = {
+  neutral: 'text-t3', good: 'text-info', warn: 'text-warning', win: 'text-success',
+}
+
+/** Snapshot mais velho que isto é refeito ao abrir a aba (fora dela não há escuta). */
+const SNAPSHOT_FRESCO_MS = 60_000
+const LINHAS_POR_CORRETOR = 40
+
 export function LeadsDashboard({ leads, onOpenLead }: Props) {
-  // Pipeline atual = aberto: nem descartado, nem ganho/encerrado
-  const active    = useMemo(() => leads.filter(l => !l.discardReason && !l.closedAt), [leads])
-  const discarded = useMemo(() => leads.filter(l => !!l.discardReason), [leads])
+  const { effectiveBrokerId, isGlobalView } = useAdminView()
+  const { isAdmin, profile, allProfiles, fetchAllProfiles } = useAuthStore()
 
-  const { loadAll, todas, allLoaded } = useLeadInteractionsStore()
-  useEffect(() => { loadAll() }, [loadAll])
+  const connection  = usePulseStore(s => s.connection)
+  const erroPulso   = usePulseStore(s => s.erro)
+  const carregado   = usePulseStore(s => s.ultimoSnapshotAt !== null)
+  const feed        = usePulseStore(s => s.feed)
+  const corretores  = usePulseStore(s => s.corretores)
+  const brokerNames = usePulseStore(s => s.brokerNames)
 
-  // Leads Meta Ads com relógio de SLA rodando (1º contato pendente)
-  const slaLeads = useMemo(() => active.filter(slaActive), [active])
+  const [janela, setJanela] = useState<Janela>('30')
+  const [agora, setAgora] = useState(() => Date.now())
 
-  // ── BLOCO 1 — North Star KPIs ───────────────────────────────────────────────
-  const vgvPipeline = useMemo(() =>
-    active.reduce((s, l) => s + (l.averageTicket ?? 0), 0), [active])
+  // Uma leitura ao abrir + escuta só de INSERT enquanto a aba está aberta.
+  useEffect(() => {
+    const s = usePulseStore.getState()
+    if (!s.ultimoSnapshotAt || Date.now() - s.ultimoSnapshotAt > SNAPSHOT_FRESCO_MS) void s.bootstrap('inicial')
+    return s.subscribe()
+  }, [])
 
-  const vgvQuente = useMemo(() =>
-    active
-      .filter(l => l.funnelStage === 'visita' || l.funnelStage === 'proposta')
-      .reduce((s, l) => s + (l.averageTicket ?? 0), 0), [active])
+  // Relógio local: só para "há 3 min" e para o prazo vencido. Não toca a rede.
+  useEffect(() => {
+    const id = setInterval(() => setAgora(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [])
 
-  const vgvPerdido = useMemo(() =>
-    discarded.reduce((s, l) => s + (l.averageTicket ?? 0), 0), [discarded])
+  useEffect(() => { if (isAdmin && allProfiles.length === 0) void fetchAllProfiles() }, [isAdmin, allProfiles.length, fetchAllProfiles])
 
-  const vendas     = useMemo(() => active.filter(l => l.funnelStage === 'venda'), [active])
-  const convRate   = leads.length > 0
-    ? ((vendas.length / leads.length) * 100).toFixed(1)
-    : '0'
+  const dias = Number(janela)
+  const serie  = useMemo(() => leadsPorDia(leads, dias, new Date(agora)), [leads, dias, agora])
+  const funil  = useMemo(() => funilAgora(leads, new Date(agora)), [leads, agora])
+  const alerta = useMemo(() => atencao(leads, agora), [leads, agora])
 
-  // ── BLOCO 2 — Pipeline Estratégico ─────────────────────────────────────────
-  const funnelStages = useMemo(() => {
-    const all = [...active, ...discarded]
+  const hoje  = serie[serie.length - 1]?.n ?? 0
+  const ontem = serie[serie.length - 2]?.n ?? 0
+  const media = mediaSemHoje(serie)
 
-    // Mapa: etapa → quantos foram descartados nela (via interaction type='discard')
-    const discardedByStage: Record<string, number> = {}
-    todas
-      .filter(i => i.type === 'discard')
-      .forEach(i => {
-        // description: "Descartado em Atendimento — motivo"
-        const match = i.description?.match(/Descartado em ([^—]+)/)
-        if (match) {
-          const stageLabel = match[1].trim()
-          const stageKey = STAGES.find(s => STAGE_CONFIG[s].label === stageLabel) ?? stageLabel
-          discardedByStage[stageKey] = (discardedByStage[stageKey] ?? 0) + 1
-        }
-      })
+  // Quem aparece nos quadros de atividade
+  const quadros = useMemo(() => {
+    const nome = (id: string) => allProfiles.find(p => p.id === id)?.name ?? brokerNames[id]
+      ?? (id === profile?.id ? profile.name : 'Corretor')
+    let ids: string[]
+    if (!isGlobalView) {
+      ids = effectiveBrokerId ? [effectiveBrokerId] : []
+    } else {
+      const comAtividade = new Set(feed.map(e => e.brokerId).filter((x): x is string => !!x))
+      const daEquipe = allProfiles.filter(p => p.active && p.role === 'broker').map(p => p.id)
+      // Admin só ganha quadro no dia em que ele mesmo atendeu.
+      const admins = allProfiles.filter(p => p.active && p.role === 'admin' && comAtividade.has(p.id)).map(p => p.id)
+      ids = [...daEquipe, ...admins]
+      if (ids.length === 0) ids = corretores.map(c => c.brokerId)
+    }
+    return ids.map(id => ({
+      id, nome: nome(id),
+      resumo: corretores.find(c => c.brokerId === id),
+      eventos: agruparFeed(feed.filter(e => e.brokerId === id)).slice(0, LINHAS_POR_CORRETOR),
+    }))
+  }, [isGlobalView, effectiveBrokerId, allProfiles, brokerNames, profile, feed, corretores])
 
-    return STAGES.map((stage, i) => {
-      const inStage   = active.filter(l => l.funnelStage === stage)
-      const count     = inStage.length
-      const vgv       = inStage.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
-      const parados   = inStage.filter(l => daysAgo(l.updatedAt) > 2).length
-      // Leads que chegaram até esta etapa ou além (funil acumulado)
-      const reached   = all.filter(l => STAGES.indexOf(l.funnelStage) >= i).length
-      const reachedPrev = i === 0 ? all.length : all.filter(l => STAGES.indexOf(l.funnelStage) >= i - 1).length
-      const dropRate  = reachedPrev > 0 ? Math.round(((reachedPrev - reached) / reachedPrev) * 100) : 0
-      const discardedHere = discardedByStage[stage] ?? 0
-      return { stage, count, vgv, parados, dropRate, discardedHere, conf: STAGE_CONFIG[stage] }
-    })
-  }, [active, discarded, todas])
-
-  // ── BLOCO 3 — Priority Ranking ──────────────────────────────────────────────
-  const priorityList = useMemo(() =>
-    active
-      .filter(l => l.funnelStage !== 'venda')
-      .map(l => ({ lead: l, score: priorityScore(l) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 8),
-    [active])
-
-  // ── BLOCO 3 — Canal Performance ─────────────────────────────────────────────
-  const canalPerf = useMemo(() => {
-    const origins = Array.from(new Set(leads.map(l => l.origin)))
-    return origins.map(origin => {
-      const all      = leads.filter(l => l.origin === origin)
-      const act      = all.filter(l => !l.discardReason)
-      const disc     = all.filter(l => !!l.discardReason)
-      const conv     = act.filter(l => l.funnelStage === 'venda').length
-      const withTkt  = act.filter(l => l.averageTicket)
-      const avgTkt   = withTkt.length > 0 ? withTkt.reduce((s, l) => s + l.averageTicket!, 0) / withTkt.length : 0
-      const vgv      = act.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
-      return {
-        origin,
-        label:    ORIGIN_LABEL[origin] ?? origin,
-        icon:     ORIGIN_ICON[origin] ?? Sparkles,
-        color:    ORIGIN_COLOR[origin] ?? 'var(--t4)',
-        total:    all.length,
-        active:   act.length,
-        discarded: disc.length,
-        conv, vgv, avgTkt,
-        convRate:  all.length > 0 ? (conv / all.length) * 100 : 0,
-        discRate:  all.length > 0 ? (disc.length / all.length) * 100 : 0,
-      }
-    }).sort((a, b) => b.total - a.total)
-  }, [leads])
-
-  // ── BLOCO 4 — Follow-up Intelligence ────────────────────────────────────────
-  const followupLeads = useMemo(() => active.filter(l => l.funnelStage === 'followup'), [active])
-  const followupSteps = useMemo(() =>
-    Array.from({ length: MAX_TENTATIVAS_FOLLOWUP + 1 }, (_, step) => ({
-      step,
-      count: followupLeads.filter(l => l.followupStep === step).length,
-    })), [followupLeads])
-  const maxFu = Math.max(1, ...followupSteps.map(s => s.count))
-
-  // ── BLOCO 4 — Loss Analysis ──────────────────────────────────────────────────
-  const lossAnalysis = useMemo(() => {
-    const map: Record<string, { count: number; vgv: number }> = {}
-    discarded.forEach(l => {
-      const key = l.discardReason ?? 'unknown'
-      if (!map[key]) map[key] = { count: 0, vgv: 0 }
-      map[key].count++
-      map[key].vgv += l.averageTicket ?? 0
-    })
-    return Object.entries(map)
-      .map(([key, d]) => ({ key, label: DISCARD_LABELS[key] ?? key, ...d }))
-      .sort((a, b) => b.vgv - a.vgv)
-  }, [discarded])
-  const maxLossVgv = Math.max(1, ...lossAnalysis.map(l => l.vgv))
-
-  // ── BLOCO 5 — Radar de Temperatura ──────────────────────────────────────────
-  const radarData = useMemo(() => {
-    // Build map: leadId → most recent interactedAt
-    const lastByLead: Record<string, string> = {}
-    todas.forEach(i => {
-      if (!lastByLead[i.leadId] || i.interactedAt > lastByLead[i.leadId]) {
-        lastByLead[i.leadId] = i.interactedAt
-      }
-    })
-    const stagesForRadar: LeadFunnelStage[] = ['proposta', 'visita', 'atendimento', 'followup', 'lead']
-    return stagesForRadar.map(stage => {
-      const inStage   = active.filter(l => l.funnelStage === stage)
-      const cold      = inStage.filter(l => {
-        const last = lastByLead[l.id]
-        return !last || daysAgo(last) > 2
-      })
-      const vgvAtRisk = cold.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
-      const coldPct   = inStage.length > 0 ? (cold.length / inStage.length) * 100 : 0
-      return { stage, label: STAGE_CONFIG[stage].label, conf: STAGE_CONFIG[stage], total: inStage.length, cold: cold.length, coldPct, vgvAtRisk }
-    })
-  }, [active, todas])
-
-  // ── BLOCO 6 — Pulso Comercial ────────────────────────────────────────────────
-  const pulsoData = useMemo(() => {
-    return Array.from({ length: 14 }, (_, i) => {
-      const d = new Date()
-      d.setDate(d.getDate() - (13 - i))
-      const dateStr = d.toISOString().split('T')[0]
-      const label   = i === 13 ? 'Hoje' : i === 12 ? 'Ontem' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-      const count   = todas.filter(x => x.interactedAt.startsWith(dateStr)).length
-      return { dateStr, label, count }
-    })
-  }, [todas])
-  const maxPulso = Math.max(1, ...pulsoData.map(d => d.count))
-
-  // ─────────────────────────────────────────────────────────────────────────────
+  const noEscopo = (c: PulseBroker) => isGlobalView || c.brokerId === effectiveBrokerId
+  const atendimentosHoje = corretores.filter(noEscopo).reduce((s, c) => s + c.interacoesHoje, 0)
+  const ligacoesHoje     = corretores.filter(noEscopo).reduce((s, c) => s + c.ligacoesHoje, 0)
+  const visitasHoje      = corretores.filter(noEscopo).reduce((s, c) => s + c.visitasHoje, 0)
+  const semPulso = !carregado
 
   return (
-    <div className="p-5 space-y-4 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-8 pb-10">
+      {/* Topo em uma linha */}
+      <div className="flex items-center gap-x-3 gap-y-2 flex-wrap">
+        <h2 className="font-display text-[18px] font-bold tracking-[-0.02em] text-t1">
+          Leads <Destaque>ao vivo</Destaque>
+        </h2>
+        <Conexao estado={connection} carregado={carregado} />
+      </div>
 
-      {/* ── SLA Meta Ads — leads aguardando 1º contato ──────────────────────── */}
-      {slaLeads.length > 0 && (
-        <div className="bg-error-bg border border-error-line rounded-[14px] p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Timer size={13} strokeWidth={1.6} className="text-error" />
-            <p className="font-label text-[11px] font-medium uppercase tracking-[0.12em] text-error">
-              SLA Meta Ads — {slaLeads.length === 1 ? '1 lead aguardando' : `${slaLeads.length} leads aguardando`} 1º contato
-            </p>
+      {/* Os quatro números do dia */}
+      <FaixaNumeros itens={[
+        {
+          rotulo: 'Leads hoje', destaque: true,
+          valor: hoje.toLocaleString('pt-BR'),
+          nota: `ontem ${ontem.toLocaleString('pt-BR')}${media !== null ? ` · média ${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}/dia` : ''}`,
+        },
+        {
+          rotulo: 'Atendimentos hoje',
+          valor: semPulso ? '—' : atendimentosHoje.toLocaleString('pt-BR'),
+          nota: semPulso ? 'carregando' : `${ligacoesHoje.toLocaleString('pt-BR')} ligações de prospecção`,
+        },
+        {
+          rotulo: 'Visitas marcadas hoje',
+          valor: semPulso ? '—' : visitasHoje.toLocaleString('pt-BR'),
+          nota: `${funil.porEtapa.visita.toLocaleString('pt-BR')} leads em visita agora`,
+        },
+        {
+          rotulo: 'Em negociação',
+          valor: formatCurrency(funil.emNegociacao),
+          nota: `${funil.leadsEmNegociacao.toLocaleString('pt-BR')} em visita e proposta`,
+        },
+      ]} />
+
+      {/* Gráfico grande + funil */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-x-10 gap-y-8">
+        <section>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <SecaoTitulo icon={Radio} descricao="Todo lead que entrou, inclusive os já descartados. Atualiza sozinho quando chega um novo.">
+              Leads recebidos por *dia*
+            </SecaoTitulo>
+            <Segmentado
+              rotulo="Janela do gráfico"
+              valor={janela}
+              onChange={setJanela}
+              opcoes={[
+                { value: '14' as const, label: '14 dias' },
+                { value: '30' as const, label: '30 dias' },
+                { value: '90' as const, label: '90 dias' },
+              ]}
+            />
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {slaLeads.map(l => (
-              <button
-                key={l.id}
-                onClick={() => onOpenLead(l)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-s2/60 border border-error-line text-xs text-t1 hover:bg-s2 transition-all duration-150"
-                title={`Abrir lead — prazo ${new Date(l.slaDueAt!).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`}
-              >
-                <span className="font-medium truncate max-w-[140px]">{l.name}</span>
-                <SlaBadge lead={l} />
-              </button>
+          <GraficoLeads serie={serie} media={media} />
+        </section>
+
+        <section>
+          <SecaoTitulo icon={Radio} descricao="Leads ativos em cada etapa. Vendas: concluídas neste mês.">
+            Funil *agora*
+          </SecaoTitulo>
+          <FunilDesenhado porEtapa={funil.porEtapa} vendasNoMes={funil.vendasNoMes} />
+        </section>
+      </div>
+
+      <PedeAtencao alerta={alerta} agora={agora} onOpenLead={onOpenLead} />
+
+      {/* Atividade por corretor, ao vivo */}
+      <section>
+        <SecaoTitulo icon={Radio} descricao="O que cada corretor fez hoje no sistema. As linhas novas entram sozinhas, sem recarregar.">
+          Atividade da *equipe*
+        </SecaoTitulo>
+
+        {erroPulso && !carregado ? (
+          <div className="flex items-start gap-3 rounded-[14px] border border-error-line bg-error-bg px-4 py-3.5" role="alert">
+            <AlertTriangle size={16} strokeWidth={1.8} className="text-error flex-shrink-0 mt-0.5" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-semibold text-error">Não foi possível carregar a atividade da equipe</p>
+              <p className="text-[13px] text-t2 mt-0.5 break-words">{erroPulso}</p>
+            </div>
+            <button type="button" onClick={() => void usePulseStore.getState().bootstrap('inicial')}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-[13px] font-semibold text-error hover:bg-surface cursor-pointer flex-shrink-0">
+              <RefreshCw size={14} strokeWidth={1.8} aria-hidden /> Tentar de novo
+            </button>
+          </div>
+        ) : !carregado ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" aria-busy="true">
+            {[0, 1].map(i => <div key={i} className="bento h-[320px] animate-pulse" />)}
+          </div>
+        ) : quadros.length === 0 ? (
+          <p className="text-[14px] text-t3 py-6">Nenhum corretor ativo para mostrar.</p>
+        ) : (
+          <div className={`grid grid-cols-1 gap-4 ${quadros.length === 2 ? 'md:grid-cols-2' : quadros.length >= 3 ? 'md:grid-cols-2 xl:grid-cols-3' : ''}`}>
+            {quadros.map(q => (
+              <QuadroCorretor key={q.id} nome={q.nome} resumo={q.resumo} eventos={q.eventos} agora={agora} />
             ))}
           </div>
-        </div>
-      )}
-
-      {/* ── BLOCO 1 — North Star KPIs ──────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <NorthStar
-          icon={<DollarSign size={15} />}
-          label="VGV no Pipeline"
-          value={vgvPipeline > 0 ? formatCurrency(vgvPipeline) : '—'}
-          sub={`${active.filter(l => l.averageTicket).length} de ${active.length} leads com ticket`}
-          color="text-brand-text" bg="bg-brand-tint" border="border-brand/25"
-        />
-        <NorthStar
-          icon={<Flame size={15} />}
-          label="VGV Quente"
-          value={vgvQuente > 0 ? formatCurrency(vgvQuente) : '—'}
-          sub="visita + proposta — fechamento próximo"
-          color="text-warning" bg="bg-warning-bg" border="border-warning-line"
-          highlight
-        />
-        <NorthStar
-          icon={<TrendingDown size={15} />}
-          label="VGV Perdido"
-          value={vgvPerdido > 0 ? formatCurrency(vgvPerdido) : '—'}
-          sub={`custo de oportunidade · ${discarded.length} descartados`}
-          color="text-red-300" bg="bg-red-500/10" border="border-red-500/20"
-        />
-        <NorthStar
-          icon={<Activity size={15} />}
-          label="Conversão Lead → Venda"
-          value={`${convRate}%`}
-          sub={`${vendas.length} vendas · ${leads.length} leads totais`}
-          color="text-green-300" bg="bg-green-500/10" border="border-green-500/20"
-        />
-      </div>
-
-      {/* ── BLOCO 2 — Pipeline Estratégico ─────────────────────────────────── */}
-      <div className="rounded-[14px] border border-line surface-premium shadow-card p-5">
-        <div className="flex items-center justify-between gap-3 mb-5">
-          <div className="flex items-center gap-2.5">
-            <span className="w-1 h-8 rounded-full bg-info" aria-hidden />
-            <Filter size={16} strokeWidth={1.7} className="text-info shrink-0" aria-hidden />
-            <div>
-              <p className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4">Funil de vendas</p>
-              <p className="font-heading text-[15px] font-extrabold text-t1 tracking-[-0.02em]">Pipeline Estratégico</p>
-            </div>
-          </div>
-          <span className="text-[11px] text-t4 bg-s2/50 border border-line px-2 py-1 rounded-lg inline-flex items-center gap-1"><TrendingDown size={11} /> perda · <AlertTriangle size={11} /> parado +7d</span>
-        </div>
-        <div className="flex items-stretch gap-1 overflow-x-auto pb-1 min-w-0">
-          {funnelStages.map((item, i) => (
-            <div key={item.stage} className="flex items-stretch flex-shrink-0">
-              <div className={`flex flex-col w-[138px] rounded-xl border ${item.conf.border} ${item.conf.bg} p-3 gap-1`}>
-                {/* Queda da etapa anterior */}
-                {i > 0 ? (
-                  <span className={`text-[11px] font-bold ${
-                    item.dropRate > 50 ? 'text-red-400' :
-                    item.dropRate > 25 ? 'text-amber-400' : 'text-green-400'
-                  }`}>
-                    ↓ {item.dropRate}% saiu
-                  </span>
-                ) : (
-                  <span className="text-[11px] text-t4">{leads.length} total</span>
-                )}
-
-                <p className={`text-xs font-semibold mt-0.5 ${item.conf.headerText}`}>{item.conf.label}</p>
-                <p className={`text-3xl font-bold leading-none ${item.conf.color}`}>{item.count}</p>
-
-                {item.vgv > 0 && (
-                  <p className="text-[11px] text-t3 mt-0.5">{formatCurrency(item.vgv)}</p>
-                )}
-
-                {item.parados > 0 && item.stage !== 'venda' && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <AlertTriangle size={9} className="text-amber-400 flex-shrink-0" />
-                    <span className="text-[11px] text-amber-400">{item.parados} esfriando</span>
-                  </div>
-                )}
-                {item.discardedHere > 0 && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <XCircle size={9} className="text-brand-text flex-shrink-0" />
-                    <span className="text-[11px] text-brand-text">{item.discardedHere} saíram aqui</span>
-                  </div>
-                )}
-              </div>
-
-              {i < funnelStages.length - 1 && (
-                <div className="flex items-center px-0.5 flex-shrink-0">
-                  <ChevronRight size={13} className="text-t4" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── BLOCO 5 — Radar de Temperatura do Pipeline ─────────────────────── */}
-      <div className="bg-page border border-line rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Thermometer size={13} className="text-warning" />
-          <span className="flex items-center gap-2.5">
-            <span className="w-1 h-4 rounded-full bg-warning" aria-hidden />
-            <p className="font-heading text-[15px] font-extrabold text-t1 tracking-[-0.02em]">
-              Radar de Temperatura do Pipeline
-            </p>
-          </span>
-          {!allLoaded && <span className="ml-2 text-[11px] text-t4 animate-pulse">carregando interações…</span>}
-          <span className="ml-auto text-xs text-t4">sem interação nos últimos 3 dias</span>
-        </div>
-        <p className="text-xs text-t4 mb-4">
-          Leads que esfriaram — VGV em risco de perda por inatividade
-        </p>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="font-label text-[11px] font-bold uppercase tracking-[0.14em] text-t4 border-b border-line">
-                <th className="text-left pb-2 pr-4">Etapa</th>
-                <th className="text-center pb-2 px-4">Total</th>
-                <th className="text-center pb-2 px-4">Frios +3d</th>
-                <th className="text-center pb-2 px-4">% Frios</th>
-                <th className="text-right pb-2 pl-4">VGV em Risco</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {radarData.map(row => {
-                const tempColor = row.coldPct > 50
-                  ? 'text-red-400'
-                  : row.coldPct > 25
-                  ? 'text-amber-400'
-                  : 'text-green-400'
-                const tempBg = row.coldPct > 50
-                  ? 'bg-red-500/8'
-                  : row.coldPct > 25
-                  ? 'bg-amber-500/5'
-                  : ''
-                return (
-                  <tr key={row.stage} className={`${tempBg} transition-colors`}>
-                    <td className="py-2.5 pr-4">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${row.conf.bg} ${row.conf.color} ${row.conf.border}`}>
-                        {row.label}
-                      </span>
-                    </td>
-                    <td className="text-center py-2.5 px-4 font-semibold text-t2">
-                      {row.total}
-                    </td>
-                    <td className="text-center py-2.5 px-4">
-                      <span className={`font-bold ${tempColor}`}>
-                        {row.cold > 0 ? `${row.cold}` : '—'}
-                      </span>
-                    </td>
-                    <td className="text-center py-2.5 px-4">
-                      {row.total > 0 ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="w-16 h-1.5 bg-s3/70 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-700 ${
-                                row.coldPct > 50 ? 'bg-red-500/70' :
-                                row.coldPct > 25 ? 'bg-amber-500/70' : 'bg-green-500/70'
-                              }`}
-                              style={{ width: `${row.coldPct}%` }}
-                            />
-                          </div>
-                          <span className={`text-xs font-semibold ${tempColor}`}>
-                            {row.coldPct.toFixed(0)}%
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-t5">—</span>
-                      )}
-                    </td>
-                    <td className="text-right py-2.5 pl-4">
-                      <span className={`text-xs font-semibold ${row.vgvAtRisk > 0 ? 'text-warning' : 'text-t5'}`}>
-                        {row.vgvAtRisk > 0 ? formatCurrency(row.vgvAtRisk) : '—'}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            {radarData.some(r => r.vgvAtRisk > 0) && (
-              <tfoot>
-                <tr className="border-t border-line">
-                  <td colSpan={4} className="pt-2.5 text-[11px] text-t4">Total VGV em risco</td>
-                  <td className="pt-2.5 text-right text-xs font-bold text-warning">
-                    {formatCurrency(radarData.reduce((s, r) => s + r.vgvAtRisk, 0))}
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-
-        {allLoaded && radarData.every(r => r.cold === 0) && active.length > 0 && (
-          <p className="text-center text-xs text-green-400 mt-3 flex items-center justify-center gap-1.5">
-            <CheckCircle2 size={13} /> Todos os leads tiveram interação nos últimos 3 dias
-          </p>
         )}
-      </div>
-
-      {/* ── BLOCO 3 — Priority Ranking + Canal Performance ──────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-
-        {/* Prioridade de Contato */}
-        <div className="lg:col-span-3 bg-page border border-line rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <Crown size={13} className="text-amber-400" />
-            <p className="text-sm font-semibold text-t1">Prioridade de Contato</p>
-            <span className="ml-auto text-xs text-t4">Etapa × Ticket × Dias parado</span>
-          </div>
-          <p className="text-xs text-t4 mb-4">
-            Quem ligar agora para maximizar conversão
-          </p>
-
-          {priorityList.length === 0 ? (
-            <p className="text-xs text-t4 text-center py-8">Sem leads para priorizar</p>
-          ) : (
-            <div className="space-y-1.5">
-              {priorityList.map(({ lead, score }, i) => {
-                const days  = Math.floor(daysAgo(lead.updatedAt))
-                const heat  = score > 80 ? 'hot' : score > 50 ? 'warm' : 'cold'
-                const conf  = STAGE_CONFIG[lead.funnelStage]
-                return (
-                  <button
-                    key={lead.id}
-                    onClick={() => onOpenLead(lead)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-s2/30 hover:bg-s3/50 border border-line hover:border-line rounded-xl transition-all text-left group"
-                  >
-                    {/* Rank */}
-                    <span className={`text-xs font-bold w-5 flex-shrink-0 ${i === 0 ? 'text-amber-400' : 'text-t4'}`}>
-                      #{i + 1}
-                    </span>
-
-                    {/* Heat indicator */}
-                    <div className={`w-1 h-8 rounded-full flex-shrink-0 ${
-                      heat === 'hot'  ? 'bg-warning' :
-                      heat === 'warm' ? 'bg-amber-500'  : 'bg-slate-600'
-                    }`} />
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-t1 truncate">{lead.name}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[11px] px-1.5 py-px rounded-full border ${conf.bg} ${conf.color} ${conf.border}`}>
-                          {conf.label}
-                        </span>
-                        <span className={`text-[11px] flex items-center gap-0.5 ${days > 7 ? 'text-amber-400' : 'text-t4'}`}>
-                          <Clock size={8} /> {days}d sem atualização
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Ticket */}
-                    {lead.averageTicket ? (
-                      <span className="text-xs font-semibold text-brand-text flex-shrink-0">
-                        {formatCurrency(lead.averageTicket)}
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-t5 flex-shrink-0">sem ticket</span>
-                    )}
-
-                    <ChevronRight size={11} className="text-t5 group-hover:text-t3 flex-shrink-0 transition-colors" />
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Canal Performance */}
-        <div className="lg:col-span-2 bg-page border border-line rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <Zap size={13} className="text-t2" />
-            <p className="text-sm font-semibold text-t1">Performance por Canal</p>
-          </div>
-          <p className="text-xs text-t4 mb-4">
-            Onde investir mais esforço comercial
-          </p>
-
-          <div className="space-y-3">
-            {canalPerf.map((c) => {
-              const bestConvOrigin = [...canalPerf].sort((a, b) => b.convRate - a.convRate)[0]?.origin
-              const isBestConv = c.origin === bestConvOrigin && c.convRate > 0
-              return (
-                <div key={c.origin} className={`p-3 rounded-xl border ${isBestConv ? 'bg-green-500/5 border-green-500/20' : 'bg-s2/30 border-line'}`}>
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
-                    <span className="text-xs font-semibold text-t1 flex items-center gap-1.5"><c.icon size={12} strokeWidth={1.6} className="text-t3" /> {c.label}</span>
-                    <span className="ml-auto text-[11px] text-t3">{c.total} leads</span>
-                    {isBestConv && (
-                      <span className="text-[11px] px-1.5 py-px rounded-full bg-green-500/20 text-green-400 border border-green-500/25">melhor conv.</span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <p className={`text-sm font-bold ${
-                        c.convRate > 3 ? 'text-green-400' :
-                        c.convRate > 1 ? 'text-amber-400' : 'text-red-400'
-                      }`}>
-                        {c.convRate.toFixed(1)}%
-                      </p>
-                      <p className="text-[11px] text-t4 mt-0.5">conversão</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-t2">
-                        {c.avgTkt > 0 ? formatCurrency(c.avgTkt) : '—'}
-                      </p>
-                      <p className="text-[11px] text-t4 mt-0.5">ticket médio</p>
-                    </div>
-                    <div>
-                      <p className={`text-sm font-bold ${
-                        c.discRate > 30 ? 'text-red-400' :
-                        c.discRate > 15 ? 'text-amber-400' : 'text-t3'
-                      }`}>
-                        {c.discRate.toFixed(0)}%
-                      </p>
-                      <p className="text-[11px] text-t4 mt-0.5">descartados</p>
-                    </div>
-                  </div>
-
-                  {/* VGV bar */}
-                  {c.vgv > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-line flex items-center justify-between">
-                      <span className="text-[11px] text-t4">VGV ativo</span>
-                      <span className="text-xs font-semibold text-brand-text">{formatCurrency(c.vgv)}</span>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ── BLOCO 4 — Follow-up Intelligence + Loss Analysis ───────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-        {/* Follow-up Intelligence */}
-        <div className="bg-page border border-line rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <MessageCircle size={13} className="text-t2" />
-            <p className="text-sm font-semibold text-t1">Inteligência de Follow-up</p>
-            <span className="ml-auto text-xs text-t4">{followupLeads.length} em followup</span>
-          </div>
-          <p className="text-xs text-t4 mb-4">
-            Em qual mensagem os leads param de responder
-          </p>
-
-          {followupLeads.length === 0 ? (
-            <p className="text-xs text-t4 text-center py-8">Nenhum lead em followup</p>
-          ) : (
-            <div className="space-y-2.5">
-              {followupSteps.map((item, i) => {
-                const label    = i === 0 ? 'Nunca contactado' : `${i}ª mensagem enviada`
-                const barPct   = maxFu > 0 ? (item.count / maxFu) * 100 : 0
-                const next     = followupSteps[i + 1]?.count ?? 0
-                const dropPct  = i < MAX_TENTATIVAS_FOLLOWUP && item.count > 0
-                  ? Math.round(((item.count - next) / item.count) * 100)
-                  : null
-                const isRisk   = i === 0 && item.count > 0
-
-                return (
-                  <div key={i} className={`${isRisk ? 'bg-amber-500/5 border border-amber-500/15 rounded-xl p-2.5 -mx-1' : ''}`}>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs w-38 flex-shrink-0 ${isRisk ? 'text-amber-400 font-semibold' : 'text-t3'}`}
-                            style={{ width: '144px' }}>
-                        {isRisk && <AlertTriangle size={11} className="inline mr-1 -mt-0.5" />}{label}
-                      </span>
-                      <div className="flex-1 h-5 bg-s2/60 rounded-md overflow-hidden">
-                        <div
-                          className="h-full rounded-md transition-all duration-700"
-                          style={{
-                            width:           `${barPct}%`,
-                            backgroundColor: isRisk ? 'rgba(245,158,11,0.25)' : 'rgba(59,130,246,0.3)',
-                          }}
-                        />
-                      </div>
-                      <span className="text-xs font-bold text-t1 w-5 text-right flex-shrink-0">
-                        {item.count}
-                      </span>
-                      <span className={`text-[11px] w-10 text-right flex-shrink-0 ${
-                        dropPct !== null && dropPct > 50 ? 'text-red-400' : 'text-t5'
-                      }`}>
-                        {dropPct !== null && item.count > 0 && dropPct > 0 ? `-${dropPct}%` : ''}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {/* Insight contextual */}
-              {followupSteps[0].count > 0 && (
-                <div className="mt-1 pt-3 border-t border-line">
-                  <p className="text-xs text-amber-400/80 flex items-start gap-1.5">
-                    <Zap size={12} className="flex-shrink-0 mt-0.5" /> <span>{followupSteps[0].count} lead{followupSteps[0].count > 1 ? 's' : ''} nunca {followupSteps[0].count > 1 ? 'foram' : 'foi'} contactado{followupSteps[0].count > 1 ? 's' : ''} — acionar agora</span>
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Loss Analysis */}
-        <div className="bg-page border border-line rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <XCircle size={13} className="text-red-400" />
-            <p className="text-sm font-semibold text-t1">Análise de Perda</p>
-            <span className="ml-auto text-xs text-t4">{discarded.length} descartados</span>
-          </div>
-          <p className="text-xs text-t4 mb-4">
-            VGV perdido por motivo — onde mais estamos deixando dinheiro na mesa
-          </p>
-
-          {lossAnalysis.length === 0 ? (
-            <p className="text-xs text-t4 text-center py-8">Sem descartados</p>
-          ) : (
-            <div className="space-y-3">
-              {lossAnalysis.map((item, i) => {
-                const barPct  = maxLossVgv > 0 ? (item.vgv / maxLossVgv) * 100 : 0
-                return (
-                  <div key={item.key}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-1.5">
-                        {i === 0 && <span className="text-[11px] px-1.5 py-px rounded-full bg-red-500/20 text-red-400 border border-red-500/25">maior perda</span>}
-                        <span className="text-xs text-t3">{item.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-t4">{item.count} leads</span>
-                        <span className="text-xs font-semibold text-red-300">
-                          {item.vgv > 0 ? formatCurrency(item.vgv) : '—'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-1.5 bg-s3/50 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-red-500/50 rounded-full transition-all duration-700"
-                        style={{ width: `${barPct}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-
-              <div className="pt-3 border-t border-line flex items-center justify-between">
-                <span className="text-xs text-t3">Total de VGV perdido</span>
-                <span className="text-sm font-bold text-red-300">
-                  {vgvPerdido > 0 ? formatCurrency(vgvPerdido) : '—'}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── BLOCO 6 — Pulso Comercial ───────────────────────────────────────── */}
-      <div className="bg-page border border-line rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-1">
-          <BarChart2 size={13} className="text-brand-text" />
-          <p className="text-sm font-semibold text-t1">Pulso Comercial</p>
-          {!allLoaded && <span className="ml-2 text-[11px] text-t4 animate-pulse">carregando…</span>}
-          <span className="ml-auto text-xs text-t4">interações registradas nos últimos 14 dias</span>
-        </div>
-        <p className="text-xs text-t4 mb-5">
-          Ritmo diário da equipe — queda indica inatividade comercial
-        </p>
-
-        {!allLoaded ? (
-          <div className="h-24 flex items-center justify-center">
-            <span className="text-xs text-t5 animate-pulse">Carregando dados…</span>
-          </div>
-        ) : (
-          <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1">
-            {pulsoData.map((day, i) => {
-              const barH   = maxPulso > 0 ? (day.count / maxPulso) * 100 : 0
-              const isToday = i === 13
-              return (
-                <div key={day.dateStr} className="flex flex-col items-center gap-1 flex-1 min-w-[28px]">
-                  {/* count label on top */}
-                  <span className={`text-[11px] font-semibold leading-none ${day.count > 0 ? (isToday ? 'text-brand-text' : 'text-t3') : 'text-transparent'}`}>
-                    {day.count}
-                  </span>
-                  {/* bar */}
-                  <div className="w-full flex items-end" style={{ height: '56px' }}>
-                    <div
-                      className={`w-full rounded-t-sm transition-all duration-700 ${
-                        isToday ? 'bg-brand-tint' : day.count > 0 ? 'bg-slate-500/40' : 'bg-s2/60'
-                      }`}
-                      style={{ height: `${Math.max(4, barH)}%` }}
-                    />
-                  </div>
-                  {/* date label */}
-                  <span className={`text-[10px] leading-none truncate w-full text-center ${isToday ? 'text-brand-text font-semibold' : 'text-t5'}`}>
-                    {day.label}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {allLoaded && pulsoData.every(d => d.count === 0) && (
-          <p className="text-center text-xs text-t4 mt-2">
-            Nenhuma interação registrada nos últimos 14 dias
-          </p>
-        )}
-
-        {allLoaded && pulsoData.some(d => d.count > 0) && (
-          <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
-            <span className="text-xs text-t4">
-              Total no período: <span className="text-t2 font-semibold">{pulsoData.reduce((s, d) => s + d.count, 0)} interações</span>
-            </span>
-            <span className="text-xs text-t4">
-              Média/dia: <span className="text-t2 font-semibold">{(pulsoData.reduce((s, d) => s + d.count, 0) / 14).toFixed(1)}</span>
-            </span>
-          </div>
-        )}
-      </div>
-
+      </section>
     </div>
   )
 }
 
-// ── NorthStar KPI Card ────────────────────────────────────────────────────────
+// ─── Estado da conexão ao vivo ────────────────────────────────────────────────
 
-interface NorthStarProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-  sub: string
-  color: string
-  bg: string
-  border: string
-  highlight?: boolean
+function Conexao({ estado, carregado }: { estado: string; carregado: boolean }) {
+  const [rotulo, cor, pulsa] =
+    estado === 'live' && carregado ? ['Ao vivo', 'bg-success', true]
+    : estado === 'reconnecting'    ? ['Reconectando — os números podem estar atrasados', 'bg-warning', false]
+    : estado === 'error'           ? ['Sem atualização ao vivo', 'bg-error', false]
+    : ['Conectando', 'bg-t4', false] as const
+  return (
+    <span className="inline-flex items-center gap-2 text-[13px] text-t3" role="status">
+      <span className={`w-2 h-2 rounded-full ${cor} ${pulsa ? 'pulse-live-dot' : ''}`} aria-hidden />
+      {rotulo}
+    </span>
+  )
 }
 
-function NorthStar({ icon, label, value, sub, color, bg, border, highlight }: NorthStarProps) {
+// ─── Gráfico de leads por dia ─────────────────────────────────────────────────
+
+function GraficoLeads({ serie, media }: { serie: { data: string; n: number }[]; media: number | null }) {
+  const opcao = useCallback((t: CoresGrafico) => {
+    const ultimo = serie.length - 1
+    const neutro = resolverCor('var(--stage-lead)')
+    return {
+      grid: { left: 4, right: 12, top: 28, bottom: 4, containLabel: true },
+      legend: { show: false },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        valueFormatter: (v: number) => `${v} ${v === 1 ? 'lead' : 'leads'}`,
+      },
+      xAxis: eixoCategoria(t, serie.map((p, i) => rotuloDia(p.data, i === ultimo))),
+      yAxis: eixoValor(t, undefined, { minInterval: 1 }),
+      series: [{
+        name: 'Leads recebidos', type: 'bar', barMaxWidth: 30,
+        // Hoje é a única barra dourada: é o dia que ainda está acontecendo.
+        data: serie.map((p, i) => ({
+          value: p.n,
+          itemStyle: { color: i === ultimo ? t.marca : neutro, opacity: i === ultimo ? 1 : 0.4, borderRadius: [6, 6, 0, 0] },
+        })),
+        label: {
+          show: serie.length <= 31, position: 'top', color: t.texto, fontSize: 11, fontWeight: 600,
+          formatter: (p: { value: number }) => (p.value > 0 ? String(p.value) : ''),
+        },
+        markLine: media === null ? undefined : {
+          silent: true, symbol: 'none',
+          lineStyle: { color: t.textoFraco, type: 'dashed', width: 1 },
+          label: { formatter: `média ${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}`, color: t.textoFraco, fontSize: 11, position: 'insideEndTop' },
+          data: [{ yAxis: media }],
+        },
+      }],
+    }
+  }, [serie, media])
+
+  const total = serie.reduce((s, p) => s + p.n, 0)
   return (
-    <div className={`${bg} border ${border} rounded-xl p-5 ${highlight ? 'ring-1 ring-warning-line shadow-card' : ''} relative overflow-hidden`}>
-      <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 ${bg} opacity-40 blur-xl`} />
-      <div className={`w-8 h-8 rounded-xl ${bg} border ${border} flex items-center justify-center mb-4 ${color} relative`}>
-        {icon}
-      </div>
-      <p className={`text-xs font-semibold uppercase tracking-widest text-t3 mb-1`}>{label}</p>
-      <p className={`text-3xl font-black leading-none tabular-nums ${color}`}>{value}</p>
-      <p className="text-[11px] text-t4 mt-2 leading-tight">{sub}</p>
+    <Grafico
+      altura={340}
+      opcao={opcao}
+      rotulo={`Leads recebidos por dia nos últimos ${serie.length} dias: ${total} no total, ${serie[serie.length - 1]?.n ?? 0} hoje.`}
+    />
+  )
+}
+
+// ─── Funil desenhado ──────────────────────────────────────────────────────────
+
+function FunilDesenhado({ porEtapa, vendasNoMes }: { porEtapa: Record<LeadFunnelStage, number>; vendasNoMes: number }) {
+  const L = 300, H = 50, VAO = 4, PASSO = 34
+  const linhas = ETAPAS_FUNIL.map(e => ({
+    etapa: e,
+    nome: e === 'venda' ? 'Vendas no mês' : STAGE_THEME[e].columnLabel,
+    n: e === 'venda' ? vendasNoMes : porEtapa[e],
+    cor: STAGE_THEME[e].solidVar,
+  }))
+  const altura = linhas.length * (H + VAO) - VAO
+
+  return (
+    <div className="flex justify-center">
+      <svg viewBox={`0 0 ${L} ${altura}`} className="w-full max-w-[340px] h-auto" role="img"
+           aria-label={`Funil agora: ${linhas.map(l => `${l.nome} ${l.n}`).join(', ')}.`}>
+        {linhas.map((l, i) => {
+          const y = i * (H + VAO)
+          const topo = L - i * PASSO, base = L - (i + 1) * PASSO
+          const pontos = [
+            [(L - topo) / 2, y], [(L + topo) / 2, y], [(L + base) / 2, y + H], [(L - base) / 2, y + H],
+          ].map(p => p.join(',')).join(' ')
+          return (
+            <g key={l.etapa}>
+              <polygon points={pontos} strokeWidth={1.25} strokeLinejoin="round"
+                style={{ fill: `color-mix(in srgb, ${l.cor} 20%, transparent)`, stroke: l.cor }} />
+              <text x={L / 2} y={y + 21} textAnchor="middle" style={{ fill: 'var(--t3)', fontSize: 11.5 }}>{l.nome}</text>
+              <text x={L / 2} y={y + 40} textAnchor="middle" className="font-display tabular-nums"
+                style={{ fill: 'var(--t1)', fontSize: 17, fontWeight: 800 }}>
+                {l.n.toLocaleString('pt-BR')}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
     </div>
+  )
+}
+
+// ─── O que pede atenção ───────────────────────────────────────────────────────
+
+function PedeAtencao({ alerta, agora, onOpenLead }: {
+  alerta: ReturnType<typeof atencao<Lead>>
+  agora: number
+  onOpenLead: (lead: Lead) => void
+}) {
+  const grupos: { chave: string; icon: LucideIcon; cor: string; titulo: string; leads: Lead[]; nota: (l: Lead) => string }[] = [
+    {
+      chave: 'sla', icon: Timer, cor: 'text-error', titulo: '1º contato atrasado', leads: alerta.primeiroContatoAtrasado,
+      nota: l => `prazo venceu ${haQuanto(l.slaDueAt!, agora)}`,
+    },
+    {
+      chave: 'frio', icon: Snowflake, cor: 'text-warning', titulo: `Sem contato há ${DIAS_ESFRIANDO} dias ou mais`, leads: alerta.esfriando,
+      nota: l => `${STAGE_THEME[l.funnelStage].label} · último contato ${haQuanto(l.lastContactAt ?? l.stageChangedAt ?? l.createdAt, agora)}`,
+    },
+    {
+      chave: 'volta', icon: Undo2, cor: 'text-info', titulo: 'Voltaram a se cadastrar', leads: alerta.voltaram,
+      nota: l => `preencheu de novo ${haQuanto(l.reentryAt!, agora)}`,
+    },
+  ]
+  const total = grupos.reduce((s, g) => s + g.leads.length, 0)
+
+  return (
+    <section>
+      <SecaoTitulo icon={AlertTriangle} descricao={total === 0 ? undefined : 'Toque em um lead para abrir.'}>
+        Pede *atenção*
+      </SecaoTitulo>
+      {total === 0 ? (
+        <p className="text-[14px] text-t3">Nada parado: nenhum 1º contato atrasado, nenhuma negociação esfriando, nenhuma reentrada sem ver.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+          {grupos.map(g => (
+            <div key={g.chave} className="min-w-0">
+              <p className="flex items-center gap-2 text-[13.5px] font-semibold text-t1">
+                <g.icon size={15} strokeWidth={1.8} className={g.leads.length > 0 ? g.cor : 'text-t4'} aria-hidden />
+                {g.titulo}
+                <span className={`ml-auto font-display text-[17px] font-extrabold tabular-nums ${g.leads.length > 0 ? 'text-t1' : 'text-t4'}`}>
+                  {g.leads.length}
+                </span>
+              </p>
+              {g.leads.length > 0 && (
+                <ul className="mt-2 divide-y divide-line border-y border-line">
+                  {g.leads.slice(0, 4).map(l => (
+                    <li key={l.id}>
+                      <button type="button" onClick={() => onOpenLead(l)}
+                        className="group w-full flex items-center gap-2 py-2.5 min-h-[44px] text-left hover:bg-s2 cursor-pointer
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40">
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[14px] font-medium text-t1 truncate">{l.name}</span>
+                          <span className="block text-[12.5px] text-t3 truncate">{g.nota(l)}</span>
+                        </span>
+                        <ChevronRight size={14} strokeWidth={1.8} className="text-t4 flex-shrink-0" aria-hidden />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {g.leads.length > 4 && <p className="text-[12.5px] text-t4 mt-1.5">e mais {g.leads.length - 4}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ─── Quadro de atividade de um corretor ───────────────────────────────────────
+
+function QuadroCorretor({ nome, resumo, eventos, agora }: {
+  nome: string
+  resumo?: PulseBroker
+  eventos: PulseEvent[]
+  agora: number
+}) {
+  const ultima = eventos[0]?.at ?? resumo?.ultimaAtividadeAt ?? null
+  const ativo = estaAtivo(ultima, agora)
+  const numeros: [number, string, string][] = [
+    [resumo?.interacoesHoje ?? 0, 'atendimento', 'atendimentos'],
+    [resumo?.ligacoesHoje ?? 0, 'ligação', 'ligações'],
+    [resumo?.avancosHoje ?? 0, 'avanço', 'avanços'],
+    [resumo?.visitasHoje ?? 0, 'visita', 'visitas'],
+  ]
+
+  return (
+    <article className="bento flex flex-col min-w-0 overflow-hidden">
+      <header className="flex items-center gap-3 px-5 pt-4 pb-3">
+        <span className="w-9 h-9 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[14px] font-bold flex-shrink-0" aria-hidden>
+          {nome.charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[15px] font-semibold text-t1 truncate">{nome}</h3>
+          <p className="flex items-center gap-1.5 text-[12.5px] text-t3">
+            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${ativo ? 'bg-success pulse-live-dot' : 'bg-t4'}`} aria-hidden />
+            {ativo ? `Em atividade · ${haQuanto(ultima!, agora)}`
+              : ultima ? `Última atividade ${haQuanto(ultima, agora)}`
+              : 'Sem atividade hoje'}
+          </p>
+        </div>
+      </header>
+
+      <p className="px-5 pb-3 text-[12.5px] text-t3 tabular-nums">
+        {numeros.map(([n, um, varios], i) => (
+          <span key={um}>
+            {i > 0 && ' · '}
+            <span className={n > 0 ? 'font-semibold text-t1' : ''}>{n.toLocaleString('pt-BR')}</span> {n === 1 ? um : varios}
+          </span>
+        ))}
+      </p>
+
+      <div className="border-t border-line h-[320px] overflow-y-auto overscroll-contain">
+        {eventos.length === 0 ? (
+          <p className="text-[13.5px] text-t4 px-5 py-8 text-center">Nenhuma atividade registrada hoje ainda.</p>
+        ) : (
+          <ul aria-live="polite" aria-label={`Atividade de ${nome} hoje`}>
+            {eventos.map(ev => {
+              const v = fraseDoCorretor(ev)
+              const Icone = v.icon
+              return (
+                <li key={ev.id} className="flex items-start gap-3 px-5 py-2.5 border-b border-line/60 last:border-0 pulse-item-in">
+                  <span className="text-[12px] text-t4 tabular-nums w-10 flex-shrink-0 pt-[3px]">{horaCurta(ev.at)}</span>
+                  <Icone size={15} strokeWidth={1.8} className={`flex-shrink-0 mt-[3px] ${TOM_COR[v.tone]}`} aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14px] text-t1 leading-snug">{v.texto}</span>
+                    {v.detalhe && <span className="block text-[12.5px] text-t3 truncate">{v.detalhe}</span>}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+    </article>
   )
 }
