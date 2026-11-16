@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRightLeft, Clock3, Hourglass } from 'lucide-react'
+import type React from 'react'
 import type { LeadPause } from '../../types'
 import { Barra } from '../../components/shared/visual'
 import { horaDaVolta } from '../../lib/pausaLeads'
-import { janelaDoDia, textoDeMinutos } from './monitorLeads'
-import type { LinhaOrigem, LinhaVelocidade, RecebidosHoje } from './monitorLeads'
+import type { PulseTone } from '../pulse/pulseEvents'
+import { posicaoNoDia, textoDeMinutos } from './monitorLeads'
+import type { LinhaOrigem, LinhaVelocidade } from './monitorLeads'
 
 /**
- * Leads › Dashboard — as peças do monitoramento ao vivo (16/11/2026).
+ * Leads › Dashboard — as peças da sala de comando (16/11/2026).
  *
  * Só desenham: quem calcula é `monitorLeads.ts`, quem busca é
  * `useMonitorLeads`. Tudo aqui reage sozinho — o número que muda dá um pulo
@@ -33,154 +34,182 @@ export function NumeroVivo({ valor, className = '' }: { valor: number | string; 
   )
 }
 
-// ─── 1. Roleta ao vivo ────────────────────────────────────────────────────────
+// ─── Relógio da sala ──────────────────────────────────────────────────────────
 
-export interface CartaoRoleta {
-  id: string
-  nome: string
-  /** está em alguma roleta (geral ou de formulário) */
-  naRoleta: boolean
-  pausa?: LeadPause
-  recebidos?: RecebidosHoje
-  /** leads com ele sem 1º contato, prazo correndo */
-  aguardando: number
-  /** … e com o prazo já vencido */
-  vencidos: number
-  /** roletas em que ele é o próximo a receber; null = a tela não lê as roletas (corretor) */
-  proximoEm: string[] | null
-}
-
-export function RoletaAoVivo({ cartoes, agora }: { cartoes: CartaoRoleta[]; agora: number }) {
-  const colunas = cartoes.length >= 3 ? 'md:grid-cols-2 xl:grid-cols-3' : cartoes.length === 2 ? 'md:grid-cols-2' : ''
+/** Hora cheia com segundos. O tique é local e isolado: só este texto redesenha. */
+export function Relogio() {
+  const [agora, setAgora] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setAgora(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const data = agora.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).replace(/\./g, '')
   return (
-    <div className={`grid grid-cols-1 gap-5 ${colunas}`}>
-      {cartoes.map(c => <CartaoDaRoleta key={c.id} c={c} agora={agora} />)}
-    </div>
+    <p className="flex items-baseline gap-2 tabular-nums" aria-label={`Agora: ${agora.toLocaleTimeString('pt-BR')}`}>
+      <span className="font-display text-[17px] font-bold tracking-[-0.01em] text-t1">{agora.toLocaleTimeString('pt-BR')}</span>
+      <span className="text-[12.5px] text-t3">{data}</span>
+    </p>
   )
 }
 
-function CartaoDaRoleta({ c, agora }: { c: CartaoRoleta; agora: number }) {
-  const proximoGeral = c.proximoEm?.includes('Roleta geral') ?? false
-  // Lead NOVO é o que a roleta entregou hoje — é esse número que conversa com
-  // o gráfico de leads por dia. O que veio de outro corretor (prazo vencido ou
-  // repasse do admin) é lead antigo trocando de mão: aparece embaixo, à parte.
-  // Somar os dois fazia o cartão dizer "6 recebidos" num dia em que chegou 1.
-  const rec = c.recebidos
-  const novos = rec?.daRoleta ?? 0
-  const herdados = rec?.porTransferencia ?? 0
-  const repassados = rec?.manual ?? 0
-  const detalhe = [
-    herdados > 0 && `+ ${n(herdados)} ${herdados === 1 ? 'herdado' : 'herdados'} por prazo vencido`,
-    repassados > 0 && `+ ${n(repassados)} ${repassados === 1 ? 'repassado' : 'repassados'} pelo admin`,
-  ].filter(Boolean).join(' · ') || (novos > 0 ? 'entregues pela roleta' : 'nenhum até agora')
-  const esperando = c.aguardando + c.vencidos
+// ─── Painel da equipe ─────────────────────────────────────────────────────────
 
-  return (
-    <article className={`bento min-w-0 overflow-hidden flex flex-col transition-shadow
-                         ${proximoGeral && !c.pausa ? 'ring-1 ring-brand/50' : ''}`}>
-      <header className="flex items-center gap-3 px-5 pt-4 pb-3.5">
-        <span className="w-10 h-10 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[15px] font-bold flex-shrink-0" aria-hidden>
-          {c.nome.charAt(0).toUpperCase()}
-        </span>
-        <h4 className="font-display text-[15.5px] font-bold tracking-[-0.015em] text-t1 truncate min-w-0 flex-1">{c.nome}</h4>
-        {c.pausa ? (
-          <span className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-full border border-warning-line bg-warning-bg px-2.5 py-1 text-[12px] font-semibold text-warning tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-warning" aria-hidden />
-            Em pausa · volta {horaDaVolta(c.pausa.untilAt, agora)}
-          </span>
-        ) : c.naRoleta ? (
-          <span className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-full bg-success-bg px-2.5 py-1 text-[12px] font-semibold text-success">
-            <span className="w-1.5 h-1.5 rounded-full bg-success pulse-live-dot" aria-hidden />
-            Recebendo
-          </span>
-        ) : (
-          <span className="flex-shrink-0 rounded-full bg-s2 px-2.5 py-1 text-[12px] font-medium text-t3">Fora das roletas</span>
-        )}
-      </header>
-
-      <dl className="grid grid-cols-2 border-y border-line bg-s2/50">
-        <div className="px-5 py-3 min-w-0">
-          <dt className="text-[12px] text-t3">Leads novos hoje</dt>
-          <dd className="font-display text-[24px] font-extrabold leading-tight text-t1 mt-0.5">
-            <NumeroVivo valor={novos} className={novos === 0 ? 'text-t4' : ''} />
-          </dd>
-          <dd className={`text-[12px] truncate ${herdados + repassados > 0 ? 'text-t2' : 'text-t4'}`} title={detalhe}>{detalhe}</dd>
-        </div>
-        <div className="px-5 py-3 min-w-0 border-l border-line">
-          <dt className="text-[12px] text-t3">Aguardando 1º contato</dt>
-          <dd className="font-display text-[24px] font-extrabold leading-tight mt-0.5">
-            <NumeroVivo valor={esperando} className={c.vencidos > 0 ? 'text-error' : esperando > 0 ? 'text-warning' : 'text-t4'} />
-          </dd>
-          <dd className={`text-[12px] truncate ${c.vencidos > 0 ? 'text-error font-medium' : 'text-t4'}`}>
-            {c.vencidos > 0 ? `${n(c.vencidos)} com o prazo vencido` : esperando > 0 ? 'dentro do prazo' : 'tudo atendido'}
-          </dd>
-        </div>
-      </dl>
-
-      {c.proximoEm !== null && (
-        <div className="px-5 py-3 min-h-[56px] flex items-center gap-2 flex-wrap">
-          {c.proximoEm.length === 0 ? (
-            <p className="text-[12.5px] text-t4">
-              {c.pausa ? 'A roleta pula a vez dele até a volta.' : 'Não é o próximo em nenhuma roleta.'}
-            </p>
-          ) : (
-            <>
-              <span className="text-[12.5px] text-t3">Próximo lead de</span>
-              {c.proximoEm.map(nome => (
-                // key com o nome: quando a vez muda de mão, o selo entra animado
-                <span key={nome} className="pulse-item-in rounded-full border border-brand/40 bg-brand/10 px-2.5 py-0.5 text-[12.5px] font-semibold text-brand-text">
-                  {nome}
-                </span>
-              ))}
-            </>
-          )}
-        </div>
-      )}
-    </article>
-  )
+const COR_DA_MARCA: Record<PulseTone, string> = {
+  neutral: 'var(--t3)',
+  good:    'var(--info)',
+  warn:    'var(--warning)',
+  win:     'var(--success)',
 }
-
-// ─── Ritmo do dia (dentro do quadro de atividade) ─────────────────────────────
 
 /**
- * Uma barra por hora do dia: mostra QUANDO o corretor produziu, não só quanto.
- * A hora em curso fica na cor da marca e cresce sozinha a cada evento.
+ * A linha do dia de um corretor: cada registro é um traço na hora exata em que
+ * aconteceu, na cor do tipo; o cursor dourado é o agora. Dá para ler de relance
+ * quando ele trabalhou, quando parou e há quanto tempo está parado.
  */
-export function RitmoDoDia({ horas, agora, nome }: { horas: number[]; agora: number; nome: string }) {
-  const dataAgora = new Date(agora)
-  const { de, ate } = janelaDoDia(horas, dataAgora)
-  const faixa = horas.slice(de, ate + 1)
-  const pico = Math.max(1, ...faixa)
-  const horaAtual = dataAgora.getHours()
-  const total = faixa.reduce((s, v) => s + v, 0)
-
+function LinhaDoDia({ marcas, de, ate, agora, nome }: {
+  marcas: { t: number; tom: PulseTone }[]
+  de: number; ate: number; agora: number; nome: string
+}) {
+  const ref = new Date(agora)
+  const cursor = posicaoNoDia(agora, de, ate, ref)
   return (
-    <div className="px-5 lg:px-6 pt-3 pb-2.5 border-b border-line">
-      <div className="flex items-baseline justify-between gap-2 mb-1.5">
-        <p className="text-[12px] text-t3">Ritmo do dia</p>
-        <p className="text-[11.5px] text-t4 tabular-nums">{de}h – {ate + 1}h</p>
-      </div>
-      <div className="flex items-end gap-[3px] h-9" role="img"
-           aria-label={`Atividade de ${nome} por hora hoje: ${total} ${total === 1 ? 'registro' : 'registros'} entre ${de}h e ${ate + 1}h.`}>
-        {faixa.map((v, i) => {
-          const h = de + i
-          const atual = h === horaAtual
-          return (
-            <span key={h} title={`${h}h — ${v} ${v === 1 ? 'registro' : 'registros'}`}
-                  className="flex-1 rounded-t-[3px] transition-[height] duration-500 ease-out"
-                  style={{
-                    height: v === 0 ? 2 : `${Math.max(14, (v / pico) * 100)}%`,
-                    background: atual ? 'var(--brand)' : v === 0 ? 'var(--line-strong)' : 'var(--stage-lead)',
-                    opacity: atual || v === 0 ? 1 : 0.5,
-                  }} />
-          )
-        })}
-      </div>
+    <div className="relative h-9" role="img"
+         aria-label={`Linha do dia de ${nome}: ${marcas.length} ${marcas.length === 1 ? 'registro' : 'registros'} entre ${de}h e ${ate + 1}h.`}>
+      {/* trilho: sólido até agora, tracejado no que ainda não aconteceu */}
+      <span className="absolute inset-x-0 top-1/2 h-px bg-[color:var(--line-strong)]" aria-hidden />
+      {cursor !== null && (
+        <span className="absolute top-1/2 right-0 h-px bg-surface" style={{ left: `${cursor}%` }} aria-hidden>
+          <span className="block h-px w-full border-t border-dashed border-[color:var(--line-strong)]" />
+        </span>
+      )}
+      {marcas.map((m, i) => {
+        const x = posicaoNoDia(m.t, de, ate, ref)
+        if (x === null) return null
+        return (
+          <span key={i} aria-hidden
+                className="absolute top-1/2 w-[3px] h-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full pulse-item-in"
+                style={{ left: `${x}%`, background: COR_DA_MARCA[m.tom], opacity: 0.78 }} />
+        )
+      })}
+      {cursor !== null && (
+        <span className="absolute inset-y-0 w-px bg-brand" style={{ left: `${cursor}%` }} aria-hidden>
+          <span className="absolute -top-[3px] left-1/2 h-[7px] w-[7px] -translate-x-1/2 rounded-full bg-brand pulse-live-dot" />
+        </span>
+      )}
     </div>
   )
 }
 
-// ─── 2. Velocidade de resposta ────────────────────────────────────────────────
+export interface LinhaEquipe {
+  id: string
+  nome: string
+  /** agiu nos últimos minutos */
+  ativo: boolean
+  /** "Em atividade · há 2 min" · "Última atividade há 1 h" */
+  status: string
+  pausa?: LeadPause
+  marcas: { t: number; tom: PulseTone }[]
+  /** atendimentos, ligações, avanços, visitas */
+  producao: { rotulo: string; hoje: number; ontem?: number }[]
+  /** null enquanto a trilha de distribuição não carregou */
+  leadsNovos: number | null
+  herdados: number
+  prazo: { noPrazo: number; comDesfecho: number; perdidos: number } | null
+  esperando: number
+  vencidos: number
+}
+
+/** Colunas do painel no computador — as mesmas no cabeçalho e em cada linha. */
+const GRADE = 'lg:grid-cols-[minmax(170px,1.1fr)_minmax(200px,3fr)_repeat(4,minmax(58px,0.6fr))_minmax(70px,0.7fr)_minmax(78px,0.8fr)_minmax(78px,0.8fr)]'
+const ROTULO = 'font-label text-[10.5px] font-bold uppercase tracking-[0.12em] text-t4'
+
+/**
+ * A equipe num painel só, uma linha por corretor: estado, linha do dia e os
+ * números lado a lado — para comparar de relance, como num painel de controle.
+ * No celular cada linha vira um bloco, com o rótulo em cima de cada número.
+ */
+export function PainelDaEquipe({ linhas, de, ate, agora }: {
+  linhas: LinhaEquipe[]; de: number; ate: number; agora: number
+}) {
+  const horas: number[] = []
+  for (let h = de; h <= ate + 1; h += 2) horas.push(h)
+  const largura = ate + 1 - de
+
+  return (
+    <div className="bento overflow-hidden">
+      {/* cabeçalho: só no computador */}
+      <div className={`hidden lg:grid ${GRADE} items-end gap-x-4 px-6 pt-4 pb-2 border-b border-line`}>
+        <span className={ROTULO}>Corretor</span>
+        <span className="relative h-4" aria-hidden>
+          {horas.map(h => (
+            <span key={h} className="absolute bottom-0 -translate-x-1/2 text-[10.5px] text-t4 tabular-nums first:translate-x-0 last:-translate-x-full"
+                  style={{ left: `${((h - de) / largura) * 100}%` }}>{h}h</span>
+          ))}
+        </span>
+        {['Atend.', 'Ligações', 'Avanços', 'Visitas', 'Leads novos', 'No prazo', 'Esperando'].map(r => (
+          <span key={r} className={`${ROTULO} text-right`}>{r}</span>
+        ))}
+      </div>
+
+      <ul>
+        {linhas.map(l => (
+          <li key={l.id} className={`grid grid-cols-4 ${GRADE} items-center gap-x-4 gap-y-3 px-5 lg:px-6 py-4 lg:py-3.5 border-b border-line last:border-0`}>
+            {/* quem e como está */}
+            <div className="col-span-4 lg:col-span-1 flex items-center gap-3 min-w-0">
+              <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${l.pausa ? 'bg-warning' : l.ativo ? 'bg-success pulse-live-dot' : 'bg-[color:var(--line-strong)]'}`} aria-hidden />
+              <div className="min-w-0">
+                <p className="truncate font-display text-[15px] font-bold tracking-[-0.015em] text-t1">{l.nome}</p>
+                <p className={`truncate text-[12px] tabular-nums ${l.pausa ? 'text-warning font-medium' : l.ativo ? 'text-success font-medium' : 'text-t3'}`}>
+                  {l.pausa ? `Em pausa · volta ${horaDaVolta(l.pausa.untilAt, agora)}` : l.status}
+                </p>
+              </div>
+            </div>
+
+            <div className="col-span-4 lg:col-span-1 min-w-0">
+              <LinhaDoDia marcas={l.marcas} de={de} ate={ate} agora={agora} nome={l.nome} />
+            </div>
+
+            {l.producao.map(p => (
+              <Celula key={p.rotulo} rotulo={p.rotulo}
+                      valor={<NumeroVivo valor={p.hoje} className={p.hoje === 0 ? 'text-t4' : 'text-t1'} />}
+                      nota={p.ontem === undefined ? undefined : `ontem ${n(p.ontem)}`}
+                      notaTom={p.ontem !== undefined && p.hoje > p.ontem ? 'text-success' : 'text-t4'} />
+            ))}
+
+            <Celula rotulo="Leads novos"
+                    valor={l.leadsNovos === null ? '—' : <NumeroVivo valor={l.leadsNovos} className={l.leadsNovos === 0 ? 'text-t4' : 'text-t1'} />}
+                    nota={l.herdados > 0 ? `+${n(l.herdados)} ${l.herdados === 1 ? 'herdado' : 'herdados'}` : undefined}
+                    dica="Leads que a roleta entregou hoje. Herdado = lead antigo que veio de outro corretor." />
+            <Celula rotulo="No prazo" largo
+                    valor={!l.prazo || l.prazo.comDesfecho === 0 ? '—' : <NumeroVivo valor={`${l.prazo.noPrazo}/${l.prazo.comDesfecho}`} />}
+                    nota={l.prazo && l.prazo.perdidos > 0 ? `${n(l.prazo.perdidos)} ${l.prazo.perdidos === 1 ? 'perdido' : 'perdidos'}` : undefined}
+                    notaTom="text-error"
+                    dica="1º contato feito dentro do prazo, sobre os leads que tiveram desfecho hoje. Perdido = o prazo venceu e o lead foi para outro corretor." />
+            <Celula rotulo="Esperando"
+                    valor={<NumeroVivo valor={l.esperando} className={l.vencidos > 0 ? 'text-error' : l.esperando > 0 ? 'text-warning' : 'text-t4'} />}
+                    nota={l.vencidos > 0 ? `${n(l.vencidos)} ${l.vencidos === 1 ? 'vencido' : 'vencidos'}` : undefined}
+                    notaTom="text-error"
+                    dica="Leads com ele ainda sem 1º contato." />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function Celula({ rotulo, valor, nota, notaTom = 'text-t4', dica, largo = false }: {
+  rotulo: string; valor: React.ReactNode; nota?: string; notaTom?: string; dica?: string; largo?: boolean
+}) {
+  return (
+    <div className={`min-w-0 lg:text-right ${largo ? 'col-span-2 lg:col-span-1' : ''}`} title={dica}>
+      <p className={`${ROTULO} lg:hidden mb-0.5 truncate`}>{rotulo}</p>
+      <p className="font-display text-[18px] font-extrabold leading-none text-t1 whitespace-nowrap">{valor}</p>
+      <p className={`mt-1 h-[14px] truncate text-[11px] leading-none tabular-nums ${nota ? notaTom : ''}`}>{nota ?? ''}</p>
+    </div>
+  )
+}
+
+// ─── 1. Velocidade de resposta ────────────────────────────────────────────────
 
 export function VelocidadeDeResposta({ linhas, total, nome, minutosPrazo }: {
   linhas: LinhaVelocidade[]
@@ -215,6 +244,9 @@ export function VelocidadeDeResposta({ linhas, total, nome, minutosPrazo }: {
           </tfoot>
         )}
       </table>
+      <p className="mt-3 text-[12px] text-t4">
+        Cada vez que o lead passa pela mão do corretor conta uma vez. "Perdeu" = o prazo venceu e o lead foi para outro.
+      </p>
     </div>
   )
 }
@@ -260,27 +292,9 @@ function LinhaDeVelocidade({ l, rotulo, minutosPrazo, total = false }: {
   )
 }
 
-/** Legenda curta das colunas — vai embaixo da tabela, não em tooltip que ninguém abre. */
-export function LegendaVelocidade() {
-  const itens = [
-    { icon: Clock3, texto: 'Cada passagem do lead pela mão do corretor conta uma vez, no dia do desfecho. Tempo em minutos úteis, pela agenda do rodízio.' },
-    { icon: ArrowRightLeft, texto: '"Perdeu": o prazo venceu e o lead foi para outro corretor.' },
-    { icon: Hourglass, texto: '"Esperando": ainda sem 1º contato registrado no WhatsApp.' },
-  ]
-  return (
-    <ul className="mt-3 pt-3 border-t border-line flex flex-col gap-1">
-      {itens.map(i => (
-        <li key={i.texto} className="flex items-start gap-2 text-[12px] text-t4">
-          <i.icon size={12} strokeWidth={1.8} className="mt-[3px] flex-shrink-0" aria-hidden /> {i.texto}
-        </li>
-      ))}
-    </ul>
-  )
-}
+// ─── 2. Qualidade por origem ──────────────────────────────────────────────────
 
-// ─── 3. Qualidade por origem ──────────────────────────────────────────────────
-
-const LINHAS_DE_ORIGEM = 8
+const LINHAS_DE_ORIGEM = 6
 
 export function QualidadePorOrigem({ linhas, rotuloOrigem, rotuloMotivo }: {
   linhas: LinhaOrigem[]

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { db } from '../../lib/db'
 import type { Lead } from '../../types'
-import type { Atribuicao, EstadoRoleta } from './monitorLeads'
+import type { Atribuicao } from './monitorLeads'
 
 const DIA_MS = 86_400_000
 /** Janela da trilha de distribuição: cobre o maior período da tela (30 dias). */
@@ -10,24 +10,22 @@ const JANELA_DIAS = 31
 const ASSENTAR_MS = 1500
 
 /**
- * Dados do monitoramento ao vivo que NÃO estão nos leads em memória: a trilha
- * de distribuição (`lead_assignments`) e o estado das roletas.
+ * O dado do monitoramento ao vivo que NÃO está nos leads em memória: a trilha
+ * de distribuição (`lead_assignments`).
  *
  * Como fica "ao vivo" sem pesar no banco:
  *   • uma leitura ao abrir (30 dias de trilha — algumas centenas de linhas);
  *   • depois disso nenhuma releitura periódica. A tela só volta ao banco
  *     quando os leads em memória mostram que algo mudou de mão — chegou lead ou
- *     um lead trocou de corretor — e aí busca APENAS as linhas novas da trilha
- *     e as duas linhas das roletas;
+ *     um lead trocou de corretor — e aí busca APENAS as linhas novas da trilha;
  *   • quem está em pausa e quem já fez o 1º contato não custam nada: vêm do
  *     que o realtime já entrega.
  *
  * Se uma atualização falhar, os números anteriores continuam na tela com o
  * aviso de que podem estar atrasados — nunca somem em silêncio.
  */
-export function useMonitorLeads(leads: Lead[], lerRoleta: boolean) {
+export function useMonitorLeads(leads: Lead[]) {
   const [atribuicoes, setAtribuicoes] = useState<Atribuicao[] | null>(null)
-  const [roleta, setRoleta] = useState<EstadoRoleta | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [atualizando, setAtualizando] = useState(false)
 
@@ -43,16 +41,12 @@ export function useMonitorLeads(leads: Lead[], lerRoleta: boolean) {
         const atual = trilha.current
         const ultimo = atual && atual.length > 0 ? atual[atual.length - 1].createdAt : undefined
         const desde = new Date(Date.now() - JANELA_DIAS * DIA_MS).toISOString()
-        const [novas, estado] = await Promise.all([
-          // Com trilha em memória, só o que entrou depois da última linha.
-          db.leadMonitor.atribuicoes(atual && ultimo ? { desde, depoisDe: ultimo } : { desde }),
-          lerRoleta ? db.leadMonitor.roleta() : Promise.resolve(null),
-        ])
+        // Com trilha em memória, só o que entrou depois da última linha.
+        const novas = await db.leadMonitor.atribuicoes(atual && ultimo ? { desde, depoisDe: ultimo } : { desde })
         const vistos = new Set((atual ?? []).map(a => a.id))
         const junta = atual && ultimo ? [...atual, ...novas.filter(a => !vistos.has(a.id))] : novas
         trilha.current = junta
         setAtribuicoes(junta)
-        setRoleta(estado)
         setErro(null)
       } catch (e) {
         setErro(e instanceof Error ? e.message : (e as { message?: string })?.message ?? 'Falha ao ler a distribuição dos leads')
@@ -63,7 +57,7 @@ export function useMonitorLeads(leads: Lead[], lerRoleta: boolean) {
       }
     })()
     return emVoo.current
-  }, [lerRoleta])
+  }, [])
 
   /**
    * Muda quando chega lead ou quando um lead troca de corretor — os dois únicos
@@ -89,5 +83,5 @@ export function useMonitorLeads(leads: Lead[], lerRoleta: boolean) {
     return () => clearTimeout(id)
   }, [assinatura, carregar])
 
-  return { atribuicoes, roleta, erro, atualizando, recarregar: carregar }
+  return { atribuicoes, erro, atualizando, recarregar: carregar }
 }

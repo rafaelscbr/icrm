@@ -2,7 +2,7 @@ import toast from 'react-hot-toast'
 import { supabase } from './supabase'
 import { getCurrentUserId, requireBrokerId } from './auth'
 import { generateId } from './formatters'
-import type { Atribuicao, EstadoRoleta } from '../modules/leads/monitorLeads'
+import type { Atribuicao } from '../modules/leads/monitorLeads'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
@@ -1347,27 +1347,6 @@ export const db = {
         if (linhas.length < PAGINA) break
       }
       return out
-    },
-    // Só o admin enxerga as roletas (RLS): duas leituras de poucas linhas.
-    roleta: async (): Promise<EstadoRoleta> => {
-      const [geral, forms] = await Promise.all([
-        supabase.from('lead_distribution').select('broker_ids, last_index').eq('id', 1).single(),
-        supabase.from('meta_form_routing').select('form_id, form_name, product_name, broker_ids, last_index, active'),
-      ])
-      if (geral.error) throw geral.error
-      if (forms.error) throw forms.error
-      const g = geral.data as { broker_ids: string[] | null; last_index: number | null }
-      return {
-        geral: { brokerIds: g.broker_ids ?? [], lastIndex: g.last_index ?? -1 },
-        formularios: ((forms.data ?? []) as Array<{
-          form_id: string; form_name: string | null; product_name: string | null
-          broker_ids: string[] | null; last_index: number | null; active: boolean
-        }>).map(f => ({
-          formId: f.form_id,
-          nome: f.product_name?.trim() || f.form_name?.trim() || 'Formulário sem nome',
-          brokerIds: f.broker_ids ?? [], lastIndex: f.last_index ?? -1, active: f.active,
-        })),
-      }
     },
   },
 

@@ -2,18 +2,19 @@
  * Leads › Dashboard — monitoramento ao vivo (16/11/2026). A parte que calcula,
  * sem tela e sem rede.
  *
- * Três perguntas que o dono faz olhando a equipe trabalhar:
- *   1. Roleta ao vivo        — para quem vai o próximo lead, e quem está fora?
- *   2. Velocidade de resposta — quem atende no prazo e quem deixa o lead vencer?
- *   3. Qualidade por origem   — qual formulário traz lead bom e qual traz curioso?
+ * Duas perguntas que o dono faz olhando a equipe trabalhar:
+ *   1. Velocidade de resposta — quem atende no prazo e quem deixa o lead vencer?
+ *   2. Qualidade por origem   — qual formulário traz lead bom e qual traz curioso?
+ * Mais o ritmo do dia (quando cada um produziu) e o que cada um recebeu hoje.
  *
  * De onde vêm os dados:
- *   • leads               — já em memória (`useLeadsStore`), zero rede;
- *   • atribuições         — `lead_assignments`, a trilha de quem recebeu cada
- *                           lead e por quê (roleta, transferência por prazo…);
- *   • roleta              — `lead_distribution` + `meta_form_routing`;
- *   • pausas              — `useLeadPauseStore` (migração 089).
+ *   • leads        — já em memória (`useLeadsStore`), zero rede;
+ *   • atribuições  — `lead_assignments`, a trilha de quem recebeu cada lead e
+ *                    por quê (roleta, transferência por prazo…).
  * As funções abaixo só cruzam essas listas — é o que os testes cobrem.
+ *
+ * "Para quem vai o próximo lead" saiu da tela em 16/11/2026, a pedido do
+ * Rafael; a conta da roleta vive só no banco (`next_lead_broker_index`).
  */
 import type { Lead, LeadFunnelStage, SlaDia } from '../../types'
 import { localDateStr } from '../../lib/formatters'
@@ -33,90 +34,7 @@ export interface Atribuicao {
   createdAt:    string
 }
 
-export interface RoletaFormulario {
-  formId:    string
-  nome:      string
-  brokerIds: string[]
-  lastIndex: number
-  active:    boolean
-}
-
-export interface EstadoRoleta {
-  geral:       { brokerIds: string[]; lastIndex: number }
-  formularios: RoletaFormulario[]
-}
-
-// ── 1. Roleta ao vivo ─────────────────────────────────────────────────────────
-
-/**
- * O próximo da lista depois de `lastIndex` que passa em `serve`. Devolve o
- * índice (base 0) ou null. É a mesma conta de `next_lead_broker_index` no
- * banco (migração 089) — se uma mudar, a outra muda junto.
- */
-export function proximoIndice(ids: string[], lastIndex: number, serve: (id: string) => boolean): number | null {
-  const n = ids.length
-  if (n === 0) return null
-  for (let k = 1; k <= n; k++) {
-    const i = ((((lastIndex ?? -1) + k) % n) + n) % n
-    if (ids[i] && serve(ids[i])) return i
-  }
-  return null
-}
-
-export interface ProximoDaRoleta {
-  /** null = roleta geral */
-  formId:   string | null
-  nome:     string
-  brokerId: string | null
-  /** o formulário não tinha ninguém disponível e o lead cairia na roleta geral */
-  viaGeral: boolean
-  /** todo mundo em pausa: vale a ordem normal, ignorando a pausa */
-  ignorouPausa: boolean
-}
-
-/**
- * Se um lead chegasse AGORA em cada roleta, com quem ele cairia. Mesma ordem de
- * decisão de `process_meta_lead`: formulário → geral → (todos em pausa)
- * formulário ignorando a pausa → geral ignorando a pausa.
- */
-export function proximoDeCadaRoleta(
-  estado: EstadoRoleta,
-  ativo: (id: string) => boolean,
-  emPausa: (id: string) => boolean,
-): ProximoDaRoleta[] {
-  const disponivel = (id: string) => ativo(id) && !emPausa(id)
-  const { geral } = estado
-
-  const iGeral = proximoIndice(geral.brokerIds, geral.lastIndex, disponivel)
-  const iGeralSemPausa = iGeral ?? proximoIndice(geral.brokerIds, geral.lastIndex, ativo)
-  const idGeral = iGeralSemPausa !== null ? geral.brokerIds[iGeralSemPausa] : null
-
-  const out: ProximoDaRoleta[] = [{
-    formId: null, nome: 'Roleta geral', brokerId: idGeral,
-    viaGeral: false, ignorouPausa: iGeral === null && idGeral !== null,
-  }]
-
-  for (const f of estado.formularios) {
-    // Formulário desligado ou sem corretor próprio usa a roleta geral — já
-    // está representado na linha de cima.
-    const pool = f.active ? f.brokerIds.filter(ativo) : []
-    if (pool.length === 0) continue
-
-    const i = proximoIndice(pool, f.lastIndex, disponivel)
-    if (i !== null) {
-      out.push({ formId: f.formId, nome: f.nome, brokerId: pool[i], viaGeral: false, ignorouPausa: false })
-      continue
-    }
-    if (iGeral !== null) {
-      out.push({ formId: f.formId, nome: f.nome, brokerId: geral.brokerIds[iGeral], viaGeral: true, ignorouPausa: false })
-      continue
-    }
-    // Ninguém disponível em lugar nenhum: a roleta do formulário, ignorando a pausa.
-    const j = proximoIndice(pool, f.lastIndex, ativo)
-    out.push({ formId: f.formId, nome: f.nome, brokerId: j !== null ? pool[j] : idGeral, viaGeral: j === null, ignorouPausa: true })
-  }
-  return out
-}
+// ── O que cada um recebeu hoje ────────────────────────────────────────────────
 
 export interface RecebidosHoje {
   /** entregues pela roleta (geral, do formulário ou cliente que voltou) */
@@ -144,7 +62,7 @@ export function recebidosHoje(atribuicoes: Atribuicao[], agora: Date = new Date(
   return mapa
 }
 
-// ── 2. Velocidade de resposta ─────────────────────────────────────────────────
+// ── 1. Velocidade de resposta ─────────────────────────────────────────────────
 
 /**
  * Minutos ÚTEIS entre dois instantes, pela agenda do rodízio (a mesma que o
@@ -303,7 +221,7 @@ export function textoDeMinutos(min: number | null): string {
   return m === 0 ? `${h} h` : `${h}h${String(m).padStart(2, '0')}`
 }
 
-// ── 3. Qualidade por origem ───────────────────────────────────────────────────
+// ── 2. Qualidade por origem ───────────────────────────────────────────────────
 
 const AVANCOU = new Set<LeadFunnelStage>(['atendimento', 'visita', 'proposta', 'venda'])
 
@@ -378,6 +296,19 @@ export function janelaDoDia(horas: number[], agora: Date = new Date()): { de: nu
   const de = Math.min(8, ...comAtividade)
   const ate = Math.max(19, agora.getHours(), ...comAtividade)
   return { de, ate }
+}
+
+/**
+ * Onde um instante cai na linha do dia, de 0 a 100 (%), numa janela que vai
+ * das `de`h até o fim da hora `ate`. Fora da janela devolve null — a marca não
+ * é desenhada em vez de ser espremida na borda.
+ */
+export function posicaoNoDia(instante: number | string, de: number, ate: number, agora: Date = new Date()): number | null {
+  const t = typeof instante === 'number' ? instante : new Date(instante).getTime()
+  const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), de).getTime()
+  const fim = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), ate + 1).getTime()
+  if (t < inicio || t > fim) return null
+  return ((t - inicio) / (fim - inicio)) * 100
 }
 
 // ── Períodos ──────────────────────────────────────────────────────────────────

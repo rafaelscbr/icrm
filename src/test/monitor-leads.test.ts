@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
-  proximoIndice, proximoDeCadaRoleta, recebidosHoje, minutosUteis, mediana,
+  recebidosHoje, minutosUteis, mediana,
   velocidadeDeResposta, qualidadePorOrigem, atividadePorHora, janelaDoDia,
-  inicioDoPeriodo, textoDeMinutos,
+  inicioDoPeriodo, posicaoNoDia, textoDeMinutos,
 } from '../modules/leads/monitorLeads'
-import type { Atribuicao, EstadoRoleta } from '../modules/leads/monitorLeads'
+import type { Atribuicao } from '../modules/leads/monitorLeads'
 import type { SlaDia } from '../types'
 
 // Segunda, 16/11/2026, 14:00 (horário local)
@@ -24,62 +24,7 @@ const at = (leadId: string, to: string, createdAt: string, extra: Partial<Atribu
   slaDueAt: null, createdAt, ...extra,
 })
 
-describe('roleta ao vivo', () => {
-  const todos = () => true
-  const ninguem = () => false
-
-  it('sem pausa é a conta de sempre: o seguinte da lista, dando a volta', () => {
-    expect(proximoIndice(['a', 'b', 'c'], 1, todos)).toBe(2)
-    expect(proximoIndice(['a', 'b', 'c'], 2, todos)).toBe(0)
-    expect(proximoIndice(['a', 'b', 'c'], -1, todos)).toBe(0)
-    expect(proximoIndice([], 0, todos)).toBeNull()
-  })
-
-  it('pula quem não serve e devolve null se ninguém serve', () => {
-    expect(proximoIndice(['a', 'b', 'c'], 0, id => id !== 'b')).toBe(2)
-    expect(proximoIndice(['a', 'b', 'c'], 0, ninguem)).toBeNull()
-  })
-
-  const estado: EstadoRoleta = {
-    geral: { brokerIds: ['dio', 'raf', 'rya'], lastIndex: 1 },
-    formularios: [
-      { formId: 'gv', nome: 'Greenview', brokerIds: ['dio', 'rya'], lastIndex: 0, active: true },
-      { formId: 'dz', nome: 'Dotzero',   brokerIds: ['dio'],        lastIndex: -1, active: true },
-      { formId: 'sem', nome: 'Sem corretor', brokerIds: [],         lastIndex: -1, active: true },
-      { formId: 'off', nome: 'Desligado',    brokerIds: ['raf'],    lastIndex: -1, active: false },
-    ],
-  }
-  const por = (lista: ReturnType<typeof proximoDeCadaRoleta>) => Object.fromEntries(lista.map(p => [p.nome, p]))
-
-  it('diz com quem o próximo lead cai em cada roleta', () => {
-    const r = por(proximoDeCadaRoleta(estado, todos, ninguem))
-    expect(r['Roleta geral'].brokerId).toBe('rya')
-    expect(r['Greenview'].brokerId).toBe('rya')
-    expect(r['Dotzero'].brokerId).toBe('dio')
-    // formulário sem corretor próprio ou desligado usa a geral: não ganha linha
-    expect(r['Sem corretor']).toBeUndefined()
-    expect(r['Desligado']).toBeUndefined()
-  })
-
-  it('formulário de um corretor só, em pausa, cai na roleta geral', () => {
-    const r = por(proximoDeCadaRoleta(estado, todos, id => id === 'dio'))
-    expect(r['Dotzero']).toMatchObject({ brokerId: 'rya', viaGeral: true, ignorouPausa: false })
-    expect(r['Greenview']).toMatchObject({ brokerId: 'rya', viaGeral: false })
-  })
-
-  it('com todos em pausa vale a ordem normal, e avisa que ignorou a pausa', () => {
-    const r = por(proximoDeCadaRoleta(estado, todos, todos))
-    expect(r['Roleta geral']).toMatchObject({ brokerId: 'rya', ignorouPausa: true })
-    expect(r['Greenview']).toMatchObject({ brokerId: 'rya', viaGeral: false, ignorouPausa: true })
-    expect(r['Dotzero']).toMatchObject({ brokerId: 'dio', ignorouPausa: true })
-  })
-
-  it('corretor inativo nunca é o próximo', () => {
-    const r = por(proximoDeCadaRoleta(estado, id => id !== 'rya', ninguem))
-    expect(r['Roleta geral'].brokerId).toBe('dio')
-    expect(r['Greenview'].brokerId).toBe('dio')
-  })
-
+describe('o que cada um recebeu hoje', () => {
   it('conta o que cada um recebeu hoje, separando roleta de transferência', () => {
     const r = recebidosHoje([
       at('l1', 'dio', t(9)),
@@ -266,6 +211,15 @@ describe('ritmo do dia e períodos', () => {
     expect(janelaDoDia(vazio, AGORA)).toEqual({ de: 8, ate: 19 })
     const cedo = [...vazio]; cedo[6] = 1; cedo[21] = 2
     expect(janelaDoDia(cedo, AGORA)).toEqual({ de: 6, ate: 21 })
+  })
+
+  it('coloca cada registro no ponto certo da linha do dia', () => {
+    // janela 8h–20h (ate = 19): 12 horas
+    expect(posicaoNoDia(t(8), 8, 19, AGORA)).toBe(0)
+    expect(posicaoNoDia(t(14), 8, 19, AGORA)).toBe(50)
+    expect(posicaoNoDia(t(20), 8, 19, AGORA)).toBe(100)
+    expect(posicaoNoDia(t(7, 59), 8, 19, AGORA)).toBeNull()     // antes da janela
+    expect(posicaoNoDia(t(10, 0, 15), 8, 19, AGORA)).toBeNull() // ontem
   })
 
   it('o período começa à meia-noite', () => {

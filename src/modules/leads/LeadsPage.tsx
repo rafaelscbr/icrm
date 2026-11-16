@@ -473,7 +473,7 @@ export function LeadsPage() {
         />
       }
     >
-      {isDashTab && <LeadsDashboard leads={leads} onOpenLead={setSelectedLead} />}
+      {isDashTab && <LeadsDashboard leads={leads} />}
       {isConvTab && <LeadConversionTab />}
       {isFollowTab && <LeadFollowupTab leads={leads} onOpenLead={setSelectedLead} />}
       {isConfigTab && <LeadSettings />}
