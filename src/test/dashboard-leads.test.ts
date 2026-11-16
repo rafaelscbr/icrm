@@ -1,6 +1,7 @@
 import { describe as descrever, it, expect } from 'vitest'
 import {
   leadsPorDia, mediaSemHoje, funilAgora, atencao, fraseDoCorretor, haQuanto, estaAtivo, rotuloDia,
+  textoDoPrazo, prazoVencido,
 } from '../modules/leads/dashboardLeads'
 import type { PulseEvent } from '../modules/pulse/types'
 
@@ -53,14 +54,22 @@ descrever('dashboard de leads · atenção', () => {
     createdAt: em(15, 8), reentryAt: undefined, reentrySeenAt: undefined, ...p,
   }) as Parameters<typeof atencao>[0][number] & { id?: string }
 
-  it('1º contato atrasado: prazo vencido e sem contato', () => {
+  it('aguardando 1º contato: com o prazo vencido OU ainda correndo, o mais urgente primeiro', () => {
     const a = atencao([
+      lead({ id: 'vence-amanha', slaDueAt: em(16, 9) }),      // chegou fora do expediente
       lead({ id: 'atrasado', slaDueAt: em(15, 14) }),
       lead({ id: 'atendido', slaDueAt: em(15, 14), firstContactAt: em(15, 13) }),
       lead({ id: 'no-prazo', slaDueAt: em(15, 16) }),
       lead({ id: 'descartado', slaDueAt: em(15, 14), discardReason: 'x' }),
+      lead({ id: 'sem-relogio' }),
     ], agora)
-    expect(a.primeiroContatoAtrasado.map(l => l.id)).toEqual(['atrasado'])
+    expect(a.aguardandoPrimeiroContato.map(l => l.id)).toEqual(['atrasado', 'no-prazo', 'vence-amanha'])
+  })
+  it('texto do prazo: vencido, hoje e outro dia', () => {
+    expect(prazoVencido(em(15, 14), agora)).toBe(true)
+    expect(textoDoPrazo(em(15, 14), agora)).toBe('prazo venceu há 1 h')
+    expect(textoDoPrazo(em(15, 18), agora)).toBe('prazo até 18:00')
+    expect(textoDoPrazo(em(16, 9), agora)).toBe('prazo até seg 09:00')
   })
   it('esfriando: só etapas quentes, 3 dias ou mais sem contato, o mais antigo primeiro', () => {
     const a = atencao([

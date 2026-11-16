@@ -86,8 +86,12 @@ export function funilAgora(leads: LeadFunil[], agora: Date = new Date()): FunilA
 // ── O que pede atenção ────────────────────────────────────────────────────────
 
 export interface Atencao<T> {
-  /** lead do Meta com o prazo de 1º contato vencido e ainda sem contato */
-  primeiroContatoAtrasado: T[]
+  /**
+   * Lead com o relógio de 1º contato correndo e ainda sem contato — vencido ou
+   * não. Mesma regra do Kanban (`slaActive`): mostrar só o vencido escondia o
+   * lead que chegou fora do expediente e vence na manhã seguinte.
+   */
+  aguardandoPrimeiroContato: T[]
   /** em atendimento, visita ou proposta sem contato há 3 dias ou mais */
   esfriando: T[]
   /** preencheu o formulário de novo e o corretor ainda não viu */
@@ -101,13 +105,11 @@ type LeadAtencao = Pick<Lead,
 export const DIAS_ESFRIANDO = 3
 
 export function atencao<T extends LeadAtencao>(leads: T[], agora: number = Date.now()): Atencao<T> {
-  const out: Atencao<T> = { primeiroContatoAtrasado: [], esfriando: [], voltaram: [] }
+  const out: Atencao<T> = { aguardandoPrimeiroContato: [], esfriando: [], voltaram: [] }
   for (const l of leads) {
     if (l.discardReason || l.closedAt) continue
 
-    if (l.slaDueAt && !l.firstContactAt && new Date(l.slaDueAt).getTime() < agora) {
-      out.primeiroContatoAtrasado.push(l)
-    }
+    if (l.slaDueAt && !l.firstContactAt) out.aguardandoPrimeiroContato.push(l)
 
     if (l.funnelStage === 'atendimento' || l.funnelStage === 'visita' || l.funnelStage === 'proposta') {
       const ultimo = new Date(l.lastContactAt ?? l.stageChangedAt ?? l.createdAt).getTime()
@@ -118,11 +120,25 @@ export function atencao<T extends LeadAtencao>(leads: T[], agora: number = Date.
       out.voltaram.push(l)
     }
   }
-  // O mais antigo primeiro: é o que está esperando há mais tempo.
-  out.primeiroContatoAtrasado.sort((a, b) => new Date(a.slaDueAt!).getTime() - new Date(b.slaDueAt!).getTime())
+  // Prazo mais próximo (ou vencido há mais tempo) primeiro.
+  out.aguardandoPrimeiroContato.sort((a, b) => new Date(a.slaDueAt!).getTime() - new Date(b.slaDueAt!).getTime())
   const ref = (l: T) => new Date(l.lastContactAt ?? l.stageChangedAt ?? l.createdAt).getTime()
   out.esfriando.sort((a, b) => ref(a) - ref(b))
   return out
+}
+
+export function prazoVencido(slaDueAt: string, agora: number = Date.now()): boolean {
+  return new Date(slaDueAt).getTime() < agora
+}
+
+/** "prazo venceu há 12 min" · "prazo até 18:30" · "prazo até seg 09:10". */
+export function textoDoPrazo(slaDueAt: string, agora: number = Date.now()): string {
+  if (prazoVencido(slaDueAt, agora)) return `prazo venceu ${haQuanto(slaDueAt, agora)}`
+  const d = new Date(slaDueAt)
+  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (localDateStr(d) === localDateStr(new Date(agora))) return `prazo até ${hora}`
+  const dia = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
+  return `prazo até ${dia} ${hora}`
 }
 
 // ── Atividade do corretor ─────────────────────────────────────────────────────
