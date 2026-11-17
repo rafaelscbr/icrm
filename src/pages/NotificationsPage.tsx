@@ -84,6 +84,7 @@ function groupNotifications(notifications: AppNotification[]) {
 /** o que a notificação é, em ícone e tom — cada tipo tem o seu lugar */
 function aparencia(n: AppNotification) {
   if (n.type === 'lead_assigned')         return { icon: UserPlus,      tom: 'marca'   as const, acao: 'Abrir lead'   }
+  if (n.type === 'lead_new_admin')        return { icon: UserPlus,      tom: 'marca'   as const, acao: 'Abrir lead'   }
   if (n.type === 'lead_recaptured')       return { icon: RefreshCw,     tom: 'info'    as const, acao: 'Abrir lead'   }
   // Voltou por conta própria: azul, o mesmo tom do "reaquecendo" no funil.
   if (n.type === 'lead_reentry')          return { icon: RefreshCw,     tom: 'info'    as const, acao: 'Abrir lead'   }

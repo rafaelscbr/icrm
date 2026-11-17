@@ -59,6 +59,7 @@ export function tituloDoGrupo(g: GrupoNotificacao): string {
   if (n === 1) return g.titulo
   switch (g.tipo) {
     case 'lead_assigned':         return `${n} leads atribuídos a você`
+    case 'lead_new_admin':        return `${n} leads novos no sistema`
     case 'lead_recaptured':       return `${n} leads transferidos para você`
     case 'lead_reentry':          return `${n} leads voltaram ao funil`
     case 'lead_returning_client': return `${n} clientes antigos voltaram`

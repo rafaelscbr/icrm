@@ -58,15 +58,17 @@ Deno.serve(async (req: Request) => {
 
   const n = await req.json() as NotificationRow
 
-  // Linha de urgência: lead com relógio de SLA rodando
+  // Linha de urgência: lead com relógio de SLA rodando — só para o DONO do
+  // lead. O admin também recebe aviso de lead novo (migração 092), e dizer a ele
+  // "você tem 5 min" sobre um lead que está com outro corretor seria falso.
   let slaLine = ''
   if (n.resource_type === 'lead' && n.resource_id) {
     const { data: lead } = await supabase
       .from('leads')
-      .select('sla_due_at, first_contact_at')
+      .select('sla_due_at, first_contact_at, broker_id')
       .eq('id', n.resource_id)
       .maybeSingle()
-    if (lead?.sla_due_at && !lead.first_contact_at) {
+    if (lead?.sla_due_at && !lead.first_contact_at && lead.broker_id === n.user_id) {
       const ate = new Date(lead.sla_due_at).toLocaleTimeString('pt-BR', {
         hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
       })

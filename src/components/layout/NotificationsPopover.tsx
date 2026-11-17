@@ -88,6 +88,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
   function notifIcon(n: AppNotification) {
     const cls = !n.read ? 'text-brand' : 'text-t4'
     if (n.type === 'lead_assigned')         return <UserPlus   size={14} strokeWidth={1.6} className={cls} />
+    if (n.type === 'lead_new_admin')        return <UserPlus   size={14} strokeWidth={1.6} className={cls} />
     if (n.type === 'lead_recaptured')       return <RefreshCw  size={14} strokeWidth={1.6} className={cls} />
     if (n.type === 'lead_reentry')          return <RefreshCw  size={14} strokeWidth={1.6} className={cls} />
     if (n.type === 'lead_returning_client') return <BadgeCheck size={14} strokeWidth={1.6} className={cls} />

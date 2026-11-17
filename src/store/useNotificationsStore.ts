@@ -102,6 +102,8 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
     // o mesmo azul do "reaquecendo" no funil.
     const AVISOS_DE_LEAD: Record<string, string> = {
       lead_assigned:         'var(--brand)',
+      // Admin: entrou lead novo no sistema, com outro corretor (migração 092)
+      lead_new_admin:        'var(--brand)',
       lead_recaptured:       'var(--brand)',
       lead_reentry:          'var(--info)',
       lead_returning_client: 'var(--info)',
