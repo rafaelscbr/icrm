@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   DndContext, DragOverlay, closestCenter,
@@ -7,7 +7,7 @@ import {
   useDroppable,
 } from '@dnd-kit/core'
 import {
-  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+  SortableContext, useSortable, verticalListSortingStrategy, rectSortingStrategy, arrayMove,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -33,7 +33,7 @@ import { TEMPERATURE_COLOR } from '../../lib/intelligence'
 import { avisoReentrada } from './reentrada'
 import { useKanbanPrefs } from '../../store/useKanbanPrefs'
 import { ORIGEM_META } from './origens'
-import { semContatoHaMaisDe, ESFRIANDO_DIAS } from './contato'
+import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
 import toast from 'react-hot-toast'
@@ -47,6 +47,52 @@ const STAGES = FUNNEL_STAGES
 function daysInStage(stageChangedAt?: string, createdAt?: string): number {
   const ref = stageChangedAt ?? createdAt ?? new Date().toISOString()
   return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
+}
+
+/**
+ * Colunas fluidas (16/11/2026). A coluna tinha 18,5rem fixos: num quadro com
+ * leads só em Followup e Atendimento, tudo ficava espremido na esquerda da tela
+ * e a coluna de 100 leads virava uma fila sem fim. Agora a coluna cheia cresce
+ * e mostra os cartões lado a lado, em "faixas".
+ *
+ *   FAIXA_MIN_REM   — largura mínima de um cartão dentro da coluna
+ *   LEADS_POR_FAIXA — a cada tantos leads a coluna pede mais uma faixa
+ *   MAX_FAIXAS      — teto: coluna muito larga vira parede de cartões
+ *
+ * Com seis colunas cheias (ou tela estreita) cada uma volta a ter uma faixa só
+ * e o quadro fica exatamente como era, com a rolagem lateral.
+ */
+const COLUNA_REM = 18.5
+const FAIXA_MIN_REM = 17
+const LEADS_POR_FAIXA = 8
+const MAX_FAIXAS = 4
+
+/** Quantas faixas a coluna gostaria de ter, pelo volume de leads. */
+function faixasDesejadas(leads: number): number {
+  return Math.min(MAX_FAIXAS, Math.max(1, Math.ceil(leads / LEADS_POR_FAIXA)))
+}
+
+/**
+ * Quantas faixas CABEM de fato na largura que a coluna recebeu. Medido, não
+ * presumido: é esse número que decide a grade e a estratégia de arrastar.
+ */
+function useFaixas(maximo: number) {
+  const [el, setEl] = useState<HTMLDivElement | null>(null)
+  const [faixas, setFaixas] = useState(1)
+  useEffect(() => {
+    if (!el) return
+    const medir = () => {
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+      const vao = 8
+      const cabem = Math.floor((el.clientWidth + vao) / (FAIXA_MIN_REM * rem + vao))
+      setFaixas(Math.max(1, Math.min(maximo, cabem)))
+    }
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(el)
+    return () => observador.disconnect()
+  }, [el, maximo])
+  return [faixas, setEl] as const
 }
 
 function orderBetween(above: Lead | null, below: Lead | null): number {
@@ -295,9 +341,20 @@ function LeadCard({
           title={next.hint}
         >
           <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 mt-px ${nextStyle!.iconColor}`} aria-hidden />
-          <p className={`flex-1 text-xs font-semibold leading-snug min-w-0 ${nextStyle!.text}`}>
-            {next.text}
-          </p>
+          {next.urgency === 'none' ? (
+            // Sem ação marcada, "Sem próxima ação definida" aparecia igual em
+            // quase todo card e deixava de informar. A linha passa a dizer o
+            // último contato — que muda de card para card — e o aviso continua
+            // à vista, menor: a regra de não deixar lead sem próxima ação vale.
+            <p className="flex-1 min-w-0 text-xs leading-snug">
+              <span className="font-semibold text-t2">{fraseContato(lead)}</span>
+              <span className="text-t4"> · sem próxima ação</span>
+            </p>
+          ) : (
+            <p className={`flex-1 text-xs font-semibold leading-snug min-w-0 ${nextStyle!.text}`}>
+              {next.text}
+            </p>
+          )}
           {!isOverlay && (
             <span
               className="ml-auto flex-shrink-0 font-label text-[11px] text-t3 tabular-nums"
@@ -445,6 +502,37 @@ function KanbanColumn({
   const conf = STAGE_CONFIG[stage]
   const { isOver, setNodeRef } = useDroppable({ id: stage })
   const ids = leads.map(l => l.id)
+  const desejadas = faixasDesejadas(leads.length)
+  const [faixas, medirLista] = useFaixas(desejadas)
+
+  // Enquanto um card está sendo arrastado a coluna fica na largura que tinha
+  // ANTES do arraste. As colunas vazias se abrem para receber o card, e sem a
+  // trava essa abertura espremia as colunas em grade: os cartões mudavam de
+  // lugar debaixo do cursor justamente na hora de soltar. Com a trava o quadro
+  // ganha rolagem lateral durante o arraste e nada se reorganiza.
+  //
+  // A largura é anotada continuamente fora do arraste: medir só quando o
+  // arraste começa é tarde — nessa hora o quadro já se rearrumou.
+  const [caixa, setCaixa] = useState<HTMLDivElement | null>(null)
+  const larguraLivre = useRef<number | null>(null)
+  const arrastandoAgora = useRef(arrastando)
+  useEffect(() => { arrastandoAgora.current = arrastando }, [arrastando])
+  useEffect(() => {
+    if (!caixa) return
+    const anotar = () => { if (!arrastandoAgora.current) larguraLivre.current = caixa.getBoundingClientRect().width }
+    anotar()
+    const observador = new ResizeObserver(anotar)
+    observador.observe(caixa)
+    return () => observador.disconnect()
+  }, [caixa])
+  const [larguraTravada, setLarguraTravada] = useState<number | null>(null)
+  // Ajuste durante a renderização (não em efeito): a trava entra no MESMO
+  // quadro em que as colunas vazias se abrem, sem um quadro intermediário.
+  const [arrastandoAntes, setArrastandoAntes] = useState(arrastando)
+  if (arrastando !== arrastandoAntes) {
+    setArrastandoAntes(arrastando)
+    setLarguraTravada(arrastando ? larguraLivre.current : null)
+  }
 
   const totalPipeline   = leads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
   const totalCommission = totalPipeline * 0.02
@@ -486,7 +574,17 @@ function KanbanColumn({
 
   return (
     // --etapa alimenta o filete e a contagem do cabeçalho (ver .kanban-cabeca).
-    <div className="flex flex-col w-[18.5rem] flex-shrink-0" style={{ ['--etapa' as string]: `var(--stage-${stage})` }} id={`coluna-${stage}`}>
+    <div className="flex flex-col" ref={setCaixa}
+         style={larguraTravada !== null
+           ? { ['--etapa' as string]: `var(--stage-${stage})`, flex: `0 0 ${larguraTravada}px` }
+           : {
+               ['--etapa' as string]: `var(--stage-${stage})`,
+               // cresce conforme o volume, até o teto de faixas; nunca menor que a coluna de sempre
+               flex: `${desejadas} 1 ${COLUNA_REM}rem`,
+               minWidth: `${COLUNA_REM}rem`,
+               maxWidth: `${desejadas * (COLUNA_REM + 1)}rem`,
+             }}
+         id={`coluna-${stage}`}>
       <div className="flex flex-col flex-1 kanban-col">
         {/* Cabeçalho fixo — uma linha: etapa, contagem, esfriando e VGV */}
         <div className="kanban-cabeca kanban-col-bg sticky top-0 z-10 flex items-center gap-2 px-1 pt-0.5 pb-2 mb-2.5">
@@ -535,16 +633,20 @@ function KanbanColumn({
           )}
         </div>
 
-        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        {/* Uma faixa: lista vertical, como sempre foi. Duas ou mais: grade, e a
+            ordem manual passa a ser lida da esquerda para a direita, linha a linha. */}
+        <SortableContext items={ids} strategy={faixas > 1 ? rectSortingStrategy : verticalListSortingStrategy}>
           <div
-            ref={setNodeRef}
-            className={`flex-1 min-h-[420px] rounded-[14px] p-1 flex flex-col transition-colors duration-200
+            ref={el => { setNodeRef(el); medirLista(el) }}
+            className={`flex-1 min-h-[420px] rounded-[14px] p-1 transition-colors duration-200
+              ${faixas > 1 ? 'grid content-start items-start' : 'flex flex-col'}
               ${dense ? 'gap-1.5' : 'gap-2'}
               ${alvo ? 'kanban-solta' : ''}
             `}
+            style={faixas > 1 ? { gridTemplateColumns: `repeat(${faixas}, minmax(0, 1fr))` } : undefined}
           >
             {vazia && (
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-[12px] border border-dashed
+              <div className="col-span-full flex flex-col items-center justify-center gap-1.5 rounded-[12px] border border-dashed
                               border-line-strong px-3 py-8">
                 <Inbox size={16} strokeWidth={1.5} className="text-t4" aria-hidden />
                 <p className="text-xs text-t4 text-center leading-snug">
@@ -661,6 +763,13 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id))
+  }
+
+  // Esc no teclado, ou soltar fora da janela. Sem isto o quadro ficava em "modo
+  // arrastando" — colunas vazias abertas e alvo marcado — até o próximo arraste.
+  function handleDragCancel() {
+    setActiveId(null)
+    setOverStage(null)
   }
 
   function handleDragOver(event: DragOverEvent) {
@@ -809,8 +918,9 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 px-1 items-stretch">
+        <div className="flex gap-4 overflow-x-auto pb-4 px-1 items-stretch [justify-content:safe_center]">
           {STAGES.map(stage => (
             <KanbanColumn
               key={stage}

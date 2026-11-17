@@ -91,7 +91,7 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
         descricao={`${nome} não tem leads ativos no funil agora.`}
         esqueleto={<EsqueletoCards cards={6} colunas={3} />}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 items-start" aria-label={`Funil de ${nome}, somente leitura`}>
+        <div className="flex gap-4 overflow-x-auto pb-4 items-start [justify-content:safe_center]" aria-label={`Funil de ${nome}, somente leitura`}>
           {FUNNEL_STAGES.map(etapa => {
             const conf = STAGE_THEME[etapa]
             const lista = porEtapa.get(etapa) ?? []
@@ -113,7 +113,12 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
             }
 
             return (
-              <section key={etapa} className="flex flex-col w-[18.5rem] flex-shrink-0" style={{ ['--etapa' as string]: `var(--stage-${etapa})` }}>
+              // Coluna fluida, como no Kanban: a cheia cresce e mostra cartões lado a lado.
+              <section key={etapa} className="flex flex-col"
+                       style={{
+                         ['--etapa' as string]: `var(--stage-${etapa})`,
+                         flex: `${faixas(lista.length)} 1 18.5rem`, minWidth: '18.5rem', maxWidth: `${faixas(lista.length) * 19.5}rem`,
+                       }}>
                 <div className="flex flex-col flex-1 kanban-col">
                   <div className="kanban-cabeca kanban-col-bg flex items-center gap-2 px-1 pt-0.5 pb-2 mb-2.5">
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${conf.dot}`} aria-hidden />
@@ -121,7 +126,7 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
                     <span className="text-[13px] font-semibold tabular-nums text-t4">{lista.length}</span>
                     {vgv > 0 && <span className="ml-auto text-[12px] text-t3 tabular-nums">{formatCurrency(vgv)}</span>}
                   </div>
-                  <ul className="flex flex-col gap-2">
+                  <ul className="grid gap-2 items-start" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(17rem, 1fr))' }}>
                     {lista.map(l => <li key={l.id}><CartaoSomenteLeitura lead={l} agora={agora} /></li>)}
                   </ul>
                 </div>
@@ -135,6 +140,9 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
 }
 
 const DIA_MS = 86_400_000
+
+/** Quantas faixas de cartões a coluna pede, pelo volume (mesma regra do Kanban). */
+const faixas = (leads: number) => Math.min(4, Math.max(1, Math.ceil(leads / 8)))
 
 /** O mesmo cartão do Kanban, só com o que se lê: sem ação, sem clique, sem telefone. */
 function CartaoSomenteLeitura({ lead, agora }: { lead: Lead; agora: number }) {
