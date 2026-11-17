@@ -325,9 +325,11 @@ function LeadCard({
         </div>
       )}
 
-      {/* Tentativas de followup — só onde a cadência existe */}
-      {lead.funnelStage === 'followup' && !dense && (
-        <div className="flex items-center gap-1 mt-2.5" role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
+      {/* Toques do followup — só onde a cadência existe. Ficam à vista também
+          no modo compacto: o Rafael pediu que os toques continuem no cartão
+          (16/11/2026). Cada traço é um toque; clicar marca até ali. */}
+      {lead.funnelStage === 'followup' && (
+        <div className={`flex items-center gap-1 ${dense ? 'mt-1.5' : 'mt-2.5'}`} role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
           {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
             <button
               key={step}
@@ -342,16 +344,22 @@ function LeadCard({
               }}
               title={`Marcar ${step}ª tentativa`}
               aria-label={`Marcar ${step}ª tentativa`}
-              // 3px de barra, mas 14px de área de clique (py transparente)
-              className="group/passo flex-1 py-[5.5px] cursor-pointer focus:outline-none"
+              // 4px de barra, mas 14px de área de clique (py transparente)
+              className="group/passo flex-1 py-[5px] cursor-pointer focus:outline-none"
             >
-              <span className={`block h-[3px] rounded-full transition-colors duration-150
+              <span className={`block h-1 rounded-full transition-colors duration-150
                 ${step <= lead.followupStep
                   ? 'bg-brand group-hover/passo:opacity-70'
                   : 'bg-line-strong group-hover/passo:bg-brand-tint'}
                 group-focus-visible/passo:ring-2 group-focus-visible/passo:ring-brand/50`} />
             </button>
           ))}
+          {/* A contagem mora aqui, junto dos traços — antes ia no botão ("· 2ª")
+              e espremia o rótulo na coluna estreita. */}
+          <span className="flex-shrink-0 ml-1 text-[11px] text-t4 tabular-nums"
+                title={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} toques`}>
+            {lead.followupStep}/{MAX_TENTATIVAS_FOLLOWUP}
+          </span>
         </div>
       )}
 
@@ -387,9 +395,6 @@ function LeadCard({
           >
             <MessageCircle size={12} strokeWidth={1.7} className="flex-shrink-0" />
             <span className="truncate">{STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}</span>
-            {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
-              <span className="flex-shrink-0 whitespace-nowrap font-medium opacity-60">· {lead.followupStep}ª</span>
-            )}
           </button>
         )}
         <button

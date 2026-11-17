@@ -201,8 +201,11 @@ export function SalesPage() {
       onCta={() => { setEditing(undefined); setFormOpen(true) }}
       // v7: o período recorta a tela inteira, então mora no topo, junto da
       // ação principal — antes ocupava uma linha sozinho acima dos números.
-      actions={<PeriodSelector />}
+      // No celular o seletor não cabe no topo junto do título (o "Vendas"
+      // sumia e o botão Novo saía da tela): lá ele desce para o conteúdo.
+      actions={<div className="hidden sm:block"><PeriodSelector /></div>}
     >
+      <div className="sm:hidden mb-4"><PeriodSelector /></div>
 
       {/* v10: uma faixa de números no lugar de três cartões com ícone */}
       <FaixaNumeros

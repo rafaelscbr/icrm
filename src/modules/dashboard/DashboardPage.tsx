@@ -1262,8 +1262,8 @@ export function DashboardPage() {
       onCta={() => setTaskFormOpen(true)}
     >
       {/* ══ Meta e previsão (v10) ═══════════════════════════════════════
-          Lado a lado, na mesma altura. Os indicadores viraram duas faixas de
-          números logo abaixo — antes eram oito cartões com ícone. */}
+          Lado a lado, na mesma altura. Os indicadores são uma faixa de quatro
+          números logo abaixo. */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
         <CommandHero
           data={overviewData}
@@ -1280,33 +1280,24 @@ export function DashboardPage() {
       {kpiLoading ? (
         <div className="h-[84px] rounded-[22px] shimmer mb-4" aria-hidden />
       ) : (
-        <>
-          <FaixaNumeros
-            className="mb-3"
-            itens={[
-              { rotulo: 'Vendas no mês', valor: overviewData?.vgl.vendasMes ?? '—',
-                nota: overviewData ? formatCurrency(overviewData.vgl.realizadoMes) : undefined, onClick: () => navigate('/vendas') },
-              { rotulo: 'Comissão realizada', valor: formatCurrency(comissaoRealizada),
-                tom: comissaoRealizada > 0 ? 'text-success' : 'text-t1', onClick: () => navigate('/vendas') },
-              { rotulo: 'Comissão prevista', valor: formatCurrency(comissaoPrevista), nota: '2% do pipeline', onClick: () => navigate('/leads') },
-              { rotulo: 'Propostas abertas', valor: overviewData?.vgl.leadsProposta ?? '—',
-                nota: overviewData ? formatCurrency(overviewData.vgl.expectativaProposta) : undefined, onClick: () => navigate('/leads') },
-            ]}
-          />
-          <FaixaNumeros
-            className="mb-10"
-            itens={[
-              { rotulo: 'Leads ativos', valor: overviewData?.leadsAtivos ?? '—', onClick: () => navigate('/leads') },
-              { rotulo: 'Visitas agendadas', valor: visitasAgendadas, onClick: () => navigate('/tarefas') },
-              { rotulo: 'SLA estourado', valor: overviewData?.alertas.slaEstourado ?? '—',
-                tom: (overviewData?.alertas.slaEstourado ?? 0) > 0 ? 'text-error' : 'text-t1',
-                nota: 'sem 1º contato no prazo', onClick: () => navigate('/leads') },
-              { rotulo: 'Tarefas vencidas', valor: overviewData?.alertas.tarefasEmAtraso ?? '—',
-                tom: (overviewData?.alertas.tarefasEmAtraso ?? 0) > 0 ? 'text-error' : 'text-t1',
-                onClick: () => navigate('/tarefas') },
-            ]}
-          />
-        </>
+        // Uma faixa, quatro números (16/11/2026). Eram oito em duas faixas, e
+        // metade repetia o que já está na tela:
+        //   · "Vendas no mês" e "Propostas abertas" estão nos dois cartões acima
+        //     (meta e previsão), com o mesmo valor;
+        //   · "SLA estourado" e "Tarefas vencidas" são exceção, não indicador:
+        //     quando existem, aparecem logo abaixo, em "Próxima melhor ação" e
+        //     como itens críticos das prioridades — com nome e botão de resolver.
+        //     Mostrar o zero o dia inteiro só ocupava lugar.
+        <FaixaNumeros
+          className="mb-10"
+          itens={[
+            { rotulo: 'Comissão realizada', valor: formatCurrency(comissaoRealizada), nota: 'vendas do mês',
+              tom: comissaoRealizada > 0 ? 'text-success' : 'text-t1', onClick: () => navigate('/vendas') },
+            { rotulo: 'Comissão prevista', valor: formatCurrency(comissaoPrevista), nota: '2% do pipeline', onClick: () => navigate('/leads') },
+            { rotulo: 'Leads ativos', valor: overviewData?.leadsAtivos ?? '—', nota: 'em aberto no funil', onClick: () => navigate('/leads') },
+            { rotulo: 'Visitas agendadas', valor: visitasAgendadas, nota: 'tarefas de visita em aberto', onClick: () => navigate('/tarefas') },
+          ]}
+        />
       )}
 
       {/* ══ Agora — próxima ação + prioridades lado a lado ═══════════════

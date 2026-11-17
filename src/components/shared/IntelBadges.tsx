@@ -72,7 +72,7 @@ export function EncaixeDoCard({ fit, produto }: { fit?: Fit; produto?: string })
   if (!fitDeserveBadge(fit)) return null
   return (
     <span
-      className={`font-label text-[10px] font-semibold uppercase tracking-[0.08em] flex-shrink-0 ${FIT_TEXT[fit!]}`}
+      className={`font-label text-[11px] font-semibold uppercase tracking-[0.08em] flex-shrink-0 ${FIT_TEXT[fit!]}`}
       title={produto ? `${produto}: ${FIT_LABEL[fit!]}` : FIT_LABEL[fit!]}
     >
       {FIT_LABEL[fit!]}

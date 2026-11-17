@@ -7,7 +7,7 @@ import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { ReforcoAvulso, ReforcoModo, SharedFields } from '../shared/types'
 import {
-  Section, CurrencyInput, DerivedBox, IdentificacaoSection, SemMensagem, ToggleModo, ReforcosIndividuais, fmtBRL,
+  Section, CurrencyInput, DerivedBox, IdentificacaoSection, SemMensagem, ToggleModo, ReforcosIndividuais, fmtBRL, PreviaAjustada,
 } from '../shared/components'
 import { avulsoDoIdx, novoReforco } from '../shared/reforcos'
 import {
@@ -201,8 +201,8 @@ function PreviewAssociativo({ valido, slugBase, renderResumo, renderCompleto, me
       </div>
 
       <div className="flex justify-center w-full">
-        {visao === 'resumo' && renderResumo(cardRef)}
-        {visao === 'completo' && <div style={{ zoom: 0.72 }}>{renderCompleto(cardRef)}</div>}
+        {visao === 'resumo' && <PreviaAjustada largura={420}>{renderResumo(cardRef)}</PreviaAjustada>}
+        {visao === 'completo' && <PreviaAjustada largura={620} zoomMaximo={0.72}>{renderCompleto(cardRef)}</PreviaAjustada>}
         {visao === 'texto' && (valido ? <BalaoMensagem texto={mensagem} /> : <SemMensagem />)}
       </div>
 

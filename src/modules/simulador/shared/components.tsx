@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, Ref, ReactNode } from 'react'
+import { useState, useRef, useCallback, useEffect, Ref, ReactNode } from 'react'
 import { Download, AlertCircle, Image as ImageIcon, MessageSquareText, Plus, Trash2 } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import toast from 'react-hot-toast'
@@ -506,9 +506,7 @@ export function PreviewColumn({ valido, slugBase, renderCard, mensagem, telefone
       </div>
 
       {visao === 'imagem' ? (
-        <div className="flex justify-center">
-          {renderCard(cardRef)}
-        </div>
+        <PreviaAjustada largura={420}>{renderCard(cardRef)}</PreviaAjustada>
       ) : valido ? (
         <BalaoMensagem texto={mensagem} />
       ) : (
@@ -553,6 +551,37 @@ export function SemMensagem() {
     <div className="w-full flex items-center gap-2.5 text-sm rounded-[14px] px-4 py-6 bg-s2 border border-line text-t3">
       <AlertCircle size={15} className="flex-shrink-0" aria-hidden />
       <span>Ajuste os valores do formulário: a mensagem aparece assim que a conta fechar.</span>
+    </div>
+  )
+}
+
+// ── Prévia que cabe na tela ───────────────────────────────────────────────────
+
+/**
+ * A proposta é desenhada numa largura fixa (é a arte que vira PNG). No celular
+ * ela é mais larga que a tela e ficava cortada dos dois lados. Aqui a PRÉVIA
+ * encolhe para caber; o PNG não muda, porque a redução fica no invólucro e a
+ * imagem é gerada a partir do cartão em si.
+ *
+ * `zoomMaximo` serve à visão mês a mês, que já era mostrada reduzida.
+ */
+export function PreviaAjustada({ largura, zoomMaximo = 1, children }: {
+  largura: number; zoomMaximo?: number; children: ReactNode
+}) {
+  const fora = useRef<HTMLDivElement>(null)
+  const [zoom, setZoom] = useState(zoomMaximo)
+  useEffect(() => {
+    const el = fora.current
+    if (!el) return
+    const medir = () => setZoom(Math.min(zoomMaximo, el.clientWidth / largura))
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(el)
+    return () => observador.disconnect()
+  }, [largura, zoomMaximo])
+  return (
+    <div ref={fora} className="w-full flex justify-center">
+      <div style={zoom < 1 ? { zoom } : undefined}>{children}</div>
     </div>
   )
 }
