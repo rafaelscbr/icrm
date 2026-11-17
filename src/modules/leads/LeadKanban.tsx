@@ -26,8 +26,6 @@ import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
-import { useIntelligenceStore } from '../../store/useIntelligenceStore'
-import { EncaixeDoCard } from '../../components/shared/IntelBadges'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { avisoReentrada } from './reentrada'
 import { useKanbanPrefs } from '../../store/useKanbanPrefs'
@@ -158,8 +156,6 @@ function LeadCard({
   // Comissão só onde ajuda a priorizar: etapas finais ou modo financeiro.
   const showCommission = financeMode || lead.funnelStage === 'proposta' || lead.funnelStage === 'venda'
 
-  const intel = useIntelligenceStore(s => s.intel[lead.id])
-
   // Reentrada ainda não vista pelo dono — o único destaque que pode competir
   // com a próxima ação, porque não é o sistema cobrando: é o lead chamando.
   const aviso = isOverlay ? null : avisoReentrada(lead)
@@ -194,9 +190,10 @@ function LeadCard({
         ${aviso ? 'kanban-card-alerta ring-1 ring-inset ring-info-line !border-info-line' : ''}
       `}
     >
-      {/* Temperatura (frio, morno, quente) saiu do cartão em 16/11/2026, a pedido
-          do Rafael: nem a palavra nem o filete de cor na borda. Continua na
-          lista de leads e nos filtros. */}
+      {/* Temperatura (frio, morno, quente) e encaixe com o produto (Ideal,
+          Difícil) saíram do cartão em 16/11/2026, a pedido do Rafael: nem a
+          palavra nem o filete de cor na borda. Continuam na lista de leads,
+          nos filtros e na ficha do lead. */}
       {isSaving && (
         <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[14px] bg-black/20" role="status" aria-label="Salvando">
           <Loader2 size={16} className="animate-spin text-brand" strokeWidth={1.6} />
@@ -284,7 +281,6 @@ function LeadCard({
             </span>
           )}
         </p>
-        <EncaixeDoCard fit={intel?.fitOrigin?.fit} produto={intel?.fitOrigin?.name} />
         {lead.averageTicket ? (
           <span className="flex-shrink-0 font-medium text-t2 tabular-nums">
             {formatCurrency(lead.averageTicket)}

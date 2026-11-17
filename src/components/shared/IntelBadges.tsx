@@ -1,6 +1,6 @@
 import {
   Temperature, Fit, TEMPERATURE_LABEL, TEMPERATURE_COLOR, TEMPERATURE_TEXT,
-  FIT_LABEL, FIT_COLOR, FIT_TEXT, fitDeserveBadge,
+  FIT_LABEL, FIT_COLOR, FIT_TEXT,
 } from '../../lib/intelligence'
 
 /**
@@ -57,25 +57,6 @@ export function FitBadge({
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: FIT_COLOR[fit] }} aria-hidden />
       {compact ? FIT_LABEL[fit] : titulo}
-    </span>
-  )
-}
-
-/**
- * Encaixe do lead com o produto, para o cartão do Kanban. Só aparece quando é
- * Ideal ou Difícil — o meio-termo não ajuda a decidir nada.
- *
- * Substitui o par temperatura + encaixe: a temperatura saiu do cartão em
- * 16/11/2026 (pedido do Rafael) e ficou só na lista e nos filtros.
- */
-export function EncaixeDoCard({ fit, produto }: { fit?: Fit; produto?: string }) {
-  if (!fitDeserveBadge(fit)) return null
-  return (
-    <span
-      className={`font-label text-[11px] font-semibold uppercase tracking-[0.08em] flex-shrink-0 ${FIT_TEXT[fit!]}`}
-      title={produto ? `${produto}: ${FIT_LABEL[fit!]}` : FIT_LABEL[fit!]}
-    >
-      {FIT_LABEL[fit!]}
     </span>
   )
 }
