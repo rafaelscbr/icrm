@@ -77,6 +77,7 @@ export function LigacoesPage() {
       subtitle="Prospecção ativa por telefone — fila compartilhada e cadência automática"
       ctaLabel="Nova campanha"
       onCta={() => setCriarOpen(true)}
+      largura="leitura"   // lista e números: linha esticada separava o nome do botão
       band={
         <Abas
           abas={[
@@ -90,10 +91,6 @@ export function LigacoesPage() {
         />
       }
     >
-      {/* Coluna de leitura (16/11/2026): com a largura única de 1760px, a linha
-          da campanha ficava com o nome numa ponta e o botão na outra. O conteúdo
-          desta tela é lista e número — cabe numa medida menor, centralizada na tela. */}
-      <div className="max-w-[1120px] mx-auto">
       {/* ── Meta do dia — uma linha: número, barra, ritmo e o botão ───── */}
       <LinhaMetaDia
         className="mb-5"
@@ -205,7 +202,6 @@ export function LigacoesPage() {
           )}
         </>
       )}
-      </div>
 
       <CallCampaignForm isOpen={criarOpen} onClose={() => setCriarOpen(false)} />
       <CallCampaignForm

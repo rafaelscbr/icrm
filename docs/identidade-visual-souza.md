@@ -176,7 +176,7 @@ Tudo em múltiplos de **4px**; o ritmo de leitura vem dos múltiplos de 8.
 
 | Medida | Valor |
 |---|---|
-| Largura máxima do conteúdo | 1760px, centralizado e igual em TODAS as telas (15/11/2026). Antes eram 1280px e o Kanban 100%: o título e as abas pulavam de lugar a cada troca. |
+| Largura do conteúdo | Três medidas, pelo tipo de tela, sempre centralizadas (16/11/2026): **painel** até 1440px (padrão: dashboards, tabelas), **quadro** até 1760px (Kanban), **leitura** até 1120px (formulários, configurações, listas simples). O **topo** — título, abas e botão principal — fica sempre em 1760px, para nada pular de lugar ao trocar de tela. |
 | Margem lateral | 16px celular · 24px tablet · 32px computador. |
 | Barra do topo (computador) | 60px de altura. |
 | Topo de cada tela | 56px, uma linha: título + abas + ação principal. Gruda no topo ao rolar. |
@@ -333,7 +333,7 @@ referência da marca.
   --dur-rapido: 140ms; --dur: 220ms; --dur-lento: 420ms;
   --curva: cubic-bezier(0.16, 1, 0.3, 1);
   /* medidas */
-  --largura-max: 1760px; --altura-barra: 60px; --altura-topo-tela: 56px;
+  --largura-topo: 1760px; --largura-painel: 1440px; --largura-leitura: 1120px; --altura-barra: 60px; --altura-topo-tela: 56px;
   --altura-doca: 64px; --toque-min: 44px;
 }
 .destaque { font-family: var(--font-destaque); font-style: italic; font-weight: 400;

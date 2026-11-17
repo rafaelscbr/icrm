@@ -160,6 +160,7 @@ export function AdminPage() {
     <PageLayout
       icon={Shield}
       iconTom="marca"
+      largura="leitura"
       title="Administração"
       subtitle={erro
         ? 'não foi possível ler os usuários'

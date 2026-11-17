@@ -304,6 +304,7 @@ export function NotificationsPage() {
     <PageLayout
       icon={Bell}
       iconTom={unreadCount > 0 ? 'marca' : 'neutro'}
+      largura="leitura"
       title="Notificações"
       subtitle={erro
         ? 'não foi possível ler as notificações'

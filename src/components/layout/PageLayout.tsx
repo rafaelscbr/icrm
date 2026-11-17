@@ -21,16 +21,29 @@ interface PageLayoutProps {
   /** Abas da tela — no desktop ficam na mesma linha do título. */
   band?: ReactNode
   /**
-   * `padrao` — até 1760px, a largura ÚNICA do sistema (15/11/2026). Antes eram
-   *            1280px na maioria das telas e 100% no Kanban: o título e as abas
-   *            pulavam de lugar a cada troca. O teto existe para monitor muito
-   *            largo não esticar gráfico e lista até a borda.
-   * `total`  — sem limite; reservado para um quadro que precise da tela
-   *            inteira. Nenhuma tela usa hoje.
+   * A largura do CONTEÚDO, pelo tipo de tela (16/11/2026). O topo — título,
+   * abas e botão principal — fica sempre na mesma medida, para nada pular de
+   * lugar ao trocar de tela; só o que vem abaixo muda:
+   *
+   * `painel`  — até 1440px. O padrão: dashboards, tabelas, listas com colunas.
+   * `quadro`  — até 1760px. Kanban e quadros que precisam de todas as colunas.
+   * `leitura` — até 1120px. Formulários, configurações e listas simples, onde
+   *             linha esticada separa o nome do que se quer ler ao lado dele.
+   *
+   * Sempre centralizado. Antes era 1760px em tudo (15/11/2026): resolvia a
+   * inconsistência entre telas, mas esticava cartão e lista em monitor grande.
    */
-  largura?: 'padrao' | 'total'
+  largura?: 'painel' | 'quadro' | 'leitura'
   children: ReactNode
 }
+
+/** O topo tem UMA medida em todas as telas — é o que impede título e abas de pularem. */
+const LARGURA_DO_TOPO = 'max-w-[1760px]'
+const LARGURA_DO_CONTEUDO = {
+  painel:  'max-w-[1440px]',
+  quadro:  'max-w-[1760px]',
+  leitura: 'max-w-[1120px]',
+} as const
 
 /** Cor de cada área (ver --area-* no index.css). */
 function corDaArea(secao: string | null): string {
@@ -76,9 +89,9 @@ function secaoDa(pathname: string): string | null {
  */
 export function PageLayout({
   title, subtitle, icon: _icon, iconTom: _iconTom,
-  ctaLabel, onCta, actions, band, largura = 'padrao', children,
+  ctaLabel, onCta, actions, band, largura = 'painel', children,
 }: PageLayoutProps) {
-  const caixa = largura === 'total' ? 'max-w-none' : 'max-w-[1760px]'
+  const conteudo = LARGURA_DO_CONTEUDO[largura]
   // A cor da área continua no indicador das abas e no hover das tabelas.
   const area = corDaArea(secaoDa(useLocation().pathname))
   const abrirBusca = useSearchStore(st => st.setOpen)
@@ -89,7 +102,7 @@ export function PageLayout({
       {/* pt-safe só no celular: a partir de lg a barra do topo (TopBar) já
           reserva a área da barra de status do iOS — aqui dobraria o vão. */}
       <header className="page-bar sticky top-0 z-10 pt-safe lg:pt-0">
-        <div className={`${caixa} mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-5`}>
+        <div className={`${LARGURA_DO_TOPO} mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-5`}>
           <div className="flex items-baseline gap-2.5 min-w-0 flex-1 lg:flex-none lg:shrink-0" title={subtitle}>
             <h1 className="font-display text-[18px] lg:text-[19px] font-bold text-t1 leading-none tracking-[-0.02em] truncate"
                 aria-label={semMarcador(title)}>
@@ -142,11 +155,11 @@ export function PageLayout({
 
         {/* Celular e tablet: as abas descem para uma faixa rolável. */}
         {band && (
-          <div className={`lg:hidden ${caixa} mx-auto px-4 sm:px-6 overflow-x-auto rolagem-limpa page-bar-abas`}>{band}</div>
+          <div className={`lg:hidden ${LARGURA_DO_TOPO} mx-auto px-4 sm:px-6 overflow-x-auto rolagem-limpa page-bar-abas`}>{band}</div>
         )}
       </header>
 
-      <div className={`${caixa} mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6`}>
+      <div className={`${conteudo} mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6`}>
         {children}
       </div>
     </div>

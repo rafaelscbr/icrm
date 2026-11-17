@@ -479,6 +479,9 @@ export function LeadsPage() {
       subtitle={erro ? 'não foi possível ler o funil' : `Funil de prospecção · ${active.length} ativos`}
       ctaLabel="Novo Lead"
       onCta={() => setShowForm(true)}
+      // O Kanban precisa de todas as colunas; lista, dashboard e análise leem
+      // melhor na medida de painel.
+      largura={isKanbanTab ? 'quadro' : 'painel'}
       band={
         <Abas
           abas={TABS.map(t => ({ value: t.value, label: t.label, icon: t.icon, badge: t.badge }))}
