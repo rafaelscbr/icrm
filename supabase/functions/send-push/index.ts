@@ -58,9 +58,14 @@ Deno.serve(async (req: Request) => {
 
   const n = await req.json() as NotificationRow
 
-  // Linha de urgência: lead com relógio de SLA rodando — só para o DONO do
+  // Linha de urgência: lead com relógio de prazo rodando — só para o DONO do
   // lead. O admin também recebe aviso de lead novo (migração 092), e dizer a ele
-  // "você tem 5 min" sobre um lead que está com outro corretor seria falso.
+  // "você tem X min" sobre um lead que está com outro corretor seria falso.
+  //
+  // Os minutos vêm do parâmetro do sistema (lead_sla_config, o mesmo que o admin
+  // edita em Configurações de leads e que o banco usa para calcular sla_due_at).
+  // Se a leitura falhar, o aviso sai só com o horário-limite: melhor não dizer
+  // o número do que dizer um número inventado.
   let slaLine = ''
   if (n.resource_type === 'lead' && n.resource_id) {
     const { data: lead } = await supabase
@@ -72,7 +77,16 @@ Deno.serve(async (req: Request) => {
       const ate = new Date(lead.sla_due_at).toLocaleTimeString('pt-BR', {
         hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
       })
-      slaLine = `Você tem 5 min úteis para o 1º contato (até ${ate})`
+      const { data: cfg, error: cfgError } = await supabase
+        .from('lead_sla_config')
+        .select('minutes')
+        .eq('id', 1)
+        .maybeSingle()
+      if (cfgError) console.error('[push] erro ao ler o prazo de 1º contato:', cfgError.message)
+      const minutos = Number(cfg?.minutes)
+      slaLine = Number.isFinite(minutos) && minutos > 0
+        ? `Você tem ${minutos} min úteis para o 1º contato (até ${ate})`
+        : `Faça o 1º contato até ${ate}`
     }
   }
 
@@ -101,7 +115,8 @@ Deno.serve(async (req: Request) => {
 
   // urgency 'high': sem isso o push sai como 'normal' e, no Android em repouso
   // (Doze), o FCM segura a mensagem até o aparelho acordar — o corretor só via
-  // o lead ao abrir o app. Lead novo tem SLA de 5 min: tem que tocar na hora.
+  // o lead ao abrir o app. Lead novo tem prazo curto de 1º contato: tem que
+  // tocar na hora.
   // TTL 24h: aparelho desligado por dias não recebe uma enxurrada de avisos velhos.
   const pushOptions = { urgency: 'high' as const, TTL: 24 * 60 * 60 }
 
