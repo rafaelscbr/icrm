@@ -17,6 +17,8 @@ interface LeadInteractionsStore {
   todas:             LeadInteraction[]
   allLoaded:         boolean
   loadForLead:       (leadId: string) => Promise<void>
+  /** Descarta o histórico em memória de um lead; a próxima abertura da ficha relê do banco. */
+  esquecer:          (leadId: string) => void
   loadAll:           () => Promise<void>
   /** Delta desde a última sync — reconciliação após reconexão ou volta à aba. */
   sincronizar:       () => Promise<void>
@@ -118,6 +120,18 @@ export const useLeadInteractionsStore = create<LeadInteractionsStore>((set, get)
     } catch {
       // error already toasted by db layer
     }
+  },
+
+  // O lead mudou de dono (chegou para mim por transferência ou pelo rodízio):
+  // o que eu tinha em memória era só a minha parte do histórico.
+  esquecer: (leadId) => {
+    if (!get().loaded.has(leadId)) return
+    set(s => {
+      const loaded = new Set(s.loaded)
+      loaded.delete(leadId)
+      const { [leadId]: _fora, ...byLead } = s.byLead
+      return { loaded, byLead }
+    })
   },
 
   subscribe: () => {

@@ -4,7 +4,7 @@ import {
   X, MessageCircle, UserCheck, Building2,
   Trash2, RotateCcw, Edit2, AlertTriangle, CheckCircle2,
   ClipboardList, Star, Search, Check,
-  ChevronDown, StickyNote, PhoneCall,
+  StickyNote, PhoneCall,
   ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
   Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight,
   RefreshCw, BadgeCheck,
@@ -29,6 +29,7 @@ import { PerfilDeclarado, BaseConhecida, FormulariosPreenchidos } from './LeadPr
 import { LeituraDoLead, ProdutosDoLead } from './LeadIntelPanel'
 import { useLeadProfile } from './useLeadProfile'
 import { useSlaInfo } from './SlaBadge'
+import { TransferirLead } from './TransferirLead'
 import { avisoReentrada } from './reentrada'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import { Abas } from '../../components/shared/Abas'
@@ -110,14 +111,14 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
-  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, setStage, transfer, ackReentry, setQualified, leads } = useLeadsStore()
+  const { discard, restore, remove, convertToContact, advanceFollowup, toggleFlag, update, setStage, ackReentry, setQualified, leads } = useLeadsStore()
   const lead = leads.find(l => l.id === initialLead.id) ?? initialLead
 
   const { add: addContact, getById }       = useContactsStore()
   const { add: addInteraction, getForLead, loadForLead } = useLeadInteractionsStore()
   const { properties }                      = usePropertiesStore()
   const { getByType }                       = useLeadConfigStore()
-  const { profile, isAdmin, allProfiles, fetchAllProfiles } = useAuthStore()
+  const { profile, isAdmin, allProfiles } = useAuthStore()
 
   // Transferência: admin transfere qualquer lead; corretor transfere os seus
   const canTransfer = isAdmin || (!!profile && lead.brokerId === profile.id)
@@ -152,7 +153,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [addingToList,      setAddingToList]      = useState(false)
   const [noteText,          setNoteText]          = useState('')
   const [showNoteInput,     setShowNoteInput]     = useState(false)
-  const [showBrokerMenu,    setShowBrokerMenu]    = useState(false)
   // Ciclo interação → tarefa: tipo da última interação registrada nesta sessão
   const [nextStepFor,       setNextStepFor]       = useState<LeadInteractionType | null>(null)
   const [aba,               setAba]               = useState<'resumo' | 'produtos' | 'historico'>('resumo')
@@ -261,19 +261,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       toast.success('Nota salva')
       setNoteText('')
       setShowNoteInput(false)
-    } catch { /* erro já toastado */ }
-  }
-
-  // Transferência completa via RPC: auditoria em lead_assignments, nota no
-  // histórico, notificação ao novo responsável e realinhamento RLS do contato
-  async function handleReassignBroker(brokerId: string, name: string) {
-    setShowBrokerMenu(false)
-    if (brokerId === lead.brokerId) return
-    try {
-      await transfer(lead.id, brokerId)
-      toast.success(`Lead transferido para ${name}`)
-      // Corretor (não-admin) transferiu para outro: o lead saiu da lista dele
-      if (!isAdmin) onClose()
     } catch { /* erro já toastado */ }
   }
 
@@ -449,50 +436,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 {formatPhone(telefone)}
               </a>
 
-              {/* Corretor — admin ou dono transfere em um clique */}
+              {/* Corretor responsável e transferência — ver TransferirLead */}
               {(brokerName || isAdmin) && (
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      if (!canTransfer) return
-                      if (allProfiles.length === 0) fetchAllProfiles()
-                      setShowBrokerMenu(v => !v)
-                    }}
-                    disabled={!canTransfer}
-                    title={canTransfer ? 'Transferir para outro corretor' : `Corretor: ${brokerName}`}
-                    aria-haspopup={canTransfer ? 'listbox' : undefined}
-                    aria-expanded={canTransfer ? showBrokerMenu : undefined}
-                    className={`inline-flex items-center gap-1.5 h-7 pl-1 pr-2.5 rounded-full bg-s2 text-[13px] text-t2
-                      ${canTransfer ? 'hover:bg-s3 cursor-pointer' : 'cursor-default'}`}
-                  >
-                    <span className="w-5 h-5 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[10.5px] font-bold" aria-hidden>
-                      {(brokerName ?? '?').charAt(0).toUpperCase()}
-                    </span>
-                    {brokerName ? brokerName.split(' ')[0] : 'Atribuir'}
-                    {canTransfer && <ChevronDown size={12} strokeWidth={1.8} className="text-t4" aria-hidden />}
-                  </button>
-                  {canTransfer && showBrokerMenu && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowBrokerMenu(false)} aria-hidden />
-                      <div className="absolute left-0 top-full mt-1.5 z-20 min-w-[210px] bg-surface border border-line rounded-[14px] shadow-dropdown overflow-hidden py-1"
-                           role="listbox" aria-label="Transferir lead para">
-                        {allProfiles.filter(p => p.active).map(p => (
-                          <button
-                            key={p.id}
-                            role="option"
-                            aria-selected={p.id === lead.brokerId}
-                            onClick={() => handleReassignBroker(p.id, p.name)}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-[13.5px] transition-colors
-                              ${p.id === lead.brokerId ? 'text-t1 bg-s2' : 'text-t2 hover:bg-s2'}`}
-                          >
-                            <span className="flex-1 truncate">{p.name}</span>
-                            {p.id === lead.brokerId && <Check size={14} className="text-brand-text flex-shrink-0" />}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                <TransferirLead lead={lead} brokerName={brokerName} canTransfer={canTransfer} onTransferido={onClose} />
               )}
 
               {lead.flagged && !isDiscarded && <span className="text-[13px] font-medium text-brand-text">Prioridade</span>}

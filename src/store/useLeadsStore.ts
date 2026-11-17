@@ -233,6 +233,9 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         // transferido para mim (ping-pong do SLA, transferência manual). O
         // payload não traz tudo que o card precisa — o delta busca a linha.
         if (!get().leads.some(l => l.id === r.id)) {
+          // Se este lead já foi meu nesta sessão, o histórico em memória é só a
+          // minha parte antiga: a ficha precisa reler tudo (migração 094).
+          void import('./useLeadInteractionsStore').then(m => m.useLeadInteractionsStore.getState().esquecer(r.id as string))
           if (!deltaTimer) deltaTimer = setTimeout(() => { deltaTimer = null; get().reload() }, 500)
           return
         }

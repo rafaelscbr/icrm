@@ -1450,12 +1450,15 @@ export const db = {
   },
 
   leadInteractions: {
+    /**
+     * O histórico INTEIRO de um lead, para a ficha. Vem pela função
+     * lead_timeline (migração 094), que responde ao dono atual do lead ou ao
+     * admin. Um select direto na tabela devolveria só o que o próprio usuário
+     * registrou — a regra de acesso serve às métricas —, e quem recebe um lead
+     * transferido abriria a ficha com o histórico vazio. Já vem ordenado.
+     */
     fetchForLead: async (leadId: string): Promise<LeadInteraction[]> => {
-      const { data, error } = await supabase
-        .from('lead_interactions')
-        .select('*')
-        .eq('lead_id', leadId)
-        .order('interacted_at', { ascending: false })
+      const { data, error } = await supabase.rpc('lead_timeline', { p_lead_id: leadId })
       if (error) {
         toast.error(`Erro ao carregar interações: ${error.message}`)
         throw error
