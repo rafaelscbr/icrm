@@ -136,7 +136,7 @@ describe('painéis do Pulse renderizam com dados', () => {
 
   it('ResponseTimePanel mostra média, mediana e cumprimento do SLA', () => {
     render(<ResponseTimePanel tempos={{
-      primeiroContato:  { mediaMin: 91, medianaMin: 33, amostra: 176, pctDentroSla: 36 },
+      primeiroContato:  { mediaMin: 91, medianaMin: 33, amostra: 176, pctDentroSla: 36, slaMin: 10 },
       segundaTentativa: { mediaMin: 2484, medianaMin: 1497, amostra: 153 },
     }} />)
     expect(screen.getByText('1h31')).toBeInTheDocument()
@@ -145,16 +145,18 @@ describe('painéis do Pulse renderizam com dados', () => {
     expect(screen.getByText('mediana 2,8 d')).toBeInTheDocument()
     expect(screen.getByText('36%')).toBeInTheDocument()
     expect(screen.getByText('176 leads')).toBeInTheDocument()
+    // o prazo do rótulo é o que o banco mandou, não um número escrito à mão
+    expect(screen.getByText('dentro do prazo de 10 min')).toBeInTheDocument()
   })
 
   it('ResponseTimePanel sem amostra não inventa número nem barra de SLA', () => {
     render(<ResponseTimePanel tempos={{
-      primeiroContato:  { mediaMin: 0, medianaMin: 0, amostra: 0, pctDentroSla: 0 },
+      primeiroContato:  { mediaMin: 0, medianaMin: 0, amostra: 0, pctDentroSla: 0, slaMin: null },
       segundaTentativa: { mediaMin: 0, medianaMin: 0, amostra: 0 },
     }} />)
     expect(screen.getAllByText('—')).toHaveLength(2)
     expect(screen.getAllByText('sem dados')).toHaveLength(2)
-    expect(screen.queryByText(/dentro do SLA/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/dentro do prazo/)).not.toBeInTheDocument()
   })
 
 })

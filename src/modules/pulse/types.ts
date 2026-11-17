@@ -85,8 +85,15 @@ export interface PulseTempos {
     mediaMin:     number
     medianaMin:   number
     amostra:      number
-    /** % de leads atendidos dentro dos 5 minutos úteis de SLA */
+    /** % de leads atendidos dentro do prazo de 1º contato (ver `slaMin`) */
     pctDentroSla: number
+    /**
+     * Minutos do prazo que o BANCO usou nessa conta — o parâmetro do sistema
+     * (lead_sla_config.minutes, migração 093). O texto do painel usa este
+     * número, nunca um escrito à mão: conta e rótulo saem do mesmo lugar.
+     * `null` enquanto o snapshot não chegou.
+     */
+    slaMin:       number | null
   }
   segundaTentativa: {
     mediaMin:   number

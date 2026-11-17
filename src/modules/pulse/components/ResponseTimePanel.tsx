@@ -2,7 +2,7 @@ import { Timer } from 'lucide-react'
 import { Painel, PainelTitulo } from './Primitives'
 import {
   formatarDuracaoUtil, nivelPrimeiroContato, nivelSegundaTentativa, nivelSla,
-  COR_NIVEL, SLA_PRIMEIRO_CONTATO_MIN,
+  COR_NIVEL,
 } from '../tempos'
 import type { PulseTempos } from '../types'
 
@@ -89,7 +89,7 @@ export function ResponseTimePanel({ tempos }: { tempos: PulseTempos }) {
                 {p1.pctDentroSla}%
               </span>
               <span className="font-label text-[10px] uppercase tracking-[0.1em] text-t4">
-                dentro do SLA de {SLA_PRIMEIRO_CONTATO_MIN} min
+                {p1.slaMin ? `dentro do prazo de ${p1.slaMin} min` : 'dentro do prazo'}
               </span>
               <span className="ml-auto font-label text-[10px] uppercase tracking-[0.1em] text-t5 tabular-nums">
                 {p1.amostra} leads

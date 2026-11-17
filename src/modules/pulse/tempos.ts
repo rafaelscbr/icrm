@@ -9,9 +9,6 @@
 /** Minutos de um dia útil cheio (Seg–Sex, 09:00–18:00). Sábado tem 240. */
 export const MINUTOS_DIA_UTIL = 540
 
-/** Meta de 1º contato do iCRM: 5 minutos úteis (regra de SLA dos leads Meta). */
-export const SLA_PRIMEIRO_CONTATO_MIN = 5
-
 export type NivelTempo = 'bom' | 'atencao' | 'ruim' | 'sem_dados'
 
 /**
@@ -35,8 +32,8 @@ export function formatarDuracaoUtil(min: number): string {
 }
 
 /**
- * Limiares de 1º contato. A meta é 5 min, mas classificar tudo acima disso
- * como "ruim" deixaria o painel vermelho para sempre e ensinaria a ignorá-lo:
+ * Limiares de 1º contato. O prazo é o do parâmetro do sistema (poucos minutos),
+ * mas classificar tudo acima dele como "ruim" deixaria o painel vermelho para sempre e ensinaria a ignorá-lo:
  * até 15 min ainda é uma resposta rápida de verdade.
  */
 export function nivelPrimeiroContato(min: number, amostra: number): NivelTempo {

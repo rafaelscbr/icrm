@@ -1211,8 +1211,8 @@ html.light {
  * Kanban v8 (01/11/2026) — mais limpo. As colunas deixaram de ser poços
  * pintados: o fundo é a própria página e a etapa se lê pela cor do cabeçalho
  * (filete de 2px + contagem tingida). O card fica chato, com borda fina, e só
- * ganha sombra no hover. Coluna vazia vira um trilho estreito (.kanban-trilho)
- * que só se abre quando há card sendo arrastado.
+ * ganha sombra no hover. Toda coluna fica sempre aberta, cheia ou
+ * vazia (16/11/2026) — o trilho estreito da coluna vazia saiu.
  */
 :root {
   --kanban-card-bg:            var(--surface);
@@ -1241,11 +1241,6 @@ html.light {
   outline: 2px dashed color-mix(in srgb, var(--etapa) 55%, transparent);
   outline-offset: -2px;
 }
-.kanban-trilho {
-  background-color: color-mix(in srgb, var(--etapa) 6%, transparent);
-  border: 0;
-}
-.kanban-trilho:hover { background-color: color-mix(in srgb, var(--etapa) 12%, transparent); }
 .kanban-card:hover { transform: translateY(-1px); }
 
 /* Régua do funil — a faixa que resume e navega o quadro */

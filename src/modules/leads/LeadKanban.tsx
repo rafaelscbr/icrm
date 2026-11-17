@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   DndContext, DragOverlay, closestCenter,
@@ -7,12 +7,12 @@ import {
   useDroppable,
 } from '@dnd-kit/core'
 import {
-  SortableContext, useSortable, verticalListSortingStrategy, rectSortingStrategy, arrayMove,
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  MessageCircle, UserCheck, GripVertical, Phone, Star, Snowflake, Loader2,
+  MessageCircle, GripVertical, Phone, Star, Snowflake, Loader2,
   Wifi, WifiOff, Trophy, Rows2, Rows3, DollarSign,
   Inbox, RefreshCw, BadgeCheck, X,
 } from 'lucide-react'
@@ -27,9 +27,8 @@ import { useTasksStore } from '../../store/useTasksStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
 import { useIntelligenceStore } from '../../store/useIntelligenceStore'
-import { IntelPair } from '../../components/shared/IntelBadges'
+import { EncaixeDoCard } from '../../components/shared/IntelBadges'
 import { aoTeclarAbrir } from '../../components/shared/lista'
-import { TEMPERATURE_COLOR } from '../../lib/intelligence'
 import { avisoReentrada } from './reentrada'
 import { useKanbanPrefs } from '../../store/useKanbanPrefs'
 import { ORIGEM_META } from './origens'
@@ -50,50 +49,18 @@ function daysInStage(stageChangedAt?: string, createdAt?: string): number {
 }
 
 /**
- * Colunas fluidas (16/11/2026). A coluna tinha 18,5rem fixos: num quadro com
- * leads só em Followup e Atendimento, tudo ficava espremido na esquerda da tela
- * e a coluna de 100 leads virava uma fila sem fim. Agora a coluna cheia cresce
- * e mostra os cartões lado a lado, em "faixas".
+ * Colunas iguais e sempre abertas (16/11/2026, pedido do Rafael). As seis etapas
+ * dividem a largura do quadro por igual, cheias ou vazias, e ficam sempre no
+ * mesmo lugar. No computador a coluna encolhe até 16rem para as seis caberem
+ * numa tela de notebook sem rolagem lateral; abaixo disso, e no celular (onde a
+ * coluna fica mais larga para o cartão respirar), o quadro rola para o lado.
  *
- *   FAIXA_MIN_REM   — largura mínima de um cartão dentro da coluna
- *   LEADS_POR_FAIXA — a cada tantos leads a coluna pede mais uma faixa
- *   MAX_FAIXAS      — teto: coluna muito larga vira parede de cartões
- *
- * Com seis colunas cheias (ou tela estreita) cada uma volta a ter uma faixa só
- * e o quadro fica exatamente como era, com a rolagem lateral.
+ * Histórico, para não repetir: a versão de horas antes recolhia a coluna vazia
+ * num trilho estreito e usava o espaço ganho para mostrar a coluna cheia em
+ * duas ou mais faixas de cartões. Com todas as colunas abertas esse espaço não
+ * existe mais, então as faixas saíram junto.
  */
-const COLUNA_REM = 18.5
-const FAIXA_MIN_REM = 17
-const LEADS_POR_FAIXA = 8
-const MAX_FAIXAS = 4
-
-/** Quantas faixas a coluna gostaria de ter, pelo volume de leads. */
-function faixasDesejadas(leads: number): number {
-  return Math.min(MAX_FAIXAS, Math.max(1, Math.ceil(leads / LEADS_POR_FAIXA)))
-}
-
-/**
- * Quantas faixas CABEM de fato na largura que a coluna recebeu. Medido, não
- * presumido: é esse número que decide a grade e a estratégia de arrastar.
- */
-function useFaixas(maximo: number) {
-  const [el, setEl] = useState<HTMLDivElement | null>(null)
-  const [faixas, setFaixas] = useState(1)
-  useEffect(() => {
-    if (!el) return
-    const medir = () => {
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-      const vao = 8
-      const cabem = Math.floor((el.clientWidth + vao) / (FAIXA_MIN_REM * rem + vao))
-      setFaixas(Math.max(1, Math.min(maximo, cabem)))
-    }
-    medir()
-    const observador = new ResizeObserver(medir)
-    observador.observe(el)
-    return () => observador.disconnect()
-  }, [el, maximo])
-  return [faixas, setEl] as const
-}
+const CLASSE_DA_COLUNA = 'flex flex-col flex-1 basis-[18.5rem] min-w-[18.5rem] lg:basis-[16rem] lg:min-w-[16rem] max-w-[22rem]'
 
 function orderBetween(above: Lead | null, below: Lead | null): number {
   const a = above ? ordemEfetiva(above) : Date.now() + 1_000_000
@@ -102,6 +69,14 @@ function orderBetween(above: Lead | null, below: Lead | null): number {
 }
 
 // ─── Card sortável ────────────────────────────────────────────────────────────
+
+/**
+ * Controles secundários do cartão (estrela, alça de arrastar, atalhos): somem
+ * em repouso no computador e aparecem ao passar o mouse ou focar pelo teclado.
+ * No toque não existe "passar o mouse", então ficam sempre à vista.
+ */
+const ATALHO_DO_CARD =
+  'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'
 
 function LeadCard({
   lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, financeMode = false,
@@ -168,8 +143,6 @@ function LeadCard({
     window.open(whatsappUrl(displayPhone), '_blank')
   }
 
-  const isLinked = !!lead.contactId
-
   // ── Próxima ação — o dado de decisão do card ──────────────────────────────
   // Vínculo direto (tasks.lead_id, migração 058). O casamento por contactId
   // continua como fallback para tarefas antigas que o backfill não conseguiu
@@ -200,7 +173,7 @@ function LeadCard({
       tabIndex={isOverlay ? -1 : 0}
       onKeyDown={aoTeclarAbrir(onClick)}
       aria-label={`Abrir lead ${displayName}`}
-      className={`kanban-card group relative border rounded-[12px] cursor-pointer overflow-hidden
+      className={`kanban-card group relative border rounded-[14px] cursor-pointer overflow-hidden
         transition-[transform,box-shadow,background-color,border-color,opacity] duration-200
         hover:-translate-y-px hover:shadow-dropdown
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
@@ -211,7 +184,7 @@ function LeadCard({
             sombra mais funda + faixa tingida na linha de decisão (nível 2).
          */ ''}
         ${urgente ? 'kanban-card-alerta' : ''}
-        ${dense ? 'p-2.5' : 'p-3'}
+        ${dense ? 'px-3 py-2.5' : 'px-3.5 py-3'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? '!shadow-modal kanban-card-prioridade' : ''}
         ${isSaving ? 'opacity-60 pointer-events-none' : ''}
@@ -221,19 +194,9 @@ function LeadCard({
         ${aviso ? 'kanban-card-alerta ring-1 ring-inset ring-info-line !border-info-line' : ''}
       `}
     >
-      {/*
-        Temperatura como filete na borda esquerda, não como badge.
-        É a mesma linguagem do Salesforce e do Pipedrive: o olho lê a coluna
-        inteira de uma vez, sem ler texto nenhum. Badge em todo card obrigaria
-        a processar 113 etiquetas para achar as duas que importam.
-      */}
-      {intel && (
-        <span
-          className="absolute left-0 top-0 bottom-0 w-[3px]"
-          style={{ background: TEMPERATURE_COLOR[intel.temperature] }}
-          aria-hidden
-        />
-      )}
+      {/* Temperatura (frio, morno, quente) saiu do cartão em 16/11/2026, a pedido
+          do Rafael: nem a palavra nem o filete de cor na borda. Continua na
+          lista de leads e nos filtros. */}
       {isSaving && (
         <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[14px] bg-black/20" role="status" aria-label="Salvando">
           <Loader2 size={16} className="animate-spin text-brand" strokeWidth={1.6} />
@@ -249,7 +212,7 @@ function LeadCard({
           className={`w-6 h-6 flex items-center justify-center rounded transition-all duration-150 ${
             lead.flagged
               ? 'text-brand'
-              : 'text-t5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:text-brand'
+              : `text-t5 hover:text-brand ${ATALHO_DO_CARD}`
           }`}
           title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
           aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
@@ -263,7 +226,7 @@ function LeadCard({
           {...attributes}
           onClick={e => e.stopPropagation()}
           aria-label="Arrastar lead"
-          className="w-6 h-6 flex items-center justify-center text-t5 hover:text-t3 cursor-grab active:cursor-grabbing transition-colors"
+          className={`w-6 h-6 flex items-center justify-center text-t4 hover:text-t2 cursor-grab active:cursor-grabbing transition-all ${ATALHO_DO_CARD}`}
         >
           <GripVertical size={13} strokeWidth={1.6} />
         </div>
@@ -286,78 +249,74 @@ function LeadCard({
         </p>
       )}
 
-      {/* ── NÍVEL 1 — Identidade ─────────────────────────────────────────── */}
-      {/* v8: sem o quadrado de iniciais — o nome já identifica, e o quadrado
-          repetido em 100 cards era o maior ruído visual do quadro. */}
-      <div className="flex items-start gap-2.5 pr-12">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
-              {displayName}
-            </p>
-            {/* O valor decide prioridade tanto quanto o nome. Estava em 11px
-                perdido na terceira linha, ao lado do produto. */}
-            {lead.averageTicket && (
-              <span className="ml-auto flex-shrink-0 font-heading text-[13px] font-bold text-t1 tabular-nums leading-tight">
-                {formatCurrency(lead.averageTicket)}
-              </span>
-            )}
-          </div>
-          {/* Só o que qualifica a identidade: prioridade e responsável.
-              Origem, produto e telefone desceram para o nível 3. */}
-          <div className="flex items-center gap-1.5 mt-1 min-w-0">
-            {/* Encaixe só aparece quando é Ideal ou Difícil — ver IntelPair */}
-            <IntelPair
-              temp={intel?.temperature}
-              fit={intel?.fitOrigin?.fit}
-              produto={intel?.fitOrigin?.name}
-            />
-            {lead.flagged && (
-              <span className="font-label text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-text flex-shrink-0">
-                Prioridade
-              </span>
-            )}
-            {lead.qualifiedAt && (
-              <span className="inline-flex items-center gap-0.5 font-label text-[11px] font-semibold uppercase tracking-[0.08em] text-success flex-shrink-0"
-                    title="Lead qualificado">
-                <BadgeCheck size={11} strokeWidth={2} aria-hidden /> Qualificado
-              </span>
-            )}
-            {brokerName && (
-              <span className="font-label text-[11px] text-t3 truncate" title={`Corretor responsável: ${brokerName}`}>
-                {brokerName.split(' ')[0]}
-              </span>
-            )}
-          </div>
-        </div>
+      {/* ── Redesenho de 16/11/2026 — quatro linhas, uma hierarquia ─────────
+          1. nome (o título)   2. contexto, numa linha neutra
+          3. a linha de decisão   4. ações
+          Saíram do cartão: temperatura, "sem próxima ação", a etiqueta
+          PRIORIDADE (a estrela já diz), o valor em negrito disputando com o
+          nome e o fundo cinza do botão em repouso. Em repouso o cartão é texto
+          sobre papel; cor só aparece onde há prazo, risco ou dinheiro. */}
+
+      {/* 1 · Nome */}
+      <div className="flex items-center gap-1.5 pr-12 min-w-0">
+        <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
+          {displayName}
+        </p>
+        {lead.qualifiedAt && (
+          <span className="flex-shrink-0 text-success" title="Lead qualificado">
+            <BadgeCheck size={13} strokeWidth={2} aria-label="Lead qualificado" />
+          </span>
+        )}
       </div>
 
-      {/* ── NÍVEL 2 — Decisão ────────────────────────────────────────────── */}
-      {/* A linha mais importante do card. Risco chama atenção pela FRASE,
-          não só pela cor — o ponto colorido é reforço, nunca o único sinal. */}
+      {/* 2 · Contexto: produto e responsável à esquerda, valor à direita.
+             O valor alinha à direita em todos os cartões (tabular), para a
+             coluna inteira se ler como uma lista de valores. */}
+      <div className="flex items-baseline gap-2 mt-1 min-w-0 text-[12px] text-t3">
+        <p className="flex-1 min-w-0 truncate">
+          {originMeta && (
+            <originMeta.icon size={11} strokeWidth={1.6} className="inline-block align-[-1px] mr-1 text-t4" aria-label={originMeta.label} />
+          )}
+          {property ? property.name : (lead.propertyName ?? '')}
+          {brokerName && (
+            <span className="text-t4" title={`Corretor responsável: ${brokerName}`}>
+              {(property || lead.propertyName) ? ' · ' : ''}{brokerName.split(' ')[0]}
+            </span>
+          )}
+        </p>
+        <EncaixeDoCard fit={intel?.fitOrigin?.fit} produto={intel?.fitOrigin?.name} />
+        {lead.averageTicket ? (
+          <span className="flex-shrink-0 font-medium text-t2 tabular-nums">
+            {formatCurrency(lead.averageTicket)}
+          </span>
+        ) : null}
+        {/* Comissão só nas etapas finais ou no modo financeiro */}
+        {lead.averageTicket && showCommission ? (
+          <span className="flex-shrink-0 font-medium text-success tabular-nums" title="Comissão estimada (2%)">
+            {formatCurrency(lead.averageTicket * 0.02)}
+          </span>
+        ) : null}
+      </div>
+
+      {/* 3 · Decisão — a linha que diz por que olhar este cartão.
+             Risco chama atenção pela FRASE e pelo ícone, não só pela cor. Sem
+             ação marcada, a linha diz o último contato, em tom neutro: assim
+             só o que tem prazo ou risco ganha peso na coluna. */}
       {next && NextIcon && (
-        <div
-          className="flex items-start gap-2 mt-2"
-          title={next.hint}
-        >
-          <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 mt-px ${nextStyle!.iconColor}`} aria-hidden />
+        <div className="flex items-center gap-1.5 mt-2.5 min-w-0" title={next.hint}>
+          <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
           {next.urgency === 'none' ? (
-            // Sem ação marcada, "Sem próxima ação definida" aparecia igual em
-            // quase todo card e deixava de informar. A linha passa a dizer o
-            // último contato — que muda de card para card — e o aviso continua
-            // à vista, menor: a regra de não deixar lead sem próxima ação vale.
-            <p className="flex-1 min-w-0 text-xs leading-snug">
-              <span className="font-semibold text-t2">{fraseContato(lead)}</span>
-              <span className="text-t4"> · sem próxima ação</span>
-            </p>
+            // O Rafael mandou tirar o aviso "sem próxima ação" do cartão
+            // (16/11/2026) — não recolocar.
+            <p className="flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
           ) : (
-            <p className={`flex-1 text-xs font-semibold leading-snug min-w-0 ${nextStyle!.text}`}>
+            <p className={`flex-1 min-w-0 text-[12px] font-semibold leading-snug ${nextStyle!.text}`}>
               {next.text}
             </p>
           )}
           {!isOverlay && (
             <span
-              className="ml-auto flex-shrink-0 font-label text-[11px] text-t3 tabular-nums"
+              className="flex-shrink-0 text-[11px] text-t4 tabular-nums"
               title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}
             >
               {stageDays}d
@@ -368,64 +327,44 @@ function LeadCard({
 
       {/* Tentativas de followup — só onde a cadência existe */}
       {lead.funnelStage === 'followup' && !dense && (
-        <div className="mt-2.5">
-          <div className="flex items-center gap-1" role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
-            {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
-              <button
-                key={step}
-                type="button"
-                onClick={async e => {
-                  e.stopPropagation()
-                  const next = lead.followupStep === step ? step - 1 : step
-                  try {
-                    await update(lead.id, { followupStep: next })
-                    toast.success(`${next}ª tentativa marcada`)
-                  } catch { /* erro já toastado */ }
-                }}
-                title={`Marcar ${step}ª tentativa`}
-                aria-label={`Marcar ${step}ª tentativa`}
-                className={`flex-1 h-1.5 rounded-full transition-all duration-150 cursor-pointer active:scale-95
-                  ${step <= lead.followupStep ? 'bg-brand hover:opacity-80' : 'bg-line-strong hover:bg-brand-tint'}`}
-              />
-            ))}
-          </div>
+        <div className="flex items-center gap-1 mt-2.5" role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
+          {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
+            <button
+              key={step}
+              type="button"
+              onClick={async e => {
+                e.stopPropagation()
+                const next = lead.followupStep === step ? step - 1 : step
+                try {
+                  await update(lead.id, { followupStep: next })
+                  toast.success(`${next}ª tentativa marcada`)
+                } catch { /* erro já toastado */ }
+              }}
+              title={`Marcar ${step}ª tentativa`}
+              aria-label={`Marcar ${step}ª tentativa`}
+              // 3px de barra, mas 14px de área de clique (py transparente)
+              className="group/passo flex-1 py-[5.5px] cursor-pointer focus:outline-none"
+            >
+              <span className={`block h-[3px] rounded-full transition-colors duration-150
+                ${step <= lead.followupStep
+                  ? 'bg-brand group-hover/passo:opacity-70'
+                  : 'bg-line-strong group-hover/passo:bg-brand-tint'}
+                group-focus-visible/passo:ring-2 group-focus-visible/passo:ring-brand/50`} />
+            </button>
+          ))}
         </div>
       )}
 
-      {/* ── NÍVEL 3 — Contexto comercial ─────────────────────────────────── */}
-      {/* Uma linha discreta, não um empilhamento de badges. Some no modo compacto. */}
-      {!dense && (
-        <div className="flex items-center gap-1.5 mt-2.5 min-w-0 text-[11px] text-t3">
-          {originMeta && (
-            <originMeta.icon size={11} strokeWidth={1.6} className="flex-shrink-0" aria-label={originMeta.label} />
-          )}
-          {(property || lead.propertyName) && (
-            <span className="truncate">{property ? property.name : lead.propertyName}</span>
-          )}
-          {/* Comissão só nas etapas finais ou no modo financeiro */}
-          {lead.averageTicket && showCommission && (
-            <span className="ml-auto flex-shrink-0 text-success tabular-nums" title="Comissão estimada (2%)">
-              {formatCurrency(lead.averageTicket * 0.02)}
-            </span>
-          )}
-          {isLinked && !lead.averageTicket && (
-            <span className="ml-auto flex-shrink-0 inline-flex items-center gap-1" title="Lead vinculado a um contato do CRM">
-              <UserCheck size={10} strokeWidth={1.6} /> CRM
-            </span>
-          )}
-        </div>
-      )}
+      {/* 4 · Ações
+             Etapa Venda troca o CTA: lá o que avança o negócio é concluir a
+             venda, e esse é o único botão cheio do quadro (ouro = dinheiro).
 
-      {/* ── NÍVEL 4 — Ações ──────────────────────────────────────────────── */}
-      {/* Etapa Venda troca o CTA: lá o que avança o negócio é concluir a venda.
-
-          O botão principal era VERDE CHEIO em todo card. Com dez cards por
-          coluna, eram trinta retângulos verdes disputando a tela ao mesmo
-          tempo — e um destaque que se repete em tudo deixa de ser destaque.
-          Agora ele é um botão fantasma que se enche de cor ao passar o mouse
-          ou receber foco: continua visível e descobrível (esconder no hover
-          seria pior, some no toque e no teclado), só parou de gritar. */}
-      <div className="mt-2.5 flex items-center gap-1">
+             Nas outras etapas a ação principal é texto, sem caixa: com cem
+             cartões na tela, cem caixas cinza eram ruído. Ela se pinta ao
+             passar o mouse ou receber foco. Os dois atalhos (só abrir o
+             WhatsApp, ligar) aparecem junto — e ficam sempre à vista no toque,
+             onde não existe "passar o mouse". */}
+      <div className="mt-2 -mb-1 flex items-center gap-0.5">
         {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
           <button
             onClick={e => { e.stopPropagation(); onConclude?.() }}
@@ -438,37 +377,39 @@ function LeadCard({
         ) : (
           <button
             onClick={handleWhatsApp}
-            className="flex-1 flex items-center justify-start gap-1.5 px-2 py-1.5 min-h-[32px] text-[12px] font-semibold
-                       text-t3 bg-s2/60 rounded-[9px] transition-all duration-150 active:scale-[0.98]
-                       group-hover:text-success group-hover:bg-success-bg
+            className="flex-1 min-w-0 -ml-1.5 flex items-center justify-start gap-1.5 px-1.5 min-h-[32px] text-[12px] font-semibold
+                       text-t2 rounded-[8px] transition-colors duration-150 active:scale-[0.98]
+                       group-hover:text-success
                        hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)]
                        focus-visible:text-success focus-visible:bg-success-bg
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
             title="Abrir WhatsApp e registrar o contato na timeline"
           >
-            <MessageCircle size={12} strokeWidth={1.6} />
-            {STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}
+            <MessageCircle size={12} strokeWidth={1.7} className="flex-shrink-0" />
+            <span className="truncate">{STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}</span>
             {lead.funnelStage === 'followup' && lead.followupStep > 0 && (
-              <span className="opacity-60">· {lead.followupStep}ª</span>
+              <span className="flex-shrink-0 whitespace-nowrap font-medium opacity-60">· {lead.followupStep}ª</span>
             )}
           </button>
         )}
         <button
           onClick={handleWhatsAppOpen}
-          className="w-8 h-8 flex items-center justify-center text-t4 hover:text-success bg-transparent hover:bg-success-bg rounded-[9px] transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          className={`w-8 h-8 flex items-center justify-center text-t4 hover:text-success hover:bg-success-bg rounded-[8px] transition-all duration-150 flex-shrink-0
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${ATALHO_DO_CARD}`}
           title="Só abrir WhatsApp, sem registrar"
           aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
         >
-          <MessageCircle size={12} strokeWidth={1.6} />
+          <MessageCircle size={13} strokeWidth={1.6} />
         </button>
         <a
           href={`tel:${displayPhone}`}
           onClick={e => e.stopPropagation()}
-          className="w-8 h-8 flex items-center justify-center text-t4 hover:text-t1 bg-transparent hover:bg-s3 rounded-[9px] transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          className={`w-8 h-8 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-[8px] transition-all duration-150 flex-shrink-0
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${ATALHO_DO_CARD}`}
           title={`Ligar — ${formatPhone(displayPhone)}`}
           aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
         >
-          <Phone size={12} strokeWidth={1.6} />
+          <Phone size={13} strokeWidth={1.6} />
         </a>
       </div>
     </div>
@@ -479,13 +420,10 @@ function LeadCard({
 
 function KanbanColumn({
   stage, leads, total, onCardClick, onConclude, isActiveDragTarget, savingId, dense, financeMode,
-  onFiltrarSemContato, filtroSemContatoAtivo, arrastando, aberta, onAbrir,
+  onFiltrarSemContato, filtroSemContatoAtivo, arrastando,
 }: {
-  /** há um card sendo arrastado — trilhos vazios se abrem para receber */
+  /** há um card sendo arrastado — a coluna vazia convida a soltar */
   arrastando: boolean
-  /** coluna vazia aberta à mão pelo corretor */
-  aberta: boolean
-  onAbrir: () => void
   stage: LeadFunnelStage
   leads: Lead[]
   /** total da etapa sem filtro — só vem quando há recorte aplicado */
@@ -502,37 +440,6 @@ function KanbanColumn({
   const conf = STAGE_CONFIG[stage]
   const { isOver, setNodeRef } = useDroppable({ id: stage })
   const ids = leads.map(l => l.id)
-  const desejadas = faixasDesejadas(leads.length)
-  const [faixas, medirLista] = useFaixas(desejadas)
-
-  // Enquanto um card está sendo arrastado a coluna fica na largura que tinha
-  // ANTES do arraste. As colunas vazias se abrem para receber o card, e sem a
-  // trava essa abertura espremia as colunas em grade: os cartões mudavam de
-  // lugar debaixo do cursor justamente na hora de soltar. Com a trava o quadro
-  // ganha rolagem lateral durante o arraste e nada se reorganiza.
-  //
-  // A largura é anotada continuamente fora do arraste: medir só quando o
-  // arraste começa é tarde — nessa hora o quadro já se rearrumou.
-  const [caixa, setCaixa] = useState<HTMLDivElement | null>(null)
-  const larguraLivre = useRef<number | null>(null)
-  const arrastandoAgora = useRef(arrastando)
-  useEffect(() => { arrastandoAgora.current = arrastando }, [arrastando])
-  useEffect(() => {
-    if (!caixa) return
-    const anotar = () => { if (!arrastandoAgora.current) larguraLivre.current = caixa.getBoundingClientRect().width }
-    anotar()
-    const observador = new ResizeObserver(anotar)
-    observador.observe(caixa)
-    return () => observador.disconnect()
-  }, [caixa])
-  const [larguraTravada, setLarguraTravada] = useState<number | null>(null)
-  // Ajuste durante a renderização (não em efeito): a trava entra no MESMO
-  // quadro em que as colunas vazias se abrem, sem um quadro intermediário.
-  const [arrastandoAntes, setArrastandoAntes] = useState(arrastando)
-  if (arrastando !== arrastandoAntes) {
-    setArrastandoAntes(arrastando)
-    setLarguraTravada(arrastando ? larguraLivre.current : null)
-  }
 
   const totalPipeline   = leads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
   const totalCommission = totalPipeline * 0.02
@@ -546,51 +453,18 @@ function KanbanColumn({
   const alvo = isOver || isActiveDragTarget
   const vazia = leads.length === 0
 
-  // Coluna vazia vira um trilho estreito: no quadro de hoje, Leads e Visita
-  // vazias ocupavam 600px de "Nada em…" e empurravam Proposta e Venda para
-  // fora da tela. Enquanto há card sendo arrastado o trilho se abre, para
-  // continuar sendo um destino fácil de soltar.
-  if (vazia && !arrastando && !aberta) {
-    return (
-      <div className="flex-shrink-0" style={{ ['--etapa' as string]: `var(--stage-${stage})` }} id={`coluna-${stage}`}>
-        <button
-          ref={setNodeRef}
-          type="button"
-          onClick={onAbrir}
-          title={`${conf.columnLabel}: nenhum lead. Clique para abrir a coluna.`}
-          aria-label={`${conf.columnLabel}, nenhum lead. Abrir coluna`}
-          className="kanban-trilho w-11 min-h-[420px] h-full rounded-[12px] flex flex-col items-center gap-3 pt-3 cursor-pointer
-                     transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-        >
-          <span className={`w-2.5 h-2.5 rounded-full ${conf.dot}`} aria-hidden />
-          <span className="text-[12px] font-semibold tabular-nums text-t4">0</span>
-          <span className="text-[12px] font-semibold text-t3 tracking-[0.04em]" style={{ writingMode: 'vertical-rl' }}>
-            {conf.columnLabel}
-          </span>
-        </button>
-      </div>
-    )
-  }
-
+  // Toda coluna fica sempre aberta, cheia ou vazia (pedido do Rafael em
+  // 16/11/2026): o quadro tem sempre as mesmas colunas no mesmo lugar. Antes a
+  // vazia virava um trilho estreito que se abria no clique ou durante o arraste.
   return (
     // --etapa alimenta o filete e a contagem do cabeçalho (ver .kanban-cabeca).
-    <div className="flex flex-col" ref={setCaixa}
-         style={larguraTravada !== null
-           ? { ['--etapa' as string]: `var(--stage-${stage})`, flex: `0 0 ${larguraTravada}px` }
-           : {
-               ['--etapa' as string]: `var(--stage-${stage})`,
-               // cresce conforme o volume, até o teto de faixas; nunca menor que a coluna de sempre
-               flex: `${desejadas} 1 ${COLUNA_REM}rem`,
-               minWidth: `${COLUNA_REM}rem`,
-               maxWidth: `${desejadas * (COLUNA_REM + 1)}rem`,
-             }}
+    <div className={CLASSE_DA_COLUNA} style={{ ['--etapa' as string]: `var(--stage-${stage})` }}
          id={`coluna-${stage}`}>
       <div className="flex flex-col flex-1 kanban-col">
         {/* Cabeçalho fixo — uma linha: etapa, contagem, esfriando e VGV */}
         <div className="kanban-cabeca kanban-col-bg sticky top-0 z-10 flex items-center gap-2 px-1 pt-0.5 pb-2 mb-2.5">
-          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${conf.dot}`} aria-hidden />
-          <h3 className="text-[14px] font-semibold text-t1">{conf.columnLabel}</h3>
-          <span className="text-[13px] font-semibold tabular-nums text-t4">
+          <h3 className="text-[13.5px] font-semibold text-t1">{conf.columnLabel}</h3>
+          <span className="text-[13px] tabular-nums text-t4">
             {leads.length}
             {total !== undefined && total !== leads.length && (
               <span title={`${leads.length} de ${total} leads desta etapa`}>/{total}</span>
@@ -620,37 +494,31 @@ function KanbanColumn({
               </span>
             )
           )}
-          {vazia && aberta ? (
-            <button type="button" onClick={onAbrir}
-              className="ml-auto text-[12px] text-t4 hover:text-t1 px-1.5 py-0.5 rounded-md hover:bg-s2 cursor-pointer"
-              title="Recolher coluna vazia">
-              Recolher
-            </button>
-          ) : totalPipeline > 0 && (
-            <span className="ml-auto text-[12.5px] text-t3 tabular-nums" title={financeMode ? `Comissão estimada: ${formatCurrency(totalCommission)}` : undefined}>
+          {totalPipeline > 0 && (
+            <span className="ml-auto text-[12px] text-t4 tabular-nums" title={financeMode ? `Comissão estimada: ${formatCurrency(totalCommission)}` : undefined}>
               {formatCurrency(totalPipeline)}
             </span>
           )}
         </div>
 
-        {/* Uma faixa: lista vertical, como sempre foi. Duas ou mais: grade, e a
-            ordem manual passa a ser lida da esquerda para a direita, linha a linha. */}
-        <SortableContext items={ids} strategy={faixas > 1 ? rectSortingStrategy : verticalListSortingStrategy}>
+        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div
-            ref={el => { setNodeRef(el); medirLista(el) }}
-            className={`flex-1 min-h-[420px] rounded-[14px] p-1 transition-colors duration-200
-              ${faixas > 1 ? 'grid content-start items-start' : 'flex flex-col'}
-              ${dense ? 'gap-1.5' : 'gap-2'}
+            ref={setNodeRef}
+            className={`flex-1 min-h-[420px] rounded-[14px] p-1 transition-colors duration-200 flex flex-col
+              ${dense ? 'gap-1.5' : 'gap-2.5'}
               ${alvo ? 'kanban-solta' : ''}
             `}
-            style={faixas > 1 ? { gridTemplateColumns: `repeat(${faixas}, minmax(0, 1fr))` } : undefined}
           >
             {vazia && (
-              <div className="col-span-full flex flex-col items-center justify-center gap-1.5 rounded-[12px] border border-dashed
-                              border-line-strong px-3 py-8">
-                <Inbox size={16} strokeWidth={1.5} className="text-t4" aria-hidden />
+              // Parada, a coluna vazia só diz que está vazia; o convite a soltar
+              // aparece quando há um card na mão.
+              <div className={`flex flex-col items-center justify-center gap-1.5 rounded-[12px] px-3 py-8
+                              ${arrastando ? 'border border-dashed border-line-strong' : ''}`}>
+                {arrastando && <Inbox size={16} strokeWidth={1.5} className="text-t4" aria-hidden />}
                 <p className="text-xs text-t4 text-center leading-snug">
-                  Solte um card aqui para mover para {conf.label.toLowerCase()}
+                  {arrastando
+                    ? `Solte aqui para mover para ${conf.label.toLowerCase()}`
+                    : `Nada em ${conf.columnLabel.toLowerCase()}`}
                 </p>
               </div>
             )}
@@ -707,18 +575,6 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   // transform e o overflow-hidden do card. Guardamos o id, não o lead, para o
   // modal sempre ler a versão atual do store.
   const [concludeId, setConcludeId] = useState<string | null>(null)
-  // Colunas vazias que o corretor abriu à mão (por padrão viram trilho).
-  // Ficam salvas por usuário — ver useKanbanPrefs.
-  const userId = useAuthStore(s => s.user?.id ?? '')
-  const abertasSalvas = useKanbanPrefs(s => s.colunasAbertas[userId])
-  const alternarSalva = useKanbanPrefs(s => s.alternarColuna)
-  const abertas = useMemo(() => new Set(abertasSalvas ?? []), [abertasSalvas])
-  function alternarColuna(stage: LeadFunnelStage) {
-    if (userId) alternarSalva(userId, stage)
-  }
-  function irParaColuna(stage: LeadFunnelStage) {
-    document.getElementById(`coluna-${stage}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
-  }
   const concludeLead = concludeId ? leads.find(l => l.id === concludeId) : null
   const { dense, financeMode, sort, setDense, setFinanceMode } = useKanbanPrefs()
 
@@ -766,7 +622,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   }
 
   // Esc no teclado, ou soltar fora da janela. Sem isto o quadro ficava em "modo
-  // arrastando" — colunas vazias abertas e alvo marcado — até o próximo arraste.
+  // arrastando" — alvo marcado e convite a soltar — até o próximo arraste.
   function handleDragCancel() {
     setActiveId(null)
     setOverStage(null)
@@ -863,26 +719,15 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
 
   return (
     <>
-      {/* ── Resumo (v10) — uma linha fina ─────────────────────────────────
-          A régua de 240px da v8 repetia o que o cabeçalho de cada coluna já
-          diz. Ficou o total, uma barra proporcional estreita e os controles. */}
+      {/* ── Resumo — uma linha fina ───────────────────────────────────────
+          Só o total e os controles. A barra proporcional por etapa saiu em
+          16/11/2026: repetia a contagem que o cabeçalho de cada coluna já dá. */}
       <div className="flex items-center gap-4 mb-4 px-1 min-h-[32px]">
         <p className="text-[13px] text-t3 whitespace-nowrap">
           <span className="font-semibold text-t1 tabular-nums">{resumo.ativos}</span> em aberto
           <span className="text-t5 mx-1.5" aria-hidden>·</span>
           <span className="font-semibold text-t1 tabular-nums">{formatCurrency(resumo.vgv)}</span> em pipeline
         </p>
-        <div className="hidden md:flex flex-1 max-w-[360px] h-1.5 gap-0.5 rounded-full overflow-hidden bg-s2" aria-hidden>
-          {STAGES.map(st => {
-            const n = sortedByStage[st].length
-            if (n === 0) return null
-            return (
-              <button key={st} type="button" tabIndex={-1} onClick={() => irParaColuna(st)}
-                title={`${STAGE_CONFIG[st].columnLabel}: ${n}`}
-                className="h-full cursor-pointer" style={{ flexGrow: n, background: `var(--stage-${st})` }} />
-            )
-          })}
-        </div>
         <div className="ml-auto flex items-center gap-1">
           <button
             onClick={() => setDense(!dense)}
@@ -935,8 +780,6 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
               isActiveDragTarget={overStage === stage && !!activeId}
               savingId={savingId}
               arrastando={!!activeId}
-              aberta={abertas.has(stage)}
-              onAbrir={() => alternarColuna(stage)}
             />
           ))}
         </div>

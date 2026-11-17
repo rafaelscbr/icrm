@@ -42,7 +42,7 @@ const GARGALOS_ZERO: PulseGargalos = {
 }
 
 const TEMPOS_ZERO: PulseTempos = {
-  primeiroContato:  { mediaMin: 0, medianaMin: 0, amostra: 0, pctDentroSla: 0 },
+  primeiroContato:  { mediaMin: 0, medianaMin: 0, amostra: 0, pctDentroSla: 0, slaMin: null },
   segundaTentativa: { mediaMin: 0, medianaMin: 0, amostra: 0 },
 }
 
