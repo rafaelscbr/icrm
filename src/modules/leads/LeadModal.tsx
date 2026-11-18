@@ -30,6 +30,7 @@ import { LeituraDoLead, ProdutosDoLead } from './LeadIntelPanel'
 import { useLeadProfile } from './useLeadProfile'
 import { useSlaInfo } from './SlaBadge'
 import { TransferirLead } from './TransferirLead'
+import { FluxosDoLead } from './fluxos/FluxosDoLead'
 import { avisoReentrada } from './reentrada'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import { Abas } from '../../components/shared/Abas'
@@ -155,7 +156,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showNoteInput,     setShowNoteInput]     = useState(false)
   // Ciclo interação → tarefa: tipo da última interação registrada nesta sessão
   const [nextStepFor,       setNextStepFor]       = useState<LeadInteractionType | null>(null)
-  const [aba,               setAba]               = useState<'resumo' | 'produtos' | 'historico'>('resumo')
+  const [aba,               setAba]               = useState<'resumo' | 'produtos' | 'fluxos' | 'historico'>('resumo')
+  // O simulador aberto por cima cuida do próprio Esc — a ficha não pode fechar atrás dele.
+  const [simuladorAberto,   setSimuladorAberto]   = useState(false)
 
   const { lists, load: loadLists } = useLeadListsStore()
   const activeLists = lists.filter(l => l.status === 'active')
@@ -165,12 +168,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
       if (showDiscard) { setShowDiscard(false); setSelectedReason(null); setDiscardSearch(''); return }
-      if (showEdit || showTaskForm) return // formulários cuidam do próprio Escape
+      if (showEdit || showTaskForm || simuladorAberto) return // formulários e o simulador cuidam do próprio Escape
       onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [showDiscard, showEdit, showTaskForm, onClose])
+  }, [showDiscard, showEdit, showTaskForm, simuladorAberto, onClose])
 
   // Abriu o lead = viu a reentrada. O aviso continua na tela enquanto o painel
   // estiver aberto (o estado é capturado na montagem); o que baixa é o destaque
@@ -488,6 +491,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               abas={[
                 { value: 'resumo'    as const, label: 'Resumo' },
                 { value: 'produtos'  as const, label: 'Produtos' },
+                { value: 'fluxos'    as const, label: 'Fluxos' },
                 { value: 'historico' as const, label: 'Histórico', badge: interactions.length || undefined },
               ]}
             />
@@ -691,6 +695,10 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 <ProdutosDoLead lead={lead} />
                 {perfil.data && <BaseConhecida lists={perfil.data.lists} />}
               </div>
+            )}
+
+            {aba === 'fluxos' && (
+              <FluxosDoLead lead={lead} onSimulador={setSimuladorAberto} />
             )}
 
             {aba === 'historico' && (

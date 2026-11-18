@@ -13,6 +13,8 @@ import { ORIGEM_META } from './origens'
 import { slaActive } from './SlaBadge'
 import { PerfilSomenteLeitura, FormulariosPreenchidos, BaseConhecida } from './LeadProfilePanel'
 import { HistoricoSomenteLeitura } from './LeadTimeline'
+import { ListaDeFluxos, agruparFluxos } from './fluxos/FluxosDoLead'
+import type { LeadFluxo } from '../simulador/shared/fluxo'
 
 /**
  * A ficha de um lead de OUTRO corretor, para o gestor ler (migração 095).
@@ -29,6 +31,33 @@ import { HistoricoSomenteLeitura } from './LeadTimeline'
  */
 
 type Detalhe = Awaited<ReturnType<typeof db.leads.detalheDaEquipe>>
+
+/**
+ * Os fluxos guardados no lead, só para ler (migração 096). Leitura à parte da
+ * ficha: se ela falhar, o resto da ficha continua de pé e a falha aparece aqui.
+ * Sem as funções de ação, a lista não tem editar, enviar nem arquivar.
+ */
+function FluxosSomenteLeitura({ leadId }: { leadId: string }) {
+  const [versoes, setVersoes] = useState<LeadFluxo[] | null>(null)
+  const [erro, setErro] = useState<string | null>(null)
+  useEffect(() => {
+    let vivo = true
+    db.leadFluxos.listar(leadId)
+      .then(v => { if (vivo) { setVersoes(v); setErro(null) } })
+      .catch(e => { if (vivo) { setVersoes(null); setErro((e as { message?: string })?.message ?? 'Falha ao ler os fluxos') } })
+    return () => { vivo = false }
+  }, [leadId])
+
+  if (erro) return <FichaSecao titulo="Fluxos"><p className="text-[13.5px] text-error" role="alert">Não foi possível carregar os fluxos: {erro}</p></FichaSecao>
+  if (versoes === null) return <FichaSecao titulo="Fluxos"><div className="h-[72px] rounded-[14px] shimmer" role="status" aria-label="Carregando os fluxos" /></FichaSecao>
+  const grupos = agruparFluxos(versoes)
+  if (grupos.length === 0) return null
+  return (
+    <FichaSecao titulo={`${grupos.length === 1 ? 'Fluxo guardado' : `${grupos.length} fluxos guardados`}`}>
+      <ListaDeFluxos grupos={grupos} />
+    </FichaSecao>
+  )
+}
 
 const DIA_MS = 86_400_000
 
@@ -221,6 +250,8 @@ function Corpo({ lead, perfil, historico, tarefas }: {
       )}
 
       {perfil && <PerfilSomenteLeitura data={perfil} />}
+
+      <FluxosSomenteLeitura leadId={lead.id} />
 
       {lead.notes?.trim() && (
         <FichaSecao titulo="Anotações">

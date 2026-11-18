@@ -9,6 +9,7 @@ import {
 import { calcularPosChaves, PosChavesInput } from './calc'
 import { PosChavesCard } from './Card'
 import { mensagemPosChaves } from './mensagem'
+import { EstadoPosChaves, RelatoDoSimulador, montarResumo, useRelato } from '../shared/fluxo'
 
 const DEFAULT: Omit<PosChavesInput, 'valorTotal'> = {
   pctChaves:    0,
@@ -24,10 +25,14 @@ interface Props {
   shared: SharedFields
   onShared: (patch: Partial<SharedFields>) => void
   corretor: string
+  /** fluxo salvo sendo reaberto — ver shared/fluxo.ts. Só vale na montagem. */
+  inicial?: EstadoPosChaves
+  /** avisa o hospedeiro (o simulador aberto pelo lead) a cada mudança */
+  onRelato?: (r: RelatoDoSimulador<EstadoPosChaves>) => void
 }
 
-export function PosChavesSimulator({ shared, onShared, corretor }: Props) {
-  const [pctChaves, setPctChaves] = useState(DEFAULT.pctChaves)
+export function PosChavesSimulator({ shared, onShared, corretor, inicial, onRelato }: Props) {
+  const [pctChaves, setPctChaves] = useState(inicial?.pctChaves ?? DEFAULT.pctChaves)
   const [base, setBase] = useState<PagamentoBase>({
     entradaQtd:   DEFAULT.entradaQtd,
     entradaValor: DEFAULT.entradaValor,
@@ -35,9 +40,11 @@ export function PosChavesSimulator({ shared, onShared, corretor }: Props) {
     reforcoValor: DEFAULT.reforcoValor,
     reforcoPeriodo: DEFAULT.reforcoPeriodo,
     parcelasQtd:  DEFAULT.parcelasQtd,
+    // por cima do padrão: um fluxo antigo pode não ter um campo criado depois
+    ...inicial?.base,
   })
-  const [entradaModo, setEntradaModo] = useState<EntradaModo>('valor')
-  const [entradaPct,  setEntradaPct]  = useState(0)
+  const [entradaModo, setEntradaModo] = useState<EntradaModo>(inicial?.entradaModo ?? 'valor')
+  const [entradaPct,  setEntradaPct]  = useState(inicial?.entradaPct ?? 0)
 
   // Em modo %, o valor da entrada é derivado do valor total do imóvel
   const entradaValorEfetivo = entradaModo === 'pct'
@@ -51,6 +58,17 @@ export function PosChavesSimulator({ shared, onShared, corretor }: Props) {
     pctChaves,
   }
   const result = calcularPosChaves(input)
+  const mensagem = result.valido ? mensagemPosChaves(input, result, { ...shared, corretor }) : ''
+
+  useRelato(onRelato, {
+    estado: { pctChaves, base, entradaModo, entradaPct },
+    valido: result.valido,
+    mensagem,
+    resumo: montarResumo({
+      valorTotal: shared.valorTotal, entradaTotal: result.entradaTotal,
+      parcelasQtd: base.parcelasQtd, parcelaValor: result.parcelaValor,
+    }),
+  })
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-8 items-start max-w-6xl mx-auto">
@@ -115,7 +133,7 @@ export function PosChavesSimulator({ shared, onShared, corretor }: Props) {
       <PreviewColumn
         valido={result.valido}
         slugBase={shared.empreendimento}
-        mensagem={result.valido ? mensagemPosChaves(input, result, { ...shared, corretor }) : ''}
+        mensagem={mensagem}
         telefone={shared.telefone}
         renderCard={ref => (
           <PosChavesCard

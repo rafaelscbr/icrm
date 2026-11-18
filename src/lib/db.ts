@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getCurrentUserId, requireBrokerId } from './auth'
 import { generateId } from './formatters'
 import type { Atribuicao, EventoDoDia } from '../modules/leads/monitorLeads'
+import type { LeadFluxo } from '../modules/simulador/shared/fluxo'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
@@ -1474,6 +1475,44 @@ export const db = {
       const { data, error } = await supabase.rpc('meta_conv_retry', { p_id: id ?? null })
       if (error) { toast.error(`Não foi possível reenviar: ${error.message}`); throw error }
       return (data as number) ?? 0
+    },
+  },
+
+  /**
+   * Fluxos do lead — simulações guardadas na ficha, com versões (migração 096).
+   * Tudo passa por função do banco: lê o dono atual do lead, o admin e o gestor
+   * (somente leitura); grava o dono ou o admin. Editar nunca sobrescreve — cada
+   * gravação é a versão seguinte do mesmo fluxo.
+   */
+  leadFluxos: {
+    /** Todas as versões dos fluxos não arquivados do lead. Sem toast: a aba mostra a falha. */
+    listar: async (leadId: string): Promise<LeadFluxo[]> => {
+      const { data, error } = await supabase.rpc('lead_fluxos_list', { p_lead_id: leadId })
+      if (error) throw error
+      return (data as LeadFluxo[] | null) ?? []
+    },
+    /** `fluxoId` nulo cria um fluxo novo (versão 1); com ele, grava a próxima versão. */
+    salvar: async (f: {
+      leadId: string; fluxoId: string | null; nome: string; modo: LeadFluxo['modo']
+      dados: LeadFluxo['dados']; resumo: LeadFluxo['resumo']; mensagem: string
+    }): Promise<LeadFluxo> => {
+      const { data, error } = await supabase.rpc('lead_fluxo_save', {
+        p_lead_id: f.leadId, p_fluxo_id: f.fluxoId, p_nome: f.nome, p_modo: f.modo,
+        p_dados: f.dados, p_resumo: f.resumo, p_mensagem: f.mensagem,
+      })
+      if (error) { toast.error(`Fluxo não salvo: ${error.message}`); throw error }
+      return data as LeadFluxo
+    },
+    /** Marca a versão como enviada ao cliente e registra a nota no histórico do lead. */
+    marcarEnviado: async (id: string): Promise<LeadFluxo> => {
+      const { data, error } = await supabase.rpc('lead_fluxo_mark_sent', { p_id: id })
+      if (error) { toast.error(`Não foi possível marcar como enviado: ${error.message}`); throw error }
+      return data as LeadFluxo
+    },
+    /** Arquiva o fluxo inteiro (todas as versões). Não apaga do banco. */
+    arquivar: async (fluxoId: string): Promise<void> => {
+      const { error } = await supabase.rpc('lead_fluxo_archive', { p_fluxo_id: fluxoId })
+      if (error) { toast.error(`Não foi possível arquivar o fluxo: ${error.message}`); throw error }
     },
   },
 

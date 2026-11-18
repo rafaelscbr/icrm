@@ -8,6 +8,7 @@ import {
 import { calcularDireto, DiretoInput } from './calc'
 import { DiretoCard } from './Card'
 import { mensagemDireto } from './mensagem'
+import { EstadoDireto, RelatoDoSimulador, montarResumo, useRelato } from '../shared/fluxo'
 
 const DEFAULT: PagamentoBase = {
   entradaQtd:   1,
@@ -22,12 +23,17 @@ interface Props {
   shared: SharedFields
   onShared: (patch: Partial<SharedFields>) => void
   corretor: string
+  /** fluxo salvo sendo reaberto — ver shared/fluxo.ts. Só vale na montagem. */
+  inicial?: EstadoDireto
+  /** avisa o hospedeiro (o simulador aberto pelo lead) a cada mudança */
+  onRelato?: (r: RelatoDoSimulador<EstadoDireto>) => void
 }
 
-export function DiretoSimulator({ shared, onShared, corretor }: Props) {
-  const [base, setBase] = useState<PagamentoBase>(DEFAULT)
-  const [entradaModo, setEntradaModo] = useState<EntradaModo>('valor')
-  const [entradaPct,  setEntradaPct]  = useState(0)
+export function DiretoSimulator({ shared, onShared, corretor, inicial, onRelato }: Props) {
+  // por cima do padrão: um fluxo antigo pode não ter um campo criado depois
+  const [base, setBase] = useState<PagamentoBase>({ ...DEFAULT, ...inicial?.base })
+  const [entradaModo, setEntradaModo] = useState<EntradaModo>(inicial?.entradaModo ?? 'valor')
+  const [entradaPct,  setEntradaPct]  = useState(inicial?.entradaPct ?? 0)
 
   // Em modo %, o valor da entrada é derivado do valor total do imóvel
   const entradaValorEfetivo = entradaModo === 'pct'
@@ -40,6 +46,17 @@ export function DiretoSimulator({ shared, onShared, corretor }: Props) {
     valorTotal: shared.valorTotal,
   }
   const result = calcularDireto(input)
+  const mensagem = result.valido ? mensagemDireto(input, result, { ...shared, corretor }) : ''
+
+  useRelato(onRelato, {
+    estado: { base, entradaModo, entradaPct },
+    valido: result.valido,
+    mensagem,
+    resumo: montarResumo({
+      valorTotal: shared.valorTotal, entradaTotal: result.entradaTotal,
+      parcelasQtd: base.parcelasQtd, parcelaValor: result.parcelaValor,
+    }),
+  })
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-8 items-start max-w-6xl mx-auto">
@@ -87,7 +104,7 @@ export function DiretoSimulator({ shared, onShared, corretor }: Props) {
       <PreviewColumn
         valido={result.valido}
         slugBase={shared.empreendimento}
-        mensagem={result.valido ? mensagemDireto(input, result, { ...shared, corretor }) : ''}
+        mensagem={mensagem}
         telefone={shared.telefone}
         renderCard={ref => (
           <DiretoCard

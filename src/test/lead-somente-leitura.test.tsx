@@ -29,11 +29,13 @@ const historico = [
 const tarefas = [{ id: 't1', title: 'Visita ao decorado', category: 'visita', dueDate: '2026-11-20', dueTime: '14:30', priority: 'high' }]
 
 const detalhe = vi.spyOn(db.leads, 'detalheDaEquipe')
+// A ficha também lê os fluxos guardados do lead (migração 096).
+const fluxos = vi.spyOn(db.leadFluxos, 'listar')
 const onClose = vi.fn()
 
 const montar = () => render(<LeadSomenteLeitura leadId="lead-1" nome="Fulana de Tal" corretor="Ryan Maciel" onClose={onClose} />)
 
-beforeEach(() => { detalhe.mockReset(); onClose.mockReset() })
+beforeEach(() => { detalhe.mockReset(); onClose.mockReset(); fluxos.mockReset().mockResolvedValue([]) })
 
 describe('LeadSomenteLeitura', () => {
   it('mostra os detalhes do lead do colega', async () => {

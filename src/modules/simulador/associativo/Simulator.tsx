@@ -14,12 +14,13 @@ import {
   AlternadorVisao, BalaoMensagem, BotaoCopiar, BotaoWhatsApp, useAcoesMensagem,
 } from '../shared/MensagemWhatsApp'
 import {
-  calcularAssociativo, AssociativoInput, Indice, Sistema, MesAno,
+  calcularAssociativo, AssociativoInput, Indice, Sistema,
   INDICE_LABELS, mesAnoLabel, mesIndex,
 } from './calc'
 import { AssociativoCard } from './Card'
 import { AssociativoCardCompleto } from './CardCompleto'
 import { mensagemAssociativo } from './mensagem'
+import { EstadoAssociativo, RelatoDoSimulador, montarResumo, useRelato } from '../shared/fluxo'
 
 // Modo Associativo: composição do pagamento na obra (entrada + parcelas +
 // balões anuais), linha do tempo com assinatura do financiamento e entrega,
@@ -27,16 +28,9 @@ import { mensagemAssociativo } from './mensagem'
 
 type BlocoModo = 'valor' | 'pct'
 
-interface Cfg {
-  entradaQtd: number; entradaModo: BlocoModo; entradaValor: number; entradaPct: number
-  parcelasQtd: number; parcelasModo: BlocoModo; parcelaValor: number; parcelasPct: number
-  balaoQtd: number; balaoModo: BlocoModo; balaoValor: number; balaoPct: number
-  balaoForma: ReforcoModo; baloesAvulsos: ReforcoAvulso[]
-  indice: Indice; taxaIndiceAnual: number; aplicarCorrecao: boolean
-  inicioParcelas: MesAno; financiamento: MesAno; entrega: MesAno
-  jurosObraMensal: number; taxaAdm: number; seguro: number; pctObraAssinatura: number
-  taxaBancoAnual: number; prazoMeses: number; sistema: Sistema
-}
+// O formulário inteiro deste modo. O tipo mora em shared/fluxo.ts porque é
+// também o formato em que o fluxo é salvo no lead.
+type Cfg = EstadoAssociativo
 
 // Tudo começa vazio: as condições mudam de produto para produto e o corretor
 // preenche com as do empreendimento que está simulando. Só ficam escolhidos os
@@ -247,10 +241,15 @@ interface Props {
   shared: SharedFields
   onShared: (patch: Partial<SharedFields>) => void
   corretor: string
+  /** fluxo salvo sendo reaberto — ver shared/fluxo.ts. Só vale na montagem. */
+  inicial?: EstadoAssociativo
+  /** avisa o hospedeiro (o simulador aberto pelo lead) a cada mudança */
+  onRelato?: (r: RelatoDoSimulador<EstadoAssociativo>) => void
 }
 
-export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
-  const [cfg, setCfg] = useState<Cfg>(DEFAULT)
+export function AssociativoSimulator({ shared, onShared, corretor, inicial, onRelato }: Props) {
+  // por cima do padrão: um fluxo antigo pode não ter um campo criado depois
+  const [cfg, setCfg] = useState<Cfg>({ ...DEFAULT, ...inicial })
   const up = (patch: Partial<Cfg>) => setCfg(prev => ({ ...prev, ...patch }))
 
   const num = (field: keyof Cfg) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -281,6 +280,18 @@ export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
   }
   const result = calcularAssociativo(input)
   const indice = INDICE_LABELS[cfg.indice]
+  const mensagem = result.valido ? mensagemAssociativo(input, result, { ...shared, corretor }) : ''
+
+  useRelato(onRelato, {
+    estado: cfg,
+    valido: result.valido,
+    mensagem,
+    resumo: montarResumo({
+      valorTotal: shared.valorTotal, entradaTotal: result.entradaTotal,
+      parcelasQtd: cfg.parcelasQtd, parcelaValor: parcelaValorEf,
+      saldoFinanciar: result.saldoFinanciar,
+    }),
+  })
 
   /** Balões anuais (12ª, 24ª… parcela) convertidos em lista editável com data. */
   function baloesDoPeriodico(): ReforcoAvulso[] {
@@ -568,7 +579,7 @@ export function AssociativoSimulator({ shared, onShared, corretor }: Props) {
       <PreviewAssociativo
         valido={result.valido}
         slugBase={shared.empreendimento}
-        mensagem={result.valido ? mensagemAssociativo(input, result, { ...shared, corretor }) : ''}
+        mensagem={mensagem}
         telefone={shared.telefone}
         renderResumo={ref => (
           <AssociativoCard
