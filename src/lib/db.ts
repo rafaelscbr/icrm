@@ -631,6 +631,7 @@ interface LeadRow {
   // Qualificação: gravada só pela RPC set_lead_qualified. Entra em `toLead`,
   // NÃO entra em `fromLead` — o upsert do front não pode apagar.
   qualified_at?: string | null
+  fluxos_count?: number | null
   qualified_by?: string | null
   closed_at?: string | null
   won_value?: number | null
@@ -673,6 +674,7 @@ function toLead(r: LeadRow): Lead {
     reentrySeenAt: r.reentry_seen_at ?? undefined,
     returningFromLeadId: r.returning_from_lead_id ?? undefined,
     qualifiedAt: r.qualified_at ?? undefined,
+    fluxosCount: r.fluxos_count ?? undefined,
     qualifiedBy: r.qualified_by ?? undefined,
     closedAt: r.closed_at ?? undefined,
     wonValue: r.won_value ?? undefined,

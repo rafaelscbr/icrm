@@ -105,7 +105,7 @@ export function FluxosDoLead({ lead, onSimulador }: {
     <section>
       {/* Lead sem fluxo não ganha um "0 fluxos" em cima da explicação. */}
       {(versoes === null || grupos.length > 0) && (
-        <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center justify-between gap-3 mb-5">
           <h3 className="text-[15px] font-semibold text-t1">
             {versoes === null ? 'Fluxos' : `${grupos.length} ${grupos.length === 1 ? 'fluxo' : 'fluxos'}`}
           </h3>
@@ -165,6 +165,13 @@ export function FluxosDoLead({ lead, onSimulador }: {
 }
 
 // ── Lista: só desenha. Sem as funções de ação, é a versão de leitura do gestor ─
+//
+// Desenho "Folha" (19/11/2026, segunda passada): cada fluxo se lê como as outras
+// seções da ficha — o nome é o título, os números vão num quadro de células
+// (o mesmo de "Quem é o cliente"), a situação numa linha com ícone e as ações
+// embaixo, uma principal e o resto como texto. Sem linha divisória entre os
+// fluxos: o espaço separa. A primeira versão era uma frase corrida com cinco
+// botões iguais.
 
 export function ListaDeFluxos({ grupos, ocupado = null, onAbrir, onMarcarEnviado, onArquivar }: {
   grupos: LeadFluxo[][]
@@ -175,7 +182,7 @@ export function ListaDeFluxos({ grupos, ocupado = null, onAbrir, onMarcarEnviado
   onArquivar?: (fluxoId: string) => void
 }) {
   return (
-    <ul className="flex flex-col">
+    <ul className="flex flex-col gap-8">
       {grupos.map(versoes => (
         <Fluxo key={versoes[0].fluxoId} versoes={versoes} ocupado={ocupado}
                onAbrir={onAbrir} onMarcarEnviado={onMarcarEnviado} onArquivar={onArquivar} />
@@ -184,9 +191,37 @@ export function ListaDeFluxos({ grupos, ocupado = null, onAbrir, onMarcarEnviado
   )
 }
 
-const BOTAO = `inline-flex items-center gap-1.5 h-8 px-2.5 -ml-2.5 rounded-[9px] text-[13px] font-semibold text-t2
+const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
+
+/** Ação secundária: texto, sem caixa. */
+const LINK = `inline-flex items-center gap-1.5 h-8 px-2 rounded-[9px] text-[13px] font-medium text-t3
   hover:bg-s2 hover:text-t1 cursor-pointer disabled:opacity-50 disabled:cursor-default
   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40`
+
+/** Os números congelados da versão, no quadro de células da ficha. */
+function NumerosDoFluxo({ resumo }: { resumo: LeadFluxo['resumo'] }) {
+  // Versão sem os números estruturados: mostra a frase que foi guardada.
+  if (!resumo || typeof resumo.valorTotal !== 'number') {
+    return <p className="text-[14px] text-t2 tabular-nums leading-snug">{resumo?.linha || 'Sem resumo'}</p>
+  }
+  const celulas = [
+    { rotulo: 'Valor do imóvel', valor: brl(resumo.valorTotal) },
+    { rotulo: 'Entrada', valor: resumo.entradaTotal > 0 ? brl(resumo.entradaTotal) : '—' },
+    { rotulo: 'Parcelas', valor: resumo.parcelasQtd > 0 && resumo.parcelaValor > 0 ? `${resumo.parcelasQtd}× de ${brl(resumo.parcelaValor)}` : '—' },
+    ...(resumo.saldoFinanciar && resumo.saldoFinanciar > 0 ? [{ rotulo: 'A financiar', valor: brl(resumo.saldoFinanciar) }] : []),
+  ]
+  return (
+    <dl className="perfil-quadro">
+      {celulas.map(c => (
+        <div key={c.rotulo} className="perfil-celula !min-h-0 !py-3 !pr-4">
+          <dt className="text-[12px] text-t4">{c.rotulo}</dt>
+          <dd className="mt-0.5 text-[15px] font-semibold text-t1 leading-snug tabular-nums truncate" title={c.valor}>{c.valor}</dd>
+        </div>
+      ))}
+      {celulas.length % 2 === 1 && <div className="perfil-celula perfil-vazia !min-h-0" aria-hidden />}
+    </dl>
+  )
+}
 
 function Fluxo({ versoes, ocupado, onAbrir, onMarcarEnviado, onArquivar }: {
   versoes: LeadFluxo[]
@@ -204,56 +239,65 @@ function Fluxo({ versoes, ocupado, onAbrir, onMarcarEnviado, onArquivar }: {
   const trabalhando = ocupado === ultima.id || ocupado === ultima.fluxoId
 
   return (
-    <li className="py-4 border-b border-line last:border-0">
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="min-w-0 text-[15px] font-semibold text-t1 truncate">{ultima.nome}</p>
-        <p className="flex-shrink-0 text-[12.5px] text-t4 tabular-nums">{ROTULO_DO_MODO[ultima.modo]} · versão {ultima.versao}</p>
+    <li>
+      {/* Título: o nome do fluxo; à direita, o tipo e a versão, discretos. */}
+      <div className="flex items-baseline justify-between gap-3 mb-2.5">
+        <h4 className="min-w-0 text-[15px] font-semibold text-t1 truncate">{ultima.nome}</h4>
+        <p className="flex-shrink-0 text-[12px] text-t4 tabular-nums">{ROTULO_DO_MODO[ultima.modo]} · versão {ultima.versao}</p>
       </div>
 
-      <p className="mt-1 text-[14px] text-t2 tabular-nums leading-snug">{ultima.resumo.linha || 'Sem resumo'}</p>
+      <NumerosDoFluxo resumo={ultima.resumo} />
 
-      <p className="mt-1.5 text-[12.5px] text-t4">
+      {/* Situação: ícone + frase. Verde só quando foi enviada ao cliente. */}
+      <p className="mt-2.5 flex items-center gap-1.5 text-[12.5px] text-t4">
         {ultima.enviadoEm ? (
-          <span className="inline-flex items-center gap-1 text-success font-medium">
+          <span className="inline-flex items-center gap-1.5 text-success font-medium">
             <Check size={13} strokeWidth={2.2} aria-hidden />
             Enviada ao cliente {quando(ultima.enviadoEm)} por {primeiroNome(ultima.enviadoPor)}
           </span>
         ) : (
-          <>
+          <span>
             Salva {quando(ultima.criadoEm)} por {primeiroNome(ultima.criadoPor)}
             {enviada && <> · a versão {enviada.versao} foi enviada ao cliente</>}
-          </>
+          </span>
         )}
       </p>
 
-      <div className="mt-2 flex items-center gap-x-3 gap-y-1 flex-wrap">
+      {/* Ações: uma principal com contorno, as outras em texto, arquivar no canto. */}
+      <div className="mt-2.5 flex items-center gap-x-1 gap-y-1 flex-wrap">
         {onAbrir && (
-          <button type="button" className={BOTAO} onClick={() => onAbrir(ultima)} disabled={trabalhando}>
+          <button type="button" onClick={() => onAbrir(ultima)} disabled={trabalhando}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 mr-1 rounded-[9px] border border-line bg-surface text-[13px] font-semibold text-t1
+                             hover:bg-s2 cursor-pointer disabled:opacity-50 disabled:cursor-default
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40">
             <Pencil size={13} strokeWidth={1.9} aria-hidden /> Abrir e editar
           </button>
         )}
         {onMarcarEnviado && !ultima.enviadoEm && (
-          <button type="button" className={BOTAO} onClick={() => onMarcarEnviado(ultima)} disabled={trabalhando}>
+          <button type="button" className={LINK} onClick={() => onMarcarEnviado(ultima)} disabled={trabalhando}>
             {ocupado === ultima.id ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Send size={13} strokeWidth={1.9} aria-hidden />}
             Marcar como enviado
           </button>
         )}
         {ultima.mensagem && (
-          <button type="button" className={BOTAO} aria-expanded={textoDe === ultima.id}
+          <button type="button" className={LINK} aria-expanded={textoDe === ultima.id}
                   onClick={() => setTextoDe(t => t === ultima.id ? null : ultima.id)}>
             {textoDe === ultima.id ? 'Ocultar texto' : 'Ver texto'}
           </button>
         )}
         {anteriores.length > 0 && (
-          <button type="button" className={BOTAO} aria-expanded={verVersoes} onClick={() => setVerVersoes(v => !v)}>
+          <button type="button" className={LINK} aria-expanded={verVersoes} onClick={() => setVerVersoes(v => !v)}>
             <History size={13} strokeWidth={1.9} aria-hidden />
             {anteriores.length === 1 ? '1 versão anterior' : `${anteriores.length} versões anteriores`}
             <ChevronDown size={13} strokeWidth={1.9} aria-hidden className={`transition-transform ${verVersoes ? 'rotate-180' : ''}`} />
           </button>
         )}
         {onArquivar && !confirmarArquivo && (
-          <button type="button" className={`${BOTAO} ml-auto !text-t4 hover:!text-error`} onClick={() => setConfirmarArquivo(true)} disabled={trabalhando}>
-            <Archive size={13} strokeWidth={1.9} aria-hidden /> Arquivar
+          <button type="button" onClick={() => setConfirmarArquivo(true)} disabled={trabalhando}
+                  aria-label="Arquivar" title="Arquivar este fluxo"
+                  className="ml-auto w-8 h-8 inline-flex items-center justify-center rounded-[9px] text-t4 hover:text-error hover:bg-error-bg
+                             cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40">
+            <Archive size={14} strokeWidth={1.8} aria-hidden />
           </button>
         )}
       </div>
@@ -277,27 +321,30 @@ function Fluxo({ versoes, ocupado, onAbrir, onMarcarEnviado, onArquivar }: {
 
       {textoDe === ultima.id && ultima.mensagem && <TextoDaVersao texto={ultima.mensagem} />}
 
+      {/* Versões anteriores: uma linha do tempo, da mais nova para a mais antiga. */}
       {verVersoes && (
-        <ol className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-line" aria-label={`Versões anteriores de ${ultima.nome}`}>
+        <ol className="mt-3.5 ml-1.5 pl-5 border-l border-line flex flex-col gap-4" aria-label={`Versões anteriores de ${ultima.nome}`}>
           {anteriores.map(v => (
-            <li key={v.id}>
+            <li key={v.id} className="relative">
+              <span className={`absolute -left-[25.5px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-surface
+                               ${v.enviadoEm ? 'bg-success' : 'bg-line-strong'}`} aria-hidden />
               <p className="flex items-baseline justify-between gap-3 text-[13px]">
                 <span className="font-semibold text-t1">
                   Versão {v.versao}
                   {v.enviadoEm && <span className="ml-1.5 inline-flex items-center gap-0.5 font-medium text-success"><Check size={12} strokeWidth={2.2} aria-hidden />enviada</span>}
                 </span>
-                <span className="flex-shrink-0 text-[12.5px] text-t4 tabular-nums">{quando(v.criadoEm)} · {primeiroNome(v.criadoPor)}</span>
+                <span className="flex-shrink-0 text-[12px] text-t4 tabular-nums">{quando(v.criadoEm)} · {primeiroNome(v.criadoPor)}</span>
               </p>
-              <p className="mt-0.5 text-[13.5px] text-t2 tabular-nums leading-snug">{v.resumo.linha || 'Sem resumo'}</p>
-              <div className="mt-1 flex items-center gap-x-3 flex-wrap">
+              <p className="mt-0.5 text-[13.5px] text-t2 tabular-nums leading-snug">{v.resumo?.linha || 'Sem resumo'}</p>
+              <div className="mt-0.5 -ml-2 flex items-center gap-x-1 flex-wrap">
                 {onAbrir && (
-                  <button type="button" className={BOTAO} onClick={() => onAbrir(v)}
+                  <button type="button" className={LINK} onClick={() => onAbrir(v)}
                           title={`Abre o simulador com os dados da versão ${v.versao}; salvar cria a versão ${ultima.versao + 1}`}>
                     <Pencil size={13} strokeWidth={1.9} aria-hidden /> Partir desta versão
                   </button>
                 )}
                 {v.mensagem && (
-                  <button type="button" className={BOTAO} aria-expanded={textoDe === v.id}
+                  <button type="button" className={LINK} aria-expanded={textoDe === v.id}
                           onClick={() => setTextoDe(t => t === v.id ? null : v.id)}>
                     {textoDe === v.id ? 'Ocultar texto' : 'Ver texto'}
                   </button>
@@ -315,7 +362,7 @@ function Fluxo({ versoes, ocupado, onAbrir, onMarcarEnviado, onArquivar }: {
 /** O texto do WhatsApp exatamente como foi gerado naquela versão. */
 function TextoDaVersao({ texto }: { texto: string }) {
   return (
-    <pre className="mt-2 max-h-[320px] overflow-y-auto rounded-[12px] bg-s2 px-3.5 py-3 text-[13px] text-t2 leading-relaxed
+    <pre className="mt-2 max-h-[320px] overflow-y-auto rounded-[14px] bg-s2 px-4 py-3.5 text-[13px] text-t2 leading-relaxed
                     whitespace-pre-wrap font-sans">{texto}</pre>
   )
 }

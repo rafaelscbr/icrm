@@ -33,6 +33,7 @@ import { ORIGEM_META } from './origens'
 import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
+import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
 import toast from 'react-hot-toast'
 
 // Re-export da fonte única — consumido por LeadsPage, LeadsDashboard,
@@ -264,6 +265,7 @@ function LeadCard({
             <BadgeCheck size={13} strokeWidth={2} aria-label="Lead qualificado" />
           </span>
         )}
+        <SinalDeFluxo quantos={lead.fluxosCount} />
       </div>
 
       {/* 2 · Contexto: produto e responsável à esquerda, valor à direita.

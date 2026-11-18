@@ -595,6 +595,8 @@ export interface Lead {
   // Qualificação — gravada só pelo banco (set_lead_qualified); a tela lê.
   qualifiedAt?: string      // quando foi marcado como qualificado
   qualifiedBy?: string      // quem qualificou (profiles.id)
+  /** Quantos fluxos de pagamento guardados (não arquivados) o lead tem — mantido pelo banco (gatilho, migração 097). */
+  fluxosCount?: number
   brokerId?:      string | null
   createdAt: string
   updatedAt: string

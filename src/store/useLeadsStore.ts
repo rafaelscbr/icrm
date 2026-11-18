@@ -216,6 +216,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             reentrySeenAt: (incoming.reentry_seen_at as string | null) ?? undefined,
             returningFromLeadId: (incoming.returning_from_lead_id as string | null) ?? undefined,
             qualifiedAt: (incoming.qualified_at as string | null) ?? undefined,
+            fluxosCount: (incoming.fluxos_count as number | null) ?? undefined,
             qualifiedBy: (incoming.qualified_by as string | null) ?? undefined,
             closedAt: (incoming.closed_at as string | null) ?? undefined,
             wonValue: (incoming.won_value as number | null) ?? undefined,
@@ -267,6 +268,8 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             reentrySeenAt: (r.reentry_seen_at as string | null) ?? undefined,
             returningFromLeadId: (r.returning_from_lead_id as string | null) ?? undefined,
             qualifiedAt: (r.qualified_at as string | null) ?? undefined,
+            // salvar ou arquivar um fluxo muda a contagem no banco (gatilho): o sinal do cartão acompanha
+            fluxosCount: (r.fluxos_count as number | null) ?? undefined,
             qualifiedBy: (r.qualified_by as string | null) ?? undefined,
             closedAt: (r.closed_at as string | null) ?? undefined,
             wonValue: (r.won_value as number | null) ?? undefined,

@@ -12,6 +12,7 @@ import { fraseContato, nivelContato } from './contato'
 import { ordemEfetiva } from './leadFiltros'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { LeadSomenteLeitura } from './LeadSomenteLeitura'
+import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
 
 /**
  * O funil de OUTRO corretor, para o gestor acompanhar — somente leitura
@@ -157,6 +158,7 @@ function CartaoSomenteLeitura({ lead, agora, onAbrir }: { lead: Lead; agora: num
                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
       <div className="flex items-baseline gap-2">
         <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">{lead.name}</p>
+        <span className="self-center"><SinalDeFluxo quantos={lead.fluxosCount} /></span>
         {lead.averageTicket ? (
           <span className="ml-auto flex-shrink-0 font-heading text-[13px] font-bold text-t1 tabular-nums leading-tight">
             {formatCurrency(lead.averageTicket)}

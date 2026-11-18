@@ -128,7 +128,10 @@ describe('aba Fluxos da ficha', () => {
 
     expect(await screen.findByText('Opção 1')).toBeInTheDocument()
     expect(screen.getByText('Pós-chaves · versão 2')).toBeInTheDocument()
-    expect(screen.getByText('linha da versão 2')).toBeInTheDocument()
+    // os números congelados da última versão, em células
+    expect(screen.getByText('R$ 600.000,00')).toBeInTheDocument()
+    expect(screen.getByText('R$ 60.000,00')).toBeInTheDocument()
+    expect(screen.getByText('36× de R$ 2.777,78')).toBeInTheDocument()
     expect(screen.getByText(/a versão 1 foi enviada ao cliente/)).toBeInTheDocument()
     expect(screen.queryByText('linha da versão 1')).not.toBeInTheDocument()
 
@@ -171,7 +174,7 @@ describe('aba Fluxos da ficha', () => {
 
   it('lista de leitura (gestor) não tem editar, enviar nem arquivar', () => {
     render(<ListaDeFluxos grupos={agruparFluxos([versao(2), versao(1)])} />)
-    expect(screen.getByText('linha da versão 2')).toBeInTheDocument()
+    expect(screen.getByText('36× de R$ 2.777,78')).toBeInTheDocument()
     const nomes = screen.getAllByRole('button').map(b => b.textContent?.trim())
     expect(nomes).toEqual(['Ver texto', '1 versão anterior'])
   })
@@ -270,3 +273,28 @@ describe('simulador aberto pelo lead', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('sinal de fluxo no cartão', () => {
+  it('não aparece sem fluxo; com um, só o ícone; com mais, a contagem', async () => {
+    const { SinalDeFluxo } = await import('../modules/leads/fluxos/SinalDeFluxo')
+    const { container, rerender } = render(<SinalDeFluxo quantos={0} />)
+    expect(container).toBeEmptyDOMElement()
+    rerender(<SinalDeFluxo />)
+    expect(container).toBeEmptyDOMElement()
+
+    rerender(<SinalDeFluxo quantos={1} />)
+    expect(screen.getByLabelText('1 fluxo de pagamento salvo')).toBeInTheDocument()
+    expect(container.textContent).toBe('')
+
+    rerender(<SinalDeFluxo quantos={3} />)
+    expect(screen.getByLabelText('3 fluxos de pagamento salvos')).toBeInTheDocument()
+    expect(container.textContent).toBe('3')
+  })
+
+  it('versão guardada sem os números estruturados mostra a frase salva', () => {
+    const antiga = versao(1, { resumo: { linha: 'frase guardada' } as never })
+    render(<ListaDeFluxos grupos={[[antiga]]} />)
+    expect(screen.getByText('frase guardada')).toBeInTheDocument()
+  })
+})
+
