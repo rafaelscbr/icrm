@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Loader2, Clock, MessageCircle, Phone, Mail, Home, Users, FileText, ArrowRight, XCircle, CheckCircle2 } from 'lucide-react'
-import { LeadInteractionType, LeadInteractionOutcome } from '../../types'
+import { LeadInteraction, LeadInteractionType, LeadInteractionOutcome } from '../../types'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
 import { NextStepSuggestion } from './NextStepSuggestion'
@@ -59,6 +59,61 @@ function formatInteractionDate(iso: string) {
   if (itemDay.getTime() === yesterday.getTime()) return `Ontem, ${time}`
   if (isThisYear) return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + `, ${time}`
   return d.toLocaleDateString('pt-BR') + `, ${time}`
+}
+
+// ── Uma linha do histórico ────────────────────────────────────────────────────
+// A mesma linha serve à ficha de trabalho (com o botão de apagar) e à ficha de
+// leitura do gestor (sem `onRemover`, não existe botão para esconder).
+
+function LinhaDoHistorico({ item, onRemover }: { item: LeadInteraction; onRemover?: () => void }) {
+  const tc = TYPE_CONFIG[item.type]
+  const oc = item.outcome ? OUTCOME_CONFIG[item.outcome] : null
+  return (
+    <div className="flex gap-3.5 group">
+      {/* Ícone */}
+      <div className="w-7 h-7 rounded-full bg-surface flex items-center justify-center flex-shrink-0 z-10 mt-1.5">
+        <tc.Icon size={15} strokeWidth={1.9} className={tc.color} aria-hidden />
+      </div>
+
+      {/* Card */}
+      <div className={`flex-1 min-w-0 rounded-[12px] px-3 py-2.5 -mx-1 ${onRemover ? 'hover:bg-s2 transition-colors' : ''}`}>
+        <div className="flex items-start justify-between gap-2 mb-0.5">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="text-[13px] font-semibold text-t1">{tc.label}</span>
+            {oc && <span className={`text-[12.5px] font-medium ${oc.color}`}>{oc.label}</span>}
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[12.5px] text-t4 whitespace-nowrap tabular-nums">
+              {formatInteractionDate(item.interactedAt)}
+            </span>
+            {onRemover && (
+              <button
+                onClick={onRemover}
+                aria-label="Apagar este registro"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-7 h-7 flex items-center justify-center text-t4 hover:text-error hover:bg-error-bg rounded-lg transition-all"
+              >
+                <Trash2 size={11} />
+              </button>
+            )}
+          </div>
+        </div>
+        {item.description && <p className="text-[14px] text-t2 leading-relaxed">{item.description}</p>}
+      </div>
+    </div>
+  )
+}
+
+/** O histórico de um lead só para ler — sem registrar nem apagar. */
+export function HistoricoSomenteLeitura({ itens }: { itens: LeadInteraction[] }) {
+  if (itens.length === 0) return <p className="text-[13.5px] text-t4">Nenhum registro neste lead ainda.</p>
+  return (
+    <div className="relative">
+      <div className="absolute left-[13px] top-3 bottom-3 w-px bg-line" />
+      <div className="space-y-1">
+        {itens.map(item => <LinhaDoHistorico key={item.id} item={item} />)}
+      </div>
+    </div>
+  )
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -277,50 +332,9 @@ export function LeadTimeline({ leadId }: Props) {
             <div className="absolute left-[13px] top-3 bottom-3 w-px bg-line" />
 
             <div className="space-y-1">
-              {interactions.map(item => {
-                const tc = TYPE_CONFIG[item.type]
-                const oc = item.outcome ? OUTCOME_CONFIG[item.outcome] : null
-                return (
-                  <div key={item.id} className="flex gap-3.5 group">
-
-                    {/* Ícone */}
-                    <div className="w-7 h-7 rounded-full bg-surface flex items-center justify-center flex-shrink-0 z-10 mt-1.5">
-                      <tc.Icon size={15} strokeWidth={1.9} className={tc.color} aria-hidden />
-                    </div>
-
-                    {/* Card */}
-                    <div className="flex-1 min-w-0 rounded-[12px] px-3 py-2.5 -mx-1 hover:bg-s2 transition-colors">
-
-                      <div className="flex items-start justify-between gap-2 mb-0.5">
-                        <div className="flex items-center gap-2 flex-wrap min-w-0">
-                          <span className="text-[13px] font-semibold text-t1">{tc.label}</span>
-                          {oc && (
-                            <span className={`text-[12.5px] font-medium ${oc.color}`}>
-                              {oc.label}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className="text-[12.5px] text-t4 whitespace-nowrap tabular-nums">
-                            {formatInteractionDate(item.interactedAt)}
-                          </span>
-                          <button
-                            onClick={() => handleRemove(item.id)}
-                            aria-label="Apagar este registro"
-                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-7 h-7 flex items-center justify-center text-t4 hover:text-error hover:bg-error-bg rounded-lg transition-all"
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {item.description && (
-                        <p className="text-[14px] text-t2 leading-relaxed">{item.description}</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+              {interactions.map(item => (
+                <LinhaDoHistorico key={item.id} item={item} onRemover={() => handleRemove(item.id)} />
+              ))}
             </div>
           </div>
         </div>

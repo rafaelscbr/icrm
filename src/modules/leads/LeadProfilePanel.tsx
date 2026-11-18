@@ -6,7 +6,7 @@ import { useIntelligenceStore } from '../../store/useIntelligenceStore'
 import { Destaque } from '../../components/shared/Destaque'
 import type { PerfilDoLead } from './useLeadProfile'
 import {
-  LeadProfileField, LeadProfileValue, LeadKnownList, LeadFormSubmission,
+  LeadProfile, LeadProfileField, LeadProfileValue, LeadKnownList, LeadFormSubmission,
 } from '../../types'
 import { formatCurrency, formatCurrencyRound, formatDateShort } from '../../lib/formatters'
 
@@ -227,6 +227,66 @@ export function PerfilDeclarado({ leadId, perfil }: { leadId: string; perfil: Pe
             </div>
           )}
         </div>
+      )}
+    </section>
+  )
+}
+
+/* ── Quem é o cliente, só para ler (ficha do gestor) ────────────────────── */
+
+/**
+ * O mesmo quadro do perfil, sem nenhuma edição: é o que o gestor vê ao abrir o
+ * lead de um colega. Componente à parte — e não o `PerfilDeclarado` com os
+ * lápis escondidos — para não existir botão de editar que alguém esqueça de
+ * esconder.
+ */
+export function PerfilSomenteLeitura({ data }: { data: LeadProfile }) {
+  const campos = ORDEM.filter(c => data.profile[c])
+  const ultimoForm = data.forms[0]
+  const prefs = [
+    { key: 'regioes'    as const, label: 'Procura em' },
+    { key: 'tipologias' as const, label: 'Tipologias' },
+  ].map(p => {
+    const vals = data.profile[p.key] as unknown as { values?: string[]; labels?: string[] } | undefined
+    return { ...p, itens: vals?.labels ?? vals?.values ?? [] }
+  }).filter(p => p.itens.length > 0)
+
+  return (
+    <section>
+      <div className="flex items-baseline justify-between gap-3 mb-2.5">
+        <h3 className="text-[15px] font-semibold text-t1 whitespace-nowrap flex-shrink-0">Quem é o <Destaque>cliente</Destaque></h3>
+        <span className="min-w-0 text-[12px] text-t4 truncate">
+          {ultimoForm ? `${ultimoForm.formName} · ${formatDateShort(ultimoForm.at)}` : 'Sem formulário do Meta'}
+          {data.isKnown && <span className="text-brand-text font-medium"> · já era da base</span>}
+        </span>
+      </div>
+
+      {campos.length > 0 ? (
+        <div className="perfil-quadro">
+          {campos.map(c => <Celula key={c} campo={c} valor={data.profile[c]!} />)}
+          {campos.length % 2 === 1 && <div className="perfil-celula perfil-vazia" aria-hidden />}
+        </div>
+      ) : (
+        <p className="text-[13.5px] text-t4">Nada declarado ainda.</p>
+      )}
+
+      {prefs.length > 0 && (
+        <dl className="mt-3 flex flex-col gap-1">
+          {prefs.map(p => (
+            <div key={p.key} className="flex items-center gap-3 min-h-[40px]">
+              <dt className="w-[76px] flex-shrink-0 text-[12.5px] text-t4">{p.label}</dt>
+              <dd className="flex-1 min-w-0 flex flex-wrap gap-1.5">
+                {p.itens.map(i => <span key={i} className="px-2.5 py-1 rounded-full bg-s2 text-[13px] font-medium text-t1">{i}</span>)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {data.missing.length > 0 && (
+        <p className="mt-3 text-[12.5px] text-t4">
+          Falta descobrir: <span className="text-t2">{data.missing.map(m => ROTULO[m] ?? m).join(', ')}</span>
+        </p>
       )}
     </section>
   )

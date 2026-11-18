@@ -1246,6 +1246,34 @@ export const db = {
       if (error) throw error
       return ((data ?? []) as LeadRow[]).map(toLead)
     },
+    /**
+     * A ficha de um lead de OUTRO corretor, para o gestor ler (migração 095).
+     * Uma chamada devolve o lead inteiro (com telefone, e-mail e anotações), o
+     * perfil declarado, o histórico e as tarefas em aberto. O banco só responde
+     * a gestor ou admin, e só para lead do funil aberto de corretor ativo.
+     * Sem toast: a ficha mostra a falha no lugar do conteúdo.
+     */
+    detalheDaEquipe: async (leadId: string): Promise<{
+      lead: Lead
+      perfil: import('../types').LeadProfile | null
+      historico: LeadInteraction[]
+      tarefas: { id: string; title: string; category: string | null; dueDate: string | null; dueTime: string | null; priority: string | null }[]
+    }> => {
+      const { data, error } = await supabase.rpc('team_lead_detail', { p_lead_id: leadId })
+      if (error) throw error
+      const d = data as {
+        lead: LeadRow
+        profile: import('../types').LeadProfile | null
+        timeline: LeadInteractionRow[]
+        tasks: { id: string; title: string; category: string | null; dueDate: string | null; dueTime: string | null; priority: string | null }[]
+      }
+      return {
+        lead: toLead(d.lead),
+        perfil: d.profile ?? null,
+        historico: (d.timeline ?? []).map(toLeadInteraction),
+        tarefas: d.tasks ?? [],
+      }
+    },
     // Transferência manual — RPC SECURITY DEFINER valida dono/admin e grava
     // auditoria (lead_assignments), interação e notificação numa transação
     transfer: async (leadId: string, toBrokerId: string): Promise<void> => {

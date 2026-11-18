@@ -10,16 +10,21 @@ import { EsqueletoCards } from '../../components/shared/Esqueleto'
 import { ORIGEM_META } from './origens'
 import { fraseContato, nivelContato } from './contato'
 import { ordemEfetiva } from './leadFiltros'
+import { aoTeclarAbrir } from '../../components/shared/lista'
+import { LeadSomenteLeitura } from './LeadSomenteLeitura'
 
 /**
  * O funil de OUTRO corretor, para o gestor acompanhar — somente leitura
  * (migração 091).
  *
  * Não é o Kanban de trabalho com os botões escondidos: é uma tela à parte, sem
- * arrastar, sem abrir o lead e sem nenhuma ação. Assim não existe botão para
- * "esquecer de esconder". E não depende só da tela: o banco não deixa o gestor
- * gravar em lead de colega, e a leitura já vem sem telefone, e-mail, anotações
- * e respostas do formulário.
+ * arrastar e sem nenhuma ação. Assim não existe botão para "esquecer de
+ * esconder". E não depende só da tela: o banco não deixa o gestor gravar em
+ * lead de colega.
+ *
+ * O quadro vem sem telefone, e-mail, anotações e respostas do formulário. Os
+ * detalhes só saem do banco um lead por vez, quando o gestor clica no cartão e
+ * abre a ficha de leitura (LeadSomenteLeitura, migração 095).
  *
  * É um retrato do momento em que foi lido, não uma tela ao vivo — o banco não
  * entrega ao gestor os eventos em tempo real dos leads dos colegas. Por isso a
@@ -30,6 +35,7 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [lidoEm, setLidoEm] = useState<Date | null>(null)
+  const [aberto, setAberto] = useState<Lead | null>(null)
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -47,7 +53,7 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
     }
   }, [brokerId])
 
-  useEffect(() => { setLeads(null); setLidoEm(null); void carregar() }, [carregar])
+  useEffect(() => { setLeads(null); setLidoEm(null); setAberto(null); void carregar() }, [carregar])
 
   const porEtapa = useMemo(() => {
     const mapa = new Map<LeadFunnelStage, Lead[]>(FUNNEL_STAGES.map(e => [e, []]))
@@ -66,7 +72,7 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
         <Eye size={16} strokeWidth={1.8} className="text-info flex-shrink-0" aria-hidden />
         <p className="min-w-0 flex-1 text-[13.5px] text-t1">
           Funil de <span className="font-semibold">{nome}</span> — somente leitura.
-          <span className="text-t3"> Você acompanha as etapas; telefone e anotações não aparecem e nada pode ser alterado.</span>
+          <span className="text-t3"> Clique num lead para ver os detalhes. Nada pode ser alterado por aqui.</span>
         </p>
         <p className="text-[12.5px] text-t3 tabular-nums flex-shrink-0">
           {leads && <>{total} {total === 1 ? 'lead' : 'leads'}{pipeline > 0 && <> · {formatCurrency(pipeline)}</>}</>}
@@ -116,7 +122,7 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
                     </p>
                   ) : (
                     <ul className="flex flex-col gap-2">
-                      {lista.map(l => <li key={l.id}><CartaoSomenteLeitura lead={l} agora={agora} /></li>)}
+                      {lista.map(l => <li key={l.id}><CartaoSomenteLeitura lead={l} agora={agora} onAbrir={() => setAberto(l)} /></li>)}
                     </ul>
                   )}
                 </div>
@@ -125,21 +131,30 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
           })}
         </div>
       </EstadoTela>
+
+      {aberto && (
+        <LeadSomenteLeitura leadId={aberto.id} nome={aberto.name} corretor={nome} onClose={() => setAberto(null)} />
+      )}
     </div>
   )
 }
 
 const DIA_MS = 86_400_000
 
-/** O mesmo cartão do Kanban, só com o que se lê: sem ação, sem clique, sem telefone. */
-function CartaoSomenteLeitura({ lead, agora }: { lead: Lead; agora: number }) {
+/** O mesmo cartão do Kanban, só com o que se lê: sem ação e sem telefone. O clique abre a ficha de leitura. */
+function CartaoSomenteLeitura({ lead, agora, onAbrir }: { lead: Lead; agora: number; onAbrir: () => void }) {
   const origem = ORIGEM_META[lead.origin]
   const diasNaEtapa = Math.floor((agora - new Date(lead.stageChangedAt ?? lead.createdAt).getTime()) / DIA_MS)
   const nivel = nivelContato(lead, agora)
   const corContato = nivel === 'parado' ? 'text-error' : nivel === 'esfriando' ? 'text-warning' : 'text-t3'
 
   return (
-    <article className="kanban-card relative border rounded-[12px] p-3 overflow-hidden">
+    // <div role="button">, como o cartão do Kanban: um <button> de verdade não
+    // pode conter os parágrafos e blocos do cartão.
+    <div role="button" tabIndex={0} onClick={onAbrir} onKeyDown={aoTeclarAbrir(onAbrir)}
+         aria-label={`Ver detalhes de ${lead.name}`}
+         className="kanban-card relative border rounded-[14px] px-3.5 py-3 overflow-hidden cursor-pointer
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
       <div className="flex items-baseline gap-2">
         <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">{lead.name}</p>
         {lead.averageTicket ? (
@@ -175,6 +190,6 @@ function CartaoSomenteLeitura({ lead, agora }: { lead: Lead; agora: number }) {
           ))}
         </div>
       )}
-    </article>
+    </div>
   )
 }
