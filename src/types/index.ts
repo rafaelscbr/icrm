@@ -932,6 +932,8 @@ export type NotificationType =
   | 'lead_all_paused'         // admin: lead chegou com todos os corretores em pausa (migração 089)
   | 'lead_intake_paused'      // admin: um corretor pausou o recebimento de leads (migração 090)
   | 'lead_new_admin'          // admin: entrou um lead novo no sistema, de qualquer origem (migração 092)
+  | 'acesso_entrada'          // admin: 1º acesso do dia de um corretor acompanhado (migração 098)
+  | 'acesso_atraso'           // admin: corretor acompanhado ainda não entrou no horário (migração 098)
 
 export interface AppNotification {
   id: string

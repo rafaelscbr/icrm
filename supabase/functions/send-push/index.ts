@@ -92,9 +92,13 @@ Deno.serve(async (req: Request) => {
 
   // Abre o card, não a lista: o aviso já diz o nome, e obrigar a procurar esse
   // nome no meio do funil é o atrito que faz o corretor parar de tocar no push.
+  // Aviso de acesso (migração 098): abre Admin › Avisos de acesso, que mostra
+  // quem entrou hoje e quem está online.
   const url = n.resource_type === 'lead'
     ? (n.resource_id ? `/leads?lead=${encodeURIComponent(n.resource_id)}` : '/leads')
-    : '/tarefas'
+    : n.resource_type === 'acesso'
+      ? '/admin#avisos-acesso'
+      : '/tarefas'
 
   const payload = JSON.stringify({
     title: n.title,

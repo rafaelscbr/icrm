@@ -19,7 +19,7 @@ import { mascaraTelefone } from '../modules/simulador/shared/components'
 
 const IDS = { empreendimento: 'Porto Velas 3D', cliente: 'joão da silva', corretor: 'Rafael Souza' }
 // toLocaleString de moeda separa "R$" do número com espaço não quebrável.
-const sp = (s: string) => s.replace(/ /g, ' ')
+const sp = (s: string) => s.replace(/\u00a0/g, ' ')
 
 describe('peças', () => {
   it('saúda pelo primeiro nome, capitalizado', () => {

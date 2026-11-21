@@ -113,6 +113,9 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
       lead_all_paused:       'var(--warning)',
       // Admin: um corretor pausou o recebimento de leads (migração 090)
       lead_intake_paused:    'var(--warning)',
+      // Admin: corretor entrou no dia / ainda não entrou (migração 098)
+      acesso_entrada:        'var(--success)',
+      acesso_atraso:         'var(--warning)',
     }
     const tarja = AVISOS_DE_LEAD[n.type]
     if (tarja) {

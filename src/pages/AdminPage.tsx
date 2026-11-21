@@ -11,6 +11,7 @@ import { SecaoTitulo, Rotulo, Chip, IconeTom } from '../components/shared/visual
 import { useAuthStore, Profile } from '../store/useAuthStore'
 import { mensagemDeErro } from '../lib/erros'
 import toast from 'react-hot-toast'
+import { AvisosDeAcesso } from '../modules/acesso/AvisosDeAcesso'
 
 /**
  * Administração de usuários.
@@ -218,6 +219,8 @@ export function AdminPage() {
               </div>
             )}
           </section>
+
+          <AvisosDeAcesso perfis={profiles} />
         </div>
       </EstadoTela>
 

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
-  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle,
+  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle, LogIn, Clock,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushDeviceState, type PushDeviceState } from '../lib/push'
+import { ANCORA_AVISOS_ACESSO } from '../modules/acesso/ancora'
 import { PageLayout } from '../components/layout/PageLayout'
 import { Abas } from '../components/shared/Abas'
 import { EstadoTela } from '../components/shared/EstadoTela'
@@ -95,6 +96,9 @@ function aparencia(n: AppNotification) {
   // recebimento (090): avisos do admin, em âmbar — pedem atenção, não socorro.
   if (n.type === 'lead_all_paused')       return { icon: AlertTriangle, tom: 'atencao' as const, acao: 'Abrir lead'   }
   if (n.type === 'lead_intake_paused')    return { icon: PauseCircle,   tom: 'atencao' as const, acao: 'Abrir Leads'  }
+  // Acesso do dia (098): verde quem entrou, âmbar quem ainda não entrou.
+  if (n.type === 'acesso_entrada')        return { icon: LogIn,         tom: 'sucesso' as const, acao: 'Ver acessos'  }
+  if (n.type === 'acesso_atraso')         return { icon: Clock,         tom: 'atencao' as const, acao: 'Ver acessos'  }
   return                                         { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
 }
 
@@ -106,13 +110,14 @@ function NotificationItem({
   const navigate = useNavigate()
   const { icon, tom, acao } = aparencia(n)
   const naoLida = !n.read
-  const temDestino = n.resourceType === 'task' || n.resourceType === 'lead'
+  const temDestino = n.resourceType === 'task' || n.resourceType === 'lead' || n.resourceType === 'acesso'
 
   function handleClick() {
     if (naoLida) onRead(n.id)
     if (n.resourceType === 'task') navigate('/tarefas')
     // Direto no card — ver comentário em NotificationsPopover.
     if (n.resourceType === 'lead') navigate(n.resourceId ? `/leads?lead=${n.resourceId}` : '/leads')
+    if (n.resourceType === 'acesso') navigate(`/admin#${ANCORA_AVISOS_ACESSO}`)
   }
 
   return (

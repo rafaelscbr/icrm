@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle, BadgeCheck, PauseCircle } from 'lucide-react'
+import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle, BadgeCheck, PauseCircle, LogIn, Clock } from 'lucide-react'
 import { useNotificationsStore } from '../../store/useNotificationsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { AppNotification } from '../../types'
+import { ANCORA_AVISOS_ACESSO } from '../../modules/acesso/ancora'
 import { agruparNotificacoes, tituloDoGrupo, type GrupoNotificacao } from '../../lib/notificacoes'
 
 function timeAgo(iso: string): string {
@@ -95,6 +96,8 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
     if (n.type === 'lead_sla_exhausted')    return <AlertTriangle size={14} strokeWidth={1.6} className={!n.read ? 'text-error' : 'text-t4'} />
     if (n.type === 'lead_all_paused')       return <AlertTriangle size={14} strokeWidth={1.6} className={!n.read ? 'text-warning' : 'text-t4'} />
     if (n.type === 'lead_intake_paused')    return <PauseCircle   size={14} strokeWidth={1.6} className={!n.read ? 'text-warning' : 'text-t4'} />
+    if (n.type === 'acesso_entrada')        return <LogIn         size={14} strokeWidth={1.6} className={!n.read ? 'text-success' : 'text-t4'} />
+    if (n.type === 'acesso_atraso')         return <Clock         size={14} strokeWidth={1.6} className={!n.read ? 'text-warning' : 'text-t4'} />
     return <ClipboardList size={14} strokeWidth={1.6} className={cls} />
   }
 
@@ -112,6 +115,8 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
     // o nome que estava escrito no aviso é o tipo de atrito que faz o corretor
     // parar de clicar na notificação.
     if (n.resourceType === 'lead') navigate(n.resourceId ? `/leads?lead=${n.resourceId}` : '/leads')
+    // Aviso de acesso: abre a configuração, que mostra também quem entrou hoje.
+    if (n.resourceType === 'acesso') navigate(`/admin#${ANCORA_AVISOS_ACESSO}`)
     onClose()
   }
 
@@ -239,6 +244,9 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
                     )}
                     {!varios && n.resourceType === 'task' && (
                       <span className="font-label text-[10px] text-brand-text">· Abrir tarefa</span>
+                    )}
+                    {!varios && n.resourceType === 'acesso' && (
+                      <span className="font-label text-[10px] text-brand-text">· Ver acessos</span>
                     )}
                   </span>
                 </span>

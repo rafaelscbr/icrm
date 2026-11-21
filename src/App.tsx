@@ -25,6 +25,7 @@ import { useContactsStore } from './store/useContactsStore'
 import { useSearchStore } from './store/useSearchStore'
 import { supabase } from './lib/supabase'
 import { syncPushSubscription } from './lib/push'
+import { iniciarRegistroDeAcesso } from './lib/acesso'
 import { carregadores } from './rotas'
 
 // ── Code splitting por rota ──────────────────────────────────────────────────
@@ -141,6 +142,10 @@ function AppRoutes() {
       }
     })
 
+    // Acesso do dia (migração 098): abrir, voltar à aba ou clicar depois de
+    // 30 min parado. É o que avisa o admin de quem entrou e de quem não entrou.
+    const pararRegistroDeAcesso = iniciarRegistroDeAcesso()
+
     // Entidades operacionais — RLS garante que cada usuário vê apenas o que tem permissão
     const unsubLeads         = subscribeLeads()
     const unsubTasks         = subscribeTasks()
@@ -153,6 +158,7 @@ function AppRoutes() {
     const unsubContacts      = useContactsStore.getState().subscribe()
 
     return () => {
+      pararRegistroDeAcesso()
       unsubNotifications()
       unsubLeads()
       unsubTasks()

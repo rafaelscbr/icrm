@@ -490,13 +490,14 @@ export function PropertyForm({ isOpen, onClose, property }: PropertyFormProps) {
 
               {/* Permuta */}
               <div className="flex flex-col gap-3">
-                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                <label htmlFor="imovel-permuta" className="flex items-center justify-between gap-4 cursor-pointer">
                   <span>
                     <span className="block text-[14px] font-medium text-t1">Aceita permuta</span>
                     <span className="block text-[12.5px] text-t4">Imóvel ou carro como parte do pagamento</span>
                   </span>
                   <button
                     type="button"
+                    id="imovel-permuta"
                     role="switch"
                     aria-checked={acceptsPermuta}
                     aria-label="Aceita permuta"
