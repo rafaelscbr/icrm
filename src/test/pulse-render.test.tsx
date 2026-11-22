@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import {
-  AoVivo, BarraDoPrazo, EquipeAgora, FilaPrimeiroContato, FunilVivo, MetaDoMes, NumerosDoMomento,
-  PontosDaFila, Resposta, mediaSemHoje, textoDaResposta, urgenciaDe,
+  AoVivo, Batimento, EquipeAgora, FilaPrimeiroContato, FunilVivo, MetaNoMarinho, NumerosNoMarinho,
+  PontosNoMarinho, PrazoNoMarinho, Resposta, curvaDoDia, mediaSemHoje, textoDaResposta, urgenciaDe,
 } from '../modules/pulse/components/Sala'
 import type { Corretor } from '../modules/pulse/components/Sala'
 import { etapaDoDescarte } from '../modules/pulse/usePulseStore'
@@ -38,15 +38,15 @@ const CORRETOR: Corretor = {
   atend: 12, ligacoes: 10, metaLigacoes: 10, avancos: 3, visitas: 1, leads: 4, herdados: 2,
 }
 
-describe('números do momento', () => {
+describe('faixa Marinho — números do momento', () => {
   it('número que ainda não chegou vira traço, não zero', () => {
-    render(<NumerosDoMomento meta={null} itens={[
+    render(<NumerosNoMarinho meta={null} itens={[
       { rotulo: 'Leads hoje', valor: null },
-      { rotulo: 'Na fila', valor: 3, tom: 'text-warning', nota: 'esperando o 1º contato' },
+      { rotulo: 'Na fila', valor: 3, cor: 'alerta', nota: '3 com o prazo correndo' },
     ]} />)
     expect(screen.getByText('—')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
-    expect(screen.getByText('esperando o 1º contato')).toBeInTheDocument()
+    expect(screen.getByText('3 com o prazo correndo')).toBeInTheDocument()
   })
 
   it('média de leads ignora hoje, que ainda está acontecendo', () => {
@@ -55,21 +55,21 @@ describe('números do momento', () => {
   })
 
   it('barra do prazo só aparece quando algum prazo fechou', () => {
-    const { container, rerender } = render(<BarraDoPrazo noPrazo={0} fora={0} perdidos={0} />)
+    const { container, rerender } = render(<PrazoNoMarinho noPrazo={0} fora={0} perdidos={0} />)
     expect(container).toBeEmptyDOMElement()
-    rerender(<BarraDoPrazo noPrazo={3} fora={1} perdidos={0} />)
+    rerender(<PrazoNoMarinho noPrazo={3} fora={1} perdidos={0} />)
     expect(container).not.toBeEmptyDOMElement()
   })
 
   it('fila vazia não desenha pontos', () => {
-    const { container } = render(<PontosDaFila urgencias={[]} />)
+    const { container } = render(<PontosNoMarinho urgencias={[]} />)
     expect(container).toBeEmptyDOMElement()
   })
 })
 
-describe('meta do mês (o único dourado)', () => {
+describe('faixa Marinho — meta do mês (o único dourado)', () => {
   it('mostra realizado, ritmo por dia útil e dias sem venda', () => {
-    render(<MetaDoMes vgl={VGL} />)
+    render(<MetaNoMarinho vgl={VGL} />)
     expect(screen.getByText('R$ 250k')).toBeInTheDocument()
     expect(screen.getByText(/25% de R\$ 1,0M/)).toBeInTheDocument()
     // faltam 750k em 25 dias úteis = 30k/dia
@@ -78,19 +78,46 @@ describe('meta do mês (o único dourado)', () => {
   })
 
   it('meta batida não pede ritmo', () => {
-    render(<MetaDoMes vgl={{ ...VGL, realizadoMes: 1_200_000, faltaParaMeta: 0 }} />)
+    render(<MetaNoMarinho vgl={{ ...VGL, realizadoMes: 1_200_000, faltaParaMeta: 0 }} />)
     expect(screen.getByText(/100% de R\$ 1,0M/)).toBeInTheDocument()
     expect(screen.getByText('meta do mês batida')).toBeInTheDocument()
   })
 
   it('sem nenhuma venda registrada não inventa contador', () => {
-    render(<MetaDoMes vgl={{ ...VGL, ultimaVenda: null, diasSemVenda: null }} />)
+    render(<MetaNoMarinho vgl={{ ...VGL, ultimaVenda: null, diasSemVenda: null }} />)
     expect(screen.getByText(/nenhuma/)).toBeInTheDocument()
   })
 
   it('antes de carregar mostra a espera, não um zero', () => {
-    const { container } = render(<MetaDoMes vgl={null} />)
+    const { container } = render(<MetaNoMarinho vgl={null} />)
     expect(container.querySelector('[aria-busy="true"]')).not.toBeNull()
+  })
+})
+
+describe('faixa Marinho — o batimento do dia', () => {
+  const hora = (h: number, m = 0) => new Date(2026, 10, 23, h, m).getTime()
+
+  it('cada registro sobe a linha no balde de 10 min em que aconteceu', () => {
+    const { y } = curvaDoDia([{ t: hora(9, 5), kind: 'interacao' }, { t: hora(9, 7), kind: 'interacao' }], 8, 19, hora(14))
+    // 8h às 20h = 72 baldes; 9h05 cai no 7º (índice 6)
+    expect(y).toHaveLength(72)
+    expect(y[6]).toBe(1)              // 0,5 × 2 registros
+    expect(y[5]).toBe(0.5)            // o vizinho recebe metade
+    expect(y[20]).toBe(0)
+  })
+
+  it('o traço vai só até agora; o resto do dia é trilho', () => {
+    expect(curvaDoDia([], 8, 19, hora(14)).ateAgora).toBe(36)
+  })
+
+  it('fora da janela do dia não conta', () => {
+    const { y } = curvaDoDia([{ t: hora(6), kind: 'lead_novo' }], 8, 19, hora(14))
+    expect(y.every(v => v === 0)).toBe(true)
+  })
+
+  it('o batimento diz quantos registros houve, para quem não vê', () => {
+    render(<Batimento batidas={[{ t: hora(9), kind: 'lead_novo' }, { t: hora(10), kind: 'venda' }]} de={8} ate={19} agora={hora(14)} />)
+    expect(screen.getByRole('img').getAttribute('aria-label')).toMatch(/2 registros/)
   })
 })
 

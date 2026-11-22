@@ -77,116 +77,12 @@ function useAltura<T extends HTMLElement>(): [RefObject<T | null>, number] {
   return [ref, h]
 }
 
-// ─── Números do momento ───────────────────────────────────────────────────────
-
-export interface Numero {
-  rotulo: string
-  /** null = ainda não dá para afirmar: mostra um traço, nunca um zero */
-  valor: number | string | null
-  tom?: 'text-t1' | 'text-warning' | 'text-error' | 'text-success'
-  nota?: ReactNode
-  /** o desenho que mostra o número (pontos da fila, barra do prazo) */
-  marca?: ReactNode
-}
-
-/** Os números do momento numa faixa só, como tipografia. A meta do mês fecha a faixa. */
-export function NumerosDoMomento({ itens, meta }: { itens: Numero[]; meta: ReactNode }) {
-  return (
-    <div className="shrink-0 rounded-[18px] border border-line bg-surface grid"
-         style={{ gridTemplateColumns: `repeat(${itens.length}, minmax(0, 1fr)) minmax(0, 1.7fr)` }}>
-      {itens.map((it, i) => (
-        <div key={it.rotulo} className={`px-6 py-5 min-w-0 flex flex-col ${i > 0 ? 'border-l border-line' : ''}`}>
-          <p className={`${ROTULO} truncate`}>{it.rotulo}</p>
-          <p className={`mt-2 font-display text-[60px] leading-[0.95] font-extrabold tracking-[-0.04em] ${it.tom ?? 'text-t1'}`}>
-            {it.valor === null ? <span className="text-t4">—</span> : <NumeroVivo valor={it.valor} />}
-          </p>
-          <div className="mt-auto pt-3 min-h-[22px]">
-            {it.marca}
-            {it.nota && <p className={`text-[14px] text-t3 truncate ${it.marca ? 'mt-1.5' : ''}`}>{it.nota}</p>}
-          </div>
-        </div>
-      ))}
-      <div className="border-l border-line min-w-0">{meta}</div>
-    </div>
-  )
-}
-
 export type Urgencia = 'ok' | 'alerta' | 'risco' | 'parado'
-
-/** Um ponto por lead esperando, na cor da urgência — a fila vista de relance. */
-export function PontosDaFila({ urgencias }: { urgencias: Urgencia[] }) {
-  if (urgencias.length === 0) return null
-  return (
-    <span className="flex flex-wrap gap-1.5" aria-hidden>
-      {urgencias.slice(0, 16).map((u, i) => (
-        <span key={i} className={`h-2.5 w-2.5 rounded-full ${u === 'risco' ? 'pulse-live-dot' : ''}`}
-              style={{ background: COR_DA_URGENCIA[u] }} />
-      ))}
-    </span>
-  )
-}
-
-/** Barra de "x de y no prazo": verde o cumprido, âmbar o atrasado, vermelho o perdido. */
-export function BarraDoPrazo({ noPrazo, fora, perdidos }: { noPrazo: number; fora: number; perdidos: number }) {
-  const total = noPrazo + fora + perdidos
-  if (total === 0) return null
-  return (
-    <span className="flex h-2.5 w-full overflow-hidden rounded-full bg-s3" aria-hidden>
-      <span style={{ width: `${(noPrazo / total) * 100}%`, background: 'var(--v-ok)' }} />
-      <span style={{ width: `${(fora / total) * 100}%`, background: 'var(--v-alerta)' }} />
-      <span style={{ width: `${(perdidos / total) * 100}%`, background: 'var(--v-risco)' }} />
-    </span>
-  )
-}
 
 // ─── Meta do mês ──────────────────────────────────────────────────────────────
 
 const SECA_ALERTA = 7
 const SECA_GRAVE  = 15
-
-/**
- * VGL do mês contra a meta — o ÚNICO dourado da tela (princípio 2): dinheiro,
- * meta e marca ao mesmo tempo. Ao lado, há quantos dias não sai venda.
- */
-export function MetaDoMes({ vgl }: { vgl: PulseVgl | null }) {
-  if (!vgl) return <div className="h-[calc(100%-40px)] m-5 rounded-[12px] shimmer" aria-busy="true" />
-  const pct = vgl.metaMes > 0 ? Math.min(100, Math.round((vgl.realizadoMes / vgl.metaMes) * 100)) : 0
-  const porDia = vgl.diasUteisRestantes > 0 ? vgl.faltaParaMeta / vgl.diasUteisRestantes : null
-  const seca = vgl.diasSemVenda
-  const corSeca = seca === null ? 'text-t4' : seca >= SECA_GRAVE ? 'text-error' : seca >= SECA_ALERTA ? 'text-warning' : 'text-success'
-
-  return (
-    <div className="relative h-full px-6 py-5 flex gap-6">
-      <div className="min-w-0 flex-1 flex flex-col">
-        <p className={`${ROTULO} truncate`}>VGL do mês · {pct}% de {formatCurrency(vgl.metaMes)}</p>
-        <p className="mt-2 font-display text-[54px] leading-[0.95] font-extrabold tracking-[-0.04em] text-brand tabular-nums whitespace-nowrap">
-          {formatCurrency(vgl.realizadoMes)}
-        </p>
-        <div className="mt-auto pt-3">
-          <span className="block h-2.5 rounded-full bg-s3 overflow-hidden" aria-hidden>
-            {pct > 0 && <span className="block h-full rounded-full bg-brand-fill transition-[width] duration-[420ms]" style={{ width: `${pct}%` }} />}
-          </span>
-          <p className="mt-1.5 text-[14px] text-t3 truncate tabular-nums">
-            {vgl.faltaParaMeta <= 0 ? 'meta do mês batida'
-              : porDia === null ? `faltam ${formatCurrency(vgl.faltaParaMeta)}`
-              : `faltam ${formatCurrency(vgl.faltaParaMeta)} · ${formatCurrency(porDia)}/dia útil`}
-          </p>
-        </div>
-      </div>
-      <div className="shrink-0 flex flex-col justify-center items-center text-center">
-        <CalendarX size={18} strokeWidth={1.6} className={corSeca} aria-hidden />
-        {seca === null ? (
-          <p className="mt-1.5 text-[14px] text-t3 leading-tight">nenhuma<br />venda</p>
-        ) : (
-          <>
-            <p className={`mt-1 font-display text-[44px] leading-none font-extrabold tabular-nums ${corSeca}`}>{seca}</p>
-            <p className="mt-1 text-[14px] text-t3 leading-tight">{seca === 1 ? 'dia' : 'dias'}<br />sem venda</p>
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
 
 // ─── Equipe agora ─────────────────────────────────────────────────────────────
 
@@ -253,7 +149,7 @@ export function EquipeAgora({ corretores, de, ate, agora }: {
         {corretores.map((c, i) => {
           const id = IDENTIDADE[i % IDENTIDADE.length]
           return (
-            <li key={c.id} className="grid items-center gap-x-5 px-6 py-3 border-t border-line/70" style={{ gridTemplateColumns: COLUNAS_EQUIPE }}>
+            <li key={c.id} className="grid items-center gap-x-5 px-6 py-1.5 border-t border-line/70" style={{ gridTemplateColumns: COLUNAS_EQUIPE }}>
               <div className="flex items-center gap-3.5 min-w-0">
                 <span className="relative shrink-0">
                   <span className="flex h-12 w-12 items-center justify-center rounded-full font-display text-[16px] font-bold"
@@ -305,7 +201,7 @@ function LinhaDoDia({ marcas, de, ate, agora, nome }: {
   const ref = new Date(agora)
   const cursor = posicaoNoDia(agora, de, ate, ref)
   return (
-    <div className="relative h-12" role="img"
+    <div className="relative h-11" role="img"
          aria-label={`Linha do dia de ${nome}: ${marcas.length} ${marcas.length === 1 ? 'registro' : 'registros'}.`}>
       {/* o dia que já passou é um trilho cheio; o que falta, um trilho claro */}
       <span className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-s3" aria-hidden />
@@ -614,5 +510,221 @@ export function Resposta({ tempos }: { tempos: PulseTempos }) {
         </p>
       </div>
     </div>
+  )
+}
+
+// ═══ Faixa Marinho ═══════════════════════════════════════════════════════════
+
+/** Um acontecimento do dia, para o batimento: quando e o que foi. */
+export interface Batida {
+  t: number
+  kind: PulseEvent['kind']
+}
+
+/** Pontos que pedem destaque sobre a linha: chegada, visita e venda. */
+const MARCO: Partial<Record<PulseEvent['kind'], { cor: string; rotulo: string }>> = {
+  lead_novo: { cor: '#818CF8', rotulo: 'lead novo' },
+  visita:    { cor: '#2DD4BF', rotulo: 'visita' },
+  venda:     { cor: '#34D399', rotulo: 'venda' },
+}
+
+const BALDE_MIN = 10
+
+/** Contagem por balde de 10 min, suavizada — o traço do dia. */
+export function curvaDoDia(batidas: Batida[], de: number, ate: number, agora: number): { y: number[]; ateAgora: number } {
+  const ref = new Date(agora)
+  const ini = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), de).getTime()
+  const fim = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), ate + 1).getTime()
+  const n = Math.round((fim - ini) / (BALDE_MIN * 60_000))
+  const bruto = Array<number>(n).fill(0)
+  for (const b of batidas) {
+    if (b.t < ini || b.t >= fim) continue
+    bruto[Math.floor((b.t - ini) / (BALDE_MIN * 60_000))]++
+  }
+  // suavização 1-2-1: um registro sozinho ainda vira um pico visível
+  const y = bruto.map((v, i) => 0.25 * (bruto[i - 1] ?? v) + 0.5 * v + 0.25 * (bruto[i + 1] ?? v))
+  const ateAgora = Math.max(0, Math.min(n - 1, Math.floor((agora - ini) / (BALDE_MIN * 60_000))))
+  return { y, ateAgora }
+}
+
+/** Curva suave por Catmull-Rom → Bézier. */
+function caminho(pts: [number, number][]): string {
+  if (pts.length === 0) return ''
+  let d = `M ${pts[0][0]} ${pts[0][1]}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] ?? p2
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6
+    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`
+  }
+  return d
+}
+
+/**
+ * O batimento da imobiliária — o nome da tela desenhado. Cada registro da
+ * equipe faz a linha subir na hora em que aconteceu; os marcos do dia (lead
+ * que chegou, visita, venda) ficam como pontos sobre o trilho; o cursor
+ * champanhe é o agora. O que ainda não aconteceu é só o trilho.
+ */
+export function Batimento({ batidas, de, ate, agora }: { batidas: Batida[]; de: number; ate: number; agora: number }) {
+  const W = 1000, H = 52
+  const { y, ateAgora } = useMemo(() => curvaDoDia(batidas, de, ate, agora), [batidas, de, ate, agora])
+  const max = Math.max(1.5, ...y)
+  const passo = y.length > 1 ? W / (y.length - 1) : W
+  const pts: [number, number][] = y.slice(0, ateAgora + 1).map((v, i) => [i * passo, H - 6 - (v / max) * (H - 18)])
+  const linha = caminho(pts)
+  const area = pts.length > 1 ? `${linha} L ${pts[pts.length - 1][0]} ${H} L 0 ${H} Z` : ''
+  const cursor = posicaoNoDia(agora, de, ate, new Date(agora))
+  const horas: number[] = []
+  for (let h = de; h <= ate + 1; h += 1) horas.push(h)
+  const ref = new Date(agora)
+  const marcos = batidas.filter(b => MARCO[b.kind])
+  const total = batidas.length
+
+  return (
+    <div className="relative">
+      <div className="relative h-[52px]" role="img"
+           aria-label={`Batimento do dia: ${total} ${total === 1 ? 'registro' : 'registros'} da equipe entre ${de}h e ${ate + 1}h.`}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden>
+          <line x1={0} y1={H - 0.5} x2={W} y2={H - 0.5} stroke="var(--m-line)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+          {area && <path d={area} fill="rgba(226, 195, 133, 0.14)" />}
+          {linha && <path d={linha} fill="none" stroke="var(--m-ouro)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
+        </svg>
+        {/* marcos do dia, sobre o trilho */}
+        {marcos.map((b, i) => {
+          const x = posicaoNoDia(b.t, de, ate, ref)
+          if (x === null) return null
+          const m = MARCO[b.kind]!
+          return (
+            <span key={i} className="absolute bottom-0 h-2.5 w-2.5 -translate-x-1/2 translate-y-1/2 rounded-full ring-2 ring-[#0F2759] pulse-item-in"
+                  style={{ left: `${x}%`, background: m.cor }} aria-hidden />
+          )
+        })}
+        {cursor !== null && (
+          <span className="absolute inset-y-0 -translate-x-1/2" style={{ left: `${cursor}%` }} aria-hidden>
+            <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2" style={{ background: 'var(--m-ouro)' }} />
+            <span className="absolute left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full pulse-live-dot"
+                  style={{ top: `${pts.length ? (pts[pts.length - 1][1] / H) * 100 : 100}%`, background: 'var(--m-ouro)', boxShadow: '0 0 0 4px rgba(226,195,133,0.22)' }} />
+          </span>
+        )}
+      </div>
+      <div className="relative mt-2 h-4" aria-hidden>
+        {horas.map(h => (
+          <span key={h} className="absolute -translate-x-1/2 text-[12.5px] tabular-nums first:translate-x-0 last:-translate-x-full"
+                style={{ left: `${((h - de) / (ate + 1 - de)) * 100}%`, color: 'var(--m-t3)' }}>{h}h</span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Legenda dos marcos do batimento. */
+export function LegendaDoBatimento() {
+  return (
+    <span className="flex items-center gap-4 text-[13.5px]" style={{ color: 'var(--m-t2)' }}>
+      <span className="flex items-center gap-1.5"><span className="h-[3px] w-4 rounded-full" style={{ background: 'var(--m-ouro)' }} /> registros</span>
+      {Object.values(MARCO).map(m => (
+        <span key={m!.rotulo} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: m!.cor }} /> {m!.rotulo}</span>
+      ))}
+    </span>
+  )
+}
+
+export interface NumeroMarinho {
+  rotulo: string
+  valor: number | string | null
+  /** cor do número sobre o Marinho — só quando carrega julgamento */
+  cor?: 'ok' | 'alerta' | 'risco'
+  nota?: ReactNode
+  marca?: ReactNode
+}
+
+const COR_MARINHO = { ok: 'var(--m-ok)', alerta: 'var(--m-alerta)', risco: 'var(--m-risco)' } as const
+
+/** Os números do momento sobre o Marinho: brancos, grandes, cor só no julgamento. */
+export function NumerosNoMarinho({ itens, meta }: { itens: NumeroMarinho[]; meta: ReactNode }) {
+  return (
+    <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${itens.length}, minmax(0, 1fr)) minmax(0, 1.55fr)` }}>
+      {itens.map((it, i) => (
+        <div key={it.rotulo} className={`min-w-0 pr-5 ${i > 0 ? 'pl-5' : ''}`} style={i > 0 ? { borderLeft: '1px solid var(--m-line)' } : undefined}>
+          <p className="font-label text-[12.5px] uppercase tracking-[0.14em] truncate" style={{ color: 'var(--m-t3)' }}>{it.rotulo}</p>
+          <p className="mt-1 font-display text-[44px] leading-[0.95] font-extrabold tracking-[-0.045em]"
+             style={{ color: it.cor ? COR_MARINHO[it.cor] : 'var(--m-t1)' }}>
+            {it.valor === null ? <span style={{ color: 'var(--m-t3)' }}>—</span> : <NumeroVivo valor={it.valor} />}
+          </p>
+          <div className="mt-2 min-h-[20px]">
+            {it.marca}
+            {it.nota && <p className={`text-[14px] truncate ${it.marca ? 'mt-1.5' : ''}`} style={{ color: 'var(--m-t2)' }}>{it.nota}</p>}
+          </div>
+        </div>
+      ))}
+      <div className="min-w-0 pl-6" style={{ borderLeft: '1px solid var(--m-line)' }}>{meta}</div>
+    </div>
+  )
+}
+
+/** VGL do mês em champanhe sobre o Marinho — dinheiro, meta e marca. */
+export function MetaNoMarinho({ vgl }: { vgl: PulseVgl | null }) {
+  if (!vgl) return <div className="h-full rounded-[12px] bg-white/5" aria-busy="true" />
+  const pct = vgl.metaMes > 0 ? Math.min(100, Math.round((vgl.realizadoMes / vgl.metaMes) * 100)) : 0
+  const porDia = vgl.diasUteisRestantes > 0 ? vgl.faltaParaMeta / vgl.diasUteisRestantes : null
+  const seca = vgl.diasSemVenda
+  const corSeca = seca === null ? 'var(--m-t3)' : seca >= SECA_GRAVE ? 'var(--m-risco)' : seca >= SECA_ALERTA ? 'var(--m-alerta)' : 'var(--m-ok)'
+  return (
+    <div className="flex gap-6 h-full">
+      <div className="min-w-0 flex-1">
+        <p className="font-label text-[12.5px] uppercase tracking-[0.14em] truncate" style={{ color: 'var(--m-t3)' }}>
+          VGL do mês · {pct}% de {formatCurrency(vgl.metaMes)}
+        </p>
+        <p className="mt-1 font-display text-[44px] leading-[0.95] font-extrabold tracking-[-0.045em] tabular-nums whitespace-nowrap" style={{ color: 'var(--m-ouro)' }}>
+          {formatCurrency(vgl.realizadoMes)}
+        </p>
+        <span className="mt-2.5 block h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }} aria-hidden>
+          {pct > 0 && <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #D6B26E, #E8CD94)' }} />}
+        </span>
+        <p className="mt-1.5 text-[14px] truncate tabular-nums" style={{ color: 'var(--m-t2)' }}>
+          {vgl.faltaParaMeta <= 0 ? 'meta do mês batida'
+            : porDia === null ? `faltam ${formatCurrency(vgl.faltaParaMeta)}`
+            : `faltam ${formatCurrency(vgl.faltaParaMeta)} · ${formatCurrency(porDia)}/dia útil`}
+        </p>
+      </div>
+      <div className="shrink-0 flex flex-col justify-center items-center text-center">
+        <CalendarX size={18} strokeWidth={1.6} style={{ color: corSeca }} aria-hidden />
+        {seca === null ? (
+          <p className="mt-1.5 text-[14px] leading-tight" style={{ color: 'var(--m-t2)' }}>nenhuma<br />venda</p>
+        ) : (
+          <>
+            <p className="mt-1 font-display text-[40px] leading-none font-extrabold tabular-nums" style={{ color: corSeca }}>{seca}</p>
+            <p className="mt-1 text-[14px] leading-tight" style={{ color: 'var(--m-t2)' }}>{seca === 1 ? 'dia' : 'dias'}<br />sem venda</p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Pontos da fila sobre o Marinho. */
+export function PontosNoMarinho({ urgencias }: { urgencias: Urgencia[] }) {
+  if (urgencias.length === 0) return null
+  const cor: Record<Urgencia, string> = { ok: 'var(--m-ok)', alerta: 'var(--m-alerta)', risco: 'var(--m-risco)', parado: 'rgba(255,255,255,0.30)' }
+  return (
+    <span className="flex flex-wrap gap-1.5" aria-hidden>
+      {urgencias.slice(0, 16).map((u, i) => (
+        <span key={i} className={`h-2.5 w-2.5 rounded-full ${u === 'risco' ? 'pulse-live-dot' : ''}`} style={{ background: cor[u] }} />
+      ))}
+    </span>
+  )
+}
+
+/** Barra do prazo de hoje sobre o Marinho. */
+export function PrazoNoMarinho({ noPrazo, fora, perdidos }: { noPrazo: number; fora: number; perdidos: number }) {
+  const total = noPrazo + fora + perdidos
+  if (total === 0) return null
+  return (
+    <span className="flex h-2 w-full overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.10)' }} aria-hidden>
+      <span style={{ width: `${(noPrazo / total) * 100}%`, background: 'var(--m-ok)' }} />
+      <span style={{ width: `${(fora / total) * 100}%`, background: 'var(--m-alerta)' }} />
+      <span style={{ width: `${(perdidos / total) * 100}%`, background: 'var(--m-risco)' }} />
+    </span>
   )
 }

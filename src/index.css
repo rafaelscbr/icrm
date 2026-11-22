@@ -655,6 +655,30 @@ html.light {
     background-size: 22px 22px, auto;
   }
 
+  /*
+   * Faixa Marinho do Pulse (22/11/2026): a "barra de marca" da identidade
+   * esticada em palco — Marinho estrutura, Champanhe destaca. Uma luz de
+   * champanhe no canto (a mesma do gold-glow, uso restrito) e nada mais.
+   * Tokens próprios porque o tema do sistema pode estar claro ou escuro e a
+   * faixa é sempre Marinho.
+   */
+  .pulse-marinho {
+    --m-t1:   #FFFFFF;
+    --m-t2:   #D5DDEC;
+    --m-t3:   #93A3C4;
+    --m-line: rgba(255, 255, 255, 0.10);
+    --m-ouro: #E2C385;
+    --m-ok:     #34D399;
+    --m-alerta: #FBBF24;
+    --m-risco:  #F87171;
+    background-color: #0F2759;
+    background-image:
+      radial-gradient(900px 320px at 100% 0%, rgba(214, 178, 110, 0.16), transparent 70%),
+      radial-gradient(700px 300px at 0% 100%, rgba(99, 102, 241, 0.10), transparent 70%);
+    color: var(--m-t1);
+  }
+  .pulse-marinho .destaque { color: var(--m-ouro); }
+
   .pulse-viewport {
     position: fixed;
     inset: 0;

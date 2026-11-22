@@ -10,9 +10,10 @@ import { usePulseStore } from './usePulseStore'
 import { useKiosk, useRelogio, useTickLento, useAntiBurnIn, useEscalaTV } from './useKiosk'
 import { SaleCelebration } from './components/SaleCelebration'
 import {
-  AoVivo, BarraDoPrazo, ChegadaDeLeads, EquipeAgora, FilaPrimeiroContato, FunilVivo, LegendaDoDia,
-  MetaDoMes, NumerosDoMomento, Painel, PontosDaFila, Resposta, mediaSemHoje, urgenciaDe,
+  AoVivo, Batimento, ChegadaDeLeads, EquipeAgora, FilaPrimeiroContato, FunilVivo, LegendaDoBatimento, LegendaDoDia,
+  MetaNoMarinho, NumerosNoMarinho, Painel, PontosNoMarinho, PrazoNoMarinho, Resposta, mediaSemHoje, urgenciaDe,
 } from './components/Sala'
+import { destacar } from '../../components/shared/Destaque'
 import type { Corretor } from './components/Sala'
 import { AlertasDaSala } from '../leads/PainelMonitor'
 import {
@@ -53,13 +54,13 @@ function Relogio() {
   const hm = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const s = String(agora.getSeconds()).padStart(2, '0')
   return (
-    <div className="flex items-baseline gap-4">
-      <span className="font-display font-extrabold text-[40px] leading-none text-t1 tabular-nums tracking-[-0.04em]">
-        {hm}<span className="text-t4 text-[26px] tracking-[-0.02em]">:{s}</span>
-      </span>
-      <span className="text-[16px] text-t3 first-letter:uppercase">
+    <div className="text-right leading-none">
+      <p className="font-display font-extrabold text-[44px] tabular-nums tracking-[-0.05em]" style={{ color: 'var(--m-t1)' }}>
+        {hm}<span className="text-[26px] tracking-[-0.02em]" style={{ color: 'var(--m-t3)' }}>:{s}</span>
+      </p>
+      <p className="mt-1 text-[14px] first-letter:uppercase" style={{ color: 'var(--m-t2)' }}>
         {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-      </span>
+      </p>
     </div>
   )
 }
@@ -72,14 +73,14 @@ function StatusConexao({ connection, desconectadoDesde, agora }: {
   const velho = desconectadoDesde !== null && agora - desconectadoDesde > LIMITE_DADO_VELHO_MS
 
   if (connection === 'loading') {
-    return <span className="text-[16px] text-t3">Conectando…</span>
+    return <span className="text-[15px]" style={{ color: 'var(--m-t2)' }}>Conectando…</span>
   }
 
   if (connection === 'live') {
     return (
-      <span className="inline-flex items-center gap-2.5 rounded-full px-4 h-10" style={{ background: 'color-mix(in srgb, var(--v-ok) 12%, var(--surface))' }}>
-        <span className="w-3 h-3 rounded-full pulse-live-dot" style={{ background: 'var(--v-ok)' }} aria-hidden />
-        <span className="text-[16px] font-semibold text-success">Ao vivo</span>
+      <span className="inline-flex items-center gap-2.5 rounded-full px-4 h-9" style={{ background: 'rgba(52, 211, 153, 0.14)' }}>
+        <span className="w-2.5 h-2.5 rounded-full pulse-live-dot" style={{ background: 'var(--m-ok)' }} aria-hidden />
+        <span className="text-[15px] font-semibold" style={{ color: 'var(--m-ok)' }}>Ao vivo</span>
       </span>
     )
   }
@@ -89,8 +90,9 @@ function StatusConexao({ connection, desconectadoDesde, agora }: {
     : null
 
   return (
-    <span className={`inline-flex items-center gap-2 text-[16px] font-semibold ${velho ? 'text-error' : 'text-warning'}`}>
-      <WifiOff size={18} strokeWidth={1.8} aria-hidden />
+    <span className="inline-flex items-center gap-2 rounded-full px-4 h-9 text-[15px] font-semibold"
+          style={{ background: 'rgba(255,255,255,0.08)', color: velho ? 'var(--m-risco)' : 'var(--m-alerta)' }}>
+      <WifiOff size={16} strokeWidth={1.8} aria-hidden />
       {velho && congeladoDesde ? `Sem conexão — números congelados às ${congeladoDesde}` : 'Reconectando…'}
     </span>
   )
@@ -246,6 +248,10 @@ export function PulsePage() {
   // O último sinal da equipe, no cabeçalho
   const ultimoEv = feed.find(e => e.brokerId && nomes.has(e.brokerId))
 
+  // O batimento: tudo o que a equipe da sala registrou hoje, com a hora
+  const batidas = feed.filter(e => (e.brokerId && nomes.has(e.brokerId)) || e.kind === 'lead_novo' || e.kind === 'venda')
+    .map(e => ({ t: new Date(e.at).getTime(), kind: e.kind }))
+
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
   if (!isAdmin) return <Navigate to="/" replace />
@@ -269,36 +275,94 @@ export function PulsePage() {
   return (
     <div className="fixed inset-0 overflow-hidden pulse-fundo">
       <div
-        className="pulse-antiburn absolute left-0 top-0 flex flex-col gap-4 px-7 py-6 select-none"
+        className="pulse-antiburn absolute left-0 top-0 flex flex-col gap-4 p-5 select-none"
         style={{
           width: palco.largura, height: palco.altura,
           transformOrigin: '0 0',
           transform: `translate(${desloc.x}px, ${desloc.y}px) scale(${palco.escala})`,
         }}
       >
-        {/* ── Cabeçalho: a marca, a hora, o pulso ─────────────────────────────── */}
-        <header className="shrink-0 flex items-center gap-7">
-          <h1 className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-brand-fill" aria-hidden>
-              <Activity size={24} strokeWidth={2} className="text-brand-fill-text" />
-            </span>
-            <span className="leading-tight">
-              <span className="block font-display text-[24px] font-extrabold tracking-[-0.03em] text-t1">Pulse</span>
-              <span className="block text-[14px] text-t3">Souza Imobiliária</span>
-            </span>
-          </h1>
-          <span className="h-10 w-px bg-line" aria-hidden />
-          <Relogio />
-          <div className="ml-auto flex items-center gap-5">
-            {ultimoEv && (
-              <p className="text-[16px] text-t3 truncate" key={ultimoEv.id}>
-                Último registro <span className="text-t1 font-semibold">{haQuanto(ultimoEv.at, agora)}</span>
-                {ultimoEv.brokerId && <> · {nomes.get(ultimoEv.brokerId)}</>}
-              </p>
-            )}
-            <StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} />
+        {/* ── A faixa Marinho: a marca, a hora, o batimento e os números ───────
+            Marinho estrutura, Champanhe destaca — a barra de marca da Souza
+            esticada em palco. É o que se lê do outro lado da sala. */}
+        <section className="pulse-marinho shrink-0 rounded-[26px] px-8 pt-5 pb-5 overflow-hidden">
+          <div className="flex items-start gap-6">
+            <div className="flex items-center gap-3.5">
+              <span className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-brand-fill" aria-hidden>
+                <Activity size={26} strokeWidth={2.2} className="text-brand-fill-text" />
+              </span>
+              <span className="leading-tight">
+                <span className="block font-display text-[15px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--m-t3)' }}>Pulse · Souza</span>
+                <h1 className="font-display text-[30px] font-extrabold tracking-[-0.035em]" style={{ color: 'var(--m-t1)' }}>
+                  {destacar('A imobiliária *agora*')}
+                </h1>
+              </span>
+            </div>
+            <div className="ml-auto flex items-start gap-6">
+              <div className="pt-3"><LegendaDoBatimento /></div>
+              <span className="h-[56px] w-px" style={{ background: 'var(--m-line)' }} aria-hidden />
+              <div className="flex flex-col items-end gap-2 pt-0.5">
+                <StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} />
+                {ultimoEv && (
+                  <p className="text-[14px] truncate" key={ultimoEv.id} style={{ color: 'var(--m-t2)' }}>
+                    Último registro <span className="font-semibold" style={{ color: 'var(--m-t1)' }}>{haQuanto(ultimoEv.at, agora)}</span>
+                    {ultimoEv.brokerId && <> · {nomes.get(ultimoEv.brokerId)}</>}
+                  </p>
+                )}
+              </div>
+              <span className="h-[56px] w-px" style={{ background: 'var(--m-line)' }} aria-hidden />
+              <Relogio />
+            </div>
           </div>
-        </header>
+
+          {/* o batimento do dia */}
+          <div className="mt-3">
+            <Batimento batidas={batidas} de={janelaDia.de} ate={janelaDia.ate} agora={agora} />
+          </div>
+
+          {/* os números do momento */}
+          <div className="mt-3 pt-4" style={{ borderTop: '1px solid var(--m-line)' }}>
+            <NumerosNoMarinho
+              itens={[
+                {
+                  rotulo: 'Leads hoje',
+                  valor: sala ? serie[serie.length - 1]?.n ?? 0 : null,
+                  nota: media === null ? undefined : `média de ${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por dia`,
+                },
+                {
+                  rotulo: 'Na fila',
+                  valor: sala ? fila.length : null,
+                  cor: vencidos > 0 ? 'risco' : correndo > 0 ? 'alerta' : fila.length === 0 && sala ? 'ok' : undefined,
+                  marca: sala ? <PontosNoMarinho urgencias={urgencias} /> : undefined,
+                  nota: !sala ? undefined : vencidos > 0 ? `${vencidos} com o prazo vencido`
+                    : correndo > 0 ? `${correndo} com o prazo correndo`
+                    : fila.length > 0 ? 'parados até o expediente' : 'todo lead já foi chamado',
+                },
+                {
+                  rotulo: 'No prazo hoje',
+                  valor: !prazoHoje || comDesfecho === 0 ? null : `${prazoHoje.noPrazo}/${comDesfecho}`,
+                  cor: prazoHoje && prazoHoje.perdidos > 0 ? 'alerta' : comDesfecho > 0 ? 'ok' : undefined,
+                  marca: prazoHoje ? <PrazoNoMarinho noPrazo={prazoHoje.noPrazo} fora={prazoHoje.foraDoPrazo} perdidos={prazoHoje.perdidos} /> : undefined,
+                  nota: !prazoHoje ? undefined
+                    : prazoHoje.perdidos > 0 ? `${prazoHoje.perdidos} perdido${prazoHoje.perdidos === 1 ? '' : 's'} por prazo`
+                    : comDesfecho === 0 ? 'nenhum prazo fechou hoje' : 'nenhum perdido por prazo',
+                },
+                {
+                  rotulo: 'Atendimentos',
+                  valor: carregado ? atendimentosHoje : null,
+                  nota: carregado ? `${ativosAgora} ${ativosAgora === 1 ? 'corretor ativo' : 'corretores ativos'} agora` : undefined,
+                },
+                {
+                  rotulo: 'Visitas',
+                  valor: carregado ? hoje.visitasMarcadas : null,
+                  cor: hoje.visitasMarcadas > 0 ? 'ok' : undefined,
+                  nota: carregado ? `${hoje.vendasQtd} ${hoje.vendasQtd === 1 ? 'venda' : 'vendas'} hoje` : undefined,
+                },
+              ]}
+              meta={<MetaNoMarinho vgl={vgl} />}
+            />
+          </div>
+        </section>
 
         {alertas.length > 0 && <div className="shrink-0"><AlertasDaSala alertas={alertas} /></div>}
         {salaErro && (
@@ -308,50 +372,9 @@ export function PulsePage() {
           </p>
         )}
 
-        {/* ── Os números do momento ─────────────────────────────────────────── */}
-        <NumerosDoMomento
-          itens={[
-            {
-              rotulo: 'Leads hoje',
-              valor: sala ? serie[serie.length - 1]?.n ?? 0 : null,
-              nota: media === null ? undefined : `média de ${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por dia`,
-            },
-            {
-              rotulo: 'Na fila',
-              valor: sala ? fila.length : null,
-              tom: vencidos > 0 ? 'text-error' : correndo > 0 ? 'text-warning' : fila.length > 0 ? 'text-t1' : 'text-success',
-              marca: sala ? <PontosDaFila urgencias={urgencias} /> : undefined,
-              nota: !sala ? undefined : vencidos > 0 ? `${vencidos} com o prazo vencido`
-                : correndo > 0 ? `${correndo} com o prazo correndo`
-                : fila.length > 0 ? 'parados até o expediente' : 'todo lead novo já foi chamado',
-            },
-            {
-              rotulo: 'No prazo hoje',
-              valor: !prazoHoje || comDesfecho === 0 ? null : `${prazoHoje.noPrazo}/${comDesfecho}`,
-              tom: prazoHoje && prazoHoje.perdidos > 0 ? 'text-warning' : comDesfecho > 0 ? 'text-success' : 'text-t1',
-              marca: prazoHoje ? <BarraDoPrazo noPrazo={prazoHoje.noPrazo} fora={prazoHoje.foraDoPrazo} perdidos={prazoHoje.perdidos} /> : undefined,
-              nota: !prazoHoje ? undefined
-                : prazoHoje.perdidos > 0 ? `${prazoHoje.perdidos} ${prazoHoje.perdidos === 1 ? 'lead perdido' : 'leads perdidos'} por prazo`
-                : comDesfecho === 0 ? 'nenhum prazo fechou hoje' : 'nenhum perdido por prazo',
-            },
-            {
-              rotulo: 'Atendimentos',
-              valor: carregado ? atendimentosHoje : null,
-              nota: carregado ? `${ativosAgora} ${ativosAgora === 1 ? 'corretor ativo' : 'corretores ativos'} agora` : undefined,
-            },
-            {
-              rotulo: 'Visitas',
-              valor: carregado ? hoje.visitasMarcadas : null,
-              tom: hoje.visitasMarcadas > 0 ? 'text-success' : 'text-t1',
-              nota: carregado ? `${hoje.vendasQtd} ${hoje.vendasQtd === 1 ? 'venda' : 'vendas'} hoje` : undefined,
-            },
-          ]}
-          meta={<MetaDoMes vgl={vgl} />}
-        />
-
-        {/* ── A equipe, de ponta a ponta: a linha do dia precisa de largura ── */}
+        {/* ── A equipe, de ponta a ponta ───────────────────────────────────── */}
         <Painel titulo="Equipe agora" extra={<LegendaDoDia />} className="shrink-0">
-          <div style={{ height: 34 + Math.max(equipe.length, 1) * 74 }} className="flex flex-col">
+          <div style={{ height: 34 + Math.max(equipe.length, 1) * 62 }} className="flex flex-col">
             {!carregado ? <div className="mx-6 flex-1 mb-6 rounded-[12px] shimmer" aria-busy="true" />
               : equipe.length === 0 ? <p className="px-6 text-[16px] text-t3">Nenhum corretor ativo.</p>
               : <EquipeAgora corretores={equipe} de={janelaDia.de} ate={janelaDia.ate} agora={agora} />}
@@ -359,7 +382,7 @@ export function PulsePage() {
         </Painel>
 
         {/* ── A fila · o que acabou de acontecer · o funil · a chegada ──────── */}
-        <div className="flex-1 min-h-0 grid gap-4" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 0.8fr) minmax(0, 1fr)' }}>
+        <div className="flex-1 min-h-0 grid gap-4" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.9fr) minmax(0, 1fr)' }}>
           <Painel titulo="Fila do 1º contato" extra={prazoMin ? `prazo de ${prazoMin} min` : undefined}>
             {sala ? <FilaPrimeiroContato fila={fila} agora={agora} prazoMin={prazoMin} />
               : <div className="mx-6 flex-1 mb-6 rounded-[12px] shimmer" aria-busy="true" />}
@@ -367,10 +390,10 @@ export function PulsePage() {
           <Painel titulo="Acabou de acontecer">
             <AoVivo feed={feed} nomes={nomes} carregado={carregado} />
           </Painel>
-          <Painel titulo="Funil agora" extra={`${Object.values(funil).reduce((a, b) => a + b, 0).toLocaleString('pt-BR')} leads ativos`}>
+          <Painel titulo="Funil agora" extra={`${Object.values(funil).reduce((a, b) => a + b, 0).toLocaleString('pt-BR')} ativos`}>
             <FunilVivo porEtapa={funil} vendasNoMes={vgl ? vgl.vendasMes : null} />
           </Painel>
-          <Painel titulo="Chegada de leads" extra="últimos 30 dias">
+          <Painel titulo="Chegada de leads" extra="30 dias">
             {sala ? <ChegadaDeLeads serie={serie} /> : <div className="mx-6 flex-1 rounded-[12px] shimmer" aria-busy="true" />}
             <Resposta tempos={tempos} />
           </Painel>
