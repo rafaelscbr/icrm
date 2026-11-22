@@ -18,6 +18,7 @@ import { useSalesStore } from './store/useSalesStore'
 import { useGoalsStore } from './store/useGoalsStore'
 import { useLeadInteractionsStore } from './store/useLeadInteractionsStore'
 import { registrarEntradaDoDia } from './lib/avisoEntrada'
+import { registrarPresenca } from './lib/presenca'
 import { useLeadsStore } from './store/useLeadsStore'
 import { useCampaignsStore } from './store/useCampaignsStore'
 import { useCampaignLeadsStore } from './store/useCampaignLeadsStore'
@@ -92,6 +93,17 @@ function PresenceTracker() {
     })
     return () => { cleanup() }
   }, [user?.id])  // eslint-disable-line react-hooks/exhaustive-deps -- presença e página são reinicializadas só quando o usuário ou a rota muda; incluir profile/user inteiros refaria a assinatura a cada troca de objeto
+
+  // Presença para o relatório de Performance: abrir o sistema e voltar à aba.
+  // O limite de um registro a cada 15 min por usuário é do banco.
+  useEffect(() => {
+    if (!user) return
+    const id = user.id
+    void registrarPresenca(id, 'abriu')
+    const aoVoltar = () => { if (document.visibilityState === 'visible') void registrarPresenca(id, 'voltou') }
+    document.addEventListener('visibilitychange', aoVoltar)
+    return () => document.removeEventListener('visibilitychange', aoVoltar)
+  }, [user?.id])  // eslint-disable-line react-hooks/exhaustive-deps -- só o id do usuário importa; o objeto user muda de identidade sem mudar de pessoa
 
   // Primeira entrada do dia avisa os admins (migração 099). Voltar à aba também
   // conta: o app que ficou aberto desde ontem não "abre" de novo de manhã. O

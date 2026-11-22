@@ -2349,3 +2349,31 @@ button.perfil-celula:focus-visible { outline: 2px solid var(--brand); outline-of
   .perfil-quadro { grid-template-columns: 1fr; }
   .perfil-vazia { display: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PERFORMANCE DO CORRETOR — impressão em PDF (19/11/2026)
+
+   O botão "Exportar PDF" carrega todos os blocos e chama a impressão do
+   navegador. Com a classe `imprimindo-performance` no body, o papel recebe só o
+   relatório: sem barra do topo, menu, filtros nem botões, e com o cabeçalho
+   da Souza que na tela fica escondido. Fora desse momento nada muda.
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media print {
+  body.imprimindo-performance { background: #fff !important; }
+  body.imprimindo-performance header.page-bar,
+  body.imprimindo-performance nav,
+  body.imprimindo-performance .nao-imprimir,
+  body.imprimindo-performance [data-sonner-toaster],
+  body.imprimindo-performance .perf-filtros { display: none !important; }
+  body.imprimindo-performance .perf-so-impressao { display: block !important; margin-bottom: 8px; }
+  body.imprimindo-performance #conteudo,
+  body.imprimindo-performance #conteudo * { overflow: visible !important; max-height: none !important; }
+  body.imprimindo-performance .perf-bloco {
+    break-inside: avoid-page;
+    box-shadow: none !important;
+    border: 1px solid #d9dee8 !important;
+    margin-bottom: 10px;
+  }
+  body.imprimindo-performance .bento { background: #fff !important; }
+  @page { size: A4; margin: 12mm; }
+}

@@ -4,6 +4,8 @@ import { getCurrentUserId, requireBrokerId } from './auth'
 import { generateId } from './formatters'
 import type { Atribuicao, EventoDoDia } from '../modules/leads/monitorLeads'
 import type { LeadFluxo } from '../modules/simulador/shared/fluxo'
+
+export type PerfFuncao = 'resumo' | 'atividade' | 'leads' | 'transferencias' | 'cadencia' | 'funil' | 'descartes' | 'presenca'
 import {
   Contact, Property, Sale, Task, Goal, DailyLog, Campaign, CampaignLead,
   ContactTag, FunnelStage, LeadSituation, Lead, LeadOrigin, LeadFunnelStage, LeadDiscardReason,
@@ -1477,6 +1479,33 @@ export const db = {
       const { data, error } = await supabase.rpc('meta_conv_retry', { p_id: id ?? null })
       if (error) { toast.error(`Não foi possível reenviar: ${error.message}`); throw error }
       return (data as number) ?? 0
+    },
+  },
+
+  /**
+   * Performance do corretor (migração 098) — uma função do banco por bloco do
+   * relatório, todas recebendo os mesmos filtros. O banco só responde a admin
+   * ou gestor. Sem toast: cada bloco mostra a própria falha no lugar dele.
+   */
+  performance: {
+    bloco: async <T>(funcao: PerfFuncao, filtros: Record<string, unknown>): Promise<T> => {
+      const { data, error } = await supabase.rpc(`perf_${funcao}`, { p_filtros: filtros })
+      if (error) throw error
+      return data as T
+    },
+    opcoes: async (): Promise<import('../modules/leads/performance/tipos').OpcoesPerf> => {
+      const { data, error } = await supabase.rpc('perf_opcoes')
+      if (error) throw error
+      return data as import('../modules/leads/performance/tipos').OpcoesPerf
+    },
+    /**
+     * Registra presença: abrir o sistema ou voltar à aba. O banco grava no
+     * máximo um registro a cada 15 minutos por usuário e devolve se gravou.
+     */
+    registrarPresenca: async (acao: 'abriu' | 'voltou'): Promise<boolean> => {
+      const { data, error } = await supabase.rpc('registrar_presenca', { p_acao: acao })
+      if (error) throw error
+      return data === true
     },
   },
 

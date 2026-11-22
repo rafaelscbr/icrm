@@ -5,7 +5,7 @@ import { aoTeclarAbrir } from '../../components/shared/lista'
 import { fitDeserveBadge } from '../../lib/intelligence'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Plus, LayoutGrid, List, BarChart3,
+  Plus, LayoutGrid, List, BarChart3, Gauge,
   MessageCircle, Users, UserPlus, UserX, ChevronRight, RefreshCw, Settings2,
   Percent, Home, BadgeCheck, Snowflake, SearchX, Hourglass,
 } from 'lucide-react'
@@ -44,13 +44,15 @@ import {
   ContextoFiltro, aplicarFiltros, contarFiltros, ordenar, chaveProduto,
 } from './leadFiltros'
 import { BarraDeFiltros, PainelDeFiltros, OpcaoCatalogo } from './FiltrosDoFunil'
+import { PerformanceTab } from './performance/PerformanceTab'
+import { limparFiltros } from './performance/filtros'
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
 const ORDENS_LISTA: OrdemLista[] = ['criacao', 'sem_contato', 'prioridade', 'valor', 'etapa', 'antigos']
 const ORDENS_KANBAN: KanbanSort[] = ['manual', ...ORDENS_LISTA]
 
-type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'followup' | 'configuracoes'
+type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'followup' | 'performance' | 'configuracoes'
 
 /**
  * Relógio de minuto. Os filtros de tempo ("sem contato há mais de 2 dias",
@@ -305,7 +307,7 @@ export function LeadsPage() {
 
   // O funil abre no Kanban: é a visão de trabalho do corretor (o que está em
   // cada etapa). A lista continua a um toque, na aba ao lado.
-  const [tab,           setTab]           = useState<Tab>('kanban')
+  const [tabEscolhida,  setTabEscolhida]  = useState<Tab>('kanban')
   const { filtros, definir, limpar, ordemLista, setOrdemLista } = useLeadFiltersStore()
   const { sort: ordemKanban, setSort: setOrdemKanban } = useKanbanPrefs()
   const [painelFiltros, setPainelFiltros] = useState(false)
@@ -314,6 +316,31 @@ export function LeadsPage() {
   const [listView,      setListView]      = useState<'active' | 'discarded' | 'won'>('active')
   const [showForm,      setShowForm]      = useState(false)
   const [searchParams,  setSearchParams]  = useSearchParams()
+
+  // Performance do corretor: só admin e gestor veem a aba (o banco recusa os
+  // demais de qualquer jeito). Fica na URL — `?aba=performance` — para o link
+  // com os filtros abrir direto nela; para quem não pode, a URL cai no Kanban.
+  const podePerformance = isAdmin || meuPerfil?.isManager === true
+  const tab: Tab = searchParams.get('aba') === 'performance'
+    ? (podePerformance ? 'performance' : tabEscolhida)
+    : (tabEscolhida === 'performance' ? 'kanban' : tabEscolhida)
+  const setTab = (t: Tab) => {
+    if (t === 'performance') {
+      const next = new URLSearchParams(searchParams)
+      next.set('aba', 'performance')
+      setSearchParams(next)
+    } else {
+      if (searchParams.get('aba') === 'performance') setSearchParams(limparFiltros(new URLSearchParams(
+        [...searchParams.entries()].filter(([k]) => k !== 'aba'))))
+      setTabEscolhida(t)
+    }
+  }
+  useEffect(() => {
+    // Corretor comum com o link na mão: some com o parâmetro em vez de ficar parado nele.
+    if (searchParams.get('aba') === 'performance' && meuPerfil && !podePerformance) {
+      setSearchParams(limparFiltros(new URLSearchParams([...searchParams.entries()].filter(([k]) => k !== 'aba'))), { replace: true })
+    }
+  }, [searchParams, meuPerfil, podePerformance]) // eslint-disable-line react-hooks/exhaustive-deps -- setSearchParams é estável
 
   // Painel do lead — derivado da URL, não de estado local (ver comentário abaixo).
   const openLeadId = searchParams.get('lead')
@@ -373,6 +400,7 @@ export function LeadsPage() {
   const isConvTab        = tab === 'conversao'
   const isFollowTab      = tab === 'followup'
   const isConfigTab      = tab === 'configuracoes'
+  const isPerfTab        = tab === 'performance'
 
   // Contexto dos filtros: a busca procura pelo nome que a tela MOSTRA (o do
   // contato do CRM, quando vinculado) e pelo produto, cadastrado ou livre.
@@ -468,6 +496,7 @@ export function LeadsPage() {
     { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                         },
     { value: 'conversao',      label: 'Conversão',       icon: Percent                           },
     { value: 'followup',       label: 'Followup',        icon: Hourglass                         },
+    ...(podePerformance ? [{ value: 'performance' as Tab, label: 'Performance', icon: Gauge }] : []),
     { value: 'configuracoes',  label: 'Configurações',   icon: Settings2                         },
   ]
 
@@ -496,6 +525,7 @@ export function LeadsPage() {
       {isConvTab && <LeadConversionTab />}
       {isFollowTab && <LeadFollowupTab leads={leads} onOpenLead={setSelectedLead} />}
       {isConfigTab && <LeadSettings />}
+      {isPerfTab && <PerformanceTab />}
 
       {/* Gestor: escolhe de quem é o funil. O do colega abre somente leitura. */}
       {isKanbanTab && colegas.length > 0 && (
