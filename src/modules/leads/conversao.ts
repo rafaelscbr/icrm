@@ -1,13 +1,8 @@
 /**
- * Relatório de conversão do funil — a parte que pensa, sem tela.
- *
- * Os números vêm prontos da RPC `lead_conversion_report` (migração 088). Aqui
- * ficam o recorte de período, a comparação com o período anterior, as taxas e
- * as leituras escritas. Tudo função pura: é o que os testes cobrem.
- *
- * Dois modos, duas perguntas:
- *   atividade → o que ACONTECEU no período (mede o trabalho do corretor)
- *   safra     → dos leads que CHEGARAM no período, até onde foram (mede o lead)
+ * Conversão do funil — datas, taxas e o formato da RPC `lead_conversion_report`
+ * (migração 088), que o Pulse usa. A aba Leads › Conversão usa o funil por
+ * safra (`safra.ts`, migração 103) e reaproveita daqui o recorte de período,
+ * os baldes e o formato das taxas. Tudo função pura.
  */
 
 export type ModoConversao = 'atividade' | 'safra'
@@ -129,8 +124,6 @@ export function rotuloBalde(data: string, balde: Balde): string {
   return fmtDataCurta(data)
 }
 
-type PontoSerie = RelatorioConversao['series'][number]
-
 /** Início do balde que contém a data: o dia, o domingo da semana ou o dia 1º do mês. */
 export function inicioDoBalde(data: string, balde: Balde): string {
   if (balde === 'day') return data
@@ -138,29 +131,11 @@ export function inicioDoBalde(data: string, balde: Balde): string {
   return somarDias(data, -deIso(data).getDay())   // semana = domingo → sábado
 }
 
-function proximoBalde(data: string, balde: Balde): string {
+export function proximoBalde(data: string, balde: Balde): string {
   if (balde === 'day') return somarDias(data, 1)
   if (balde === 'week') return somarDias(data, 7)
   const d = deIso(data)
   return iso(new Date(d.getFullYear(), d.getMonth() + 1, 1))
-}
-
-/**
- * Série contínua: o banco só devolve os baldes em que algo aconteceu, e um
- * gráfico que pula do dia 6 para o dia 9 esconde justamente os dias parados.
- * Aqui os buracos entram com zero. Sem período (acumulado), vai do primeiro ao
- * último balde que existe.
- */
-export function preencherSerie(serie: PontoSerie[], inicio: string | null, fim: string | null, balde: Balde): PontoSerie[] {
-  if (serie.length === 0 && (!inicio || !fim)) return []
-  const porBalde = new Map(serie.map(p => [p.bucket, p]))
-  const de  = inicioDoBalde(inicio ?? serie[0].bucket, balde)
-  const ate = inicioDoBalde(fim ?? serie[serie.length - 1].bucket, balde)
-  const out: PontoSerie[] = []
-  for (let b = de, i = 0; b <= ate && i < 800; b = proximoBalde(b, balde), i++) {
-    out.push(porBalde.get(b) ?? { bucket: b, received: 0, atendimento: 0, visita: 0, proposta: 0, venda: 0 })
-  }
-  return out
 }
 
 /** Passos do funil mostrado: de onde → para onde, com a base e quantos avançaram. */
@@ -179,130 +154,6 @@ export function passos(r: RelatorioConversao): Passo[] {
     const [de, base] = seq[i]
     return { de: NOME[de], para: NOME[para], base, avancaram: n, taxa: taxa(n, base) }
   })
-}
-
-// ── Leituras ──────────────────────────────────────────────────────────────────
-
-export type TomLeitura = 'sucesso' | 'atencao' | 'info' | 'neutro'
-export interface Leitura { tom: TomLeitura; texto: string }
-
-const plural = (n: number, um: string, varios: string) => `${n.toLocaleString('pt-BR')} ${n === 1 ? um : varios}`
-
-/**
- * O que os números dizem, em frases.
- *
- * Regra da casa: nunca afirmar mais do que se observou. Por isso toda leitura
- * carrega os números que a sustentam, nenhuma sai com base menor que 5, e a
- * comparação entre origens só existe na safra — no modo atividade os leads
- * que visitaram não são necessariamente os que chegaram no período.
- */
-export function gerarLeituras(
-  atual: RelatorioConversao,
-  anterior: RelatorioConversao | null,
-  recorte: Recorte,
-  nomes: { origem: (slug: string) => string; motivo: (slug: string) => string },
-): Leitura[] {
-  const out: Leitura[] = []
-  const ps = passos(atual)
-
-  // 1. Onde o funil mais perde
-  const comBase = ps.filter(p => p.base >= 5 && p.taxa !== null && p.avancaram <= p.base)
-  if (comBase.length > 0) {
-    const pior = comBase.reduce((a, b) => (b.taxa! < a.taxa! ? b : a))
-    out.push({
-      tom: 'atencao',
-      texto: `A maior perda está entre ${pior.de} e ${pior.para}: de ${pior.base.toLocaleString('pt-BR')}, ` +
-             `${pior.avancaram === 0 ? 'nenhum avançou' : `${pior.avancaram.toLocaleString('pt-BR')} ${pior.avancaram === 1 ? 'avançou' : 'avançaram'}`} (${fmtTaxa(pior.taxa)}).`,
-    })
-  }
-
-  // 2. Contra o período anterior
-  if (anterior && recorte.dias) {
-    const antes = `nos ${recorte.dias} dias anteriores`
-    for (const [rotulo, a, b] of [
-      ['Visitas', etapa(atual, 'visita'), etapa(anterior, 'visita')],
-      ['Leads recebidos', atual.received, anterior.received],
-    ] as [string, number, number][]) {
-      if (a === 0 && b === 0) continue
-      out.push({
-        tom: a > b ? 'sucesso' : a < b ? 'atencao' : 'neutro',
-        texto: a === b
-          ? `${rotulo}: ${a.toLocaleString('pt-BR')}, o mesmo número ${antes}.`
-          : `${rotulo}: ${a.toLocaleString('pt-BR')} neste período, contra ${b.toLocaleString('pt-BR')} ${antes}.`,
-      })
-    }
-  }
-
-  // 3. Origem que mais leva a visita — só na safra, onde são os mesmos leads
-  if (atual.mode === 'safra') {
-    const origens = atual.byOrigin.filter(o => o.received >= 10)
-    if (origens.length >= 2) {
-      const melhor = origens.reduce((a, b) =>
-        ((b.stages.visita ?? 0) / b.received > (a.stages.visita ?? 0) / a.received ? b : a))
-      const v = melhor.stages.visita ?? 0
-      if (v > 0) {
-        out.push({
-          tom: 'info',
-          texto: `${nomes.origem(melhor.origin)} é a origem que mais leva a visita: ${v.toLocaleString('pt-BR')} de ` +
-                 `${melhor.received.toLocaleString('pt-BR')} leads (${fmtTaxa(taxa(v, melhor.received))}).`,
-        })
-      }
-    }
-  }
-
-  // 4. Descartes
-  if (atual.discarded > 0) {
-    const principal = atual.discardReasons[0]
-    const parte = atual.mode === 'safra'
-      ? `${plural(atual.discarded, 'lead da safra foi descartado', 'leads da safra foram descartados')} (${fmtTaxa(taxa(atual.discarded, atual.received))})`
-      : `${plural(atual.discarded, 'lead foi descartado', 'leads foram descartados')} no período`
-    out.push({
-      tom: 'neutro',
-      texto: principal
-        ? `${parte}. Motivo mais comum: ${nomes.motivo(principal.reason)} (${principal.count.toLocaleString('pt-BR')}).`
-        : `${parte}.`,
-    })
-  }
-
-  // 5. Tempo até a visita
-  if (atual.medianDaysToVisit !== null && etapa(atual, 'visita') >= 3) {
-    const d = atual.medianDaysToVisit
-    out.push({
-      tom: 'neutro',
-      texto: d < 1
-        ? 'Metade das visitas foi marcada no mesmo dia em que o lead chegou.'
-        : `Metade das visitas acontece em até ${d.toLocaleString('pt-BR')} ${d === 1 ? 'dia' : 'dias'} depois da chegada do lead.`,
-    })
-  }
-
-  // 6. Mais gente na etapa seguinte do que na anterior — só acontece na atividade
-  const estouro = ps.find(p => p.avancaram > p.base && p.avancaram > 0)
-  if (atual.mode === 'atividade' && estouro) {
-    out.push({
-      tom: 'info',
-      texto: `Há mais leads em ${estouro.para} (${estouro.avancaram}) do que em ${estouro.de} (${estouro.base}) porque parte deles ` +
-             `entrou no funil antes deste período. Para acompanhar os mesmos leads do começo ao fim, use "Por safra".`,
-    })
-  }
-
-  // 7. Limite do histórico
-  if (atual.historySince && (recorte.inicio === null || recorte.inicio < atual.historySince)) {
-    out.push({
-      tom: 'info',
-      texto: `As mudanças de etapa só são registradas desde ${fmtData(atual.historySince)}. Antes dessa data o relatório ` +
-             `só conhece a etapa em que o lead está hoje.`,
-    })
-  }
-
-  return out
-}
-
-/** Variação contra o período anterior, para a nota da faixa de números. */
-export function variacao(atual: number, anterior: number | null | undefined): string | null {
-  if (anterior === null || anterior === undefined) return null
-  const d = atual - anterior
-  if (d === 0) return 'igual ao anterior'
-  return `${d > 0 ? '+' : '−'}${Math.abs(d).toLocaleString('pt-BR')} vs. anterior`
 }
 
 /** "sem_condicao" → "Sem condicao" — só quando a configuração não tem o rótulo. */

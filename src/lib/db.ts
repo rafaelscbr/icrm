@@ -1379,18 +1379,17 @@ export const db = {
     },
   },
 
-  // Relatório de conversão do funil (migração 088). Sem toast: a tela mostra a
-  // falha de forma permanente (EstadoTela), e um aviso que some não basta.
-  leadConversion: {
-    report: async (p: {
-      brokerId: string | null; start: string | null; end: string | null
-      mode: 'atividade' | 'safra'; bucket: 'day' | 'week' | 'month'
-    }): Promise<import('../modules/leads/conversao').RelatorioConversao> => {
-      const { data, error } = await supabase.rpc('lead_conversion_report', {
-        p_broker_id: p.brokerId, p_start: p.start, p_end: p.end, p_mode: p.mode, p_bucket: p.bucket,
+  // Funil por safra (migração 103) — a aba Leads › Conversão. Sem toast: a
+  // tela mostra a falha de forma permanente (EstadoTela).
+  funilSafra: {
+    carregar: async (p: {
+      start: string | null; end: string | null; bucket: 'day' | 'week' | 'month'
+    }): Promise<import('../modules/leads/safra').FunilSafraBruto> => {
+      const { data, error } = await supabase.rpc('funil_por_safra', {
+        p_start: p.start, p_end: p.end, p_bucket: p.bucket,
       })
       if (error) throw error
-      return data as import('../modules/leads/conversao').RelatorioConversao
+      return data as import('../modules/leads/safra').FunilSafraBruto
     },
   },
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  montarRecorte, somarDias, diasEntre, taxa, fmtTaxa, passos, gerarLeituras, variacao,
-  rotuloBalde, etapa, slugLegivel, preencherSerie, inicioDoBalde,
+  montarRecorte, somarDias, diasEntre, taxa, fmtTaxa, passos,
+  rotuloBalde, etapa, slugLegivel, inicioDoBalde,
 } from '../modules/leads/conversao'
 import type { RelatorioConversao } from '../modules/leads/conversao'
 
@@ -16,7 +16,6 @@ function rel(p: Partial<RelatorioConversao> & { etapas?: Record<string, number> 
     ...p,
   }
 }
-const nomes = { origem: (s: string) => s, motivo: (s: string) => s }
 
 describe('conversão · recorte de período', () => {
   it('corta o fim em hoje e compara com o mesmo número de dias logo antes', () => {
@@ -77,68 +76,7 @@ describe('conversão · taxas', () => {
   })
 })
 
-describe('conversão · leituras', () => {
-  const recorte = montarRecorte('2026-11-01', '2026-11-15', false, '2026-11-15')
-
-  it('aponta a maior perda com os números que a sustentam', () => {
-    const l = gerarLeituras(rel({ received: 100, etapas: { atendimento: 20, visita: 2, proposta: 1, venda: 1 } }), null, recorte, nomes)
-    expect(l[0].texto).toContain('Atendimento e Visita')
-    expect(l[0].texto).toContain('de 20, 2 avançaram (10%)')
-  })
-
-  it('não tira conclusão de base menor que 5', () => {
-    const l = gerarLeituras(rel({ received: 3, etapas: { atendimento: 1 } }), null, recorte, nomes)
-    expect(l.find(x => x.texto.includes('maior perda'))).toBeUndefined()
-  })
-
-  it('compara com o período anterior e dá o tom', () => {
-    const atual = rel({ received: 50, etapas: { visita: 4 } })
-    const antes = rel({ received: 60, etapas: { visita: 2 } })
-    const l = gerarLeituras(atual, antes, recorte, nomes)
-    expect(l.find(x => x.texto.startsWith('Visitas'))).toMatchObject({ tom: 'sucesso' })
-    expect(l.find(x => x.texto.startsWith('Leads recebidos'))).toMatchObject({ tom: 'atencao' })
-    expect(l.find(x => x.texto.startsWith('Visitas'))!.texto).toContain('nos 15 dias anteriores')
-  })
-
-  it('avisa quando há mais gente na etapa seguinte (só no modo atividade)', () => {
-    const r = rel({ received: 2, etapas: { atendimento: 6, visita: 3 } })
-    expect(gerarLeituras(r, null, recorte, nomes).some(x => x.texto.includes('Por safra'))).toBe(true)
-    expect(gerarLeituras({ ...r, mode: 'safra' }, null, recorte, nomes).some(x => x.texto.includes('Por safra'))).toBe(false)
-  })
-
-  it('melhor origem só aparece na safra, com base mínima', () => {
-    const origens = [
-      { origin: 'meta_ads', received: 100, discarded: 80, stages: { visita: 2 } },
-      { origin: 'indicacao', received: 12, discarded: 2, stages: { visita: 3 } },
-      { origin: 'site', received: 4, discarded: 0, stages: { visita: 4 } },   // base pequena: fora
-    ]
-    const safra = gerarLeituras(rel({ mode: 'safra', received: 116, byOrigin: origens }), null, recorte, nomes)
-    expect(safra.find(x => x.texto.includes('origem que mais leva a visita'))!.texto).toContain('indicacao')
-    const ativ = gerarLeituras(rel({ received: 116, byOrigin: origens }), null, recorte, nomes)
-    expect(ativ.some(x => x.texto.includes('origem que mais leva'))).toBe(false)
-  })
-
-  it('descartes trazem o motivo mais comum', () => {
-    const l = gerarLeituras(rel({ mode: 'safra', received: 100, discarded: 88, discardReasons: [{ reason: 'sem_condicao', count: 60 }] }), null, recorte, nomes)
-    const d = l.find(x => x.texto.includes('descartados'))!
-    expect(d.texto).toContain('(88%)')
-    expect(d.texto).toContain('sem_condicao (60)')
-  })
-
-  it('avisa do limite do histórico quando o período começa antes dele', () => {
-    const antigo = montarRecorte('2026-04-01', '2026-04-30', false, '2026-11-15')
-    expect(gerarLeituras(rel({ received: 1 }), null, antigo, nomes).some(x => x.texto.includes('11/05/2026'))).toBe(true)
-    expect(gerarLeituras(rel({ received: 1 }), null, recorte, nomes).some(x => x.texto.includes('11/05/2026'))).toBe(false)
-  })
-})
-
 describe('conversão · apoio', () => {
-  it('variação contra o período anterior', () => {
-    expect(variacao(5, 3)).toBe('+2 vs. anterior')
-    expect(variacao(3, 5)).toBe('−2 vs. anterior')
-    expect(variacao(3, 3)).toBe('igual ao anterior')
-    expect(variacao(3, null)).toBeNull()
-  })
   it('rótulo do eixo e slug', () => {
     expect(rotuloBalde('2026-11-08', 'week')).toBe('08/11')
     expect(rotuloBalde('2026-11-01', 'month')).toBe('nov/26')
@@ -146,27 +84,10 @@ describe('conversão · apoio', () => {
   })
 })
 
-describe('conversão · série contínua', () => {
-  const p = (bucket: string, received = 1) => ({ bucket, received, atendimento: 0, visita: 0, proposta: 0, venda: 0 })
-
-  it('dia sem movimento entra com zero', () => {
-    const s = preencherSerie([p('2026-11-06', 4), p('2026-11-09', 2)], '2026-11-05', '2026-11-10', 'day')
-    expect(s.map(x => x.bucket)).toEqual(['2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09', '2026-11-10'])
-    expect(s.map(x => x.received)).toEqual([0, 4, 0, 0, 2, 0])
-  })
+describe('conversão · baldes', () => {
   it('semana começa no domingo', () => {
     expect(inicioDoBalde('2026-11-11', 'week')).toBe('2026-11-08')   // quarta → domingo
     expect(inicioDoBalde('2026-11-08', 'week')).toBe('2026-11-08')
-    const s = preencherSerie([p('2026-11-08')], '2026-10-28', '2026-11-15', 'week')
-    expect(s.map(x => x.bucket)).toEqual(['2026-10-25', '2026-11-01', '2026-11-08', '2026-11-15'])
-  })
-  it('mês a mês, atravessando o ano', () => {
-    const s = preencherSerie([p('2026-11-01')], '2026-11-20', '2027-01-05', 'month')
-    expect(s.map(x => x.bucket)).toEqual(['2026-11-01', '2026-12-01', '2027-01-01'])
-  })
-  it('acumulado vai do primeiro ao último balde que existe', () => {
-    const s = preencherSerie([p('2026-05-01'), p('2026-08-01')], null, null, 'month')
-    expect(s.map(x => x.bucket)).toEqual(['2026-05-01', '2026-06-01', '2026-07-01', '2026-08-01'])
-    expect(preencherSerie([], null, null, 'month')).toEqual([])
+    expect(inicioDoBalde('2026-11-20', 'month')).toBe('2026-11-01')
   })
 })
