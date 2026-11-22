@@ -152,3 +152,30 @@ export function useAntiBurnIn(): { x: number; y: number } {
   }, [])
   return DESLOCAMENTOS[i]
 }
+
+/**
+ * Tela da TV num palco fixo de 1600 × 900 px, escalado para caber em qualquer
+ * tela — Full HD fica 1,2×, 4K (sem escala do sistema) fica 2,4×, um notebook
+ * fica um pouco menor. O desenho é feito uma vez, nesse palco, e nunca
+ * quebra linha diferente de uma TV para outra. Sobrando largura ou altura
+ * (tela que não é 16:9), o palco estica naquela direção em vez de deixar faixa.
+ *
+ * `transform: scale` e não `zoom`: o gráfico mede o próprio contêiner, e com
+ * zoom as medidas saem trocadas em alguns navegadores de TV.
+ */
+export const PALCO = { largura: 1600, altura: 900 } as const
+
+export function useEscalaTV(): { escala: number; largura: number; altura: number } {
+  const medir = () => {
+    const w = window.innerWidth, h = window.innerHeight
+    const escala = Math.min(w / PALCO.largura, h / PALCO.altura)
+    return { escala, largura: w / escala, altura: h / escala }
+  }
+  const [m, setM] = useState(medir)
+  useEffect(() => {
+    const aoMudar = () => setM(medir())
+    window.addEventListener('resize', aoMudar)
+    return () => window.removeEventListener('resize', aoMudar)
+  }, [])
+  return m
+}

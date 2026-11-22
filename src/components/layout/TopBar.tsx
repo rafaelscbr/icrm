@@ -4,7 +4,7 @@ import * as Popover from '@radix-ui/react-popover'
 import {
   Search, Plus, ChevronDown, Bell, Sun, Moon, MoreHorizontal,
 } from 'lucide-react'
-import { filtrarPorPermissao, isGroup, acoesCriar } from './nav/navConfig'
+import { filtrarPorPermissao, isGroup, acoesCriar, podeVerMenu } from './nav/navConfig'
 import type { NavEntry, NavLeaf } from './nav/navConfig'
 import { AccountMenu } from './nav/AccountMenu'
 import { ViewSwitcher, type Visao } from './nav/ViewSwitcher'
@@ -118,7 +118,7 @@ export function TopBar() {
   const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
   const allowedMenus = profile?.allowedMenus ?? null
-  const secoes = filtrarPorPermissao(key => isAdmin || allowedMenus === null || allowedMenus.includes(key))
+  const secoes = filtrarPorPermissao(key => podeVerMenu(key, isAdmin, allowedMenus))
   const entradas = secoes.flatMap(s => s.items)
   const porChave = (k: string) => entradas.find(e => e.key === k)
 

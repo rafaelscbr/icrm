@@ -2,7 +2,7 @@ import type { ComponentType, CSSProperties } from 'react'
 import {
   LayoutDashboard, Users, Building2, TrendingUp, BarChart3,
   CheckSquare, Megaphone, Search, Home, Tv2, UserPlus, Calculator,
-  Target, Database, Package, Rocket, Send, Phone, Trophy,
+  Target, Database, Package, Rocket, Send, Phone, Trophy, Activity,
 } from 'lucide-react'
 
 export type NavIcon = ComponentType<{
@@ -88,6 +88,8 @@ export const navSections: Array<{ label: string; items: NavEntry[] }> = [
     label: 'Inteligência',
     items: [
       { key: 'performance', to: '/performance', icon: BarChart3, label: 'Análise', end: false },
+      // A sala de comando em tempo real (a TV). Absorveu o Dashboard de Leads em 22/11/2026.
+      { key: 'pulse',       to: '/pulse',       icon: Activity,  label: 'Pulse',   end: false },
     ],
   },
 ]
@@ -144,6 +146,19 @@ export function secoesDaGaveta(
  * Num grupo a permissão é por filho: quem só tem 'imoveis' liberado vê
  * Produtos com um item só, em vez de perder o menu inteiro.
  */
+/**
+ * Itens que só o admin vê, mesmo para quem tem todos os menus liberados
+ * (`allowedMenus` nulo). O Pulse lê a empresa inteira em tempo real e hoje só
+ * responde ao admin — o gestor entra numa etapa própria, com canal seguro.
+ */
+export const SO_ADMIN = new Set(['pulse'])
+
+/** A regra única de "este usuário vê este item do menu?". */
+export function podeVerMenu(key: string, isAdmin: boolean, allowedMenus: string[] | null): boolean {
+  if (SO_ADMIN.has(key)) return isAdmin
+  return isAdmin || allowedMenus === null || allowedMenus.includes(key)
+}
+
 export function filtrarPorPermissao(
   podeVer: (key: string) => boolean,
 ): Array<{ label: string; items: NavEntry[] }> {

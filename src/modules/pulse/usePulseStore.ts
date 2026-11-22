@@ -3,9 +3,11 @@ import { supabase } from '../../lib/supabase'
 import { localDateStr } from '../../lib/formatters'
 import type {
   PulseSnapshot, PulseEvent, PulseBroker, PulseHoje, PulseGargalos, PulseConnection, PulseTempos,
-  PulseVgl, PulseResumoDia,
+  PulseVgl, PulseResumoDia, PulseSala, PulseAtribuicao,
 } from './types'
 import { isEventoRuido } from './pulseEvents'
+import { useAuthStore } from '../../store/useAuthStore'
+import { useLeadPauseStore } from '../../store/useLeadPauseStore'
 
 // ─── Orçamento de recursos ────────────────────────────────────────────────────
 //
@@ -76,6 +78,13 @@ interface PulseStore {
   leadsInfo:       Record<string, { nome: string; produto: string | null }>
   feed:            PulseEvent[]
   porHora:         number[]
+  /**
+   * O que veio do Dashboard de Leads (migração 102): leads por dia, quem espera
+   * o 1º contato e a trilha de distribuição. null antes da 1ª leitura.
+   */
+  sala:            PulseSala | null
+  /** a leitura da sala falhou — o resto do painel continua valendo */
+  salaErro:        string | null
   /** timestamps dos últimos eventos — só para o cálculo do clima */
   recent:          number[]
 
@@ -92,6 +101,17 @@ function funilToMap(funil: PulseSnapshot['funil']): Record<string, number> {
   const map: Record<string, number> = {}
   funil.forEach(f => { map[f.stage] = f.count })
   return map
+}
+
+const ETAPAS_DESCARTE: Record<string, string> = {
+  lead: 'lead', leads: 'lead', followup: 'followup', atendimento: 'atendimento',
+  visita: 'visita', proposta: 'proposta',
+}
+
+/** "Descartado em Followup — motivo" → 'followup'. Mesma leitura da migração 098. */
+export function etapaDoDescarte(descricao: string | undefined): string | null {
+  const m = descricao?.match(/^Descartado em (.+?) —/)
+  return m ? ETAPAS_DESCARTE[m[1].trim().toLowerCase()] ?? null : null
 }
 
 /** Bucket horário local do evento — mesma base do gráfico do dia. */
@@ -119,6 +139,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   leadsInfo:       {},
   feed:            [],
   porHora:         Array(24).fill(0),
+  sala:            null,
+  salaErro:        null,
   recent:          [],
 
   comissaoPrevista: () => get().negociacaoValor * TAXA_COMISSAO,
@@ -159,11 +181,13 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     }
 
     try {
-      // As duas RPCs em paralelo — juntas somam ~32 kB, uma vez por sessão.
-      const [snapRes, vglRes] = await Promise.all([
+      // As três RPCs em paralelo — juntas somam ~40 kB, uma vez por sessão.
+      const [snapRes, vglRes, salaRes] = await Promise.all([
         supabase.rpc('pulse_snapshot'),
         supabase.rpc('pulse_vgl'),
+        supabase.rpc('pulse_sala'),
       ])
+      if (salaRes.error) console.error('[pulse] sala:', salaRes.error)
       const { data, error } = snapRes
       if (error) throw error
 
@@ -200,6 +224,10 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         tempos:            snap.tempos ?? TEMPOS_ZERO,
         // Falha só do VGL não derruba o painel — o bloco some, o resto fica.
         vgl:               vglRes.error ? get().vgl : (vglRes.data as PulseVgl),
+        // Falha só da sala: os blocos que dependem dela dizem que falharam; o
+        // resto do painel fica. Nunca mostra a sala de ontem como se fosse de hoje.
+        sala:              salaRes.error ? null : (salaRes.data as PulseSala),
+        salaErro:          salaRes.error ? salaRes.error.message : null,
         corretores:        snap.corretores ?? [],
         brokerNames,
         leadsInfo,
@@ -247,6 +275,10 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     let retryTimer: ReturnType<typeof setTimeout> | null = null
     let channel: ReturnType<typeof buildChannel> | null = null
 
+    /** Muda a sala só se ela já foi lida — antes disso o snapshot vai trazê-la inteira. */
+    const mudarSala = (fn: (sala: PulseSala) => PulseSala) =>
+      set(s => (s.sala ? { sala: fn(s.sala) } : s))
+
     const push = (ev: PulseEvent) => {
       if (isEventoRuido(ev)) return
 
@@ -280,9 +312,14 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
             hoje.leadsNovos += 1
             funil.lead = (funil.lead ?? 0) + 1
             break
-          case 'interacao':
+          case 'interacao': {
             hoje.interacoes += 1
+            // Descarte tira o lead do funil. A etapa de onde ele saiu vem na
+            // descrição gravada pelo sistema ("Descartado em Followup — motivo").
+            const etapa = ev.subTipo === 'discard' ? etapaDoDescarte(ev.detalhe) : null
+            if (etapa) funil[etapa] = Math.max(0, (funil[etapa] ?? 0) - 1)
             break
+          }
           case 'etapa':
             hoje.mudancasEtapa += 1
             if (ev.fromStage) funil[ev.fromStage] = Math.max(0, (funil[ev.fromStage] ?? 0) - 1)
@@ -313,6 +350,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
               visitasHoje:    c.visitasHoje    + (ev.kind === 'visita'    ? 1 : 0),
               vendasHoje:     c.vendasHoje     + (ev.kind === 'venda'     ? 1 : 0),
               ligacoesHoje:   c.ligacoesHoje   + (ev.kind === 'ligacao'   ? 1 : 0),
+              avancosHoje:    (c.avancosHoje ?? 0) + (ev.kind === 'etapa'   ? 1 : 0),
               ultimaAtividadeAt: ev.at,
             })
           : s.corretores
@@ -338,6 +376,21 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         // lead exibam o produto sem nenhuma consulta.
         const produto = (r.property_name as string | null) ?? null
         set(s => ({ leadsInfo: { ...s.leadsInfo, [id]: { nome, produto } } }))
+        mudarSala(sala => {
+          const slaDueAt = (r.sla_due_at as string | null) ?? null
+          const brokerId = (r.broker_id as string | null) ?? null
+          const ultimo = sala.leadsPorDia[sala.leadsPorDia.length - 1]
+          return {
+            ...sala,
+            leadsPorDia: ultimo && ultimo.data === localDateStr(new Date(r.created_at as string))
+              ? [...sala.leadsPorDia.slice(0, -1), { ...ultimo, n: ultimo.n + 1 }]
+              : sala.leadsPorDia,
+            esperando: slaDueAt && !sala.esperando.some(e => e.id === id)
+              ? [...sala.esperando, { id, nome, brokerId, slaDueAt }]
+              : sala.esperando,
+            trilha: { ...sala.trilha, [id]: sala.trilha[id] ?? { firstContactAt: null, discardReason: null, closedAt: null } },
+          }
+        })
         push({
           id,
           leadId:    id,
@@ -360,6 +413,23 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         if (!r.broker_id) return
         const tipo   = r.type as string
         const leadId = r.lead_id as string
+        // 1º contato (o banco conta só WhatsApp — trigger handle_first_contact) e
+        // descarte tiram o lead da espera e fecham a passagem dele na trilha.
+        if (tipo === 'whatsapp' || tipo === 'discard') {
+          mudarSala(sala => {
+            const t = sala.trilha[leadId]
+            return {
+              ...sala,
+              esperando: sala.esperando.filter(e => e.id !== leadId),
+              trilha: !t ? sala.trilha : {
+                ...sala.trilha,
+                [leadId]: tipo === 'whatsapp'
+                  ? { ...t, firstContactAt: t.firstContactAt ?? (r.interacted_at as string) }
+                  : { ...t, discardReason: t.discardReason ?? 'discard' },
+              },
+            }
+          })
+        }
         // Nome e produto saem do mapa em memória — zero consulta por evento.
         const info   = get().leadsInfo[leadId]
         push({
@@ -415,6 +485,47 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
           leadNome: (r.contact_name as string | null) ?? undefined,
           subTipo:  (r.outcome as string | null) ?? 'discou',
         })
+      })
+
+      // O lead mudou de mão (roleta, rodízio por prazo, transferência). A linha
+      // traz o novo dono e o novo prazo: atualiza quem está esperando e a trilha
+      // do "no prazo" sem nenhuma consulta.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lead_assignments' }, p => {
+        const r = p.new as Record<string, unknown>
+        const a: PulseAtribuicao = {
+          id:           r.id as string,
+          leadId:       r.lead_id as string,
+          fromBrokerId: (r.from_broker_id as string | null) ?? null,
+          toBrokerId:   (r.to_broker_id as string | null) ?? null,
+          reason:       r.reason as string,
+          slaDueAt:     (r.sla_due_at as string | null) ?? null,
+          createdAt:    r.created_at as string,
+        }
+        mudarSala(sala => {
+          if (sala.atribuicoes.some(x => x.id === a.id)) return sala
+          const t = sala.trilha[a.leadId]
+          const espera = sala.esperando.find(e => e.id === a.leadId)
+          let esperando = sala.esperando
+          if (espera) {
+            esperando = a.slaDueAt
+              ? sala.esperando.map(e => e.id === a.leadId ? { ...e, brokerId: a.toBrokerId, slaDueAt: a.slaDueAt! } : e)
+              : sala.esperando.filter(e => e.id !== a.leadId)
+          } else if (a.slaDueAt && t && !t.firstContactAt && !t.discardReason && !t.closedAt) {
+            const nome = get().leadsInfo[a.leadId]?.nome ?? 'Lead'
+            esperando = [...sala.esperando, { id: a.leadId, nome, brokerId: a.toBrokerId, slaDueAt: a.slaDueAt }]
+          }
+          return { ...sala, atribuicoes: [...sala.atribuicoes, a], esperando }
+        })
+      })
+
+      // Um corretor pausou o recebimento: o banco avisa o admin (migração 090).
+      // É a deixa para reler as pausas — uma leitura pequena, só quando muda.
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${useAuthStore.getState().user?.id ?? '00000000-0000-0000-0000-000000000000'}`,
+      }, p => {
+        const r = p.new as Record<string, unknown>
+        if (r.type === 'lead_intake_paused') void useLeadPauseStore.getState().carregar()
       })
 
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'campaign_activity_log' }, p => {

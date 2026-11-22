@@ -5,7 +5,7 @@ import { aoTeclarAbrir } from '../../components/shared/lista'
 import { fitDeserveBadge } from '../../lib/intelligence'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Plus, LayoutGrid, List, BarChart3, Gauge,
+  Plus, LayoutGrid, List, Gauge,
   MessageCircle, Users, UserPlus, UserX, ChevronRight, RefreshCw, Settings2,
   Percent, Home, BadgeCheck, Snowflake, SearchX, Hourglass,
 } from 'lucide-react'
@@ -30,7 +30,6 @@ import { LeadForm } from './LeadForm'
 import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
 import { LeadVisitaTaskModal } from './LeadVisitaTaskModal'
-import { LeadsDashboard } from './LeadsDashboard'
 import { Segmentado } from '../../components/shared/visual'
 import { FunilSomenteLeitura } from './FunilSomenteLeitura'
 import { LeadConversionTab } from './LeadConversionTab'
@@ -52,7 +51,8 @@ const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 
 const ORDENS_LISTA: OrdemLista[] = ['criacao', 'sem_contato', 'prioridade', 'valor', 'etapa', 'antigos']
 const ORDENS_KANBAN: KanbanSort[] = ['manual', ...ORDENS_LISTA]
 
-type Tab = 'leads' | 'kanban' | 'dashboard' | 'conversao' | 'followup' | 'performance' | 'configuracoes'
+// A aba Dashboard saiu em 22/11/2026: virou a sala de comando do Pulse (/pulse).
+type Tab = 'leads' | 'kanban' | 'conversao' | 'followup' | 'performance' | 'configuracoes'
 
 /**
  * Relógio de minuto. Os filtros de tempo ("sem contato há mais de 2 dias",
@@ -396,7 +396,6 @@ export function LeadsPage() {
 
   const isListTab        = tab === 'leads'
   const isKanbanTab      = tab === 'kanban'
-  const isDashTab        = tab === 'dashboard'
   const isConvTab        = tab === 'conversao'
   const isFollowTab      = tab === 'followup'
   const isConfigTab      = tab === 'configuracoes'
@@ -493,7 +492,6 @@ export function LeadsPage() {
   const TABS: { value: Tab; label: string; icon: typeof List; badge?: number }[] = [
     { value: 'kanban',         label: 'Kanban',          icon: LayoutGrid                        },
     { value: 'leads',          label: 'Leads',          icon: List,        badge: erro ? undefined : active.length },
-    { value: 'dashboard',      label: 'Dashboard',       icon: BarChart3                         },
     { value: 'conversao',      label: 'Conversão',       icon: Percent                           },
     { value: 'followup',       label: 'Followup',        icon: Hourglass                         },
     ...(podePerformance ? [{ value: 'performance' as Tab, label: 'Performance', icon: Gauge }] : []),
@@ -521,7 +519,6 @@ export function LeadsPage() {
         />
       }
     >
-      {isDashTab && <LeadsDashboard leads={leads} />}
       {isConvTab && <LeadConversionTab />}
       {isFollowTab && <LeadFollowupTab leads={leads} onOpenLead={setSelectedLead} />}
       {isConfigTab && <LeadSettings />}

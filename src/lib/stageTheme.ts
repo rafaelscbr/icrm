@@ -2,7 +2,7 @@ import { LeadFunnelStage } from '../types'
 
 /**
  * Fonte única de verdade para label e cores das etapas do funil de leads.
- * Consumida por LeadKanban, LeadModal, ContactModal, LeadsDashboard,
+ * Consumida por LeadKanban, LeadModal, ContactModal, o Pulse,
  * TransferToFunnelModal, FunnelStrip e DashboardPage —
  * nunca redefinir cores de etapa dentro de uma tela.
  *

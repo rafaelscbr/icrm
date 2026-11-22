@@ -36,7 +36,7 @@ import { ConcludeSaleModal } from './ConcludeSaleModal'
 import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
 import toast from 'react-hot-toast'
 
-// Re-export da fonte única — consumido por LeadsPage, LeadsDashboard,
+// Re-export da fonte única — consumido por LeadsPage, o Pulse,
 // LeadsPerformance e TransferToFunnelModal. Cores vivem em lib/stageTheme.ts.
 export const STAGE_CONFIG = STAGE_THEME
 

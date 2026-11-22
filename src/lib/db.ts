@@ -2,7 +2,7 @@ import toast from 'react-hot-toast'
 import { supabase } from './supabase'
 import { getCurrentUserId, requireBrokerId } from './auth'
 import { generateId } from './formatters'
-import type { Atribuicao, EventoDoDia } from '../modules/leads/monitorLeads'
+import type { EventoDoDia } from '../modules/leads/monitorLeads'
 import type { LeadFluxo } from '../modules/simulador/shared/fluxo'
 
 export type PerfFuncao = 'resumo' | 'atividade' | 'leads' | 'transferencias' | 'cadencia' | 'funil' | 'descartes' | 'presenca'
@@ -1364,33 +1364,6 @@ export const db = {
   // que entrou de novo (`depoisDe`) — `lead_assignments` nunca é alterada, só
   // cresce. Sem toast: a tela mostra a falha no próprio bloco.
   leadMonitor: {
-    atribuicoes: async (p: { desde: string; depoisDe?: string }): Promise<Atribuicao[]> => {
-      const PAGINA = 1000   // teto de linhas por resposta do PostgREST
-      const out: Atribuicao[] = []
-      for (let pagina = 0; pagina < 20; pagina++) {
-        let q = supabase
-          .from('lead_assignments')
-          .select('id, lead_id, from_broker_id, to_broker_id, reason, sla_due_at, created_at')
-          .order('created_at', { ascending: true })
-          .order('id', { ascending: true })
-          .range(pagina * PAGINA, pagina * PAGINA + PAGINA - 1)
-        q = p.depoisDe ? q.gt('created_at', p.depoisDe) : q.gte('created_at', p.desde)
-        const { data, error } = await q
-        if (error) throw error
-        const linhas = (data ?? []) as Array<{
-          id: string; lead_id: string; from_broker_id: string | null; to_broker_id: string | null
-          reason: string; sla_due_at: string | null; created_at: string
-        }>
-        for (const r of linhas) {
-          out.push({
-            id: r.id, leadId: r.lead_id, fromBrokerId: r.from_broker_id, toBrokerId: r.to_broker_id,
-            reason: r.reason, slaDueAt: r.sla_due_at, createdAt: r.created_at,
-          })
-        }
-        if (linhas.length < PAGINA) break
-      }
-      return out
-    },
     /**
      * Os registros de produção de um dia (atendimento, avanço, visita, ligação),
      * com a hora de cada um — para dizer quanto cada corretor tinha feito "ontem

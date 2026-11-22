@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Users, Building2, Megaphone, CheckSquare, X, UserPlus, Plus, Sun, Moon, Zap } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
-import { navSections, isGroup, type NavIcon } from '../layout/nav/navConfig'
+import { navSections, isGroup, SO_ADMIN, type NavIcon } from '../layout/nav/navConfig'
+import { useAuthStore } from '../../store/useAuthStore'
 import { useContactSearch } from '../../hooks/useContactSearch'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
@@ -76,11 +77,12 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
    * respondem a `?nova=1` / `?novo=1` abrindo o formulário.
    */
   const { theme, toggle: toggleTheme } = useThemeStore()
+  const isAdmin = useAuthStore(s => s.isAdmin)
   const acoes: Acao[] = [
     { id: 'nova-tarefa',  label: 'Nova tarefa',  icon: Plus, run: () => go('/tarefas?nova=1') },
     { id: 'novo-lead',    label: 'Novo lead',    icon: Plus, run: () => go('/leads?novo=1') },
     { id: 'novo-contato', label: 'Novo contato', icon: Plus, run: () => go('/contatos?novo=1') },
-    ...navSections.flatMap(secao => secao.items.flatMap<Acao>(item =>
+    ...navSections.flatMap(secao => secao.items.filter(item => isAdmin || !SO_ADMIN.has(item.key)).flatMap<Acao>(item =>
       isGroup(item)
         ? item.children.map(c => ({ id: c.to, label: `Ir para ${item.label} · ${c.label}`, icon: c.icon, run: () => go(c.to) }))
         : [{ id: item.to, label: `Ir para ${item.label}`, icon: item.icon, run: () => go(item.to) }],

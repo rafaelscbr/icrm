@@ -1,16 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { KpiRail } from '../modules/pulse/components/KpiRail'
-import { FunnelStrip } from '../modules/pulse/components/FunnelStrip'
-import { LiveFeed } from '../modules/pulse/components/LiveFeed'
-import { BrokerRadar } from '../modules/pulse/components/BrokerRadar'
-import { DayChart } from '../modules/pulse/components/DayChart'
-import { ClimateGauge } from '../modules/pulse/components/ClimateGauge'
 import { ResponseTimePanel } from '../modules/pulse/components/ResponseTimePanel'
-import { VglPanel } from '../modules/pulse/components/VglPanel'
 import { ClosingSummary } from '../modules/pulse/components/ClosingSummary'
 import { PageBanner } from '../modules/pulse/components/PageBanner'
-import { calcClimate } from '../modules/pulse/climate'
+import { FaixaAgora, FunilDesenhado, MetaDoMes, RegistrosAoVivo, mediaSemHoje } from '../modules/pulse/components/Sala'
+import { etapaDoDescarte } from '../modules/pulse/usePulseStore'
 import type { PulseEvent, PulseHoje, PulseBroker, PulseVgl, PulseDestaques } from '../modules/pulse/types'
 
 const DESTAQUES: PulseDestaques = {
@@ -41,11 +35,6 @@ const HOJE: PulseHoje = {
   vendasQtd: 3, vendasValor: 1_250_000, vendasComissao: 62_500,
 }
 
-const HOJE_ZERO: PulseHoje = {
-  leadsNovos: 0, interacoes: 0, visitasMarcadas: 0, mudancasEtapa: 0, ligacoes: 0,
-  vendasQtd: 0, vendasValor: 0, vendasComissao: 0,
-}
-
 const CORRETORES: PulseBroker[] = [
   { brokerId: 'b1', nome: 'Rafael',        interacoesHoje: 12, leadsHoje: 2, visitasHoje: 1, vendasHoje: 0, ligacoesHoje: 14, ultimaAtividadeAt: new Date().toISOString() },
   { brokerId: 'b2', nome: 'Dionata Alves', interacoesHoje: 5,  leadsHoje: 3, visitasHoje: 0, vendasHoje: 1, ligacoesHoje: 10, ultimaAtividadeAt: null },
@@ -60,80 +49,88 @@ const FEED: PulseEvent[] = [
   { id: '6', at: new Date().toISOString(), kind: 'visita', leadNome: 'Visita Paramount', detalhe: '2026-08-05' },
 ]
 
-const NOMES = { b1: 'Rafael', b2: 'Dionata Alves' }
+const NOMES = new Map([['b1', 'Rafael'], ['b2', 'Dionata']])
 
-describe('painéis do Pulse renderizam com dados', () => {
-  it('KpiRail mostra os números do dia', () => {
-    render(<KpiRail hoje={HOJE} corretoresOnline={5} negociacaoValor={487_000} comissaoPrevista={24_350} />)
-    expect(screen.getByText('05')).toBeInTheDocument()   // online
-    expect(screen.getByText('38')).toBeInTheDocument()   // atendimentos
-    expect(screen.getByText('R$ 487k')).toBeInTheDocument()
+describe('sala de comando — os números do momento', () => {
+  it('número que ainda não chegou vira traço, não zero', () => {
+    render(<FaixaAgora itens={[
+      { rotulo: 'Leads hoje', valor: null },
+      { rotulo: 'Esperando 1º contato', valor: 3, tom: 'text-warning', nota: 'todos dentro do prazo' },
+    ]} />)
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('todos dentro do prazo')).toBeInTheDocument()
   })
 
-  it('FunnelStrip soma o total do funil', () => {
-    render(<FunnelStrip funil={{ lead: 4, followup: 71, atendimento: 19, proposta: 1 }} />)
-    expect(screen.getByText('95')).toBeInTheDocument()
+  it('média de leads ignora hoje, que ainda está acontecendo', () => {
+    expect(mediaSemHoje([{ n: 4 }, { n: 6 }, { n: 1 }])).toBe(5)
+    expect(mediaSemHoje([{ n: 9 }])).toBeNull()
+  })
+})
+
+describe('sala de comando — meta do mês (o único dourado)', () => {
+  it('mostra realizado, ritmo por dia útil e dias sem venda', () => {
+    render(<MetaDoMes vgl={VGL} />)
+    expect(screen.getByText('R$ 250k')).toBeInTheDocument()
+    expect(screen.getByText(/25% da meta/)).toBeInTheDocument()
+    // faltam 750k em 25 dias úteis = 30k/dia
+    expect(screen.getByText('faltam R$ 750k · R$ 30k/dia útil')).toBeInTheDocument()
+    expect(screen.getByText('21')).toBeInTheDocument()
   })
 
-  it('LiveFeed renderiza todos os tipos de evento', () => {
-    render(<LiveFeed feed={FEED} brokerNames={NOMES} />)
-    // Nome + produto no texto, origem + corretor que recebeu no detalhe
-    expect(screen.getByText('Novo lead — Vanessa Lima · Garden Park')).toBeInTheDocument()
-    expect(screen.getByText('Meta Ads → Dionata Alves')).toBeInTheDocument()
-    expect(screen.getByText(/Rafael moveu João → Visita/)).toBeInTheDocument()
-    expect(screen.getByText(/Venda registrada — Torre Garden/)).toBeInTheDocument()
-    expect(screen.getByText('Rafael falou no WhatsApp com Ana · Al Mare')).toBeInTheDocument()
-    expect(screen.getByText(/Dionata Alves disparou para Carlos/)).toBeInTheDocument()
+  it('meta batida não pede ritmo', () => {
+    render(<MetaDoMes vgl={{ ...VGL, realizadoMes: 1_200_000, faltaParaMeta: 0 }} />)
+    expect(screen.getByText(/100% da meta/)).toBeInTheDocument()
+    expect(screen.getByText('meta do mês batida')).toBeInTheDocument()
   })
 
-  it('BrokerRadar separa quem está online de quem não está', () => {
-    render(
-      <BrokerRadar
-        corretores={CORRETORES}
-        online={[{ brokerId: 'b1', nome: 'Rafael', paginaAtual: '/leads' }]}
-        agora={Date.now()}
-      />
-    )
-    expect(screen.getByText('Rafael')).toBeInTheDocument()
-    expect(screen.getByText('offline')).toBeInTheDocument()
-    expect(screen.getByText('1 online')).toBeInTheDocument()
+  it('sem nenhuma venda registrada não inventa contador', () => {
+    render(<MetaDoMes vgl={{ ...VGL, ultimaVenda: null, diasSemVenda: null }} />)
+    expect(screen.getByText(/nenhuma/)).toBeInTheDocument()
   })
 
-  it('DayChart desenha a curva do dia', () => {
-    const porHora = Array(24).fill(0)
-    porHora[9] = 4; porHora[10] = 12; porHora[14] = 7
-    render(<DayChart porHora={porHora} horaAtual={14} />)
-    expect(screen.getByText('23 ações')).toBeInTheDocument()
+  it('antes de carregar mostra a espera, não um zero', () => {
+    const { container } = render(<MetaDoMes vgl={null} />)
+    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull()
+  })
+})
+
+describe('sala de comando — funil e registros', () => {
+  it('o funil diz cada etapa e as vendas do mês', () => {
+    render(<FunilDesenhado porEtapa={{ lead: 6, followup: 91, atendimento: 35, visita: 2, proposta: 1 }} vendasNoMes={3} />)
+    const funil = screen.getByRole('img')
+    expect(funil.getAttribute('aria-label')).toMatch(/Followup 91/)
+    expect(funil.getAttribute('aria-label')).toMatch(/Vendas no mês 3/)
   })
 
-  it('DayChart conta atividade fora do horário comercial — lead do Meta cai de madrugada', () => {
-    const porHora = Array(24).fill(0)
-    porHora[0] = 1; porHora[2] = 1; porHora[3] = 1   // fora da faixa padrão 7h–21h
-    const { unmount } = render(<DayChart porHora={porHora} horaAtual={8} />)
-    // O total é do dia inteiro; marcar "0 ações" com o feed listando 3 leads
-    // ao lado seria uma contradição na mesma tela.
-    expect(screen.getByText('3 ações')).toBeInTheDocument()
-    // A faixa se estica até a madrugada, então a hora 00 vira rótulo do eixo.
-    expect(screen.getByText('00')).toBeInTheDocument()
-    unmount()
+  it('vendas do mês ainda sem dado viram traço', () => {
+    render(<FunilDesenhado porEtapa={{}} vendasNoMes={null} />)
+    expect(screen.getByRole('img').getAttribute('aria-label')).toMatch(/Vendas no mês sem dado/)
   })
 
-  it('DayChart estica a faixa para a madrugada e para a noite', () => {
-    const porHora = Array(24).fill(0)
-    porHora[23] = 5
-    render(<DayChart porHora={porHora} horaAtual={23} />)
-    expect(screen.getByText('5 ações')).toBeInTheDocument()
+  it('registros trazem o nome de quem fez e só de quem está na sala', () => {
+    render(<RegistrosAoVivo feed={[
+      ...FEED,
+      { id: 'x', at: new Date().toISOString(), kind: 'interacao', subTipo: 'whatsapp', leadNome: 'Zé', brokerId: 'fantasma' },
+    ]} nomes={NOMES} carregado />)
+    expect(screen.getAllByText(/Dionata ·/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Zé/)).not.toBeInTheDocument()
   })
 
-  it('ClimateGauge mostra o nível calculado', () => {
-    const clima = calcClimate({
-      atividade30min: 10, interacoesHoje: 25, leadsNovosHoje: 12,
-      corretoresOnline: 5, visitasHoje: 4, vendasHoje: 2, semAtendimentoHoje: 0,
-    })
-    render(<ClimateGauge clima={clima} />)
-    expect(screen.getByText('PEGANDO FOGO')).toBeInTheDocument()
+  it('dia sem registro diz isso', () => {
+    render(<RegistrosAoVivo feed={[]} nomes={NOMES} carregado />)
+    expect(screen.getByText('Nenhum registro hoje ainda.')).toBeInTheDocument()
   })
 
+  it('descarte devolve a etapa de onde o lead saiu, para o funil descontar', () => {
+    expect(etapaDoDescarte('Descartado em Followup — sem interesse')).toBe('followup')
+    expect(etapaDoDescarte('Descartado em Leads — duplicado')).toBe('lead')
+    expect(etapaDoDescarte('qualquer outra nota')).toBeNull()
+    expect(etapaDoDescarte(undefined)).toBeNull()
+  })
+})
+
+describe('tempo de resposta', () => {
   it('ResponseTimePanel mostra média, mediana e cumprimento do SLA', () => {
     render(<ResponseTimePanel tempos={{
       primeiroContato:  { mediaMin: 91, medianaMin: 33, amostra: 176, pctDentroSla: 36, slaMin: 10 },
@@ -159,34 +156,6 @@ describe('painéis do Pulse renderizam com dados', () => {
     expect(screen.queryByText(/dentro do prazo/)).not.toBeInTheDocument()
   })
 
-})
-
-describe('VglPanel — meta do mês e seca de vendas', () => {
-  it('mostra realizado, ritmo necessário e dias sem venda', () => {
-    render(<VglPanel vgl={VGL} />)
-    expect(screen.getByText('R$ 250k')).toBeInTheDocument()
-    expect(screen.getByText('25% da meta')).toBeInTheDocument()
-    // faltam 750k em 25 dias úteis = 30k/dia
-    expect(screen.getByText(/faltam R\$ 750k · R\$ 30k por dia útil/)).toBeInTheDocument()
-    expect(screen.getByText('21')).toBeInTheDocument()
-    expect(screen.getByText(/dias.*sem venda/s)).toBeInTheDocument()
-  })
-
-  it('sem nenhuma venda registrada não inventa contador', () => {
-    render(<VglPanel vgl={{ ...VGL, ultimaVenda: null, diasSemVenda: null }} />)
-    expect(screen.getByText('nenhuma venda registrada')).toBeInTheDocument()
-  })
-
-  it('meta batida não pede ritmo diário', () => {
-    render(<VglPanel vgl={{ ...VGL, realizadoMes: 1_200_000, faltaParaMeta: 0 }} />)
-    expect(screen.getByText('100% da meta')).toBeInTheDocument()
-    expect(screen.queryByText(/por dia útil/)).not.toBeInTheDocument()
-  })
-
-  it('não renderiza sem dados', () => {
-    const { container } = render(<VglPanel vgl={null} />)
-    expect(container).toBeEmptyDOMElement()
-  })
 })
 
 describe('ClosingSummary — relatório do dia fechado', () => {
@@ -275,25 +244,3 @@ describe('PageBanner — identifica a página de relance', () => {
   })
 })
 
-describe('painéis do Pulse renderizam vazios — é assim que a tela abre às 8h', () => {
-  it('nenhum painel quebra sem dados', () => {
-    expect(() => {
-      render(
-        <>
-          <KpiRail hoje={HOJE_ZERO} corretoresOnline={0} negociacaoValor={0} comissaoPrevista={0} />
-          <FunnelStrip funil={{}} />
-          <LiveFeed feed={[]} brokerNames={{}} />
-          <BrokerRadar corretores={[]} online={[]} agora={Date.now()} />
-          <DayChart porHora={Array(24).fill(0)} horaAtual={8} />
-        </>
-      )
-    }).not.toThrow()
-
-    expect(screen.getByText(/Nenhuma atividade registrada hoje ainda/)).toBeInTheDocument()
-  })
-
-  it('feed lida com corretor desconhecido sem quebrar', () => {
-    render(<LiveFeed feed={[{ id: 'x', at: new Date().toISOString(), kind: 'interacao', subTipo: 'ligacao', leadNome: 'Zé', brokerId: 'fantasma' }]} brokerNames={{}} />)
-    expect(screen.getByText(/Alguém ligou para Zé/)).toBeInTheDocument()
-  })
-})

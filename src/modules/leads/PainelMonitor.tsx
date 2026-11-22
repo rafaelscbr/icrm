@@ -3,11 +3,10 @@ import type React from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ChevronRight } from 'lucide-react'
 import type { LeadPause } from '../../types'
-import { Barra } from '../../components/shared/visual'
 import { horaDaVolta } from '../../lib/pausaLeads'
 import type { PulseTone } from '../pulse/pulseEvents'
-import { posicaoNoDia, textoDeMinutos } from './monitorLeads'
-import type { AlertaSala, LinhaOrigem, LinhaVelocidade } from './monitorLeads'
+import { posicaoNoDia } from './monitorLeads'
+import type { AlertaSala } from './monitorLeads'
 
 /**
  * Leads › Dashboard — as peças da sala de comando (16/11/2026).
@@ -248,150 +247,6 @@ function Celula({ rotulo, valor, nota, notaTom = 'text-t4', dica, largo = false 
       <p className={`${ROTULO} lg:hidden mb-0.5 truncate`}>{rotulo}</p>
       <p className="font-display text-[18px] font-extrabold leading-none text-t1 whitespace-nowrap">{valor}</p>
       <p className={`mt-1 h-[14px] truncate text-[11px] leading-none tabular-nums ${nota ? notaTom : ''}`}>{nota ?? ''}</p>
-    </div>
-  )
-}
-
-// ─── 1. Velocidade de resposta ────────────────────────────────────────────────
-
-export function VelocidadeDeResposta({ linhas, total, nome, minutosPrazo }: {
-  linhas: LinhaVelocidade[]
-  total: LinhaVelocidade
-  nome: (id: string | null) => string
-  /** prazo de 1º contato configurado; null = configuração não carregou */
-  minutosPrazo: number | null
-}) {
-  if (total.recebidos === 0) {
-    return <p className="text-[13.5px] text-t4 py-8 text-center">Nenhum lead distribuído neste período.</p>
-  }
-  const comTotal = linhas.length > 1
-  return (
-    <div className="overflow-x-auto -mx-5 lg:-mx-6 px-5 lg:px-6">
-      <table className="w-full min-w-[520px] text-left border-separate border-spacing-0">
-        <thead>
-          <tr className="text-[12px] text-t3">
-            <th scope="col" className="font-medium pb-2 pr-3">Corretor</th>
-            <th scope="col" className="font-medium pb-2 px-3 text-right" title="Cada vez que um lead passou pela mão do corretor e teve desfecho no período (ou ainda espera contato)">Leads</th>
-            <th scope="col" className="font-medium pb-2 px-3 text-right" title="Mediana, em minutos úteis, entre receber o lead e registrar o 1º contato">1º contato em</th>
-            <th scope="col" className="font-medium pb-2 px-3 w-[26%]">No prazo{minutosPrazo ? ` (${minutosPrazo} min)` : ''}</th>
-            <th scope="col" className="font-medium pb-2 px-3 text-right" title="O prazo venceu e o rodízio levou o lead para outro corretor">Perdeu</th>
-            <th scope="col" className="font-medium pb-2 pl-3 text-right">Esperando</th>
-          </tr>
-        </thead>
-        <tbody>
-          {linhas.map(l => <LinhaDeVelocidade key={l.brokerId ?? 'sem'} l={l} rotulo={nome(l.brokerId)} minutosPrazo={minutosPrazo} />)}
-        </tbody>
-        {comTotal && (
-          <tfoot>
-            <LinhaDeVelocidade l={total} rotulo="Equipe" minutosPrazo={minutosPrazo} total />
-          </tfoot>
-        )}
-      </table>
-      <p className="mt-3 text-[12px] text-t4">
-        Cada vez que o lead passa pela mão do corretor conta uma vez. "Perdeu" = o prazo venceu e o lead foi para outro.
-      </p>
-    </div>
-  )
-}
-
-function LinhaDeVelocidade({ l, rotulo, minutosPrazo, total = false }: {
-  l: LinhaVelocidade; rotulo: string; minutosPrazo: number | null; total?: boolean
-}) {
-  // Só entra na conta do prazo quem tinha prazo e já teve desfecho.
-  const comDesfecho = l.noPrazo + l.foraDoPrazo + l.perdidos
-  const pct = comDesfecho > 0 ? (l.noPrazo / comDesfecho) * 100 : null
-  const tomPrazo = pct === null ? 'neutro' : pct >= 80 ? 'sucesso' : pct >= 50 ? 'atencao' : 'risco'
-  const lento = minutosPrazo !== null && l.medianaMin !== null && l.medianaMin > minutosPrazo
-  const borda = total ? 'border-t-2 border-line-strong' : 'border-t border-line'
-  const esperando = l.aguardando + l.vencidos
-
-  return (
-    <tr className={total ? 'font-semibold' : ''}>
-      <th scope="row" className={`${borda} py-2.5 pr-3 text-[14px] ${total ? 'font-semibold' : 'font-medium'} text-t1 truncate max-w-[160px]`}>{rotulo}</th>
-      <td className={`${borda} py-2.5 px-3 text-right text-[14px] text-t1`}><NumeroVivo valor={l.recebidos} /></td>
-      <td className={`${borda} py-2.5 px-3 text-right text-[14px] whitespace-nowrap ${lento ? 'text-warning' : 'text-t1'}`}>
-        <NumeroVivo valor={textoDeMinutos(l.medianaMin)} />
-      </td>
-      <td className={`${borda} py-2.5 px-3`}>
-        {pct === null ? (
-          <span className="text-[13px] text-t4">—</span>
-        ) : (
-          <div className="flex items-center gap-2.5">
-            <div className="flex-1 min-w-[48px]">
-              <Barra pct={pct} tom={tomPrazo} altura={5} rotuloAcessivel={`${l.noPrazo} de ${comDesfecho} leads atendidos no prazo`} />
-            </div>
-            <span className="text-[13px] text-t2 tabular-nums whitespace-nowrap">{n(l.noPrazo)} de {n(comDesfecho)}</span>
-          </div>
-        )}
-      </td>
-      <td className={`${borda} py-2.5 px-3 text-right text-[14px] ${l.perdidos > 0 ? 'text-error' : 'text-t4'}`}>
-        <NumeroVivo valor={l.perdidos} />
-      </td>
-      <td className={`${borda} py-2.5 pl-3 text-right text-[14px] whitespace-nowrap ${l.vencidos > 0 ? 'text-error' : esperando > 0 ? 'text-warning' : 'text-t4'}`}>
-        <NumeroVivo valor={esperando} />
-        {l.vencidos > 0 && <span className="text-[12px] font-normal"> · {n(l.vencidos)} vencido{l.vencidos > 1 ? 's' : ''}</span>}
-      </td>
-    </tr>
-  )
-}
-
-// ─── 2. Qualidade por origem ──────────────────────────────────────────────────
-
-const LINHAS_DE_ORIGEM = 6
-
-export function QualidadePorOrigem({ linhas, rotuloOrigem, rotuloMotivo }: {
-  linhas: LinhaOrigem[]
-  rotuloOrigem: (slug: string) => string
-  rotuloMotivo: (slug: string) => string
-}) {
-  if (linhas.length === 0) {
-    return <p className="text-[13.5px] text-t4 py-8 text-center">Nenhum lead chegou neste período.</p>
-  }
-  const visiveis = linhas.slice(0, LINHAS_DE_ORIGEM)
-  const resto = linhas.length - visiveis.length
-  return (
-    <div>
-      <ul className="divide-y divide-line">
-        {visiveis.map(l => {
-          const pct = (v: number) => (l.chegaram > 0 ? (v / l.chegaram) * 100 : 0)
-          return (
-            <li key={l.chave} className="py-3 first:pt-0">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="min-w-0 truncate text-[14px] text-t1">
-                  <span className="font-semibold">{l.produto ?? 'Sem produto'}</span>
-                  <span className="text-t3"> · {rotuloOrigem(l.origem)}</span>
-                </p>
-                <p className="flex-shrink-0 text-[13px] text-t3 tabular-nums">
-                  <NumeroVivo valor={l.chegaram} className="font-display text-[16px] font-extrabold text-t1" /> {l.chegaram === 1 ? 'chegou' : 'chegaram'}
-                </p>
-              </div>
-
-              {/* Onde estão hoje: avançou · em aberto · descartado */}
-              <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-s2" role="img"
-                   aria-label={`${l.avancaram} avançaram, ${l.emAberto} em aberto, ${l.descartados} descartados`}>
-                <span className="bg-success transition-[width] duration-500" style={{ width: `${pct(l.avancaram)}%` }} />
-                <span className="transition-[width] duration-500" style={{ width: `${pct(l.emAberto)}%`, background: 'var(--stage-lead)', opacity: 0.45 }} />
-                <span className="bg-error/70 transition-[width] duration-500" style={{ width: `${pct(l.descartados)}%` }} />
-              </div>
-
-              <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12.5px] tabular-nums">
-                <span className={l.avancaram > 0 ? 'text-success font-medium' : 'text-t4'}>{n(l.avancaram)} {l.avancaram === 1 ? 'avançou' : 'avançaram'}</span>
-                <span className="text-t3">{n(l.emAberto)} em aberto</span>
-                <span className={l.descartados > 0 ? 'text-error' : 'text-t4'}>
-                  {n(l.descartados)} {l.descartados === 1 ? 'descartado' : 'descartados'}
-                  {l.descartados > 0 && ` (${Math.round(pct(l.descartados))}%)`}
-                </span>
-                {l.motivoTop && (
-                  <span className="text-t4 truncate">
-                    motivo nº 1: {rotuloMotivo(l.motivoTop.slug)} ({n(l.motivoTop.n)})
-                  </span>
-                )}
-              </p>
-            </li>
-          )
-        })}
-      </ul>
-      {resto > 0 && <p className="text-[12.5px] text-t4 pt-2.5 border-t border-line">e mais {resto} {resto === 1 ? 'origem' : 'origens'} com menos leads</p>}
     </div>
   )
 }

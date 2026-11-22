@@ -166,3 +166,42 @@ export interface PulseSnapshot {
 
 /** Estado da conexão — a faixa de status no topo da tela lê daqui. */
 export type PulseConnection = 'loading' | 'live' | 'reconnecting' | 'stale' | 'error'
+
+/**
+ * O que o Pulse herdou do Dashboard de Leads (migração 102, RPC pulse_sala).
+ * Lido junto com o snapshot e mantido pelo realtime — o Pulse nunca carrega a
+ * lista inteira de leads.
+ */
+export interface PulseEsperando {
+  id:       string
+  nome:     string
+  brokerId: string | null
+  slaDueAt: string
+}
+
+/** Uma linha de `lead_assignments`: o lead passou para `toBrokerId`. */
+export interface PulseAtribuicao {
+  id:           string
+  leadId:       string
+  fromBrokerId: string | null
+  toBrokerId:   string | null
+  reason:       string
+  slaDueAt:     string | null
+  createdAt:    string
+}
+
+/** O mínimo de cada lead da trilha para dizer se o prazo foi cumprido. */
+export interface PulseTrilhaLead {
+  firstContactAt: string | null
+  discardReason:  string | null
+  closedAt:       string | null
+}
+
+export interface PulseSala {
+  /** últimos 30 dias, do mais antigo para hoje */
+  leadsPorDia: Array<{ data: string; n: number }>
+  esperando:   PulseEsperando[]
+  /** desde o início de ontem */
+  atribuicoes: PulseAtribuicao[]
+  trilha:      Record<string, PulseTrilhaLead>
+}

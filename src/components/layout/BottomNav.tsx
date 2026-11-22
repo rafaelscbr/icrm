@@ -8,7 +8,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { useSearchStore } from '../../store/useSearchStore'
 import { useThemeStore } from '../../store/useThemeStore'
 import { useUnreadCount } from '../../store/useNotificationsStore'
-import { externalTools as tools, secoesDaGaveta, isGroup, navSections, acoesCriar } from './nav/navConfig'
+import { externalTools as tools, secoesDaGaveta, isGroup, navSections, acoesCriar, podeVerMenu } from './nav/navConfig'
 import type { NavLeaf } from './nav/navConfig'
 import { iniciais } from '../../lib/formatters'
 import { PausaLeads } from './nav/PausaLeads'
@@ -79,7 +79,7 @@ export function BottomNav() {
   const fecharRef = useRef<HTMLButtonElement>(null)
 
   const allowedMenus = profile?.allowedMenus ?? null
-  const podeVer = (key: string) => isAdmin || allowedMenus === null || allowedMenus.includes(key)
+  const podeVer = (key: string) => podeVerMenu(key, isAdmin, allowedMenus)
 
   const secoes = secoesDaGrade(podeVer)
   const barra = fixos.filter(i => podeVer(i.chave))

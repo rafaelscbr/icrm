@@ -625,6 +625,19 @@ html.light {
     border-radius: 3px;
   }
 
+  /*
+   * Fundo da sala de comando (Pulse na TV, 22/11/2026): a folha do sistema com
+   * uma grade de pontos quase invisível — o "papel milimetrado" de painel de
+   * dados. Incolor (princípio 4): dá textura sem competir com nenhum número.
+   */
+  .pulse-fundo {
+    background-color: var(--page-bg);
+    background-image:
+      radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--t1) 7%, transparent) 1px, transparent 0),
+      var(--grain);
+    background-size: 22px 22px, auto;
+  }
+
   .pulse-viewport {
     position: fixed;
     inset: 0;
