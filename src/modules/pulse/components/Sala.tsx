@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type React from 'react'
+import { useContagem } from '../../../hooks/useContagem'
 import type { ReactNode, RefObject } from 'react'
 import { CalendarX, CheckCircle2 } from 'lucide-react'
 import type { LeadFunnelStage, LeadPause } from '../../../types'
@@ -29,19 +31,12 @@ import type { PulseEvent, PulseTempos, PulseVgl } from '../types'
 
 const n = (v: number) => v.toLocaleString('pt-BR')
 
-const ROTULO = 'font-label text-[12.5px] uppercase tracking-[0.14em] text-t3'
-
 /** Cor viva de cada tipo de registro — a mesma na linha do dia e no feed. */
 export const COR_DO_TOM: Record<PulseTone, string> = {
   neutral: 'var(--v-neutro)',
   good:    'var(--v-contato)',
   warn:    'var(--v-alerta)',
   win:     'var(--v-ok)',
-}
-
-const COR_DA_ETAPA: Record<LeadFunnelStage, string> = {
-  lead: 'var(--v-lead)', followup: 'var(--v-followup)', atendimento: 'var(--v-atendimento)',
-  visita: 'var(--v-visita)', proposta: 'var(--v-proposta)', venda: 'var(--v-venda)',
 }
 
 // ─── Moldura ──────────────────────────────────────────────────────────────────
@@ -117,126 +112,59 @@ function iniciais(nome: string) {
   return ((partes[0]?.[0] ?? '') + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase()
 }
 
-const COLUNAS_EQUIPE = '290px minmax(0, 1fr) repeat(5, 104px)'
-
 /**
- * A equipe, uma faixa por corretor: quem é e como está agora, a linha do dia
- * (cada registro um traço vivo na hora em que aconteceu, o cursor dourado é o
- * agora) e o que produziu hoje.
+ * A equipe em formato de placar: uma linha por corretor, com o anel da meta
+ * de ligações do dia em volta do avatar (enche conforme ele liga), o estado
+ * agora e o que produziu. A linha do dia de cada um saiu: o batimento da
+ * faixa Marinho já conta o dia da imobiliária.
  */
-export function EquipeAgora({ corretores, de, ate, agora }: {
-  corretores: Corretor[]; de: number; ate: number; agora: number
-}) {
-  const horas: number[] = []
-  for (let h = de; h <= ate + 1; h += 2) horas.push(h)
-  const largura = ate + 1 - de
-
+export function EquipeCompacta({ corretores, agora }: { corretores: Corretor[]; agora: number }) {
   return (
-    <div className="flex-1 min-h-0 flex flex-col">
-      <div className="grid items-end gap-x-5 px-6 pb-2" style={{ gridTemplateColumns: COLUNAS_EQUIPE }}>
-        <span />
-        <span className="relative h-5" aria-hidden>
-          {horas.map(h => (
-            <span key={h} className="absolute bottom-0 -translate-x-1/2 text-[13px] text-t4 tabular-nums first:translate-x-0 last:-translate-x-full"
-                  style={{ left: `${((h - de) / largura) * 100}%` }}>{h}h</span>
-          ))}
-        </span>
-        {['Atend.', 'Ligações', 'Avanços', 'Visitas', 'Leads'].map(r => (
-          <span key={r} className={`${ROTULO} text-right`}>{r}</span>
-        ))}
-      </div>
-      <ul className="flex-1 min-h-0 overflow-hidden">
-        {corretores.map((c, i) => {
-          const id = IDENTIDADE[i % IDENTIDADE.length]
-          return (
-            <li key={c.id} className="grid items-center gap-x-5 px-6 py-1.5 border-t border-line/70" style={{ gridTemplateColumns: COLUNAS_EQUIPE }}>
-              <div className="flex items-center gap-3.5 min-w-0">
-                <span className="relative shrink-0">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full font-display text-[16px] font-bold"
-                        style={{ background: id.fundo, color: id.tinta }} aria-hidden>{iniciais(c.nome)}</span>
-                  <span className={`absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-[2.5px] border-[color:var(--surface)] ${c.ativo && !c.pausa ? 'pulse-live-dot' : ''}`}
-                        style={{ background: c.pausa ? 'var(--v-alerta)' : c.ativo ? 'var(--v-ok)' : 'var(--v-neutro)' }} aria-hidden />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate font-display text-[19px] font-bold tracking-[-0.02em] text-t1">{c.nome}</span>
-                  <span className={`block truncate text-[14px] tabular-nums ${c.pausa ? 'text-warning font-medium' : c.ativo ? 'text-success font-medium' : 'text-t3'}`}>
-                    {c.pausa ? `Em pausa · volta ${horaDaVolta(c.pausa.untilAt, agora)}` : c.status}
-                  </span>
-                </span>
-              </div>
-
-              <LinhaDoDia marcas={c.marcas} de={de} ate={ate} agora={agora} nome={c.nome} />
-
-              <Contagem valor={c.atend} />
-              <Contagem valor={c.ligacoes} meta={c.metaLigacoes} />
-              <Contagem valor={c.avancos} />
-              <Contagem valor={c.visitas} />
-              <Contagem valor={c.leads} nota={c.herdados > 0 ? `+${n(c.herdados)} herdado${c.herdados === 1 ? '' : 's'}` : undefined} />
-            </li>
-          )
-        })}
-      </ul>
-    </div>
-  )
-}
-
-function Contagem({ valor, meta, nota }: { valor: number | null; meta?: number; nota?: string }) {
-  const bateu = meta !== undefined && valor !== null && valor >= meta
-  return (
-    <span className="text-right min-w-0">
-      <span className="block font-display text-[30px] leading-none font-extrabold tracking-[-0.03em] whitespace-nowrap">
-        {valor === null ? <span className="text-t4">—</span>
-          : <NumeroVivo valor={valor} className={bateu ? 'text-success' : valor === 0 ? 'text-t4' : 'text-t1'} />}
-        {meta !== undefined && <span className="text-[15px] font-semibold text-t4 tabular-nums">/{n(meta)}</span>}
-      </span>
-      {nota && <span className="block mt-1 text-[12.5px] text-t3 truncate">{nota}</span>}
-    </span>
-  )
-}
-
-function LinhaDoDia({ marcas, de, ate, agora, nome }: {
-  marcas: { t: number; tom: PulseTone }[]
-  de: number; ate: number; agora: number; nome: string
-}) {
-  const ref = new Date(agora)
-  const cursor = posicaoNoDia(agora, de, ate, ref)
-  return (
-    <div className="relative h-11" role="img"
-         aria-label={`Linha do dia de ${nome}: ${marcas.length} ${marcas.length === 1 ? 'registro' : 'registros'}.`}>
-      {/* o dia que já passou é um trilho cheio; o que falta, um trilho claro */}
-      <span className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-s3" aria-hidden />
-      {cursor !== null && (
-        <span className="absolute left-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full"
-              style={{ width: `${cursor}%`, background: 'color-mix(in srgb, var(--t1) 14%, transparent)' }} aria-hidden />
-      )}
-      {marcas.map((m, i) => {
-        const x = posicaoNoDia(m.t, de, ate, ref)
-        if (x === null) return null
+    <ul className="flex-1 min-h-0 overflow-hidden px-6 pb-4">
+      {corretores.map((c, i) => {
+        const id = IDENTIDADE[i % IDENTIDADE.length]
+        const pct = c.metaLigacoes > 0 ? Math.min(1, c.ligacoes / c.metaLigacoes) : 0
+        const R = 27, C = 2 * Math.PI * R
+        const corAnel = pct >= 1 ? 'var(--v-ok)' : 'var(--v-lead)'
         return (
-          <span key={i} aria-hidden
-                className="absolute top-1/2 w-[5px] h-[30px] -translate-x-1/2 -translate-y-1/2 rounded-full pulse-item-in"
-                style={{ left: `${x}%`, background: COR_DO_TOM[m.tom] }} />
+          <li key={c.id} className="flex items-center gap-4 py-2.5 border-t border-line/70 first:border-t-0 pulse-item-in">
+            <span className="relative shrink-0 h-[62px] w-[62px]" title={`${c.ligacoes} de ${c.metaLigacoes} ligações hoje`}>
+              <svg viewBox="0 0 62 62" className="absolute inset-0 -rotate-90" aria-hidden>
+                <circle cx={31} cy={31} r={R} fill="none" stroke="var(--s3)" strokeWidth={4} />
+                <circle cx={31} cy={31} r={R} fill="none" stroke={corAnel} strokeWidth={4} strokeLinecap="round"
+                        strokeDasharray={C} strokeDashoffset={C * (1 - pct)} style={{ transition: 'stroke-dashoffset 900ms cubic-bezier(.2,.8,.2,1)' }} />
+              </svg>
+              <span className="absolute inset-[8px] flex items-center justify-center rounded-full font-display text-[16px] font-bold"
+                    style={{ background: id.fundo, color: id.tinta }} aria-hidden>{iniciais(c.nome)}</span>
+              <span className={`absolute right-0 bottom-0 h-4 w-4 rounded-full border-[3px] border-[color:var(--surface)] ${c.ativo && !c.pausa ? 'pulse-live-dot' : ''}`}
+                    style={{ background: c.pausa ? 'var(--v-alerta)' : c.ativo ? 'var(--v-ok)' : 'var(--v-neutro)' }} aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-display text-[18px] font-bold tracking-[-0.02em] text-t1">{c.nome.split(' ')[0]}</span>
+              <span className={`block truncate text-[13.5px] tabular-nums ${c.pausa ? 'text-warning font-medium' : c.ativo ? 'text-success font-medium' : 'text-t3'}`}>
+                {c.pausa ? `Em pausa · volta ${horaDaVolta(c.pausa.untilAt, agora)}` : c.status}
+              </span>
+            </span>
+            <Placar rotulo="atend." valor={c.atend} />
+            <Placar rotulo="leads" valor={c.leads} nota={c.herdados > 0 ? `+${n(c.herdados)}` : undefined} />
+            <Placar rotulo="lig." valor={c.ligacoes} meta={c.metaLigacoes} />
+          </li>
         )
       })}
-      {cursor !== null && (
-        <span className="absolute inset-y-0 w-[2px] -translate-x-1/2 bg-brand" style={{ left: `${cursor}%` }} aria-hidden>
-          <span className="absolute -top-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-brand pulse-live-dot" />
-        </span>
-      )}
-    </div>
+    </ul>
   )
 }
 
-/** O que cada cor de traço quer dizer — quatro palavras. */
-export function LegendaDoDia() {
-  const itens: [PulseTone, string][] = [['good', 'contato'], ['win', 'interesse ou visita'], ['warn', 'descarte'], ['neutral', 'anotação']]
+function Placar({ rotulo, valor, meta, nota }: { rotulo: string; valor: number | null; meta?: number; nota?: string }) {
+  const bateu = meta !== undefined && valor !== null && valor >= meta
   return (
-    <span className="flex items-center justify-end gap-x-4" aria-label="Cores da linha do dia">
-      {itens.map(([tom, nome]) => (
-        <span key={nome} className="flex items-center gap-1.5 whitespace-nowrap">
-          <span className="h-3.5 w-[4px] rounded-full" style={{ background: COR_DO_TOM[tom] }} aria-hidden /> {nome}
-        </span>
-      ))}
+    <span className="shrink-0 w-[62px] text-right">
+      <span className="block font-display text-[26px] leading-none font-extrabold tracking-[-0.03em] whitespace-nowrap">
+        {valor === null ? <span className="text-t4">—</span>
+          : <NumeroVivo valor={valor} className={bateu ? 'text-success' : valor === 0 ? 'text-t4' : 'text-t1'} />}
+        {nota && <span className="text-[13px] font-semibold text-t3 align-top ml-0.5">{nota}</span>}
+      </span>
+      <span className="block mt-1 text-[12.5px] text-t3">{rotulo}</span>
     </span>
   )
 }
@@ -381,43 +309,127 @@ export function AoVivo({ feed, nomes, carregado }: {
 
 // ─── Funil ────────────────────────────────────────────────────────────────────
 
+/** Tons de cada fatia, do claro (topo) ao profundo — texto branco legível em todas. */
+const FATIA: Record<LeadFunnelStage, [string, string]> = {
+  lead:        ['#818CF8', '#4F46E5'],
+  followup:    ['#C084FC', '#9333EA'],
+  atendimento: ['#38BDF8', '#0284C7'],
+  visita:      ['#2DD4BF', '#0D9488'],
+  proposta:    ['#FBBF24', '#D97706'],
+  venda:       ['#4ADE80', '#16A34A'],
+}
+
+/** Texto de número que sobe até o valor (700 ms) e acende quando muda. */
+function ContagemSvg({ valor, ...props }: { valor: number } & React.SVGProps<SVGTextElement>) {
+  const v = useContagem(valor)
+  const anterior = useRef(valor)
+  const [acende, setAcende] = useState(0)
+  useEffect(() => {
+    if (anterior.current !== valor) { anterior.current = valor; setAcende(a => a + 1) }
+  }, [valor])
+  return <text key={acende} className={acende ? 'pulse-acende' : undefined} {...props}>{Math.round(v).toLocaleString('pt-BR')}</text>
+}
+
+/** Gotas que descem pelo funil: posição e ritmo fixos, durações que não se repetem juntas. */
+const GOTAS = [
+  { dx: -60, dur: 6.8, atraso: 0 },   { dx: 34, dur: 8.3, atraso: 1.6 }, { dx: -12, dur: 7.4, atraso: 3.1 },
+  { dx: 78, dur: 9.1, atraso: 0.9 },  { dx: -96, dur: 7.9, atraso: 4.4 }, { dx: 8, dur: 6.2, atraso: 5.6 },
+  { dx: -40, dur: 8.8, atraso: 2.4 }, { dx: 54, dur: 7.1, atraso: 6.3 },
+]
+
 /**
- * O funil é uma FORMA, não um gráfico de proporção: com 90 leads em followup
- * e 1 em proposta, barras proporcionais virariam um traço. A silhueta afunila
- * por posição; cada fatia leva a cor viva da etapa e o número dentro dela.
+ * O funil da imobiliária, protagonista da tela. É uma FORMA, não um gráfico
+ * de proporção (com 90 em followup e 1 em proposta, barras proporcionais
+ * virariam um traço): a silhueta afunila por posição, cada fatia na cor da
+ * etapa, com o número grande dentro e, ao lado, quanto do funil ativo ela é.
+ *
+ * Vivo: as fatias montam uma a uma ao abrir, gotas (os leads) descem por
+ * dentro, um brilho atravessa de tempos em tempos, e o número que muda
+ * sobe até o valor novo e acende.
  */
-export function FunilVivo({ porEtapa, vendasNoMes }: {
+export function FunilHeroi({ porEtapa, vendasNoMes }: {
   porEtapa: Partial<Record<LeadFunnelStage, number>>
   vendasNoMes: number | null
 }) {
-  const L = 320, H = 66, VAO = 6, PASSO = 32
+  const W = 620, H = 70, VAO = 9, TOPO = 430, BASE = 150
+  const ativos = ETAPAS_FUNIL.filter(e => e !== 'venda').reduce((t, e) => t + (porEtapa[e] ?? 0), 0)
   const linhas = ETAPAS_FUNIL.map(e => ({
     etapa: e,
     nome: e === 'venda' ? 'Vendas no mês' : STAGE_THEME[e].columnLabel,
     n: e === 'venda' ? vendasNoMes : (porEtapa[e] ?? 0),
-    cor: COR_DA_ETAPA[e],
   }))
+  const passo = (TOPO - BASE) / linhas.length
   const altura = linhas.length * (H + VAO) - VAO
+  const cx = TOPO / 2
+  const fatias = linhas.map((l, i) => {
+    const y = i * (H + VAO)
+    const a = TOPO - i * passo, b = TOPO - (i + 1) * passo
+    const pts = [[cx - a / 2, y], [cx + a / 2, y], [cx + b / 2, y + H], [cx - b / 2, y + H]]
+    return { ...l, i, y, a, pontos: pts.map(p => p.join(',')).join(' ') }
+  })
 
   return (
-    <div className="flex-1 min-h-0 flex items-center justify-center px-5 pb-5">
-      <svg viewBox={`0 0 ${L} ${altura}`} className="h-full max-h-full w-auto max-w-full" role="img"
+    <div className="flex-1 min-h-0 flex items-center justify-center px-6 pb-6">
+      <svg viewBox={`-16 -4 ${W + 16} ${altura + 8}`} className="h-full max-h-full w-auto max-w-full overflow-visible" role="img"
            aria-label={`Funil agora: ${linhas.map(l => `${l.nome} ${l.n ?? 'sem dado'}`).join(', ')}.`}>
-        {linhas.map((l, i) => {
-          const y = i * (H + VAO)
-          const topo = L - i * PASSO, base = L - (i + 1) * PASSO
-          const pontos = [
-            [(L - topo) / 2, y], [(L + topo) / 2, y], [(L + base) / 2, y + H], [(L - base) / 2, y + H],
-          ].map(p => p.join(',')).join(' ')
+        <defs>
+          {fatias.map(f => (
+            <linearGradient key={f.etapa} id={`fatia-${f.etapa}`} x1="0" y1="0" x2="0.45" y2="1">
+              <stop offset="0%" stopColor={FATIA[f.etapa][0]} />
+              <stop offset="100%" stopColor={FATIA[f.etapa][1]} />
+            </linearGradient>
+          ))}
+          <clipPath id="funil-forma">
+            {fatias.map(f => <polygon key={f.etapa} points={f.pontos} />)}
+          </clipPath>
+          <linearGradient id="funil-luz" x1="0" x2="1">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0" />
+            <stop offset="50%" stopColor="#fff" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* as fatias, montando uma a uma */}
+        {fatias.map(f => (
+          <g key={f.etapa} className="funil-fatia" style={{ animationDelay: `${f.i * 110}ms` }}>
+            <polygon points={f.pontos} fill={`url(#fatia-${f.etapa})`} stroke="rgba(255,255,255,0.55)" strokeWidth={1.5} strokeLinejoin="round" />
+          </g>
+        ))}
+
+        {/* os leads descendo e o brilho que atravessa — sempre por dentro da forma */}
+        <g clipPath="url(#funil-forma)" aria-hidden>
+          {GOTAS.map((g, i) => (
+            <circle key={i} className="funil-gota" cx={cx + g.dx} cy={-6} r={4} fill="#fff"
+                    style={{ '--dur': `${g.dur}s`, '--atraso': `${g.atraso}s`, '--queda': `${altura + 12}px` } as React.CSSProperties} />
+          ))}
+          <rect className="funil-brilho" x={0} y={-20} width={120} height={altura + 40} fill="url(#funil-luz)" />
+        </g>
+
+        {/* nome e número dentro de cada fatia */}
+        {fatias.map(f => (
+          <g key={`t-${f.etapa}`} className="funil-fatia" style={{ animationDelay: `${f.i * 110 + 80}ms` }}>
+            <text x={cx} y={f.y + 24} textAnchor="middle"
+                  style={{ fill: 'rgba(255,255,255,0.88)', fontSize: 14, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              {f.nome}
+            </text>
+            {f.n === null
+              ? <text x={cx} y={f.y + 57} textAnchor="middle" style={{ fill: '#fff', fontSize: 32, fontWeight: 800 }}>—</text>
+              : <ContagemSvg valor={f.n} x={cx} y={f.y + 57} textAnchor="middle" className="font-display tabular-nums"
+                             style={{ fill: '#fff', fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em' }} />}
+          </g>
+        ))}
+
+        {/* ao lado: quanto do funil ativo cada etapa é */}
+        {fatias.filter(f => f.etapa !== 'venda').map(f => {
+          const xs = cx + f.a / 2 + 26
+          const pct = f.etapa !== 'venda' && ativos > 0 && f.n !== null ? Math.round((f.n / ativos) * 100) : null
           return (
-            <g key={l.etapa}>
-              <polygon points={pontos} strokeWidth={2} strokeLinejoin="round"
-                style={{ fill: `color-mix(in srgb, ${l.cor} 34%, var(--surface))`, stroke: l.cor }} />
-              <text x={L / 2} y={y + 24} textAnchor="middle"
-                style={{ fill: 'var(--t2)', fontSize: 16, fontWeight: 600 }}>{l.nome}</text>
-              <text x={L / 2} y={y + 55} textAnchor="middle" className="font-display tabular-nums"
-                style={{ fill: 'var(--t1)', fontSize: 30, fontWeight: 800 }}>
-                {l.n === null ? '—' : l.n.toLocaleString('pt-BR')}
+            <g key={`p-${f.etapa}`} className="funil-fatia" style={{ animationDelay: `${f.i * 110 + 160}ms` }}>
+              <line x1={cx + f.a / 2 - 4} y1={f.y + H / 2} x2={xs - 8} y2={f.y + H / 2} stroke="var(--line-strong)" strokeWidth={1} strokeDasharray="2 4" />
+              <circle cx={cx + f.a / 2 - 4} cy={f.y + H / 2} r={3.5} fill={FATIA[f.etapa][1]} />
+              <text x={xs} y={f.y + H / 2 + 2} dominantBaseline="middle" className="font-display tabular-nums"
+                    style={{ fill: 'var(--t1)', fontSize: 22, fontWeight: 800 }}>
+                {pct === null ? '—' : `${pct}%`}
               </text>
             </g>
           )
@@ -587,8 +599,8 @@ export function Batimento({ batidas, de, ate, agora }: { batidas: Batida[]; de: 
            aria-label={`Batimento do dia: ${total} ${total === 1 ? 'registro' : 'registros'} da equipe entre ${de}h e ${ate + 1}h.`}>
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden>
           <line x1={0} y1={H - 0.5} x2={W} y2={H - 0.5} stroke="var(--m-line)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-          {area && <path d={area} fill="rgba(226, 195, 133, 0.14)" />}
-          {linha && <path d={linha} fill="none" stroke="var(--m-ouro)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
+          {area && <path d={area} className="pulse-area" fill="rgba(226, 195, 133, 0.16)" />}
+          {linha && <path d={linha} className="pulse-traco" pathLength={1} fill="none" stroke="var(--m-ouro)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
         </svg>
         {/* marcos do dia, sobre o trilho */}
         {marcos.map((b, i) => {

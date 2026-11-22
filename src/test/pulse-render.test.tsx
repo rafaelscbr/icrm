@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import {
-  AoVivo, Batimento, EquipeAgora, FilaPrimeiroContato, FunilVivo, MetaNoMarinho, NumerosNoMarinho,
+  AoVivo, Batimento, EquipeCompacta, FilaPrimeiroContato, FunilHeroi, MetaNoMarinho, NumerosNoMarinho,
   PontosNoMarinho, PrazoNoMarinho, Resposta, curvaDoDia, mediaSemHoje, textoDaResposta, urgenciaDe,
 } from '../modules/pulse/components/Sala'
 import type { Corretor } from '../modules/pulse/components/Sala'
@@ -150,25 +150,27 @@ describe('fila do 1º contato', () => {
 })
 
 describe('equipe, funil e registros', () => {
-  it('a faixa do corretor mostra quem é, como está e o que fez', () => {
-    render(<EquipeAgora corretores={[CORRETOR]} de={8} ate={19} agora={AGORA} />)
-    expect(screen.getByText('Dionata Alves')).toBeInTheDocument()
+  it('o placar do corretor mostra quem é, como está e o que fez', () => {
+    render(<EquipeCompacta corretores={[CORRETOR]} agora={AGORA} />)
+    expect(screen.getByText('Dionata')).toBeInTheDocument()
     expect(screen.getByText('DA')).toBeInTheDocument()
     expect(screen.getByText('Em atividade · há 2 min')).toBeInTheDocument()
-    expect(screen.getByText('+2 herdados')).toBeInTheDocument()
-    expect(screen.getByText('/10')).toBeInTheDocument()
+    expect(screen.getByText('+2')).toBeInTheDocument()            // herdados, junto dos leads
+    expect(screen.getByTitle('10 de 10 ligações hoje')).toBeInTheDocument()
   })
 
   it('leads ainda sem a trilha viram traço', () => {
-    render(<EquipeAgora corretores={[{ ...CORRETOR, leads: null }]} de={8} ate={19} agora={AGORA} />)
+    render(<EquipeCompacta corretores={[{ ...CORRETOR, leads: null }]} agora={AGORA} />)
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
-  it('o funil diz cada etapa e as vendas do mês', () => {
-    render(<FunilVivo porEtapa={{ lead: 6, followup: 91, atendimento: 35, visita: 2, proposta: 1 }} vendasNoMes={3} />)
+  it('o funil diz cada etapa, as vendas do mês e quanto do funil cada etapa é', () => {
+    render(<FunilHeroi porEtapa={{ lead: 6, followup: 91, atendimento: 35, visita: 2, proposta: 1 }} vendasNoMes={3} />)
     const funil = screen.getByRole('img')
     expect(funil.getAttribute('aria-label')).toMatch(/Followup 91/)
     expect(funil.getAttribute('aria-label')).toMatch(/Vendas no mês 3/)
+    // 91 de 135 ativos = 67%
+    expect(screen.getByText('67%')).toBeInTheDocument()
   })
 
   it('registros trazem o nome de quem fez e só de quem está na sala', () => {

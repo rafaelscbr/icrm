@@ -679,6 +679,74 @@ html.light {
   }
   .pulse-marinho .destaque { color: var(--m-ouro); }
 
+  /* ── Movimento da sala (22/11/2026) ─────────────────────────────────────
+   * Tudo anima só transform e opacity (a GPU resolve). Os ciclos ambientes
+   * têm durações que não são múltiplas entre si — o olho nunca percebe o
+   * loop. `prefers-reduced-motion` congela tudo pela regra global do arquivo.
+   */
+
+  /* Luzes que passeiam devagar dentro da faixa Marinho */
+  .pulse-luzes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
+  .pulse-luzes::before, .pulse-luzes::after {
+    content: ''; position: absolute; border-radius: 9999px;
+  }
+  .pulse-luzes::before {
+    width: 900px; height: 520px; right: -220px; top: -260px;
+    background: radial-gradient(closest-side, rgba(214, 178, 110, 0.26), transparent);
+    animation: pulse-luz-a 48s ease-in-out infinite alternate;
+  }
+  .pulse-luzes::after {
+    width: 820px; height: 520px; left: -260px; bottom: -300px;
+    background: radial-gradient(closest-side, rgba(129, 140, 248, 0.20), transparent);
+    animation: pulse-luz-b 67s ease-in-out infinite alternate;
+  }
+  @keyframes pulse-luz-a {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(-380px, 90px, 0) scale(1.15); }
+    100% { transform: translate3d(-160px, 150px, 0) scale(1.05); }
+  }
+  @keyframes pulse-luz-b {
+    0%   { transform: translate3d(0, 0, 0) scale(1.1); }
+    50%  { transform: translate3d(420px, -70px, 0) scale(1); }
+    100% { transform: translate3d(180px, -130px, 0) scale(1.2); }
+  }
+
+  /* O batimento se desenha ao abrir a tela (pathLength="1" no traço) */
+  .pulse-traco { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pulse-traco 2.2s cubic-bezier(0.22, 0.61, 0.36, 1) 0.2s forwards; }
+  .pulse-area  { opacity: 0; animation: pulse-surge 1.4s ease-out 1.4s forwards; }
+  @keyframes pulse-traco { to { stroke-dashoffset: 0; } }
+  @keyframes pulse-surge { to { opacity: 1; } }
+
+  /* O funil monta fatia por fatia */
+  .funil-fatia {
+    transform-box: fill-box; transform-origin: center;
+    animation: funil-entra 760ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  @keyframes funil-entra {
+    from { opacity: 0; transform: scaleX(0.4) translateY(-10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* Leads descendo pelo funil — gotas que nascem no topo e somem embaixo */
+  .funil-gota { opacity: 0; animation: funil-gota var(--dur, 7s) linear var(--atraso, 0s) infinite; }
+  @keyframes funil-gota {
+    0%   { transform: translateY(0); opacity: 0; }
+    12%  { opacity: 0.85; }
+    82%  { opacity: 0.85; }
+    100% { transform: translateY(var(--queda, 400px)); opacity: 0; }
+  }
+  /* Um brilho atravessa o funil de tempos em tempos */
+  .funil-brilho { animation: funil-brilho 9s ease-in-out 2.5s infinite; }
+  @keyframes funil-brilho {
+    0%       { transform: translateX(-220px) skewX(-18deg); }
+    35%, 100% { transform: translateX(820px) skewX(-18deg); }
+  }
+  /* Número que acabou de mudar dá um pulo de luz */
+  .pulse-acende { animation: pulse-acende 1.2s ease-out; }
+  @keyframes pulse-acende {
+    0%   { filter: brightness(1.6); transform: scale(1.04); }
+    100% { filter: none; transform: none; }
+  }
+
   .pulse-viewport {
     position: fixed;
     inset: 0;

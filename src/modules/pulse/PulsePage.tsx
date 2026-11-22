@@ -10,7 +10,7 @@ import { usePulseStore } from './usePulseStore'
 import { useKiosk, useRelogio, useTickLento, useAntiBurnIn, useEscalaTV } from './useKiosk'
 import { SaleCelebration } from './components/SaleCelebration'
 import {
-  AoVivo, Batimento, ChegadaDeLeads, EquipeAgora, FilaPrimeiroContato, FunilVivo, LegendaDoBatimento, LegendaDoDia,
+  AoVivo, Batimento, ChegadaDeLeads, EquipeCompacta, FilaPrimeiroContato, FunilHeroi, LegendaDoBatimento,
   MetaNoMarinho, NumerosNoMarinho, Painel, PontosNoMarinho, PrazoNoMarinho, Resposta, mediaSemHoje, urgenciaDe,
 } from './components/Sala'
 import { destacar } from '../../components/shared/Destaque'
@@ -207,7 +207,7 @@ export function PulsePage() {
     const rec = resposta?.recebidos.get(q.id)
     return {
       id: q.id, nome: q.nome, ativo,
-      status: ativo ? `Em atividade · ${haQuanto(q.ultimaAt!, agora)}` : q.ultimaAt ? `Última atividade ${haQuanto(q.ultimaAt, agora)}` : 'Sem atividade hoje',
+      status: ativo ? `ativo · ${haQuanto(q.ultimaAt!, agora)}` : q.ultimaAt ? `visto ${haQuanto(q.ultimaAt, agora)}` : 'sem atividade hoje',
       pausa: pausaDe(pausas, q.id, agora),
       marcas: q.marcas,
       atend: q.resumo?.interacoesHoje ?? 0,
@@ -285,8 +285,9 @@ export function PulsePage() {
         {/* ── A faixa Marinho: a marca, a hora, o batimento e os números ───────
             Marinho estrutura, Champanhe destaca — a barra de marca da Souza
             esticada em palco. É o que se lê do outro lado da sala. */}
-        <section className="pulse-marinho shrink-0 rounded-[26px] px-8 pt-5 pb-5 overflow-hidden">
-          <div className="flex items-start gap-6">
+        <section className="pulse-marinho relative shrink-0 rounded-[26px] px-8 pt-5 pb-5 overflow-hidden">
+          <div className="pulse-luzes" aria-hidden />
+          <div className="relative flex items-start gap-6">
             <div className="flex items-center gap-3.5">
               <span className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-brand-fill" aria-hidden>
                 <Activity size={26} strokeWidth={2.2} className="text-brand-fill-text" />
@@ -316,12 +317,12 @@ export function PulsePage() {
           </div>
 
           {/* o batimento do dia */}
-          <div className="mt-3">
+          <div className="relative mt-3">
             <Batimento batidas={batidas} de={janelaDia.de} ate={janelaDia.ate} agora={agora} />
           </div>
 
           {/* os números do momento */}
-          <div className="mt-3 pt-4" style={{ borderTop: '1px solid var(--m-line)' }}>
+          <div className="relative mt-3 pt-4" style={{ borderTop: '1px solid var(--m-line)' }}>
             <NumerosNoMarinho
               itens={[
                 {
@@ -372,31 +373,37 @@ export function PulsePage() {
           </p>
         )}
 
-        {/* ── A equipe, de ponta a ponta ───────────────────────────────────── */}
-        <Painel titulo="Equipe agora" extra={<LegendaDoDia />} className="shrink-0">
-          <div style={{ height: 34 + Math.max(equipe.length, 1) * 62 }} className="flex flex-col">
-            {!carregado ? <div className="mx-6 flex-1 mb-6 rounded-[12px] shimmer" aria-busy="true" />
-              : equipe.length === 0 ? <p className="px-6 text-[16px] text-t3">Nenhum corretor ativo.</p>
-              : <EquipeAgora corretores={equipe} de={janelaDia.de} ate={janelaDia.ate} agora={agora} />}
-          </div>
-        </Painel>
+        {/* ── O funil protagonista · a fila e a equipe · o agora e a chegada ── */}
+        <div className="flex-1 min-h-0 grid gap-4" style={{ gridTemplateColumns: 'minmax(0, 1.32fr) minmax(0, 1fr) minmax(0, 1fr)' }}>
+          <Painel titulo="Funil agora" extra={
+            <span><span className="font-semibold text-t1 tabular-nums">{Object.values(funil).reduce((a, b) => a + b, 0).toLocaleString('pt-BR')}</span> leads ativos</span>
+          }>
+            <FunilHeroi porEtapa={funil} vendasNoMes={vgl ? vgl.vendasMes : null} />
+          </Painel>
 
-        {/* ── A fila · o que acabou de acontecer · o funil · a chegada ──────── */}
-        <div className="flex-1 min-h-0 grid gap-4" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.9fr) minmax(0, 1fr)' }}>
-          <Painel titulo="Fila do 1º contato" extra={prazoMin ? `prazo de ${prazoMin} min` : undefined}>
-            {sala ? <FilaPrimeiroContato fila={fila} agora={agora} prazoMin={prazoMin} />
-              : <div className="mx-6 flex-1 mb-6 rounded-[12px] shimmer" aria-busy="true" />}
-          </Painel>
-          <Painel titulo="Acabou de acontecer">
-            <AoVivo feed={feed} nomes={nomes} carregado={carregado} />
-          </Painel>
-          <Painel titulo="Funil agora" extra={`${Object.values(funil).reduce((a, b) => a + b, 0).toLocaleString('pt-BR')} ativos`}>
-            <FunilVivo porEtapa={funil} vendasNoMes={vgl ? vgl.vendasMes : null} />
-          </Painel>
-          <Painel titulo="Chegada de leads" extra="30 dias">
-            {sala ? <ChegadaDeLeads serie={serie} /> : <div className="mx-6 flex-1 rounded-[12px] shimmer" aria-busy="true" />}
-            <Resposta tempos={tempos} />
-          </Painel>
+          <div className="flex flex-col gap-4 min-h-0 min-w-0">
+            <Painel titulo="Fila do 1º contato" extra={prazoMin ? `prazo de ${prazoMin} min` : undefined} className="flex-1">
+              {sala ? <FilaPrimeiroContato fila={fila} agora={agora} prazoMin={prazoMin} />
+                : <div className="mx-6 flex-1 mb-6 rounded-[12px] shimmer" aria-busy="true" />}
+            </Painel>
+            <Painel titulo="Equipe" extra="anel = meta de ligações do dia" className="shrink-0">
+              <div style={{ height: 16 + Math.max(equipe.length, 1) * 84 }} className="flex flex-col">
+                {!carregado ? <div className="mx-6 flex-1 mb-4 rounded-[12px] shimmer" aria-busy="true" />
+                  : equipe.length === 0 ? <p className="px-6 text-[16px] text-t3">Nenhum corretor ativo.</p>
+                  : <EquipeCompacta corretores={equipe} agora={agora} />}
+              </div>
+            </Painel>
+          </div>
+
+          <div className="flex flex-col gap-4 min-h-0 min-w-0">
+            <Painel titulo="Acabou de acontecer" className="flex-1">
+              <AoVivo feed={feed} nomes={nomes} carregado={carregado} />
+            </Painel>
+            <Painel titulo="Chegada de leads" extra="30 dias" className="shrink-0 h-[260px]">
+              {sala ? <ChegadaDeLeads serie={serie} /> : <div className="mx-6 flex-1 rounded-[12px] shimmer" aria-busy="true" />}
+              <Resposta tempos={tempos} />
+            </Painel>
+          </div>
         </div>
       </div>
 
