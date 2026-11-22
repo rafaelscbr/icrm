@@ -10,7 +10,7 @@
  * Lead descartado conta. Crédito para o dono atual do lead.
  */
 
-import { fmtTaxa, inicioDoBalde, proximoBalde, taxa } from './conversao'
+import { inicioDoBalde, proximoBalde, taxa } from './conversao'
 import type { Balde } from './conversao'
 
 /** Sem corretor / sem produto viram uma chave de texto: o filtro não lida com null. */
@@ -254,83 +254,4 @@ export function tempoAteVisita(f: FunilSafra, filtro: Filtro): TempoVisita {
   const m = dias.length
   const mediana = m === 0 ? null : m % 2 ? dias[(m - 1) / 2] : (dias[m / 2 - 1] + dias[m / 2]) / 2
   return { total: m, mediana: mediana === null ? null : Math.round(mediana * 10) / 10, faixas }
-}
-
-// ── Leituras ──────────────────────────────────────────────────────────────────
-
-export type TomLeitura = 'sucesso' | 'atencao' | 'info' | 'neutro'
-export interface Leitura { tom: TomLeitura; texto: string }
-
-const n = (x: number) => x.toLocaleString('pt-BR')
-
-/**
- * O que os números dizem, em frases. Regra da casa: nunca afirmar mais do que
- * se observou — toda leitura carrega os números que a sustentam, nenhuma sai de
- * base menor que 5, e comparação entre corretores ou produtos pede 10 leads.
- */
-export function leiturasSafra(
-  f: FunilSafra, filtro: Filtro, hoje: string,
-  nomeMotivo: (slug: string) => string,
-): Leitura[] {
-  const out: Leitura[] = []
-  const c = contar(f, filtro)
-  if (c.recebidos === 0) return out
-
-  // 1. Onde o funil mais perde
-  const ps = passosSafra(c).filter(p => p.base >= 5 && p.taxaPasso !== null)
-  if (ps.length > 0) {
-    const pior = ps.reduce((a, b) => (b.taxaPasso! < a.taxaPasso! ? b : a))
-    out.push({
-      tom: 'atencao',
-      texto: `A maior perda está entre ${NOME_ETAPA[pior.anterior]} e ${NOME_ETAPA[pior.etapa]}: de ${n(pior.base)}, ` +
-             `${pior.n === 0 ? 'nenhum avançou' : `${n(pior.n)} ${pior.n === 1 ? 'avançou' : 'avançaram'}`} (${fmtTaxa(pior.taxaPasso)}).`,
-    })
-  }
-
-  // 2. Produto e corretor que mais levam a visita — só com base de 10 leads
-  const melhor = (fs: Fatia[]) => {
-    const com = fs.filter(x => x.c.recebidos >= 10)
-    if (com.length < 2) return null
-    const m = com.reduce((a, b) => (b.c.visita / b.c.recebidos > a.c.visita / a.c.recebidos ? b : a))
-    return m.c.visita > 0 ? m : null
-  }
-  if (filtro.produto === null) {
-    const p = melhor(ladoALado(f, 'produto', filtro))
-    if (p) out.push({ tom: 'info', texto: `${p.nome} é o produto que mais leva a visita: ${n(p.c.visita)} de ${n(p.c.recebidos)} leads (${fmtTaxa(taxa(p.c.visita, p.c.recebidos))}).` })
-  }
-  if (filtro.corretor === null) {
-    const k = melhor(ladoALado(f, 'corretor', filtro))
-    if (k) out.push({ tom: 'sucesso', texto: `${k.nome} é quem mais leva lead a visita: ${n(k.c.visita)} de ${n(k.c.recebidos)} (${fmtTaxa(taxa(k.c.visita, k.c.recebidos))}).` })
-  }
-
-  // 3. Descartes
-  if (c.descartados > 0) {
-    const [principal] = motivosSafra(f, filtro, 1)
-    const parte = `${fmtTaxa(taxa(c.descartados, c.recebidos))} da safra foi descartada (${n(c.descartados)} de ${n(c.recebidos)})`
-    out.push({ tom: 'neutro', texto: principal ? `${parte}. Motivo mais comum: ${nomeMotivo(principal.motivo)} (${n(principal.n)}).` : `${parte}.` })
-  }
-
-  // 4. Tempo até a visita
-  const t = tempoAteVisita(f, filtro)
-  if (t.mediana !== null && t.total >= 3) {
-    out.push({
-      tom: 'neutro',
-      texto: t.mediana < 1
-        ? 'Metade das visitas acontece no mesmo dia em que o lead chega.'
-        : `Metade das visitas acontece em até ${t.mediana.toLocaleString('pt-BR')} ${t.mediana === 1 ? 'dia' : 'dias'} depois da chegada do lead.`,
-    })
-  }
-
-  // 5. Safra ainda nova: a taxa dos últimos dias ainda vai subir
-  if (f.end && f.end >= hoje && c.emAndamento > 0) {
-    out.push({ tom: 'info', texto: `${n(c.emAndamento)} ${c.emAndamento === 1 ? 'lead segue' : 'leads seguem'} em andamento. Os que chegaram nos últimos dias ainda estão no começo do funil, então as taxas desta safra ainda podem subir.` })
-  }
-
-  // 6. Limite do histórico
-  if (f.historySince && (f.start === null || f.start < f.historySince)) {
-    const [y, m, d] = f.historySince.split('-')
-    out.push({ tom: 'info', texto: `As mudanças de etapa só são registradas desde ${d}/${m}/${y}. Para leads anteriores, vale a etapa em que estão hoje.` })
-  }
-
-  return out
 }

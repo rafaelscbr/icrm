@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  SEM, contar, ladoALado, leiturasSafra, matriz, motivosSafra, normalizar, passosSafra, serieSafra, tempoAteVisita,
+  SEM, contar, ladoALado, matriz, motivosSafra, normalizar, passosSafra, serieSafra, tempoAteVisita,
 } from '../modules/leads/safra'
 import type { FunilSafraBruto } from '../modules/leads/safra'
 
@@ -102,29 +102,5 @@ describe('safra · tempo, saídas e série', () => {
     expect(t.mediana).toBe(3)
     expect(t.faixas.map(x => x.n)).toEqual([1, 3, 1, 0, 1])
     expect(tempoAteVisita(f, { corretor: 'ana', produto: null }).mediana).toBe(3.5)
-  })
-})
-
-describe('safra · leituras', () => {
-  const motivo = (s: string) => (s === 'sem_interesse' ? 'Sem interesse' : s)
-
-  it('aponta a maior perda e o motivo de saída, com os números', () => {
-    const l = leiturasSafra(f, todos, '2026-11-22', motivo).map(x => x.texto)
-    expect(l[0]).toContain('entre Visita e Proposta: de 6, 3 avançaram (50%)')   // Proposta→Venda tem base 3: fica de fora
-    expect(l.some(t => t.includes('Motivo mais comum: Sem interesse (8)'))).toBe(true)
-  })
-
-  it('não compara corretores com menos de 10 leads cada', () => {
-    const l = leiturasSafra(f, todos, '2026-11-22', motivo).map(x => x.texto)
-    expect(l.some(t => t.includes('quem mais leva lead a visita'))).toBe(false)
-  })
-
-  it('avisa que a safra ainda está amadurecendo quando o período chega a hoje', () => {
-    const l = leiturasSafra(f, todos, '2026-11-15', motivo).map(x => x.texto)
-    expect(l.some(t => t.includes('ainda podem subir'))).toBe(true)
-  })
-
-  it('sem leads, nenhuma leitura', () => {
-    expect(leiturasSafra(f, { corretor: 'outro', produto: null }, '2026-11-22', motivo)).toEqual([])
   })
 })

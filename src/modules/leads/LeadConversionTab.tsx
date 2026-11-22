@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Building2, Percent, RefreshCw, User, X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Building2, Filter, RefreshCw, User, X } from 'lucide-react'
 import { db } from '../../lib/db'
-import { STAGE_THEME } from '../../lib/stageTheme'
 import { useAdminView } from '../../hooks/useAdminView'
+import { useContagem } from '../../hooks/useContagem'
 import { useAuthStore } from '../../store/useAuthStore'
 import { usePeriodStore } from '../../store/usePeriodStore'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
@@ -10,48 +11,42 @@ import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import { FilterDropdown } from '../../components/shared/FilterDropdown'
 import { EstadoTela } from '../../components/shared/EstadoTela'
 import { EsqueletoKpis, EsqueletoLinhas } from '../../components/shared/Esqueleto'
-import { Destaque } from '../../components/shared/Destaque'
-import { Barra, Segmentado, SecaoTitulo, TOM } from '../../components/shared/visual'
-import { Grafico, eixoCategoria, eixoValor, resolverCor } from '../../components/charts/Grafico'
+import { destacar } from '../../components/shared/Destaque'
+import { Segmentado } from '../../components/shared/visual'
+import { Grafico, eixoCategoria, eixoValor } from '../../components/charts/Grafico'
 import type { CoresGrafico } from '../../components/charts/Grafico'
-import type { LeadFunnelStage } from '../../types'
-import { fmtData, fmtTaxa, hojeIso, montarRecorte, rotuloBalde, slugLegivel, taxa } from './conversao'
+import { fmtDataCurta, fmtTaxa, montarRecorte, rotuloBalde, slugLegivel, taxa } from './conversao'
 import {
-  ETAPAS_SAFRA, NOME_ETAPA, SEM, contar, ladoALado, leiturasSafra, matriz, motivosSafra, normalizar,
+  ETAPAS_SAFRA, NOME_ETAPA, SEM, contar, ladoALado, matriz, motivosSafra, normalizar,
   passosSafra, serieSafra, tempoAteVisita,
 } from './safra'
-import type { Contagem, EtapaSafra, Fatia, Filtro, FunilSafra } from './safra'
+import type { Contagem, EtapaSafra, Fatia, Filtro, FunilSafra, PontoSafra } from './safra'
+import { FATIA, FunilDesenhado } from './FunilDesenhado'
+import type { ChaveFatia, FatiaDesenho } from './FunilDesenhado'
 
 /**
- * Leads › Conversão — refeita em 22/11/2026, sempre por safra.
+ * Leads › Conversão — 22/11/2026, na linguagem do Pulse.
  *
- * A pergunta é uma só: dos leads que CHEGARAM no período, até onde foram até
- * hoje? Antes havia uma segunda leitura ("por atividade") que confundia mais
- * do que ajudava; saiu. O que entrou no lugar são os recortes:
+ * Sempre por safra: dos leads que CHEGARAM no período, até onde foram até
+ * hoje. Topo claro com filtros e um cartão de número por etapa, cards brancos
+ * sobre o fundo pontilhado, e o funil DESENHADO — a mesma forma do Pulse — no
+ * grande e, lado a lado, um por corretor ou produto. Inspirada no Pulse, não
+ * copiada: a faixa Marinho é dele (o Rafael não quis repetir).
  *
- *   • período (o seletor global do sistema),
- *   • corretor (o modelo de visão do admin: imobiliária · meu · corretor X),
- *   • produto (o empreendimento do formulário do Meta),
- *   • e o funil LADO A LADO — de cada corretor, ou de cada produto, respeitando
- *     o outro filtro. Corretor escolhido + "produtos" = o funil dele em cada
- *     produto, um ao lado do outro.
+ * Pouco texto de propósito (pedido do Rafael): número, desenho e rótulo curto.
  *
- * O banco devolve um cubo pequeno (`funil_por_safra`, migração 103, ~5 KB) e
- * a tela recorta na hora: só o período vai ao banco de novo. Descartado conta;
- * crédito para o dono atual do lead.
+ * O banco devolve um cubo pequeno (`funil_por_safra`, migração 103, ~5 KB) e a
+ * tela recorta na hora por corretor e produto; só o período vai ao banco.
+ * Descartado conta; crédito para o dono atual do lead.
  */
 
-const COR: Record<EtapaSafra | 'chegada', string> = {
-  chegada:     'var(--stage-lead)',
-  atendimento: STAGE_THEME.atendimento.solidVar,
-  visita:      STAGE_THEME.visita.solidVar,
-  proposta:    STAGE_THEME.proposta.solidVar,
-  venda:       STAGE_THEME.venda.solidVar,
-}
-const COLUNAS: (EtapaSafra | 'chegada')[] = ['chegada', ...ETAPAS_SAFRA]
+const COLUNAS: ChaveFatia[] = ['chegada', ...ETAPAS_SAFRA]
 const n = (x: number) => x.toLocaleString('pt-BR')
-/** Barra em raiz quadrada: 1% ainda aparece ao lado de 100%. O número escrito é o real. */
-const escala = (parte: number, base: number) => (base > 0 && parte > 0 ? Math.max(3, Math.sqrt(parte / base) * 100) : 0)
+const pct = (a: number, b: number) => fmtTaxa(taxa(a, b))
+
+function fatiasDe(c: Contagem): FatiaDesenho[] {
+  return COLUNAS.map(k => ({ chave: k, nome: k === 'chegada' ? 'Leads' : NOME_ETAPA[k], n: k === 'chegada' ? c.recebidos : c[k] }))
+}
 
 export function LeadConversionTab() {
   const { effectiveBrokerId, isGlobalView } = useAdminView()
@@ -97,7 +92,7 @@ export function LeadConversionTab() {
     [motivos],
   )
 
-  // Corretor comum: o cubo já vem só com os leads dele — filtrar de novo é inútil.
+  // Corretor comum: o cubo já vem só com os leads dele.
   const corretor = isAdmin && !isGlobalView ? effectiveBrokerId : null
   const filtro: Filtro = useMemo(() => ({ corretor, produto }), [corretor, produto])
 
@@ -106,14 +101,9 @@ export function LeadConversionTab() {
       : dados?.corretores.find(c => c.chave === id)?.nome ?? allProfiles.find(p => p.id === id)?.name ?? 'Corretor'
   const nomeProduto = (k: string | null) => (k === null ? null : dados?.produtos.find(p => p.chave === k)?.nome ?? 'Produto')
 
-  const quando = recorte.inicio && recorte.fim
-    ? `de ${fmtData(recorte.inicio)} a ${fmtData(recorte.fim)}`
-    : 'desde o começo'
-
   const total = useMemo(() => (dados ? contar(dados, filtro) : null), [dados, filtro])
-  const nadaNoPeriodo = !!dados && dados.cubo.length === 0
+  const serie = useMemo(() => (dados ? serieSafra(dados, filtro, recorte.inicio, recorte.fim) : []), [dados, filtro, recorte])
 
-  // Opções dos filtros, com quantos leads cada um tem na safra
   const opcoesProduto = useMemo(() => dados
     ? ladoALado(dados, 'produto', { corretor, produto: null }).map(f => ({ value: f.chave, label: f.nome, count: f.c.recebidos }))
     : [], [dados, corretor])
@@ -129,94 +119,98 @@ export function LeadConversionTab() {
   }, [dados, produto, corretor])
 
   const escolherCorretor = (id: string | null) => setViewAsBroker(id && id !== SEM ? id : null)
+  const quando = recorte.inicio && recorte.fim ? `${fmtDataCurta(recorte.inicio)} a ${fmtDataCurta(recorte.fim)}` : 'desde o começo'
 
   return (
-    <div className="flex flex-col gap-7 pb-12">
-      {/* Topo: título, frase e filtros */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-x-3 gap-y-2 flex-wrap">
-          <h2 className="font-display text-[20px] font-bold tracking-[-0.02em] text-t1">
-            Conversão do <Destaque>funil</Destaque>
+    <div className="pulse-fundo rounded-[28px] p-3 sm:p-4 flex flex-col gap-4 mb-10">
+      {/* ── Topo: título, filtros e os números da safra ── */}
+      <header className="flex items-end gap-x-4 gap-y-3 flex-wrap px-1 pt-1">
+        <div className="min-w-0">
+          <p className="font-label text-[11px] font-semibold uppercase tracking-[0.18em] text-t3">Safra · {quando}</p>
+          <h2 className="font-display text-[28px] leading-tight font-extrabold tracking-[-0.035em] text-t1 mt-0.5">
+            {destacar('Conversão do *funil*')}
           </h2>
-          <div className="ml-auto flex items-center gap-2 flex-wrap">
-            <FilterDropdown label="Produto" icon={Building2} allLabel="Todos os produtos"
-              options={opcoesProduto} value={produto} onChange={setProduto} align="right" />
-            {isAdmin && (
-              <FilterDropdown label="Corretor" icon={User} allLabel="Imobiliária inteira"
-                options={opcoesCorretor} value={corretor} onChange={escolherCorretor} align="right" />
-            )}
-            <PeriodSelector />
-            <button
-              type="button"
-              onClick={() => void carregar()}
-              disabled={carregando}
-              aria-label="Atualizar o funil"
-              className="w-9 h-9 rounded-[10px] flex items-center justify-center text-t3 hover:text-t1 hover:bg-s2
-                         cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-            >
-              <RefreshCw size={15} strokeWidth={1.8} className={carregando ? 'animate-spin' : ''} aria-hidden />
-            </button>
-          </div>
         </div>
-        <p className="text-[13.5px] text-t3 max-w-3xl">
-          Leads que chegaram <span className="font-medium text-t2">{quando}</span> e até onde foram até hoje.
-          Lead descartado entra na conta; cada lead conta para o corretor que está com ele.
-        </p>
-        {(corretor || produto) && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {corretor && <FiltroAtivo rotulo={nomeCorretor(corretor)!} icone={User} onLimpar={() => escolherCorretor(null)} />}
-            {produto && <FiltroAtivo rotulo={nomeProduto(produto)!} icone={Building2} onLimpar={() => setProduto(null)} />}
-          </div>
-        )}
-      </div>
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
+          <FilterDropdown label="Produto" icon={Building2} allLabel="Todos os produtos"
+            options={opcoesProduto} value={produto} onChange={setProduto} align="right" />
+          {isAdmin && (
+            <FilterDropdown label="Corretor" icon={User} allLabel="Imobiliária inteira"
+              options={opcoesCorretor} value={corretor} onChange={escolherCorretor} align="right" />
+          )}
+          <PeriodSelector />
+          <button
+            type="button"
+            onClick={() => void carregar()}
+            disabled={carregando}
+            aria-label="Atualizar"
+            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-t3 hover:text-t1 hover:bg-white
+                       cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+          >
+            <RefreshCw size={15} strokeWidth={1.8} className={carregando ? 'animate-spin' : ''} aria-hidden />
+          </button>
+        </div>
+      </header>
+
+      {(corretor || produto) && (
+        <div className="flex items-center gap-2 flex-wrap px-1 -mt-1">
+          {corretor && <FiltroAtivo rotulo={nomeCorretor(corretor)!} icone={User} onLimpar={() => escolherCorretor(null)} />}
+          {produto && <FiltroAtivo rotulo={nomeProduto(produto)!} icone={Building2} onLimpar={() => setProduto(null)} />}
+        </div>
+      )}
+
+      {total && total.recebidos > 0 && <NumerosDaSafra c={total} />}
 
       <EstadoTela
         carregando={carregando && !dados}
         erro={erro}
-        vazio={nadaNoPeriodo}
+        vazio={!!dados && dados.cubo.length === 0}
         onTentarDeNovo={() => void carregar()}
-        icone={Percent}
+        icone={Filter}
         titulo="Nenhum lead chegou no *período*"
-        descricao="A safra deste recorte está vazia. Troque o período no topo."
-        esqueleto={<div className="flex flex-col gap-6"><EsqueletoKpis kpis={5} /><EsqueletoLinhas linhas={6} /></div>}
+        descricao="Troque o período no topo."
+        esqueleto={<div className="flex flex-col gap-4"><EsqueletoKpis kpis={3} /><EsqueletoLinhas linhas={6} /></div>}
       >
         {dados && total && (
-          <div className={`flex flex-col gap-9 transition-opacity duration-200 ${carregando ? 'opacity-60' : ''}`} aria-busy={carregando}>
+          <div className={`flex flex-col gap-4 transition-opacity duration-200 ${carregando ? 'opacity-60' : ''}`} aria-busy={carregando}>
             {total.recebidos === 0 ? (
-              <p className="bento px-6 py-10 text-center text-[14px] text-t3">
-                Nenhum lead {corretor ? `de ${nomeCorretor(corretor)}` : ''}{produto ? ` do ${nomeProduto(produto)}` : ''} chegou neste período.
-              </p>
+              <p className="pulse-card rounded-[20px] px-6 py-12 text-center text-[15px] text-t3">Nenhum lead neste recorte.</p>
             ) : (
-              <>
-                <FunilPrincipal c={total} mediana={tempoAteVisita(dados, filtro).mediana} />
-                <Leituras itens={leiturasSafra(dados, filtro, hojeIso(), nomeMotivo)} />
-              </>
+              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] gap-4">
+                <Cartao titulo="Funil da *safra*" extra="passe o mouse nas etapas">
+                  <FunilDaSafra c={total} />
+                </Cartao>
+                <div className="grid grid-cols-1 gap-4 content-start">
+                  <Cartao titulo="Onde *param*" extra="vivos · descartados">
+                    <OndeParam c={total} />
+                  </Cartao>
+                  <Cartao titulo="Até a *visita*" extra="dias desde a chegada">
+                    <AteAVisita dados={dados} filtro={filtro} />
+                  </Cartao>
+                </div>
+              </div>
             )}
 
             <LadoALado
               dados={dados}
               filtro={filtro}
               admin={isAdmin}
-              nomeCorretor={nomeCorretor(corretor)}
-              nomeProduto={nomeProduto(produto)}
               escolherCorretor={escolherCorretor}
               escolherProduto={setProduto}
             />
 
-            {isAdmin && (
-              <Matriz dados={dados} filtro={filtro}
-                escolher={(c, p) => { escolherCorretor(c); setProduto(p) }} />
+            {total.recebidos > 0 && (
+              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] gap-4">
+                <Cartao titulo="Safra a *safra*" extra={{ day: 'por dia', week: 'por semana', month: 'por mês' }[dados.bucket]}>
+                  <SafraASafra serie={serie} balde={dados.bucket} />
+                </Cartao>
+                <Cartao titulo="Por que *saem*" extra={`${n(total.descartados)} descartados`}>
+                  <PorQueSaem dados={dados} filtro={filtro} total={total} nomeMotivo={nomeMotivo} />
+                </Cartao>
+              </div>
             )}
 
-            {total.recebidos > 0 && (
-              <>
-                <Safras dados={dados} filtro={filtro} inicio={recorte.inicio} fim={recorte.fim} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-9">
-                  <Saidas dados={dados} filtro={filtro} total={total} nomeMotivo={nomeMotivo} />
-                  <TempoAteVisita dados={dados} filtro={filtro} />
-                </div>
-              </>
-            )}
+            {isAdmin && <Matriz dados={dados} filtro={filtro} escolher={(c, p) => { escolherCorretor(c); setProduto(p) }} />}
           </div>
         )}
       </EstadoTela>
@@ -224,9 +218,26 @@ export function LeadConversionTab() {
   )
 }
 
+// ─── Peças ────────────────────────────────────────────────────────────────────
+
+function Cartao({ titulo, extra, acao, children, className = '' }: {
+  titulo: string; extra?: ReactNode; acao?: ReactNode; children: ReactNode; className?: string
+}) {
+  return (
+    <section className={`pulse-card rounded-[20px] flex flex-col min-w-0 overflow-hidden ${className}`}>
+      <header className="flex items-center gap-3 px-6 pt-5 pb-3 flex-wrap">
+        <h3 className="font-display text-[18px] font-bold tracking-[-0.02em] text-t1 whitespace-nowrap">{destacar(titulo)}</h3>
+        {extra && <span className="min-w-0 text-[13.5px] text-t3 truncate">{extra}</span>}
+        {acao && <div className="ml-auto">{acao}</div>}
+      </header>
+      <div className="flex-1 min-h-0 px-6 pb-6">{children}</div>
+    </section>
+  )
+}
+
 function FiltroAtivo({ rotulo, icone: Icone, onLimpar }: { rotulo: string; icone: typeof User; onLimpar: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1.5 h-8 pl-3 pr-1 rounded-full bg-brand-tint border border-brand/25 text-[13px] font-medium text-t1">
+    <span className="inline-flex items-center gap-1.5 h-8 pl-3 pr-1 rounded-full bg-white border border-brand/30 text-[13px] font-medium text-t1 shadow-sm">
       <Icone size={13} strokeWidth={1.8} className="text-brand-text" aria-hidden />
       {rotulo}
       <button type="button" onClick={onLimpar} aria-label={`Tirar o filtro ${rotulo}`}
@@ -238,179 +249,253 @@ function FiltroAtivo({ rotulo, icone: Icone, onLimpar }: { rotulo: string; icone
   )
 }
 
-// ─── O funil principal ────────────────────────────────────────────────────────
-
-/**
- * O funil inteiro numa faixa: cinco colunas (chegaram → venda), cada uma com o
- * número, quanto isso é dos leads que chegaram e quanto avançou do passo
- * anterior. Por baixo, a fita colorida afina de etapa em etapa, e em cada
- * coluna fica onde os leads PARARAM — vivos ou descartados.
- */
-function FunilPrincipal({ c, mediana }: { c: Contagem; mediana: number | null }) {
-  const [foco, setFoco] = useState<EtapaSafra | 'chegada' | null>(null)
-  const ps = passosSafra(c)
-  const conversao = taxa(c.venda, c.recebidos)
-
-  // Fita: largura fixa por coluna, altura pela raiz da proporção
-  const H = 132
-  const alt = COLUNAS.map(e => {
-    const v = e === 'chegada' ? c.recebidos : c[e]
-    return v > 0 ? Math.max(5, H * Math.sqrt(v / Math.max(1, c.recebidos))) : 2
-  })
-  const W = 1000, col = W / 5, barra = col * 0.62
-
-  return (
-    <section aria-label="Funil da safra" className="bento overflow-hidden">
-      <div className="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)]">
-        {/* O número que decide */}
-        <div className="px-6 py-6 xl:border-r border-b xl:border-b-0 border-line flex flex-col gap-5">
-          <div>
-            <p className="text-[12.5px] text-t4">Viraram venda</p>
-            <p className="font-display text-[52px] leading-none font-extrabold tracking-[-0.04em] text-brand-text tabular-nums mt-1.5">
-              {fmtTaxa(conversao)}
-            </p>
-            <p className="text-[13.5px] text-t3 mt-2">
-              <span className="font-semibold text-t1 tabular-nums">{n(c.venda)}</span> {c.venda === 1 ? 'venda' : 'vendas'} de{' '}
-              <span className="font-semibold text-t1 tabular-nums">{n(c.recebidos)}</span> {c.recebidos === 1 ? 'lead' : 'leads'}
-            </p>
-          </div>
-          <dl className="grid grid-cols-3 xl:grid-cols-1 gap-3">
-            <MiniNumero rotulo="Em andamento" valor={n(c.emAndamento)} nota={`${fmtTaxa(taxa(c.emAndamento, c.recebidos))} da safra`} />
-            <MiniNumero rotulo="Descartados" valor={n(c.descartados)} nota={`${fmtTaxa(taxa(c.descartados, c.recebidos))} da safra`} />
-            <MiniNumero rotulo="Até a visita" valor={mediana === null ? '—' : mediana < 1 ? 'mesmo dia' : `${mediana.toLocaleString('pt-BR')} d`}
-              nota={mediana === null ? 'sem visitas ainda' : 'metade das visitas'} />
-          </dl>
-        </div>
-
-        {/* As cinco etapas */}
-        <div className="min-w-0" role="presentation" onMouseLeave={() => setFoco(null)}>
-          <ol className="grid grid-cols-1 sm:grid-cols-5">
-            {COLUNAS.map((e, i) => {
-              const v = e === 'chegada' ? c.recebidos : c[e]
-              const passo = i > 0 ? ps[i - 1] : null
-              const apagado = foco !== null && foco !== e
-              return (
-                <li key={e}
-                  className={`sm:border-l first:border-l-0 border-line transition-opacity duration-200 ${apagado ? 'opacity-45' : ''}`}>
-                  <div role="presentation" className="h-full px-5 pt-5 pb-3" onMouseEnter={() => setFoco(e)}>
-                  <p className="flex items-center gap-1.5 font-label text-[11px] uppercase tracking-[0.14em] text-t3">
-                    <span className="w-2 h-2 rounded-full" style={{ background: COR[e] }} aria-hidden />
-                    {NOME_ETAPA[e]}
-                  </p>
-                  <p className="font-display text-[34px] leading-none font-extrabold tracking-[-0.03em] text-t1 tabular-nums mt-2.5">
-                    {n(v)}
-                  </p>
-                  <p className="text-[12.5px] text-t4 mt-1.5 tabular-nums">
-                    {i === 0 ? 'leads na safra' : `${fmtTaxa(taxa(v, c.recebidos))} dos leads`}
-                  </p>
-                  {passo && (
-                    <p className="inline-flex items-center gap-1 mt-2 h-6 px-2 rounded-full bg-s2 text-[12px] text-t2 tabular-nums"
-                       title={`De ${n(passo.base)} em ${NOME_ETAPA[passo.anterior].toLowerCase()}, ${n(passo.n)} chegaram a ${NOME_ETAPA[e].toLowerCase()}`}>
-                      <span className="font-semibold text-t1">{fmtTaxa(passo.taxaPasso)}</span> do passo anterior
-                    </p>
-                  )}
-                  {/* Celular: a fita vira uma barra por etapa */}
-                  <div className="sm:hidden mt-3 h-2 rounded-full bg-s2 overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${escala(v, c.recebidos)}%`, background: COR[e] }} />
-                  </div>
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
-
-          {/* A fita: afina de etapa em etapa */}
-          <svg viewBox={`0 0 ${W} ${H + 8}`} preserveAspectRatio="none" className="hidden sm:block w-full h-[120px]" aria-hidden>
-            <defs>
-              {COLUNAS.map(e => (
-                <linearGradient key={e} id={`fita-${e}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor={COR[e]} stopOpacity="0.95" />
-                  <stop offset="1" stopColor={COR[e]} stopOpacity="0.7" />
-                </linearGradient>
-              ))}
-            </defs>
-            {COLUNAS.map((e, i) => {
-              const x = i * col + (col - barra) / 2
-              const meio = (H + 8) / 2
-              const h = alt[i]
-              const apagado = foco !== null && foco !== e
-              return (
-                <g key={e} className="transition-opacity duration-200" style={{ opacity: apagado ? 0.3 : 1 }}>
-                  {i < 4 && (
-                    <path
-                      d={`M ${x + barra} ${meio - h / 2} L ${x + col} ${meio - alt[i + 1] / 2} L ${x + col} ${meio + alt[i + 1] / 2} L ${x + barra} ${meio + h / 2} Z`}
-                      fill={COR[COLUNAS[i + 1]]} opacity="0.16" />
-                  )}
-                  <rect x={x} y={meio - h / 2} width={barra} height={h} rx="6" fill={`url(#fita-${e})`} />
-                </g>
-              )
-            })}
-          </svg>
-
-          {/* Onde pararam */}
-          <div className="grid grid-cols-1 sm:grid-cols-5 border-t border-line bg-s2/40">
-            {COLUNAS.map((e, i) => {
-              const apagado = foco !== null && foco !== e
-              const parada = e === 'venda' ? null : c.parouEm[e]
-              return (
-                <div key={e} className={`px-5 py-3 sm:border-l first:border-l-0 border-line transition-opacity duration-200 ${apagado ? 'opacity-45' : ''}`}>
-                  <p className="text-[11.5px] text-t4">{i === 0 ? 'Pararam no 1º contato' : e === 'venda' ? 'Fecharam' : `Pararam em ${NOME_ETAPA[e].toLowerCase()}`}</p>
-                  {parada ? (
-                    <p className="text-[13px] text-t2 tabular-nums mt-0.5">
-                      <span className="font-semibold text-t1">{n(parada.ativos)}</span> {parada.ativos === 1 ? 'vivo' : 'vivos'}
-                      <span className="text-t4"> · </span>
-                      <span className="font-semibold text-t1">{n(parada.descartados)}</span> {parada.descartados === 1 ? 'descartado' : 'descartados'}
-                    </p>
-                  ) : (
-                    <p className="text-[13px] text-t2 tabular-nums mt-0.5">
-                      <span className="font-semibold text-success">{n(c.venda)}</span> {c.venda === 1 ? 'venda' : 'vendas'}
-                    </p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </section>
-  )
+function Vivo({ valor }: { valor: number }) {
+  const v = useContagem(valor)
+  return <>{Math.round(v).toLocaleString('pt-BR')}</>
 }
 
-function MiniNumero({ rotulo, valor, nota }: { rotulo: string; valor: string; nota: string }) {
+// ─── Números da safra ─────────────────────────────────────────────────────────
+
+/**
+ * Um cartão por etapa, com a cor da etapa (a mesma do funil): o número, quanto
+ * isso é dos leads e uma barra na cor da etapa. O último é a conversão em
+ * venda — o único dourado da tela.
+ */
+function NumerosDaSafra({ c }: { c: Contagem }) {
+  const itens: { chave: ChaveFatia | 'descarte'; rotulo: string; valor: number; nota: string }[] = [
+    { chave: 'chegada',     rotulo: 'Leads',     valor: c.recebidos,   nota: `${n(c.emAndamento)} em andamento` },
+    { chave: 'atendimento', rotulo: 'Atendidos', valor: c.atendimento, nota: `${pct(c.atendimento, c.recebidos)} dos leads` },
+    { chave: 'visita',      rotulo: 'Visitaram', valor: c.visita,      nota: `${pct(c.visita, c.recebidos)} dos leads` },
+    { chave: 'proposta',    rotulo: 'Propostas', valor: c.proposta,    nota: `${pct(c.proposta, c.recebidos)} dos leads` },
+    { chave: 'descarte',    rotulo: 'Descartados', valor: c.descartados, nota: `${pct(c.descartados, c.recebidos)} dos leads` },
+  ]
+  const cor = (k: ChaveFatia | 'descarte'): [string, string] => (k === 'descarte' ? ['#CBD5E1', '#94A3B8'] : FATIA[k])
   return (
-    <div className="min-w-0">
-      <dt className="text-[12px] text-t4 truncate">{rotulo}</dt>
-      <dd className="font-display text-[20px] font-extrabold tracking-[-0.02em] text-t1 tabular-nums leading-tight">{valor}</dd>
-      <dd className="text-[11.5px] text-t4 truncate">{nota}</dd>
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      {itens.map(it => {
+        const [claro, fundo] = cor(it.chave)
+        const largura = it.chave === 'chegada' ? 100 : c.recebidos > 0 && it.valor > 0 ? Math.max(3, Math.sqrt(it.valor / c.recebidos) * 100) : 0
+        return (
+          <div key={it.rotulo} className="pulse-card relative rounded-[18px] px-4 pt-4 pb-3.5 min-w-0 overflow-hidden">
+            <p className="flex items-center gap-2 text-[13px] font-medium text-t3 truncate">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: fundo }} aria-hidden />
+              {it.rotulo}
+            </p>
+            <p className="mt-2 font-display text-[34px] leading-none font-extrabold tracking-[-0.04em] tabular-nums text-t1">
+              <Vivo valor={it.valor} />
+            </p>
+            <p className="mt-1.5 text-[12.5px] text-t3 truncate tabular-nums">{it.nota}</p>
+            <span className="mt-3 block h-1.5 rounded-full bg-[#EEF1F7] overflow-hidden" aria-hidden>
+              <span className="block h-full rounded-full transition-[width] duration-700" style={{ width: `${largura}%`, background: `linear-gradient(90deg, ${claro}, ${fundo})` }} />
+            </span>
+          </div>
+        )
+      })}
+      <div className="col-span-2 md:col-span-3 xl:col-span-1 relative rounded-[18px] px-4 pt-4 pb-3.5 min-w-0 overflow-hidden border border-brand/30
+                      shadow-[0_14px_34px_-18px_rgba(156,116,48,.55)]"
+           style={{ background: 'linear-gradient(158deg, #FFFDF8 0%, #F8EFDC 100%)' }}>
+        <p className="flex items-center gap-2 text-[13px] font-medium text-brand-text">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: FATIA.venda[1] }} aria-hidden />
+          Viraram venda
+        </p>
+        <p className="mt-2 font-display text-[34px] leading-none font-extrabold tracking-[-0.04em] tabular-nums text-brand-text">
+          {fmtTaxa(taxa(c.venda, c.recebidos))}
+        </p>
+        <p className="mt-1.5 text-[12.5px] text-t2 tabular-nums">
+          <b className="text-t1">{n(c.venda)}</b> {c.venda === 1 ? 'venda' : 'vendas'} de {n(c.recebidos)}
+        </p>
+      </div>
     </div>
   )
 }
 
-function Leituras({ itens }: { itens: ReturnType<typeof leiturasSafra> }) {
-  if (itens.length === 0) return null
-  return (
-    <section aria-label="O que os números dizem">
-      <SecaoTitulo icon={Percent}>O que os números *dizem*</SecaoTitulo>
-      <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-2.5 stagger-children">
-        {itens.map((l, i) => (
-          <li key={i} className="flex items-start gap-3 text-[14px] leading-relaxed text-t2">
-            <span className={`mt-[9px] w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOM[l.tom].ponto}`} aria-hidden />
-            <span>{l.texto}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
+// ─── Funil da safra ───────────────────────────────────────────────────────────
+
+function FunilDaSafra({ c }: { c: Contagem }) {
+  const [foco, setFoco] = useState<ChaveFatia | null>(null)
+  const ps = passosSafra(c)
+  const fatias = fatiasDe(c)
+  const f = fatias.find(x => x.chave === foco)
+  const passo = foco && foco !== 'chegada' ? ps.find(p => p.etapa === foco) : null
+  const parada = foco && foco !== 'venda' ? c.parouEm[foco] : null
+
+  const dica = f && (
+    <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-[14px] bg-[#0F2759] px-4 py-3 text-white shadow-[0_18px_40px_-12px_rgba(15,39,89,0.55)] pulse-item-in whitespace-nowrap"
+         role="status">
+      <p className="text-[12.5px] font-semibold uppercase tracking-[0.14em]" style={{ color: FATIA[f.chave][0] }}>{f.nome}</p>
+      <p className="mt-0.5 font-display text-[26px] font-extrabold leading-none tabular-nums">
+        {n(f.n)}<span className="ml-1.5 text-[14px] font-medium text-white/70">{pct(f.n, c.recebidos)} dos leads</span>
+      </p>
+      {passo && <p className="mt-1 text-[13px] text-white/75">{passo.anterior === 'chegada' ? `${fmtTaxa(passo.taxaPasso)} dos leads chegaram aqui` : `${fmtTaxa(passo.taxaPasso)} de quem estava em ${NOME_ETAPA[passo.anterior].toLowerCase()}`}</p>}
+      {parada && <p className="mt-0.5 text-[13px] text-white/75">pararam aqui: {n(parada.ativos)} vivos · {n(parada.descartados)} descartados</p>}
+    </div>
   )
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-4 items-stretch">
+      <FunilDesenhado fatias={fatias} foco={foco} onFoco={setFoco} dica={dica}
+        rotulo={`Funil da safra: ${fatias.map(x => `${x.nome} ${x.n}`).join(', ')}.`} />
+      <Escada c={c} foco={foco} />
+    </div>
+  )
+}
+
+/** Os degraus da safra e, entre eles, quanto avançou de um para o outro. */
+function Escada({ c, foco }: { c: Contagem; foco: ChaveFatia | null }) {
+  const ps = passosSafra(c)
+  const maxRaiz = Math.sqrt(Math.max(1, c.recebidos))
+  return (
+    <ol className="rounded-[18px] bg-[#F4F6FB] px-5 py-4 flex flex-col justify-between gap-1">
+      {COLUNAS.map((k, i) => {
+        const v = k === 'chegada' ? c.recebidos : c[k]
+        const p = i > 0 ? ps[i - 1] : null
+        return (
+          <li key={k} className="transition-opacity duration-200" style={{ opacity: foco === null || foco === k ? 1 : 0.35 }}>
+            {p && (
+              <div className="flex items-center gap-2 py-1 pl-1">
+                <span className="text-t4 text-[14px]" aria-hidden>↓</span>
+                <span className="rounded-full px-2.5 py-0.5 text-[13px] font-bold tabular-nums"
+                      style={{ background: `color-mix(in srgb, ${FATIA[k][1]} 14%, transparent)`, color: FATIA[k][1] }}>
+                  {fmtTaxa(p.taxaPasso)}
+                </span>
+                <span className="text-[12.5px] text-t3">avançam</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <span className="w-[96px] shrink-0 text-[14.5px] font-semibold text-t1">{k === 'chegada' ? 'Leads' : NOME_ETAPA[k]}</span>
+              <span className="relative flex-1 h-3 rounded-full bg-white overflow-hidden">
+                <span className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700"
+                      style={{ width: `${v > 0 ? Math.max(2, (Math.sqrt(v) / maxRaiz) * 100) : 0}%`, background: `linear-gradient(90deg, ${FATIA[k][0]}, ${FATIA[k][1]})` }} />
+              </span>
+              <span className="w-[56px] shrink-0 text-right font-display text-[20px] font-extrabold tabular-nums text-t1">{n(v)}</span>
+            </div>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+// ─── Onde param · até a visita · por que saem ─────────────────────────────────
+
+function OndeParam({ c }: { c: Contagem }) {
+  const linhas = (['chegada', 'atendimento', 'visita', 'proposta'] as const).map(k => ({ k, ...c.parouEm[k] }))
+  const maior = Math.max(1, ...linhas.map(l => l.ativos + l.descartados))
+  return (
+    <ul className="flex flex-col gap-3">
+      {linhas.map(l => (
+        <li key={l.k} className="grid grid-cols-[96px_minmax(0,1fr)_76px] items-center gap-3">
+          <span className="text-[14px] font-medium text-t1">{l.k === 'chegada' ? '1º contato' : NOME_ETAPA[l.k]}</span>
+          <span className="flex h-3 rounded-full bg-[#F1F3F8] overflow-hidden" aria-hidden>
+            <span className="h-full" style={{ width: `${(l.ativos / maior) * 100}%`, background: `linear-gradient(90deg, ${FATIA[l.k][0]}, ${FATIA[l.k][1]})` }} />
+            <span className="h-full" style={{ width: `${(l.descartados / maior) * 100}%`, background: '#CBD2DE' }} />
+          </span>
+          <span className="text-right text-[13px] tabular-nums text-t3" aria-label={`${l.ativos} vivos, ${l.descartados} descartados`}>
+            <b className="text-t1">{n(l.ativos)}</b> · {n(l.descartados)}
+          </span>
+        </li>
+      ))}
+      <li className="grid grid-cols-[96px_minmax(0,1fr)_76px] items-center gap-3">
+        <span className="text-[14px] font-medium text-t1">Venda</span>
+        <span className="h-3 rounded-full bg-[#F1F3F8] overflow-hidden" aria-hidden>
+          <span className="block h-full rounded-full" style={{ width: `${c.venda > 0 ? Math.max(2, (c.venda / maior) * 100) : 0}%`, background: `linear-gradient(90deg, ${FATIA.venda[0]}, ${FATIA.venda[1]})` }} />
+        </span>
+        <span className="text-right text-[13px] tabular-nums font-bold" style={{ color: FATIA.venda[1] }}>{n(c.venda)}</span>
+      </li>
+    </ul>
+  )
+}
+
+const FAIXA_CURTA = ['mesmo dia', '1–3 d', '4–7 d', '8–14 d', '15+ d']
+
+function AteAVisita({ dados, filtro }: { dados: FunilSafra; filtro: Filtro }) {
+  const t = tempoAteVisita(dados, filtro)
+  if (t.total === 0) return <p className="text-[14px] text-t4 py-2">Sem visitas ainda.</p>
+  const maior = Math.max(1, ...t.faixas.map(f => f.n))
+  return (
+    <div className="flex items-end gap-6">
+      <div className="shrink-0">
+        <p className="font-display text-[40px] leading-none font-extrabold tracking-[-0.04em] tabular-nums text-t1">
+          {t.mediana! < 1 ? '0' : t.mediana!.toLocaleString('pt-BR')}<span className="text-[16px] font-bold text-t3 ml-1">dias</span>
+        </p>
+        <p className="text-[12.5px] text-t3 mt-1.5">mediana · {n(t.total)} visitas</p>
+      </div>
+      <div className="flex-1 grid grid-cols-5 gap-2 items-end h-[92px]">
+        {t.faixas.map((f, i) => (
+          <div key={f.rotulo} className="flex flex-col items-center justify-end h-full gap-1" title={`${f.rotulo}: ${f.n}`}>
+            <span className="text-[12.5px] font-bold tabular-nums text-t1">{f.n || ''}</span>
+            <span className="w-full rounded-t-[7px]" style={{ height: `${f.n ? Math.max(6, (f.n / maior) * 54) : 3}px`, background: f.n ? `linear-gradient(180deg, ${FATIA.visita[0]}, ${FATIA.visita[1]})` : '#E5E9F1' }} />
+            <span className="text-[11px] text-t4 whitespace-nowrap">{FAIXA_CURTA[i]}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PorQueSaem({ dados, filtro, total, nomeMotivo }: {
+  dados: FunilSafra; filtro: Filtro; total: Contagem; nomeMotivo: (slug: string) => string
+}) {
+  const lista = motivosSafra(dados, filtro)
+  if (lista.length === 0) return <p className="text-[14px] text-t4 py-2">Nenhum descarte.</p>
+  return (
+    <ul className="flex flex-col gap-3.5">
+      {lista.map(m => (
+        <li key={m.motivo}>
+          <div className="flex items-baseline justify-between gap-3 mb-1.5">
+            <span className="text-[14px] font-medium text-t1 truncate">{nomeMotivo(m.motivo)}</span>
+            <span className="text-[13px] text-t3 tabular-nums shrink-0"><b className="text-t1">{n(m.n)}</b> · {pct(m.n, total.descartados)}</span>
+          </div>
+          <span className="block h-2.5 rounded-full bg-[#F1F3F8] overflow-hidden" aria-hidden>
+            <span className="block h-full rounded-full" style={{ width: `${Math.max(2, (m.n / lista[0].n) * 100)}%`, background: 'linear-gradient(90deg, #94A3B8, #64748B)' }} />
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// ─── Safra a safra ────────────────────────────────────────────────────────────
+
+function SafraASafra({ serie, balde }: { serie: PontoSafra[]; balde: FunilSafra['bucket'] }) {
+  const opcao = useCallback((t: CoresGrafico) => {
+    const p = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : null)
+    const linha = (nome: string, cor: string, dados: (number | null)[]) => ({
+      name: nome, type: 'line', yAxisIndex: 1, data: dados, symbol: 'circle', symbolSize: 7,
+      lineStyle: { width: 3, color: cor }, itemStyle: { color: cor, borderColor: '#fff', borderWidth: 2 },
+    })
+    return {
+      grid: { left: 4, right: 4, top: 36, bottom: 4, containLabel: true },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      xAxis: eixoCategoria(t, serie.map(s => rotuloBalde(s.bucket, balde))),
+      yAxis: [
+        eixoValor(t, undefined, { minInterval: 1 }),
+        eixoValor(t, (v: number) => `${v}%`, { splitLine: { show: false }, max: (x: { max: number }) => Math.max(10, Math.ceil(x.max / 10) * 10) }),
+      ],
+      series: [
+        {
+          name: 'Leads', type: 'bar', barMaxWidth: 24, data: serie.map(s => s.recebidos),
+          itemStyle: {
+            borderRadius: [6, 6, 0, 0],
+            color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#A5B4FC' }, { offset: 1, color: '#C7D2FE' }] },
+          },
+        },
+        linha('% atendidos', FATIA.atendimento[1], serie.map(s => p(s.atendimento, s.recebidos))),
+        linha('% visitaram', FATIA.visita[1], serie.map(s => p(s.visita, s.recebidos))),
+      ],
+    }
+  }, [serie, balde])
+
+  if (serie.length < 2) return <p className="text-[14px] text-t4 py-2">Período curto demais.</p>
+  return <Grafico altura={270} opcao={opcao} rotulo={`Safra a safra: ${serie.reduce((s, x) => s + x.recebidos, 0)} leads em ${serie.length} pontos.`} />
 }
 
 // ─── Lado a lado ──────────────────────────────────────────────────────────────
 
-function LadoALado({ dados, filtro, admin, nomeCorretor, nomeProduto, escolherCorretor, escolherProduto }: {
+function LadoALado({ dados, filtro, admin, escolherCorretor, escolherProduto }: {
   dados: FunilSafra
   filtro: Filtro
   admin: boolean
-  nomeCorretor: string | null
-  nomeProduto: string | null
   escolherCorretor: (id: string | null) => void
   escolherProduto: (k: string | null) => void
 }) {
@@ -419,12 +504,8 @@ function LadoALado({ dados, filtro, admin, nomeCorretor, nomeProduto, escolherCo
   const [dimEscolhida, setDim] = useState<'corretor' | 'produto' | null>(null)
   const dim = !podeCorretores ? 'produto' : dimEscolhida ?? (filtro.corretor ? 'produto' : 'corretor')
   const fatias = useMemo(() => ladoALado(dados, dim, filtro), [dados, dim, filtro])
-
   if (fatias.length === 0) return null
 
-  const descricao = dim === 'corretor'
-    ? `O funil de cada corretor${nomeProduto ? ` no ${nomeProduto}` : ''}. Toque em um para filtrar a tela por ele.`
-    : `O funil de cada produto${nomeCorretor ? ` nos leads de ${nomeCorretor}` : ''}. Toque em um para filtrar a tela por ele.`
   const selecionado = dim === 'corretor' ? filtro.corretor : filtro.produto
   const escolher = (chave: string) => {
     if (dim === 'corretor') { if (chave !== SEM) escolherCorretor(chave === selecionado ? null : chave) }
@@ -432,72 +513,52 @@ function LadoALado({ dados, filtro, admin, nomeCorretor, nomeProduto, escolherCo
   }
 
   return (
-    <section aria-label="Funis lado a lado">
-      <div className="flex items-end gap-3 flex-wrap mb-3">
-        <div className="min-w-0">
-          <h3 className="text-[15px] font-semibold text-t1 tracking-[-0.01em]">
-            Lado a <Destaque>lado</Destaque>
-          </h3>
-          <p className="text-[12.5px] text-t4 mt-0.5">{descricao}</p>
-        </div>
-        {podeCorretores && (
-          <div className="ml-auto">
-            <Segmentado rotulo="Comparar" valor={dim} onChange={v => setDim(v)}
-              opcoes={[{ value: 'corretor' as const, label: 'Corretores' }, { value: 'produto' as const, label: 'Produtos' }]} />
-          </div>
-        )}
-      </div>
-      <ul className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(236px,1fr))] stagger-children">
+    <Cartao titulo="Lado a *lado*" extra="toque para filtrar"
+      acao={podeCorretores && (
+        <Segmentado rotulo="Comparar" valor={dim} onChange={v => setDim(v)}
+          opcoes={[{ value: 'corretor' as const, label: 'Corretores' }, { value: 'produto' as const, label: 'Produtos' }]} />
+      )}>
+      <ul className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(250px,1fr))] stagger-children">
         {fatias.map(f => (
           <li key={f.chave}>
-            <CartaoFunil fatia={f} ativo={f.chave === selecionado}
+            <MiniFunil fatia={f} ativo={f.chave === selecionado}
               onClick={dim === 'corretor' && f.chave === SEM ? undefined : () => escolher(f.chave)} />
           </li>
         ))}
       </ul>
-    </section>
+    </Cartao>
   )
 }
 
-function CartaoFunil({ fatia, ativo, onClick }: { fatia: Fatia; ativo: boolean; onClick?: () => void }) {
+function MiniFunil({ fatia, ativo, onClick }: { fatia: Fatia; ativo: boolean; onClick?: () => void }) {
   const { c } = fatia
-  const pouco = c.recebidos < 5
+  const desenho = fatiasDe(c)
   const corpo = (
     <>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[14px] font-semibold text-t1 truncate">{fatia.nome}</span>
-        <span className="text-[12px] text-t4 tabular-nums flex-shrink-0">{n(c.recebidos)} {c.recebidos === 1 ? 'lead' : 'leads'}</span>
-      </div>
-      <p className="mt-2 flex items-baseline gap-1.5">
-        <span className={`font-display text-[26px] leading-none font-extrabold tracking-[-0.03em] tabular-nums ${pouco ? 'text-t3' : 'text-t1'}`}>
-          {fmtTaxa(taxa(c.visita, c.recebidos))}
+        <span className="text-[15px] font-bold text-t1 truncate">{fatia.nome}</span>
+        <span className="text-[13px] font-bold tabular-nums shrink-0" style={{ color: FATIA.venda[1] }}>
+          {fmtTaxa(taxa(c.venda, c.recebidos))} <span className="font-medium text-t4">venda</span>
         </span>
-        <span className="text-[12px] text-t4">chegaram a visita</span>
-      </p>
-      <ul className="mt-3 flex flex-col gap-1.5">
-        {ETAPAS_SAFRA.map(e => (
-          <li key={e} className="grid grid-cols-[76px_minmax(0,1fr)_28px_38px] items-center gap-2 text-[12px]">
-            <span className="text-t3 truncate">{NOME_ETAPA[e]}</span>
-            <span className="h-1.5 rounded-full bg-s2 overflow-hidden" aria-hidden>
-              <span className="block h-full rounded-full" style={{ width: `${escala(c[e], c.recebidos)}%`, background: COR[e] }} />
-            </span>
-            <span className={`text-right tabular-nums font-semibold ${c[e] === 0 ? 'text-t4' : 'text-t1'}`}>{n(c[e])}</span>
-            <span className="text-right tabular-nums text-t4">{fmtTaxa(taxa(c[e], c.recebidos))}</span>
-          </li>
+      </div>
+      <div className="mt-3 flex justify-center">
+        <FunilDesenhado tamanho="mini" fatias={desenho} rotulo={`${fatia.nome}: ${desenho.map(x => `${x.nome} ${x.n}`).join(', ')}`} />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
+        {(['atendimento', 'visita', 'proposta'] as EtapaSafra[]).map(e => (
+          <span key={e} className="rounded-[10px] py-1" style={{ background: `color-mix(in srgb, ${FATIA[e][1]} 10%, transparent)` }}>
+            <span className="block text-[13px] font-bold tabular-nums" style={{ color: FATIA[e][1] }}>{pct(c[e], c.recebidos)}</span>
+            <span className="block text-[10.5px] text-t4">{NOME_ETAPA[e].toLowerCase()}</span>
+          </span>
         ))}
-      </ul>
-      <p className="mt-3 pt-2.5 border-t border-line text-[11.5px] text-t4 tabular-nums">
-        {pouco ? 'Poucos leads para comparar · ' : ''}
-        {n(c.emAndamento)} em andamento · {fmtTaxa(taxa(c.descartados, c.recebidos))} descartados
-      </p>
+      </div>
     </>
   )
-  const base = `bento block w-full h-full text-left px-4 py-3.5 transition-[box-shadow,transform] duration-200
-                ${ativo ? 'ring-2 ring-brand/60' : ''}`
+  const base = `pulse-card block w-full h-full text-left rounded-[18px] px-4 py-3.5 transition-[box-shadow,transform] duration-200 ${ativo ? 'ring-2 ring-brand/70' : ''}`
   return onClick ? (
     <button type="button" onClick={onClick} aria-pressed={ativo}
-      aria-label={`${fatia.nome}: ${c.recebidos} leads, ${c.visita} chegaram a visita, ${c.venda} vendas`}
-      className={`${base} cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_rgba(15,39,89,.45)]
+      aria-label={`${fatia.nome}: ${c.recebidos} leads, ${c.visita} visitas, ${c.venda} vendas`}
+      className={`${base} cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-18px_rgba(15,39,89,.5)]
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50`}>
       {corpo}
     </button>
@@ -512,11 +573,7 @@ const METRICAS: { value: EtapaSafra; label: string }[] = [
   { value: 'venda',       label: 'Venda' },
 ]
 
-/**
- * Quem converte o quê: cada célula é a taxa da etapa escolhida naquele
- * corretor e naquele produto. Mais forte = taxa maior. Com menos de 5 leads a
- * célula fica sem cor — porcentagem de três leads não diz nada.
- */
+/** Taxa da etapa em cada cruzamento. Menos de 5 leads: sem cor. */
 function Matriz({ dados, filtro, escolher }: {
   dados: FunilSafra
   filtro: Filtro
@@ -528,204 +585,71 @@ function Matriz({ dados, filtro, escolher }: {
 
   const tx = (c: Contagem) => (c.recebidos >= 5 ? taxa(c[metrica], c.recebidos) : null)
   const maior = Math.max(1, ...m.linhas.flatMap(l => m.colunas.map(col => tx(m.celula(l.chave, col.chave)) ?? 0)))
-  const cor = COR[metrica]
+  const cor = FATIA[metrica][1]
+  const totalGeral = contar(dados)
 
   const celula = (chave: string, c: Contagem, corretor: string | null, produto: string | null, total = false) => {
-    const t = tx(c)
-    const ativo = (corretor ?? null) === filtro.corretor && (produto ?? null) === filtro.produto
     if (c.recebidos === 0) return <td key={chave} className="px-2 py-2 text-center text-[13px] text-t4">—</td>
-    const fundo = t !== null && !total ? `color-mix(in srgb, ${cor} ${Math.round(8 + 52 * (t / maior))}%, transparent)` : undefined
-    const clicavel = corretor !== SEM
+    const t = tx(c)
+    const forte = t !== null && !total ? t / maior : 0
+    const ativo = corretor === filtro.corretor && produto === filtro.produto
+    const fundo = t !== null && !total ? `color-mix(in srgb, ${cor} ${Math.round(8 + 72 * forte)}%, transparent)` : undefined
+    const claro = forte > 0.6
     const conteudo = (
       <>
-        <span className={`block text-[14px] font-semibold tabular-nums ${t === null ? 'text-t4' : 'text-t1'}`}>{t === null ? '·' : fmtTaxa(t)}</span>
-        <span className="block text-[11px] text-t4 tabular-nums">{n(c[metrica])} de {n(c.recebidos)}</span>
+        <span className={`block text-[15px] font-bold tabular-nums ${claro ? 'text-white' : t === null ? 'text-t4' : 'text-t1'}`}>{t === null ? '·' : fmtTaxa(t)}</span>
+        <span className={`block text-[11px] tabular-nums ${claro ? 'text-white/80' : 'text-t4'}`}>{n(c[metrica])}/{n(c.recebidos)}</span>
       </>
     )
+    const classe = `w-full min-w-[84px] rounded-[12px] px-2 py-2 text-center ${total ? 'bg-[#F4F6FB]' : ''} ${ativo ? 'ring-2 ring-brand/70' : ''}`
     return (
       <td key={chave} className="p-1">
-        {clicavel ? (
+        {corretor !== SEM ? (
           <button type="button" onClick={() => escolher(corretor, produto)}
             aria-label={`${NOME_ETAPA[metrica]}: ${c[metrica]} de ${c.recebidos} leads`}
-            className={`w-full min-w-[84px] rounded-[10px] px-2 py-1.5 text-center cursor-pointer transition-shadow
-                        hover:ring-1 hover:ring-line focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50
-                        ${total ? 'bg-s2/70' : ''} ${ativo ? 'ring-2 ring-brand/60' : ''}`}
+            className={`${classe} cursor-pointer transition-transform hover:scale-[1.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50`}
             style={fundo ? { background: fundo } : undefined}>
             {conteudo}
           </button>
         ) : (
-          <div className={`w-full min-w-[84px] rounded-[10px] px-2 py-1.5 text-center ${total ? 'bg-s2/70' : ''}`}
-               style={fundo ? { background: fundo } : undefined}>{conteudo}</div>
+          <div className={classe} style={fundo ? { background: fundo } : undefined}>{conteudo}</div>
         )}
       </td>
     )
   }
 
-  const totalGeral = contar(dados)
-
   return (
-    <section aria-label="Corretor por produto">
-      <div className="flex items-end gap-3 flex-wrap mb-3">
-        <div className="min-w-0">
-          <h3 className="text-[15px] font-semibold text-t1 tracking-[-0.01em]">
-            Corretor × <Destaque>produto</Destaque>
-          </h3>
-          <p className="text-[12.5px] text-t4 mt-0.5">
-            Quantos leads de cada cruzamento chegaram a {NOME_ETAPA[metrica].toLowerCase()}. Cor mais forte, taxa maior; com menos de 5 leads fica sem cor. Toque para filtrar.
-          </p>
-        </div>
-        <div className="ml-auto">
-          <Segmentado rotulo="Etapa da matriz" valor={metrica} onChange={setMetrica} opcoes={METRICAS} />
-        </div>
-      </div>
-      <div className="bento overflow-x-auto">
+    <Cartao titulo="Corretor × *produto*" extra={`% que chegou a ${NOME_ETAPA[metrica].toLowerCase()}`}
+      acao={<Segmentado rotulo="Etapa da matriz" valor={metrica} onChange={setMetrica} opcoes={METRICAS} />}>
+      <div className="overflow-x-auto -mx-2">
         <table className="w-full border-separate border-spacing-0">
           <thead>
             <tr>
-              <th scope="col" className="sticky left-0 z-[1] bg-surface px-4 py-3 text-left text-[12px] font-medium text-t4">Corretor</th>
+              <th scope="col" className="sticky left-0 z-[1] bg-surface px-3 py-2 text-left text-[12.5px] font-medium text-t4">Corretor</th>
               {m.colunas.map(col => (
-                <th key={col.chave} scope="col" className="px-2 py-3 text-center text-[12px] font-medium text-t3 max-w-[140px]">
+                <th key={col.chave} scope="col" className="px-2 py-2 text-center text-[12.5px] font-semibold text-t2 max-w-[140px]">
                   <span className="block truncate" title={col.nome}>{col.nome}</span>
                 </th>
               ))}
-              <th scope="col" className="px-2 py-3 text-center text-[12px] font-semibold text-t2">Todos</th>
+              <th scope="col" className="px-2 py-2 text-center text-[12.5px] font-semibold text-t1">Todos</th>
             </tr>
           </thead>
           <tbody>
             {m.linhas.map(l => (
-              <tr key={l.chave} className="border-t border-line">
-                <th scope="row" className="sticky left-0 z-[1] bg-surface px-4 py-1 text-left text-[13.5px] font-semibold text-t1 whitespace-nowrap">
-                  {l.nome}
-                </th>
+              <tr key={l.chave}>
+                <th scope="row" className="sticky left-0 z-[1] bg-surface px-3 py-1 text-left text-[14px] font-semibold text-t1 whitespace-nowrap">{l.nome}</th>
                 {m.colunas.map(col => celula(col.chave, m.celula(l.chave, col.chave), l.chave, col.chave))}
                 {celula('todos', m.totalLinha(l.chave), l.chave, null, true)}
               </tr>
             ))}
             <tr>
-              <th scope="row" className="sticky left-0 z-[1] bg-surface px-4 py-1 text-left text-[13.5px] font-semibold text-t2">Imobiliária</th>
+              <th scope="row" className="sticky left-0 z-[1] bg-surface px-3 py-1 text-left text-[14px] font-semibold text-t3">Imobiliária</th>
               {m.colunas.map(col => celula(col.chave, m.totalColuna(col.chave), null, col.chave, true))}
               {celula('todos', totalGeral, null, null, true)}
             </tr>
           </tbody>
         </table>
       </div>
-    </section>
-  )
-}
-
-// ─── Safras no tempo ──────────────────────────────────────────────────────────
-
-function Safras({ dados, filtro, inicio, fim }: { dados: FunilSafra; filtro: Filtro; inicio: string | null; fim: string | null }) {
-  const serie = useMemo(() => serieSafra(dados, filtro, inicio, fim), [dados, filtro, inicio, fim])
-  const unidade = { day: 'dia', week: 'semana', month: 'mês' }[dados.bucket]
-
-  const opcao = useCallback((t: CoresGrafico) => {
-    const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : null)
-    const linha = (nome: string, e: LeadFunnelStage, dados: (number | null)[]) => ({
-      // Sem suavização: curva entre dois pontos sugere valor que não existiu.
-      name: nome, type: 'line', yAxisIndex: 1, data: dados, connectNulls: false,
-      symbol: 'circle', symbolSize: 6, lineStyle: { width: 2.5, color: resolverCor(STAGE_THEME[e].solidVar) },
-      itemStyle: { color: resolverCor(STAGE_THEME[e].solidVar) },
-    })
-    return {
-      grid: { left: 4, right: 4, top: 40, bottom: 4, containLabel: true },
-      tooltip: {
-        trigger: 'axis', axisPointer: { type: 'shadow' },
-        valueFormatter: (v: number | null) => (v === null || v === undefined ? '—' : String(v)),
-      },
-      xAxis: eixoCategoria(t, serie.map(s => rotuloBalde(s.bucket, dados.bucket))),
-      yAxis: [
-        eixoValor(t, undefined, { minInterval: 1 }),
-        eixoValor(t, (v: number) => `${v}%`, { splitLine: { show: false }, max: (x: { max: number }) => Math.max(10, Math.ceil(x.max / 10) * 10) }),
-      ],
-      series: [
-        {
-          name: 'Leads que chegaram', type: 'bar', barMaxWidth: 26,
-          data: serie.map(s => s.recebidos),
-          itemStyle: { color: resolverCor('var(--stage-lead)'), opacity: 0.3, borderRadius: [5, 5, 0, 0] },
-        },
-        linha('% atendidos', 'atendimento', serie.map(s => pct(s.atendimento, s.recebidos))),
-        linha('% com visita', 'visita', serie.map(s => pct(s.visita, s.recebidos))),
-      ],
-    }
-  }, [serie, dados.bucket])
-
-  if (serie.length < 2) return null
-  return (
-    <section>
-      <SecaoTitulo icon={Percent}
-        descricao={`Cada barra é a safra de um ${unidade}: quantos chegaram (escala da esquerda) e quanto dela foi atendida e visitou até hoje (direita). Safra recente ainda está amadurecendo.`}>
-        Safra a *safra*
-      </SecaoTitulo>
-      <Grafico
-        altura={290}
-        opcao={opcao}
-        rotulo={`Safras por ${unidade}: ${serie.reduce((s, x) => s + x.recebidos, 0)} leads em ${serie.length} ${unidade === 'mês' ? 'meses' : `${unidade}s`}.`}
-      />
-    </section>
-  )
-}
-
-// ─── Saídas e tempo ───────────────────────────────────────────────────────────
-
-function Saidas({ dados, filtro, total, nomeMotivo }: {
-  dados: FunilSafra; filtro: Filtro; total: Contagem; nomeMotivo: (slug: string) => string
-}) {
-  const lista = motivosSafra(dados, filtro)
-  return (
-    <section>
-      <SecaoTitulo icon={Percent} descricao={`${n(total.descartados)} leads da safra saíram do funil (${fmtTaxa(taxa(total.descartados, total.recebidos))}).`}>
-        Por que os leads *saem*
-      </SecaoTitulo>
-      {lista.length === 0 ? (
-        <p className="text-[13px] text-t4 py-6">Nenhum lead desta safra foi descartado.</p>
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {lista.map(m => (
-            <li key={m.motivo}>
-              <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                <span className="text-[14px] text-t1 truncate">{nomeMotivo(m.motivo)}</span>
-                <span className="text-[13px] text-t3 tabular-nums flex-shrink-0">
-                  {n(m.n)} · {fmtTaxa(taxa(m.n, total.descartados))}
-                </span>
-              </div>
-              <Barra pct={taxa(m.n, total.descartados) ?? 0} tom="neutro" altura={5}
-                rotuloAcessivel={`${nomeMotivo(m.motivo)}: ${m.n} de ${total.descartados} descartes`} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
-function TempoAteVisita({ dados, filtro }: { dados: FunilSafra; filtro: Filtro }) {
-  const t = tempoAteVisita(dados, filtro)
-  const maior = Math.max(1, ...t.faixas.map(f => f.n))
-  return (
-    <section>
-      <SecaoTitulo icon={Percent} descricao="Dias entre a chegada do lead e a primeira vez que ele entrou em Visita.">
-        Quanto demora até a *visita*
-      </SecaoTitulo>
-      {t.total === 0 ? (
-        <p className="text-[13px] text-t4 py-6">Nenhum lead desta safra chegou a visita ainda.</p>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {t.faixas.map(f => (
-            <li key={f.rotulo} className="grid grid-cols-[120px_minmax(0,1fr)_56px] items-center gap-3">
-              <span className="text-[13.5px] text-t2">{f.rotulo}</span>
-              <span className="h-6 rounded-[7px] bg-s2 overflow-hidden" aria-hidden>
-                <span className="block h-full rounded-[7px]"
-                  style={{ width: `${f.n === 0 ? 0 : Math.max(3, (f.n / maior) * 100)}%`, background: COR.visita, opacity: 0.85 }} />
-              </span>
-              <span className="text-right text-[13px] tabular-nums">
-                <span className={`font-semibold ${f.n === 0 ? 'text-t4' : 'text-t1'}`}>{n(f.n)}</span>
-                <span className="text-t4"> · {fmtTaxa(taxa(f.n, t.total))}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    </Cartao>
   )
 }
