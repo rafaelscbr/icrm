@@ -648,7 +648,8 @@ html.light {
     --v-risco:       #EF4444;
     --v-contato:     #0EA5E9;
     --v-neutro:      #94A3B8;
-    background-color: var(--page-bg);
+    /* um tom mais fundo que a Folha: os cards brancos destacam do fundo */
+    background-color: color-mix(in srgb, var(--page-bg) 90%, #0F2759 10%);
     background-image:
       radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--t1) 7%, transparent) 1px, transparent 0),
       var(--grain);
@@ -678,6 +679,16 @@ html.light {
     color: var(--m-t1);
   }
   .pulse-marinho .destaque { color: var(--m-ouro); }
+
+  /* Card da sala: branco com uma sombra larga e suave — destaca do fundo
+     sem filete pesado. */
+  .pulse-card {
+    background: var(--surface);
+    border: 1px solid color-mix(in srgb, var(--t1) 7%, transparent);
+    box-shadow:
+      0 1px 2px rgba(15, 39, 89, 0.06),
+      0 14px 34px -16px rgba(15, 39, 89, 0.30);
+  }
 
   /* ── Movimento da sala (22/11/2026) ─────────────────────────────────────
    * Tudo anima só transform e opacity (a GPU resolve). Os ciclos ambientes
@@ -725,14 +736,6 @@ html.light {
   @keyframes funil-entra {
     from { opacity: 0; transform: scaleX(0.4) translateY(-10px); }
     to   { opacity: 1; transform: none; }
-  }
-  /* Leads descendo pelo funil — gotas que nascem no topo e somem embaixo */
-  .funil-gota { opacity: 0; animation: funil-gota var(--dur, 7s) linear var(--atraso, 0s) infinite; }
-  @keyframes funil-gota {
-    0%   { transform: translateY(0); opacity: 0; }
-    12%  { opacity: 0.85; }
-    82%  { opacity: 0.85; }
-    100% { transform: translateY(var(--queda, 400px)); opacity: 0; }
   }
   /* Um brilho atravessa o funil de tempos em tempos */
   .funil-brilho { animation: funil-brilho 9s ease-in-out 2.5s infinite; }

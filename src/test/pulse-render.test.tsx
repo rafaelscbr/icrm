@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
+import type { RelatorioConversao } from '../modules/leads/conversao'
 import {
-  AoVivo, Batimento, EquipeCompacta, FilaPrimeiroContato, FunilHeroi, MetaNoMarinho, NumerosNoMarinho,
+  AoVivo, Batimento, EquipeCompacta, FilaPrimeiroContato, FunilDaImobiliaria, MetaNoMarinho, NumerosNoMarinho,
   PontosNoMarinho, PrazoNoMarinho, Resposta, curvaDoDia, mediaSemHoje, textoDaResposta, urgenciaDe,
 } from '../modules/pulse/components/Sala'
 import type { Corretor } from '../modules/pulse/components/Sala'
@@ -164,13 +165,45 @@ describe('equipe, funil e registros', () => {
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
-  it('o funil diz cada etapa, as vendas do mês e quanto do funil cada etapa é', () => {
-    render(<FunilHeroi porEtapa={{ lead: 6, followup: 91, atendimento: 35, visita: 2, proposta: 1 }} vendasNoMes={3} />)
+  const CONVERSAO: RelatorioConversao = {
+    mode: 'safra', start: '2026-08-25', end: '2026-11-22', bucket: 'month',
+    received: 529, discarded: 394,
+    funnel: [
+      { stage: 'followup', count: 521 }, { stage: 'atendimento', count: 62 }, { stage: 'visita', count: 12 },
+      { stage: 'proposta', count: 7 }, { stage: 'venda', count: 5 },
+    ],
+    series: [], byOrigin: [], byBroker: [], discardReasons: [], medianDaysToVisit: null, historySince: null,
+  }
+  const PORETAPA = { lead: 6, followup: 91, atendimento: 35, visita: 2, proposta: 1 }
+
+  it('o funil diz cada etapa agora e as vendas do mês', () => {
+    render(<FunilDaImobiliaria porEtapa={PORETAPA} vendasNoMes={3} conversao={CONVERSAO} janelaDias={90} />)
     const funil = screen.getByRole('img')
     expect(funil.getAttribute('aria-label')).toMatch(/Followup 91/)
     expect(funil.getAttribute('aria-label')).toMatch(/Vendas no mês 3/)
-    // 91 de 135 ativos = 67%
-    expect(screen.getByText('67%')).toBeInTheDocument()
+  })
+
+  it('a escada traz a conversão de cada passo e a de ponta a ponta, iguais à aba Conversão', () => {
+    render(<FunilDaImobiliaria porEtapa={PORETAPA} vendasNoMes={3} conversao={CONVERSAO} janelaDias={90} />)
+    expect(screen.getByText('0,9%')).toBeInTheDocument()          // 5 de 529
+    expect(screen.getByText('12%')).toBeInTheDocument()           // 62 de 529
+    expect(screen.getByText('19%')).toBeInTheDocument()           // 12 de 62
+    expect(screen.getByText('58%')).toBeInTheDocument()           // 7 de 12
+    expect(screen.getByText('71%')).toBeInTheDocument()           // 5 de 7
+    expect(screen.getByText('529')).toBeInTheDocument()
+  })
+
+  it('com o mouse na fatia, mostra quantos estão lá e quanto do funil ativo isso é', () => {
+    const { container } = render(<FunilDaImobiliaria porEtapa={PORETAPA} vendasNoMes={3} conversao={CONVERSAO} janelaDias={90} />)
+    const fatias = container.querySelectorAll('g.funil-fatia')
+    fireEvent.mouseEnter(fatias[1])                                // followup
+    expect(screen.getByRole('status')).toHaveTextContent('91')
+    expect(screen.getByRole('status')).toHaveTextContent('67% do funil ativo')   // 91 de 135
+  })
+
+  it('sem a conversão, diz que a leitura falhou em vez de mostrar zero', () => {
+    render(<FunilDaImobiliaria porEtapa={PORETAPA} vendasNoMes={3} conversao={null} janelaDias={90} />)
+    expect(screen.getByText(/Conversão indisponível/)).toBeInTheDocument()
   })
 
   it('registros trazem o nome de quem fez e só de quem está na sala', () => {

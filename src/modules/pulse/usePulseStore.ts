@@ -7,6 +7,8 @@ import type {
 } from './types'
 import { isEventoRuido } from './pulseEvents'
 import { useAuthStore } from '../../store/useAuthStore'
+import { somarDias } from '../leads/conversao'
+import type { RelatorioConversao } from '../leads/conversao'
 import { useLeadPauseStore } from '../../store/useLeadPauseStore'
 
 // ─── Orçamento de recursos ────────────────────────────────────────────────────
@@ -30,6 +32,8 @@ const RECENT_MAX             = 400
 const JANELA_CLIMA_MS        = 30 * 60 * 1000
 const RESNAPSHOT_COOLDOWN_MS = 10 * 60 * 1000
 const RECONNECT_DELAY_MS     = 4000
+/** A conversão do funil olha a safra dos últimos 90 dias: dos leads que chegaram, até onde foram. */
+export const JANELA_CONVERSAO_DIAS = 90
 
 /** Taxa padrão de comissão do sistema — espelha o default de concludeSale. */
 const TAXA_COMISSAO = 0.05
@@ -82,6 +86,12 @@ interface PulseStore {
   sala:            PulseSala | null
   /** a leitura da sala falhou — o resto do painel continua valendo */
   salaErro:        string | null
+  /**
+   * Conversão da imobiliária: dos leads que chegaram nos últimos 90 dias, até
+   * onde foram (lead_conversion_report, modo safra — a mesma conta da aba
+   * Conversão). Lida com o snapshot; null se falhou.
+   */
+  conversao:       RelatorioConversao | null
   /** timestamps dos últimos eventos — só para o cálculo do clima */
   recent:          number[]
 
@@ -137,6 +147,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   porHora:         Array(24).fill(0),
   sala:            null,
   salaErro:        null,
+  conversao:       null,
   recent:          [],
 
   comissaoPrevista: () => get().negociacaoValor * TAXA_COMISSAO,
@@ -157,12 +168,18 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
 
     try {
       // As três RPCs em paralelo — juntas somam ~40 kB, uma vez por sessão.
-      const [snapRes, vglRes, salaRes] = await Promise.all([
+      const hoje = localDateStr()
+      const [snapRes, vglRes, salaRes, convRes] = await Promise.all([
         supabase.rpc('pulse_snapshot'),
         supabase.rpc('pulse_vgl'),
         supabase.rpc('pulse_sala'),
+        supabase.rpc('lead_conversion_report', {
+          p_broker_id: null, p_start: somarDias(hoje, -(JANELA_CONVERSAO_DIAS - 1)), p_end: hoje,
+          p_mode: 'safra', p_bucket: 'month',
+        }),
       ])
       if (salaRes.error) console.error('[pulse] sala:', salaRes.error)
+      if (convRes.error) console.error('[pulse] conversão:', convRes.error)
       const { data, error } = snapRes
       if (error) throw error
 
@@ -203,6 +220,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         // resto do painel fica. Nunca mostra a sala de ontem como se fosse de hoje.
         sala:              salaRes.error ? null : (salaRes.data as PulseSala),
         salaErro:          salaRes.error ? salaRes.error.message : null,
+        conversao:         convRes.error ? null : (convRes.data as RelatorioConversao),
         corretores:        snap.corretores ?? [],
         brokerNames,
         leadsInfo,

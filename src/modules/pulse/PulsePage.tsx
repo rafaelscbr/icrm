@@ -6,11 +6,11 @@ import { useLeadPauseStore } from '../../store/useLeadPauseStore'
 import { useSlaConfigStore } from '../../store/useSlaConfigStore'
 import { pausaDe } from '../../lib/pausaLeads'
 import { DAILY_TARGETS } from '../../lib/metasConfig'
-import { usePulseStore } from './usePulseStore'
+import { usePulseStore, JANELA_CONVERSAO_DIAS } from './usePulseStore'
 import { useKiosk, useRelogio, useTickLento, useAntiBurnIn, useEscalaTV } from './useKiosk'
 import { SaleCelebration } from './components/SaleCelebration'
 import {
-  AoVivo, Batimento, ChegadaDeLeads, EquipeCompacta, FilaPrimeiroContato, FunilHeroi, LegendaDoBatimento,
+  AoVivo, Batimento, ChegadaDeLeads, EquipeCompacta, FilaPrimeiroContato, FunilDaImobiliaria, LegendaDoBatimento,
   MetaNoMarinho, NumerosNoMarinho, Painel, PontosNoMarinho, PrazoNoMarinho, Resposta, mediaSemHoje, urgenciaDe,
 } from './components/Sala'
 import { destacar } from '../../components/shared/Destaque'
@@ -103,7 +103,7 @@ export function PulsePage() {
 
   const {
     connection, erro, desconectadoDesde, ultimoSnapshotAt,
-    hoje, funil, tempos, vgl, celebracao, sala, salaErro,
+    hoje, funil, tempos, vgl, celebracao, sala, salaErro, conversao,
     corretores, brokerNames, feed,
     bootstrap, subscribe, podar, encerrarCelebracao,
   } = usePulseStore()
@@ -374,11 +374,9 @@ export function PulsePage() {
         )}
 
         {/* ── O funil protagonista · a fila e a equipe · o agora e a chegada ── */}
-        <div className="flex-1 min-h-0 grid gap-4" style={{ gridTemplateColumns: 'minmax(0, 1.32fr) minmax(0, 1fr) minmax(0, 1fr)' }}>
-          <Painel titulo="Funil agora" extra={
-            <span><span className="font-semibold text-t1 tabular-nums">{Object.values(funil).reduce((a, b) => a + b, 0).toLocaleString('pt-BR')}</span> leads ativos</span>
-          }>
-            <FunilHeroi porEtapa={funil} vendasNoMes={vgl ? vgl.vendasMes : null} />
+        <div className="flex-1 min-h-0 grid gap-4" style={{ gridTemplateColumns: 'minmax(0, 1.55fr) minmax(0, 0.95fr) minmax(0, 0.95fr)' }}>
+          <Painel titulo="Funil da imobiliária" extra="passe o mouse nas etapas">
+            <FunilDaImobiliaria porEtapa={funil} vendasNoMes={vgl ? vgl.vendasMes : null} conversao={conversao} janelaDias={JANELA_CONVERSAO_DIAS} />
           </Painel>
 
           <div className="flex flex-col gap-4 min-h-0 min-w-0">
