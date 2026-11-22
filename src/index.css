@@ -631,6 +631,23 @@ html.light {
    * dados. Incolor (princípio 4): dá textura sem competir com nenhum número.
    */
   .pulse-fundo {
+    /*
+     * Cores vivas da sala (só em DADOS: marcas, barras, pontos — nunca em
+     * moldura nem em texto corrido). São as mesmas famílias das etapas e dos
+     * status do sistema, acesas para a TV: o lead continua índigo, a visita
+     * continua verde-água, o prazo vencido continua vermelho.
+     */
+    --v-lead:        #6366F1;
+    --v-followup:    #A855F7;
+    --v-atendimento: #0EA5E9;
+    --v-visita:      #14B8A6;
+    --v-proposta:    #F59E0B;
+    --v-venda:       #22C55E;
+    --v-ok:          #10B981;
+    --v-alerta:      #F59E0B;
+    --v-risco:       #EF4444;
+    --v-contato:     #0EA5E9;
+    --v-neutro:      #94A3B8;
     background-color: var(--page-bg);
     background-image:
       radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--t1) 7%, transparent) 1px, transparent 0),
