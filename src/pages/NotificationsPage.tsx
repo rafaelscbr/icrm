@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
-  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle,
+  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle, LogIn,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushDeviceState, type PushDeviceState } from '../lib/push'
@@ -95,6 +95,8 @@ function aparencia(n: AppNotification) {
   // recebimento (090): avisos do admin, em âmbar — pedem atenção, não socorro.
   if (n.type === 'lead_all_paused')       return { icon: AlertTriangle, tom: 'atencao' as const, acao: 'Abrir lead'   }
   if (n.type === 'lead_intake_paused')    return { icon: PauseCircle,   tom: 'atencao' as const, acao: 'Abrir Leads'  }
+  // Corretor entrou no sistema (099): informativo, sem destino na tela.
+  if (n.type === 'broker_login')          return { icon: LogIn,         tom: 'info'    as const, acao: ''             }
   return                                         { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
 }
 

@@ -92,9 +92,11 @@ Deno.serve(async (req: Request) => {
 
   // Abre o card, não a lista: o aviso já diz o nome, e obrigar a procurar esse
   // nome no meio do funil é o atrito que faz o corretor parar de tocar no push.
+  // Aviso sem destino próprio (ex.: corretor entrou no sistema, migração 099)
+  // abre a página inicial — mandar para Tarefas seria apontar para nada.
   const url = n.resource_type === 'lead'
     ? (n.resource_id ? `/leads?lead=${encodeURIComponent(n.resource_id)}` : '/leads')
-    : '/tarefas'
+    : n.resource_type === 'task' ? '/tarefas' : '/'
 
   const payload = JSON.stringify({
     title: n.title,

@@ -1627,6 +1627,15 @@ export const db = {
         read: r.read, createdAt: r.created_at,
       }))
     },
+    /**
+     * Primeira entrada do dia do corretor: o banco avisa os admins (migração
+     * 099). Devolve true só quando o aviso saiu agora.
+     */
+    registrarEntradaDoDia: async (): Promise<boolean> => {
+      const { data, error } = await supabase.rpc('registrar_entrada_do_dia')
+      if (error) throw error
+      return data === true
+    },
     markRead: async (id: string) => {
       const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id)
       if (error) throw error
