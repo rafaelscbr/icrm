@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
-  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle, LogIn, Clock,
+  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle, LogIn, Clock, ListChecks,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushDeviceState, type PushDeviceState } from '../lib/push'
@@ -100,6 +100,8 @@ function aparencia(n: AppNotification) {
   // Corretor(es) sem entrar 30 min após o início do expediente (100): âmbar,
   // pede atenção, não socorro — o mesmo tom da pausa no recebimento.
   if (n.type === 'broker_late')           return { icon: Clock,         tom: 'atencao' as const, acao: ''             }
+  // Resumo do fim do dia (101): informativo, uma linha por corretor.
+  if (n.type === 'broker_summary')        return { icon: ListChecks,    tom: 'marca'   as const, acao: ''             }
   return                                         { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
 }
 
@@ -146,7 +148,7 @@ function NotificationItem({
         </div>
 
         {n.body && (
-          <p className={`text-[13px] mt-0.5 truncate ${naoLida ? 'text-t2' : 'text-t4'}`}>
+          <p className={`text-[13px] mt-0.5 ${n.type === 'broker_summary' ? 'whitespace-pre-line' : 'truncate'} ${naoLida ? 'text-t2' : 'text-t4'}`}>
             {n.body}
           </p>
         )}
@@ -215,7 +217,7 @@ function GrupoItem({ grupo, onRead, onReadMany }: {
             )}
           </div>
           {grupo.corpo && (
-            <p className={`text-[13px] mt-0.5 ${naoLida ? 'text-t2' : 'text-t4'}`}>{grupo.corpo}</p>
+            <p className={`text-[13px] mt-0.5 ${grupo.tipo === 'broker_summary' ? 'whitespace-pre-line' : ''} ${naoLida ? 'text-t2' : 'text-t4'}`}>{grupo.corpo}</p>
           )}
           <div className="flex items-center gap-x-3 gap-y-1.5 mt-2 flex-wrap">
             <span className="font-label text-[11px] text-t4 tabular-nums" title={`${dataCompleta(grupo.maisAntigo)} até ${dataCompleta(grupo.maisRecente)}`}>

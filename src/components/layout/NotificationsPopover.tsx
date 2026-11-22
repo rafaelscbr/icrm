@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle, BadgeCheck, PauseCircle, LogIn, Clock } from 'lucide-react'
+import { Bell, CheckCheck, ClipboardList, UserPlus, RefreshCw, ArrowRight, X, AlertTriangle, BadgeCheck, PauseCircle, LogIn, Clock, ListChecks } from 'lucide-react'
 import { useNotificationsStore } from '../../store/useNotificationsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { AppNotification } from '../../types'
@@ -97,6 +97,7 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
     if (n.type === 'lead_intake_paused')    return <PauseCircle   size={14} strokeWidth={1.6} className={!n.read ? 'text-warning' : 'text-t4'} />
     if (n.type === 'broker_login')          return <LogIn         size={14} strokeWidth={1.6} className={!n.read ? 'text-info' : 'text-t4'} />
     if (n.type === 'broker_late')           return <Clock         size={14} strokeWidth={1.6} className={!n.read ? 'text-warning' : 'text-t4'} />
+    if (n.type === 'broker_summary')        return <ListChecks    size={14} strokeWidth={1.6} className={cls} />
     return <ClipboardList size={14} strokeWidth={1.6} className={cls} />
   }
 
@@ -229,7 +230,9 @@ export function NotificationsPopover({ isOpen, onClose, anchorEl, lado = 'direit
                     )}
                   </span>
                   {g.corpo && (
-                    <span className="block text-[11px] text-t3 mt-0.5 truncate">{g.corpo}</span>
+                    // O resumo do dia tem uma linha por corretor: cortar na primeira
+                    // esconderia todos menos um.
+                    <span className={`block text-[11px] text-t3 mt-0.5 ${g.tipo === 'broker_summary' ? 'whitespace-pre-line' : 'truncate'}`}>{g.corpo}</span>
                   )}
                   <span className="flex items-center gap-1.5 mt-1">
                     <span className="font-label text-[10px] text-t4 tabular-nums">{timeAgo(g.maisRecente)}</span>
