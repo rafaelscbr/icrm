@@ -67,6 +67,7 @@ export function tituloDoGrupo(g: GrupoNotificacao): string {
     case 'lead_all_paused':       return `${n} leads chegaram com todos em pausa`
     case 'lead_intake_paused':    return `${n}× ${g.titulo}`
     case 'broker_login':          return g.titulo
+    case 'broker_late':           return g.titulo
     default:                      return `${n}× ${g.titulo}`
   }
 }

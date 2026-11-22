@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell, BellRing, ClipboardList, UserPlus, RefreshCw, CheckCheck, ArrowRight, BellOff,
-  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle, LogIn,
+  BadgeCheck, ChevronRight, AlertTriangle, Smartphone, PauseCircle, LogIn, Clock,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { enablePush, pushDeviceState, type PushDeviceState } from '../lib/push'
@@ -97,6 +97,9 @@ function aparencia(n: AppNotification) {
   if (n.type === 'lead_intake_paused')    return { icon: PauseCircle,   tom: 'atencao' as const, acao: 'Abrir Leads'  }
   // Corretor entrou no sistema (099): informativo, sem destino na tela.
   if (n.type === 'broker_login')          return { icon: LogIn,         tom: 'info'    as const, acao: ''             }
+  // Corretor(es) sem entrar 30 min após o início do expediente (100): âmbar,
+  // pede atenção, não socorro — o mesmo tom da pausa no recebimento.
+  if (n.type === 'broker_late')           return { icon: Clock,         tom: 'atencao' as const, acao: ''             }
   return                                         { icon: ClipboardList, tom: 'atencao' as const, acao: 'Abrir tarefa' }
 }
 
