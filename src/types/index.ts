@@ -794,6 +794,12 @@ export interface CallCampaign {
   ownerBrokerId?: string
   averageTicket?: number
   productName?:   string
+  /**
+   * Tipologia da carteira (migração 110). Com ela, o banco grava o nome do
+   * lançamento e o preço da tabela em productName/averageTicket, e o lead
+   * transferido para o funil entra ligado à tipologia.
+   */
+  developmentUnitId?: string
   /** horas de espera até a próxima tentativa, por número da tentativa */
   retryHours:     number[]
   maxAttempts:    number

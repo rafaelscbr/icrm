@@ -23,6 +23,7 @@ interface CallCampaignRow {
   owner_broker_id:  string | null
   average_ticket:   number | null
   product_name:     string | null
+  development_unit_id: string | null
   retry_hours:      number[]
   max_attempts:     number
   claim_minutes:    number
@@ -39,6 +40,7 @@ function toCampaign(r: CallCampaignRow): CallCampaign {
     ownerBrokerId: r.owner_broker_id ?? undefined,
     averageTicket: r.average_ticket ?? undefined,
     productName:   r.product_name ?? undefined,
+    developmentUnitId: r.development_unit_id ?? undefined,
     retryHours:    r.retry_hours ?? [4, 24, 72, 168],
     maxAttempts:   r.max_attempts,
     claimMinutes:  r.claim_minutes,
@@ -114,6 +116,7 @@ export const useCallCampaignsStore = create<CallCampaignsState>((set, get) => ({
         owner_broker_id: input.ownerBrokerId ?? getCurrentUserId(),
         average_ticket:  input.averageTicket ?? null,
         product_name:    input.productName ?? null,
+        development_unit_id: input.developmentUnitId ?? null,
         retry_hours:     input.retryHours  ?? [4, 24, 72, 168],
         max_attempts:    input.maxAttempts ?? 5,
         claim_minutes:   input.claimMinutes ?? 15,
@@ -131,6 +134,8 @@ export const useCallCampaignsStore = create<CallCampaignsState>((set, get) => ({
       ...(patch.description   !== undefined ? { description: patch.description ?? null } : {}),
       ...(patch.averageTicket !== undefined ? { average_ticket: patch.averageTicket ?? null } : {}),
       ...(patch.productName   !== undefined ? { product_name: patch.productName ?? null } : {}),
+      // `in`, não `!== undefined`: tirar a tipologia (voltar a produto fora da carteira) é gravar null
+      ...('developmentUnitId' in patch ? { development_unit_id: patch.developmentUnitId ?? null } : {}),
       ...(patch.retryHours    !== undefined ? { retry_hours: patch.retryHours } : {}),
       ...(patch.maxAttempts   !== undefined ? { max_attempts: patch.maxAttempts } : {}),
       ...(patch.claimMinutes  !== undefined ? { claim_minutes: patch.claimMinutes } : {}),

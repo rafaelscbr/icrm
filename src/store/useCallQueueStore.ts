@@ -79,7 +79,7 @@ interface CallQueueState {
    * tela deixaria o lead preso: ele não volta pela fila (de propósito) e não
    * teria outra porta de saída.
    */
-  transferir:   (opts?: { queueId?: string; ticket?: number; notes?: string; productName?: string }) => Promise<string>
+  transferir:   (opts?: { queueId?: string; ticket?: number; notes?: string; productName?: string; unitId?: string }) => Promise<string>
   limpar:       () => void
   carregarContadores: () => Promise<void>
   /**
@@ -267,6 +267,7 @@ export const useCallQueueStore = create<CallQueueState>((set, get) => ({
       p_ticket:        opts.ticket ?? null,
       p_notes:         opts.notes ?? null,
       p_property_name: opts.productName ?? null,
+      p_unit_id:       opts.unitId ?? null,
     })
     if (error) throw error
 

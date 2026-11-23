@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, GitMerge, Loader2, Phone, AlertTriangle, Package, Wallet } from 'lucide-react'
 import { SidePanel } from '../../../components/ui/SidePanel'
 import { Button } from '../../../components/ui/Button'
 import { Rotulo, IconeTom, Dica } from './Primitivas'
 import { useCallQueueStore } from '../../../store/useCallQueueStore'
 import { useLeadsStore } from '../../../store/useLeadsStore'
-import { formatPhone } from '../../../lib/formatters'
+import { useDevelopmentsStore } from '../../../store/useDevelopmentsStore'
+import { formatCurrencyFull, formatPhone } from '../../../lib/formatters'
+import { precoDaTipologia, tipologiasComTabela } from '../../../lib/carteira'
 import { STAGE_THEME } from '../../../lib/stageTheme'
 import type { CallCampaign, CallLogEntry } from '../../../types'
 import toast from 'react-hot-toast'
@@ -20,6 +22,10 @@ import toast from 'react-hot-toast'
  * "Lead" ou "Follow-up" seriam um passo atrás. A origem é própria
  * (prospecção · ligação) para o canal aparecer separado do disparo em toda
  * análise de funil.
+ *
+ * Campanha ligada à carteira (migração 110): o produto vem dela e o corretor
+ * só confirma — ou troca — a tipologia que o cliente quer. O VGV é o preço da
+ * tabela, gravado pelo banco; não há ticket para digitar.
  */
 
 /** O mínimo que a transferência precisa saber — atendido pelo lead na mão do
@@ -50,6 +56,18 @@ export function TransferCallLeadPanel({ isOpen, onClose, lead, campaign, onDone 
   const [produto,  setProduto]  = useState('')
   const [notas,    setNotas]    = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [unitId,   setUnitId]   = useState('')
+
+  const { developments, unidades, carregarCarteira } = useDevelopmentsStore()
+  const unidadeCampanha = unidades.find(u => u.id === campaign.developmentUnitId)
+  const devCampanha     = developments.find(d => d.id === unidadeCampanha?.developmentId)
+  const tips = useMemo(
+    () => unidadeCampanha ? tipologiasComTabela(unidades, unidadeCampanha.developmentId) : [],
+    [unidades, unidadeCampanha],
+  )
+  const tipologia   = unidades.find(u => u.id === unitId)
+  /** campanha na carteira — a tipologia manda e o ticket some */
+  const pelaCarteira = Boolean(campaign.developmentUnitId)
 
   useEffect(() => {
     if (!isOpen) return
@@ -57,7 +75,9 @@ export function TransferCallLeadPanel({ isOpen, onClose, lead, campaign, onDone 
     setProduto(campaign.productName ?? '')
     setNotas(lead.notes ?? '')
     setSalvando(false)
-  }, [isOpen, campaign, lead])
+    setUnitId(campaign.developmentUnitId ?? '')
+    if (campaign.developmentUnitId) void carregarCarteira()
+  }, [isOpen, campaign, lead, carregarCarteira])
 
   // Mesmo telefone já no funil: não bloqueia (pode ser reentrada legítima),
   // mas quem transfere precisa saber antes de criar uma segunda entrada.
@@ -70,12 +90,14 @@ export function TransferCallLeadPanel({ isOpen, onClose, lead, campaign, onDone 
   async function handleTransfer() {
     setSalvando(true)
     try {
-      const leadId = await transferir({
-        queueId:     lead.id,
-        ticket:      ticket ? Number(ticket.replace(/\D/g, '')) : undefined,
-        notes:       notas.trim() || undefined,
-        productName: produto.trim() || undefined,
-      })
+      const leadId = await transferir(pelaCarteira
+        ? { queueId: lead.id, notes: notas.trim() || undefined, unitId: unitId || undefined }
+        : {
+            queueId:     lead.id,
+            ticket:      ticket ? Number(ticket.replace(/\D/g, '')) : undefined,
+            notes:       notas.trim() || undefined,
+            productName: produto.trim() || undefined,
+          })
       await loadLeads()
       toast.success(`${lead.name} entrou no funil em Atendimento`)
       onClose()
@@ -161,43 +183,73 @@ export function TransferCallLeadPanel({ isOpen, onClose, lead, campaign, onDone 
           </div>
         )}
 
-        <div>
-          <label htmlFor="transf-produto" className="flex items-center gap-2 mb-2">
-            <IconeTom icon={Package} tom="neutro" tamanho="sm" />
-            <Rotulo>Produto de interesse</Rotulo>
-          </label>
-          <input
-            id="transf-produto"
-            type="text"
-            value={produto}
-            onChange={e => setProduto(e.target.value)}
-            placeholder="Ex.: Porto Velas"
-            className="w-full bg-s3/50 border border-line rounded-[14px] px-3.5 py-3 text-sm
-                       text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="transf-ticket" className="flex items-center gap-2 mb-2">
-            <IconeTom icon={Wallet} tom="marca" tamanho="sm" />
-            <Rotulo>Ticket médio</Rotulo>
-          </label>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-t3" aria-hidden>R$</span>
+        {pelaCarteira ? (
+          <div>
+            <label htmlFor="transf-tipologia" className="flex items-center gap-2 mb-2">
+              <IconeTom icon={Package} tom="neutro" tamanho="sm" />
+              <Rotulo>{devCampanha?.name ?? campaign.productName ?? 'Produto'} · tipologia</Rotulo>
+            </label>
+            <select
+              id="transf-tipologia"
+              value={unitId}
+              onChange={e => setUnitId(e.target.value)}
+              disabled={tips.length === 0}
+              className="w-full bg-s3/50 border border-line rounded-[14px] px-3.5 py-3 text-sm text-t1
+                         cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/30"
+            >
+              {tips.length === 0 && <option value={unitId}>{unidadeCampanha?.name ?? 'Carregando a carteira…'}</option>}
+              {tips.map(u => (
+                <option key={u.id} value={u.id}>{u.name} · {formatCurrencyFull(precoDaTipologia(u) ?? 0)}</option>
+              ))}
+            </select>
+            <p className="flex items-center gap-1.5 text-[12.5px] text-t3 mt-1.5 tabular-nums">
+              <Wallet size={13} strokeWidth={1.6} className="text-brand-text shrink-0" aria-hidden />
+              VGV de <b className="text-t1 font-semibold">
+                {formatCurrencyFull(precoDaTipologia(tipologia ?? unidadeCampanha ?? {}) ?? campaign.averageTicket ?? 0)}
+              </b>, pela tabela vigente
+            </p>
+          </div>
+        ) : (
+          <>
+          <div>
+            <label htmlFor="transf-produto" className="flex items-center gap-2 mb-2">
+              <IconeTom icon={Package} tom="neutro" tamanho="sm" />
+              <Rotulo>Produto de interesse</Rotulo>
+            </label>
             <input
-              id="transf-ticket"
+              id="transf-produto"
               type="text"
-              inputMode="numeric"
-              value={ticket ? Number(ticket.replace(/\D/g, '')).toLocaleString('pt-BR') : ''}
-              onChange={e => setTicket(e.target.value.replace(/\D/g, ''))}
-              placeholder="0"
-              className="w-full bg-s3/50 border border-line rounded-[14px] pl-10 pr-3.5 py-3 text-sm
-                         text-t1 placeholder:text-t4 focus:outline-none focus:ring-2
-                         focus:ring-brand/30 tabular-nums"
+              value={produto}
+              onChange={e => setProduto(e.target.value)}
+              placeholder="Ex.: Porto Velas"
+              className="w-full bg-s3/50 border border-line rounded-[14px] px-3.5 py-3 text-sm
+                         text-t1 placeholder:text-t4 focus:outline-none focus:ring-2 focus:ring-brand/30"
             />
           </div>
-          <p className="text-[11px] text-t4 mt-1.5">Alimenta a previsão de VGL do funil.</p>
-        </div>
+
+          <div>
+            <label htmlFor="transf-ticket" className="flex items-center gap-2 mb-2">
+              <IconeTom icon={Wallet} tom="marca" tamanho="sm" />
+              <Rotulo>Ticket médio</Rotulo>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-t3" aria-hidden>R$</span>
+              <input
+                id="transf-ticket"
+                type="text"
+                inputMode="numeric"
+                value={ticket ? Number(ticket.replace(/\D/g, '')).toLocaleString('pt-BR') : ''}
+                onChange={e => setTicket(e.target.value.replace(/\D/g, ''))}
+                placeholder="0"
+                className="w-full bg-s3/50 border border-line rounded-[14px] pl-10 pr-3.5 py-3 text-sm
+                           text-t1 placeholder:text-t4 focus:outline-none focus:ring-2
+                           focus:ring-brand/30 tabular-nums"
+              />
+            </div>
+            <p className="text-[11px] text-t4 mt-1.5">Alimenta a previsão de VGL do funil.</p>
+          </div>
+          </>
+        )}
 
         <div>
           <label htmlFor="transf-notas" className="block mb-2">

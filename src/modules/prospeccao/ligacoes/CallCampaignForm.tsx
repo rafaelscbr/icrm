@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Check } from 'lucide-react'
+import { Check, Info } from 'lucide-react'
 import { SidePanel } from '../../../components/ui/SidePanel'
 import { Button } from '../../../components/ui/Button'
 import { useCallCampaignsStore } from '../../../store/useCallCampaignsStore'
 import { useLeadListsStore } from '../../../store/useLeadListsStore'
 import { useAuthStore } from '../../../store/useAuthStore'
+import { useDevelopmentsStore } from '../../../store/useDevelopmentsStore'
+import { lancamentosAtivos, precoDaTipologia, tipologiasComTabela } from '../../../lib/carteira'
+import { formatCurrencyFull } from '../../../lib/formatters'
 import { CADENCIA_PADRAO, descreveCadencia } from './config'
 import type { CallCampaign } from '../../../types'
 import toast from 'react-hot-toast'
@@ -21,7 +24,15 @@ import toast from 'react-hot-toast'
  * v10 "folha limpa" (01/11/2026): o nome é o título; produto, ticket e
  * abordagem logo abaixo; listas numa lista de marcar. Ritmo da fila e
  * responsável têm padrão bom e ficam em "Ritmo e responsável".
+ *
+ * Produto pela carteira (23/11/2026, migração 110): como nas campanhas do
+ * Meta, a campanha aponta para uma tipologia. O lead transferido para o funil
+ * entra ligado a ela, com o preço da tabela vigente como VGV. Produto que não
+ * está na carteira continua possível, com nome e ticket digitados.
  */
+
+/** valor do seletor de produto para "não está na carteira" */
+const FORA = '__fora'
 
 interface Props {
   isOpen:    boolean
@@ -33,12 +44,16 @@ export function CallCampaignForm({ isOpen, onClose, campaign }: Props) {
   const { create, update, addLists } = useCallCampaignsStore()
   const { lists, load: loadLists }   = useLeadListsStore()
   const { profile, allProfiles, isAdmin } = useAuthStore()
+  const { developments, unidades, carregarCarteira, erroCarteira } = useDevelopmentsStore()
 
   const editando = Boolean(campaign)
 
   const [nome,      setNome]      = useState('')
   const [descricao, setDescricao] = useState('')
   const [produto,   setProduto]   = useState('')
+  /** lançamento da carteira, FORA ou '' (sem produto) */
+  const [devId,     setDevId]     = useState('')
+  const [unitId,    setUnitId]    = useState('')
   const [ticket,    setTicket]    = useState('')
   const [maxTent,   setMaxTent]   = useState(5)
   const [reserva,   setReserva]   = useState(15)
@@ -51,6 +66,7 @@ export function CallCampaignForm({ isOpen, onClose, campaign }: Props) {
   useEffect(() => {
     if (!isOpen) return
     void loadLists()
+    void carregarCarteira()
     setNome(campaign?.name ?? '')
     setDescricao(campaign?.description ?? '')
     setProduto(campaign?.productName ?? '')
@@ -62,7 +78,29 @@ export function CallCampaignForm({ isOpen, onClose, campaign }: Props) {
     setSalvando(false)
     setErroNome('')
     setRitmo(false)
-  }, [isOpen, campaign, profile?.id, loadLists])
+    setUnitId(campaign?.developmentUnitId ?? '')
+    setDevId(campaign?.developmentUnitId ? '' : campaign?.productName ? FORA : '')
+  }, [isOpen, campaign, profile?.id, loadLists, carregarCarteira])
+
+  // A tipologia gravada só aponta o lançamento depois que a carteira chega.
+  useEffect(() => {
+    if (!isOpen || !unitId || devId) return
+    const u = unidades.find(x => x.id === unitId)
+    if (u) setDevId(u.developmentId)
+  }, [isOpen, unitId, devId, unidades])
+
+  const lancamentos = useMemo(() => lancamentosAtivos(developments), [developments])
+  const tips        = devId && devId !== FORA ? tipologiasComTabela(unidades, devId) : []
+  const tipologia   = unidades.find(u => u.id === unitId && u.developmentId === devId)
+  const devAtual    = developments.find(d => d.id === devId)
+
+  function escolherLancamento(id: string) {
+    setDevId(id)
+    if (id === FORA) { setUnitId(''); return }
+    // Uma tipologia só com tabela: não há o que escolher.
+    const t = id ? tipologiasComTabela(unidades, id) : []
+    setUnitId(t.length === 1 ? t[0].id : '')
+  }
 
   const listasAtivas = lists.filter(l => l.status !== 'archived')
   const totalSel = listasAtivas
@@ -81,14 +119,23 @@ export function CallCampaignForm({ isOpen, onClose, campaign }: Props) {
     e?.preventDefault()
     if (salvando) return
     if (!nome.trim()) { setErroNome('Dê um nome à campanha'); return }
+    if (devId && devId !== FORA && !tipologia) {
+      toast.error(tips.length === 0
+        ? `${devAtual?.name ?? 'Este lançamento'} ainda não tem tabela cadastrada`
+        : 'Escolha a tipologia da campanha')
+      return
+    }
     setErroNome('')
     setSalvando(true)
     try {
+      // Com tipologia, nome e preço vêm da carteira (o banco grava os dois).
       const payload = {
         name:          nome.trim(),
         description:   descricao.trim() || undefined,
-        productName:   produto.trim() || undefined,
-        averageTicket: ticket ? Number(ticket.replace(/\D/g, '')) : undefined,
+        developmentUnitId: tipologia?.id,
+        productName:   tipologia ? devAtual?.name : devId === FORA ? produto.trim() || undefined : undefined,
+        averageTicket: tipologia ? precoDaTipologia(tipologia)
+                     : devId === FORA && ticket ? Number(ticket.replace(/\D/g, '')) : undefined,
         maxAttempts:   maxTent,
         claimMinutes:  reserva,
         ownerBrokerId: dono || undefined,
@@ -117,7 +164,7 @@ export function CallCampaignForm({ isOpen, onClose, campaign }: Props) {
     }
   }
 
-  const sujo = !editando && Boolean(nome.trim() || produto.trim() || ticket || descricao.trim() || listasSel.size)
+  const sujo = !editando && Boolean(nome.trim() || devId || produto.trim() || ticket || descricao.trim() || listasSel.size)
 
   return (
     <SidePanel
@@ -161,33 +208,91 @@ export function CallCampaignForm({ isOpen, onClose, campaign }: Props) {
             : <p className="text-[13px] text-t4 mt-0.5">Ex.: Porto Velas · proprietários</p>}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="camp-produto" className="rotulo-campo">Produto</label>
-            <input
-              id="camp-produto"
-              type="text"
-              value={produto}
-              onChange={e => setProduto(e.target.value)}
-              placeholder="Empreendimento"
-              className="w-full px-3.5 py-2.5 min-h-[44px]"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="camp-ticket" className="rotulo-campo">Ticket médio</label>
-            <div className="relative flex items-center">
-              <span className="absolute left-3.5 text-[13px] text-t4 select-none" aria-hidden>R$</span>
-              <input
-                id="camp-ticket"
-                type="text"
-                inputMode="numeric"
-                value={ticket ? Number(ticket.replace(/\D/g, '')).toLocaleString('pt-BR') : ''}
-                onChange={e => setTicket(e.target.value.replace(/\D/g, ''))}
-                placeholder="500.000"
-                className="w-full pl-10 pr-4 py-2.5 min-h-[44px] tabular-nums"
-              />
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="camp-lancamento" className="rotulo-campo">Produto</label>
+              <select
+                id="camp-lancamento"
+                value={devId}
+                onChange={e => escolherLancamento(e.target.value)}
+                disabled={!!erroCarteira}
+                className="campo w-full cursor-pointer"
+              >
+                <option value="">Sem produto</option>
+                {lancamentos.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <option value={FORA}>Outro, fora da carteira</option>
+              </select>
             </div>
+
+            {devId === FORA ? (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="camp-produto" className="rotulo-campo">Nome do produto</label>
+                <input
+                  id="camp-produto"
+                  type="text"
+                  value={produto}
+                  onChange={e => setProduto(e.target.value)}
+                  placeholder="Empreendimento"
+                  className="w-full px-3.5 py-2.5 min-h-[44px]"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="camp-tipologia" className="rotulo-campo">Tipologia</label>
+                <select
+                  id="camp-tipologia"
+                  value={tipologia?.id ?? ''}
+                  onChange={e => setUnitId(e.target.value)}
+                  disabled={!devId || tips.length === 0}
+                  className="campo w-full cursor-pointer"
+                >
+                  <option value="">{!devId ? '—' : tips.length === 0 ? 'Sem tabela cadastrada' : 'Escolha a tipologia'}</option>
+                  {tips.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} · {formatCurrencyFull(precoDaTipologia(u) ?? 0)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
+
+          {devId === FORA && (
+            <div className="flex flex-col gap-1.5 sm:w-1/2 sm:pr-2">
+              <label htmlFor="camp-ticket" className="rotulo-campo">Ticket médio</label>
+              <div className="relative flex items-center">
+                <span className="absolute left-3.5 text-[13px] text-t4 select-none" aria-hidden>R$</span>
+                <input
+                  id="camp-ticket"
+                  type="text"
+                  inputMode="numeric"
+                  value={ticket ? Number(ticket.replace(/\D/g, '')).toLocaleString('pt-BR') : ''}
+                  onChange={e => setTicket(e.target.value.replace(/\D/g, ''))}
+                  placeholder="500.000"
+                  className="w-full pl-10 pr-4 py-2.5 min-h-[44px] tabular-nums"
+                />
+              </div>
+            </div>
+          )}
+
+          {tipologia && devAtual ? (
+            <p className="text-[12.5px] text-t3 tabular-nums">
+              Cada lead transferido entra com <b className="text-t1 font-semibold">{formatCurrencyFull(precoDaTipologia(tipologia) ?? 0)}</b> de
+              VGV, pela tabela vigente · comissão de {devAtual.commissionPct.toLocaleString('pt-BR')}%
+            </p>
+          ) : (devId && devId !== FORA) || erroCarteira ? (
+            <p className="flex items-start gap-1.5 text-[12.5px] text-warning">
+              <Info size={13} strokeWidth={1.8} className="flex-shrink-0 mt-[2px]" aria-hidden />
+              {erroCarteira
+                ? 'Não foi possível carregar a carteira de lançamentos. Feche e abra de novo.'
+                : tips.length === 0
+                  ? `${devAtual?.name ?? 'Este lançamento'} ainda não tem tabela cadastrada.`
+                  : 'Escolha a tipologia: é ela que dá o VGV de cada lead.'}
+            </p>
+          ) : devId === FORA ? (
+            <p className="text-[12.5px] text-t4">
+              Fora da carteira, o lead entra com o ticket fixo digitado aqui.
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-1.5">
