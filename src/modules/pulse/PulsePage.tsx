@@ -1,3 +1,4 @@
+import { InstalarPulse, useCabecalhoDoPulse } from './InstalarPulse'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Activity, WifiOff, AlertTriangle } from 'lucide-react'
@@ -11,11 +12,11 @@ import { useKiosk, useRelogio, useTickLento, useAntiBurnIn, useEscalaTV } from '
 import { SaleCelebration } from './components/SaleCelebration'
 import {
   AoVivo, Batimento, ChegadaDeLeads, EquipeCompacta, FilaPrimeiroContato, FunilDaImobiliaria, LegendaDoBatimento,
-  MetaNoMarinho, NumerosNoMarinho, Painel, PontosNoMarinho, PrazoNoMarinho, Resposta, mediaSemHoje, urgenciaDe,
+  MetaNoMarinho, NumerosNoCelular, NumerosNoMarinho, Painel, PontosNoMarinho, PrazoNoMarinho, Resposta, mediaSemHoje, urgenciaDe,
 } from './components/Sala'
 import { destacar } from '../../components/shared/Destaque'
 import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
-import type { Corretor } from './components/Sala'
+import type { Corretor, NumeroMarinho } from './components/Sala'
 import { AlertasDaSala } from '../leads/PainelMonitor'
 import {
   alertasDaSala, atividadePorHora, janelaDoDia, recebidosHoje, velocidadeDeResposta,
@@ -133,8 +134,22 @@ export function PulsePage() {
   useKiosk({ onViradaDoDia })
   const desloc = useAntiBurnIn()
   const palco = useEscalaTV()
+  // Pulse instalável: com a sala aberta, o <head> é o do Pulse (ícone e nome)
+  useCabecalhoDoPulse()
+
+  // Celular (22/11/2026): abaixo de 768 px a sala deixa de ser o palco da TV
+  // escalado e vira uma coluna que rola com o dedo — mesmos dados, mesma ordem
+  // de importância. O iPhone 17 Pro Max tem 440 pt de largura.
+  const [celular, setCelular] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const f = () => setCelular(mq.matches)
+    mq.addEventListener('change', f)
+    return () => mq.removeEventListener('change', f)
+  }, [])
 
   useEffect(() => {
+    if (celular) return   // no celular a sala rola
     const html = document.documentElement
     const body = document.body
     const antes = {
@@ -150,7 +165,7 @@ export function PulsePage() {
       body.style.overflow = antes.body
       body.style.overscrollBehavior = antes.overscroll
     }
-  }, [])
+  }, [celular])
 
   useEffect(() => {
     if (!user || !isAdmin) return
@@ -254,6 +269,44 @@ export function PulsePage() {
   const batidas = feed.filter(e => (e.brokerId && nomes.has(e.brokerId)) || e.kind === 'lead_novo' || e.kind === 'venda')
     .map(e => ({ t: new Date(e.at).getTime(), kind: e.kind }))
 
+  // Os números do momento — os mesmos na TV e no celular
+  const numeros: NumeroMarinho[] = [
+                {
+                  rotulo: 'Leads hoje',
+                  valor: sala ? serie[serie.length - 1]?.n ?? 0 : null,
+                  nota: media === null ? undefined : `média de ${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por dia`,
+                },
+                {
+                  rotulo: 'Na fila',
+                  valor: sala ? fila.length : null,
+                  cor: vencidos > 0 ? 'risco' : correndo > 0 ? 'alerta' : fila.length === 0 && sala ? 'ok' : undefined,
+                  marca: sala ? <PontosNoMarinho urgencias={urgencias} /> : undefined,
+                  nota: !sala ? undefined : vencidos > 0 ? `${vencidos} com o prazo vencido`
+                    : correndo > 0 ? `${correndo} com o prazo correndo`
+                    : fila.length > 0 ? 'parados até o expediente' : 'todo lead já foi chamado',
+                },
+                {
+                  rotulo: 'No prazo hoje',
+                  valor: !prazoHoje || comDesfecho === 0 ? null : `${prazoHoje.noPrazo}/${comDesfecho}`,
+                  cor: prazoHoje && prazoHoje.perdidos > 0 ? 'alerta' : comDesfecho > 0 ? 'ok' : undefined,
+                  marca: prazoHoje ? <PrazoNoMarinho noPrazo={prazoHoje.noPrazo} fora={prazoHoje.foraDoPrazo} perdidos={prazoHoje.perdidos} /> : undefined,
+                  nota: !prazoHoje ? undefined
+                    : prazoHoje.perdidos > 0 ? `${prazoHoje.perdidos} perdido${prazoHoje.perdidos === 1 ? '' : 's'} por prazo`
+                    : comDesfecho === 0 ? 'nenhum prazo fechou hoje' : 'nenhum perdido por prazo',
+                },
+                {
+                  rotulo: 'Atendimentos',
+                  valor: carregado ? atendimentosHoje : null,
+                  nota: carregado ? `${ativosAgora} ${ativosAgora === 1 ? 'corretor ativo' : 'corretores ativos'} agora` : undefined,
+                },
+                {
+                  rotulo: 'Visitas',
+                  valor: carregado ? hoje.visitasMarcadas : null,
+                  cor: hoje.visitasMarcadas > 0 ? 'ok' : undefined,
+                  nota: carregado ? `${hoje.vendasQtd} ${hoje.vendasQtd === 1 ? 'venda' : 'vendas'} hoje` : undefined,
+                },
+              ]
+
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
   if (!isAdmin) return <Navigate to="/" replace />
@@ -270,6 +323,86 @@ export function PulsePage() {
         >
           Tentar de novo
         </button>
+      </div>
+    )
+  }
+
+  if (celular) {
+    return (
+      <div className="min-h-dvh pulse-fundo flex flex-col gap-3 px-3 pb-[calc(16px+env(safe-area-inset-bottom))] pt-[calc(10px+env(safe-area-inset-top))]">
+        {/* A faixa Marinho, em coluna: marca e hora, o batimento, os números */}
+        <section className="pulse-marinho relative rounded-[24px] px-4 pt-4 pb-4 overflow-hidden">
+          <div className="pulse-luzes" aria-hidden />
+          <div className="relative flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-brand-fill shrink-0" aria-hidden>
+              <Activity size={23} strokeWidth={2.2} className="text-brand-fill-text" />
+            </span>
+            <span className="leading-tight min-w-0">
+              <span className="block font-display text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--m-t3)' }}>Pulse · Souza</span>
+              <h1 className="font-display text-[22px] font-extrabold tracking-[-0.03em] truncate" style={{ color: 'var(--m-t1)' }}>
+                {destacar('A imobiliária *agora*')}
+              </h1>
+            </span>
+            <span className="ml-auto font-display text-[26px] font-extrabold tabular-nums tracking-[-0.03em]" style={{ color: 'var(--m-t1)' }}>
+              {new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          <div className="relative mt-3 flex items-center gap-2 flex-wrap">
+            <StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} />
+            {ultimoEv && (
+              <p className="flex items-center gap-1.5 min-w-0 text-[12.5px]" style={{ color: 'var(--m-t2)' }}>
+                <span className="font-semibold" style={{ color: 'var(--m-t1)' }}>{haQuanto(ultimoEv.at, agora)}</span>
+                {ultimoEv.brokerId && <CorretorComFoto id={ultimoEv.brokerId} nome={nomes.get(ultimoEv.brokerId) ?? ''} tamanho={20} className="gap-1.5" />}
+              </p>
+            )}
+            <InstalarPulse escuro className="ml-auto h-8 px-3 text-[12px]" />
+          </div>
+          <div className="relative mt-3">
+            <Batimento batidas={batidas} de={janelaDia.de} ate={janelaDia.ate} agora={agora} />
+          </div>
+          <div className="relative mt-3 pt-3" style={{ borderTop: '1px solid var(--m-line)' }}>
+            <NumerosNoCelular itens={numeros} />
+            <div className="mt-3 rounded-[16px] px-3.5 py-3" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid var(--m-line)' }}>
+              <MetaNoMarinho vgl={vgl} />
+            </div>
+          </div>
+        </section>
+
+        {alertas.length > 0 && <AlertasDaSala alertas={alertas} />}
+        {salaErro && (
+          <p className="flex items-center gap-2 rounded-[12px] border border-error-line bg-error-bg px-3 py-2 text-[14px] text-t1" role="alert">
+            <AlertTriangle size={16} strokeWidth={1.8} className="text-error" aria-hidden />
+            Não consegui ler a fila e a chegada de leads: {salaErro}
+          </p>
+        )}
+
+        <Painel titulo="Fila do 1º contato" extra={prazoMin ? `prazo de ${prazoMin} min` : undefined} className="h-[380px]">
+          {sala ? <FilaPrimeiroContato fila={fila} agora={agora} prazoMin={prazoMin} />
+            : <div className="mx-6 flex-1 mb-6 rounded-[12px] shimmer" aria-busy="true" />}
+        </Painel>
+
+        <Painel titulo="Funil da imobiliária">
+          <FunilDaImobiliaria empilhado porEtapa={funil} vendasNoMes={vgl ? vgl.vendasMes : null} conversao={conversao} janelaDias={JANELA_CONVERSAO_DIAS} />
+        </Painel>
+
+        <Painel titulo="Equipe" extra="anel = meta de ligações">
+          <div style={{ height: 16 + Math.max(equipe.length, 1) * 84 }} className="flex flex-col">
+            {!carregado ? <div className="mx-6 flex-1 mb-4 rounded-[12px] shimmer" aria-busy="true" />
+              : equipe.length === 0 ? <p className="px-6 text-[15px] text-t3">Nenhum corretor ativo.</p>
+              : <EquipeCompacta corretores={equipe} agora={agora} />}
+          </div>
+        </Painel>
+
+        <Painel titulo="Acabou de acontecer" className="h-[440px]">
+          <AoVivo feed={feed} nomes={nomes} carregado={carregado} />
+        </Painel>
+
+        <Painel titulo="Chegada de leads" extra="30 dias" className="h-[280px]">
+          {sala ? <ChegadaDeLeads serie={serie} /> : <div className="mx-6 flex-1 rounded-[12px] shimmer" aria-busy="true" />}
+          <Resposta tempos={tempos} />
+        </Painel>
+
+        <SaleCelebration venda={celebracao} onFim={encerrarCelebracao} />
       </div>
     )
   }
@@ -332,42 +465,7 @@ export function PulsePage() {
           {/* os números do momento */}
           <div className="relative mt-3 pt-4" style={{ borderTop: '1px solid var(--m-line)' }}>
             <NumerosNoMarinho
-              itens={[
-                {
-                  rotulo: 'Leads hoje',
-                  valor: sala ? serie[serie.length - 1]?.n ?? 0 : null,
-                  nota: media === null ? undefined : `média de ${media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por dia`,
-                },
-                {
-                  rotulo: 'Na fila',
-                  valor: sala ? fila.length : null,
-                  cor: vencidos > 0 ? 'risco' : correndo > 0 ? 'alerta' : fila.length === 0 && sala ? 'ok' : undefined,
-                  marca: sala ? <PontosNoMarinho urgencias={urgencias} /> : undefined,
-                  nota: !sala ? undefined : vencidos > 0 ? `${vencidos} com o prazo vencido`
-                    : correndo > 0 ? `${correndo} com o prazo correndo`
-                    : fila.length > 0 ? 'parados até o expediente' : 'todo lead já foi chamado',
-                },
-                {
-                  rotulo: 'No prazo hoje',
-                  valor: !prazoHoje || comDesfecho === 0 ? null : `${prazoHoje.noPrazo}/${comDesfecho}`,
-                  cor: prazoHoje && prazoHoje.perdidos > 0 ? 'alerta' : comDesfecho > 0 ? 'ok' : undefined,
-                  marca: prazoHoje ? <PrazoNoMarinho noPrazo={prazoHoje.noPrazo} fora={prazoHoje.foraDoPrazo} perdidos={prazoHoje.perdidos} /> : undefined,
-                  nota: !prazoHoje ? undefined
-                    : prazoHoje.perdidos > 0 ? `${prazoHoje.perdidos} perdido${prazoHoje.perdidos === 1 ? '' : 's'} por prazo`
-                    : comDesfecho === 0 ? 'nenhum prazo fechou hoje' : 'nenhum perdido por prazo',
-                },
-                {
-                  rotulo: 'Atendimentos',
-                  valor: carregado ? atendimentosHoje : null,
-                  nota: carregado ? `${ativosAgora} ${ativosAgora === 1 ? 'corretor ativo' : 'corretores ativos'} agora` : undefined,
-                },
-                {
-                  rotulo: 'Visitas',
-                  valor: carregado ? hoje.visitasMarcadas : null,
-                  cor: hoje.visitasMarcadas > 0 ? 'ok' : undefined,
-                  nota: carregado ? `${hoje.vendasQtd} ${hoje.vendasQtd === 1 ? 'venda' : 'vendas'} hoje` : undefined,
-                },
-              ]}
+              itens={numeros}
               meta={<MetaNoMarinho vgl={vgl} />}
             />
           </div>

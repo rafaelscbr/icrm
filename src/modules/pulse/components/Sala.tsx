@@ -391,7 +391,9 @@ function ContagemSvg({ valor, ...props }: { valor: number } & React.SVGProps<SVG
  * mostra o que ela é — quantos estão lá, quanto do funil ativo isso é e, na
  * escada ao lado, o passo de conversão correspondente.
  */
-export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDias }: {
+export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDias, empilhado = false }: {
+  /** celular: o funil em cima e a escada embaixo, em vez de lado a lado */
+  empilhado?: boolean
   porEtapa: Partial<Record<LeadFunnelStage, number>>
   vendasNoMes: number | null
   conversao: RelatorioConversao | null
@@ -417,9 +419,10 @@ export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDia
   const focada = fatias.find(f => f.etapa === foco)
 
   return (
-    <div className="flex-1 min-h-0 grid gap-2 px-6 pb-6" style={{ gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1fr)' }}>
+    <div className={`flex-1 min-h-0 grid ${empilhado ? 'gap-4 px-4 pb-4' : 'gap-2 px-6 pb-6'}`}
+         style={{ gridTemplateColumns: empilhado ? 'minmax(0, 1fr)' : 'minmax(0, 1.05fr) minmax(0, 1fr)' }}>
       {/* ── agora ── */}
-      <div className="relative min-h-0 flex flex-col">
+      <div className={`relative min-h-0 flex flex-col ${empilhado ? 'h-[340px]' : ''}`}>
         <p className="text-[13.5px] text-t3 mb-2">Agora · <span className="font-semibold text-t1 tabular-nums">{ativos.toLocaleString('pt-BR')}</span> leads ativos</p>
         <div className="relative flex-1 min-h-0 flex items-center justify-center" role="presentation" onMouseLeave={() => setFoco(null)}>
           <svg viewBox={`0 -4 ${W} ${altura + 8}`} className="h-full max-h-full w-auto max-w-full overflow-visible" role="img"
@@ -784,8 +787,9 @@ export function Batimento({ batidas, de, ate, agora }: { batidas: Batida[]; de: 
         )}
       </div>
       <div className="relative mt-2 h-4" aria-hidden>
-        {horas.map(h => (
-          <span key={h} className="absolute -translate-x-1/2 text-[12.5px] tabular-nums first:translate-x-0 last:-translate-x-full"
+        {horas.map((h, i) => (
+          // no celular, uma hora sim, outra não: 17 rótulos não cabem em 400 px
+          <span key={h} className={`absolute -translate-x-1/2 text-[12.5px] tabular-nums first:translate-x-0 last:-translate-x-full ${(h - de) % 2 && i !== horas.length - 1 ? 'max-md:hidden' : ''}`}
                 style={{ left: `${((h - de) / (ate + 1 - de)) * 100}%`, color: 'var(--m-t3)' }}>{h}h</span>
         ))}
       </div>
@@ -834,6 +838,32 @@ export function NumerosNoMarinho({ itens, meta }: { itens: NumeroMarinho[]; meta
         </div>
       ))}
       <div className="min-w-0 pl-6" style={{ borderLeft: '1px solid var(--m-line)' }}>{meta}</div>
+    </div>
+  )
+}
+
+/**
+ * Os mesmos números no celular (22/11/2026): duas colunas de cartões dentro da
+ * faixa Marinho, número grande e a nota embaixo — a tela estreita não comporta
+ * a fileira de seis da TV.
+ */
+export function NumerosNoCelular({ itens }: { itens: NumeroMarinho[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-2.5">
+      {itens.map((it, i) => (
+        // número ímpar de itens: o último ocupa a linha toda (sem buraco)
+        <div key={it.rotulo} className={`min-w-0 rounded-[16px] px-3.5 py-3 ${itens.length % 2 && i === itens.length - 1 ? 'col-span-2' : ''}`} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid var(--m-line)' }}>
+          <p className="font-label text-[11px] uppercase tracking-[0.14em] truncate" style={{ color: 'var(--m-t3)' }}>{it.rotulo}</p>
+          <p className="mt-1 font-display text-[34px] leading-[0.95] font-extrabold tracking-[-0.04em]"
+             style={{ color: it.cor ? COR_MARINHO[it.cor] : 'var(--m-t1)' }}>
+            {it.valor === null ? <span style={{ color: 'var(--m-t3)' }}>—</span> : <NumeroVivo valor={it.valor} />}
+          </p>
+          <div className="mt-1.5">
+            {it.marca}
+            {it.nota && <p className={`text-[12.5px] leading-snug ${it.marca ? 'mt-1' : ''}`} style={{ color: 'var(--m-t2)' }}>{it.nota}</p>}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
