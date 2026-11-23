@@ -201,7 +201,7 @@ function FunilGeral({ r, admin, descricao }: { r: Recorte; admin: boolean; descr
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       {/* Conversão — o funil desenhado */}
-      <article className="bento surface-premium lg:col-span-7 p-5 sm:p-6 flex flex-col" aria-label="Conversão do funil">
+      <article className="bento surface-premium lg:col-span-7 xl:col-span-8 p-5 sm:p-6 flex flex-col" aria-label="Conversão do funil">
         <header className="flex items-start justify-between gap-3 mb-5">
           <div>
             <p className="text-[12.5px] text-t4">Conversão</p>
@@ -218,7 +218,7 @@ function FunilGeral({ r, admin, descricao }: { r: Recorte; admin: boolean; descr
           </div>
         </header>
 
-        <div className="flex-1 flex items-center justify-center px-1 sm:px-4">
+        <div className="flex-1 flex items-center justify-center">
           <FunilJoia etapas={etapasDoFunil(r)} rotulo={`Funil de conversão, leads que chegaram ${descricao}`} />
         </div>
 
@@ -230,7 +230,7 @@ function FunilGeral({ r, admin, descricao }: { r: Recorte; admin: boolean; descr
       </article>
 
       {/* Dinheiro — em andamento e vendido */}
-      <div className="lg:col-span-5 flex flex-col gap-4">
+      <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
         <article className="bento surface-premium p-5 sm:p-6" aria-label="VGV em andamento">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -276,7 +276,7 @@ function PipelinePorEtapa({ r }: { r: Recorte }) {
           <div key={e} style={{ width: `${(r.aberto[e].vgv / total) * 100}%`, background: JOIA[JOIA_ABERTA[e]].claro }} />
         ))}
       </div>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
+      <dl className="grid grid-cols-2 xl:grid-cols-1 gap-x-4 gap-y-2 mt-3">
         {ETAPAS_ABERTAS.map(e => (
           <div key={e} className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: JOIA[JOIA_ABERTA[e]].claro }} aria-hidden />
@@ -367,7 +367,7 @@ function CartaoFunil({ r, admin, foto }: {
         </div>
       </header>
 
-      <div className="px-2 sm:px-6">
+      <div>
         <FunilJoia compacto etapas={etapasDoFunil(r)} rotulo={`Funil de ${r.nome}`} />
       </div>
 
