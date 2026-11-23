@@ -13,7 +13,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import {
   MessageCircle, GripVertical, Phone, Star, Snowflake, Loader2,
-  Wifi, WifiOff, Trophy, Rows2, Rows3, DollarSign,
+  Wifi, WifiOff, Trophy, Rows2, Rows3,
   Inbox, RefreshCw, BadgeCheck, X, Sparkles,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
@@ -30,7 +30,7 @@ import { aoTeclarAbrir } from '../../components/shared/lista'
 import { avisoReentrada } from './reentrada'
 import { useKanbanPrefs } from '../../store/useKanbanPrefs'
 import { useContagem } from '../../hooks/useContagem'
-import { comissaoLiquida, parteDoCorretor, totaisComissao } from './comissao'
+import { divisao } from './comissao'
 import { ORIGEM_META } from './origens'
 import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
@@ -58,20 +58,43 @@ const COR_ETAPA: Record<LeadFunnelStage, [string, string]> = {
   venda:       ['#4ADE80', '#16A34A'],
 }
 
-/** Como a comissão aparece nesta visão: de quem é e quanto cada lead vale. */
+/**
+ * A comissão nesta visão (comissao.ts). O admin vê as duas partes — a do
+ * corretor e a da imobiliária; o corretor vê só a dele.
+ */
+export interface Dinheiro { vgv: number; corretor: number; souza: number }
 export interface VisaoComissao {
-  /** "sua comissão", "comissão do Ryan" ou "comissão líquida" */
-  rotulo: string
-  /** quanto este lead vale nesta visão */
-  doLead: (l: Lead) => number
-  /** soma de uma lista, e o detalhe para o title (visão da imobiliária) */
-  total: (ls: Lead[]) => { valor: number; vgv: number; detalhe?: string }
+  /** admin: mostra corretor + imobiliária; corretor: só a parte dele */
+  admin: boolean
+  /** "Sua comissão", "Ryan" ou "Corretor" */
+  rotuloCorretor: string
+  doLead: (l: Lead) => Dinheiro
+  total: (ls: Lead[]) => Dinheiro
 }
 
 function iniciais(nome: string): string {
   const p = nome.trim().split(/\s+/).filter(Boolean)
   if (p.length === 0) return '?'
   return ((p[0][0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
+}
+
+/**
+ * Foto redonda do corretor responsável — rosto conhecido no cartão: o lead
+ * tem dono, e o dono é gente. Sem foto, as iniciais na cor da marca.
+ */
+function FotoCorretor({ nome, url, tamanho = 30 }: { nome: string; url?: string; tamanho?: number }) {
+  const [falhou, setFalhou] = useState(false)
+  return url && !falhou ? (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError não é interação: só troca a foto quebrada pelas iniciais
+    <img src={url} alt="" onError={() => setFalhou(true)} draggable={false}
+         className="rounded-full object-cover ring-2 ring-surface shadow-[0_2px_6px_-2px_rgba(15,39,89,.35)] flex-shrink-0"
+         style={{ width: tamanho, height: tamanho }} />
+  ) : (
+    <span className="rounded-full bg-brand-tint text-brand-text ring-2 ring-surface flex items-center justify-center text-[10.5px] font-bold flex-shrink-0"
+          style={{ width: tamanho, height: tamanho }} aria-hidden>
+      {iniciais(nome)}
+    </span>
+  )
 }
 
 /** Número em reais que conta até o valor e solta um "+R$" quando sobe. */
@@ -133,7 +156,7 @@ const ATALHO_DO_CARD =
   'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'
 
 function LeadCard({
-  lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, financeMode = false, comissao,
+  lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, comissao,
 }: {
   /** quanto o lead vale de comissão nesta visão (ver VisaoComissao) */
   comissao?: VisaoComissao
@@ -143,19 +166,16 @@ function LeadCard({
   isOverlay?: boolean; isSaving?: boolean
   /** Densidade compacta — esconde o contexto comercial e aperta o espaçamento. */
   dense?: boolean
-  /** Modo financeiro — mostra comissão em todas as etapas, não só nas finais. */
-  financeMode?: boolean
 }) {
   const { advanceFollowup, toggleFlag, update } = useLeadsStore()
-  const { isAdmin, viewAsBrokerId, allProfiles } = useAuthStore()
+  const { profile, allProfiles } = useAuthStore()
   const { properties } = usePropertiesStore()
   const { tasks } = useTasksStore()
   const { add: addInteraction } = useLeadInteractionsStore()
 
-  // Visão admin global: identifica o corretor responsável em cada card
-  const brokerName = isAdmin && !viewAsBrokerId && lead.brokerId
-    ? allProfiles.find(p => p.id === lead.brokerId)?.name
-    : undefined
+  // Corretor responsável: a foto vai no canto do cartão, em toda visão
+  const responsavel = !lead.brokerId ? undefined
+    : lead.brokerId === profile?.id ? profile : allProfiles.find(p => p.id === lead.brokerId)
 
   const {
     attributes, listeners, setNodeRef,
@@ -211,8 +231,7 @@ function LeadCard({
   const NextIcon = nextStyle?.icon
   const urgente = next?.urgency === 'critical' || next?.urgency === 'attention'
 
-  // Comissão só onde ajuda a priorizar: etapas finais ou modo financeiro.
-  const showCommission = financeMode || lead.funnelStage === 'proposta' || lead.funnelStage === 'venda'
+  const din = comissao && lead.averageTicket ? comissao.doLead(lead) : null
 
   // Reentrada ainda não vista pelo dono — o único destaque que pode competir
   // com a próxima ação, porque não é o sistema cobrando: é o lead chamando.
@@ -227,76 +246,39 @@ function LeadCard({
       tabIndex={isOverlay ? -1 : 0}
       onKeyDown={aoTeclarAbrir(onClick)}
       aria-label={`Abrir lead ${displayName}`}
-      className={`kanban-card group relative border rounded-[14px] cursor-pointer overflow-hidden
+      className={`kanban-card group relative border rounded-[16px] cursor-pointer overflow-hidden
         transition-[transform,box-shadow,background-color,border-color,opacity] duration-200
-        hover:-translate-y-px hover:shadow-dropdown
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
-        ${/*
-            Todo card tem superfície própria — é o que separa card de coluna.
-            A versão "recolhida" (bg-s2/50) tinha a mesma cor da coluna e
-            apagava a maioria dos leads. O peso da urgência agora vem de
-            sombra mais funda + faixa tingida na linha de decisão (nível 2).
-         */ ''}
         ${urgente ? 'kanban-card-alerta' : ''}
-        ${dense ? 'px-3 py-2.5' : 'px-3.5 py-3'}
+        ${dense ? 'px-3 py-2.5' : 'px-3.5 pt-3 pb-2.5'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? '!shadow-modal kanban-card-prioridade' : ''}
         ${isSaving ? 'opacity-60 pointer-events-none' : ''}
         ${lead.flagged ? 'kanban-card-prioridade' : ''}
-        ${/* Reentrada ganha anel: é o card que tem de ser visto primeiro na
-              coluna, e ele já sobe para o topo na ordenação. */ ''}
         ${aviso ? 'kanban-card-alerta ring-1 ring-inset ring-info-line !border-info-line' : ''}
       `}
     >
-      {/* Temperatura (frio, morno, quente) e encaixe com o produto (Ideal,
-          Difícil) saíram do cartão em 16/11/2026, a pedido do Rafael: nem a
-          palavra nem o filete de cor na borda. Continuam na lista de leads,
-          nos filtros e na ficha do lead. */}
+      {/* ── Cartão v11 (22/11/2026) ─────────────────────────────────────────
+          De cima para baixo, o que decide a ligação:
+            1. QUEM — o nome do lead e, no canto, o rosto do corretor dono
+            2. O QUÊ — produto e origem
+            3. QUANTO — VGV e comissão (o corretor vê a dele; o admin vê a do
+               corretor e a da imobiliária). Dinheiro à vista dá vontade de ligar.
+            4. QUANDO — a próxima ação (faixa tingida só com prazo ou risco)
+            5. AÇÃO — chamar no WhatsApp, em verde
+          Continuam fora do cartão, a pedido do Rafael: temperatura, "sem
+          próxima ação", Difícil/Ideal, etiqueta PRIORIDADE e botão com fundo
+          em repouso. */}
       {isSaving && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[14px] bg-black/20" role="status" aria-label="Salvando">
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[16px] bg-black/20" role="status" aria-label="Salvando">
           <Loader2 size={16} className="animate-spin text-brand" strokeWidth={1.6} />
         </div>
       )}
 
-      <div className="absolute top-2.5 right-2.5 flex items-center gap-0.5">
-        <button
-          onClick={async e => {
-            e.stopPropagation()
-            try { await toggleFlag(lead.id) } catch { /* erro já toastado */ }
-          }}
-          className={`w-6 h-6 flex items-center justify-center rounded transition-all duration-150 ${
-            lead.flagged
-              ? 'text-brand'
-              : `text-t5 hover:text-brand ${ATALHO_DO_CARD}`
-          }`}
-          title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
-          aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
-          aria-pressed={!!lead.flagged}
-        >
-          <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
-        </button>
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
-        <div
-          {...listeners}
-          {...attributes}
-          onClick={e => e.stopPropagation()}
-          aria-label="Arrastar lead"
-          className={`w-6 h-6 flex items-center justify-center text-t4 hover:text-t2 cursor-grab active:cursor-grabbing transition-all ${ATALHO_DO_CARD}`}
-        >
-          <GripVertical size={13} strokeWidth={1.6} />
-        </div>
-      </div>
-
-      {/* ── NÍVEL 0 — O lead chamou ──────────────────────────────────────────
-          Fica acima do nome porque é o motivo de olhar este card antes dos
-          outros. Ícone + frase: a cor sozinha nunca diz o que houve, e quem usa
-          o funil de vez em quando não decora legenda de cor. */}
+      {/* O lead chamou (reentrada) — acima de tudo: é o motivo de abrir este */}
       {aviso && (
-        <p
-          className="flex items-center gap-1.5 mb-2 pr-12 font-label text-[11px] font-bold
-                     uppercase tracking-[0.08em] text-info"
-          title={aviso.detalhe}
-        >
+        <p className="flex items-center gap-1.5 mb-2 pr-10 font-label text-[11px] font-bold uppercase tracking-[0.08em] text-info"
+           title={aviso.detalhe}>
           {aviso.tipo === 'cliente'
             ? <BadgeCheck size={12} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />
             : <RefreshCw  size={12} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />}
@@ -304,77 +286,76 @@ function LeadCard({
         </p>
       )}
 
-      {/* ── Cartão v10 (22/11/2026) — três blocos, uma leitura ──────────────
-          QUEM (iniciais, nome; embaixo, alinhados ao nome, produto · corretor
-          e o valor) → O QUE FAZER (a próxima ação; vira faixa tingida só
-          quando há prazo ou risco) → AÇÃO (rodapé com filete: chamar no
-          WhatsApp e, à direita, o dinheiro em jogo).
-          Continuam fora do cartão, a pedido do Rafael: temperatura, "sem
-          próxima ação", Difícil/Ideal, etiqueta PRIORIDADE e botão com fundo
-          em repouso. */}
-
-      {/* 1 · Quem */}
-      <div className="flex items-center gap-2.5 pr-12 min-w-0">
-        {!dense && (
-          <span className="kanban-avatar flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold tracking-[0.02em]" aria-hidden>
-            {iniciais(displayName)}
+      {/* 1 + 2 · Quem e o quê */}
+      <div className="flex items-start gap-2.5 min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="font-heading text-[14.5px] font-semibold text-t1 truncate leading-tight tracking-[-0.015em]">
+              {displayName}
+            </p>
+            {lead.qualifiedAt && (
+              <span className="flex-shrink-0 text-success" title="Lead qualificado">
+                <BadgeCheck size={13} strokeWidth={2} aria-label="Lead qualificado" />
+              </span>
+            )}
+            {lead.flagged && (
+              <Star size={12} strokeWidth={1.8} fill="currentColor" className="flex-shrink-0 text-brand" aria-label="Prioridade" />
+            )}
+            <SinalDeFluxo quantos={lead.fluxosCount} />
+          </div>
+          <p className="mt-1 text-[12px] text-t3 truncate">
+            {originMeta && (
+              <originMeta.icon size={11} strokeWidth={1.6} className="inline-block align-[-1px] mr-1 text-t4" aria-label={originMeta.label} />
+            )}
+            {property ? property.name : (lead.propertyName ?? 'Sem produto')}
+            {dense && lead.averageTicket ? <span className="text-t2 font-semibold tabular-nums"> · {formatCurrency(lead.averageTicket)}</span> : null}
+          </p>
+        </div>
+        {responsavel && (
+          <span title={`Responsável: ${responsavel.name}`} className="flex-shrink-0">
+            <FotoCorretor nome={responsavel.name} url={responsavel.avatarUrl} tamanho={dense ? 26 : 32} />
           </span>
         )}
-        <p className="font-heading text-[14px] font-semibold text-t1 truncate leading-tight tracking-[-0.015em]">
-          {displayName}
-        </p>
-        {lead.qualifiedAt && (
-          <span className="flex-shrink-0 text-success" title="Lead qualificado">
-            <BadgeCheck size={13} strokeWidth={2} aria-label="Lead qualificado" />
-          </span>
-        )}
-        <SinalDeFluxo quantos={lead.fluxosCount} />
-      </div>
-      {/* Produto · corretor à esquerda, valor à direita (tabular: a coluna se
-          lê como uma lista de valores). Na largura toda: a coluna é estreita. */}
-      <div className={`flex items-baseline gap-2 min-w-0 text-[12px] text-t3 ${dense ? 'mt-1' : 'mt-2'}`}>
-        <p className="flex-1 min-w-0 truncate">
-          {originMeta && (
-            <originMeta.icon size={11} strokeWidth={1.6} className="inline-block align-[-1px] mr-1 text-t4" aria-label={originMeta.label} />
-          )}
-          {property ? property.name : (lead.propertyName ?? '')}
-          {brokerName && (
-            <span className="text-t4" title={`Corretor responsável: ${brokerName}`}>
-              {(property || lead.propertyName) ? ' · ' : ''}{brokerName.split(' ')[0]}
-            </span>
-          )}
-        </p>
-        {lead.averageTicket ? (
-          <span className="flex-shrink-0 font-semibold text-t1 tabular-nums">
-            {formatCurrency(lead.averageTicket)}
-          </span>
-        ) : null}
       </div>
 
-      {/* 2 · O que fazer — risco chama pela FRASE e pelo ícone, e ganha a
-             faixa tingida; sem ação marcada, só o último contato, neutro. */}
+      {/* 3 · Quanto — o VGV numa linha; embaixo, a comissão do corretor e
+             (para o admin) a da Souza, lado a lado */}
+      {!dense && din && comissao && (
+        <div className="mt-2.5 rounded-[11px] bg-s2/70 px-2.5 py-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-t4">VGV</span>
+            <span className="text-[13.5px] font-bold text-t1 tabular-nums">{formatCurrency(din.vgv)}</span>
+          </div>
+          <div className={`mt-1.5 pt-1.5 border-t border-line grid ${comissao.admin ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
+            <div className={`min-w-0 ${comissao.admin ? '' : 'flex items-baseline justify-between gap-2'}`}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-success/80 truncate">{comissao.rotuloCorretor}</p>
+              <p className="text-[13px] font-bold text-success tabular-nums truncate">{din.corretor > 0 ? formatCurrency(din.corretor) : '—'}</p>
+            </div>
+            {comissao.admin && (
+              <div className="min-w-0 border-l border-line pl-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-brand-text/80 truncate">Souza</p>
+                <p className="text-[13px] font-bold text-brand-text tabular-nums truncate">{formatCurrency(din.souza)}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 4 · Quando — risco chama pela FRASE e pelo ícone; sem ação marcada,
+             só o último contato, neutro ("sem próxima ação" não volta). */}
       {next && NextIcon && (
         <div
-          className={`flex items-center gap-1.5 min-w-0 ${urgente
-            ? `mt-2 rounded-[9px] border px-2 py-1.5 ${nextStyle!.chip}`
-            : 'mt-2'}`}
+          className={`flex items-center gap-1.5 min-w-0 mt-2.5 ${urgente ? `rounded-[9px] border px-2 py-1.5 ${nextStyle!.chip}` : ''}`}
           title={next.hint}
         >
           <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
           {next.urgency === 'none' ? (
-            // O Rafael mandou tirar o aviso "sem próxima ação" do cartão
-            // (16/11/2026) — não recolocar.
             <p className="flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
           ) : (
-            <p className={`flex-1 min-w-0 truncate text-[12px] font-semibold ${nextStyle!.text}`}>
-              {next.text}
-            </p>
+            <p className={`flex-1 min-w-0 truncate text-[12px] font-semibold ${nextStyle!.text}`}>{next.text}</p>
           )}
           {!isOverlay && (
-            <span
-              className="flex-shrink-0 text-[11px] text-t4 tabular-nums"
-              title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}
-            >
+            <span className="flex-shrink-0 text-[11px] text-t4 tabular-nums" title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}>
               {stageDays}d
             </span>
           )}
@@ -419,16 +400,11 @@ function LeadCard({
         </div>
       )}
 
-      {/* 4 · Ações
-             Etapa Venda troca o CTA: lá o que avança o negócio é concluir a
-             venda, e esse é o único botão cheio do quadro (ouro = dinheiro).
-
-             Nas outras etapas a ação principal é texto, sem caixa: com cem
-             cartões na tela, cem caixas cinza eram ruído. Ela se pinta ao
-             passar o mouse ou receber foco. Os dois atalhos (só abrir o
-             WhatsApp, ligar) aparecem junto — e ficam sempre à vista no toque,
-             onde não existe "passar o mouse". */}
-      <div className={`flex items-center gap-0.5 -mb-1 ${dense ? 'mt-1.5' : 'mt-2.5 pt-1.5 border-t border-line'}`}>
+      {/* 5 · Ação — em Venda, concluir (o único botão cheio: dinheiro);
+             nas outras, chamar no WhatsApp, em verde e sem caixa em repouso.
+             Atalhos (prioridade, só abrir o WhatsApp, ligar, arrastar)
+             aparecem no hover — e ficam sempre à vista no toque. */}
+      <div className={`relative flex items-center gap-0.5 -mb-0.5 ${dense ? 'mt-1.5' : 'mt-2.5 pt-1.5 border-t border-line'}`}>
         {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
           <button
             onClick={e => { e.stopPropagation(); onConclude?.() }}
@@ -441,44 +417,64 @@ function LeadCard({
         ) : (
           <button
             onClick={handleWhatsApp}
-            className="flex-1 min-w-0 -ml-1.5 flex items-center justify-start gap-1.5 px-1.5 min-h-[32px] text-[12px] font-semibold
+            className="flex-1 min-w-0 -ml-1.5 flex items-center justify-start gap-1.5 px-1.5 min-h-[32px] text-[12.5px] font-semibold
                        text-success rounded-[8px] transition-colors duration-150 active:scale-[0.98]
                        hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)]
-                       focus-visible:text-success focus-visible:bg-success-bg
+                       focus-visible:bg-success-bg
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
             title="Abrir WhatsApp e registrar o contato na timeline"
           >
-            <MessageCircle size={12} strokeWidth={1.7} className="flex-shrink-0" />
+            <MessageCircle size={13} strokeWidth={1.8} className="flex-shrink-0" />
             <span className="truncate">{STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}</span>
           </button>
         )}
-        {/* Comissão só nas etapas finais ou no modo financeiro — 5% do VGV,
-            menos ISS e Simples, na parte de quem olha (comissao.ts) */}
-        {lead.averageTicket && showCommission && comissao && comissao.doLead(lead) > 0 ? (
-          <span className="flex-shrink-0 rounded-full px-2 py-0.5 text-[11.5px] font-semibold text-success bg-success-bg tabular-nums"
-                title={`${comissao.rotulo[0].toUpperCase()}${comissao.rotulo.slice(1)} estimada`}>
-            +{formatCurrency(comissao.doLead(lead))}
-          </span>
-        ) : null}
-        <button
-          onClick={handleWhatsAppOpen}
-          className={`w-8 h-8 flex items-center justify-center text-t4 hover:text-success hover:bg-success-bg rounded-[8px] transition-all duration-150 flex-shrink-0
-                      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${ATALHO_DO_CARD}`}
-          title="Só abrir WhatsApp, sem registrar"
-          aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
-        >
-          <MessageCircle size={13} strokeWidth={1.6} />
-        </button>
-        <a
-          href={`tel:${displayPhone}`}
-          onClick={e => e.stopPropagation()}
-          className={`w-8 h-8 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-[8px] transition-all duration-150 flex-shrink-0
-                      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${ATALHO_DO_CARD}`}
-          title={`Ligar — ${formatPhone(displayPhone)}`}
-          aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
-        >
-          <Phone size={13} strokeWidth={1.6} />
-        </a>
+        {/* Atalhos por cima do fim do rodapé, só no hover/foco (sempre à vista
+            no toque): assim a chamada principal não perde espaço em repouso. */}
+        <div className={`absolute right-0 bottom-0 top-1.5 flex items-center gap-0.5 pl-3 bg-gradient-to-l from-[var(--kanban-card-bg)] from-80% to-transparent ${ATALHO_DO_CARD}`}>
+          <button
+            onClick={async e => {
+              e.stopPropagation()
+              try { await toggleFlag(lead.id) } catch { /* erro já toastado */ }
+            }}
+            className={`w-7 h-7 flex items-center justify-center rounded-[8px] transition-all duration-150 flex-shrink-0
+                        hover:bg-brand-tint focus:outline-none focus-visible:ring-2 focus-visible:ring-brand
+                        ${lead.flagged ? 'text-brand' : 'text-t4 hover:text-brand'}`}
+            title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+            aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+            aria-pressed={!!lead.flagged}
+          >
+            <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            onClick={handleWhatsAppOpen}
+            className={`w-7 h-7 flex items-center justify-center text-t4 hover:text-success hover:bg-success-bg rounded-[8px] transition-all duration-150 flex-shrink-0
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand`}
+            title="Só abrir WhatsApp, sem registrar"
+            aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
+          >
+            <MessageCircle size={13} strokeWidth={1.6} />
+          </button>
+          <a
+            href={`tel:${displayPhone}`}
+            onClick={e => e.stopPropagation()}
+            className={`w-7 h-7 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-[8px] transition-all duration-150 flex-shrink-0
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand`}
+            title={`Ligar — ${formatPhone(displayPhone)}`}
+            aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
+          >
+            <Phone size={13} strokeWidth={1.6} />
+          </a>
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
+          <div
+            {...listeners}
+            {...attributes}
+            onClick={e => e.stopPropagation()}
+            aria-label="Arrastar lead"
+            className={`w-6 h-7 flex items-center justify-center text-t4 hover:text-t2 cursor-grab active:cursor-grabbing transition-all flex-shrink-0`}
+          >
+            <GripVertical size={13} strokeWidth={1.6} />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -487,7 +483,7 @@ function LeadCard({
 // ─── Coluna do kanban ─────────────────────────────────────────────────────────
 
 function KanbanColumn({
-  stage, leads, total, onCardClick, onConclude, isActiveDragTarget, savingId, dense, financeMode,
+  stage, leads, total, onCardClick, onConclude, isActiveDragTarget, savingId, dense,
   onFiltrarSemContato, filtroSemContatoAtivo, arrastando, comissao, primeira,
 }: {
   comissao: VisaoComissao
@@ -504,7 +500,6 @@ function KanbanColumn({
   isActiveDragTarget: boolean
   savingId: string | null
   dense: boolean
-  financeMode: boolean
   onFiltrarSemContato?: () => void
   filtroSemContatoAtivo: boolean
 }) {
@@ -545,14 +540,22 @@ function KanbanColumn({
             </span>
           </div>
 
-          <div className="flex items-end gap-2 px-2 pt-2.5 min-h-[46px]">
-            <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-t4">VGV</p>
-              <DinheiroVivo valor={totais.vgv} className="font-display text-[17px] font-semibold text-t1 leading-tight" />
-            </div>
-            <div className="min-w-0 ml-auto text-right" title={totais.detalhe}>
-              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-success/80 truncate">{comissao.rotulo}</p>
-              <DinheiroVivo valor={totais.valor} ganho className="font-display text-[17px] font-bold text-success leading-tight" />
+          {/* O dinheiro da coluna: VGV em cima; embaixo, a comissão do
+              corretor e (para o admin) a da Souza */}
+          <div className="px-2 pt-2.5">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-t4">VGV</p>
+            <DinheiroVivo valor={totais.vgv} className="font-display text-[19px] font-bold text-t1 leading-tight tracking-[-0.02em]" />
+            <div className={`mt-1.5 grid ${comissao.admin ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
+              <div className="min-w-0">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-success/80 truncate">{comissao.rotuloCorretor}</p>
+                <DinheiroVivo valor={totais.corretor} ganho className="text-[13.5px] font-bold text-success leading-tight" />
+              </div>
+              {comissao.admin && (
+                <div className="min-w-0">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-brand-text/80 truncate">Souza</p>
+                  <DinheiroVivo valor={totais.souza} ganho className="text-[13.5px] font-bold text-brand-text leading-tight" />
+                </div>
+              )}
             </div>
           </div>
 
@@ -611,11 +614,32 @@ function KanbanColumn({
                 onClick={() => onCardClick(lead)}
                 onConclude={() => onConclude(lead)}
                 isSaving={savingId === lead.id}
-                dense={dense} financeMode={financeMode} comissao={comissao}
+                dense={dense} comissao={comissao}
               />
             ))}
           </div>
         </SortableContext>
+      </div>
+    </div>
+  )
+}
+
+// ─── Placar do topo ───────────────────────────────────────────────────────────
+
+function Placar({ rotulo, valor, cor, fundo, destaque = false }: {
+  rotulo: string; valor: number; cor: string; fundo: string; destaque?: boolean
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface pl-2.5 pr-4 py-2 min-w-0">
+      <span className="flex-shrink-0 w-9 h-9 rounded-[11px] flex items-center justify-center text-white" style={{ backgroundImage: fundo }} aria-hidden>
+        <Sparkles size={16} strokeWidth={2} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11.5px] font-medium text-t3 leading-tight truncate">{rotulo}</p>
+        <span style={{ color: cor }}>
+          <DinheiroVivo valor={valor} ganho={destaque}
+            className={`font-display ${destaque ? 'text-[21px]' : 'text-[19px]'} font-bold leading-tight tracking-[-0.02em]`} />
+        </span>
       </div>
     </div>
   )
@@ -659,41 +683,33 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   // modal sempre ler a versão atual do store.
   const [concludeId, setConcludeId] = useState<string | null>(null)
   const concludeLead = concludeId ? leads.find(l => l.id === concludeId) : null
-  const { dense, financeMode, sort, setDense, setFinanceMode } = useKanbanPrefs()
+  const { dense, sort, setDense } = useKanbanPrefs()
   const { isAdmin, profile, allProfiles, viewAsBrokerId } = useAuthStore()
 
   // ── Comissão nesta visão (comissao.ts) ────────────────────────────────────
-  // Corretor vê a parte dele. Admin vendo um corretor vê a parte daquele
-  // corretor. Admin na imobiliária inteira (ou em si mesmo, sem parte) vê a
-  // líquida — e, no title, quanto vai para os corretores e quanto fica.
+  // Admin vê, de cada lead, a parte do corretor dono e o que fica com a Souza
+  // (na visão global, na própria ou vendo um corretor). O corretor vê só a
+  // parte dele. Lead sem parte (do próprio admin) fica todo com a Souza.
   const comissao = useMemo<VisaoComissao>(() => {
     const shareDe = (id: string | null | undefined) =>
       (id ? (id === profile?.id ? profile.commissionShare : allProfiles.find(p => p.id === id)?.commissionShare) : null) ?? null
-    const global = isAdmin && !viewAsBrokerId
-    const alvoId = isAdmin ? viewAsBrokerId : profile?.id ?? null
-    const share = global ? null : shareDe(alvoId)
-    if (!global && share) {
-      const deOutro = isAdmin && alvoId !== profile?.id
-      const nome = allProfiles.find(p => p.id === alvoId)?.name.split(' ')[0]
-      return {
-        rotulo: deOutro ? `comissão de ${nome ?? 'corretor'}` : 'sua comissão',
-        doLead: l => parteDoCorretor(l.averageTicket ?? 0, share),
-        total: ls => {
-          const vgv = ls.reduce((t, l) => t + (l.averageTicket ?? 0), 0)
-          return { vgv, valor: parteDoCorretor(vgv, share), detalhe: `${share}% da comissão líquida (5% do VGV − 3% ISS − 6% Simples)` }
-        },
-      }
+    const doLead = (l: Lead): Dinheiro => {
+      const vgv = l.averageTicket ?? 0
+      const d = divisao(vgv, shareDe(l.brokerId))
+      return { vgv, corretor: d.corretor, souza: d.souza }
     }
+    const nomeVisto = isAdmin && viewAsBrokerId && viewAsBrokerId !== profile?.id
+      ? allProfiles.find(p => p.id === viewAsBrokerId)?.name.split(' ')[0]
+      : null
     return {
-      rotulo: 'comissão líquida',
-      doLead: l => comissaoLiquida(l.averageTicket ?? 0),
-      total: ls => {
-        const t = totaisComissao(ls, shareDe)
-        return {
-          vgv: t.vgv, valor: t.liquida,
-          detalhe: `5% do VGV − 3% ISS − 6% Simples. Corretores: ${formatCurrency(t.corretores)} · fica com a Souza: ${formatCurrency(t.souza)}`,
-        }
-      },
+      admin: isAdmin,
+      rotuloCorretor: !isAdmin ? 'Sua comissão' : nomeVisto ?? 'Corretor',
+      doLead,
+      total: ls => ls.reduce<Dinheiro>((t, l) => {
+        if (!l.averageTicket) return t
+        const d = doLead(l)
+        return { vgv: t.vgv + d.vgv, corretor: t.corretor + d.corretor, souza: t.souza + d.souza }
+      }, { vgv: 0, corretor: 0, souza: 0 }),
     }
   }, [isAdmin, profile, allProfiles, viewAsBrokerId])
 
@@ -725,8 +741,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   // Placar do topo — o que está em jogo nos leads em aberto (fora Venda).
   const resumo = useMemo(() => {
     const ativos = leads.filter(l => l.funnelStage !== 'venda')
-    const t = comissao.total(ativos)
-    return { ativos: ativos.length, vgv: t.vgv, comissao: t.valor, detalhe: t.detalhe }
+    return { ativos: ativos.length, ...comissao.total(ativos) }
   }, [leads, comissao])
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null
@@ -833,27 +848,19 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
 
   return (
     <>
-      {/* ── Placar — o que está em jogo ─────────────────────────────────────
-          O número verde é a comissão possível nos leads em aberto: ganho à
-          vista, não meta a cumprir. É o que dá vontade de chamar o próximo. */}
-      <div className="flex items-center gap-x-6 gap-y-3 flex-wrap mb-4 px-1">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-10 h-10 rounded-[12px] flex items-center justify-center text-white"
-                style={{ backgroundImage: 'linear-gradient(135deg, #4ADE80, #16A34A)' }} aria-hidden>
-            <Sparkles size={18} strokeWidth={2} />
-          </span>
-          <div className="min-w-0" title={resumo.detalhe}>
-            <p className="text-[12px] font-medium text-t3 leading-tight">
-              {comissao.rotulo[0].toUpperCase() + comissao.rotulo.slice(1)} em jogo
-            </p>
-            <DinheiroVivo valor={resumo.comissao} ganho className="font-display text-[24px] font-bold text-success leading-tight tracking-[-0.02em]" />
-          </div>
+      {/* ── Placar — o que está em jogo nos leads em aberto ──────────────────
+          Ganho à vista, não meta a cumprir: é o que dá vontade de chamar o
+          próximo. O admin vê as três contas (VGV, corretores, Souza); o
+          corretor vê a dele em destaque. 5% do VGV − 3% ISS − 6% Simples. */}
+      <div className="flex items-center gap-x-3 gap-y-3 flex-wrap mb-4 px-1">
+        <div className="flex items-stretch gap-2 flex-wrap">
+          <Placar rotulo={comissao.admin ? 'Comissão dos corretores' : 'Sua comissão em jogo'} valor={resumo.corretor}
+                  cor="#16A34A" fundo="linear-gradient(135deg, #4ADE80, #16A34A)" destaque />
+          {comissao.admin && (
+            <Placar rotulo="Comissão da Souza" valor={resumo.souza} cor="var(--brand-text)" fundo="linear-gradient(135deg, #E2C385, #B8913F)" destaque />
+          )}
+          <Placar rotulo={`VGV · ${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)" fundo="linear-gradient(135deg, #818CF8, #4F46E5)" />
         </div>
-        <p className="text-[13px] text-t3 whitespace-nowrap">
-          <span className="font-semibold text-t1 tabular-nums">{formatCurrency(resumo.vgv)}</span> em VGV
-          <span className="text-t5 mx-1.5" aria-hidden>·</span>
-          <span className="font-semibold text-t1 tabular-nums">{resumo.ativos}</span> leads em aberto
-        </p>
         <div className="ml-auto flex items-center gap-1">
           <button
             onClick={() => setDense(!dense)}
@@ -864,16 +871,6 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
           >
             {dense ? <Rows2 size={13} strokeWidth={1.7} /> : <Rows3 size={13} strokeWidth={1.7} />}
             {dense ? 'Compacto' : 'Completo'}
-          </button>
-          <button
-            onClick={() => setFinanceMode(!financeMode)}
-            aria-pressed={financeMode}
-            title="Mostrar a comissão em todos os cards (sem isto, só em Proposta e Venda)"
-            className={`flex items-center gap-1.5 text-[12.5px] font-medium px-2.5 h-8 rounded-lg transition-colors cursor-pointer
-              ${financeMode ? 'text-success bg-success-bg' : 'text-t3 hover:text-t1 hover:bg-s2'}`}
-          >
-            <DollarSign size={13} strokeWidth={1.7} />
-            Comissão nos cards
           </button>
           <span className="flex items-center pl-1.5" title={connected ? 'Sincronizado em tempo real' : 'Reconectando ao servidor'}>
             {connected
@@ -902,7 +899,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
               filtroSemContatoAtivo={filtroSemContatoAtivo}
               onCardClick={setSelectedLead}
               onConclude={l => setConcludeId(l.id)}
-              dense={dense} financeMode={financeMode}
+              dense={dense}
               isActiveDragTarget={overStage === stage && !!activeId}
               savingId={savingId}
               arrastando={!!activeId}
@@ -915,7 +912,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
         <DragOverlay>
           {activeLead ? (
             <div style={{ ['--etapa' as string]: COR_ETAPA[activeLead.funnelStage][1] }}>
-              <LeadCard lead={activeLead} onClick={() => {}} isOverlay dense={dense} comissao={comissao} financeMode={financeMode} />
+              <LeadCard lead={activeLead} onClick={() => {}} isOverlay dense={dense} comissao={comissao} />
             </div>
           ) : null}
         </DragOverlay>

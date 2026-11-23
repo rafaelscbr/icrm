@@ -29,6 +29,13 @@ export function parteDoCorretor(vgv: number, share: number | null | undefined): 
   return share ? comissaoLiquida(vgv) * (share / 100) : 0
 }
 
+/** Divisão da líquida de um VGV: a parte do corretor e o que fica com a Souza. */
+export function divisao(vgv: number, share: number | null | undefined): { liquida: number; corretor: number; souza: number } {
+  const liquida = comissaoLiquida(vgv)
+  const corretor = parteDoCorretor(vgv, share)
+  return { liquida, corretor, souza: liquida - corretor }
+}
+
 export interface TotaisComissao {
   vgv: number
   liquida: number

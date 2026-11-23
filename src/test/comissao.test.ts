@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { comissaoBruta, comissaoLiquida, parteDoCorretor, totaisComissao } from '../modules/leads/comissao'
+import { comissaoBruta, comissaoLiquida, divisao, parteDoCorretor, totaisComissao } from '../modules/leads/comissao'
 
 describe('comissão do Kanban', () => {
   it('5% do VGV, menos 3% de ISS e depois 6% do Simples', () => {
@@ -12,6 +12,13 @@ describe('comissão do Kanban', () => {
     expect(parteDoCorretor(600_000, 40)).toBeCloseTo(10_941.6, 6)   // Ryan
     expect(parteDoCorretor(600_000, 50)).toBeCloseTo(13_677, 6)     // Dionata
     expect(parteDoCorretor(600_000, null)).toBe(0)
+  })
+
+  it('divisão: o que é do corretor e o que fica com a Souza', () => {
+    const d = divisao(600_000, 40)
+    expect(d.corretor).toBeCloseTo(10_941.6, 6)
+    expect(d.souza).toBeCloseTo(16_412.4, 6)
+    expect(divisao(600_000, null)).toMatchObject({ corretor: 0, souza: 27_354 })
   })
 
   it('totais da coluna: VGV, líquida, corretores e o que fica com a Souza', () => {
