@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   DndContext, DragOverlay, closestCenter,
@@ -14,7 +14,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   MessageCircle, GripVertical, Phone, Star, Snowflake, Loader2,
   Wifi, WifiOff, Trophy, Rows2, Rows3, DollarSign,
-  Inbox, RefreshCw, BadgeCheck, X,
+  Inbox, RefreshCw, BadgeCheck, X, Sparkles,
 } from 'lucide-react'
 import { Lead, LeadFunnelStage, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -29,6 +29,8 @@ import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { avisoReentrada } from './reentrada'
 import { useKanbanPrefs } from '../../store/useKanbanPrefs'
+import { useContagem } from '../../hooks/useContagem'
+import { comissaoLiquida, parteDoCorretor, totaisComissao } from './comissao'
 import { ORIGEM_META } from './origens'
 import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
@@ -41,6 +43,59 @@ import toast from 'react-hot-toast'
 export const STAGE_CONFIG = STAGE_THEME
 
 const STAGES = FUNNEL_STAGES
+
+/**
+ * Cores vivas da trilha (as mesmas do Pulse e do funil da Conversão): do claro
+ * ao profundo. A profunda é a --etapa da coluna (avatar, borda do hover, alvo
+ * do arraste); o par vira o degradê da seta do cabeçalho.
+ */
+const COR_ETAPA: Record<LeadFunnelStage, [string, string]> = {
+  lead:        ['#818CF8', '#4F46E5'],
+  followup:    ['#C084FC', '#9333EA'],
+  atendimento: ['#38BDF8', '#0284C7'],
+  visita:      ['#2DD4BF', '#0D9488'],
+  proposta:    ['#FBBF24', '#D97706'],
+  venda:       ['#4ADE80', '#16A34A'],
+}
+
+/** Como a comissão aparece nesta visão: de quem é e quanto cada lead vale. */
+export interface VisaoComissao {
+  /** "sua comissão", "comissão do Ryan" ou "comissão líquida" */
+  rotulo: string
+  /** quanto este lead vale nesta visão */
+  doLead: (l: Lead) => number
+  /** soma de uma lista, e o detalhe para o title (visão da imobiliária) */
+  total: (ls: Lead[]) => { valor: number; vgv: number; detalhe?: string }
+}
+
+function iniciais(nome: string): string {
+  const p = nome.trim().split(/\s+/).filter(Boolean)
+  if (p.length === 0) return '?'
+  return ((p[0][0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
+}
+
+/** Número em reais que conta até o valor e solta um "+R$" quando sobe. */
+function DinheiroVivo({ valor, className = '', ganho = false }: { valor: number; className?: string; ganho?: boolean }) {
+  const v = useContagem(valor, 900)
+  const anterior = useRef(valor)
+  const [subiu, setSubiu] = useState<{ k: number; d: number } | null>(null)
+  useEffect(() => {
+    const d = valor - anterior.current
+    anterior.current = valor
+    if (ganho && d > 0.5) setSubiu(s => ({ k: (s?.k ?? 0) + 1, d }))
+  }, [valor, ganho])
+  return (
+    <span className={`relative inline-block tabular-nums ${className}`}>
+      {v < 1 ? 'R$ 0' : formatCurrency(v)}
+      {subiu && (
+        <span key={subiu.k} aria-hidden
+              className="kanban-ganho pointer-events-none absolute left-full ml-1.5 top-0 whitespace-nowrap text-[11px] font-bold text-success">
+          +{formatCurrency(subiu.d)}
+        </span>
+      )}
+    </span>
+  )
+}
 
 function daysInStage(stageChangedAt?: string, createdAt?: string): number {
   const ref = stageChangedAt ?? createdAt ?? new Date().toISOString()
@@ -59,7 +114,7 @@ function daysInStage(stageChangedAt?: string, createdAt?: string): number {
  * duas ou mais faixas de cartões. Com todas as colunas abertas esse espaço não
  * existe mais, então as faixas saíram junto.
  */
-const CLASSE_DA_COLUNA = 'flex flex-col flex-1 basis-[18.5rem] min-w-[18.5rem] lg:basis-[16rem] lg:min-w-[16rem] max-w-[22rem]'
+const CLASSE_DA_COLUNA = 'flex flex-col flex-1 basis-[18.5rem] min-w-[18.5rem] lg:basis-[15rem] lg:min-w-[15rem] max-w-[22rem]'
 
 function orderBetween(above: Lead | null, below: Lead | null): number {
   const a = above ? ordemEfetiva(above) : Date.now() + 1_000_000
@@ -78,8 +133,10 @@ const ATALHO_DO_CARD =
   'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'
 
 function LeadCard({
-  lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, financeMode = false,
+  lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, financeMode = false, comissao,
 }: {
+  /** quanto o lead vale de comissão nesta visão (ver VisaoComissao) */
+  comissao?: VisaoComissao
   lead: Lead; onClick: () => void
   /** Abre o "Concluir venda" — o modal mora no Kanban, não no card */
   onConclude?: () => void
@@ -255,9 +312,15 @@ function LeadCard({
           nome e o fundo cinza do botão em repouso. Em repouso o cartão é texto
           sobre papel; cor só aparece onde há prazo, risco ou dinheiro. */}
 
-      {/* 1 · Nome */}
-      <div className="flex items-center gap-1.5 pr-12 min-w-0">
-        <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">
+      {/* 1 · Nome, com as iniciais num círculo na cor da etapa: o cartão
+             vira uma PESSOA a chamar, não uma linha de planilha. */}
+      <div className="flex items-center gap-2 pr-12 min-w-0">
+        {!dense && (
+          <span className="kanban-avatar flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10.5px] font-bold tracking-[0.02em]" aria-hidden>
+            {iniciais(displayName)}
+          </span>
+        )}
+        <p className="font-heading text-[14px] font-semibold text-t1 truncate leading-tight tracking-[-0.015em]">
           {displayName}
         </p>
         {lead.qualifiedAt && (
@@ -288,10 +351,12 @@ function LeadCard({
             {formatCurrency(lead.averageTicket)}
           </span>
         ) : null}
-        {/* Comissão só nas etapas finais ou no modo financeiro */}
-        {lead.averageTicket && showCommission ? (
-          <span className="flex-shrink-0 font-medium text-success tabular-nums" title="Comissão estimada (2%)">
-            {formatCurrency(lead.averageTicket * 0.02)}
+        {/* Comissão só nas etapas finais ou no modo financeiro — 5% do VGV,
+            menos ISS e Simples, na parte de quem olha (comissao.ts) */}
+        {lead.averageTicket && showCommission && comissao && comissao.doLead(lead) > 0 ? (
+          <span className="flex-shrink-0 rounded-full px-1.5 py-px text-[11.5px] font-semibold text-success bg-success-bg tabular-nums"
+                title={`${comissao.rotulo[0].toUpperCase()}${comissao.rotulo.slice(1)} estimada`}>
+            +{formatCurrency(comissao.doLead(lead))}
           </span>
         ) : null}
       </div>
@@ -384,8 +449,7 @@ function LeadCard({
           <button
             onClick={handleWhatsApp}
             className="flex-1 min-w-0 -ml-1.5 flex items-center justify-start gap-1.5 px-1.5 min-h-[32px] text-[12px] font-semibold
-                       text-t2 rounded-[8px] transition-colors duration-150 active:scale-[0.98]
-                       group-hover:text-success
+                       text-success rounded-[8px] transition-colors duration-150 active:scale-[0.98]
                        hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)]
                        focus-visible:text-success focus-visible:bg-success-bg
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
@@ -423,8 +487,11 @@ function LeadCard({
 
 function KanbanColumn({
   stage, leads, total, onCardClick, onConclude, isActiveDragTarget, savingId, dense, financeMode,
-  onFiltrarSemContato, filtroSemContatoAtivo, arrastando,
+  onFiltrarSemContato, filtroSemContatoAtivo, arrastando, comissao, primeira,
 }: {
+  comissao: VisaoComissao
+  /** a primeira seta da trilha não tem o entalhe à esquerda */
+  primeira: boolean
   /** há um card sendo arrastado — a coluna vazia convida a soltar */
   arrastando: boolean
   stage: LeadFunnelStage
@@ -444,8 +511,7 @@ function KanbanColumn({
   const { isOver, setNodeRef } = useDroppable({ id: stage })
   const ids = leads.map(l => l.id)
 
-  const totalPipeline   = leads.reduce((s, l) => s + (l.averageTicket ?? 0), 0)
-  const totalCommission = totalPipeline * 0.02
+  const totais = comissao.total(leads)
   // Risco da coluna: leads em aberto sem contato além da janela de
   // esfriamento. Mesma régua do filtro e da linha do card (contato.ts).
   const coldCount = leads.filter(l =>
@@ -460,54 +526,67 @@ function KanbanColumn({
   // 16/11/2026): o quadro tem sempre as mesmas colunas no mesmo lugar. Antes a
   // vazia virava um trilho estreito que se abria no clique ou durante o arraste.
   return (
-    // --etapa alimenta o filete e a contagem do cabeçalho (ver .kanban-cabeca).
-    <div className={CLASSE_DA_COLUNA} style={{ ['--etapa' as string]: `var(--stage-${stage})` }}
+    // --etapa / --etapa-clara: a cor viva da etapa (seta, avatar, hover, alvo).
+    <div className={CLASSE_DA_COLUNA}
+         style={{ ['--etapa' as string]: COR_ETAPA[stage][1], ['--etapa-clara' as string]: COR_ETAPA[stage][0] }}
          id={`coluna-${stage}`}>
       <div className="flex flex-col flex-1 kanban-col">
-        {/* Cabeçalho fixo — uma linha: etapa, contagem, esfriando e VGV */}
-        <div className="kanban-cabeca kanban-col-bg sticky top-0 z-10 flex items-center gap-2 px-1 pt-0.5 pb-2 mb-2.5">
-          <h3 className="text-[13.5px] font-semibold text-t1">{conf.columnLabel}</h3>
-          <span className="text-[13px] tabular-nums text-t4">
-            {leads.length}
-            {total !== undefined && total !== leads.length && (
-              <span title={`${leads.length} de ${total} leads desta etapa`}>/{total}</span>
-            )}
-          </span>
-          {coldCount > 0 && (
-            onFiltrarSemContato ? (
-              <button
-                type="button"
-                onClick={onFiltrarSemContato}
-                aria-pressed={filtroSemContatoAtivo}
-                title={filtroSemContatoAtivo
-                  ? 'Mostrar todos os leads de novo'
-                  : `${coldCount} sem contato há mais de ${ESFRIANDO_DIAS} dias (${riskPct}%). Clique para ver só eles.`}
-                className={`inline-flex items-center gap-1 px-1.5 h-6 rounded-md text-[12px] text-warning tabular-nums
-                  transition-colors hover:bg-warning-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-warning/40
-                  ${filtroSemContatoAtivo ? 'bg-warning-bg' : ''}`}
-              >
-                <Snowflake size={11} strokeWidth={1.8} aria-hidden />
-                {coldCount}
-                {filtroSemContatoAtivo && <X size={10} strokeWidth={2} aria-hidden />}
-              </button>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-[12px] text-warning tabular-nums"
-                    title={`${coldCount} sem contato há mais de ${ESFRIANDO_DIAS} dias`}>
-                <Snowflake size={11} strokeWidth={1.8} aria-hidden />{coldCount}
-              </span>
-            )
-          )}
-          {totalPipeline > 0 && (
-            <span className="ml-auto text-[12px] text-t4 tabular-nums" title={financeMode ? `Comissão estimada: ${formatCurrency(totalCommission)}` : undefined}>
-              {formatCurrency(totalPipeline)}
+        {/* Cabeçalho fixo: a seta da trilha e, embaixo, o dinheiro da coluna */}
+        <div className="kanban-cabeca kanban-col-bg sticky top-0 z-10 pb-2 mb-1.5">
+          <div className={`kanban-trilha ${primeira ? 'kanban-trilha-primeira' : ''} flex items-center gap-2 h-10 pl-6 pr-7 text-white`}
+               style={primeira ? { paddingLeft: 14 } : undefined}>
+            <h3 className="text-[13.5px] font-semibold tracking-[0.01em] truncate">{conf.columnLabel}</h3>
+            <span className="ml-auto inline-flex items-center justify-center min-w-[24px] h-[20px] px-1.5 rounded-full bg-white/25 text-[12px] font-bold tabular-nums">
+              {leads.length}
+              {total !== undefined && total !== leads.length && (
+                <span className="font-medium opacity-80" title={`${leads.length} de ${total} leads desta etapa`}>/{total}</span>
+              )}
             </span>
+          </div>
+
+          <div className="flex items-end gap-2 px-2 pt-2.5 min-h-[46px]">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-t4">VGV</p>
+              <DinheiroVivo valor={totais.vgv} className="font-display text-[17px] font-semibold text-t1 leading-tight" />
+            </div>
+            <div className="min-w-0 ml-auto text-right" title={totais.detalhe}>
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-success/80 truncate">{comissao.rotulo}</p>
+              <DinheiroVivo valor={totais.valor} ganho className="font-display text-[17px] font-bold text-success leading-tight" />
+            </div>
+          </div>
+
+          {coldCount > 0 && (
+            <div className="px-2 pt-1">
+              {onFiltrarSemContato ? (
+                <button
+                  type="button"
+                  onClick={onFiltrarSemContato}
+                  aria-pressed={filtroSemContatoAtivo}
+                  title={filtroSemContatoAtivo
+                    ? 'Mostrar todos os leads de novo'
+                    : `${coldCount} sem contato há mais de ${ESFRIANDO_DIAS} dias (${riskPct}%). Clique para ver só eles.`}
+                  className={`inline-flex items-center gap-1 px-1.5 h-6 -ml-1.5 rounded-md text-[12px] text-warning tabular-nums
+                    transition-colors hover:bg-warning-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-warning/40
+                    ${filtroSemContatoAtivo ? 'bg-warning-bg' : ''}`}
+                >
+                  <Snowflake size={11} strokeWidth={1.8} aria-hidden />
+                  {coldCount} esfriando
+                  {filtroSemContatoAtivo && <X size={10} strokeWidth={2} aria-hidden />}
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[12px] text-warning tabular-nums"
+                      title={`${coldCount} sem contato há mais de ${ESFRIANDO_DIAS} dias`}>
+                  <Snowflake size={11} strokeWidth={1.8} aria-hidden />{coldCount} esfriando
+                </span>
+              )}
+            </div>
           )}
         </div>
 
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div
             ref={setNodeRef}
-            className={`flex-1 min-h-[420px] rounded-[14px] p-1 transition-colors duration-200 flex flex-col
+            className={`flex-1 min-h-[420px] rounded-[14px] p-1.5 transition-colors duration-200 flex flex-col stagger-children
               ${dense ? 'gap-1.5' : 'gap-2.5'}
               ${alvo ? 'kanban-solta' : ''}
             `}
@@ -531,7 +610,7 @@ function KanbanColumn({
                 onClick={() => onCardClick(lead)}
                 onConclude={() => onConclude(lead)}
                 isSaving={savingId === lead.id}
-                dense={dense} financeMode={financeMode}
+                dense={dense} financeMode={financeMode} comissao={comissao}
               />
             ))}
           </div>
@@ -580,6 +659,42 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   const [concludeId, setConcludeId] = useState<string | null>(null)
   const concludeLead = concludeId ? leads.find(l => l.id === concludeId) : null
   const { dense, financeMode, sort, setDense, setFinanceMode } = useKanbanPrefs()
+  const { isAdmin, profile, allProfiles, viewAsBrokerId } = useAuthStore()
+
+  // ── Comissão nesta visão (comissao.ts) ────────────────────────────────────
+  // Corretor vê a parte dele. Admin vendo um corretor vê a parte daquele
+  // corretor. Admin na imobiliária inteira (ou em si mesmo, sem parte) vê a
+  // líquida — e, no title, quanto vai para os corretores e quanto fica.
+  const comissao = useMemo<VisaoComissao>(() => {
+    const shareDe = (id: string | null | undefined) =>
+      (id ? (id === profile?.id ? profile.commissionShare : allProfiles.find(p => p.id === id)?.commissionShare) : null) ?? null
+    const global = isAdmin && !viewAsBrokerId
+    const alvoId = isAdmin ? viewAsBrokerId : profile?.id ?? null
+    const share = global ? null : shareDe(alvoId)
+    if (!global && share) {
+      const deOutro = isAdmin && alvoId !== profile?.id
+      const nome = allProfiles.find(p => p.id === alvoId)?.name.split(' ')[0]
+      return {
+        rotulo: deOutro ? `comissão de ${nome ?? 'corretor'}` : 'sua comissão',
+        doLead: l => parteDoCorretor(l.averageTicket ?? 0, share),
+        total: ls => {
+          const vgv = ls.reduce((t, l) => t + (l.averageTicket ?? 0), 0)
+          return { vgv, valor: parteDoCorretor(vgv, share), detalhe: `${share}% da comissão líquida (5% do VGV − 3% ISS − 6% Simples)` }
+        },
+      }
+    }
+    return {
+      rotulo: 'comissão líquida',
+      doLead: l => comissaoLiquida(l.averageTicket ?? 0),
+      total: ls => {
+        const t = totaisComissao(ls, shareDe)
+        return {
+          vgv: t.vgv, valor: t.liquida,
+          detalhe: `5% do VGV − 3% ISS − 6% Simples. Corretores: ${formatCurrency(t.corretores)} · fica com a Souza: ${formatCurrency(t.souza)}`,
+        }
+      },
+    }
+  }, [isAdmin, profile, allProfiles, viewAsBrokerId])
 
   // O Kanban baixava a tabela inteira de interações (~5,4 MB, e ainda cortada
   // em 1.000 linhas) só para saber a data do último contato de cada card.
@@ -606,17 +721,12 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
     }, {} as Record<LeadFunnelStage, Lead[]>)
   }, [leads, sort])
 
-  // Resumo do funil — compacto e derivado do que já está em tela.
+  // Placar do topo — o que está em jogo nos leads em aberto (fora Venda).
   const resumo = useMemo(() => {
     const ativos = leads.filter(l => l.funnelStage !== 'venda')
-    return {
-      ativos: ativos.length,
-      vgv: ativos.reduce((s, l) => s + (l.averageTicket ?? 0), 0),
-      visitas: leads.filter(l => l.funnelStage === 'visita').length,
-      propostas: leads.filter(l => l.funnelStage === 'proposta').length,
-      vendas: leads.filter(l => l.funnelStage === 'venda').length,
-    }
-  }, [leads])
+    const t = comissao.total(ativos)
+    return { ativos: ativos.length, vgv: t.vgv, comissao: t.valor, detalhe: t.detalhe }
+  }, [leads, comissao])
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null
 
@@ -722,14 +832,26 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
 
   return (
     <>
-      {/* ── Resumo — uma linha fina ───────────────────────────────────────
-          Só o total e os controles. A barra proporcional por etapa saiu em
-          16/11/2026: repetia a contagem que o cabeçalho de cada coluna já dá. */}
-      <div className="flex items-center gap-4 mb-4 px-1 min-h-[32px]">
+      {/* ── Placar — o que está em jogo ─────────────────────────────────────
+          O número verde é a comissão possível nos leads em aberto: ganho à
+          vista, não meta a cumprir. É o que dá vontade de chamar o próximo. */}
+      <div className="flex items-center gap-x-6 gap-y-3 flex-wrap mb-4 px-1">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex-shrink-0 w-10 h-10 rounded-[12px] flex items-center justify-center text-white"
+                style={{ backgroundImage: 'linear-gradient(135deg, #4ADE80, #16A34A)' }} aria-hidden>
+            <Sparkles size={18} strokeWidth={2} />
+          </span>
+          <div className="min-w-0" title={resumo.detalhe}>
+            <p className="text-[12px] font-medium text-t3 leading-tight">
+              {comissao.rotulo[0].toUpperCase() + comissao.rotulo.slice(1)} em jogo
+            </p>
+            <DinheiroVivo valor={resumo.comissao} ganho className="font-display text-[24px] font-bold text-success leading-tight tracking-[-0.02em]" />
+          </div>
+        </div>
         <p className="text-[13px] text-t3 whitespace-nowrap">
-          <span className="font-semibold text-t1 tabular-nums">{resumo.ativos}</span> em aberto
+          <span className="font-semibold text-t1 tabular-nums">{formatCurrency(resumo.vgv)}</span> em VGV
           <span className="text-t5 mx-1.5" aria-hidden>·</span>
-          <span className="font-semibold text-t1 tabular-nums">{formatCurrency(resumo.vgv)}</span> em pipeline
+          <span className="font-semibold text-t1 tabular-nums">{resumo.ativos}</span> leads em aberto
         </p>
         <div className="ml-auto flex items-center gap-1">
           <button
@@ -745,12 +867,12 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
           <button
             onClick={() => setFinanceMode(!financeMode)}
             aria-pressed={financeMode}
-            title="Exibir comissão estimada em todos os cards e colunas"
+            title="Mostrar a comissão em todos os cards (sem isto, só em Proposta e Venda)"
             className={`flex items-center gap-1.5 text-[12.5px] font-medium px-2.5 h-8 rounded-lg transition-colors cursor-pointer
               ${financeMode ? 'text-success bg-success-bg' : 'text-t3 hover:text-t1 hover:bg-s2'}`}
           >
             <DollarSign size={13} strokeWidth={1.7} />
-            Comissão
+            Comissão nos cards
           </button>
           <span className="flex items-center pl-1.5" title={connected ? 'Sincronizado em tempo real' : 'Reconectando ao servidor'}>
             {connected
@@ -768,8 +890,8 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 px-1 items-stretch [justify-content:safe_center]">
-          {STAGES.map(stage => (
+        <div className="flex gap-3 overflow-x-auto pb-4 px-1 items-stretch [justify-content:safe_center]">
+          {STAGES.map((stage, i) => (
             <KanbanColumn
               key={stage}
               stage={stage}
@@ -783,12 +905,18 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
               isActiveDragTarget={overStage === stage && !!activeId}
               savingId={savingId}
               arrastando={!!activeId}
+              comissao={comissao}
+              primeira={i === 0}
             />
           ))}
         </div>
 
         <DragOverlay>
-          {activeLead ? <LeadCard lead={activeLead} onClick={() => {}} isOverlay dense={dense} /> : null}
+          {activeLead ? (
+            <div style={{ ['--etapa' as string]: COR_ETAPA[activeLead.funnelStage][1] }}>
+              <LeadCard lead={activeLead} onClick={() => {}} isOverlay dense={dense} comissao={comissao} financeMode={financeMode} />
+            </div>
+          ) : null}
         </DragOverlay>
       </DndContext>
 

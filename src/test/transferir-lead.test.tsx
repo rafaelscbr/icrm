@@ -16,7 +16,7 @@ import type { Lead } from '../types'
 type Perfil = ReturnType<typeof useAuthStore.getState>['allProfiles'][number]
 
 const perfil = (id: string, name: string, extra: Partial<Perfil> = {}): Perfil => ({
-  id, name, role: 'broker', active: true, isManager: false, ...extra,
+  id, name, role: 'broker', active: true, isManager: false, commissionShare: null, ...extra,
 } as Perfil)
 
 const RAFAEL  = perfil('adm', 'Rafael', { role: 'admin' })

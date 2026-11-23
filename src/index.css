@@ -1368,6 +1368,58 @@ html.light {
 }
 .kanban-card:hover { transform: translateY(-1px); }
 
+/*
+ * Kanban v9 (22/11/2026) — trilha colorida, estilo "path" do Salesforce.
+ * Cada coluna abre com uma seta na cor viva da etapa (--etapa e --etapa-clara,
+ * postas pelo LeadKanban), e o corpo da coluna leva um tingimento leve dessa
+ * cor que some em 260px. O card é branco e chato; no hover ganha a borda e uma
+ * sombra curta na cor da etapa. Movimento só em transform/opacity.
+ */
+.kanban-col {
+  border-radius: 16px;
+  background-color: color-mix(in srgb, var(--etapa) 4%, var(--page-bg));
+}
+/* o cabeçalho fixo tem a mesma cor da coluna: os cartões passam por baixo */
+.kanban-col-bg {
+  background-color: color-mix(in srgb, var(--etapa) 4%, var(--page-bg));
+  border-radius: 16px 16px 0 0;
+}
+.kanban-cabeca { border-bottom: 0; }
+.kanban-trilha {
+  background-image: linear-gradient(100deg, var(--etapa-clara), var(--etapa));
+  clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 50%, calc(100% - 13px) 100%, 0 100%, 13px 50%);
+  animation: kanban-trilha-entra 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.kanban-trilha-primeira {
+  clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 50%, calc(100% - 13px) 100%, 0 100%);
+  border-radius: 10px 0 0 10px;
+}
+@keyframes kanban-trilha-entra {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+/* "+R$" que sobe e some quando a comissão da coluna aumenta */
+.kanban-ganho { animation: kanban-ganho 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+@keyframes kanban-ganho {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.9); }
+  15%  { opacity: 1; transform: translateY(0) scale(1); }
+  70%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
+.kanban-card { border-radius: 14px; }
+.kanban-card:hover {
+  border-color: color-mix(in srgb, var(--etapa) 40%, var(--kanban-card-line)) !important;
+  box-shadow: 0 12px 24px -16px color-mix(in srgb, var(--etapa) 70%, transparent);
+}
+.kanban-avatar {
+  background-color: color-mix(in srgb, var(--etapa) 14%, transparent);
+  color: var(--etapa);
+}
+.kanban-solta {
+  background-color: color-mix(in srgb, var(--etapa) 9%, transparent);
+  outline: 2px dashed color-mix(in srgb, var(--etapa) 60%, transparent);
+}
+
 /* Régua do funil — a faixa que resume e navega o quadro */
 .regua-segmento { transition: background-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out); }
 .regua-segmento:hover { background-color: color-mix(in srgb, var(--etapa) 9%, transparent); }

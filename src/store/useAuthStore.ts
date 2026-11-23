@@ -10,6 +10,8 @@ export interface Profile {
   allowedMenus: string[] | null  // null = todos os menus liberados
   /** Gestor: corretor que pode ver, somente leitura, o funil dos colegas (migração 091) */
   isManager: boolean
+  /** Parte do corretor, em % da comissão líquida (migração 104). null = não divide. */
+  commissionShare: number | null
 }
 
 interface AuthStore {
@@ -38,6 +40,7 @@ function mapProfile(r: Record<string, unknown>): Profile {
     avatarUrl: (r.avatar_url as string | null) ?? undefined,
     allowedMenus: (r.allowed_menus as string[] | null) ?? null,
     isManager: r.is_manager === true,
+    commissionShare: r.commission_share == null ? null : Number(r.commission_share),
   }
 }
 
