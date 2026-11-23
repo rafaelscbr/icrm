@@ -3,6 +3,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { Grafico, eixoCategoria, eixoValor } from '../../../components/charts/Grafico'
 import type { CoresGrafico } from '../../../components/charts/Grafico'
 import { Bloco, BotaoCsv, Indicador, Quadro, Situacao, Tabela } from './pecas'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 import { useBloco, usePerf } from './contexto'
 import { ROTULO_ETAPA, diaHoraSP, nomeDeArquivo, rotuloDia } from './formatos'
 import type { Transferencias } from './tipos'
@@ -108,7 +109,11 @@ function Conteudo({ d }: { d: Transferencias }) {
             ordemInicial={{ chave: 'saiu', desc: true }}
             colunas={[
               { chave: 'nome', rotulo: 'Lead', ordem: p => p.nome.toLowerCase(), valor: p => <span className="font-medium text-t1">{p.nome}</span> },
-              ...(varios ? [{ chave: 'corretor', rotulo: 'Perdeu', valor: (p: Transferencias['perdidos'][number]) => nomeDoCorretor(p.corretor).split(' ')[0] }] : []),
+              ...(varios ? [{ chave: 'corretor', rotulo: 'Perdeu', valor: (p: Transferencias['perdidos'][number]) => (
+                <CorretorComFoto id={p.corretor} nome={nomeDoCorretor(p.corretor)} tamanho={24} className="gap-1.5 whitespace-nowrap">
+                  {nomeDoCorretor(p.corretor).split(' ')[0]}
+                </CorretorComFoto>
+              ) }] : []),
               { chave: 'recebido', rotulo: 'Recebido', ordem: p => p.recebido_em, valor: p => diaHoraSP(p.recebido_em) },
               { chave: 'saiu', rotulo: 'Saiu', ordem: p => p.saiu_em, valor: p => diaHoraSP(p.saiu_em) },
               { chave: 'para', rotulo: 'Foi para', ordem: p => p.para, valor: p => p.para?.split(' ')[0] ?? '—' },

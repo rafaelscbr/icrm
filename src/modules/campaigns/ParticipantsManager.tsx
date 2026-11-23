@@ -4,6 +4,7 @@ import { Modal } from '../../components/ui/Modal'
 import { useCampaignParticipantsStore } from '../../store/useCampaignParticipantsStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import toast from 'react-hot-toast'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 
 interface ParticipantsManagerProps {
   campaignId: string
@@ -66,9 +67,8 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
                 const profile = allProfiles.find(pr => pr.id === p.brokerId)
                 return (
                   <div key={p.id} className="flex items-center gap-3 p-3 bg-s3/40 rounded-xl border border-line">
-                    <div className="w-8 h-8 rounded-xl bg-brand-tint flex items-center justify-center text-sm font-bold text-brand-text flex-shrink-0">
-                      {profile?.name?.charAt(0).toUpperCase() ?? '?'}
-                    </div>
+                    {/* Foto no lugar da inicial (22/11/2026) */}
+                    <FotoPerfil nome={profile?.name} url={profile?.avatarUrl} tamanho={36} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-t1 truncate">{profile?.name ?? p.brokerId}</p>
                       <span className={`text-[11px] flex items-center gap-1 mt-0.5 ${p.role === 'owner' ? 'text-amber-400' : 'text-t3'}`}>
@@ -100,10 +100,8 @@ export function ParticipantsManager({ campaignId, compact = false }: Participant
                   onClick={() => handleAdd(b.id)}
                   className="flex items-center gap-3 p-3 bg-s3/30 hover:bg-s3/60 rounded-xl border border-line hover:border-brand/25 transition-all text-left cursor-pointer group"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-slate-500/20 group-hover:bg-brand-tint flex items-center justify-center text-sm font-bold text-t3 group-hover:text-brand-text flex-shrink-0 transition-colors">
-                    {b.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-sm text-t3 group-hover:text-t1 transition-colors flex-1">{b.name}</span>
+                  <FotoPerfil nome={b.name} url={b.avatarUrl} tamanho={36} />
+                  <span className="text-sm text-t3 group-hover:text-t1 transition-colors flex-1 min-w-0 truncate">{b.name}</span>
                   <Plus size={13} className="text-t4 group-hover:text-brand-text transition-colors" />
                 </button>
               ))}

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
-import { Avatar } from '../../components/ui/Avatar'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { formatCurrency } from '../../lib/formatters'
 import { DAILY_TARGETS, WEEKLY_TARGETS, MONTHLY_TARGETS } from '../../lib/metasConfig'
 
@@ -298,7 +298,8 @@ function BrokerRow({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Avatar name={name} photoUrl={avatarUrl ?? undefined} size="xs" />
+              {/* Foto um pouco maior (22/11/2026): dá para saber quem é quem sem ler o nome */}
+              <FotoPerfil nome={name} url={avatarUrl} tamanho={32} />
               <p className="font-heading text-sm font-bold text-t1 tracking-[-0.01em] truncate">{name}</p>
             </div>
             {word && (

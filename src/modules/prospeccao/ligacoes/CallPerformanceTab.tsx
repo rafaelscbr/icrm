@@ -8,6 +8,7 @@ import { useCallCampaignsStore } from '../../../store/useCallCampaignsStore'
 import { formatCurrency } from '../../../lib/formatters'
 import { DAILY_TARGETS } from '../../../lib/metasConfig'
 import type { CallPerformance } from '../../../types'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 import toast from 'react-hot-toast'
 
 /**
@@ -263,9 +264,8 @@ export function CallPerformanceTab({ campaignId }: Props) {
                       ? <Medal size={15} strokeWidth={1.7} className="text-brand shrink-0" aria-label="líder" />
                       : <span className="w-[15px] shrink-0" aria-hidden />}
 
-                    <span className="font-heading text-[14px] font-bold text-t1 truncate flex-1">
-                      {c.nome ?? 'Corretor'}
-                    </span>
+                    <CorretorComFoto id={c.brokerId} nome={c.nome ?? 'Corretor'} tamanho={32}
+                                     className="font-heading text-[14px] font-bold text-t1 flex-1" />
 
                     <Chip icon={Target} tom={bateuHoje ? 'sucesso' : 'neutro'}>
                       {c.hoje}/{DAILY_TARGETS.ligacoes} hoje

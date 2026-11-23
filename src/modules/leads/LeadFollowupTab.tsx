@@ -8,6 +8,8 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { useContagem } from '../../hooks/useContagem'
 import { Destaque, destacar } from '../../components/shared/Destaque'
 import { TOM } from '../../components/shared/visual'
+import { CorretorComFoto, useFotoDoCorretor } from '../../components/shared/CorretorComFoto'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { diasSemContato, nivelContato, ESFRIANDO_DIAS, PARADO_DIAS } from './contato'
 import type { NivelContato } from './contato'
 import {
@@ -417,6 +419,7 @@ function LinhaDoCorretor({ linha, nome, ativo, onClick }: {
     return () => cancelAnimationFrame(id)
   }, [])
   const pct = linha.pctEmDia === null ? null : Math.round(linha.pctEmDia)
+  const fotoDe = useFotoDoCorretor()
 
   return (
     <button type="button" onClick={onClick} aria-pressed={ativo}
@@ -425,9 +428,15 @@ function LinhaDoCorretor({ linha, nome, ativo, onClick }: {
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
                   ${ativo ? 'bg-s2 ring-1 ring-line-strong' : 'hover:bg-s2'}`}>
       <span className="flex items-center gap-3">
-        <span className="w-9 h-9 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[14px] font-bold flex-shrink-0" aria-hidden>
-          {nome.charAt(0).toUpperCase()}
-        </span>
+        {/* foto do corretor (22/11/2026): quem é quem sem ler o nome.
+            "Sem corretor" não tem rosto — segue a inicial. */}
+        {linha.brokerId ? (
+          <FotoPerfil nome={nome} url={fotoDe(linha.brokerId)} tamanho={40} />
+        ) : (
+          <span className="w-10 h-10 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[14px] font-bold flex-shrink-0" aria-hidden>
+            {nome.charAt(0).toUpperCase()}
+          </span>
+        )}
         <span className="min-w-0 flex-1">
           <span className="block text-[14.5px] font-semibold text-t1 truncate">{nome}</span>
           <span className="block text-[12.5px] text-t3 truncate tabular-nums">
@@ -462,12 +471,10 @@ function LinhaDoLead({ lead, agora, corretor, onOpen }: {
 }) {
   const dias = diasSemContato(lead, agora)
   const nv = nivelContato(lead, agora)
-  const meta = [
-    STAGE_THEME[lead.funnelStage].label,
-    lead.propertyName,
-    corretor?.split(' ')[0],
-    lead.funnelStage === 'followup' && lead.followupStep > 0 ? `tentativa ${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP}` : null,
-  ].filter(Boolean).join(' · ')
+  // O corretor sai do texto corrido: vai com a foto, entre a etapa/produto e a tentativa.
+  const antes = [STAGE_THEME[lead.funnelStage].label, lead.propertyName].filter(Boolean).join(' · ')
+  const tentativa = lead.funnelStage === 'followup' && lead.followupStep > 0
+    ? `tentativa ${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP}` : null
 
   return (
     <button type="button" onClick={onOpen}
@@ -476,7 +483,18 @@ function LinhaDoLead({ lead, agora, corretor, onOpen }: {
       <span className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: NIVEL[nv].cor }} aria-hidden />
       <span className="min-w-0 flex-1">
         <span className="block text-[14.5px] font-semibold text-t1 truncate">{lead.name}</span>
-        <span className="block text-[12.5px] text-t3 truncate">{meta}</span>
+        <span className="flex items-center gap-1.5 min-w-0 text-[12.5px] text-t3 whitespace-nowrap">
+          <span className="min-w-0 truncate">{antes}</span>
+          {corretor && (
+            <>
+              <span aria-hidden>·</span>
+              <CorretorComFoto id={lead.brokerId} nome={corretor} tamanho={24} className="gap-1.5 flex-shrink-0 max-w-[45%]">
+                {corretor.split(' ')[0]}
+              </CorretorComFoto>
+            </>
+          )}
+          {tentativa && <span className="flex-shrink-0">· {tentativa}</span>}
+        </span>
       </span>
       <span className="text-right flex-shrink-0">
         <span className={`flex items-center justify-end gap-1.5 font-display text-[16px] font-extrabold tabular-nums leading-none ${NIVEL[nv].texto}`}>

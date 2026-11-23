@@ -6,6 +6,7 @@ import { db } from '../../lib/db'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { formatCurrency } from '../../lib/formatters'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 import { EsqueletoCards } from '../../components/shared/Esqueleto'
 import { ORIGEM_META } from './origens'
 import { fraseContato, nivelContato } from './contato'
@@ -72,7 +73,7 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
       <div className="mb-4 flex items-center gap-x-4 gap-y-2 flex-wrap rounded-[14px] border border-info-line bg-info-bg px-4 py-3" role="status">
         <Eye size={16} strokeWidth={1.8} className="text-info flex-shrink-0" aria-hidden />
         <p className="min-w-0 flex-1 text-[13.5px] text-t1">
-          Funil de <span className="font-semibold">{nome}</span> — somente leitura.
+          Funil de <CorretorComFoto id={brokerId} nome={nome} tamanho={28} className="font-semibold" /> — somente leitura.
           <span className="text-t3"> Clique num lead para ver os detalhes. Nada pode ser alterado por aqui.</span>
         </p>
         <p className="text-[12.5px] text-t3 tabular-nums flex-shrink-0">
@@ -134,7 +135,7 @@ export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome
       </EstadoTela>
 
       {aberto && (
-        <LeadSomenteLeitura leadId={aberto.id} nome={aberto.name} corretor={nome} onClose={() => setAberto(null)} />
+        <LeadSomenteLeitura leadId={aberto.id} nome={aberto.name} corretor={nome} corretorId={brokerId} onClose={() => setAberto(null)} />
       )}
     </div>
   )

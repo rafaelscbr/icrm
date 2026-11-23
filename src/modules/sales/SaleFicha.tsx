@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { Sale, calcSaleCommissions } from '../../types'
 import { formatCurrency, formatCurrencyFull, formatDate, formatPhone, whatsappUrl } from '../../lib/formatters'
 import { STAGE_THEME } from '../../lib/stageTheme'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 
 /**
  * Ficha da venda — padrão "Folha" (02/11/2026).
@@ -51,7 +52,7 @@ export function SaleFicha({ sale, onClose, onEdit, onDelete }: {
           <div className="flex items-center gap-x-3 gap-y-1 mt-2 flex-wrap text-[14px]">
             <span className="text-t2">{sale.propertyName}</span>
             <span className="text-t4">{formatDate(sale.date)}</span>
-            {isAdmin && corretor && <span className="text-t4">{corretor}</span>}
+            {isAdmin && corretor && <CorretorComFoto id={sale.brokerId} nome={corretor} tamanho={28} className="text-t4" />}
           </div>
           <div className="h-5" />
         </>

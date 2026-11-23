@@ -11,6 +11,7 @@ import type { LucideIcon } from 'lucide-react'
 import { DAILY_TARGETS, WEEKLY_TARGETS, MONTHLY_TARGETS } from '../../lib/metasConfig'
 import confetti from 'canvas-confetti'
 import { useAuthStore } from '../../store/useAuthStore'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { Abas } from '../../components/shared/Abas'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Modal } from '../../components/ui/Modal'
@@ -27,7 +28,6 @@ import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
 import { useCallQueueStore } from '../../store/useCallQueueStore'
 import { Goal, GoalCategory, Task, Sale } from '../../types'
-import { iniciais } from '../../lib/formatters'
 import { useContagem } from '../../hooks/useContagem'
 import { avisarComDesfazer } from '../../lib/desfazer'
 
@@ -529,6 +529,8 @@ interface GrupoDeMetas {
   id: string
   nome: string
   ativo: boolean
+  /** foto do perfil do corretor, quando tem */
+  fotoUrl?: string
   metas: Goal[]
 }
 
@@ -574,13 +576,8 @@ function GrupoDoCorretor({ grupo, tasks, sales, disparos, onEdit, onDelete, onPa
   return (
     <section aria-label={`Metas de ${grupo.nome}`}>
       <div className="flex items-center gap-3 mb-3">
-        <span
-          className="w-8 h-8 rounded-full bg-brand-tint border border-brand/25 text-brand-text font-heading
-                     text-[12px] font-bold flex items-center justify-center shrink-0"
-          aria-hidden
-        >
-          {iniciais(grupo.nome) || '?'}
-        </span>
+        {/* Foto no lugar das iniciais (22/11/2026): a seção de cada corretor se reconhece de relance */}
+        <FotoPerfil nome={grupo.nome} url={grupo.fotoUrl} tamanho={40} />
         <div className="min-w-0 flex-1">
           <p className="font-heading text-[14px] font-bold text-t1 leading-tight truncate">
             {grupo.nome}
@@ -711,7 +708,7 @@ export function GoalsPage() {
     return [...porId.entries()]
       .map(([id, metas]) => {
         const p = allProfiles.find(x => x.id === id)
-        return { id, nome: p?.name ?? (id ? 'Corretor sem cadastro' : 'Sem dono'), ativo: p?.active !== false, metas }
+        return { id, nome: p?.name ?? (id ? 'Corretor sem cadastro' : 'Sem dono'), ativo: p?.active !== false, fotoUrl: p?.avatarUrl, metas }
       })
       .sort((a, b) => Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome))
   }, [visaoGlobal, active, allProfiles])

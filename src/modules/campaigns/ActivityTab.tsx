@@ -7,6 +7,7 @@ import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { CampaignActivity } from '../../types'
 import { localDateStr } from '../../lib/formatters'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 
 // ─── Configuração visual por tipo de ação ────────────────────────────────────
 
@@ -338,9 +339,11 @@ export function ActivityTab({ campaignId }: ActivityTabProps) {
                   {/* Corpo */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-sm font-semibold text-t1">
-                        {activity.brokerName ?? 'Sistema'}
-                      </span>
+                      {/* Foto de quem fez (22/11/2026); ação do sistema fica só com o nome */}
+                      {activity.brokerId
+                        ? <CorretorComFoto id={activity.brokerId} nome={activity.brokerName ?? 'Corretor'} tamanho={24}
+                                           className="text-sm font-semibold text-t1" />
+                        : <span className="text-sm font-semibold text-t1">{activity.brokerName ?? 'Sistema'}</span>}
                       <span className={`text-xs font-medium px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
                         {cfg.label}
                       </span>

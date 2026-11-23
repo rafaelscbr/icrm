@@ -14,6 +14,7 @@ import {
   MetaNoMarinho, NumerosNoMarinho, Painel, PontosNoMarinho, PrazoNoMarinho, Resposta, mediaSemHoje, urgenciaDe,
 } from './components/Sala'
 import { destacar } from '../../components/shared/Destaque'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 import type { Corretor } from './components/Sala'
 import { AlertasDaSala } from '../leads/PainelMonitor'
 import {
@@ -207,6 +208,7 @@ export function PulsePage() {
     const rec = resposta?.recebidos.get(q.id)
     return {
       id: q.id, nome: q.nome, ativo,
+      foto: allProfiles.find(p => p.id === q.id)?.avatarUrl,
       status: ativo ? `ativo · ${haQuanto(q.ultimaAt!, agora)}` : q.ultimaAt ? `visto ${haQuanto(q.ultimaAt, agora)}` : 'sem atividade hoje',
       pausa: pausaDe(pausas, q.id, agora),
       marcas: q.marcas,
@@ -218,11 +220,11 @@ export function PulsePage() {
       leads: resposta ? rec?.daRoleta ?? 0 : null,
       herdados: (rec?.porTransferencia ?? 0) + (rec?.manual ?? 0),
     }
-  }), [quadros, agora, resposta, pausas])
+  }), [quadros, agora, resposta, pausas, allProfiles])
 
   // ── Alertas por exceção ───────────────────────────────────────────────────
   const fila = useMemo(
-    () => (sala?.esperando ?? []).map(l => ({ id: l.id, nome: l.nome, corretor: nomeDe(l.brokerId), slaDueAt: l.slaDueAt })),
+    () => (sala?.esperando ?? []).map(l => ({ id: l.id, nome: l.nome, corretor: nomeDe(l.brokerId), corretorId: l.brokerId, slaDueAt: l.slaDueAt })),
     [sala, nomeDe],
   )
   const alertas = alertasDaSala({
@@ -305,9 +307,15 @@ export function PulsePage() {
               <div className="flex flex-col items-end gap-2 pt-0.5">
                 <StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} />
                 {ultimoEv && (
-                  <p className="text-[14px] truncate" key={ultimoEv.id} style={{ color: 'var(--m-t2)' }}>
-                    Último registro <span className="font-semibold" style={{ color: 'var(--m-t1)' }}>{haQuanto(ultimoEv.at, agora)}</span>
-                    {ultimoEv.brokerId && <> · {nomes.get(ultimoEv.brokerId)}</>}
+                  <p className="flex items-center gap-1.5 min-w-0 whitespace-nowrap text-[14px]" key={ultimoEv.id} style={{ color: 'var(--m-t2)' }}>
+                    <span>Último registro</span>
+                    <span className="font-semibold" style={{ color: 'var(--m-t1)' }}>{haQuanto(ultimoEv.at, agora)}</span>
+                    {ultimoEv.brokerId && (
+                      <>
+                        <span aria-hidden>·</span>
+                        <CorretorComFoto id={ultimoEv.brokerId} nome={nomes.get(ultimoEv.brokerId) ?? ''} tamanho={22} className="gap-1.5" />
+                      </>
+                    )}
                   </p>
                 )}
               </div>

@@ -4,6 +4,8 @@ import toast from 'react-hot-toast'
 import { useLeadPauseStore } from '../../store/useLeadPauseStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { fraseDaVolta, pausaEmVigor } from '../../lib/pausaLeads'
+import { useFotoDoCorretor } from '../../components/shared/CorretorComFoto'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 
 /**
  * Quem está fora da roleta agora — visão do admin (migração 089).
@@ -17,6 +19,7 @@ export function PausasDaEquipe() {
   const { allProfiles, fetchAllProfiles, profile } = useAuthStore()
   const [agora, setAgora] = useState(() => Date.now())
   const [devolvendo, setDevolvendo] = useState<string | null>(null)
+  const fotoDe = useFotoDoCorretor()
 
   useEffect(() => { void carregar() }, [carregar])
   useEffect(() => { if (allProfiles.length === 0) void fetchAllProfiles() }, [allProfiles.length, fetchAllProfiles])
@@ -67,6 +70,7 @@ export function PausasDaEquipe() {
       <ul className="mt-3 divide-y divide-warning-line/60">
         {emVigor.map(p => (
           <li key={p.id} className="flex items-center gap-3 py-2">
+            <FotoPerfil nome={nome(p.brokerId)} url={fotoDe(p.brokerId)} tamanho={36} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-semibold text-t1">{nome(p.brokerId)}</p>
               <p className="text-[12.5px] tabular-nums text-t3">{fraseDaVolta(p.untilAt, agora)}</p>

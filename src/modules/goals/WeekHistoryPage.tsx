@@ -15,7 +15,8 @@ import { useGoalsStore } from '../../store/useGoalsStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useAuthStore } from '../../store/useAuthStore'
-import { iniciais } from '../../lib/formatters'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
+import { useFotoDoCorretor } from '../../components/shared/CorretorComFoto'
 import { WeekSnapshot, WeekSnapshotEntry, GoalCategory } from '../../types'
 
 /**
@@ -122,6 +123,7 @@ function WeekCardEquipe({ weekStart, weekEnd, itens, nomes }: {
 }) {
   const { range, year } = formatWeekLabel(weekStart, weekEnd)
   const [aberto, setAberto] = useState<string | null>(null)
+  const fotoDe = useFotoDoCorretor()
   const media = Math.round(itens.reduce((a, s) => a + s.score, 0) / itens.length)
   const ordenados = [...itens].sort((a, b) => b.score - a.score)
 
@@ -150,13 +152,8 @@ function WeekCardEquipe({ weekStart, weekEnd, itens, nomes }: {
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left cursor-pointer hover:bg-s3/40
                            transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
               >
-                <span
-                  className="w-7 h-7 rounded-full bg-brand-tint border border-brand/25 text-brand-text font-heading
-                             text-[11px] font-bold flex items-center justify-center shrink-0"
-                  aria-hidden
-                >
-                  {iniciais(nome) || '?'}
-                </span>
+                {/* Foto no lugar das iniciais (22/11/2026) */}
+                <FotoPerfil nome={nome} url={fotoDe(s.brokerId)} tamanho={32} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px] font-semibold text-t1 truncate">{nome}</span>
                   <span className="block text-[11px] text-t4 tabular-nums">

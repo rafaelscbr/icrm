@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Bloco, Indicador, Quadro } from './pecas'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 import { useBloco } from './contexto'
 import { ETAPAS, ROTULO_ETAPA, pct, tempoUtil } from './formatos'
 import type { PrimeiroContatoGrupo, Resumo, ResumoCorretor } from './tipos'
@@ -145,7 +146,9 @@ function Comparacao({ corretores, prazo }: { corretores: ResumoCorretor[]; prazo
           <tr>
             <th scope="col" className="text-left text-[12px] font-medium text-t4 px-1 pb-2">Indicador</th>
             {corretores.map(c => (
-              <th key={c.id} scope="col" className="text-right text-[13px] font-semibold text-t1 px-2 pb-2 whitespace-nowrap">{c.nome.split(' ')[0]}</th>
+              <th key={c.id} scope="col" className="text-right text-[13px] font-semibold text-t1 px-2 pb-2 whitespace-nowrap">
+                <CorretorComFoto id={c.id} nome={c.nome} tamanho={24} className="gap-1.5">{c.nome.split(' ')[0]}</CorretorComFoto>
+              </th>
             ))}
           </tr>
         </thead>

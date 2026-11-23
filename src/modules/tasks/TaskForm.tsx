@@ -16,6 +16,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
 import { localDateStr } from '../../lib/formatters'
 import { ContactForm } from '../contacts/ContactForm'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import toast from 'react-hot-toast'
 
 interface TaskFormProps {
@@ -531,15 +532,16 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
             </button>
             {assignableProfiles.map(p => (
               <button key={p.id} type="button" onClick={() => setAssignedToId(assignedToId === p.id ? '' : p.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
+                aria-pressed={assignedToId === p.id}
+                className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
                   ${assignedToId === p.id
                     ? 'bg-brand-tint border-brand/25 text-brand-text'
                     : 'border-line text-t3 hover:text-t1 hover:border-line-strong'
                   }`}
               >
-                <div className="w-4 h-4 rounded-full bg-brand-tint flex items-center justify-center text-[11px] font-bold text-brand-text flex-shrink-0">
-                  {p.name[0].toUpperCase()}
-                </div>
+                {/* Foto no lugar da inicial (22/11/2026); o anel marca quem está escolhido */}
+                <FotoPerfil nome={p.name} url={p.avatarUrl} tamanho={24}
+                            className={assignedToId === p.id ? 'ring-2 ring-brand/50' : ''} />
                 {p.name}
               </button>
             ))}
@@ -560,16 +562,15 @@ export function TaskForm({ isOpen, onClose, task, defaultContactId, defaultLeadI
               const active = participantIds.includes(p.id)
               return (
                 <button key={p.id} type="button" onClick={() => toggleParticipant(p.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
+                  aria-pressed={active}
+                  className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer
                     ${active
                       ? 'bg-info-bg border-info-line text-info'
                       : 'border-line text-t3 hover:text-t1 hover:border-line-strong'
                     }`}
                 >
-                  <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0
-                    ${active ? 'bg-info-bg text-info' : 'bg-s3/50 text-t3'}`}>
-                    {p.name[0].toUpperCase()}
-                  </div>
+                  <FotoPerfil nome={p.name} url={p.avatarUrl} tamanho={24}
+                              className={active ? 'ring-2 ring-info/50' : ''} />
                   {p.name}
                 </button>
               )

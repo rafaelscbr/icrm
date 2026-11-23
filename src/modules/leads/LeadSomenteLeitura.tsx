@@ -6,6 +6,8 @@ import { db } from '../../lib/db'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { formatCurrency, formatPhone } from '../../lib/formatters'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useFotoDoCorretor } from '../../components/shared/CorretorComFoto'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import {
   FichaPainel, FichaBarraTopo, FichaNome, FichaNumeros, FichaSecao, FichaRegua,
 } from '../../components/shared/Ficha'
@@ -77,12 +79,14 @@ function dataDaTarefa(dueDate: string | null, dueTime: string | null): string {
   return `${dia}/${mes}${dueTime ? ` às ${dueTime.slice(0, 5)}` : ''}`
 }
 
-export function LeadSomenteLeitura({ leadId, nome, corretor, onClose }: {
+export function LeadSomenteLeitura({ leadId, nome, corretor, corretorId, onClose }: {
   leadId: string
   /** nome do lead como veio no quadro — aparece já, enquanto a ficha carrega */
   nome: string
   /** nome do corretor responsável */
   corretor: string
+  /** id do corretor — para a foto já na abertura; sem ele, a foto chega com a ficha */
+  corretorId?: string | null
   onClose: () => void
 }) {
   const [dados, setDados] = useState<Detalhe | null>(null)
@@ -107,6 +111,7 @@ export function LeadSomenteLeitura({ leadId, nome, corretor, onClose }: {
 
   const lead = dados?.lead
   const primeiroNome = corretor.split(' ')[0]
+  const fotoDe = useFotoDoCorretor()
 
   return (
     <FichaPainel
@@ -119,6 +124,8 @@ export function LeadSomenteLeitura({ leadId, nome, corretor, onClose }: {
             contexto={<>
               <Eye size={13} strokeWidth={1.8} className="text-info flex-shrink-0" aria-hidden />
               <span className="truncate">Somente leitura · lead de {primeiroNome}</span>
+              {/* a foto logo depois do nome: de quem é este lead, de relance */}
+              <FotoPerfil nome={corretor} url={fotoDe(corretorId ?? lead?.brokerId)} tamanho={24} />
             </>}
             acoes={
               <button type="button" onClick={() => void carregar()} disabled={carregando}

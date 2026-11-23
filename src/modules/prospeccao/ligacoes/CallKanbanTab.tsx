@@ -11,6 +11,8 @@ import {
 } from './config'
 import type { CallBoard, CallBoardCard, CallCampaign } from '../../../types'
 import toast from 'react-hot-toast'
+import { FotoPerfil } from '../../../components/shared/FotoPerfil'
+import { useFotoDoCorretor } from '../../../components/shared/CorretorComFoto'
 
 /**
  * O quadro — leitura do MESMO estado que o discador opera.
@@ -229,6 +231,8 @@ function Cartao({ card, nomeDe, onTransferir, onFalarAgora, pegando }: {
 }) {
   const desfecho  = card.lastOutcome ? OUTCOME_BY_VALUE[card.lastOutcome] : null
   const reservado = card.claimedUntil && new Date(card.claimedUntil) > new Date()
+  const fotoDe    = useFotoDoCorretor()
+  const quemTem   = nomeDe(card.claimedBy)
 
   // Mesma regra do funil e dos disparos: só quem pede ação carrega superfície.
   // Aqui "pede ação" é o lead pronto para transferir, ou o retorno que já
@@ -288,7 +292,11 @@ function Cartao({ card, nomeDe, onTransferir, onFalarAgora, pegando }: {
       )}
 
       {reservado && (
-        <Chip icon={Lock} tom="atencao">com {nomeDe(card.claimedBy)} agora</Chip>
+        // Foto de quem reservou (22/11/2026) — "você" dispensa a foto
+        <Chip icon={Lock} tom="atencao">
+          com {quemTem !== 'você' && <FotoPerfil nome={quemTem} url={fotoDe(card.claimedBy)} tamanho={20} />}
+          {quemTem} agora
+        </Chip>
       )}
 
       {card.notes && (

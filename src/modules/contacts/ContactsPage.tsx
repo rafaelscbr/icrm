@@ -22,6 +22,7 @@ import { useLeadsStore } from '../../store/useLeadsStore'
 import { Contact, ContactTag } from '../../types'
 import { formatPhone, whatsappUrl, isBirthdayThisMonth } from '../../lib/formatters'
 import toast from 'react-hot-toast'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 
 const TAG_LABELS: Record<ContactTag, string> = {
   owner: 'Proprietário',
@@ -268,7 +269,11 @@ export function ContactsPage() {
               </div>
 
               <div className={celula(COLUNAS_CONTATO[1])}>
-                <p className="text-xs text-t3 truncate">{nomeDoDono(c.brokerId)}</p>
+                {/* Foto do dono ao lado do primeiro nome (22/11/2026) */}
+                {c.brokerId && nomeDoDono(c.brokerId) !== '—'
+                  ? <CorretorComFoto id={c.brokerId} nome={c.brokerId === profile?.id ? profile.name : nomeDoDono(c.brokerId)}
+                                     tamanho={24} className="text-xs text-t3 max-w-full">{nomeDoDono(c.brokerId)}</CorretorComFoto>
+                  : <p className="text-xs text-t3 truncate">—</p>}
               </div>
               <div className={celula(COLUNAS_CONTATO[2])}>
                 <NumeroCelula tom="suave">{dataCurta(c.createdAt)}</NumeroCelula>

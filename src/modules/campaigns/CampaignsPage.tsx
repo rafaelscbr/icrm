@@ -23,6 +23,7 @@ import { useDisparosStore } from '../../store/useDisparosStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { Campaign } from '../../types'
 import { STATUS_CONFIG } from './config'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 
 type PageTab = 'campanhas' | 'performance'
 
@@ -194,7 +195,7 @@ export function CampaignsPage() {
                   <p className="text-[14.5px] font-semibold text-t1 truncate">{c.name}</p>
                   <p className="text-[12.5px] text-t4 truncate mt-0.5">
                     {statusCfg.label}
-                    {isAdmin && brokerName && <> · {brokerName}</>}
+                    {isAdmin && brokerName && <> · <CorretorComFoto id={c.brokerId} nome={brokerName} tamanho={24} /></>}
                     {' · '}{total.toLocaleString('pt-BR')} {total === 1 ? 'lead' : 'leads'}
                   </p>
                 </button>

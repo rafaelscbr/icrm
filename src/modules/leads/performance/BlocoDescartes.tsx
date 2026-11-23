@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { useLeadConfigStore } from '../../../store/useLeadConfigStore'
 import { Bloco, BotaoCsv, Tabela } from './pecas'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 import { useBloco, usePerf } from './contexto'
 import { ROTULO_ETAPA, ROTULO_ORIGEM, diaHoraSP, nomeDeArquivo, rotuloMotivo } from './formatos'
 import type { Descartes } from './tipos'
@@ -76,7 +77,11 @@ export function BlocoDescartes() {
               ordemInicial={{ chave: 'quando', desc: true }}
               colunas={[
                 { chave: 'nome', rotulo: 'Lead', ordem: l => l.nome.toLowerCase(), valor: l => <span className="font-medium text-t1">{l.nome}</span> },
-                ...(varios ? [{ chave: 'corretor', rotulo: 'Corretor', valor: (l: Descartes['linhas'][number]) => l.corretor_nome.split(' ')[0] }] : []),
+                ...(varios ? [{ chave: 'corretor', rotulo: 'Corretor', valor: (l: Descartes['linhas'][number]) => (
+                  <CorretorComFoto id={l.corretor} nome={l.corretor_nome} tamanho={24} className="gap-1.5 whitespace-nowrap">
+                    {l.corretor_nome.split(' ')[0]}
+                  </CorretorComFoto>
+                ) }] : []),
                 { chave: 'quando', rotulo: 'Quando', ordem: l => l.quando, valor: l => diaHoraSP(l.quando) },
                 { chave: 'etapa', rotulo: 'Etapa', ordem: l => l.etapa, valor: l => ROTULO_ETAPA[l.etapa ?? ''] ?? l.etapa ?? '—' },
                 { chave: 'motivo', rotulo: 'Motivo', ordem: l => l.motivo, valor: l => rotuloMotivo(l.motivo, rotulos) },

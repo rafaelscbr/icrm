@@ -16,6 +16,7 @@ import {
 } from './config'
 import type { CallCampaign, CallOutcome, CallBoardCard } from '../../../types'
 import toast from 'react-hot-toast'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 
 /**
  * O discador — a tela onde o trabalho acontece.
@@ -230,7 +231,8 @@ export function CallQueueTab({ campaign }: Props) {
                       <IconeTom icon={cfg.icon} tom={cfg.tom} tamanho="sm" />
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] text-t2 truncate">
-                          <span className="font-semibold text-t1">{h.brokerName ?? 'Corretor'}</span>
+                          <CorretorComFoto id={h.brokerId} nome={h.brokerName ?? 'Corretor'} tamanho={24}
+                                           className="font-semibold text-t1" />
                           {' · '}{cfg.short}
                         </p>
                         {h.notes && <p className="text-[11px] text-t4 line-clamp-2">{h.notes}</p>}

@@ -12,6 +12,9 @@ import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import { useSalesStore } from '../../store/useSalesStore'
 import { usePeriodStore, matchesPeriod } from '../../store/usePeriodStore'
 import { formatCurrency, formatCurrencyFull } from '../../lib/formatters'
+import { useAuthStore } from '../../store/useAuthStore'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
+import { useFotoDoCorretor } from '../../components/shared/CorretorComFoto'
 import { Sale, calcSaleCommissions } from '../../types'
 
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
@@ -73,6 +76,9 @@ function SeasonalitySection({ sales }: { sales: Sale[] }) {
 
 export function SalesTab() {
   const { sales, load: loadSales } = useSalesStore()
+  const profile = useAuthStore(s => s.profile)
+  const allProfiles = useAuthStore(s => s.allProfiles)
+  const fotoDe = useFotoDoCorretor()
   const { startDate, endDate, getLabel } = usePeriodStore()
 
   useEffect(() => { loadSales() }, [loadSales])
@@ -101,17 +107,23 @@ export function SalesTab() {
     })
   }, [sales, startDate, endDate])
 
-  // Vendas por corretor
+  // Vendas por corretor — o nome vem do perfil (antes era 'Corretor' fixo e
+  // toda linha saía igual; 22/11/2026). Venda lançada sem corretor fica à parte.
   const byBroker = useMemo(() => {
-    const map: Record<string, { name: string; count: number; revenue: number }> = {}
+    const nomeDe = (id: string | null | undefined): string => {
+      if (!id) return 'Sem corretor'
+      if (id === profile?.id) return profile.name
+      return allProfiles.find(p => p.id === id)?.name ?? 'Corretor'
+    }
+    const map: Record<string, { brokerId: string | null; name: string; count: number; revenue: number }> = {}
     periodSales.forEach(s => {
       const key = s.brokerId ?? 'unknown'
-      if (!map[key]) map[key] = { name: 'Corretor', count: 0, revenue: 0 }
+      if (!map[key]) map[key] = { brokerId: s.brokerId ?? null, name: nomeDe(s.brokerId), count: 0, revenue: 0 }
       map[key].count++
       map[key].revenue += s.value
     })
     return Object.entries(map).map(([id, d]) => ({ id, ...d })).sort((a, b) => b.revenue - a.revenue)
-  }, [periodSales])
+  }, [periodSales, profile, allProfiles])
 
   const compacto = useCallback((v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1).replace('.', ',')} mi` : v >= 1_000 ? `${Math.round(v / 1_000)} mil` : String(v), [])
   const opcaoVgv = useCallback((t: CoresGrafico) =>
@@ -167,9 +179,7 @@ export function SalesTab() {
             <div className="flex flex-col gap-3">
               {byBroker.map((b) => (
                 <div key={b.id} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center text-[11px] font-bold text-brand flex-shrink-0">
-                    {b.name.charAt(0).toUpperCase()}
-                  </div>
+                  <FotoPerfil nome={b.name} url={fotoDe(b.brokerId)} tamanho={32} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium text-t2 truncate">{b.name}</span>

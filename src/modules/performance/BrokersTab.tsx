@@ -16,6 +16,8 @@ import { useCampaignActivityStore } from '../../store/useCampaignActivityStore'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useDisparosStore } from '../../store/useDisparosStore'
 import { formatCurrency } from '../../lib/formatters'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
+import { CorretorComFoto, useFotoDoCorretor } from '../../components/shared/CorretorComFoto'
 
 const REAL_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
 
@@ -116,6 +118,8 @@ export function BrokersTab() {
     allProfiles.filter(p => p.active !== false && (p.role === 'broker' || (isAdmin && p.role === 'admin'))),
     [allProfiles, isAdmin]
   )
+
+  const fotoDe = useFotoDoCorretor()
 
   const from = useMemo(() => startOf(period), [period])
   const prevFrom = useMemo(() => {
@@ -240,7 +244,7 @@ export function BrokersTab() {
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-line bg-s2/30">
           <Crown size={14} className="text-brand flex-shrink-0" />
           <p className="text-sm text-t2">
-            <span className="font-bold text-t1">{ranked[0].name}</span> lidera em atividade —{' '}
+            <CorretorComFoto id={ranked[0].id} nome={ranked[0].name} tamanho={24} className="font-bold text-t1" /> lidera em atividade —{' '}
             <span className="text-brand-text font-semibold">{ranked[0].disparos + ranked[0].interactions}</span> ações no período
           </p>
         </div>
@@ -256,18 +260,17 @@ export function BrokersTab() {
             <Card key={s.id} className="flex flex-col gap-5">
               {/* Header corretor */}
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-sm font-bold text-brand">
-                    {s.initial}
-                  </div>
+                <div className="relative flex-shrink-0">
+                  {/* Foto no lugar da inicial (22/11/2026): Dionata e Ryan começam diferente, mas a foto diz na hora */}
+                  <FotoPerfil nome={s.name} url={fotoDe(s.id)} tamanho={40} />
                   {rank === 0 && ranked.length > 1 && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand-fill flex items-center justify-center">
                       <Crown size={9} className="text-brand-fill-text" />
                     </div>
                   )}
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-t1">{s.name}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-t1 truncate">{s.name}</p>
                   <p className="text-xs text-t4">
                     Taxa conversão histórica: <span className="text-t2 font-medium">{s.convRate}%</span>
                   </p>
@@ -343,7 +346,7 @@ export function BrokersTab() {
               return (
                 <div key={s.id}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-t2">{s.name}</span>
+                    <CorretorComFoto id={s.id} nome={s.name} tamanho={24} className="text-xs font-semibold text-t2" />
                     <span className="text-xs text-t4">{total14} interações</span>
                   </div>
                   <div className="flex items-end gap-1 h-10">

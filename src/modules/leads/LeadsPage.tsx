@@ -26,6 +26,7 @@ import { useKanbanPrefs, KanbanSort } from '../../store/useKanbanPrefs'
 import { useLeadFiltersStore, OrdemLista } from '../../store/useLeadFiltersStore'
 import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
 import { Avatar } from '../../components/ui/Avatar'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 import { LeadForm } from './LeadForm'
 import { LeadModal } from './LeadModal'
 import { LeadKanban, STAGE_CONFIG } from './LeadKanban'
@@ -178,8 +179,11 @@ function LeadRow({ lead, onClick, mostrarEncaixe = true, agora }: {
           {brokerName && (
             <>
               <span className="text-t5" aria-hidden>·</span>
-              <span className="truncate" title={`Corretor responsável: ${brokerName}`}>
-                {brokerName.split(' ')[0]}
+              {/* foto ao lado do nome: na visão global, quem é quem de relance */}
+              <span className="flex min-w-0" title={`Corretor responsável: ${brokerName}`}>
+                <CorretorComFoto id={lead.brokerId} nome={brokerName} tamanho={24} className="gap-1.5">
+                  {brokerName.split(' ')[0]}
+                </CorretorComFoto>
               </span>
             </>
           )}

@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
 import { Bloco, BotaoCsv, Tabela } from './pecas'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 import { useBloco, usePerf } from './contexto'
 import { ROTULO_ETAPA, diaHoraSP, nomeDeArquivo, pct } from './formatos'
 import type { Funil } from './tipos'
@@ -48,7 +49,11 @@ export function BlocoFunil({ onParadoDias }: { onParadoDias: (n: number) => void
                   {corretores.map(c => (
                     <Fragment key={c}>
                       {corretores.length > 1 && (
-                        <tr><th colSpan={7} scope="colgroup" className="text-left text-[12.5px] font-semibold text-t2 pt-3 pb-1 px-1">{nomeDoCorretor(c)}</th></tr>
+                        <tr>
+                          <th colSpan={7} scope="colgroup" className="text-left text-[12.5px] font-semibold text-t2 pt-3 pb-1 px-1">
+                            <CorretorComFoto id={c} nome={nomeDoCorretor(c)} tamanho={24} />
+                          </th>
+                        </tr>
                       )}
                       {d.etapas.filter(e => e.corretor === c).map(e => (
                         <tr key={`${c}${e.etapa}`} className="border-t border-line">
@@ -95,7 +100,11 @@ export function BlocoFunil({ onParadoDias }: { onParadoDias: (n: number) => void
                   ordemInicial={{ chave: 'dias', desc: true }}
                   colunas={[
                     { chave: 'nome', rotulo: 'Lead', ordem: p => p.nome.toLowerCase(), valor: p => <span className="font-medium text-t1">{p.nome}</span> },
-                    ...(corretores.length > 1 ? [{ chave: 'corretor', rotulo: 'Corretor', valor: (p: Funil['parados'][number]) => nomeDoCorretor(p.corretor).split(' ')[0] }] : []),
+                    ...(corretores.length > 1 ? [{ chave: 'corretor', rotulo: 'Corretor', valor: (p: Funil['parados'][number]) => (
+                      <CorretorComFoto id={p.corretor} nome={nomeDoCorretor(p.corretor)} tamanho={24} className="gap-1.5 whitespace-nowrap">
+                        {nomeDoCorretor(p.corretor).split(' ')[0]}
+                      </CorretorComFoto>
+                    ) }] : []),
                     { chave: 'etapa', rotulo: 'Etapa', ordem: p => p.etapa, valor: p => ROTULO_ETAPA[p.etapa] ?? p.etapa },
                     { chave: 'ultimo', rotulo: 'Último contato', ordem: p => p.ultimo_contato, valor: p => p.ultimo_contato ? diaHoraSP(p.ultimo_contato) : <span className="text-error">nunca</span> },
                     { chave: 'dias', rotulo: 'Dias', alinhar: 'direita', ordem: p => p.dias, valor: p => <span className="font-semibold text-warning">{p.dias}</span> },

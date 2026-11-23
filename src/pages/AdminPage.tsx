@@ -5,7 +5,7 @@ import {
 import { PageLayout } from '../components/layout/PageLayout'
 import { SidePanel } from '../components/ui/SidePanel'
 import { Button } from '../components/ui/Button'
-import { Avatar } from '../components/ui/Avatar'
+import { FotoPerfil } from '../components/shared/FotoPerfil'
 import { EstadoTela } from '../components/shared/EstadoTela'
 import { SecaoTitulo, Rotulo, Chip, IconeTom } from '../components/shared/visual'
 import { useAuthStore, Profile } from '../store/useAuthStore'
@@ -451,7 +451,8 @@ function ProfileRow({
     <div className={`rounded-[14px] border border-line surface-premium shadow-card px-4 py-3.5 transition-all
       ${profile.active ? '' : 'opacity-60'}`}>
       <div className="flex items-center gap-3 flex-wrap">
-        <Avatar name={profile.name} size="sm" />
+        {/* Foto do perfil (22/11/2026) — o nome está ao lado, então a imagem é decorativa */}
+        <FotoPerfil nome={profile.name} url={profile.avatarUrl} tamanho={40} />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

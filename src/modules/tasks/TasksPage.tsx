@@ -29,6 +29,7 @@ import { buildGoogleCalendarUrl } from '../../lib/googleCalendar'
 import { localDateStr } from '../../lib/formatters'
 import { ChecklistBadge } from '../../components/shared/ChecklistBadge'
 import { avisarComDesfazer } from '../../lib/desfazer'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -188,14 +189,17 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
               quem, não o que fazer agora — então leem como texto. A linha
               chegava a oito elementos emoldurados; a única coisa que decide a
               ação aqui é o prazo, e é ele que fica com cor. */}
+          {/* Foto ao lado do nome (22/11/2026): quem delegou / para quem foi, de relance */}
           {isAssignedToMe && delegatedByName && (
-            <span className="flex items-center gap-1 text-xs text-t3">
-              <UserCheck size={10} strokeWidth={1.6} aria-hidden /> de {delegatedByName}
+            <span className="flex items-center gap-1 text-xs text-t3 min-w-0">
+              <UserCheck size={10} strokeWidth={1.6} aria-hidden /> de{' '}
+              <CorretorComFoto id={t.brokerId} nome={delegatedByName} tamanho={24} />
             </span>
           )}
           {isDelegatedByMe && assignedToName && (
-            <span className="flex items-center gap-1 text-xs text-t3">
-              <UserCheck size={10} strokeWidth={1.6} aria-hidden /> para {assignedToName}
+            <span className="flex items-center gap-1 text-xs text-t3 min-w-0">
+              <UserCheck size={10} strokeWidth={1.6} aria-hidden /> para{' '}
+              <CorretorComFoto id={t.assignedToId} nome={assignedToName} tamanho={24} />
             </span>
           )}
 
@@ -205,8 +209,9 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
             </span>
           )}
           {t.participants?.includes(currentUserId ?? '') && t.brokerId !== currentUserId && (
-            <span className="flex items-center gap-1 text-xs text-t3">
-              <Users size={10} strokeWidth={1.6} aria-hidden /> de {allProfiles.find(p => p.id === t.brokerId)?.name ?? 'Criador'}
+            <span className="flex items-center gap-1 text-xs text-t3 min-w-0">
+              <Users size={10} strokeWidth={1.6} aria-hidden /> de{' '}
+              <CorretorComFoto id={t.brokerId} nome={allProfiles.find(p => p.id === t.brokerId)?.name ?? 'Criador'} tamanho={24} />
             </span>
           )}
 

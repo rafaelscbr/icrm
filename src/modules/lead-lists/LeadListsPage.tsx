@@ -21,6 +21,7 @@ import { DeleteListModal } from './DeleteListModal'
 import { supabase }      from '../../lib/supabase'
 import { batchListScores, ListScoreResult } from '../../lib/listScore'
 import toast             from 'react-hot-toast'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 
 export function LeadListsPage() {
   const { lists, loading, erro, load, remove, archive } = useLeadListsStore()
@@ -238,7 +239,7 @@ export function LeadListsPage() {
                   </p>
                   <p className="text-[12.5px] text-t4 truncate mt-0.5">
                     {perfil || 'Sem perfil definido'}
-                    {dono && <> · {dono}</>}
+                    {dono && <> · <CorretorComFoto id={list.brokerId} nome={dono} tamanho={24} /></>}
                   </p>
                 </button>
 

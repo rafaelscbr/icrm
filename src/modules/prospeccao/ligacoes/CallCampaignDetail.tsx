@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowLeft, Phone, LayoutGrid, BarChart3, Pencil, Pause, Play, CheckCheck,
-  ListPlus, Users, Check, Loader2, X, Database, Crown, Timer,
+  ListPlus, Users, Check, Loader2, X, Database, Crown,
 } from 'lucide-react'
 import { useRovingTabs } from '../../../components/shared/Abas'
 import { SidePanel } from '../../../components/ui/SidePanel'
@@ -14,6 +14,7 @@ import { Rotulo, IconeTom, Dica, Chip, TOM } from './Primitivas'
 import { useCallCampaignsStore } from '../../../store/useCallCampaignsStore'
 import { useLeadListsStore } from '../../../store/useLeadListsStore'
 import { useAuthStore } from '../../../store/useAuthStore'
+import { FotoPerfil } from '../../../components/shared/FotoPerfil'
 import { CALL_STATUS_CONFIG } from './config'
 import toast from 'react-hot-toast'
 
@@ -329,13 +330,8 @@ function EquipePanel({ isOpen, onClose, campaignId }: {
         <section className="flex flex-col gap-2">
           {dono && (
             <div className="flex items-center gap-3 rounded-[14px] border border-brand/25 bg-brand-tint px-3.5 py-3">
-              <span
-                className="w-8 h-8 rounded-full grad-brand flex items-center justify-center
-                           shrink-0 font-heading text-[13px] font-extrabold"
-                aria-hidden
-              >
-                {dono.name.charAt(0).toUpperCase()}
-              </span>
+              {/* Foto no lugar da inicial (22/11/2026): quem é quem de relance */}
+              <FotoPerfil nome={dono.name} url={dono.avatarUrl} tamanho={36} />
               <span className="text-sm font-semibold text-t1 flex-1 truncate">{dono.name}</span>
               <Chip icon={Crown} tom="marca">responsável</Chip>
             </div>
@@ -345,10 +341,7 @@ function EquipePanel({ isOpen, onClose, campaignId }: {
             const perfil = allProfiles.find(x => x.id === p.brokerId)
             return (
               <div key={p.id} className="flex items-center gap-3 rounded-[14px] border border-line bg-s2/50 px-3.5 py-3">
-                <span className="w-8 h-8 rounded-full bg-s3 flex items-center justify-center shrink-0
-                                 font-heading text-[13px] font-bold text-t2" aria-hidden>
-                  {(perfil?.name ?? '?').charAt(0).toUpperCase()}
-                </span>
+                <FotoPerfil nome={perfil?.name ?? 'Corretor'} url={perfil?.avatarUrl} tamanho={36} />
                 <span className="text-sm text-t1 flex-1 truncate">{perfil?.name ?? 'Corretor'}</span>
                 <button
                   onClick={() => removeParticipant(p.id).catch(() => toast.error('Falha ao remover'))}
@@ -386,7 +379,7 @@ function EquipePanel({ isOpen, onClose, campaignId }: {
                               transition-colors cursor-pointer min-h-[40px]
                               focus:outline-none focus:ring-2 focus:ring-brand/30`}
                 >
-                  <Timer size={12} strokeWidth={1.6} aria-hidden /> {p.name}
+                  <FotoPerfil nome={p.name} url={p.avatarUrl} tamanho={24} /> {p.name}
                 </button>
               ))}
             </div>

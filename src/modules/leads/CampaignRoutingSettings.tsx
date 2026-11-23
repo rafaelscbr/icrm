@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, Check, Info, Loader2, RefreshCw } from 'lucide-react'
 import { db } from '../../lib/db'
 import { useAuthStore } from '../../store/useAuthStore'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { MetaFormRouting } from '../../types'
 import { CAMPO, Interruptor, SecaoConfig } from './SecaoConfig'
 import toast from 'react-hot-toast'
@@ -167,9 +168,17 @@ export function CampaignRoutingSettings() {
                                   disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
                                   ${on ? 'bg-brand-tint text-brand-text' : 'bg-s2 text-t3 hover:text-t1 hover:bg-s3'}`}
                               >
-                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0
-                                  ${on ? 'bg-brand-fill text-brand-fill-text' : 'bg-surface text-t3'}`} aria-hidden>
-                                  {on ? <Check size={12} strokeWidth={2.6} /> : b.name.charAt(0).toUpperCase()}
+                                {/* foto do corretor (22/11/2026); quem recebe ganha o selo de
+                                    confirmação sobre a foto, quem não recebe fica esmaecido */}
+                                <span className="relative flex-shrink-0" aria-hidden>
+                                  <FotoPerfil nome={b.name} url={b.avatarUrl} tamanho={26}
+                                              className={on ? '' : 'opacity-60 grayscale'} />
+                                  {on && (
+                                    <span className="absolute -right-1 -bottom-1 w-[15px] h-[15px] rounded-full bg-brand-fill text-brand-fill-text
+                                                     flex items-center justify-center ring-2 ring-surface">
+                                      <Check size={9} strokeWidth={3.2} />
+                                    </span>
+                                  )}
                                 </span>
                                 {b.name.split(' ')[0]}
                               </button>

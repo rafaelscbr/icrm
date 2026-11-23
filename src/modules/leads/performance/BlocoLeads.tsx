@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Bloco, BotaoCsv, Situacao, Tabela } from './pecas'
 import type { Coluna } from './pecas'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 import { useBloco, usePerf } from './contexto'
 import {
   ROTULO_ETAPA, ROTULO_MOTIVO_ENTRADA, ROTULO_ORIGEM, diaHoraSP, nomeDeArquivo, tempoUtil,
@@ -52,7 +53,11 @@ function ListaLeads({ linhas, onAbrir }: { linhas: LeadRecebido[]; onAbrir: (l: 
     { chave: 'nome', rotulo: 'Lead', ordem: l => l.nome.toLowerCase(),
       valor: l => <span className="font-medium text-t1">{l.nome}</span> },
     ...(varios ? [{ chave: 'corretor', rotulo: 'Corretor', ordem: (l: LeadRecebido) => l.corretor_nome,
-      valor: (l: LeadRecebido) => l.corretor_nome.split(' ')[0] }] : []),
+      valor: (l: LeadRecebido) => (
+        <CorretorComFoto id={l.corretor} nome={l.corretor_nome} tamanho={24} className="gap-1.5 whitespace-nowrap">
+          {l.corretor_nome.split(' ')[0]}
+        </CorretorComFoto>
+      ) }] : []),
     { chave: 'motivo', rotulo: 'Entrada', ordem: l => l.motivo,
       valor: l => <span className={l.motivo === 'sla_recapture' ? 'text-warning' : 'text-t2'}>{ROTULO_MOTIVO_ENTRADA[l.motivo] ?? l.motivo}</span> },
     { chave: 'origem', rotulo: 'Origem e anúncio', ordem: l => `${l.origem ?? ''}${l.anuncio_nome ?? ''}`,

@@ -13,6 +13,8 @@ import { posicaoNoDia, textoDeMinutos } from '../../leads/monitorLeads'
 import { NumeroVivo } from '../../leads/PainelMonitor'
 import { horaDaVolta } from '../../../lib/pausaLeads'
 import { formatCurrency } from '../../../lib/formatters'
+import { CorretorComFoto, useFotoDoCorretor } from '../../../components/shared/CorretorComFoto'
+import { FotoPerfil } from '../../../components/shared/FotoPerfil'
 import { agruparFeed, horaCurta } from '../pulseEvents'
 import type { PulseTone } from '../pulseEvents'
 import type { PulseEvent, PulseTempos, PulseVgl } from '../types'
@@ -92,6 +94,8 @@ const SECA_GRAVE  = 15
 export interface Corretor {
   id: string
   nome: string
+  /** foto de perfil (migrações 105/106) — sem ela, as iniciais */
+  foto?: string
   ativo: boolean
   status: string
   pausa?: LeadPause
@@ -142,8 +146,12 @@ export function EquipeCompacta({ corretores, agora }: { corretores: Corretor[]; 
                 <circle cx={31} cy={31} r={R} fill="none" stroke={corAnel} strokeWidth={4} strokeLinecap="round"
                         strokeDasharray={C} strokeDashoffset={C * (1 - pct)} style={{ transition: 'stroke-dashoffset 900ms cubic-bezier(.2,.8,.2,1)' }} />
               </svg>
-              <span className="absolute inset-[8px] flex items-center justify-center rounded-full font-display text-[16px] font-bold"
-                    style={{ background: id.fundo, color: id.tinta }} aria-hidden>{iniciais(c.nome)}</span>
+              {c.foto ? (
+                <img src={c.foto} alt="" draggable={false} className="absolute inset-[7px] h-[48px] w-[48px] rounded-full object-cover" />
+              ) : (
+                <span className="absolute inset-[8px] flex items-center justify-center rounded-full font-display text-[16px] font-bold"
+                      style={{ background: id.fundo, color: id.tinta }} aria-hidden>{iniciais(c.nome)}</span>
+              )}
               <span className={`absolute right-0 bottom-0 h-4 w-4 rounded-full border-[3px] border-[color:var(--surface)] ${c.ativo && !c.pausa ? 'pulse-live-dot' : ''}`}
                     style={{ background: c.pausa ? 'var(--v-alerta)' : c.ativo ? 'var(--v-ok)' : 'var(--v-neutro)' }} aria-hidden />
             </span>
@@ -183,6 +191,8 @@ export interface Espera {
   id: string
   nome: string
   corretor?: string
+  /** id do corretor — para a foto ao lado do nome */
+  corretorId?: string | null
   slaDueAt: string
 }
 
@@ -249,9 +259,16 @@ export function FilaPrimeiroContato({ fila, agora, prazoMin }: { fila: Espera[];
           <li key={e.id} className="-mx-3 border-t border-line/70 first:border-t-0 pulse-item-in">
             <button type="button" onClick={() => abrirLead(e.id)} title="Abrir a ficha do lead"
                     className="block w-full text-left px-3 py-2.5 rounded-[12px] cursor-pointer transition-colors hover:bg-s2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40">
-            <div className="flex items-baseline justify-between gap-3 min-w-0">
-              <span className="min-w-0 truncate text-[17px] font-semibold text-t1">
-                {e.nome}{e.corretor && <span className="font-normal text-t3"> · {e.corretor.split(' ')[0]}</span>}
+            <div className="flex items-center justify-between gap-3 min-w-0">
+              <span className="min-w-0 flex items-center gap-2 text-[17px] font-semibold text-t1">
+                <span className="min-w-0 truncate">{e.nome}</span>
+                {/* a foto ao lado do nome: na TV, quem é quem de longe */}
+                {e.corretor && (
+                  <span className="flex shrink-0 items-center gap-2 font-normal text-t3">
+                    <span aria-hidden>·</span>
+                    <CorretorComFoto id={e.corretorId} nome={e.corretor} tamanho={26}>{e.corretor.split(' ')[0]}</CorretorComFoto>
+                  </span>
+                )}
               </span>
               <span className={`shrink-0 text-[14px] font-semibold tabular-nums ${tomTexto}`}>{texto}</span>
             </div>
@@ -298,6 +315,7 @@ export function AoVivo({ feed, nomes, carregado }: {
     () => agruparFeed(feed.filter(e => e.brokerId && nomes.has(e.brokerId))).slice(0, LINHAS_MAX),
     [feed, nomes],
   )
+  const fotoDe = useFotoDoCorretor()
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden relative">
@@ -314,6 +332,8 @@ export function AoVivo({ feed, nomes, carregado }: {
                 <Linha leadId={ev.leadId}>
                 <span className="w-[48px] shrink-0 pt-[2px] text-[14px] text-t4 tabular-nums">{horaCurta(ev.at)}</span>
                 <span className="mt-[7px] h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: COR_DO_TOM[v.tone] }} aria-hidden />
+                {/* a foto de quem fez, ao lado do nome em negrito */}
+                {ev.brokerId && <FotoPerfil nome={nomes.get(ev.brokerId)} url={fotoDe(ev.brokerId)} tamanho={26} className="-mt-[2px]" />}
                 <span className="min-w-0 flex-1">
                   <span className="block text-[16px] text-t1 leading-snug line-clamp-2">
                     {ev.brokerId && <span className="font-semibold">{nomes.get(ev.brokerId)} · </span>}

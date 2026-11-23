@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Segmentado } from '../../../components/shared/visual'
 import { Bloco, BotaoCsv, Indicador, Quadro } from './pecas'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 import { useBloco, usePerf } from './contexto'
 import { ROTULO_ETAPA, nomeDeArquivo, pct, rotuloDia } from './formatos'
 import type { Cadencia } from './tipos'
@@ -127,7 +128,13 @@ function Conteudo({ d, nomeDoCorretor }: { d: Cadencia; nomeDoCorretor: (id: str
                       tabIndex={0} onClick={() => abrirLead(l.lead_id, l.nome, l.corretor_nome)}
                       onKeyDown={e => { if (e.key === 'Enter') abrirLead(l.lead_id, l.nome, l.corretor_nome) }}>
                     <td className="px-1 py-1.5 font-medium text-t1 max-w-[220px] truncate">{l.nome}</td>
-                    {varios && <td className="px-1 py-1.5 text-t2">{l.corretor_nome.split(' ')[0]}</td>}
+                    {varios && (
+                      <td className="px-1 py-1.5 text-t2 whitespace-nowrap">
+                        <CorretorComFoto id={l.corretor} nome={l.corretor_nome} tamanho={24} className="gap-1.5">
+                          {l.corretor_nome.split(' ')[0]}
+                        </CorretorComFoto>
+                      </td>
+                    )}
                     <td className="px-1 py-1.5 text-t2">{ROTULO_ETAPA[l.etapa] ?? l.etapa}</td>
                     <td className="px-1 py-1.5 text-right text-t2">{l.etapa === 'followup' ? `${l.passo}/${d.max_tentativas}` : '—'}</td>
                     <td className="px-1 py-1.5 text-right">{l.contatos_periodo}</td>

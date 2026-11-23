@@ -10,6 +10,7 @@ import { FaixaNumeros, Segmentado } from '../../components/shared/visual'
 import { ListContainer } from '../../components/ui/ListContainer'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
+import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 import { EstadoTela } from '../../components/shared/EstadoTela'
 import { CabecalhoLista, AcoesLinha, ContextoLinha, celula } from '../../components/shared/lista'
 import type { Coluna } from '../../components/shared/lista'
@@ -101,7 +102,7 @@ export function SalesPage() {
     { chave: 'data',     rotulo: 'Data',          largura: 'w-[118px]' },
     { chave: 'valor',    rotulo: 'Valor',         largura: 'w-[130px]', alinhar: 'dir' },
     { chave: 'comissao', rotulo: 'Comissão',      largura: 'w-[150px]', alinhar: 'dir' },
-    ...(isAdmin ? [{ chave: 'corretor', rotulo: 'Corretor', largura: 'w-[110px]' } as Coluna] : []),
+    ...(isAdmin ? [{ chave: 'corretor', rotulo: 'Corretor', largura: 'w-[140px]' } as Coluna] : []),
   ]
 
   const filtered = sales.filter(s => {
@@ -353,7 +354,12 @@ export function SalesPage() {
                   </div>
 
                   {isAdmin && (
-                    <span className={celula(COLUNAS[5], 'text-xs text-t3 truncate')}>{brokerName}</span>
+                    // Foto ao lado do nome (22/11/2026): a coluna ficou 30px mais larga para caber
+                    <span className={celula(COLUNAS[5], 'text-xs text-t3 truncate')}>
+                      {s.brokerId && brokerName !== '—'
+                        ? <CorretorComFoto id={s.brokerId} nome={brokerName ?? ''} tamanho={24} className="max-w-full" />
+                        : brokerName}
+                    </span>
                   )}
 
                   <AcoesLinha largura="w-[76px]">

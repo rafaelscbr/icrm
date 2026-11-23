@@ -3,6 +3,7 @@ import { Grafico, eixoCategoria, eixoValor } from '../../../components/charts/Gr
 import type { CoresGrafico } from '../../../components/charts/Grafico'
 import { Segmentado } from '../../../components/shared/visual'
 import { Bloco, BotaoCsv } from './pecas'
+import { CorretorComFoto } from '../../../components/shared/CorretorComFoto'
 import { useBloco, usePerf } from './contexto'
 import { horaSP, minutoDoDiaSP, nomeDeArquivo, rotuloDia } from './formatos'
 import type { Atividade, AtividadeDia, Presenca } from './tipos'
@@ -116,7 +117,13 @@ function TabelaDias({ linhas, varios }: { linhas: AtividadeDia[]; varios: boolea
             const parado = l.acoes === 0
             return (
               <tr key={`${l.corretor}${l.dia}`} className={`border-t border-line ${parado ? 'text-t4' : 'text-t1'}`}>
-                {varios && <td className="px-1 py-1.5">{nomeDoCorretor(l.corretor).split(' ')[0]}</td>}
+                {varios && (
+                  <td className="px-1 py-1.5 whitespace-nowrap">
+                    <CorretorComFoto id={l.corretor} nome={nomeDoCorretor(l.corretor)} tamanho={24} className="gap-1.5">
+                      {nomeDoCorretor(l.corretor).split(' ')[0]}
+                    </CorretorComFoto>
+                  </td>
+                )}
                 <td className="px-1 py-1.5 whitespace-nowrap">{rotuloDia(l.dia)}</td>
                 <td className="px-1 py-1.5 text-right font-semibold">{l.contatos}</td>
                 <td className="px-1 py-1.5 text-right">{l.whatsapp}</td>
@@ -208,15 +215,20 @@ export function BlocoPresenca() {
             <span className="inline-flex items-center gap-1.5"><span className="w-5 h-1.5 rounded-full bg-success" /> da 1ª à última ação</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-[3px] h-3 rounded-full bg-error" /> perda no pingue-pongue</span>
           </div>
-          <div className="flex text-[11px] text-t4 tabular-nums pl-[132px] pr-1">
+          <div className="flex text-[11px] text-t4 tabular-nums pl-[160px] pr-1">
             {[6, 9, 12, 15, 18, 21].map(h => (
               <span key={h} className="flex-1">{h}h</span>
             ))}
           </div>
           {d.dias.map(dia => (
             <div key={`${dia.corretor}${dia.dia}`} className="flex items-center gap-3 py-1">
-              <span className="w-[120px] flex-shrink-0 text-[12.5px] text-t2 truncate">
-                {rotuloDia(dia.dia)} <span className="text-t4">· {nomeDoCorretor(dia.corretor).split(' ')[0]}</span>
+              {/* a régua das horas acima desloca o mesmo tanto (148 + gap 12) */}
+              <span className="w-[148px] flex-shrink-0 flex items-center gap-1.5 text-[12.5px] text-t2 min-w-0">
+                <span className="flex-shrink-0">{rotuloDia(dia.dia)}</span>
+                <span className="text-t4 flex-shrink-0" aria-hidden>·</span>
+                <CorretorComFoto id={dia.corretor} nome={nomeDoCorretor(dia.corretor)} tamanho={24} className="gap-1.5 text-t4">
+                  {nomeDoCorretor(dia.corretor).split(' ')[0]}
+                </CorretorComFoto>
               </span>
               <div className="relative flex-1 h-5 rounded-[6px] bg-s2" role="img"
                    aria-label={`${rotuloDia(dia.dia)}: primeiro acesso ${horaSP(dia.primeiro_acesso)}, primeira ação ${horaSP(dia.primeira_acao)}, última ${horaSP(dia.ultima_acao)}, ${dia.perdas.length} perdas`}>
