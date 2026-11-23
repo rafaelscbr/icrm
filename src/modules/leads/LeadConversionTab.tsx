@@ -21,7 +21,7 @@ import {
   passosSafra, serieSafra, tempoAteVisita,
 } from './safra'
 import type { Contagem, EtapaSafra, Fatia, Filtro, FunilSafra, PontoSafra } from './safra'
-import { FATIA, FunilDesenhado } from './FunilDesenhado'
+import { FunilDesenhado, TOM, TOM_DESCARTE } from './FunilDesenhado'
 import type { ChaveFatia, FatiaDesenho } from './FunilDesenhado'
 
 /**
@@ -122,12 +122,12 @@ export function LeadConversionTab() {
   const quando = recorte.inicio && recorte.fim ? `${fmtDataCurta(recorte.inicio)} a ${fmtDataCurta(recorte.fim)}` : 'desde o começo'
 
   return (
-    <div className="pulse-fundo rounded-[28px] p-3 sm:p-4 flex flex-col gap-4 mb-10">
+    <div className="flex flex-col gap-5 pb-10">
       {/* ── Topo: título, filtros e os números da safra ── */}
       <header className="flex items-end gap-x-4 gap-y-3 flex-wrap px-1 pt-1">
         <div className="min-w-0">
           <p className="font-label text-[11px] font-semibold uppercase tracking-[0.18em] text-t3">Safra · {quando}</p>
-          <h2 className="font-display text-[28px] leading-tight font-extrabold tracking-[-0.035em] text-t1 mt-0.5">
+          <h2 className="font-display text-[24px] leading-tight font-bold tracking-[-0.03em] text-t1 mt-0.5">
             {destacar('Conversão do *funil*')}
           </h2>
         </div>
@@ -174,7 +174,7 @@ export function LeadConversionTab() {
         {dados && total && (
           <div className={`flex flex-col gap-4 transition-opacity duration-200 ${carregando ? 'opacity-60' : ''}`} aria-busy={carregando}>
             {total.recebidos === 0 ? (
-              <p className="pulse-card rounded-[20px] px-6 py-12 text-center text-[15px] text-t3">Nenhum lead neste recorte.</p>
+              <p className="rounded-[16px] border border-line bg-surface px-6 py-12 text-center text-[14px] text-t3">Nenhum lead neste recorte.</p>
             ) : (
               <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] gap-4">
                 <Cartao titulo="Funil da *safra*" extra="passe o mouse nas etapas">
@@ -224,20 +224,20 @@ function Cartao({ titulo, extra, acao, children, className = '' }: {
   titulo: string; extra?: ReactNode; acao?: ReactNode; children: ReactNode; className?: string
 }) {
   return (
-    <section className={`pulse-card rounded-[20px] flex flex-col min-w-0 overflow-hidden ${className}`}>
-      <header className="flex items-center gap-3 px-6 pt-5 pb-3 flex-wrap">
-        <h3 className="font-display text-[18px] font-bold tracking-[-0.02em] text-t1 whitespace-nowrap">{destacar(titulo)}</h3>
-        {extra && <span className="min-w-0 text-[13.5px] text-t3 truncate">{extra}</span>}
+    <section className={`rounded-[16px] border border-line bg-surface flex flex-col min-w-0 overflow-hidden ${className}`}>
+      <header className="flex items-center gap-3 px-5 pt-4 pb-3 flex-wrap">
+        <h3 className="font-display text-[15.5px] font-semibold tracking-[-0.015em] text-t1 whitespace-nowrap">{destacar(titulo)}</h3>
+        {extra && <span className="min-w-0 text-[12.5px] text-t4 truncate">{extra}</span>}
         {acao && <div className="ml-auto">{acao}</div>}
       </header>
-      <div className="flex-1 min-h-0 px-6 pb-6">{children}</div>
+      <div className="flex-1 min-h-0 px-5 pb-5">{children}</div>
     </section>
   )
 }
 
 function FiltroAtivo({ rotulo, icone: Icone, onLimpar }: { rotulo: string; icone: typeof User; onLimpar: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1.5 h-8 pl-3 pr-1 rounded-full bg-white border border-brand/30 text-[13px] font-medium text-t1 shadow-sm">
+    <span className="inline-flex items-center gap-1.5 h-8 pl-3 pr-1 rounded-full bg-surface border border-line text-[13px] font-medium text-t1">
       <Icone size={13} strokeWidth={1.8} className="text-brand-text" aria-hidden />
       {rotulo}
       <button type="button" onClick={onLimpar} aria-label={`Tirar o filtro ${rotulo}`}
@@ -263,47 +263,35 @@ function Vivo({ valor }: { valor: number }) {
  */
 function NumerosDaSafra({ c }: { c: Contagem }) {
   const itens: { chave: ChaveFatia | 'descarte'; rotulo: string; valor: number; nota: string }[] = [
-    { chave: 'chegada',     rotulo: 'Leads',     valor: c.recebidos,   nota: `${n(c.emAndamento)} em andamento` },
-    { chave: 'atendimento', rotulo: 'Atendidos', valor: c.atendimento, nota: `${pct(c.atendimento, c.recebidos)} dos leads` },
-    { chave: 'visita',      rotulo: 'Visitaram', valor: c.visita,      nota: `${pct(c.visita, c.recebidos)} dos leads` },
-    { chave: 'proposta',    rotulo: 'Propostas', valor: c.proposta,    nota: `${pct(c.proposta, c.recebidos)} dos leads` },
+    { chave: 'chegada',     rotulo: 'Leads',       valor: c.recebidos,   nota: `${n(c.emAndamento)} em andamento` },
+    { chave: 'atendimento', rotulo: 'Atendidos',   valor: c.atendimento, nota: `${pct(c.atendimento, c.recebidos)} dos leads` },
+    { chave: 'visita',      rotulo: 'Visitaram',   valor: c.visita,      nota: `${pct(c.visita, c.recebidos)} dos leads` },
+    { chave: 'proposta',    rotulo: 'Propostas',   valor: c.proposta,    nota: `${pct(c.proposta, c.recebidos)} dos leads` },
     { chave: 'descarte',    rotulo: 'Descartados', valor: c.descartados, nota: `${pct(c.descartados, c.recebidos)} dos leads` },
   ]
-  const cor = (k: ChaveFatia | 'descarte'): [string, string] => (k === 'descarte' ? ['#CBD5E1', '#94A3B8'] : FATIA[k])
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-      {itens.map(it => {
-        const [claro, fundo] = cor(it.chave)
-        const largura = it.chave === 'chegada' ? 100 : c.recebidos > 0 && it.valor > 0 ? Math.max(3, Math.sqrt(it.valor / c.recebidos) * 100) : 0
-        return (
-          <div key={it.rotulo} className="pulse-card relative rounded-[18px] px-4 pt-4 pb-3.5 min-w-0 overflow-hidden">
-            <p className="flex items-center gap-2 text-[13px] font-medium text-t3 truncate">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: fundo }} aria-hidden />
-              {it.rotulo}
-            </p>
-            <p className="mt-2 font-display text-[34px] leading-none font-extrabold tracking-[-0.04em] tabular-nums text-t1">
-              <Vivo valor={it.valor} />
-            </p>
-            <p className="mt-1.5 text-[12.5px] text-t3 truncate tabular-nums">{it.nota}</p>
-            <span className="mt-3 block h-1.5 rounded-full bg-[#EEF1F7] overflow-hidden" aria-hidden>
-              <span className="block h-full rounded-full transition-[width] duration-700" style={{ width: `${largura}%`, background: `linear-gradient(90deg, ${claro}, ${fundo})` }} />
-            </span>
-          </div>
-        )
-      })}
-      <div className="col-span-2 md:col-span-3 xl:col-span-1 relative rounded-[18px] px-4 pt-4 pb-3.5 min-w-0 overflow-hidden border border-brand/30
-                      shadow-[0_14px_34px_-18px_rgba(156,116,48,.55)]"
-           style={{ background: 'linear-gradient(158deg, #FFFDF8 0%, #F8EFDC 100%)' }}>
-        <p className="flex items-center gap-2 text-[13px] font-medium text-brand-text">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: FATIA.venda[1] }} aria-hidden />
+    <div className="rounded-[16px] border border-line bg-surface grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 overflow-hidden">
+      {itens.map((it, i) => (
+        <div key={it.rotulo} className={`px-5 py-4 min-w-0 border-line ${i > 0 ? 'xl:border-l' : ''} ${i % 2 ? 'border-l md:border-l-0' : ''} ${i % 3 ? 'md:border-l' : ''} ${i >= 2 ? 'border-t md:border-t-0' : ''} ${i >= 3 ? 'md:border-t xl:border-t-0' : ''}`}>
+          <p className="flex items-center gap-2 text-[12.5px] text-t3 truncate">
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: it.chave === 'descarte' ? TOM_DESCARTE : TOM[it.chave].barra }} aria-hidden />
+            {it.rotulo}
+          </p>
+          <p className="mt-1.5 font-display text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums text-t1">
+            <Vivo valor={it.valor} />
+          </p>
+          <p className="mt-1.5 text-[12px] text-t4 truncate tabular-nums">{it.nota}</p>
+        </div>
+      ))}
+      <div className="px-5 py-4 min-w-0 border-line border-l border-t xl:border-t-0">
+        <p className="flex items-center gap-2 text-[12.5px] text-t3">
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: TOM.venda.barra }} aria-hidden />
           Viraram venda
         </p>
-        <p className="mt-2 font-display text-[34px] leading-none font-extrabold tracking-[-0.04em] tabular-nums text-brand-text">
+        <p className="mt-1.5 font-display text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums" style={{ color: TOM.venda.barra }}>
           {fmtTaxa(taxa(c.venda, c.recebidos))}
         </p>
-        <p className="mt-1.5 text-[12.5px] text-t2 tabular-nums">
-          <b className="text-t1">{n(c.venda)}</b> {c.venda === 1 ? 'venda' : 'vendas'} de {n(c.recebidos)}
-        </p>
+        <p className="mt-1.5 text-[12px] text-t4 tabular-nums">{n(c.venda)} {c.venda === 1 ? 'venda' : 'vendas'} de {n(c.recebidos)}</p>
       </div>
     </div>
   )
@@ -320,10 +308,10 @@ function FunilDaSafra({ c }: { c: Contagem }) {
   const parada = foco && foco !== 'venda' ? c.parouEm[foco] : null
 
   const dica = f && (
-    <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-[14px] bg-[#0F2759] px-4 py-3 text-white shadow-[0_18px_40px_-12px_rgba(15,39,89,0.55)] pulse-item-in whitespace-nowrap"
+    <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-[12px] bg-[#0F2759] px-4 py-3 text-white pulse-item-in whitespace-nowrap"
          role="status">
-      <p className="text-[12.5px] font-semibold uppercase tracking-[0.14em]" style={{ color: FATIA[f.chave][0] }}>{f.nome}</p>
-      <p className="mt-0.5 font-display text-[26px] font-extrabold leading-none tabular-nums">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: f.chave === 'venda' ? '#E2C385' : '#B8C5E3' }}>{f.nome}</p>
+      <p className="mt-1 font-display text-[22px] font-semibold leading-none tabular-nums">
         {n(f.n)}<span className="ml-1.5 text-[14px] font-medium text-white/70">{pct(f.n, c.recebidos)} dos leads</span>
       </p>
       {passo && <p className="mt-1 text-[13px] text-white/75">{passo.anterior === 'chegada' ? `${fmtTaxa(passo.taxaPasso)} dos leads chegaram aqui` : `${fmtTaxa(passo.taxaPasso)} de quem estava em ${NOME_ETAPA[passo.anterior].toLowerCase()}`}</p>}
@@ -345,7 +333,7 @@ function Escada({ c, foco }: { c: Contagem; foco: ChaveFatia | null }) {
   const ps = passosSafra(c)
   const maxRaiz = Math.sqrt(Math.max(1, c.recebidos))
   return (
-    <ol className="rounded-[18px] bg-[#F4F6FB] px-5 py-4 flex flex-col justify-between gap-1">
+    <ol className="md:border-l border-line md:pl-6 py-1 flex flex-col justify-between gap-1">
       {COLUNAS.map((k, i) => {
         const v = k === 'chegada' ? c.recebidos : c[k]
         const p = i > 0 ? ps[i - 1] : null
@@ -354,20 +342,20 @@ function Escada({ c, foco }: { c: Contagem; foco: ChaveFatia | null }) {
             {p && (
               <div className="flex items-center gap-2 py-1 pl-1">
                 <span className="text-t4 text-[14px]" aria-hidden>↓</span>
-                <span className="rounded-full px-2.5 py-0.5 text-[13px] font-bold tabular-nums"
-                      style={{ background: `color-mix(in srgb, ${FATIA[k][1]} 14%, transparent)`, color: FATIA[k][1] }}>
+                <span className="rounded-full px-2 py-px text-[12px] font-semibold tabular-nums"
+                      style={{ background: `color-mix(in srgb, ${TOM[k].barra} 12%, transparent)`, color: k === 'chegada' ? TOM.atendimento.barra : TOM[k].barra }}>
                   {fmtTaxa(p.taxaPasso)}
                 </span>
                 <span className="text-[12.5px] text-t3">avançam</span>
               </div>
             )}
             <div className="flex items-center gap-3">
-              <span className="w-[96px] shrink-0 text-[14.5px] font-semibold text-t1">{k === 'chegada' ? 'Leads' : NOME_ETAPA[k]}</span>
-              <span className="relative flex-1 h-3 rounded-full bg-white overflow-hidden">
+              <span className="w-[96px] shrink-0 text-[13.5px] font-medium text-t2">{k === 'chegada' ? 'Leads' : NOME_ETAPA[k]}</span>
+              <span className="relative flex-1 h-1.5 rounded-full bg-s2 overflow-hidden">
                 <span className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700"
-                      style={{ width: `${v > 0 ? Math.max(2, (Math.sqrt(v) / maxRaiz) * 100) : 0}%`, background: `linear-gradient(90deg, ${FATIA[k][0]}, ${FATIA[k][1]})` }} />
+                      style={{ width: `${v > 0 ? Math.max(2, (Math.sqrt(v) / maxRaiz) * 100) : 0}%`, background: TOM[k].barra }} />
               </span>
-              <span className="w-[56px] shrink-0 text-right font-display text-[20px] font-extrabold tabular-nums text-t1">{n(v)}</span>
+              <span className="w-[56px] shrink-0 text-right font-display text-[17px] font-semibold tabular-nums text-t1">{n(v)}</span>
             </div>
           </li>
         )
@@ -385,22 +373,22 @@ function OndeParam({ c }: { c: Contagem }) {
     <ul className="flex flex-col gap-3">
       {linhas.map(l => (
         <li key={l.k} className="grid grid-cols-[96px_minmax(0,1fr)_76px] items-center gap-3">
-          <span className="text-[14px] font-medium text-t1">{l.k === 'chegada' ? '1º contato' : NOME_ETAPA[l.k]}</span>
-          <span className="flex h-3 rounded-full bg-[#F1F3F8] overflow-hidden" aria-hidden>
-            <span className="h-full" style={{ width: `${(l.ativos / maior) * 100}%`, background: `linear-gradient(90deg, ${FATIA[l.k][0]}, ${FATIA[l.k][1]})` }} />
-            <span className="h-full" style={{ width: `${(l.descartados / maior) * 100}%`, background: '#CBD2DE' }} />
+          <span className="text-[13.5px] text-t2">{l.k === 'chegada' ? '1º contato' : NOME_ETAPA[l.k]}</span>
+          <span className="flex h-1.5 rounded-full bg-s2 overflow-hidden" aria-hidden>
+            <span className="h-full" style={{ width: `${(l.ativos / maior) * 100}%`, background: TOM[l.k].barra }} />
+            <span className="h-full" style={{ width: `${(l.descartados / maior) * 100}%`, background: TOM_DESCARTE }} />
           </span>
           <span className="text-right text-[13px] tabular-nums text-t3" aria-label={`${l.ativos} vivos, ${l.descartados} descartados`}>
-            <b className="text-t1">{n(l.ativos)}</b> · {n(l.descartados)}
+            <b className="font-semibold text-t1">{n(l.ativos)}</b> · {n(l.descartados)}
           </span>
         </li>
       ))}
       <li className="grid grid-cols-[96px_minmax(0,1fr)_76px] items-center gap-3">
-        <span className="text-[14px] font-medium text-t1">Venda</span>
-        <span className="h-3 rounded-full bg-[#F1F3F8] overflow-hidden" aria-hidden>
-          <span className="block h-full rounded-full" style={{ width: `${c.venda > 0 ? Math.max(2, (c.venda / maior) * 100) : 0}%`, background: `linear-gradient(90deg, ${FATIA.venda[0]}, ${FATIA.venda[1]})` }} />
+        <span className="text-[13.5px] text-t2">Venda</span>
+        <span className="h-1.5 rounded-full bg-s2 overflow-hidden" aria-hidden>
+          <span className="block h-full rounded-full" style={{ width: `${c.venda > 0 ? Math.max(2, (c.venda / maior) * 100) : 0}%`, background: TOM.venda.barra }} />
         </span>
-        <span className="text-right text-[13px] tabular-nums font-bold" style={{ color: FATIA.venda[1] }}>{n(c.venda)}</span>
+        <span className="text-right text-[13px] tabular-nums font-semibold" style={{ color: TOM.venda.barra }}>{n(c.venda)}</span>
       </li>
     </ul>
   )
@@ -415,7 +403,7 @@ function AteAVisita({ dados, filtro }: { dados: FunilSafra; filtro: Filtro }) {
   return (
     <div className="flex items-end gap-6">
       <div className="shrink-0">
-        <p className="font-display text-[40px] leading-none font-extrabold tracking-[-0.04em] tabular-nums text-t1">
+        <p className="font-display text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums text-t1">
           {t.mediana! < 1 ? '0' : t.mediana!.toLocaleString('pt-BR')}<span className="text-[16px] font-bold text-t3 ml-1">dias</span>
         </p>
         <p className="text-[12.5px] text-t3 mt-1.5">mediana · {n(t.total)} visitas</p>
@@ -423,8 +411,8 @@ function AteAVisita({ dados, filtro }: { dados: FunilSafra; filtro: Filtro }) {
       <div className="flex-1 grid grid-cols-5 gap-2 items-end h-[92px]">
         {t.faixas.map((f, i) => (
           <div key={f.rotulo} className="flex flex-col items-center justify-end h-full gap-1" title={`${f.rotulo}: ${f.n}`}>
-            <span className="text-[12.5px] font-bold tabular-nums text-t1">{f.n || ''}</span>
-            <span className="w-full rounded-t-[7px]" style={{ height: `${f.n ? Math.max(6, (f.n / maior) * 54) : 3}px`, background: f.n ? `linear-gradient(180deg, ${FATIA.visita[0]}, ${FATIA.visita[1]})` : '#E5E9F1' }} />
+            <span className="text-[12px] font-semibold tabular-nums text-t2">{f.n || ''}</span>
+            <span className="w-full rounded-t-[5px]" style={{ height: `${f.n ? Math.max(6, (f.n / maior) * 54) : 3}px`, background: f.n ? TOM.visita.fill : 'var(--s2)' }} />
             <span className="text-[11px] text-t4 whitespace-nowrap">{FAIXA_CURTA[i]}</span>
           </div>
         ))}
@@ -443,11 +431,11 @@ function PorQueSaem({ dados, filtro, total, nomeMotivo }: {
       {lista.map(m => (
         <li key={m.motivo}>
           <div className="flex items-baseline justify-between gap-3 mb-1.5">
-            <span className="text-[14px] font-medium text-t1 truncate">{nomeMotivo(m.motivo)}</span>
-            <span className="text-[13px] text-t3 tabular-nums shrink-0"><b className="text-t1">{n(m.n)}</b> · {pct(m.n, total.descartados)}</span>
+            <span className="text-[13.5px] text-t2 truncate">{nomeMotivo(m.motivo)}</span>
+            <span className="text-[13px] text-t3 tabular-nums shrink-0"><b className="font-semibold text-t1">{n(m.n)}</b> · {pct(m.n, total.descartados)}</span>
           </div>
-          <span className="block h-2.5 rounded-full bg-[#F1F3F8] overflow-hidden" aria-hidden>
-            <span className="block h-full rounded-full" style={{ width: `${Math.max(2, (m.n / lista[0].n) * 100)}%`, background: 'linear-gradient(90deg, #94A3B8, #64748B)' }} />
+          <span className="block h-1.5 rounded-full bg-s2 overflow-hidden" aria-hidden>
+            <span className="block h-full rounded-full" style={{ width: `${Math.max(2, (m.n / lista[0].n) * 100)}%`, background: '#9AA6BD' }} />
           </span>
         </li>
       ))}
@@ -461,8 +449,8 @@ function SafraASafra({ serie, balde }: { serie: PontoSafra[]; balde: FunilSafra[
   const opcao = useCallback((t: CoresGrafico) => {
     const p = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : null)
     const linha = (nome: string, cor: string, dados: (number | null)[]) => ({
-      name: nome, type: 'line', yAxisIndex: 1, data: dados, symbol: 'circle', symbolSize: 7,
-      lineStyle: { width: 3, color: cor }, itemStyle: { color: cor, borderColor: '#fff', borderWidth: 2 },
+      name: nome, type: 'line', yAxisIndex: 1, data: dados, symbol: 'circle', symbolSize: 5,
+      lineStyle: { width: 2, color: cor }, itemStyle: { color: cor },
     })
     return {
       grid: { left: 4, right: 4, top: 36, bottom: 4, containLabel: true },
@@ -474,14 +462,11 @@ function SafraASafra({ serie, balde }: { serie: PontoSafra[]; balde: FunilSafra[
       ],
       series: [
         {
-          name: 'Leads', type: 'bar', barMaxWidth: 24, data: serie.map(s => s.recebidos),
-          itemStyle: {
-            borderRadius: [6, 6, 0, 0],
-            color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#A5B4FC' }, { offset: 1, color: '#C7D2FE' }] },
-          },
+          name: 'Leads', type: 'bar', barMaxWidth: 18, data: serie.map(s => s.recebidos),
+          itemStyle: { borderRadius: [4, 4, 0, 0], color: TOM.chegada.fill },
         },
-        linha('% atendidos', FATIA.atendimento[1], serie.map(s => p(s.atendimento, s.recebidos))),
-        linha('% visitaram', FATIA.visita[1], serie.map(s => p(s.visita, s.recebidos))),
+        linha('% atendidos', TOM.atendimento.barra, serie.map(s => p(s.atendimento, s.recebidos))),
+        linha('% visitaram', TOM.proposta.barra, serie.map(s => p(s.visita, s.recebidos))),
       ],
     }
   }, [serie, balde])
@@ -536,29 +521,29 @@ function MiniFunil({ fatia, ativo, onClick }: { fatia: Fatia; ativo: boolean; on
   const corpo = (
     <>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[15px] font-bold text-t1 truncate">{fatia.nome}</span>
-        <span className="text-[13px] font-bold tabular-nums shrink-0" style={{ color: FATIA.venda[1] }}>
+        <span className="text-[14px] font-semibold text-t1 truncate">{fatia.nome}</span>
+        <span className="text-[12.5px] font-semibold tabular-nums shrink-0" style={{ color: TOM.venda.barra }}>
           {fmtTaxa(taxa(c.venda, c.recebidos))} <span className="font-medium text-t4">venda</span>
         </span>
       </div>
       <div className="mt-3 flex justify-center">
         <FunilDesenhado tamanho="mini" fatias={desenho} rotulo={`${fatia.nome}: ${desenho.map(x => `${x.nome} ${x.n}`).join(', ')}`} />
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
+      <div className="mt-3 pt-2.5 border-t border-line grid grid-cols-3 gap-1 text-center">
         {(['atendimento', 'visita', 'proposta'] as EtapaSafra[]).map(e => (
-          <span key={e} className="rounded-[10px] py-1" style={{ background: `color-mix(in srgb, ${FATIA[e][1]} 10%, transparent)` }}>
-            <span className="block text-[13px] font-bold tabular-nums" style={{ color: FATIA[e][1] }}>{pct(c[e], c.recebidos)}</span>
+          <span key={e} className="py-0.5">
+            <span className="block text-[13px] font-semibold tabular-nums text-t1">{pct(c[e], c.recebidos)}</span>
             <span className="block text-[10.5px] text-t4">{NOME_ETAPA[e].toLowerCase()}</span>
           </span>
         ))}
       </div>
     </>
   )
-  const base = `pulse-card block w-full h-full text-left rounded-[18px] px-4 py-3.5 transition-[box-shadow,transform] duration-200 ${ativo ? 'ring-2 ring-brand/70' : ''}`
+  const base = `block w-full h-full text-left rounded-[14px] border bg-surface px-4 py-3.5 transition-colors duration-200 ${ativo ? 'border-[#2F4789]' : 'border-line'}`
   return onClick ? (
     <button type="button" onClick={onClick} aria-pressed={ativo}
       aria-label={`${fatia.nome}: ${c.recebidos} leads, ${c.visita} visitas, ${c.venda} vendas`}
-      className={`${base} cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-18px_rgba(15,39,89,.5)]
+      className={`${base} cursor-pointer hover:border-[#A9B7D9]
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50`}>
       {corpo}
     </button>
@@ -585,7 +570,7 @@ function Matriz({ dados, filtro, escolher }: {
 
   const tx = (c: Contagem) => (c.recebidos >= 5 ? taxa(c[metrica], c.recebidos) : null)
   const maior = Math.max(1, ...m.linhas.flatMap(l => m.colunas.map(col => tx(m.celula(l.chave, col.chave)) ?? 0)))
-  const cor = FATIA[metrica][1]
+  const cor = '#2F4789'
   const totalGeral = contar(dados)
 
   const celula = (chave: string, c: Contagem, corretor: string | null, produto: string | null, total = false) => {
@@ -593,21 +578,21 @@ function Matriz({ dados, filtro, escolher }: {
     const t = tx(c)
     const forte = t !== null && !total ? t / maior : 0
     const ativo = corretor === filtro.corretor && produto === filtro.produto
-    const fundo = t !== null && !total ? `color-mix(in srgb, ${cor} ${Math.round(8 + 72 * forte)}%, transparent)` : undefined
+    const fundo = t !== null && !total ? `color-mix(in srgb, ${cor} ${Math.round(6 + 74 * forte)}%, transparent)` : undefined
     const claro = forte > 0.6
     const conteudo = (
       <>
-        <span className={`block text-[15px] font-bold tabular-nums ${claro ? 'text-white' : t === null ? 'text-t4' : 'text-t1'}`}>{t === null ? '·' : fmtTaxa(t)}</span>
+        <span className={`block text-[14px] font-semibold tabular-nums ${claro ? 'text-white' : t === null ? 'text-t4' : 'text-t1'}`}>{t === null ? '·' : fmtTaxa(t)}</span>
         <span className={`block text-[11px] tabular-nums ${claro ? 'text-white/80' : 'text-t4'}`}>{n(c[metrica])}/{n(c.recebidos)}</span>
       </>
     )
-    const classe = `w-full min-w-[84px] rounded-[12px] px-2 py-2 text-center ${total ? 'bg-[#F4F6FB]' : ''} ${ativo ? 'ring-2 ring-brand/70' : ''}`
+    const classe = `w-full min-w-[84px] rounded-[10px] px-2 py-2 text-center ${total ? 'bg-s2/60' : ''} ${ativo ? 'ring-1 ring-[#2F4789]' : ''}`
     return (
       <td key={chave} className="p-1">
         {corretor !== SEM ? (
           <button type="button" onClick={() => escolher(corretor, produto)}
             aria-label={`${NOME_ETAPA[metrica]}: ${c[metrica]} de ${c.recebidos} leads`}
-            className={`${classe} cursor-pointer transition-transform hover:scale-[1.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50`}
+            className={`${classe} cursor-pointer transition-colors hover:ring-1 hover:ring-[#A9B7D9] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50`}
             style={fundo ? { background: fundo } : undefined}>
             {conteudo}
           </button>
