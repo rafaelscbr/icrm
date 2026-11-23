@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowDown, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { destacar } from '../../components/shared/Destaque'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
+import { FunilJoia } from '../../components/shared/FunilJoia'
+import type { EtapaFunil } from '../../components/shared/FunilJoia'
 import { Segmentado } from '../../components/shared/visual'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { db } from '../../lib/db'
 import { mensagemDeErro } from '../../lib/erros'
 import { formatCurrencyRound } from '../../lib/formatters'
-import { JOIA, fundoJoiaClaro } from '../../lib/paletaJoia'
+import { JOIA } from '../../lib/paletaJoia'
 import { fmtTaxa, taxa } from '../leads/conversao'
 import { normalizar } from '../leads/safra'
 import type { FunilSafra } from '../leads/safra'
@@ -33,12 +35,17 @@ import type { Dinheiro, EtapaAberta, Periodo, Recorte } from './funis'
 
 /** Passos do funil, na régua da safra (lead e followup = chegaram). */
 const PASSOS: { chave: 'recebidos' | 'atendimento' | 'visita' | 'proposta' | 'venda'; nome: string; joia: LeadFunnelStage }[] = [
-  { chave: 'recebidos',   nome: 'Chegaram',    joia: 'lead' },
+  { chave: 'recebidos',   nome: 'Leads',       joia: 'lead' },
   { chave: 'atendimento', nome: 'Atendimento', joia: 'atendimento' },
   { chave: 'visita',      nome: 'Visita',      joia: 'visita' },
   { chave: 'proposta',    nome: 'Proposta',    joia: 'proposta' },
-  { chave: 'venda',       nome: 'Venda',       joia: 'venda' },
+  { chave: 'venda',       nome: 'Vendas',      joia: 'venda' },
 ]
+
+/** As fatias do funil de um recorte, na régua da safra. */
+function etapasDoFunil(r: Recorte): EtapaFunil[] {
+  return PASSOS.map(p => ({ chave: p.chave, nome: p.nome, n: r.safra[p.chave], joia: p.joia }))
+}
 
 const NOME_ABERTA: Record<EtapaAberta, string> = {
   chegada: '1º contato', atendimento: 'Atendimento', visita: 'Visita', proposta: 'Proposta',
@@ -211,43 +218,9 @@ function FunilGeral({ r, admin, descricao }: { r: Recorte; admin: boolean; descr
           </div>
         </header>
 
-        <ol className="flex flex-col justify-around gap-1.5 flex-1">
-          {PASSOS.map((p, i) => {
-            const n = s[p.chave]
-            const anterior = i > 0 ? s[PASSOS[i - 1].chave] : null
-            const passo = anterior !== null ? taxa(n, anterior) : null
-            const largura = total > 0 ? Math.max((n / total) * 100, n > 0 ? 16 : 10) : 10
-            return (
-              <li key={p.chave}>
-                {i > 0 && (
-                  <div className="flex items-center justify-center gap-1.5 h-5 text-[11.5px] text-t4 tabular-nums" aria-hidden>
-                    <ArrowDown size={11} strokeWidth={2} />
-                    {fmtTaxa(passo)} avançam
-                  </div>
-                )}
-                <div className="grid grid-cols-[92px_minmax(0,1fr)_92px] sm:grid-cols-[108px_minmax(0,1fr)_108px] items-center gap-3">
-                  <span className="text-[13px] font-medium text-t2 truncate">{p.nome}</span>
-                  <div className="flex justify-center">
-                    <div
-                      className="h-11 rounded-[12px] flex items-center justify-center text-white shadow-card transition-[width] duration-500"
-                      style={{ width: `${largura}%`, backgroundImage: fundoJoiaClaro(p.joia, 100) }}
-                    >
-                      <span className="font-display font-extrabold tabular-nums text-[17px]">
-                        {n.toLocaleString('pt-BR')}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-right text-[12px] text-t4 tabular-nums">
-                    {i === 0 ? `${s.descartados.toLocaleString('pt-BR')} descartados` : `${fmtTaxa(taxa(n, total))} do total`}
-                  </span>
-                </div>
-                <span className="sr-only">
-                  {p.nome}: {n} leads{passo !== null ? `, ${fmtTaxa(passo)} da etapa anterior` : ''}.
-                </span>
-              </li>
-            )
-          })}
-        </ol>
+        <div className="flex-1 flex items-center justify-center px-1 sm:px-4">
+          <FunilJoia etapas={etapasDoFunil(r)} rotulo={`Funil de conversão, leads que chegaram ${descricao}`} />
+        </div>
 
         <p className="mt-5 pt-4 border-t border-line text-[13px] text-t3">
           {total > 0
@@ -394,25 +367,9 @@ function CartaoFunil({ r, admin, foto }: {
         </div>
       </header>
 
-      <ol className="flex flex-col gap-1.5" aria-label={`Conversão de ${r.nome}`}>
-        {PASSOS.map((p, i) => {
-          const n = s[p.chave]
-          const anterior = i > 0 ? s[PASSOS[i - 1].chave] : null
-          const passo = anterior !== null ? taxa(n, anterior) : null
-          const largura = s.recebidos > 0 ? (n / s.recebidos) * 100 : 0
-          return (
-            <li key={p.chave} className="grid grid-cols-[82px_minmax(0,1fr)_40px_44px] items-center gap-2.5">
-              <span className="text-[12.5px] text-t3 truncate">{p.nome}</span>
-              <div className="h-2 rounded-full bg-s3 overflow-hidden" aria-hidden>
-                <div className="h-full rounded-full transition-[width] duration-500"
-                     style={{ width: `${n > 0 ? Math.max(largura, 3) : 0}%`, background: JOIA[p.joia].claro }} />
-              </div>
-              <span className="text-[13px] font-semibold text-t1 tabular-nums text-right">{n.toLocaleString('pt-BR')}</span>
-              <span className="text-[11.5px] text-t4 tabular-nums text-right">{i === 0 ? '' : fmtTaxa(passo)}</span>
-            </li>
-          )
-        })}
-      </ol>
+      <div className="px-2 sm:px-6">
+        <FunilJoia compacto etapas={etapasDoFunil(r)} rotulo={`Funil de ${r.nome}`} />
+      </div>
 
       <div className="grid grid-cols-2 gap-3 pt-4 border-t border-line mt-auto">
         <Valores titulo="Em andamento" d={r.pipeline} n={r.pipeline.n} unidade={['lead', 'leads']} admin={admin} />
