@@ -1,4 +1,5 @@
-import type { LeadFunnelStage } from '../../types'
+import type { LeadFunnelStage, LeadOrigin } from '../../types'
+import { MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { FUNNEL_STAGES } from '../../lib/stageTheme'
 import { divisao, PCT_PADRAO } from '../leads/comissao'
 
@@ -29,6 +30,12 @@ export interface CartaoSala {
   devId: string | null
   /** desde quando está na etapa (ISO) — ordena a coluna, mais recente em cima */
   desde: string
+  origem: LeadOrigin | null
+  criadoEm: string
+  /** leads.last_contact_at — WhatsApp, ligação, tarefa (migração 074) */
+  ultimoContatoAt: string | null
+  /** toques do followup (0..10) */
+  passo: number
   /** mexeu ao vivo nesta sessão (ms) — o cartão acende por alguns segundos */
   vivoAt?: number
 }
@@ -48,6 +55,10 @@ export function cartaoDaLinha(r: Record<string, unknown>): CartaoSala | null {
     produto:  (r.property_name as string | null) ?? null,
     devId:    (r.development_id as string | null) ?? null,
     desde:    ((r.stage_changed_at ?? r.created_at) as string | null) ?? new Date().toISOString(),
+    origem:   (r.origin as LeadOrigin | null) ?? null,
+    criadoEm: (r.created_at as string | null) ?? new Date().toISOString(),
+    ultimoContatoAt: (r.last_contact_at as string | null) ?? null,
+    passo:    Number(r.followup_step ?? 0) || 0,
   }
 }
 
@@ -64,7 +75,29 @@ export function mover(cartoes: CartaoSala[], id: string, para: string | undefine
   const out = cartoes.map(c => {
     if (c.id !== id || c.etapa === para) return c
     mudou = true
-    return { ...c, etapa: para as LeadFunnelStage, desde: at, vivoAt: agora }
+    // Lead → Followup é o 1º WhatsApp: os toques recomeçam e o INSERT do
+    // WhatsApp, que vem logo depois, conta o primeiro (ver `contato`).
+    const passo = c.etapa === 'lead' && para === 'followup' ? 0 : c.passo
+    return { ...c, etapa: para as LeadFunnelStage, desde: at, vivoAt: agora, passo }
+  })
+  return mudou ? out : cartoes
+}
+
+/** Os tipos que o banco conta como contato (migração 074). */
+const TIPOS_DE_CONTATO = new Set(['whatsapp', 'ligacao', 'tarefa'])
+
+/**
+ * Contato registrado: atualiza o "último contato" e, no WhatsApp de quem está
+ * em Followup, conta mais um toque — o mesmo que o botão Chamar faz no Kanban.
+ */
+export function contato(cartoes: CartaoSala[], id: string, tipo: string, at: string): CartaoSala[] {
+  if (!TIPOS_DE_CONTATO.has(tipo)) return cartoes
+  let mudou = false
+  const out = cartoes.map(c => {
+    if (c.id !== id) return c
+    mudou = true
+    const passo = tipo === 'whatsapp' && c.etapa === 'followup' ? Math.min(c.passo + 1, MAX_TENTATIVAS_FOLLOWUP) : c.passo
+    return { ...c, ultimoContatoAt: !c.ultimoContatoAt || at > c.ultimoContatoAt ? at : c.ultimoContatoAt, passo }
   })
   return mudou ? out : cartoes
 }

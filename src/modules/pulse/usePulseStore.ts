@@ -10,7 +10,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { somarDias } from '../leads/conversao'
 import type { RelatorioConversao } from '../leads/conversao'
 import { useLeadPauseStore } from '../../store/useLeadPauseStore'
-import { cartaoDaLinha, entrar, mover, tirar, trocarDono } from './kanbanDaSala'
+import { cartaoDaLinha, contato, entrar, mover, tirar, trocarDono } from './kanbanDaSala'
 import type { CartaoSala } from './kanbanDaSala'
 
 // ─── Orçamento de recursos ────────────────────────────────────────────────────
@@ -195,7 +195,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         // Segunda tela: só as colunas que o cartão mostra, só o que está no
         // quadro (em aberto + vendido no mês). ~150 linhas, uma vez.
         supabase.from('leads')
-          .select('id,name,funnel_stage,broker_id,average_ticket,property_name,development_id,stage_changed_at,created_at')
+          .select('id,name,funnel_stage,broker_id,average_ticket,property_name,development_id,stage_changed_at,created_at,origin,last_contact_at,followup_step')
           .is('discard_reason', null)
           .or(`closed_at.is.null,closed_at.gte.${ini.toISOString()}`),
         supabase.from('developments').select('id,commission_pct'),
@@ -464,6 +464,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         // O Kanban da segunda tela anda junto: etapa nova ou fora do quadro.
         if (tipo === 'stage_change') mudarKanban(k => mover(k, leadId, (r.to_stage as string | null) ?? undefined, r.interacted_at as string))
         else if (tipo === 'discard') mudarKanban(k => tirar(k, leadId))
+        else mudarKanban(k => contato(k, leadId, tipo, r.interacted_at as string))
         // Nome e produto saem do mapa em memória — zero consulta por evento.
         const info   = get().leadsInfo[leadId]
         push({
