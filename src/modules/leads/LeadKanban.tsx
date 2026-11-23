@@ -304,19 +304,19 @@ function LeadCard({
         </p>
       )}
 
-      {/* ── Redesenho de 16/11/2026 — quatro linhas, uma hierarquia ─────────
-          1. nome (o título)   2. contexto, numa linha neutra
-          3. a linha de decisão   4. ações
-          Saíram do cartão: temperatura, "sem próxima ação", a etiqueta
-          PRIORIDADE (a estrela já diz), o valor em negrito disputando com o
-          nome e o fundo cinza do botão em repouso. Em repouso o cartão é texto
-          sobre papel; cor só aparece onde há prazo, risco ou dinheiro. */}
+      {/* ── Cartão v10 (22/11/2026) — três blocos, uma leitura ──────────────
+          QUEM (iniciais, nome; embaixo, alinhados ao nome, produto · corretor
+          e o valor) → O QUE FAZER (a próxima ação; vira faixa tingida só
+          quando há prazo ou risco) → AÇÃO (rodapé com filete: chamar no
+          WhatsApp e, à direita, o dinheiro em jogo).
+          Continuam fora do cartão, a pedido do Rafael: temperatura, "sem
+          próxima ação", Difícil/Ideal, etiqueta PRIORIDADE e botão com fundo
+          em repouso. */}
 
-      {/* 1 · Nome, com as iniciais num círculo na cor da etapa: o cartão
-             vira uma PESSOA a chamar, não uma linha de planilha. */}
-      <div className="flex items-center gap-2 pr-12 min-w-0">
+      {/* 1 · Quem */}
+      <div className="flex items-center gap-2.5 pr-12 min-w-0">
         {!dense && (
-          <span className="kanban-avatar flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10.5px] font-bold tracking-[0.02em]" aria-hidden>
+          <span className="kanban-avatar flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold tracking-[0.02em]" aria-hidden>
             {iniciais(displayName)}
           </span>
         )}
@@ -330,11 +330,9 @@ function LeadCard({
         )}
         <SinalDeFluxo quantos={lead.fluxosCount} />
       </div>
-
-      {/* 2 · Contexto: produto e responsável à esquerda, valor à direita.
-             O valor alinha à direita em todos os cartões (tabular), para a
-             coluna inteira se ler como uma lista de valores. */}
-      <div className="flex items-baseline gap-2 mt-1 min-w-0 text-[12px] text-t3">
+      {/* Produto · corretor à esquerda, valor à direita (tabular: a coluna se
+          lê como uma lista de valores). Na largura toda: a coluna é estreita. */}
+      <div className={`flex items-baseline gap-2 min-w-0 text-[12px] text-t3 ${dense ? 'mt-1' : 'mt-2'}`}>
         <p className="flex-1 min-w-0 truncate">
           {originMeta && (
             <originMeta.icon size={11} strokeWidth={1.6} className="inline-block align-[-1px] mr-1 text-t4" aria-label={originMeta.label} />
@@ -347,33 +345,28 @@ function LeadCard({
           )}
         </p>
         {lead.averageTicket ? (
-          <span className="flex-shrink-0 font-medium text-t2 tabular-nums">
+          <span className="flex-shrink-0 font-semibold text-t1 tabular-nums">
             {formatCurrency(lead.averageTicket)}
-          </span>
-        ) : null}
-        {/* Comissão só nas etapas finais ou no modo financeiro — 5% do VGV,
-            menos ISS e Simples, na parte de quem olha (comissao.ts) */}
-        {lead.averageTicket && showCommission && comissao && comissao.doLead(lead) > 0 ? (
-          <span className="flex-shrink-0 rounded-full px-1.5 py-px text-[11.5px] font-semibold text-success bg-success-bg tabular-nums"
-                title={`${comissao.rotulo[0].toUpperCase()}${comissao.rotulo.slice(1)} estimada`}>
-            +{formatCurrency(comissao.doLead(lead))}
           </span>
         ) : null}
       </div>
 
-      {/* 3 · Decisão — a linha que diz por que olhar este cartão.
-             Risco chama atenção pela FRASE e pelo ícone, não só pela cor. Sem
-             ação marcada, a linha diz o último contato, em tom neutro: assim
-             só o que tem prazo ou risco ganha peso na coluna. */}
+      {/* 2 · O que fazer — risco chama pela FRASE e pelo ícone, e ganha a
+             faixa tingida; sem ação marcada, só o último contato, neutro. */}
       {next && NextIcon && (
-        <div className="flex items-center gap-1.5 mt-2.5 min-w-0" title={next.hint}>
+        <div
+          className={`flex items-center gap-1.5 min-w-0 ${urgente
+            ? `mt-2 rounded-[9px] border px-2 py-1.5 ${nextStyle!.chip}`
+            : 'mt-2'}`}
+          title={next.hint}
+        >
           <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
           {next.urgency === 'none' ? (
             // O Rafael mandou tirar o aviso "sem próxima ação" do cartão
             // (16/11/2026) — não recolocar.
             <p className="flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
           ) : (
-            <p className={`flex-1 min-w-0 text-[12px] font-semibold leading-snug ${nextStyle!.text}`}>
+            <p className={`flex-1 min-w-0 truncate text-[12px] font-semibold ${nextStyle!.text}`}>
               {next.text}
             </p>
           )}
@@ -435,7 +428,7 @@ function LeadCard({
              passar o mouse ou receber foco. Os dois atalhos (só abrir o
              WhatsApp, ligar) aparecem junto — e ficam sempre à vista no toque,
              onde não existe "passar o mouse". */}
-      <div className="mt-2 -mb-1 flex items-center gap-0.5">
+      <div className={`flex items-center gap-0.5 -mb-1 ${dense ? 'mt-1.5' : 'mt-2.5 pt-1.5 border-t border-line'}`}>
         {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
           <button
             onClick={e => { e.stopPropagation(); onConclude?.() }}
@@ -459,6 +452,14 @@ function LeadCard({
             <span className="truncate">{STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}</span>
           </button>
         )}
+        {/* Comissão só nas etapas finais ou no modo financeiro — 5% do VGV,
+            menos ISS e Simples, na parte de quem olha (comissao.ts) */}
+        {lead.averageTicket && showCommission && comissao && comissao.doLead(lead) > 0 ? (
+          <span className="flex-shrink-0 rounded-full px-2 py-0.5 text-[11.5px] font-semibold text-success bg-success-bg tabular-nums"
+                title={`${comissao.rotulo[0].toUpperCase()}${comissao.rotulo.slice(1)} estimada`}>
+            +{formatCurrency(comissao.doLead(lead))}
+          </span>
+        ) : null}
         <button
           onClick={handleWhatsAppOpen}
           className={`w-8 h-8 flex items-center justify-center text-t4 hover:text-success hover:bg-success-bg rounded-[8px] transition-all duration-150 flex-shrink-0
