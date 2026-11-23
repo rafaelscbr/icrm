@@ -9,7 +9,7 @@ export default defineConfig({
       // 'prompt': a versão nova espera e a tela avisa (src/lib/atualizacao.ts).
       // 'autoUpdate' trocava em silêncio e a tela aberta seguia com o código velho.
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'badge-96.png'],
+      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'badge-96.png', 'pulse.webmanifest', 'icones-pulse/*'],
       manifest: {
         name: 'Souza Imobiliária',
         short_name: 'Souza Imob',
@@ -22,7 +22,8 @@ export default defineConfig({
         scope: '/',
         start_url: '/',
         lang: 'pt-BR',
-        // "S." Champanhe sobre Marinho — identidade Folha Clara (03/11/2026).
+        // "S." Champanhe sobre o azul da Meta de VGV (degradê + brilho champanhe,
+        // 22/11/2026). O Pulse tem manifesto e ícone próprios: pulse.webmanifest.
         // PNG primeiro: o Android e a instalação no Chrome escolhem por tamanho.
         icons: [
           { src: '/icon-192.png',          sizes: '192x192', type: 'image/png',     purpose: 'any' },

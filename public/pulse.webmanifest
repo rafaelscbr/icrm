@@ -1,0 +1,19 @@
+{
+  "id": "/pulse",
+  "name": "Pulse · Souza Imobiliária",
+  "short_name": "Pulse",
+  "description": "A imobiliária agora: funil, fila do 1º contato, equipe e o que acabou de acontecer.",
+  "start_url": "/pulse",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0F2759",
+  "background_color": "#0F2759",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icones-pulse/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icones-pulse/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icones-pulse/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icones-pulse/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
