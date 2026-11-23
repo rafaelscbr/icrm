@@ -10,6 +10,7 @@ import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { PeriodSelector } from '../../components/shared/PeriodSelector'
 import { FilterDropdown } from '../../components/shared/FilterDropdown'
 import { EstadoTela } from '../../components/shared/EstadoTela'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { EsqueletoKpis, EsqueletoLinhas } from '../../components/shared/Esqueleto'
 import { destacar } from '../../components/shared/Destaque'
 import { Segmentado } from '../../components/shared/visual'
@@ -99,6 +100,7 @@ export function LeadConversionTab() {
   const nomeCorretor = (id: string | null) =>
     id === null ? null
       : dados?.corretores.find(c => c.chave === id)?.nome ?? allProfiles.find(p => p.id === id)?.name ?? 'Corretor'
+  const fotoDoFiltro = useFotoDe()
   const nomeProduto = (k: string | null) => (k === null ? null : dados?.produtos.find(p => p.chave === k)?.nome ?? 'Produto')
 
   const total = useMemo(() => (dados ? contar(dados, filtro) : null), [dados, filtro])
@@ -154,7 +156,7 @@ export function LeadConversionTab() {
 
       {(corretor || produto) && (
         <div className="flex items-center gap-2 flex-wrap px-1 -mt-1">
-          {corretor && <FiltroAtivo rotulo={nomeCorretor(corretor)!} icone={User} onLimpar={() => escolherCorretor(null)} />}
+          {corretor && <FiltroAtivo rotulo={nomeCorretor(corretor)!} icone={User} foto={fotoDoFiltro(corretor)} onLimpar={() => escolherCorretor(null)} />}
           {produto && <FiltroAtivo rotulo={nomeProduto(produto)!} icone={Building2} onLimpar={() => setProduto(null)} />}
         </div>
       )}
@@ -235,10 +237,12 @@ function Cartao({ titulo, extra, acao, children, className = '' }: {
   )
 }
 
-function FiltroAtivo({ rotulo, icone: Icone, onLimpar }: { rotulo: string; icone: typeof User; onLimpar: () => void }) {
+function FiltroAtivo({ rotulo, icone: Icone, onLimpar, foto }: { rotulo: string; icone: typeof User; onLimpar: () => void; foto?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 h-8 pl-3 pr-1 rounded-full bg-surface border border-line text-[13px] font-medium text-t1">
-      <Icone size={13} strokeWidth={1.8} className="text-brand-text" aria-hidden />
+    <span className={`inline-flex items-center gap-1.5 h-8 pr-1 rounded-full bg-surface border border-line text-[13px] font-medium text-t1 ${foto ? 'pl-1' : 'pl-3'}`}>
+      {foto
+        ? <FotoPerfil nome={rotulo} url={foto} tamanho={24} />
+        : <Icone size={13} strokeWidth={1.8} className="text-brand-text" aria-hidden />}
       {rotulo}
       <button type="button" onClick={onLimpar} aria-label={`Tirar o filtro ${rotulo}`}
         className="w-6 h-6 rounded-full flex items-center justify-center text-t3 hover:text-t1 hover:bg-s2 cursor-pointer
@@ -477,6 +481,12 @@ function SafraASafra({ serie, balde }: { serie: PontoSafra[]; balde: FunilSafra[
 
 // ─── Lado a lado ──────────────────────────────────────────────────────────────
 
+/** Foto de perfil de um corretor pela chave do cubo (o id do perfil). */
+function useFotoDe() {
+  const { profile, allProfiles } = useAuthStore()
+  return (id: string) => (id === profile?.id ? profile?.avatarUrl : allProfiles.find(p => p.id === id)?.avatarUrl)
+}
+
 function LadoALado({ dados, filtro, admin, escolherCorretor, escolherProduto }: {
   dados: FunilSafra
   filtro: Filtro
@@ -484,6 +494,7 @@ function LadoALado({ dados, filtro, admin, escolherCorretor, escolherProduto }: 
   escolherCorretor: (id: string | null) => void
   escolherProduto: (k: string | null) => void
 }) {
+  const fotoDe = useFotoDe()
   const podeCorretores = admin && dados.corretores.length > 1
   // Com um corretor escolhido, o natural é ver o funil dele em cada produto.
   const [dimEscolhida, setDim] = useState<'corretor' | 'produto' | null>(null)
@@ -507,6 +518,7 @@ function LadoALado({ dados, filtro, admin, escolherCorretor, escolherProduto }: 
         {fatias.map(f => (
           <li key={f.chave}>
             <MiniFunil fatia={f} ativo={f.chave === selecionado}
+              foto={dim === 'corretor' ? { url: fotoDe(f.chave) } : undefined}
               onClick={dim === 'corretor' && f.chave === SEM ? undefined : () => escolher(f.chave)} />
           </li>
         ))}
@@ -515,13 +527,20 @@ function LadoALado({ dados, filtro, admin, escolherCorretor, escolherProduto }: 
   )
 }
 
-function MiniFunil({ fatia, ativo, onClick }: { fatia: Fatia; ativo: boolean; onClick?: () => void }) {
+function MiniFunil({ fatia, ativo, onClick, foto }: {
+  fatia: Fatia; ativo: boolean; onClick?: () => void
+  /** no lado a lado de corretores: a foto dele, para reconhecer de relance */
+  foto?: { url?: string }
+}) {
   const { c } = fatia
   const desenho = fatiasDe(c)
   const corpo = (
     <>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[14px] font-semibold text-t1 truncate">{fatia.nome}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2.5 min-w-0">
+          {foto && <FotoPerfil nome={fatia.nome} url={foto.url} tamanho={40} />}
+          <span className="text-[14px] font-semibold text-t1 truncate">{fatia.nome}</span>
+        </span>
         <span className="text-[12.5px] font-semibold tabular-nums shrink-0" style={{ color: TOM.venda.texto }}>
           {fmtTaxa(taxa(c.venda, c.recebidos))} <span className="font-medium text-t4">venda</span>
         </span>
@@ -566,6 +585,7 @@ function Matriz({ dados, filtro, escolher }: {
 }) {
   const [metrica, setMetrica] = useState<EtapaSafra>('visita')
   const m = useMemo(() => matriz(dados), [dados])
+  const fotoDe = useFotoDe()
   if (m.linhas.length < 2 || m.colunas.length < 2) return null
 
   const tx = (c: Contagem) => (c.recebidos >= 5 ? taxa(c[metrica], c.recebidos) : null)
@@ -622,7 +642,12 @@ function Matriz({ dados, filtro, escolher }: {
           <tbody>
             {m.linhas.map(l => (
               <tr key={l.chave}>
-                <th scope="row" className="sticky left-0 z-[1] bg-surface px-3 py-1 text-left text-[14px] font-semibold text-t1 whitespace-nowrap">{l.nome}</th>
+                <th scope="row" className="sticky left-0 z-[1] bg-surface px-3 py-1 text-left text-[14px] font-semibold text-t1 whitespace-nowrap">
+                  <span className="flex items-center gap-2.5">
+                    {l.chave !== SEM && <FotoPerfil nome={l.nome} url={fotoDe(l.chave)} tamanho={36} />}
+                    {l.nome}
+                  </span>
+                </th>
                 {m.colunas.map(col => celula(col.chave, m.celula(l.chave, col.chave), l.chave, col.chave))}
                 {celula('todos', m.totalLinha(l.chave), l.chave, null, true)}
               </tr>
