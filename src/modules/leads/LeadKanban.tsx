@@ -24,7 +24,7 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useRealtimeStatusStore } from '../../store/useRealtimeStatusStore'
 import { useTasksStore } from '../../store/useTasksStore'
-import { formatPhone, formatCurrency, whatsappUrl } from '../../lib/formatters'
+import { formatPhone, formatCurrencyFull, formatCurrencyRound, whatsappUrl } from '../../lib/formatters'
 import { computeNextAction, URGENCY_STYLE, STAGE_CTA } from './nextAction'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { avisoReentrada } from './reentrada'
@@ -109,11 +109,11 @@ function DinheiroVivo({ valor, className = '', ganho = false }: { valor: number;
   }, [valor, ganho])
   return (
     <span className={`relative inline-block tabular-nums ${className}`}>
-      {v < 1 ? 'R$ 0' : formatCurrency(v)}
+      {formatCurrencyRound(Math.max(0, Math.round(v)))}
       {subiu && (
         <span key={subiu.k} aria-hidden
               className="kanban-ganho pointer-events-none absolute left-full ml-1.5 top-0 whitespace-nowrap text-[11px] font-bold text-success">
-          +{formatCurrency(subiu.d)}
+          +{formatCurrencyRound(Math.round(subiu.d))}
         </span>
       )}
     </span>
@@ -137,7 +137,10 @@ function daysInStage(stageChangedAt?: string, createdAt?: string): number {
  * duas ou mais faixas de cartões. Com todas as colunas abertas esse espaço não
  * existe mais, então as faixas saíram junto.
  */
-const CLASSE_DA_COLUNA = 'flex flex-col flex-1 basis-[18.5rem] min-w-[18.5rem] lg:basis-[15rem] lg:min-w-[15rem] max-w-[22rem]'
+// v12 (22/11/2026): o cartão ficou horizontal a pedido do Rafael, e isso pede
+// coluna mais larga (22rem). Em tela menor que ~1900px o quadro rola para o
+// lado, como no Salesforce — com encaixe suave em cada coluna.
+const CLASSE_DA_COLUNA = 'flex flex-col flex-1 basis-[calc(100vw-2.5rem)] min-w-[calc(100vw-2.5rem)] sm:basis-[22rem] sm:min-w-[22rem] max-w-[26rem] snap-start'
 
 function orderBetween(above: Lead | null, below: Lead | null): number {
   const a = above ? ordemEfetiva(above) : Date.now() + 1_000_000
@@ -146,14 +149,6 @@ function orderBetween(above: Lead | null, below: Lead | null): number {
 }
 
 // ─── Card sortável ────────────────────────────────────────────────────────────
-
-/**
- * Controles secundários do cartão (estrela, alça de arrastar, atalhos): somem
- * em repouso no computador e aparecem ao passar o mouse ou focar pelo teclado.
- * No toque não existe "passar o mouse", então ficam sempre à vista.
- */
-const ATALHO_DO_CARD =
-  'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'
 
 function LeadCard({
   lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, comissao,
@@ -237,10 +232,20 @@ function LeadCard({
   // com a próxima ação, porque não é o sistema cobrando: é o lead chamando.
   const aviso = isOverlay ? null : avisoReentrada(lead)
 
+  // Progresso no funil: lead(0) → venda(5). Barra no pé do cartão — quanto
+  // falta para a comissão (efeito de gradiente de meta: quanto mais perto,
+  // mais vontade de empurrar).
+  const passo = STAGES.indexOf(lead.funnelStage)
+
+  // No toque não há hover nem alça visível: o cartão inteiro vira a alça
+  // (segurar 250 ms arrasta — TouchSensor; um toque rápido abre a ficha).
+  const toque = typeof window !== 'undefined' && window.matchMedia?.('(hover: none)').matches
+
   return (
     <div
       ref={setNodeRef}
       style={style}
+      {...(toque && !isOverlay ? listeners : {})}
       onClick={onClick}
       role="button"
       tabIndex={isOverlay ? -1 : 0}
@@ -250,7 +255,7 @@ function LeadCard({
         transition-[transform,box-shadow,background-color,border-color,opacity] duration-200
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
         ${urgente ? 'kanban-card-alerta' : ''}
-        ${dense ? 'px-3 py-2.5' : 'px-3.5 pt-3 pb-2.5'}
+        ${dense ? 'px-3 pt-2.5 pb-3' : 'px-3.5 pt-3 pb-3.5'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? '!shadow-modal kanban-card-prioridade' : ''}
         ${isSaving ? 'opacity-60 pointer-events-none' : ''}
@@ -258,26 +263,23 @@ function LeadCard({
         ${aviso ? 'kanban-card-alerta ring-1 ring-inset ring-info-line !border-info-line' : ''}
       `}
     >
-      {/* ── Cartão v11 (22/11/2026) ─────────────────────────────────────────
-          De cima para baixo, o que decide a ligação:
-            1. QUEM — o nome do lead e, no canto, o rosto do corretor dono
-            2. O QUÊ — produto e origem
-            3. QUANTO — VGV e comissão (o corretor vê a dele; o admin vê a do
-               corretor e a da imobiliária). Dinheiro à vista dá vontade de ligar.
-            4. QUANDO — a próxima ação (faixa tingida só com prazo ou risco)
-            5. AÇÃO — chamar no WhatsApp, em verde
-          Continuam fora do cartão, a pedido do Rafael: temperatura, "sem
-          próxima ação", Difícil/Ideal, etiqueta PRIORIDADE e botão com fundo
-          em repouso. */}
+      {/* ── Cartão v12 (22/11/2026) — horizontal ────────────────────────────
+          Três faixas em vez de uma pilha:
+            1. o dono (foto) · o lead e o produto · o VGV por extenso
+            2. o dinheiro: a comissão do corretor (e da Souza, para o admin)
+            3. o que fazer agora · a chamada no WhatsApp
+          e, no pé, a barra de progresso das etapas.
+          Valores sempre por extenso ("R$ 600.000,00"), a pedido do Rafael.
+          Continuam fora: temperatura, "sem próxima ação", Difícil/Ideal,
+          etiqueta PRIORIDADE e botão com fundo em repouso. */}
       {isSaving && (
         <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[16px] bg-black/20" role="status" aria-label="Salvando">
           <Loader2 size={16} className="animate-spin text-brand" strokeWidth={1.6} />
         </div>
       )}
 
-      {/* O lead chamou (reentrada) — acima de tudo: é o motivo de abrir este */}
       {aviso && (
-        <p className="flex items-center gap-1.5 mb-2 pr-10 font-label text-[11px] font-bold uppercase tracking-[0.08em] text-info"
+        <p className="flex items-center gap-1.5 mb-2 font-label text-[11px] font-bold uppercase tracking-[0.08em] text-info"
            title={aviso.detalhe}>
           {aviso.tipo === 'cliente'
             ? <BadgeCheck size={12} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />
@@ -286,8 +288,13 @@ function LeadCard({
         </p>
       )}
 
-      {/* 1 + 2 · Quem e o quê */}
-      <div className="flex items-start gap-2.5 min-w-0">
+      {/* 1 · Dono · lead · VGV */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        {responsavel && (
+          <span title={`Responsável: ${responsavel.name}`} className="flex-shrink-0">
+            <FotoCorretor nome={responsavel.name} url={responsavel.avatarUrl} tamanho={dense ? 28 : 36} />
+          </span>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <p className="font-heading text-[14.5px] font-semibold text-t1 truncate leading-tight tracking-[-0.015em]">
@@ -303,70 +310,138 @@ function LeadCard({
             )}
             <SinalDeFluxo quantos={lead.fluxosCount} />
           </div>
-          <p className="mt-1 text-[12px] text-t3 truncate">
+          <p className="mt-0.5 text-[12px] text-t3 truncate">
             {originMeta && (
               <originMeta.icon size={11} strokeWidth={1.6} className="inline-block align-[-1px] mr-1 text-t4" aria-label={originMeta.label} />
             )}
             {property ? property.name : (lead.propertyName ?? 'Sem produto')}
-            {dense && lead.averageTicket ? <span className="text-t2 font-semibold tabular-nums"> · {formatCurrency(lead.averageTicket)}</span> : null}
           </p>
         </div>
-        {responsavel && (
-          <span title={`Responsável: ${responsavel.name}`} className="flex-shrink-0">
-            <FotoCorretor nome={responsavel.name} url={responsavel.avatarUrl} tamanho={dense ? 26 : 32} />
-          </span>
-        )}
+        {lead.averageTicket ? (
+          <div className="flex-shrink-0 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-t4 leading-none">VGV</p>
+            <p className="mt-1 text-[13.5px] font-bold text-t1 tabular-nums leading-none">{formatCurrencyFull(lead.averageTicket)}</p>
+          </div>
+        ) : null}
       </div>
 
-      {/* 3 · Quanto — o VGV numa linha; embaixo, a comissão do corretor e
-             (para o admin) a da Souza, lado a lado */}
-      {!dense && din && comissao && (
-        <div className="mt-2.5 rounded-[11px] bg-s2/70 px-2.5 py-2">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-t4">VGV</span>
-            <span className="text-[13.5px] font-bold text-t1 tabular-nums">{formatCurrency(din.vgv)}</span>
+      {/* 2 · O dinheiro em jogo — por extenso */}
+      {!dense && din && comissao && (din.corretor > 0 || comissao.admin) && (
+        <div className="mt-2.5 flex items-stretch rounded-[11px] bg-s2/70 overflow-hidden text-[12.5px]">
+          <div className="flex-1 min-w-0 px-2.5 py-1.5 flex items-center justify-between gap-2"
+               title={comissao.admin ? 'Comissão líquida do corretor' : 'Sua comissão líquida (5% do VGV − 3% ISS − 6% Simples)'}>
+            <span className="text-[11.5px] font-medium text-success/80 truncate">
+              {comissao.admin && responsavel ? responsavel.name.split(' ')[0] : comissao.rotuloCorretor}
+            </span>
+            <span className="font-bold text-success tabular-nums whitespace-nowrap">{din.corretor > 0 ? formatCurrencyFull(din.corretor) : '—'}</span>
           </div>
-          <div className={`mt-1.5 pt-1.5 border-t border-line grid ${comissao.admin ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
-            <div className={`min-w-0 ${comissao.admin ? '' : 'flex items-baseline justify-between gap-2'}`}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-success/80 truncate">{comissao.rotuloCorretor}</p>
-              <p className="text-[13px] font-bold text-success tabular-nums truncate">{din.corretor > 0 ? formatCurrency(din.corretor) : '—'}</p>
+          {comissao.admin && (
+            <div className="flex-1 min-w-0 px-2.5 py-1.5 flex items-center justify-between gap-2 border-l border-line" title="Comissão líquida da imobiliária">
+              <span className="text-[11.5px] font-medium text-brand-text/80">Souza</span>
+              <span className="font-bold text-brand-text tabular-nums whitespace-nowrap">{formatCurrencyFull(din.souza)}</span>
             </div>
-            {comissao.admin && (
-              <div className="min-w-0 border-l border-line pl-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-brand-text/80 truncate">Souza</p>
-                <p className="text-[13px] font-bold text-brand-text tabular-nums truncate">{formatCurrency(din.souza)}</p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       )}
 
-      {/* 4 · Quando — risco chama pela FRASE e pelo ícone; sem ação marcada,
-             só o último contato, neutro ("sem próxima ação" não volta). */}
-      {next && NextIcon && (
-        <div
-          className={`flex items-center gap-1.5 min-w-0 mt-2.5 ${urgente ? `rounded-[9px] border px-2 py-1.5 ${nextStyle!.chip}` : ''}`}
-          title={next.hint}
-        >
-          <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
-          {next.urgency === 'none' ? (
-            <p className="flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
-          ) : (
-            <p className={`flex-1 min-w-0 truncate text-[12px] font-semibold ${nextStyle!.text}`}>{next.text}</p>
-          )}
-          {!isOverlay && (
-            <span className="flex-shrink-0 text-[11px] text-t4 tabular-nums" title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}>
-              {stageDays}d
-            </span>
-          )}
+      {/* 3 · O que fazer agora · chamada */}
+      <div className="mt-2.5 flex items-center gap-2 min-w-0">
+        {next && NextIcon ? (
+          <div
+            className={`flex-1 min-w-0 flex items-center gap-1.5 ${urgente ? `rounded-[9px] border px-2 py-1 ${nextStyle!.chip}` : ''}`}
+            title={next.hint}
+          >
+            <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
+            {next.urgency === 'none' ? (
+              <p className="flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
+            ) : (
+              <p className={`flex-1 min-w-0 truncate text-[12px] font-semibold ${nextStyle!.text}`}>{next.text}</p>
+            )}
+            {!isOverlay && (
+              <span className="flex-shrink-0 text-[11px] text-t4 tabular-nums" title={`${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} nesta etapa`}>
+                {stageDays}d
+              </span>
+            )}
+          </div>
+        ) : <div className="flex-1" />}
+
+        {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
+          <button
+            onClick={e => { e.stopPropagation(); onConclude?.() }}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 text-[12px] font-bold text-brand-fill-text bg-brand-fill hover:bg-brand-fill-hover rounded-full transition-all duration-150 active:scale-[0.97]"
+            title="Concluir a venda e registrar no faturamento"
+          >
+            <Trophy size={12} strokeWidth={1.8} />
+            Concluir venda
+          </button>
+        ) : (
+          <button
+            onClick={handleWhatsApp}
+            className="flex-shrink-0 flex items-center gap-1.5 px-2.5 h-8 text-[12.5px] font-semibold text-success rounded-full
+                       transition-colors duration-150 active:scale-[0.97]
+                       hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)]
+                       focus-visible:bg-success-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
+            title={`${STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'} — abre o WhatsApp e registra o contato`}
+            aria-label={`${STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}: chamar ${displayName} no WhatsApp`}
+          >
+            <MessageCircle size={13} strokeWidth={1.8} className="flex-shrink-0" />
+            Chamar
+          </button>
+        )}
+
+        {/* Atalhos — flutuam no canto do cartão, só no hover/foco do
+            computador. No toque somem: tocar o cartão abre a ficha, que tem
+            todos eles. */}
+        <div className={`absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-full border border-line bg-surface px-1 py-0.5 shadow-[0_6px_16px_-8px_rgba(15,39,89,.35)]
+                         opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 [@media(hover:none)]:hidden`}>
+          <button
+            onClick={async e => {
+              e.stopPropagation()
+              try { await toggleFlag(lead.id) } catch { /* erro já toastado */ }
+            }}
+            className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-brand-tint
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${lead.flagged ? 'text-brand' : 'text-t4 hover:text-brand'}`}
+            title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+            aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+            aria-pressed={!!lead.flagged}
+          >
+            <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            onClick={handleWhatsAppOpen}
+            className="w-7 h-7 flex items-center justify-center text-t4 hover:text-success hover:bg-success-bg rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            title="Só abrir WhatsApp, sem registrar"
+            aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
+          >
+            <MessageCircle size={13} strokeWidth={1.6} />
+          </button>
+          <a
+            href={`tel:${displayPhone}`}
+            onClick={e => e.stopPropagation()}
+            className="w-7 h-7 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            title={`Ligar — ${formatPhone(displayPhone)}`}
+            aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
+          >
+            <Phone size={13} strokeWidth={1.6} />
+          </a>
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
+          <div
+            {...listeners}
+            {...attributes}
+            onClick={e => e.stopPropagation()}
+            aria-label="Arrastar lead"
+            className="w-6 h-7 flex items-center justify-center text-t4 hover:text-t2 cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical size={13} strokeWidth={1.6} />
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Toques do followup — só onde a cadência existe. Ficam à vista também
           no modo compacto: o Rafael pediu que os toques continuem no cartão
           (16/11/2026). Cada traço é um toque; clicar marca até ali. */}
       {lead.funnelStage === 'followup' && (
-        <div className={`flex items-center gap-1 ${dense ? 'mt-1.5' : 'mt-2.5'}`} role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
+        <div className={`flex items-center gap-1 mt-2`} role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
           {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
             <button
               key={step}
@@ -400,81 +475,15 @@ function LeadCard({
         </div>
       )}
 
-      {/* 5 · Ação — em Venda, concluir (o único botão cheio: dinheiro);
-             nas outras, chamar no WhatsApp, em verde e sem caixa em repouso.
-             Atalhos (prioridade, só abrir o WhatsApp, ligar, arrastar)
-             aparecem no hover — e ficam sempre à vista no toque. */}
-      <div className={`relative flex items-center gap-0.5 -mb-0.5 ${dense ? 'mt-1.5' : 'mt-2.5 pt-1.5 border-t border-line'}`}>
-        {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
-          <button
-            onClick={e => { e.stopPropagation(); onConclude?.() }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 min-h-[32px] text-[12px] font-bold text-brand-fill-text bg-brand-fill hover:bg-brand-fill-hover rounded-[9px] transition-all duration-150 active:scale-[0.98]"
-            title="Concluir a venda e registrar no faturamento"
-          >
-            <Trophy size={12} strokeWidth={1.8} />
-            Concluir venda
-          </button>
-        ) : (
-          <button
-            onClick={handleWhatsApp}
-            className="flex-1 min-w-0 -ml-1.5 flex items-center justify-start gap-1.5 px-1.5 min-h-[32px] text-[12.5px] font-semibold
-                       text-success rounded-[8px] transition-colors duration-150 active:scale-[0.98]
-                       hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)]
-                       focus-visible:bg-success-bg
-                       focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
-            title="Abrir WhatsApp e registrar o contato na timeline"
-          >
-            <MessageCircle size={13} strokeWidth={1.8} className="flex-shrink-0" />
-            <span className="truncate">{STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}</span>
-          </button>
-        )}
-        {/* Atalhos por cima do fim do rodapé, só no hover/foco (sempre à vista
-            no toque): assim a chamada principal não perde espaço em repouso. */}
-        <div className={`absolute right-0 bottom-0 top-1.5 flex items-center gap-0.5 pl-3 bg-gradient-to-l from-[var(--kanban-card-bg)] from-80% to-transparent ${ATALHO_DO_CARD}`}>
-          <button
-            onClick={async e => {
-              e.stopPropagation()
-              try { await toggleFlag(lead.id) } catch { /* erro já toastado */ }
-            }}
-            className={`w-7 h-7 flex items-center justify-center rounded-[8px] transition-all duration-150 flex-shrink-0
-                        hover:bg-brand-tint focus:outline-none focus-visible:ring-2 focus-visible:ring-brand
-                        ${lead.flagged ? 'text-brand' : 'text-t4 hover:text-brand'}`}
-            title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
-            aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
-            aria-pressed={!!lead.flagged}
-          >
-            <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
-          </button>
-          <button
-            onClick={handleWhatsAppOpen}
-            className={`w-7 h-7 flex items-center justify-center text-t4 hover:text-success hover:bg-success-bg rounded-[8px] transition-all duration-150 flex-shrink-0
-                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand`}
-            title="Só abrir WhatsApp, sem registrar"
-            aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
-          >
-            <MessageCircle size={13} strokeWidth={1.6} />
-          </button>
-          <a
-            href={`tel:${displayPhone}`}
-            onClick={e => e.stopPropagation()}
-            className={`w-7 h-7 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-[8px] transition-all duration-150 flex-shrink-0
-                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand`}
-            title={`Ligar — ${formatPhone(displayPhone)}`}
-            aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
-          >
-            <Phone size={13} strokeWidth={1.6} />
-          </a>
-          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
-          <div
-            {...listeners}
-            {...attributes}
-            onClick={e => e.stopPropagation()}
-            aria-label="Arrastar lead"
-            className={`w-6 h-7 flex items-center justify-center text-t4 hover:text-t2 cursor-grab active:cursor-grabbing transition-all flex-shrink-0`}
-          >
-            <GripVertical size={13} strokeWidth={1.6} />
-          </div>
-        </div>
+      {/* Progresso no funil, no pé do cartão — cada traço uma etapa, na cor
+          dela, aceso até onde o lead chegou */}
+      <div className="absolute left-0 right-0 bottom-0 flex gap-[2px] px-3.5 pb-1.5" role="img"
+           aria-label={`Etapa ${passo + 1} de ${STAGES.length}: ${STAGE_CONFIG[lead.funnelStage].label}`}
+           title={`Etapa ${passo + 1} de ${STAGES.length} · faltam ${STAGES.length - 1 - passo} para a venda`}>
+        {STAGES.map((st, i) => (
+          <span key={st} className="flex-1 h-[3px] rounded-full transition-colors duration-300"
+                style={{ background: i <= passo ? COR_ETAPA[st][1] : 'var(--s3)', opacity: i <= passo ? 0.9 : 1 }} />
+        ))}
       </div>
     </div>
   )
@@ -634,7 +643,7 @@ function Placar({ rotulo, valor, cor, fundo, destaque = false, foto, nota, titul
   titulo?: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface pl-2.5 pr-4 py-2 min-w-0" title={titulo}>
+    <div className="flex-shrink-0 snap-start flex items-center gap-3 rounded-[14px] border border-line bg-surface pl-2.5 pr-4 py-2" title={titulo}>
       {foto ? (
         <FotoCorretor nome={foto.nome} url={foto.url} tamanho={36} />
       ) : (
@@ -877,14 +886,15 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
           a líquida de cada corretor, com a foto; o corretor vê só a dele.
           5% do VGV − 3% ISS − 6% Simples (comissao.ts). */}
       <div className="flex items-center gap-x-3 gap-y-3 flex-wrap mb-4 px-1">
-        <div className="flex items-stretch gap-2 flex-wrap">
+        {/* No celular os números correm numa faixa só, com rolagem lateral */}
+        <div className="flex items-stretch gap-2 max-w-full overflow-x-auto sm:flex-wrap sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0 snap-x">
           {comissao.admin ? (
             <>
               <Placar rotulo="VGV" nota={`${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)"
                       fundo="linear-gradient(135deg, #818CF8, #4F46E5)" />
               <Placar rotulo="Comissão geral" nota="5% do VGV" valor={comissaoBruta(resumo.vgv)} cor="var(--t1)"
                       fundo="linear-gradient(135deg, #38BDF8, #0284C7)"
-                      titulo={`Bruta. Depois do ISS (3%) e do Simples (6%), sobra ${formatCurrency(resumo.corretor + resumo.souza)} líquidos.`} />
+                      titulo={`Bruta. Depois do ISS (3%) e do Simples (6%), sobra ${formatCurrencyRound(resumo.corretor + resumo.souza)} líquidos.`} />
               <Placar rotulo="Líquida Souza" valor={resumo.souza} cor="var(--brand-text)" destaque
                       fundo="linear-gradient(135deg, #E2C385, #B8913F)" />
               {resumo.corretores.map(c => (
@@ -929,7 +939,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-3 overflow-x-auto pb-4 px-1 items-stretch [justify-content:safe_center]">
+        <div className="flex gap-3 overflow-x-auto pb-4 px-1 items-stretch [justify-content:safe_center] snap-x snap-proximity scroll-px-1">
           {STAGES.map((stage, i) => (
             <KanbanColumn
               key={stage}
