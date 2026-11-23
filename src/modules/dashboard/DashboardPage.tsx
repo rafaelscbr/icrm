@@ -2,20 +2,21 @@ import { useEffect, useMemo, useState, ReactNode } from 'react'
 import { destacar } from '../../components/shared/Destaque'
 import { useNavigate } from 'react-router-dom'
 import {
-  Users, TrendingUp, ArrowRight, Sparkles, CheckCircle2,
+  TrendingUp, ArrowRight, Sparkles, CheckCircle2,
   AlertTriangle, CalendarCheck, RefreshCw,
-  ChevronDown, ChevronUp, Flame, Info, BarChart3, ArrowDown, LayoutDashboard,
-  Filter, MessageCircle,
+  ChevronDown, ChevronUp, Flame, Info, BarChart3, LayoutDashboard,
+  MessageCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Tom } from '../../components/shared/visual'
 import { Task, Lead, calcSaleCommissions } from '../../types'
-import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
+import { STAGE_THEME } from '../../lib/stageTheme'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadModal } from '../leads/LeadModal'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { FaixaNumeros } from '../../components/shared/visual'
 import { ProximaAcao } from './ProximaAcao'
+import { FunisComerciais } from './FunisComerciais'
 import { useSalesStore } from '../../store/useSalesStore'
 import { useTasksStore } from '../../store/useTasksStore'
 import { useLeadsStore } from '../../store/useLeadsStore'
@@ -33,8 +34,9 @@ import toast from 'react-hot-toast'
    Hierarquia da tela, de cima para baixo:
      1. Hero        — Meta de VGV × Previsão de VGV (o coração da tela)
      2. Indicadores — receita em protagonismo, operação discreta, alerta urgente
-     3. Prioridades — o que exige ação agora, com nome e link para resolver
-     4. Funil       — receita por etapa, com gargalo explícito
+     3. Funil       — geral, por produto e por corretor: conversão, VGV em
+                      andamento e vendido, comissão (FunisComerciais.tsx)
+     4. Prioridades — o que exige ação agora, com nome e link para resolver
      5. Evolução    — VGV realizado por semana contra a meta acumulada
 
    Regra do produto: a PREVISÃO é visita + proposta, nunca o funil inteiro.
@@ -63,22 +65,6 @@ interface OverviewData {
   alertas: { tarefasEmAtraso: number; slaEstourado: number }
 }
 
-/**
- * Coorte do funil (RPC `lead_funnel_analytics`).
- *
- * `reached` = quantos leads já ALCANÇARAM cada etapa, por profundidade máxima.
- * É monotônico e é a única base válida para calcular conversão.
- *
- * A contagem de ocupação (`leadFunnel` do overview) NÃO serve para isso: ela diz
- * quantos leads estão parados em cada etapa AGORA. Com 2 em "Lead" e 77 em
- * "Followup", dividir um pelo outro dava "3850% de conversão" — número sem
- * significado, porque não são a mesma coorte.
- */
-interface FunnelAnalytics {
-  totalLeads: number
-  funnel: Array<{ stage: string; reached: number; avgDays: number | null }>
-}
-
 interface ExtrasData {
   aniversariantes: Array<{
     id: string; nome: string; telefone: string
@@ -92,8 +78,8 @@ interface ExtrasData {
   leadsSemContato: Array<{ leadId: string; dias: number }>
 }
 
-/** Comissão estimada sobre pipeline — mesma convenção do Kanban (2%). */
-const PIPELINE_COMMISSION_RATE = 0.02
+/** Comissão bruta estimada sobre a previsão (visita + proposta) — 5%, a regra da casa (comissao.ts). */
+const PIPELINE_COMMISSION_RATE = 0.05
 
 /** Teto de leads frios na lista de prioridades — o excedente é anunciado na tela. */
 const COLD_LIMIT = 10
@@ -628,212 +614,6 @@ function PriorityFeed({ items, loading, onSeeAll, coldOverflow = 0 }: {
   )
 }
 
-// ─── 4. Funil de receita ──────────────────────────────────────────────────────
-
-interface StageDetail { vgv: number; parados: number }
-
-/**
- * Funil de receita — duas leituras na mesma tabela, cada uma com a sua base:
- *
- *   COORTE (RPC lead_funnel_analytics): quantos leads já alcançaram a etapa,
- *   a conversão entre etapas e o tempo médio até avançar. Monotônico.
- *
- *   AGORA (overview + store de leads): quantos estão parados na etapa neste
- *   momento, quanto de VGV está ali e quantos passaram de 7 dias sem sair.
- *
- * Misturar as duas produz absurdos — dividir a ocupação de "Followup" pela de
- * "Lead" chega a dar mais de 100%. Por isso a barra e a conversão usam a
- * coorte, e o VGV/parados aparecem em colunas separadas, rotuladas.
- */
-function RevenueFunnel({ data, analytics, detail, loading, error, onNavigate }: {
-  data: OverviewData | null
-  analytics: FunnelAnalytics | null
-  detail: Record<string, StageDetail>
-  loading: boolean
-  error: string | null
-  onNavigate: () => void
-}) {
-  const rows = useMemo(() => {
-    if (!data) return []
-    const stages = FUNNEL_STAGES.map(stage => ({
-      stage,
-      theme: STAGE_THEME[stage],
-      agora:   data.leadFunnel.find(s => s.stage === stage)?.count ?? 0,
-      reached: analytics?.funnel.find(f => f.stage === stage)?.reached ?? null,
-      avgDays: analytics?.funnel.find(f => f.stage === stage)?.avgDays ?? null,
-    }))
-    // A barra usa a coorte quando disponível; sem ela, cai para a ocupação
-    // escalada pelo MAIOR valor (nunca pelo primeiro — o topo pode estar vazio).
-    const maxAgora = Math.max(...stages.map(s => s.agora), 1)
-    const topReached = stages[0]?.reached ?? 0
-    return stages.map((s, i) => {
-      const prev = i > 0 ? stages[i - 1].reached : null
-      const base = s.reached !== null && topReached > 0 ? s.reached / topReached : s.agora / maxAgora
-      return {
-        ...s,
-        widthPct: Math.min(Math.max(base * 100, (s.reached ?? s.agora) > 0 ? 3 : 0), 100),
-        conv: s.reached !== null && prev !== null && prev > 0
-          ? Math.round((s.reached / prev) * 100)
-          : null,
-      }
-    })
-  }, [data, analytics])
-
-  // Gargalo = pior conversão de coorte entre duas etapas. Só ele é destacado.
-  const bottleneckIdx = useMemo(() => {
-    let idx = -1, worst = Infinity
-    rows.forEach((r, i) => { if (r.conv !== null && r.conv < worst) { worst = r.conv; idx = i } })
-    return worst < 100 ? idx : -1
-  }, [rows])
-
-  const total = data?.leadFunnel.reduce((a, s) => a + s.count, 0) ?? 0
-  const hasDetail = Object.keys(detail).length > 0
-  const hasCohort = !!analytics
-
-  if (error && !data) {
-    return <p className="rounded-[16px] border border-line surface-premium px-5 py-4 text-xs text-error" role="alert">{error}</p>
-  }
-
-  if (loading && !data) {
-    return (
-      <div className="rounded-[16px] border border-line surface-premium p-5 flex flex-col gap-3">
-        {Array.from({ length: 6 }).map((_, i) => <ShimmerBlock key={i} className="w-full h-9" />)}
-      </div>
-    )
-  }
-
-  if (data && total === 0) {
-    return (
-      <div className="rounded-[16px] border border-line surface-premium flex flex-col items-center py-12 gap-2">
-        <Users size={26} className="text-t4" aria-hidden />
-        <p className="text-sm text-t3">Nenhum lead no funil ainda</p>
-        <button onClick={onNavigate} className="text-xs font-semibold text-brand hover:text-brand-text transition-colors cursor-pointer mt-1">
-          Cadastrar o primeiro lead →
-        </button>
-      </div>
-    )
-  }
-
-  const bottleneck = bottleneckIdx > 0 ? rows[bottleneckIdx] : null
-
-  return (
-    <div className="rounded-[16px] border border-line surface-premium overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
-      {/* Leitura do gargalo — a decisão que a tela quer provocar */}
-      {bottleneck && (
-        <div className="flex items-start gap-2.5 px-5 py-3 border-b border-line bg-warning-bg/40">
-          <AlertTriangle size={14} className="text-warning flex-shrink-0 mt-0.5" aria-hidden />
-          <p className="text-[13px] text-t2 leading-relaxed">
-            Maior gargalo entre <span className="font-semibold text-t1">{rows[bottleneckIdx - 1].theme.label}</span> e{' '}
-            <span className="font-semibold text-t1">{bottleneck.theme.label}</span>: apenas{' '}
-            <span className="font-bold text-warning tabular-nums">{bottleneck.conv}%</span> dos leads avançam.
-          </p>
-        </div>
-      )}
-
-      {/* Cabeçalho de colunas */}
-      <div className="hidden md:flex items-center gap-3 px-5 pt-3.5 pb-1.5">
-        <span className="w-28 flex-shrink-0" />
-        <span className="flex-1" />
-        {hasCohort && (
-          <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-20 text-right flex-shrink-0" title="Leads que já alcançaram esta etapa">
-            Alcançaram
-          </span>
-        )}
-        <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-16 text-right flex-shrink-0" title="Leads parados nesta etapa agora">Agora</span>
-        {hasDetail && (
-          <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-20 text-right flex-shrink-0">VGV</span>
-        )}
-        {hasCohort && (
-          <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-14 text-right flex-shrink-0" title="Tempo médio até avançar">Médio</span>
-        )}
-        {hasDetail && (
-          <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-t4 w-16 text-right flex-shrink-0" title="Parados há mais de 7 dias">Parados</span>
-        )}
-      </div>
-
-      <div className="px-5 pb-5">
-        {rows.map((r, i) => {
-          const d = detail[r.stage]
-          const isBottleneck = i === bottleneckIdx
-          return (
-            <div key={r.stage}>
-              {r.conv !== null && (
-                <div className="flex items-center gap-2 pl-[7.5rem] py-1">
-                  <ArrowDown size={11} className={isBottleneck ? 'text-warning' : 'text-t5'} aria-hidden />
-                  <span className={`text-[11px] font-bold tabular-nums ${isBottleneck ? 'text-warning' : 'text-t4'}`}>
-                    {r.conv}%
-                  </span>
-                  {isBottleneck && (
-                    <span className="font-label text-[10px] font-bold uppercase tracking-[0.1em] text-warning bg-warning-bg border border-warning-line px-1.5 py-px rounded-full">
-                      gargalo
-                    </span>
-                  )}
-                </div>
-              )}
-
-              <button
-                onClick={onNavigate}
-                className="w-full flex items-center gap-3 py-1.5 text-left cursor-pointer group"
-                aria-label={
-                  `${r.theme.label}: ${r.reached !== null ? `${r.reached} alcançaram, ` : ''}${r.agora} em aberto agora` +
-                  `${d ? `, ${formatCurrency(d.vgv)} em VGV, ${d.parados} parados` : ''}`
-                }
-              >
-                <span className="flex items-center gap-2 w-28 flex-shrink-0 min-w-0">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.theme.dot}`} aria-hidden />
-                  <span className="text-sm font-semibold text-t2 truncate group-hover:text-t1 transition-colors">{r.theme.label}</span>
-                </span>
-
-                <span className="flex-1 h-8 rounded-[8px] bg-s3/40 overflow-hidden min-w-0">
-                  <span
-                    className={`block h-full rounded-[8px] ${r.theme.dot} opacity-85 transition-all duration-700`}
-                    style={{ width: `${r.widthPct}%` }}
-                  />
-                </span>
-
-                {hasCohort && (
-                  <span className="text-sm font-bold text-t1 tabular-nums w-20 text-right flex-shrink-0 hidden md:block">
-                    {r.reached !== null ? r.reached.toLocaleString('pt-BR') : '—'}
-                  </span>
-                )}
-
-                <span className="text-sm font-semibold text-t2 tabular-nums w-16 text-right flex-shrink-0">
-                  {r.agora.toLocaleString('pt-BR')}
-                </span>
-
-                {hasDetail && (
-                  <span className="text-xs text-t2 tabular-nums w-20 text-right flex-shrink-0 hidden md:block">
-                    {d && d.vgv > 0 ? formatCurrency(d.vgv) : '—'}
-                  </span>
-                )}
-                {hasCohort && (
-                  <span className="text-xs text-t4 tabular-nums w-14 text-right flex-shrink-0 hidden md:block">
-                    {r.avgDays !== null && r.avgDays > 0 ? `${Math.round(r.avgDays)}d` : '—'}
-                  </span>
-                )}
-                {hasDetail && (
-                  <span
-                    className={`text-xs tabular-nums w-16 text-right flex-shrink-0 hidden md:block ${d && d.parados > 0 ? 'text-warning font-semibold' : 'text-t4'}`}
-                    title={d && d.parados > 0 ? `${d.parados} lead(s) há mais de 7 dias parados nesta etapa` : undefined}
-                  >
-                    {d && d.parados > 0 ? d.parados : '—'}
-                  </span>
-                )}
-              </button>
-            </div>
-          )
-        })}
-      </div>
-
-      <p className="px-5 pb-4 text-[11px] text-t4 leading-relaxed">
-        <span className="font-semibold text-t3">Alcançaram</span> e <span className="font-semibold text-t3">conversão</span> usam a
-        coorte (profundidade máxima já atingida pelo lead). <span className="font-semibold text-t3">Agora</span>, VGV e parados
-        descrevem quem está na etapa neste momento.
-      </p>
-    </div>
-  )
-}
-
 // ─── 5. Evolução de receita ───────────────────────────────────────────────────
 
 interface WeekPoint { label: string; realizado: number; acumulado: number; metaAcum: number }
@@ -983,12 +763,11 @@ export function DashboardPage() {
   const [taskFormOpen,    setTaskFormOpen]    = useState(false)
   const [selectedLead,    setSelectedLead]    = useState<Lead | null>(null)
   const [overviewData,    setOverviewData]    = useState<OverviewData | null>(null)
-  const [analytics,       setAnalytics]       = useState<FunnelAnalytics | null>(null)
   const [extras,          setExtras]          = useState<ExtrasData | null>(null)
   const [overviewLoading, setOverviewLoading] = useState(true)
   const [overviewError,   setOverviewError]   = useState<string | null>(null)
 
-  const { profile } = useAuthStore()
+  const { profile, isAdmin } = useAuthStore()
   const { effectiveBrokerId, isGlobalView } = useAdminView()
   const firstName = profile?.name?.split(' ')[0] ?? 'Corretor'
 
@@ -1022,21 +801,6 @@ export function DashboardPage() {
     setExtras(data as ExtrasData)
   }
 
-  // Coorte do funil — base correta para conversão e tempo médio por etapa.
-  // Mesma RPC da aba Conversão em Leads, sem filtro de período (funil inteiro).
-  async function loadAnalytics() {
-    const { data, error } = await supabase.rpc('lead_funnel_analytics', {
-      p_broker_id: effectiveBrokerId, p_start: null, p_end: null,
-    })
-    if (error) {
-      // O funil degrada para a leitura de ocupação — sem conversão inventada.
-      console.error('[dashboard] funnel analytics:', error)
-      setAnalytics(null)
-      return
-    }
-    setAnalytics(data as FunnelAnalytics)
-  }
-
   useEffect(() => {
     loadSales(); loadTasks(); loadMyLeads()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1045,7 +809,6 @@ export function DashboardPage() {
   useEffect(() => {
     loadOverview()
     loadExtras()
-    loadAnalytics()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveBrokerId])
 
@@ -1062,24 +825,6 @@ export function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [leads, effectiveBrokerId, isGlobalView]
   )
-
-  // ── Ocupação por etapa: VGV parado e leads envelhecendo ────────────────────
-  // O tempo médio NÃO sai daqui — "há quanto tempo os que ficaram estão presos"
-  // não é a mesma coisa que "quanto tempo leva para avançar". O segundo vem da
-  // coorte (analytics.avgDays); usar o primeiro no lugar dele inflaria o número
-  // com justamente os leads que nunca avançaram.
-  const funnelDetail = useMemo(() => {
-    const STALE_DAYS = 7
-    const acc: Record<string, StageDetail> = {}
-    activeLeads.forEach(l => {
-      const d = acc[l.funnelStage] ?? { vgv: 0, parados: 0 }
-      d.vgv += l.averageTicket ?? 0
-      const ref = l.stageChangedAt ?? l.createdAt
-      if (ref && (Date.now() - new Date(ref).getTime()) / 86_400_000 > STALE_DAYS) d.parados += 1
-      acc[l.funnelStage] = d
-    })
-    return acc
-  }, [activeLeads])
 
   // ── Prioridades de hoje ────────────────────────────────────────────────────
   async function registrarContato(lead: Lead) {
@@ -1293,12 +1038,21 @@ export function DashboardPage() {
           itens={[
             { rotulo: 'Comissão realizada', valor: formatCurrency(comissaoRealizada), nota: 'vendas do mês',
               tom: comissaoRealizada > 0 ? 'text-success' : 'text-t1', onClick: () => navigate('/vendas') },
-            { rotulo: 'Comissão prevista', valor: formatCurrency(comissaoPrevista), nota: '2% do pipeline', onClick: () => navigate('/leads') },
+            { rotulo: 'Comissão prevista', valor: formatCurrency(comissaoPrevista), nota: '5% de visita + proposta', onClick: () => navigate('/leads') },
             { rotulo: 'Leads ativos', valor: overviewData?.leadsAtivos ?? '—', nota: 'em aberto no funil', onClick: () => navigate('/leads') },
             { rotulo: 'Visitas agendadas', valor: visitasAgendadas, nota: 'tarefas de visita em aberto', onClick: () => navigate('/tarefas') },
           ]}
         />
       )}
+
+      {/* ══ Funil comercial — geral, por produto e por corretor (23/11/2026) ══
+          Logo abaixo da meta: de onde vem o que falta. */}
+      <FunisComerciais
+        leads={leads}
+        sales={sales}
+        corretor={isGlobalView ? null : (effectiveBrokerId ?? null)}
+        mostrarCorretores={isGlobalView && isAdmin}
+      />
 
       {/* ══ Agora — próxima ação + prioridades lado a lado ═══════════════
           Se não houver sugestão de próxima ação, as prioridades ocupam a
@@ -1321,16 +1075,6 @@ export function DashboardPage() {
         </SectionLabel>
         <PriorityFeed items={priorityItems} loading={kpiLoading} coldOverflow={coldOverflow} onSeeAll={() => navigate('/leads')} />
       </div>
-      </div>
-
-      {/* ══ 4. Funil de receita ═════════════════════════════════════════ */}
-      <SectionLabel icon={Filter} tom="info" hint="Volume, receita e tempo por etapa">Funil de *receita*</SectionLabel>
-      <div className="mb-8">
-        <RevenueFunnel
-          data={overviewData} analytics={analytics} detail={funnelDetail}
-          loading={overviewLoading} error={overviewError}
-          onNavigate={() => navigate('/leads')}
-        />
       </div>
 
       {/* ══ 5. Evolução de receita ══════════════════════════════════════ */}
