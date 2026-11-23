@@ -10,6 +10,8 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { somarDias } from '../leads/conversao'
 import type { RelatorioConversao } from '../leads/conversao'
 import { useLeadPauseStore } from '../../store/useLeadPauseStore'
+import { cartaoDaLinha, entrar, mover, tirar, trocarDono } from './kanbanDaSala'
+import type { CartaoSala } from './kanbanDaSala'
 
 // ─── Orçamento de recursos ────────────────────────────────────────────────────
 //
@@ -94,6 +96,15 @@ interface PulseStore {
   conversao:       RelatorioConversao | null
   /** timestamps dos últimos eventos — só para o cálculo do clima */
   recent:          number[]
+  /**
+   * O Kanban da imobiliária inteira (segunda tela, kanbanDaSala.ts): os leads
+   * em aberto + os vendidos do mês. Lido com o snapshot; depois anda só com os
+   * eventos do canal. null antes da 1ª leitura.
+   */
+  kanban:          CartaoSala[] | null
+  kanbanErro:      string | null
+  /** % de comissão de cada produto da carteira (developments.commission_pct) */
+  pctProduto:      Record<string, number>
 
   bootstrap: (motivo: 'inicial' | 'virada_dia' | 'reconexao') => Promise<void>
   subscribe: () => () => void
@@ -149,6 +160,9 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   salaErro:        null,
   conversao:       null,
   recent:          [],
+  kanban:          null,
+  kanbanErro:      null,
+  pctProduto:      {},
 
   comissaoPrevista: () => get().negociacaoValor * TAXA_COMISSAO,
 
@@ -169,7 +183,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     try {
       // As três RPCs em paralelo — juntas somam ~40 kB, uma vez por sessão.
       const hoje = localDateStr()
-      const [snapRes, vglRes, salaRes, convRes] = await Promise.all([
+      const ini = new Date(); ini.setDate(1); ini.setHours(0, 0, 0, 0)
+      const [snapRes, vglRes, salaRes, convRes, kanbanRes, pctRes] = await Promise.all([
         supabase.rpc('pulse_snapshot'),
         supabase.rpc('pulse_vgl'),
         supabase.rpc('pulse_sala'),
@@ -177,7 +192,15 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
           p_broker_id: null, p_start: somarDias(hoje, -(JANELA_CONVERSAO_DIAS - 1)), p_end: hoje,
           p_mode: 'safra', p_bucket: 'month',
         }),
+        // Segunda tela: só as colunas que o cartão mostra, só o que está no
+        // quadro (em aberto + vendido no mês). ~150 linhas, uma vez.
+        supabase.from('leads')
+          .select('id,name,funnel_stage,broker_id,average_ticket,property_name,development_id,stage_changed_at,created_at')
+          .is('discard_reason', null)
+          .or(`closed_at.is.null,closed_at.gte.${ini.toISOString()}`),
+        supabase.from('developments').select('id,commission_pct'),
       ])
+      if (kanbanRes.error) console.error('[pulse] kanban:', kanbanRes.error)
       if (salaRes.error) console.error('[pulse] sala:', salaRes.error)
       if (convRes.error) console.error('[pulse] conversão:', convRes.error)
       const { data, error } = snapRes
@@ -221,6 +244,13 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         sala:              salaRes.error ? null : (salaRes.data as PulseSala),
         salaErro:          salaRes.error ? salaRes.error.message : null,
         conversao:         convRes.error ? null : (convRes.data as RelatorioConversao),
+        // Falha só do Kanban: a segunda tela diz que falhou; nunca mostra o
+        // quadro de antes como se fosse o de agora.
+        kanban:            kanbanRes.error ? null
+                             : (kanbanRes.data ?? []).map(r => cartaoDaLinha(r as Record<string, unknown>)).filter((c): c is CartaoSala => !!c),
+        kanbanErro:        kanbanRes.error ? kanbanRes.error.message : null,
+        pctProduto:        pctRes.error ? get().pctProduto
+                             : Object.fromEntries((pctRes.data ?? []).map(d => [d.id as string, Number(d.commission_pct ?? 5)])),
         corretores:        snap.corretores ?? [],
         brokerNames,
         leadsInfo,
@@ -269,6 +299,14 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     /** Muda a sala só se ela já foi lida — antes disso o snapshot vai trazê-la inteira. */
     const mudarSala = (fn: (sala: PulseSala) => PulseSala) =>
       set(s => (s.sala ? { sala: fn(s.sala) } : s))
+
+    /** Mexe no Kanban só se ele já foi lido — antes disso a leitura traz tudo. */
+    const mudarKanban = (fn: (k: CartaoSala[]) => CartaoSala[]) =>
+      set(s => {
+        if (!s.kanban) return s
+        const k = fn(s.kanban)
+        return k === s.kanban ? s : { kanban: k }
+      })
 
     const push = (ev: PulseEvent) => {
       if (isEventoRuido(ev)) return
@@ -367,6 +405,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         // lead exibam o produto sem nenhuma consulta.
         const produto = (r.property_name as string | null) ?? null
         set(s => ({ leadsInfo: { ...s.leadsInfo, [id]: { nome, produto } } }))
+        const cartao = !r.discard_reason && !r.closed_at ? cartaoDaLinha(r) : null
+        if (cartao) mudarKanban(k => entrar(k, cartao))
         mudarSala(sala => {
           const slaDueAt = (r.sla_due_at as string | null) ?? null
           const brokerId = (r.broker_id as string | null) ?? null
@@ -421,6 +461,9 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
             }
           })
         }
+        // O Kanban da segunda tela anda junto: etapa nova ou fora do quadro.
+        if (tipo === 'stage_change') mudarKanban(k => mover(k, leadId, (r.to_stage as string | null) ?? undefined, r.interacted_at as string))
+        else if (tipo === 'discard') mudarKanban(k => tirar(k, leadId))
         // Nome e produto saem do mapa em memória — zero consulta por evento.
         const info   = get().leadsInfo[leadId]
         push({
@@ -507,6 +550,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
           }
           return { ...sala, atribuicoes: [...sala.atribuicoes, a], esperando }
         })
+        mudarKanban(k => trocarDono(k, a.leadId, a.toBrokerId))
       })
 
       // Um corretor pausou o recebimento: o banco avisa o admin (migração 090).

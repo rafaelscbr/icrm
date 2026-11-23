@@ -693,6 +693,34 @@ html.light {
       0 14px 34px -16px rgba(15, 39, 89, 0.30);
   }
 
+  /* Segunda tela do Pulse — o Kanban (23/11/2026). A troca de tela entra
+     suave; o cartão que mexeu ao vivo pulsa um anel na cor da etapa (três
+     vezes, só transform e opacity) e fica com a etiqueta "agora". */
+  .pulse-tela-entra { animation: pulse-tela-entra 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes pulse-tela-entra {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .pulse-cartao { animation: pulse-cartao-entra 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes pulse-cartao-entra {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .pulse-cartao-vivo { border-color: color-mix(in srgb, var(--etapa) 45%, transparent); }
+  .pulse-cartao-vivo::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 2px solid var(--etapa);
+    pointer-events: none;
+    animation: pulse-cartao-anel 1.8s ease-out 3 both;
+  }
+  @keyframes pulse-cartao-anel {
+    0%   { opacity: 0.9; transform: scale(1); }
+    100% { opacity: 0;   transform: scale(1.06); }
+  }
+
   /* ── Movimento da sala (22/11/2026) ─────────────────────────────────────
    * Tudo anima só transform e opacity (a GPU resolve). Os ciclos ambientes
    * têm durações que não são múltiplas entre si — o olho nunca percebe o

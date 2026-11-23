@@ -10,6 +10,8 @@ import { DAILY_TARGETS } from '../../lib/metasConfig'
 import { usePulseStore, JANELA_CONVERSAO_DIAS } from './usePulseStore'
 import { useKiosk, useRelogio, useTickLento, useAntiBurnIn, useEscalaTV } from './useKiosk'
 import { SaleCelebration } from './components/SaleCelebration'
+import { GiroDasTelas, KanbanDaSala } from './components/KanbanDaSala'
+import type { TelaPulse } from './components/KanbanDaSala'
 import {
   AoVivo, Batimento, ChegadaDeLeads, EquipeCompacta, FilaPrimeiroContato, FunilDaImobiliaria, LegendaDoBatimento,
   MetaNoMarinho, NumerosNoCelular, NumerosNoMarinho, Painel, PontosNoMarinho, PrazoNoMarinho, Resposta, mediaSemHoje, urgenciaDe,
@@ -50,6 +52,13 @@ import { estaAtivo, fraseDoCorretor, haQuanto } from '../leads/dashboardLeads'
 
 /** A partir daqui os dados na tela são velhos demais para serem chamados de "ao vivo". */
 const LIMITE_DADO_VELHO_MS = 30 * 60 * 1000
+
+/**
+ * O giro da TV (23/11/2026): 5 minutos na sala, 5 no Kanban, sem parar. É um
+ * cronômetro em JS — a troca não toca a rede, e as duas telas continuam
+ * recebendo os eventos do canal o tempo todo (a que está fora do ar também).
+ */
+const GIRO_MS = 5 * 60 * 1000
 
 function Relogio() {
   const agora = useRelogio()
@@ -106,7 +115,7 @@ export function PulsePage() {
   const {
     connection, erro, desconectadoDesde, ultimoSnapshotAt,
     hoje, funil, tempos, vgl, celebracao, sala, salaErro, conversao,
-    corretores, brokerNames, feed,
+    corretores, brokerNames, feed, kanban, kanbanErro, pctProduto,
     bootstrap, subscribe, podar, encerrarCelebracao,
   } = usePulseStore()
   const carregado = ultimoSnapshotAt !== null
@@ -132,6 +141,11 @@ export function PulsePage() {
   }, [bootstrap])
 
   useKiosk({ onViradaDoDia })
+
+  // ── O giro: sala ⇄ Kanban ─────────────────────────────────────────────────
+  const [tela, setTela] = useState<TelaPulse>('sala')
+  const [trocouEm, setTrocouEm] = useState(() => Date.now())
+  const irPara = useCallback((t: TelaPulse) => { setTela(t); setTrocouEm(Date.now()) }, [])
   const desloc = useAntiBurnIn()
   const palco = useEscalaTV()
   // Pulse instalável: com a sala aberta, o <head> é o do Pulse (ícone e nome)
@@ -166,6 +180,22 @@ export function PulsePage() {
       body.style.overscrollBehavior = antes.overscroll
     }
   }, [celular])
+
+  // Na TV gira sozinho; no celular quem troca é o dedo.
+  useEffect(() => {
+    if (celular) return
+    const t = setTimeout(() => irPara(tela === 'sala' ? 'kanban' : 'sala'), Math.max(0, GIRO_MS - (Date.now() - trocouEm)))
+    return () => clearTimeout(t)
+  }, [celular, tela, trocouEm, irPara])
+
+  // Setas do teclado (ou do controle da TV) trocam na hora
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') irPara(tela === 'sala' ? 'kanban' : 'sala')
+    }
+    window.addEventListener('keydown', f)
+    return () => window.removeEventListener('keydown', f)
+  }, [tela, irPara])
 
   useEffect(() => {
     if (!user || !isAdmin) return
@@ -330,6 +360,20 @@ export function PulsePage() {
   if (celular) {
     return (
       <div className="min-h-dvh pulse-fundo flex flex-col gap-3 px-3 pb-[calc(16px+env(safe-area-inset-bottom))] pt-[calc(10px+env(safe-area-inset-top))]">
+        {/* As duas telas do Pulse — no celular, troca no toque */}
+        <div className="flex items-center rounded-full p-1 bg-surface border border-line shadow-sm" role="tablist" aria-label="Telas do Pulse">
+          {(['sala', 'kanban'] as const).map(t => (
+            <button key={t} type="button" role="tab" aria-selected={tela === t} onClick={() => irPara(t)}
+                    className={`flex-1 h-10 rounded-full text-[15px] font-semibold transition-colors ${tela === t ? 'bg-brand-fill text-brand-fill-text' : 'text-t2'}`}>
+              {t === 'sala' ? 'A sala agora' : 'O Kanban'}
+            </button>
+          ))}
+        </div>
+
+        {tela === 'kanban' ? (
+          <KanbanDaSala celular cartoes={kanban} erro={kanbanErro} pctProduto={pctProduto} perfis={allProfiles} agora={agora}
+                        giro={null} direita={<StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} />} />
+        ) : (<>
         {/* A faixa Marinho, em coluna: marca e hora, o batimento, os números */}
         <section className="pulse-marinho relative rounded-[24px] px-4 pt-4 pb-4 overflow-hidden">
           <div className="pulse-luzes" aria-hidden />
@@ -401,6 +445,7 @@ export function PulsePage() {
           {sala ? <ChegadaDeLeads serie={serie} /> : <div className="mx-6 flex-1 rounded-[12px] shimmer" aria-busy="true" />}
           <Resposta tempos={tempos} />
         </Painel>
+        </>)}
 
         <SaleCelebration venda={celebracao} onFim={encerrarCelebracao} />
       </div>
@@ -417,6 +462,18 @@ export function PulsePage() {
           transform: `translate(${desloc.x}px, ${desloc.y}px) scale(${palco.escala})`,
         }}
       >
+        <div key={tela} className="pulse-tela-entra flex-1 min-h-0 flex flex-col gap-4">
+        {tela === 'kanban' ? (
+          <KanbanDaSala cartoes={kanban} erro={kanbanErro} pctProduto={pctProduto} perfis={allProfiles} agora={agora}
+                        giro={<GiroDasTelas tela={tela} trocouEm={trocouEm} duracaoMs={GIRO_MS} onTrocar={irPara} />}
+                        direita={(
+                          <div className="flex items-start gap-6">
+                            <div className="pt-1.5"><StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} /></div>
+                            <span className="h-[56px] w-px" style={{ background: 'var(--m-line)' }} aria-hidden />
+                            <Relogio />
+                          </div>
+                        )} />
+        ) : (<>
         {/* ── A faixa Marinho: a marca, a hora, o batimento e os números ───────
             Marinho estrutura, Champanhe destaca — a barra de marca da Souza
             esticada em palco. É o que se lê do outro lado da sala. */}
@@ -434,6 +491,7 @@ export function PulsePage() {
                 </h1>
               </span>
             </div>
+            <div className="ml-4 pt-0.5"><GiroDasTelas tela={tela} trocouEm={trocouEm} duracaoMs={GIRO_MS} onTrocar={irPara} /></div>
             <div className="ml-auto flex items-start gap-6">
               <div className="pt-3"><LegendaDoBatimento /></div>
               <span className="h-[56px] w-px" style={{ background: 'var(--m-line)' }} aria-hidden />
@@ -508,6 +566,8 @@ export function PulsePage() {
               <Resposta tempos={tempos} />
             </Painel>
           </div>
+        </div>
+        </>)}
         </div>
       </div>
 
