@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
-import { AlertTriangle, LayoutGrid, Activity, ArrowRight, ChevronRight, Inbox, Trophy } from 'lucide-react'
+import { AlertTriangle, LayoutGrid, Activity, ArrowRight } from 'lucide-react'
 import type { LeadFunnelStage } from '../../../types'
 import type { Profile } from '../../../store/useAuthStore'
 import { STAGE_THEME } from '../../../lib/stageTheme'
-import { JOIA, degradeJoiaClaro } from '../../../lib/paletaJoia'
+import { JOIA, fundoJoiaClaro } from '../../../lib/paletaJoia'
 import { formatCurrencyRound } from '../../../lib/formatters'
 import { FotoPerfil } from '../../../components/shared/FotoPerfil'
 import { destacar } from '../../../components/shared/Destaque'
@@ -26,7 +26,7 @@ import type { CartaoSala, ColunaSala, DinheiroSala } from '../kanbanDaSala'
  * fora e quanto valem. Cartão que mexeu ao vivo acende na cor da etapa.
  */
 
-const CARTAO_H = 76
+const CARTAO_H = 80
 const VAO = 8
 /** quanto tempo o cartão que mexeu fica marcado como "agora" */
 const VIVO_MS = 2 * 60 * 1000
@@ -94,18 +94,19 @@ export function GiroDasTelas({ tela, trocouEm, duracaoMs, onTrocar }: {
 function Cartao({ c, dono, agora }: { c: CartaoSala; dono?: Profile; agora: number }) {
   const vivo = c.vivoAt !== undefined && agora - c.vivoAt < VIVO_MS
   return (
-    <li className={`pulse-card pulse-cartao relative rounded-[16px] px-3 flex items-center gap-3 ${vivo ? 'pulse-cartao-vivo' : ''}`}
+    <li className={`pulse-card pulse-cartao relative rounded-[14px] pl-3.5 pr-3 flex items-center gap-2.5 ${vivo ? 'pulse-cartao-vivo' : ''}`}
         style={{ height: CARTAO_H, ['--etapa' as string]: JOIA[c.etapa].medio }}>
-      <FotoPerfil nome={dono?.name ?? '?'} url={dono?.avatarUrl} tamanho={42} anel
-                  className="shadow-[0_3px_8px_-3px_rgba(15,39,89,.45)]" />
+      <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full" style={{ background: JOIA[c.etapa].claro }} aria-hidden />
+      <FotoPerfil nome={dono?.name ?? '?'} url={dono?.avatarUrl} tamanho={36} anel
+                  className="shadow-[0_2px_6px_-2px_rgba(15,39,89,.35)]" />
       <div className="flex-1 min-w-0 leading-tight">
-        <p className="font-heading text-[15.5px] font-semibold text-t1 truncate tracking-[-0.015em]">{c.nome}</p>
+        <p className="font-heading text-[15px] font-semibold text-t1 truncate tracking-[-0.01em]">{c.nome}</p>
         <p className="mt-0.5 text-[12.5px] text-t3 truncate">{c.produto ?? 'Sem produto'}</p>
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <p className="text-[14px] font-bold text-t1 tabular-nums tracking-[-0.01em]">{c.vgv > 0 ? rs(c.vgv) : <span className="font-medium text-t4">sem VGV</span>}</p>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <p className="text-[13.5px] font-bold text-t1 tabular-nums">{c.vgv > 0 ? rs(c.vgv) : <span className="font-medium text-t4">sem VGV</span>}</p>
           {vivo
-            ? <span className="shrink-0 rounded-full px-2 text-[10.5px] leading-[18px] font-bold uppercase tracking-[0.08em] text-white" style={{ background: JOIA[c.etapa].medio }}>agora</span>
-            : <span className="shrink-0 rounded-full px-2 text-[11.5px] leading-[18px] font-medium text-t3 tabular-nums bg-s2">{diasNaEtapa(c.desde, agora)}</span>}
+            ? <span className="shrink-0 rounded-full px-1.5 text-[10.5px] leading-[16px] font-bold uppercase tracking-[0.08em] text-white" style={{ background: JOIA[c.etapa].medio }}>agora</span>
+            : <span className="shrink-0 text-[12px] text-t4 tabular-nums">{diasNaEtapa(c.desde, agora)}</span>}
         </div>
       </div>
     </li>
@@ -134,89 +135,69 @@ function useCapacidade(total: number, ativo: boolean): [RefObject<HTMLUListEleme
   return [ref, total <= cabem ? total : Math.max(0, cabem - 1)]
 }
 
-/**
- * Uma raia por etapa (redesenho de 23/11/2026, "mais bonito na TV"): a raia
- * inteira levemente tingida da cor da etapa, a cabeça como uma joia (o degradê
- * claro da paleta, texto branco: nome, quantos, o VGV grande e a divisão), e
- * os cartões brancos por cima. Entre uma cabeça e a próxima, uma seta — a
- * trilha do funil continua legível sem a faixa recortada.
- */
-function Coluna({ col, ultima, perfis, agora, celular }: {
+function Coluna({ col, primeira, perfis, agora, celular }: {
   col: ColunaSala
-  ultima: boolean
+  primeira: boolean
   perfis: Map<string, Profile>
   agora: number
   celular: boolean
 }) {
   const etapa = col.etapa as LeadFunnelStage
-  const j = JOIA[etapa]
   const [ref, cabem] = useCapacidade(col.cartoes.length, !celular)
   const visiveis = col.cartoes.slice(0, cabem)
   const resto = col.cartoes.slice(cabem)
   const restoVgv = resto.reduce((t, c) => t + c.vgv, 0)
   const venda = etapa === 'venda'
+  // Corretores = soma das partes de quem tem parte; o resto da líquida é da Souza
   const d: DinheiroSala = col.dinheiro
-  const nome = venda ? 'Vendas do mês' : STAGE_THEME[etapa].columnLabel
 
   return (
-    <div className={`relative flex flex-col min-h-0 min-w-0 rounded-[24px] p-2 ${celular ? 'w-[82vw] shrink-0 snap-start' : ''}`}
-         style={{
-           ['--etapa' as string]: j.medio,
-           background: `linear-gradient(180deg, color-mix(in srgb, ${j.medio} 11%, var(--surface)) 0%, color-mix(in srgb, ${j.medio} 5%, transparent) 100%)`,
-           border: `1px solid color-mix(in srgb, ${j.medio} 16%, transparent)`,
-         }}>
-      {/* a cabeça da raia: a joia da etapa */}
-      <header className="relative shrink-0 rounded-[18px] px-4 pt-3 pb-3.5 text-white"
-              style={{ backgroundImage: degradeJoiaClaro(etapa, 140), boxShadow: `0 12px 24px -14px ${j.fundo}` }}>
-        <div className="flex items-center gap-2">
-          <h3 className="font-display text-[13px] font-bold uppercase tracking-[0.14em] truncate text-white/90">{nome}</h3>
-          <span className="ml-auto inline-flex items-center justify-center min-w-[32px] h-[26px] px-2 rounded-full bg-white/20 text-[15px] font-extrabold tabular-nums">
-            {col.cartoes.length}
-          </span>
-        </div>
-        <p className="mt-1.5 font-display text-[27px] font-extrabold tabular-nums leading-none tracking-[-0.03em]">{rs(d.vgv)}</p>
-        <p className="mt-0.5 text-[11.5px] font-medium text-white/70">{venda ? 'VGV vendido' : 'VGV em jogo'}</p>
-        <div className="mt-2.5 pt-2.5 grid grid-cols-2 gap-2 border-t border-white/20">
+    <div className={`flex flex-col min-h-0 min-w-0 ${celular ? 'w-[82vw] shrink-0 snap-start' : ''}`}
+         style={{ ['--etapa' as string]: JOIA[etapa].medio, ['--etapa-fundo' as string]: fundoJoiaClaro(etapa, 120) }}>
+      {/* a seta da trilha */}
+      <div className={`kanban-trilha ${primeira ? 'kanban-trilha-primeira' : ''} shrink-0 flex items-center gap-2 h-11 pl-7 pr-8 text-white`}
+           style={primeira ? { paddingLeft: 16 } : undefined}>
+        <h3 className="font-display text-[17px] font-bold tracking-[-0.01em] truncate">
+          {venda ? 'Vendas do mês' : STAGE_THEME[etapa].columnLabel}
+        </h3>
+        <span className="ml-auto inline-flex items-center justify-center min-w-[30px] h-[24px] px-2 rounded-full bg-white/25 text-[14px] font-bold tabular-nums">
+          {col.cartoes.length}
+        </span>
+      </div>
+
+      {/* o dinheiro da coluna */}
+      <div className="shrink-0 px-1.5 pt-3 pb-3">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-t4">{venda ? 'VGV vendido' : 'VGV'}</p>
+        <p className="font-display text-[25px] font-extrabold text-t1 tabular-nums leading-tight tracking-[-0.025em]">{rs(d.vgv)}</p>
+        <div className="mt-1.5 grid grid-cols-2 gap-2">
           <div className="min-w-0">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-white/65">Corretores</p>
-            <p className="text-[14.5px] font-bold tabular-nums leading-tight">{rs(d.corretor)}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-success/80">Corretores</p>
+            <p className="text-[14.5px] font-bold text-success tabular-nums leading-tight">{rs(d.corretor)}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-white/65">Souza</p>
-            <p className="text-[14.5px] font-bold tabular-nums leading-tight" style={{ color: '#F6E3B8' }}>{rs(d.souza)}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-brand-text/80">Souza</p>
+            <p className="text-[14.5px] font-bold text-brand-text tabular-nums leading-tight">{rs(d.souza)}</p>
           </div>
         </div>
-        {/* a seta para a próxima etapa */}
-        {!ultima && !celular && (
-          <span className="absolute top-1/2 -right-[30px] z-10 -translate-y-1/2 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-surface"
-                style={{ boxShadow: '0 2px 8px -2px rgba(15,39,89,.35)', color: j.medio }} aria-hidden>
-            <ChevronRight size={17} strokeWidth={2.6} />
-          </span>
-        )}
-      </header>
+      </div>
 
       {/* os cartões */}
-      <ul ref={ref} className={`mt-2 flex flex-col min-h-0 ${celular ? 'max-h-[62vh] overflow-y-auto pb-1' : 'flex-1 overflow-hidden'}`} style={{ gap: VAO }}>
+      <ul ref={ref} className={`flex flex-col min-h-0 ${celular ? 'max-h-[62vh] overflow-y-auto pb-2' : 'flex-1 overflow-hidden'}`} style={{ gap: VAO }}>
         {col.cartoes.length === 0 ? (
-          <li className="flex-1 min-h-[160px] flex flex-col items-center justify-center gap-3 text-center px-4">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full"
-                  style={{ background: `color-mix(in srgb, ${j.medio} 12%, transparent)`, color: j.medio }} aria-hidden>
-              {venda ? <Trophy size={24} strokeWidth={1.8} /> : <Inbox size={24} strokeWidth={1.8} />}
-            </span>
-            <p className="text-[14.5px] font-medium text-t3 leading-snug">
-              {venda ? 'Nenhuma venda no mês ainda' : `Ninguém em ${nome.toLowerCase()} agora`}
-            </p>
+          <li className="rounded-[14px] border border-dashed px-3 flex items-center justify-center text-[13.5px] text-t4"
+              style={{ height: CARTAO_H, borderColor: 'color-mix(in srgb, var(--etapa) 30%, transparent)' }}>
+            {venda ? 'Nenhuma venda no mês ainda' : 'Ninguém nesta etapa'}
           </li>
         ) : (
           <>
             {visiveis.map(c => <Cartao key={c.id} c={c} dono={c.brokerId ? perfis.get(c.brokerId) : undefined} agora={agora} />)}
             {resto.length > 0 && (
-              <li className="shrink-0 rounded-[16px] px-4 flex items-center justify-between gap-2 bg-surface/70"
-                  style={{ height: CARTAO_H - 22, border: `1px dashed color-mix(in srgb, ${j.medio} 35%, transparent)` }}>
-                <span className="text-[14.5px] font-bold tabular-nums" style={{ color: j.medio }}>
+              <li className="shrink-0 rounded-[14px] px-3 flex items-center justify-between gap-2"
+                  style={{ height: CARTAO_H, background: 'color-mix(in srgb, var(--etapa) 9%, transparent)' }}>
+                <span className="text-[14px] font-bold tabular-nums" style={{ color: 'var(--etapa)' }}>
                   + {resto.length.toLocaleString('pt-BR')} {resto.length === 1 ? 'lead' : 'leads'}
                 </span>
-                {restoVgv > 0 && <span className="text-[13.5px] font-semibold text-t2 tabular-nums">{rs(restoVgv)}</span>}
+                {restoVgv > 0 && <span className="text-[13px] font-semibold text-t2 tabular-nums">{rs(restoVgv)}</span>}
               </li>
             )}
           </>
@@ -361,10 +342,10 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
       ) : (
         <div className={celular
           ? 'flex items-start gap-3 overflow-x-auto snap-x snap-mandatory -mx-3 px-3 pb-2'
-          : 'flex-1 min-h-0 grid gap-4'}
+          : 'flex-1 min-h-0 grid gap-3'}
              style={celular ? undefined : { gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' }}>
           {colunas.map((col, i) => (
-            <Coluna key={col.etapa} col={col} ultima={i === colunas.length - 1} perfis={porId} agora={agora}
+            <Coluna key={col.etapa} col={col} primeira={i === 0} perfis={porId} agora={agora}
                     celular={celular} />
           ))}
         </div>
