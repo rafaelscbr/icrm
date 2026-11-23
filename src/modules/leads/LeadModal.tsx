@@ -20,7 +20,8 @@ import { usePropertiesStore } from '../../store/usePropertiesStore'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
-import { formatPhone, formatCurrency, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
+import { formatPhone, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
+import { divisao } from './comissao'
 import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
@@ -194,8 +195,13 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const originConf = ORIGIN_CONFIG[lead.origin] ?? { label: lead.origin, icon: MapPin }
   const isDiscarded = !!lead.discardReason
   const isLinked    = !!lead.contactId
-  const commission  = (lead.averageTicket ?? (property?.value)) ? ((lead.averageTicket ?? property?.value ?? 0) * 0.02) : 0
   const ticket      = lead.averageTicket ?? property?.value
+  // Comissão: a mesma conta do Kanban (comissao.ts) — 5% do VGV − 3% ISS −
+  // 6% Simples, dividida entre o corretor dono e a Souza. O admin vê as duas.
+  const dono = lead.brokerId
+    ? (lead.brokerId === profile?.id ? profile : allProfiles.find(p => p.id === lead.brokerId))
+    : undefined
+  const comissao = ticket ? divisao(ticket, dono?.commissionShare) : null
 
   // Interactions
   const interactions  = getForLead(lead.id)
@@ -588,12 +594,19 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 {/* Números do negócio */}
                 <dl className="ficha-numeros">
                   <div>
-                    <dt>Ticket</dt>
-                    <dd className="tabular-nums text-t1">{ticket ? formatCurrency(ticket) : '—'}</dd>
+                    <dt>VGV</dt>
+                    <dd className="tabular-nums text-t1">{ticket ? formatCurrencyFull(ticket) : '—'}</dd>
                   </div>
-                  <div>
-                    <dt>Comissão</dt>
-                    <dd className={`tabular-nums ${commission > 0 ? 'text-success' : 'text-t1'}`}>{commission > 0 ? formatCurrency(commission) : '—'}</dd>
+                  <div title="5% do VGV − 3% ISS − 6% Simples">
+                    <dt>{comissao && comissao.corretor > 0
+                      ? (isAdmin ? `Comissão ${dono?.name.split(' ')[0] ?? 'corretor'}` : 'Sua comissão')
+                      : 'Comissão líquida'}</dt>
+                    <dd className={`tabular-nums ${comissao ? 'text-success' : 'text-t1'}`}>
+                      {!comissao ? '—' : formatCurrencyFull(comissao.corretor > 0 ? comissao.corretor : comissao.liquida)}
+                      {isAdmin && comissao && comissao.corretor > 0 && (
+                        <span className="block text-[12px] font-semibold text-brand-text">Souza {formatCurrencyFull(comissao.souza)}</span>
+                      )}
+                    </dd>
                   </div>
                   <div>
                     <dt>Último contato</dt>

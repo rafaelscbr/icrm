@@ -1,3 +1,4 @@
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { useEffect, useState } from 'react'
 import { Check, ChevronDown, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -94,6 +95,9 @@ export function TransferirLead({ lead, brokerName, canTransfer, onTransferido }:
   }
 
   const primeiroNome = brokerName ? brokerName.split(' ')[0] : 'Atribuir'
+  const dono = lead.brokerId
+    ? (lead.brokerId === profile?.id ? profile : allProfiles.find(p => p.id === lead.brokerId))
+    : undefined
 
   return (
     <div className="relative">
@@ -104,12 +108,11 @@ export function TransferirLead({ lead, brokerName, canTransfer, onTransferido }:
         title={canTransfer ? 'Transferir para outro corretor' : `Corretor: ${brokerName}`}
         aria-haspopup={canTransfer ? 'dialog' : undefined}
         aria-expanded={canTransfer ? aberto : undefined}
-        className={`inline-flex items-center gap-1.5 h-7 pl-1 pr-2.5 rounded-full bg-s2 text-[13px] text-t2
+        className={`inline-flex items-center gap-2 h-9 pl-1 pr-3 rounded-full bg-s2 text-[13.5px] font-medium text-t1
           ${canTransfer ? 'hover:bg-s3 cursor-pointer' : 'cursor-default'}`}
       >
-        <span className="w-5 h-5 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[11px] font-bold" aria-hidden>
-          {(brokerName ?? '?').charAt(0).toUpperCase()}
-        </span>
+        {/* O rosto do responsável: o lead tem dono, e o dono é gente */}
+        <FotoPerfil nome={brokerName ?? '?'} url={dono?.avatarUrl} tamanho={28} />
         {primeiroNome}
         {canTransfer && <ChevronDown size={12} strokeWidth={1.8} className="text-t4" aria-hidden />}
       </button>
@@ -193,6 +196,7 @@ export function TransferirLead({ lead, brokerName, canTransfer, onTransferido }:
                             className={`w-full flex items-center gap-2.5 px-3 min-h-[40px] text-left text-[13.5px] transition-colors
                               ${atual ? 'text-t1 bg-s2 cursor-default' : 'text-t2 hover:bg-s2 cursor-pointer'}`}
                           >
+                            <FotoPerfil nome={p.name} url={p.avatarUrl} tamanho={24} />
                             <span className="flex-1 truncate">{p.name}</span>
                             {atual && <Check size={14} className="text-brand-text flex-shrink-0" aria-label="Responsável atual" />}
                           </button>

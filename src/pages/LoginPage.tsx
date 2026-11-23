@@ -7,6 +7,8 @@ import {
 import { useAuthStore } from '../store/useAuthStore'
 import { useThemeStore } from '../store/useThemeStore'
 import { Destaque } from '../components/shared/Destaque'
+import { FotoPerfil } from '../components/shared/FotoPerfil'
+import { esquecerUltimaConta, lerUltimaConta } from '../lib/ultimaConta'
 
 /**
  * Entrada do iCRM — v2 "Folha e marca" (01/11/2026).
@@ -79,7 +81,10 @@ export function LoginPage() {
   const emailRef = useRef<HTMLInputElement>(null)
   const senhaRef = useRef<HTMLInputElement>(null)
 
-  const [email,     setEmail]     = useState('')
+  // Quem entrou por último neste aparelho: a tela pergunta "É você?" com a
+  // foto e o e-mail já preenchido — só falta a senha (lib/ultimaConta.ts).
+  const [conta,     setConta]     = useState(lerUltimaConta)
+  const [email,     setEmail]     = useState(() => conta?.email ?? '')
   const [senha,     setSenha]     = useState('')
   const [verSenha,  setVerSenha]  = useState(false)
   const [errEmail,  setErrEmail]  = useState('')
@@ -100,8 +105,18 @@ export function LoginPage() {
   // Foco automático só com mouse/trackpad: no celular ele abriria o teclado
   // por cima da tela antes de a pessoa ver onde está.
   useEffect(() => {
-    if (window.matchMedia('(pointer: fine)').matches) emailRef.current?.focus()
+    if (window.matchMedia('(pointer: fine)').matches) (conta ? senhaRef : emailRef).current?.focus()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao abrir a tela
   }, [])
+
+  function outraConta() {
+    esquecerUltimaConta()
+    setConta(null)
+    setEmail('')
+    setSenha('')
+    setErro('')
+    setTimeout(() => emailRef.current?.focus(), 0)
+  }
 
   useEffect(() => {
     const on  = () => setOnline(true)
@@ -210,23 +225,54 @@ export function LoginPage() {
         </div>
 
         <section className="login-cartao w-full max-w-[400px] mx-auto my-auto" aria-labelledby={ids.titulo}>
-          <p className="text-[13px] font-medium text-t4 mb-2">Acesso da equipe</p>
-          <h1 id={ids.titulo} className="font-display text-[2.2rem] sm:text-[2.5rem] font-bold text-t1 tracking-[-0.025em] leading-[1.05]">
-            {olaInicio} <Destaque>{olaFim}</Destaque>.
-          </h1>
-          <p className="text-[15px] text-t3 mt-2 mb-8">
-            Entre com sua conta para abrir o seu funil.
-          </p>
+          {conta ? (
+            // Quem volta: o próprio rosto e o próprio nome — reconhecimento
+            // antes de qualquer campo.
+            <div className="flex flex-col items-start">
+              <span className="rounded-full p-[3px] mb-4" style={{ background: 'linear-gradient(135deg, #E2C385, #B8913F)' }}>
+                <FotoPerfil nome={conta.nome} url={conta.foto} tamanho={84} anel />
+              </span>
+              <p className="text-[13px] font-medium text-t4 mb-1.5">Que bom te ver de volta</p>
+              <h1 id={ids.titulo} className="font-display text-[2.2rem] sm:text-[2.5rem] font-bold text-t1 tracking-[-0.025em] leading-[1.05]">
+                {olaInicio} {olaFim.toLowerCase()}, <Destaque>{conta.nome.split(' ')[0]}</Destaque>.
+              </h1>
+              <p className="text-[15px] text-t3 mt-2 mb-8">
+                É você? Digite sua senha para abrir o seu funil.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-[13px] font-medium text-t4 mb-2">Acesso da equipe</p>
+              <h1 id={ids.titulo} className="font-display text-[2.2rem] sm:text-[2.5rem] font-bold text-t1 tracking-[-0.025em] leading-[1.05]">
+                {olaInicio} <Destaque>{olaFim}</Destaque>.
+              </h1>
+              <p className="text-[15px] text-t3 mt-2 mb-8">
+                Entre com sua conta para abrir o seu funil.
+              </p>
+            </>
+          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate aria-busy={enviando}>
-            {/* E-mail */}
-            <div className="flex flex-col gap-1.5">
+            {/* E-mail — quem volta já tem o e-mail preenchido: vira uma linha
+                com "Não é você?". O campo continua no formulário (oculto) para
+                o gerenciador de senha casar a conta. */}
+            {conta && (
+              <div className="flex items-center justify-between gap-3 -mt-3 rounded-[12px] bg-s2 px-3.5 py-2.5">
+                <span className="min-w-0 truncate text-[14px] text-t2">{conta.email}</span>
+                <button type="button" onClick={outraConta}
+                  className="flex-shrink-0 text-[13px] font-medium text-brand-text hover:underline underline-offset-4 cursor-pointer rounded-md px-1 -mx-1 min-h-[24px]">
+                  Não é você?
+                </button>
+              </div>
+            )}
+            <div className={conta ? 'sr-only' : 'flex flex-col gap-1.5'} aria-hidden={conta ? true : undefined}>
               <label htmlFor={ids.email} className="rotulo-campo">E-mail</label>
               <div className="relative">
                 <Mail size={17} strokeWidth={1.6} className="absolute left-4 top-1/2 -translate-y-1/2 text-t4 pointer-events-none" aria-hidden />
                 <input
                   ref={emailRef}
                   id={ids.email}
+                  tabIndex={conta ? -1 : undefined}
                   name="email"
                   type="email"
                   inputMode="email"

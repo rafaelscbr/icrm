@@ -11,6 +11,7 @@ import { useUnreadCount } from '../../store/useNotificationsStore'
 import { externalTools as tools, secoesDaGaveta, isGroup, navSections, acoesCriar, podeVerMenu } from './nav/navConfig'
 import type { NavLeaf } from './nav/navConfig'
 import { iniciais } from '../../lib/formatters'
+import { FotoPerfil } from '../shared/FotoPerfil'
 import { PausaLeads } from './nav/PausaLeads'
 
 /*
@@ -171,9 +172,13 @@ export function BottomNav() {
             <div className="overflow-y-auto overscroll-contain px-4 pb-[calc(96px+env(safe-area-inset-bottom,0px))]">
               {/* Quem está logado · avisos · tema · fechar */}
               <div className="flex items-center gap-3 py-2">
-                <span className="w-10 h-10 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[14px] font-bold shrink-0" aria-hidden>
-                  {iniciais(profile?.name) || 'U'}
-                </span>
+                {profile?.avatarUrl ? (
+                  <FotoPerfil nome={profile.name} url={profile.avatarUrl} tamanho={40} />
+                ) : (
+                  <span className="w-10 h-10 rounded-full bg-brand-fill text-brand-fill-text flex items-center justify-center text-[14px] font-bold shrink-0" aria-hidden>
+                    {iniciais(profile?.name) || 'U'}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-[15px] font-semibold text-t1 truncate">{profile?.name ?? 'Usuário'}</p>
                   <p className="text-[12.5px] text-t4">{isAdmin ? 'Administrador' : profile?.isManager ? 'Gestor · Corretor' : 'Corretor'}</p>

@@ -30,6 +30,7 @@ import { aoTeclarAbrir } from '../../components/shared/lista'
 import { avisoReentrada } from './reentrada'
 import { useKanbanPrefs } from '../../store/useKanbanPrefs'
 import { useContagem } from '../../hooks/useContagem'
+import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { comissaoBruta, divisao } from './comissao'
 import { ORIGEM_META } from './origens'
 import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
@@ -70,31 +71,6 @@ export interface VisaoComissao {
   rotuloCorretor: string
   doLead: (l: Lead) => Dinheiro
   total: (ls: Lead[]) => Dinheiro
-}
-
-function iniciais(nome: string): string {
-  const p = nome.trim().split(/\s+/).filter(Boolean)
-  if (p.length === 0) return '?'
-  return ((p[0][0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
-}
-
-/**
- * Foto redonda do corretor responsável — rosto conhecido no cartão: o lead
- * tem dono, e o dono é gente. Sem foto, as iniciais na cor da marca.
- */
-function FotoCorretor({ nome, url, tamanho = 30 }: { nome: string; url?: string; tamanho?: number }) {
-  const [falhou, setFalhou] = useState(false)
-  return url && !falhou ? (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError não é interação: só troca a foto quebrada pelas iniciais
-    <img src={url} alt="" onError={() => setFalhou(true)} draggable={false}
-         className="rounded-full object-cover ring-2 ring-surface shadow-[0_2px_6px_-2px_rgba(15,39,89,.35)] flex-shrink-0"
-         style={{ width: tamanho, height: tamanho }} />
-  ) : (
-    <span className="rounded-full bg-brand-tint text-brand-text ring-2 ring-surface flex items-center justify-center text-[10.5px] font-bold flex-shrink-0"
-          style={{ width: tamanho, height: tamanho }} aria-hidden>
-      {iniciais(nome)}
-    </span>
-  )
 }
 
 /** Número em reais que conta até o valor e solta um "+R$" quando sobe. */
@@ -163,14 +139,18 @@ function LeadCard({
   dense?: boolean
 }) {
   const { advanceFollowup, toggleFlag, update } = useLeadsStore()
-  const { profile, allProfiles } = useAuthStore()
+  const { profile, allProfiles, isAdmin, viewAsBrokerId } = useAuthStore()
   const { properties } = usePropertiesStore()
   const { tasks } = useTasksStore()
   const { add: addInteraction } = useLeadInteractionsStore()
 
-  // Corretor responsável: a foto vai no canto do cartão, em toda visão
+  // Corretor responsável. A foto só aparece onde há donos diferentes — na
+  // visão global do admin. No quadro do corretor (ou filtrado num corretor)
+  // todo cartão é do mesmo dono: a mesma foto cem vezes seria ruído (Rafael,
+  // 22/11/2026).
   const responsavel = !lead.brokerId ? undefined
     : lead.brokerId === profile?.id ? profile : allProfiles.find(p => p.id === lead.brokerId)
+  const mostrarDono = isAdmin && !viewAsBrokerId
 
   const {
     attributes, listeners, setNodeRef,
@@ -290,9 +270,9 @@ function LeadCard({
 
       {/* 1 · Dono · lead · VGV */}
       <div className="flex items-center gap-2.5 min-w-0">
-        {responsavel && (
+        {responsavel && mostrarDono && (
           <span title={`Responsável: ${responsavel.name}`} className="flex-shrink-0">
-            <FotoCorretor nome={responsavel.name} url={responsavel.avatarUrl} tamanho={dense ? 28 : 36} />
+            <FotoPerfil nome={responsavel.name} url={responsavel.avatarUrl} tamanho={dense ? 28 : 36} anel className="shadow-[0_2px_6px_-2px_rgba(15,39,89,.35)]" />
           </span>
         )}
         <div className="flex-1 min-w-0">
@@ -645,7 +625,7 @@ function Placar({ rotulo, valor, cor, fundo, destaque = false, foto, nota, titul
   return (
     <div className="flex-shrink-0 snap-start flex items-center gap-3 rounded-[14px] border border-line bg-surface pl-2.5 pr-4 py-2" title={titulo}>
       {foto ? (
-        <FotoCorretor nome={foto.nome} url={foto.url} tamanho={36} />
+        <FotoPerfil nome={foto.nome} url={foto.url} tamanho={36} />
       ) : (
         <span className="flex-shrink-0 w-9 h-9 rounded-[11px] flex items-center justify-center text-white" style={{ backgroundImage: fundo }} aria-hidden>
           <Sparkles size={16} strokeWidth={2} />

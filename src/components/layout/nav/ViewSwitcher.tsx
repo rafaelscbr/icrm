@@ -1,5 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
 import { ChevronsUpDown, Globe, Check } from 'lucide-react'
+import { FotoPerfil } from '../../shared/FotoPerfil'
 
 /** Marca de seleção — reserva a largura mesmo quando ausente, para os rótulos não dançarem. */
 function Marca({ visivel }: { visivel: boolean }) {
@@ -12,6 +13,8 @@ export interface Visao {
   id: string | null
   inicial: string
   label: string
+  /** foto de perfil do corretor (sem ela, a inicial) */
+  foto?: string
 }
 
 /**
@@ -41,7 +44,11 @@ export function ViewSwitcher({
 
   const global = vigente.id === null
 
-  const Avatar = ({ v, ativo, gatilho = false }: { v: Visao; ativo: boolean; gatilho?: boolean }) => (
+  const Avatar = ({ v, ativo, gatilho = false }: { v: Visao; ativo: boolean; gatilho?: boolean }) => v.foto ? (
+    <span className="flex-shrink-0 rounded-full" style={{ boxShadow: ativo ? '0 0 0 1.5px var(--brand)' : undefined }} aria-hidden>
+      <FotoPerfil nome={v.label} url={v.foto} tamanho={22} />
+    </span>
+  ) : (
     <span
       className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
       style={{

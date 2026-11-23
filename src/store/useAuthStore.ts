@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
+import { guardarUltimaConta } from '../lib/ultimaConta'
 
 export interface Profile {
   id: string
@@ -70,6 +71,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       const profile = await loadProfile(session.user.id)
       const isAdmin = profile?.role === 'admin'
       const allProfiles = isAdmin ? await fetchProfiles() : []
+      if (profile && session.user.email) guardarUltimaConta({ email: session.user.email, nome: profile.name, foto: profile.avatarUrl })
       set({
         user: { id: session.user.id, email: session.user.email! },
         profile,
@@ -84,6 +86,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const profile = await loadProfile(session.user.id)
+        // A tela de entrada reconhece quem volta (lib/ultimaConta.ts)
+        if (profile && session.user.email) guardarUltimaConta({ email: session.user.email, nome: profile.name, foto: profile.avatarUrl })
         set({
           user: { id: session.user.id, email: session.user.email! },
           profile,

@@ -146,10 +146,10 @@ export function TopBar() {
   const visoes: Visao[] = isAdmin
     ? [
         { id: null, inicial: 'G', label: 'Visão Global' },
-        ...(profile ? [{ id: profile.id, inicial, label: 'Meu Desempenho' }] : []),
+        ...(profile ? [{ id: profile.id, inicial, label: 'Meu Desempenho', foto: profile.avatarUrl }] : []),
         ...allProfiles
           .filter(p => p.role === 'broker' && p.id !== profile?.id)
-          .map(p => ({ id: p.id, inicial: iniciais(p.name) || '?', label: p.name })),
+          .map(p => ({ id: p.id, inicial: iniciais(p.name) || '?', label: p.name, foto: p.avatarUrl })),
       ]
     : []
 
@@ -323,6 +323,7 @@ export function TopBar() {
           nome={nome}
           papel={papel}
           inicial={inicial}
+          foto={profile?.avatarUrl}
           isAdmin={isAdmin}
           theme={theme}
           onToggleTheme={toggle}

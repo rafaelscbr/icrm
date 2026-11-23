@@ -9,6 +9,7 @@ import { useLeadPauseStore } from '../../../store/useLeadPauseStore'
 import { horaDaVolta } from '../../../lib/pausaLeads'
 import { PausaLeads, useMinhaPausa } from './PausaLeads'
 import { externalTools } from './navConfig'
+import { FotoPerfil } from '../../shared/FotoPerfil'
 
 /**
  * Menu da conta — o depósito de tudo que NÃO é navegação.
@@ -22,8 +23,10 @@ import { externalTools } from './navConfig'
  * qualquer pessoa que já usou um SaaS vai procurar.
  */
 export function AccountMenu({
-  collapsed, nome, papel, inicial, isAdmin, theme, onToggleTheme, onBuscar, onSair, lado = 'direita',
+  collapsed, nome, papel, inicial, foto, isAdmin, theme, onToggleTheme, onBuscar, onSair, lado = 'direita',
 }: {
+  /** foto de perfil (migrações 105/106); sem ela, a inicial */
+  foto?: string
   collapsed: boolean
   /** v6: na barra do topo o menu abre para baixo. */
   lado?: 'direita' | 'abaixo'
@@ -64,12 +67,16 @@ export function AccountMenu({
             ${collapsed ? 'justify-center py-1.5' : 'gap-2.5 p-1.5'}`}
         >
           <span className="relative flex-shrink-0" aria-hidden>
-            <span
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold"
-              style={{ background: 'var(--brand-fill)', color: 'var(--brand-fill-text)' }}
-            >
-              {inicial}
-            </span>
+            {foto ? (
+              <FotoPerfil nome={nome} url={foto} tamanho={32} className="ring-2 ring-[color:var(--brand-fill)]" />
+            ) : (
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold"
+                style={{ background: 'var(--brand-fill)', color: 'var(--brand-fill-text)' }}
+              >
+                {inicial}
+              </span>
+            )}
             {/* Fora da roleta: o ponto âmbar fica visível sem abrir o menu. */}
             {pausa && (
               <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full"
@@ -107,11 +114,14 @@ export function AccountMenu({
                      animate-in fade-in duration-150
                      focus:outline-none"
         >
-          <div className="px-2 pb-2 pt-1.5">
-            <p className="truncate text-[13px] font-semibold leading-tight" style={{ color: 'var(--nav-active-text)' }}>
-              {nome}
-            </p>
-            <p className="truncate text-[11px] leading-tight" style={{ color: 'var(--nav-muted)' }}>{papel}</p>
+          <div className="flex items-center gap-2.5 px-2 pb-2 pt-1.5">
+            {foto && <FotoPerfil nome={nome} url={foto} tamanho={40} />}
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold leading-tight" style={{ color: 'var(--nav-active-text)' }}>
+                {nome}
+              </p>
+              <p className="truncate text-[11px] leading-tight" style={{ color: 'var(--nav-muted)' }}>{papel}</p>
+            </div>
           </div>
 
           <div className="mx-1 mb-1.5 h-px" style={{ background: 'var(--nav-line)' }} />
