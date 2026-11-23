@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useContagem } from '../../hooks/useContagem'
 import type { EtapaSafra } from './safra'
@@ -8,10 +8,8 @@ import type { EtapaSafra } from './safra'
  * trapézio que afinam de cima para baixo, com o número escrito dentro. É uma
  * FORMA, não um gráfico de proporção — a proporção fica nos números.
  *
- * Cor (22/11/2026, versão minimalista): uma família só. O funil desce do azul
- * da Folha ao Marinho — quanto mais fundo no funil, mais escuro — e a venda,
- * que é dinheiro, é champanhe. Nada de arco-íris: a cor diz "profundidade" e
- * "venda", e só.
+ * Cor: as cores vivas de cada etapa, as mesmas do Pulse (o Rafael preferiu
+ * estas à versão monocromática). O resto da tela é que é minimalista.
  *
  * Dois tamanhos: `grande` (com o mouse) e `mini` (lado a lado).
  */
@@ -19,16 +17,17 @@ import type { EtapaSafra } from './safra'
 export type ChaveFatia = EtapaSafra | 'chegada'
 
 /**
- * fill  — a fatia do funil
- * texto — o que vai escrito dentro dela
- * barra — a mesma etapa sobre fundo branco (barras, pontos, linhas, taxas)
+ * de/ate — o degradê da fatia (do claro, em cima, ao profundo): as cores vivas
+ *          do Pulse, com texto branco legível em todas
+ * barra  — a etapa sobre fundo branco: barras, pontos, linhas
+ * texto  — a etapa escrita sobre fundo branco (taxas, rótulos)
  */
-export const TOM: Record<ChaveFatia, { fill: string; texto: string; barra: string }> = {
-  chegada:     { fill: '#E6EBF5', texto: '#0F2759', barra: '#A9B7D9' },
-  atendimento: { fill: '#B8C5E3', texto: '#0F2759', barra: '#7F95CC' },
-  visita:      { fill: '#7088C2', texto: '#FFFFFF', barra: '#5470B5' },
-  proposta:    { fill: '#2F4789', texto: '#FFFFFF', barra: '#2F4789' },
-  venda:       { fill: '#C9A45C', texto: '#FFFFFF', barra: '#B8913F' },
+export const TOM: Record<ChaveFatia, { de: string; ate: string; barra: string; texto: string }> = {
+  chegada:     { de: '#818CF8', ate: '#4F46E5', barra: '#6366F1', texto: '#4F46E5' },
+  atendimento: { de: '#38BDF8', ate: '#0284C7', barra: '#0EA5E9', texto: '#0284C7' },
+  visita:      { de: '#2DD4BF', ate: '#0D9488', barra: '#14B8A6', texto: '#0D9488' },
+  proposta:    { de: '#FBBF24', ate: '#D97706', barra: '#F59E0B', texto: '#D97706' },
+  venda:       { de: '#4ADE80', ate: '#16A34A', barra: '#22C55E', texto: '#16A34A' },
 }
 /** Descartado: cinza neutro — sai do funil, não é etapa. */
 export const TOM_DESCARTE = '#D5DAE4'
@@ -59,6 +58,7 @@ export function FunilDesenhado({ fatias, tamanho = 'grande', foco = null, onFoco
   /** cartão que aparece sobre a fatia em foco (só no grande) */
   dica?: ReactNode
 }) {
+  const id = useId().replace(/:/g, '')
   const g = GEO[tamanho]
   const mini = tamanho === 'mini'
   const passo = (g.TOPO - g.BASE) / fatias.length
@@ -74,9 +74,16 @@ export function FunilDesenhado({ fatias, tamanho = 'grande', foco = null, onFoco
     <div className="relative flex items-center justify-center min-h-0" role="presentation" onMouseLeave={() => onFoco?.(null)}>
       <svg viewBox={`0 -4 ${g.W} ${altura + 8}`} className={`${mini ? 'w-full max-w-[240px]' : 'w-full max-w-[420px]'} h-auto overflow-visible`}
            role="img" aria-label={rotulo}>
+        <defs>
+          {formas.map(f => (
+            <linearGradient key={f.chave} id={`${id}-${f.chave}`} x1="0" y1="0" x2="0.45" y2="1">
+              <stop offset="0%" stopColor={TOM[f.chave].de} />
+              <stop offset="100%" stopColor={TOM[f.chave].ate} />
+            </linearGradient>
+          ))}
+        </defs>
         {formas.map(f => {
           const recua = foco !== null && foco !== f.chave
-          const t = TOM[f.chave]
           const corpo = (
             <g style={{
               transformBox: 'fill-box', transformOrigin: 'center',
@@ -84,24 +91,24 @@ export function FunilDesenhado({ fatias, tamanho = 'grande', foco = null, onFoco
               opacity: recua ? 0.35 : 1,
               transition: 'transform 240ms cubic-bezier(.2,.8,.2,1), opacity 240ms ease',
             }}>
-              <polygon points={f.pontos} fill={t.fill} strokeLinejoin="round" />
+              <polygon points={f.pontos} fill={`url(#${id}-${f.chave})`} strokeLinejoin="round" />
               {mini ? (
                 <text x={cx} y={f.y + 18.5} textAnchor="middle" pointerEvents="none">
-                  <tspan style={{ fill: t.texto, opacity: 0.75, fontSize: 8.5, fontWeight: 600, letterSpacing: '0.12em' }}>
+                  <tspan style={{ fill: '#fff', opacity: 0.88, fontSize: 8.5, fontWeight: 600, letterSpacing: '0.12em' }}>
                     {f.nome.toUpperCase()}
                   </tspan>
-                  <tspan dx={6} style={{ fill: t.texto, fontSize: 13, fontWeight: 700 }}>
+                  <tspan dx={6} style={{ fill: '#fff', fontSize: 13, fontWeight: 700 }}>
                     {f.n.toLocaleString('pt-BR')}
                   </tspan>
                 </text>
               ) : (
                 <>
                   <text x={cx} y={f.y + 21} textAnchor="middle" pointerEvents="none"
-                        style={{ fill: t.texto, opacity: 0.75, fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+                        style={{ fill: '#fff', opacity: 0.88, fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
                     {f.nome}
                   </text>
                   <ContagemSvg valor={f.n} x={cx} y={f.y + 46} textAnchor="middle" pointerEvents="none" className="font-display tabular-nums"
-                               style={{ fill: t.texto, fontSize: 23, fontWeight: 700, letterSpacing: '-0.02em' }} />
+                               style={{ fill: '#fff', fontSize: 23, fontWeight: 700, letterSpacing: '-0.02em' }} />
                 </>
               )}
             </g>

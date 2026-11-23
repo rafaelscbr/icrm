@@ -288,7 +288,7 @@ function NumerosDaSafra({ c }: { c: Contagem }) {
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: TOM.venda.barra }} aria-hidden />
           Viraram venda
         </p>
-        <p className="mt-1.5 font-display text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums" style={{ color: TOM.venda.barra }}>
+        <p className="mt-1.5 font-display text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums text-brand-text">
           {fmtTaxa(taxa(c.venda, c.recebidos))}
         </p>
         <p className="mt-1.5 text-[12px] text-t4 tabular-nums">{n(c.venda)} {c.venda === 1 ? 'venda' : 'vendas'} de {n(c.recebidos)}</p>
@@ -310,7 +310,7 @@ function FunilDaSafra({ c }: { c: Contagem }) {
   const dica = f && (
     <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-[12px] bg-[#0F2759] px-4 py-3 text-white pulse-item-in whitespace-nowrap"
          role="status">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: f.chave === 'venda' ? '#E2C385' : '#B8C5E3' }}>{f.nome}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: TOM[f.chave].de }}>{f.nome}</p>
       <p className="mt-1 font-display text-[22px] font-semibold leading-none tabular-nums">
         {n(f.n)}<span className="ml-1.5 text-[14px] font-medium text-white/70">{pct(f.n, c.recebidos)} dos leads</span>
       </p>
@@ -343,7 +343,7 @@ function Escada({ c, foco }: { c: Contagem; foco: ChaveFatia | null }) {
               <div className="flex items-center gap-2 py-1 pl-1">
                 <span className="text-t4 text-[14px]" aria-hidden>↓</span>
                 <span className="rounded-full px-2 py-px text-[12px] font-semibold tabular-nums"
-                      style={{ background: `color-mix(in srgb, ${TOM[k].barra} 12%, transparent)`, color: k === 'chegada' ? TOM.atendimento.barra : TOM[k].barra }}>
+                      style={{ background: `color-mix(in srgb, ${TOM[k].barra} 12%, transparent)`, color: TOM[k].texto }}>
                   {fmtTaxa(p.taxaPasso)}
                 </span>
                 <span className="text-[12.5px] text-t3">avançam</span>
@@ -388,7 +388,7 @@ function OndeParam({ c }: { c: Contagem }) {
         <span className="h-1.5 rounded-full bg-s2 overflow-hidden" aria-hidden>
           <span className="block h-full rounded-full" style={{ width: `${c.venda > 0 ? Math.max(2, (c.venda / maior) * 100) : 0}%`, background: TOM.venda.barra }} />
         </span>
-        <span className="text-right text-[13px] tabular-nums font-semibold" style={{ color: TOM.venda.barra }}>{n(c.venda)}</span>
+        <span className="text-right text-[13px] tabular-nums font-semibold" style={{ color: TOM.venda.texto }}>{n(c.venda)}</span>
       </li>
     </ul>
   )
@@ -412,7 +412,7 @@ function AteAVisita({ dados, filtro }: { dados: FunilSafra; filtro: Filtro }) {
         {t.faixas.map((f, i) => (
           <div key={f.rotulo} className="flex flex-col items-center justify-end h-full gap-1" title={`${f.rotulo}: ${f.n}`}>
             <span className="text-[12px] font-semibold tabular-nums text-t2">{f.n || ''}</span>
-            <span className="w-full rounded-t-[5px]" style={{ height: `${f.n ? Math.max(6, (f.n / maior) * 54) : 3}px`, background: f.n ? TOM.visita.fill : 'var(--s2)' }} />
+            <span className="w-full rounded-t-[5px]" style={{ height: `${f.n ? Math.max(6, (f.n / maior) * 54) : 3}px`, background: f.n ? `linear-gradient(180deg, ${TOM.visita.de}, ${TOM.visita.ate})` : 'var(--s2)' }} />
             <span className="text-[11px] text-t4 whitespace-nowrap">{FAIXA_CURTA[i]}</span>
           </div>
         ))}
@@ -463,10 +463,10 @@ function SafraASafra({ serie, balde }: { serie: PontoSafra[]; balde: FunilSafra[
       series: [
         {
           name: 'Leads', type: 'bar', barMaxWidth: 18, data: serie.map(s => s.recebidos),
-          itemStyle: { borderRadius: [4, 4, 0, 0], color: TOM.chegada.fill },
+          itemStyle: { borderRadius: [4, 4, 0, 0], color: '#C7D2FE' },
         },
         linha('% atendidos', TOM.atendimento.barra, serie.map(s => p(s.atendimento, s.recebidos))),
-        linha('% visitaram', TOM.proposta.barra, serie.map(s => p(s.visita, s.recebidos))),
+        linha('% visitaram', TOM.visita.barra, serie.map(s => p(s.visita, s.recebidos))),
       ],
     }
   }, [serie, balde])
@@ -522,7 +522,7 @@ function MiniFunil({ fatia, ativo, onClick }: { fatia: Fatia; ativo: boolean; on
     <>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[14px] font-semibold text-t1 truncate">{fatia.nome}</span>
-        <span className="text-[12.5px] font-semibold tabular-nums shrink-0" style={{ color: TOM.venda.barra }}>
+        <span className="text-[12.5px] font-semibold tabular-nums shrink-0" style={{ color: TOM.venda.texto }}>
           {fmtTaxa(taxa(c.venda, c.recebidos))} <span className="font-medium text-t4">venda</span>
         </span>
       </div>
@@ -532,18 +532,18 @@ function MiniFunil({ fatia, ativo, onClick }: { fatia: Fatia; ativo: boolean; on
       <div className="mt-3 pt-2.5 border-t border-line grid grid-cols-3 gap-1 text-center">
         {(['atendimento', 'visita', 'proposta'] as EtapaSafra[]).map(e => (
           <span key={e} className="py-0.5">
-            <span className="block text-[13px] font-semibold tabular-nums text-t1">{pct(c[e], c.recebidos)}</span>
+            <span className="block text-[13px] font-semibold tabular-nums" style={{ color: TOM[e].texto }}>{pct(c[e], c.recebidos)}</span>
             <span className="block text-[10.5px] text-t4">{NOME_ETAPA[e].toLowerCase()}</span>
           </span>
         ))}
       </div>
     </>
   )
-  const base = `block w-full h-full text-left rounded-[14px] border bg-surface px-4 py-3.5 transition-colors duration-200 ${ativo ? 'border-[#2F4789]' : 'border-line'}`
+  const base = `block w-full h-full text-left rounded-[14px] border bg-surface px-4 py-3.5 transition-colors duration-200 ${ativo ? 'border-brand' : 'border-line'}`
   return onClick ? (
     <button type="button" onClick={onClick} aria-pressed={ativo}
       aria-label={`${fatia.nome}: ${c.recebidos} leads, ${c.visita} visitas, ${c.venda} vendas`}
-      className={`${base} cursor-pointer hover:border-[#A9B7D9]
+      className={`${base} cursor-pointer hover:border-line-strong
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50`}>
       {corpo}
     </button>
@@ -570,7 +570,7 @@ function Matriz({ dados, filtro, escolher }: {
 
   const tx = (c: Contagem) => (c.recebidos >= 5 ? taxa(c[metrica], c.recebidos) : null)
   const maior = Math.max(1, ...m.linhas.flatMap(l => m.colunas.map(col => tx(m.celula(l.chave, col.chave)) ?? 0)))
-  const cor = '#2F4789'
+  const cor = TOM[metrica].barra
   const totalGeral = contar(dados)
 
   const celula = (chave: string, c: Contagem, corretor: string | null, produto: string | null, total = false) => {
@@ -586,13 +586,13 @@ function Matriz({ dados, filtro, escolher }: {
         <span className={`block text-[11px] tabular-nums ${claro ? 'text-white/80' : 'text-t4'}`}>{n(c[metrica])}/{n(c.recebidos)}</span>
       </>
     )
-    const classe = `w-full min-w-[84px] rounded-[10px] px-2 py-2 text-center ${total ? 'bg-s2/60' : ''} ${ativo ? 'ring-1 ring-[#2F4789]' : ''}`
+    const classe = `w-full min-w-[84px] rounded-[10px] px-2 py-2 text-center ${total ? 'bg-s2/60' : ''} ${ativo ? 'ring-1 ring-brand' : ''}`
     return (
       <td key={chave} className="p-1">
         {corretor !== SEM ? (
           <button type="button" onClick={() => escolher(corretor, produto)}
             aria-label={`${NOME_ETAPA[metrica]}: ${c[metrica]} de ${c.recebidos} leads`}
-            className={`${classe} cursor-pointer transition-colors hover:ring-1 hover:ring-[#A9B7D9] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50`}
+            className={`${classe} cursor-pointer transition-colors hover:ring-1 hover:ring-line-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50`}
             style={fundo ? { background: fundo } : undefined}>
             {conteudo}
           </button>
