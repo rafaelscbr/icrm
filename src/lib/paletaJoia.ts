@@ -21,12 +21,14 @@ import type { LeadFunnelStage } from '../types'
 export interface Joia { claro: string; medio: string; fundo: string }
 
 export const JOIA: Record<LeadFunnelStage, Joia> = {
-  lead:        { claro: '#1A3F8F', medio: '#12306E', fundo: '#0C2153' },   // o azul da meta
-  followup:    { claro: '#4A2F91', medio: '#382272', fundo: '#251653' },   // ametista
-  atendimento: { claro: '#14608F', medio: '#0F4B70', fundo: '#0A3453' },   // oceano
-  visita:      { claro: '#0F716B', medio: '#0B5753', fundo: '#073E3B' },   // petróleo
-  proposta:    { claro: '#94692A', medio: '#73511F', fundo: '#533913' },   // bronze champanhe
-  venda:       { claro: '#1B7C4E', medio: '#135F3B', fundo: '#0C4429' },   // esmeralda
+  // Um degrau mais claro que o card da meta (Rafael, 22/11/2026: "um pouco
+  // mais claro, o azul da meta é bem claro") — mesma receita, mais luz.
+  lead:        { claro: '#2A57B5', medio: '#1D4396', fundo: '#143275' },   // o azul da meta
+  followup:    { claro: '#5B3DB0', medio: '#472D92', fundo: '#352072' },   // ametista
+  atendimento: { claro: '#1C78B0', medio: '#155F91', fundo: '#0F4772' },   // oceano
+  visita:      { claro: '#148A82', medio: '#0F6E68', fundo: '#0B534F' },   // petróleo
+  proposta:    { claro: '#B07F33', medio: '#8F6627', fundo: '#6E4D1C' },   // bronze champanhe
+  venda:       { claro: '#23955E', medio: '#1A7849', fundo: '#135B37' },   // esmeralda
 }
 
 /** O brilho champanhe do canto — a assinatura do card da meta. */
