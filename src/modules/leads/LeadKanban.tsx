@@ -30,7 +30,7 @@ import { aoTeclarAbrir } from '../../components/shared/lista'
 import { avisoReentrada } from './reentrada'
 import { useKanbanPrefs } from '../../store/useKanbanPrefs'
 import { useContagem } from '../../hooks/useContagem'
-import { divisao } from './comissao'
+import { comissaoBruta, divisao } from './comissao'
 import { ORIGEM_META } from './origens'
 import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
@@ -626,16 +626,26 @@ function KanbanColumn({
 
 // ─── Placar do topo ───────────────────────────────────────────────────────────
 
-function Placar({ rotulo, valor, cor, fundo, destaque = false }: {
-  rotulo: string; valor: number; cor: string; fundo: string; destaque?: boolean
+function Placar({ rotulo, valor, cor, fundo, destaque = false, foto, nota, titulo }: {
+  rotulo: string; valor: number; cor: string; fundo?: string; destaque?: boolean
+  /** no lugar do ícone: a foto do corretor */
+  foto?: { nome: string; url?: string }
+  nota?: string
+  titulo?: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface pl-2.5 pr-4 py-2 min-w-0">
-      <span className="flex-shrink-0 w-9 h-9 rounded-[11px] flex items-center justify-center text-white" style={{ backgroundImage: fundo }} aria-hidden>
-        <Sparkles size={16} strokeWidth={2} />
-      </span>
+    <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface pl-2.5 pr-4 py-2 min-w-0" title={titulo}>
+      {foto ? (
+        <FotoCorretor nome={foto.nome} url={foto.url} tamanho={36} />
+      ) : (
+        <span className="flex-shrink-0 w-9 h-9 rounded-[11px] flex items-center justify-center text-white" style={{ backgroundImage: fundo }} aria-hidden>
+          <Sparkles size={16} strokeWidth={2} />
+        </span>
+      )}
       <div className="min-w-0">
-        <p className="text-[11.5px] font-medium text-t3 leading-tight truncate">{rotulo}</p>
+        <p className="text-[11.5px] font-medium text-t3 leading-tight truncate">
+          {rotulo}{nota && <span className="text-t4"> · {nota}</span>}
+        </p>
         <span style={{ color: cor }}>
           <DinheiroVivo valor={valor} ganho={destaque}
             className={`font-display ${destaque ? 'text-[21px]' : 'text-[19px]'} font-bold leading-tight tracking-[-0.02em]`} />
@@ -741,8 +751,21 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   // Placar do topo — o que está em jogo nos leads em aberto (fora Venda).
   const resumo = useMemo(() => {
     const ativos = leads.filter(l => l.funnelStage !== 'venda')
-    return { ativos: ativos.length, ...comissao.total(ativos) }
-  }, [leads, comissao])
+    // Parte líquida de cada corretor (só quem tem parte e lead com valor)
+    const porId = new Map<string, number>()
+    for (const l of ativos) {
+      if (!l.brokerId || !l.averageTicket) continue
+      const c = comissao.doLead(l).corretor
+      if (c > 0) porId.set(l.brokerId, (porId.get(l.brokerId) ?? 0) + c)
+    }
+    const corretores = [...porId.entries()]
+      .map(([id, valor]) => {
+        const p = id === profile?.id ? profile : allProfiles.find(x => x.id === id)
+        return { id, valor, nome: p?.name ?? 'Corretor', url: p?.avatarUrl, share: p?.commissionShare ?? null }
+      })
+      .sort((a, b) => b.valor - a.valor)
+    return { ativos: ativos.length, ...comissao.total(ativos), corretores }
+  }, [leads, comissao, profile, allProfiles])
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null
 
@@ -850,16 +873,34 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
     <>
       {/* ── Placar — o que está em jogo nos leads em aberto ──────────────────
           Ganho à vista, não meta a cumprir: é o que dá vontade de chamar o
-          próximo. O admin vê as três contas (VGV, corretores, Souza); o
-          corretor vê a dele em destaque. 5% do VGV − 3% ISS − 6% Simples. */}
+          próximo. O admin vê VGV, comissão geral (5%), a líquida da Souza e
+          a líquida de cada corretor, com a foto; o corretor vê só a dele.
+          5% do VGV − 3% ISS − 6% Simples (comissao.ts). */}
       <div className="flex items-center gap-x-3 gap-y-3 flex-wrap mb-4 px-1">
         <div className="flex items-stretch gap-2 flex-wrap">
-          <Placar rotulo={comissao.admin ? 'Comissão dos corretores' : 'Sua comissão em jogo'} valor={resumo.corretor}
-                  cor="#16A34A" fundo="linear-gradient(135deg, #4ADE80, #16A34A)" destaque />
-          {comissao.admin && (
-            <Placar rotulo="Comissão da Souza" valor={resumo.souza} cor="var(--brand-text)" fundo="linear-gradient(135deg, #E2C385, #B8913F)" destaque />
+          {comissao.admin ? (
+            <>
+              <Placar rotulo="VGV" nota={`${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)"
+                      fundo="linear-gradient(135deg, #818CF8, #4F46E5)" />
+              <Placar rotulo="Comissão geral" nota="5% do VGV" valor={comissaoBruta(resumo.vgv)} cor="var(--t1)"
+                      fundo="linear-gradient(135deg, #38BDF8, #0284C7)"
+                      titulo={`Bruta. Depois do ISS (3%) e do Simples (6%), sobra ${formatCurrency(resumo.corretor + resumo.souza)} líquidos.`} />
+              <Placar rotulo="Líquida Souza" valor={resumo.souza} cor="var(--brand-text)" destaque
+                      fundo="linear-gradient(135deg, #E2C385, #B8913F)" />
+              {resumo.corretores.map(c => (
+                <Placar key={c.id} rotulo={`Líquida ${c.nome.split(' ')[0]}`} nota={c.share ? `${c.share}%` : undefined}
+                        valor={c.valor} cor="#16A34A" destaque foto={{ nome: c.nome, url: c.url }} />
+              ))}
+            </>
+          ) : (
+            <>
+              <Placar rotulo="Sua comissão em jogo" valor={resumo.corretor} cor="#16A34A" destaque
+                      foto={profile ? { nome: profile.name, url: profile.avatarUrl } : undefined}
+                      fundo="linear-gradient(135deg, #4ADE80, #16A34A)" />
+              <Placar rotulo="VGV" nota={`${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)"
+                      fundo="linear-gradient(135deg, #818CF8, #4F46E5)" />
+            </>
           )}
-          <Placar rotulo={`VGV · ${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)" fundo="linear-gradient(135deg, #818CF8, #4F46E5)" />
         </div>
         <div className="ml-auto flex items-center gap-1">
           <button
