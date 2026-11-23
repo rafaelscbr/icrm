@@ -44,3 +44,19 @@ export function degradeJoia(etapa: LeadFunnelStage, angulo = 140): string {
 export function fundoJoia(etapa: LeadFunnelStage, angulo = 140): string {
   return `${BRILHO_CHAMPANHE}, ${degradeJoia(etapa, angulo)}`
 }
+
+/**
+ * A versão clara, para peças finas (as setas do Kanban, os ícones do placar):
+ * numa faixa de 40 px o degradê inteiro chega ao tom de fundo e a peça fica
+ * escura. Aqui ela fica no claro até um terço e termina no médio — sem o
+ * fundo. O texto branco fica sempre sobre o claro ou mais escuro, então o
+ * contraste não piora (Rafael, 23/11/2026: "as cores mais claras no kanban").
+ */
+export function degradeJoiaClaro(etapa: LeadFunnelStage, angulo = 140): string {
+  const j = JOIA[etapa]
+  return `linear-gradient(${angulo}deg, ${j.claro} 0%, ${j.claro} 35%, ${j.medio} 100%)`
+}
+
+export function fundoJoiaClaro(etapa: LeadFunnelStage, angulo = 140): string {
+  return `${BRILHO_CHAMPANHE}, ${degradeJoiaClaro(etapa, angulo)}`
+}

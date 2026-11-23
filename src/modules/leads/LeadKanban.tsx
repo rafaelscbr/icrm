@@ -32,7 +32,7 @@ import { useKanbanPrefs } from '../../store/useKanbanPrefs'
 import { useContagem } from '../../hooks/useContagem'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { comissaoBruta, divisao } from './comissao'
-import { JOIA, degradeJoia, fundoJoia } from '../../lib/paletaJoia'
+import { JOIA, degradeJoiaClaro, fundoJoiaClaro } from '../../lib/paletaJoia'
 import { ORIGEM_META } from './origens'
 import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
@@ -506,7 +506,7 @@ function KanbanColumn({
   return (
     // --etapa: o tom médio da etapa (hover, alvo); --etapa-fundo: a seta.
     <div className={CLASSE_DA_COLUNA}
-         style={{ ['--etapa' as string]: JOIA[stage].medio, ['--etapa-fundo' as string]: fundoJoia(stage, 120) }}
+         style={{ ['--etapa' as string]: JOIA[stage].medio, ['--etapa-fundo' as string]: fundoJoiaClaro(stage, 120) }}
          id={`coluna-${stage}`}>
       <div className="flex flex-col flex-1 kanban-col">
         {/* Cabeçalho fixo: a seta da trilha e, embaixo, o dinheiro da coluna */}
@@ -864,12 +864,12 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
           {comissao.admin ? (
             <>
               <Placar rotulo="VGV" nota={`${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)"
-                      fundo={degradeJoia('lead')} />
+                      fundo={degradeJoiaClaro('lead')} />
               <Placar rotulo="Comissão geral" nota="5% do VGV" valor={comissaoBruta(resumo.vgv)} cor="var(--t1)"
-                      fundo={degradeJoia('atendimento')}
+                      fundo={degradeJoiaClaro('atendimento')}
                       titulo={`Bruta. Depois do ISS (3%) e do Simples (6%), sobra ${formatCurrencyRound(resumo.corretor + resumo.souza)} líquidos.`} />
               <Placar rotulo="Líquida Souza" valor={resumo.souza} cor="var(--brand-text)" destaque
-                      fundo={degradeJoia('proposta')} />
+                      fundo={degradeJoiaClaro('proposta')} />
               {resumo.corretores.map(c => (
                 <Placar key={c.id} rotulo={`Líquida ${c.nome.split(' ')[0]}`} nota={c.share ? `${c.share}%` : undefined}
                         valor={c.valor} cor="#16A34A" destaque foto={{ nome: c.nome, url: c.url }} />
@@ -879,9 +879,9 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
             <>
               <Placar rotulo="Sua comissão em jogo" valor={resumo.corretor} cor="#16A34A" destaque
                       foto={profile ? { nome: profile.name, url: profile.avatarUrl } : undefined}
-                      fundo={degradeJoia('venda')} />
+                      fundo={degradeJoiaClaro('venda')} />
               <Placar rotulo="VGV" nota={`${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)"
-                      fundo={degradeJoia('lead')} />
+                      fundo={degradeJoiaClaro('lead')} />
             </>
           )}
         </div>
