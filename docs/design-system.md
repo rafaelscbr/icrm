@@ -110,9 +110,8 @@ lead, ir para…) · `TasksLinkedModal` · `Esqueleto` (`EsqueletoLinhas`,
 spinner só em ação do usuário, leitura de tela usa esqueleto) ·
 `lib/notificacoes.ts` (avisos iguais viram um grupo; o sino conta grupos) ·
 `hooks/useContagem` (número que conta até o valor) ·
-`dashboard/ProximaAcao` (próxima melhor ação: SLA, vencidas, visitas de
-amanhã, meta do dia, leads esfriando, avisos — deep links `?foco=` em Tarefas
-e `?etapa=` em Leads)
+`shared/FunilJoia` (o funil do sistema: trapézios na paleta joia, com
+conversão — dashboard e Pulse)
 
 ### Layout — `src/components/layout/`
 
