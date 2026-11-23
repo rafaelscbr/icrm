@@ -664,18 +664,21 @@ html.light {
    * faixa é sempre Marinho.
    */
   .pulse-marinho {
+    /* 22/11/2026: a receita do card da Meta de VGV, na versão mais clara da
+       paleta joia (lib/paletaJoia.ts) — o Rafael quis o Pulse mais claro.
+       Os textos secundários sobem um tom para manter a leitura no azul. */
     --m-t1:   #FFFFFF;
-    --m-t2:   #D5DDEC;
-    --m-t3:   #93A3C4;
-    --m-line: rgba(255, 255, 255, 0.10);
-    --m-ouro: #E2C385;
-    --m-ok:     #34D399;
-    --m-alerta: #FBBF24;
-    --m-risco:  #F87171;
-    background-color: #0F2759;
+    --m-t2:   #E6ECF8;
+    --m-t3:   #BCC8E4;
+    --m-line: rgba(255, 255, 255, 0.16);
+    --m-ouro: #EBD09A;
+    --m-ok:     #4ADE9B;
+    --m-alerta: #FCD34D;
+    --m-risco:  #FCA5A5;
+    background-color: #1D4396;
     background-image:
-      radial-gradient(900px 320px at 100% 0%, rgba(214, 178, 110, 0.16), transparent 70%),
-      radial-gradient(700px 300px at 0% 100%, rgba(99, 102, 241, 0.10), transparent 70%);
+      radial-gradient(900px 320px at 100% 0%, rgba(226, 195, 133, 0.26), transparent 70%),
+      linear-gradient(140deg, #2A57B5 0%, #1D4396 48%, #143275 100%);
     color: var(--m-t1);
   }
   .pulse-marinho .destaque { color: var(--m-ouro); }
