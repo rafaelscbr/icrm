@@ -32,6 +32,7 @@ import { useKanbanPrefs } from '../../store/useKanbanPrefs'
 import { useContagem } from '../../hooks/useContagem'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { comissaoBruta, divisao } from './comissao'
+import { JOIA, degradeJoia, fundoJoia } from '../../lib/paletaJoia'
 import { ORIGEM_META } from './origens'
 import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
@@ -46,18 +47,10 @@ export const STAGE_CONFIG = STAGE_THEME
 const STAGES = FUNNEL_STAGES
 
 /**
- * Cores vivas da trilha (as mesmas do Pulse e do funil da Conversão): do claro
- * ao profundo. A profunda é a --etapa da coluna (avatar, borda do hover, alvo
- * do arraste); o par vira o degradê da seta do cabeçalho.
+ * Cores da trilha: a paleta "joia" (lib/paletaJoia.ts) — a receita do card da
+ * Meta de VGV (degradê a 140° + brilho champanhe) em um tom por etapa. O tom
+ * médio é a --etapa da coluna (hover, alvo do arraste, progresso).
  */
-const COR_ETAPA: Record<LeadFunnelStage, [string, string]> = {
-  lead:        ['#818CF8', '#4F46E5'],
-  followup:    ['#C084FC', '#9333EA'],
-  atendimento: ['#38BDF8', '#0284C7'],
-  visita:      ['#2DD4BF', '#0D9488'],
-  proposta:    ['#FBBF24', '#D97706'],
-  venda:       ['#4ADE80', '#16A34A'],
-}
 
 /**
  * A comissão nesta visão (comissao.ts). O admin vê as duas partes — a do
@@ -462,7 +455,7 @@ function LeadCard({
            title={`Etapa ${passo + 1} de ${STAGES.length} · faltam ${STAGES.length - 1 - passo} para a venda`}>
         {STAGES.map((st, i) => (
           <span key={st} className="flex-1 h-[3px] rounded-full transition-colors duration-300"
-                style={{ background: i <= passo ? COR_ETAPA[st][1] : 'var(--s3)', opacity: i <= passo ? 0.9 : 1 }} />
+                style={{ background: i <= passo ? JOIA[st].medio : 'var(--s3)' }} />
         ))}
       </div>
     </div>
@@ -511,9 +504,9 @@ function KanbanColumn({
   // 16/11/2026): o quadro tem sempre as mesmas colunas no mesmo lugar. Antes a
   // vazia virava um trilho estreito que se abria no clique ou durante o arraste.
   return (
-    // --etapa / --etapa-clara: a cor viva da etapa (seta, avatar, hover, alvo).
+    // --etapa: o tom médio da etapa (hover, alvo); --etapa-fundo: a seta.
     <div className={CLASSE_DA_COLUNA}
-         style={{ ['--etapa' as string]: COR_ETAPA[stage][1], ['--etapa-clara' as string]: COR_ETAPA[stage][0] }}
+         style={{ ['--etapa' as string]: JOIA[stage].medio, ['--etapa-fundo' as string]: fundoJoia(stage, 120) }}
          id={`coluna-${stage}`}>
       <div className="flex flex-col flex-1 kanban-col">
         {/* Cabeçalho fixo: a seta da trilha e, embaixo, o dinheiro da coluna */}
@@ -871,12 +864,12 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
           {comissao.admin ? (
             <>
               <Placar rotulo="VGV" nota={`${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)"
-                      fundo="linear-gradient(135deg, #818CF8, #4F46E5)" />
+                      fundo={degradeJoia('lead')} />
               <Placar rotulo="Comissão geral" nota="5% do VGV" valor={comissaoBruta(resumo.vgv)} cor="var(--t1)"
-                      fundo="linear-gradient(135deg, #38BDF8, #0284C7)"
+                      fundo={degradeJoia('atendimento')}
                       titulo={`Bruta. Depois do ISS (3%) e do Simples (6%), sobra ${formatCurrencyRound(resumo.corretor + resumo.souza)} líquidos.`} />
               <Placar rotulo="Líquida Souza" valor={resumo.souza} cor="var(--brand-text)" destaque
-                      fundo="linear-gradient(135deg, #E2C385, #B8913F)" />
+                      fundo={degradeJoia('proposta')} />
               {resumo.corretores.map(c => (
                 <Placar key={c.id} rotulo={`Líquida ${c.nome.split(' ')[0]}`} nota={c.share ? `${c.share}%` : undefined}
                         valor={c.valor} cor="#16A34A" destaque foto={{ nome: c.nome, url: c.url }} />
@@ -886,9 +879,9 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
             <>
               <Placar rotulo="Sua comissão em jogo" valor={resumo.corretor} cor="#16A34A" destaque
                       foto={profile ? { nome: profile.name, url: profile.avatarUrl } : undefined}
-                      fundo="linear-gradient(135deg, #4ADE80, #16A34A)" />
+                      fundo={degradeJoia('venda')} />
               <Placar rotulo="VGV" nota={`${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)"
-                      fundo="linear-gradient(135deg, #818CF8, #4F46E5)" />
+                      fundo={degradeJoia('lead')} />
             </>
           )}
         </div>
@@ -942,7 +935,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
 
         <DragOverlay>
           {activeLead ? (
-            <div style={{ ['--etapa' as string]: COR_ETAPA[activeLead.funnelStage][1] }}>
+            <div style={{ ['--etapa' as string]: JOIA[activeLead.funnelStage].medio }}>
               <LeadCard lead={activeLead} onClick={() => {}} isOverlay dense={dense} comissao={comissao} />
             </div>
           ) : null}

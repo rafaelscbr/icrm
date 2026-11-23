@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useContagem } from '../../hooks/useContagem'
 import type { EtapaSafra } from './safra'
+import type { LeadFunnelStage } from '../../types'
+import { JOIA } from '../../lib/paletaJoia'
 
 /**
  * O desenho do funil (a forma do Pulse) para a aba Conversão: fatias em
@@ -17,17 +19,17 @@ import type { EtapaSafra } from './safra'
 export type ChaveFatia = EtapaSafra | 'chegada'
 
 /**
- * de/ate — o degradê da fatia (do claro, em cima, ao profundo): as cores vivas
- *          do Pulse, com texto branco legível em todas
- * barra  — a etapa sobre fundo branco: barras, pontos, linhas
- * texto  — a etapa escrita sobre fundo branco (taxas, rótulos)
+ * de/meio/ate — o degradê da fatia (paleta joia, lib/paletaJoia.ts: a receita
+ *               do card da Meta de VGV), com texto branco em cima
+ * barra/texto — a etapa sobre fundo branco: barras, pontos, linhas, taxas
  */
-export const TOM: Record<ChaveFatia, { de: string; ate: string; barra: string; texto: string }> = {
-  chegada:     { de: '#818CF8', ate: '#4F46E5', barra: '#6366F1', texto: '#4F46E5' },
-  atendimento: { de: '#38BDF8', ate: '#0284C7', barra: '#0EA5E9', texto: '#0284C7' },
-  visita:      { de: '#2DD4BF', ate: '#0D9488', barra: '#14B8A6', texto: '#0D9488' },
-  proposta:    { de: '#FBBF24', ate: '#D97706', barra: '#F59E0B', texto: '#D97706' },
-  venda:       { de: '#4ADE80', ate: '#16A34A', barra: '#22C55E', texto: '#16A34A' },
+const tom = (e: LeadFunnelStage) => ({ de: JOIA[e].claro, meio: JOIA[e].medio, ate: JOIA[e].fundo, barra: JOIA[e].medio, texto: JOIA[e].medio })
+export const TOM: Record<ChaveFatia, { de: string; meio: string; ate: string; barra: string; texto: string }> = {
+  chegada:     tom('lead'),
+  atendimento: tom('atendimento'),
+  visita:      tom('visita'),
+  proposta:    tom('proposta'),
+  venda:       tom('venda'),
 }
 /** Descartado: cinza neutro — sai do funil, não é etapa. */
 export const TOM_DESCARTE = '#D5DAE4'
@@ -78,9 +80,16 @@ export function FunilDesenhado({ fatias, tamanho = 'grande', foco = null, onFoco
           {formas.map(f => (
             <linearGradient key={f.chave} id={`${id}-${f.chave}`} x1="0" y1="0" x2="0.45" y2="1">
               <stop offset="0%" stopColor={TOM[f.chave].de} />
+              <stop offset="48%" stopColor={TOM[f.chave].meio} />
               <stop offset="100%" stopColor={TOM[f.chave].ate} />
             </linearGradient>
           ))}
+          {/* o brilho champanhe do canto, como no card da meta */}
+          <radialGradient id={`${id}-brilho`} cx="1" cy="0" r="1.1">
+            <stop offset="0%" stopColor="#D6B26E" stopOpacity="0.30" />
+            <stop offset="55%" stopColor="#D6B26E" stopOpacity="0" />
+          </radialGradient>
+          <clipPath id={`${id}-forma`}>{formas.map(f => <polygon key={f.chave} points={f.pontos} />)}</clipPath>
         </defs>
         {formas.map(f => {
           const recua = foco !== null && foco !== f.chave
@@ -124,6 +133,7 @@ export function FunilDesenhado({ fatias, tamanho = 'grande', foco = null, onFoco
             </g>
           )
         })}
+        <rect x={0} y={0} width={g.W} height={altura} fill={`url(#${id}-brilho)`} clipPath={`url(#${id}-forma)`} pointerEvents="none" />
       </svg>
       {dica}
     </div>

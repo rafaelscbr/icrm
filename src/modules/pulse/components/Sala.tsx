@@ -1,3 +1,4 @@
+import { JOIA } from '../../../lib/paletaJoia'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type React from 'react'
 import { useContagem } from '../../../hooks/useContagem'
@@ -334,13 +335,15 @@ export function AoVivo({ feed, nomes, carregado }: {
 // ─── Funil ────────────────────────────────────────────────────────────────────
 
 /** Tons de cada fatia, do claro (topo) ao profundo — texto branco legível em todas. */
-const FATIA: Record<LeadFunnelStage, [string, string]> = {
-  lead:        ['#818CF8', '#4F46E5'],
-  followup:    ['#C084FC', '#9333EA'],
-  atendimento: ['#38BDF8', '#0284C7'],
-  visita:      ['#2DD4BF', '#0D9488'],
-  proposta:    ['#FBBF24', '#D97706'],
-  venda:       ['#4ADE80', '#16A34A'],
+// Paleta joia (lib/paletaJoia.ts): a receita do card da Meta de VGV em um
+// tom por etapa — claro → médio → fundo, texto branco legível em todas.
+const FATIA: Record<LeadFunnelStage, [string, string, string]> = {
+  lead:        [JOIA.lead.claro,        JOIA.lead.medio,        JOIA.lead.fundo],
+  followup:    [JOIA.followup.claro,    JOIA.followup.medio,    JOIA.followup.fundo],
+  atendimento: [JOIA.atendimento.claro, JOIA.atendimento.medio, JOIA.atendimento.fundo],
+  visita:      [JOIA.visita.claro,      JOIA.visita.medio,      JOIA.visita.fundo],
+  proposta:    [JOIA.proposta.claro,    JOIA.proposta.medio,    JOIA.proposta.fundo],
+  venda:       [JOIA.venda.claro,       JOIA.venda.medio,       JOIA.venda.fundo],
 }
 
 /** Texto de número que sobe até o valor (700 ms) e acende quando muda. */
@@ -405,10 +408,15 @@ export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDia
               {fatias.map(f => (
                 <linearGradient key={f.etapa} id={`fatia-${f.etapa}`} x1="0" y1="0" x2="0.45" y2="1">
                   <stop offset="0%" stopColor={FATIA[f.etapa][0]} />
-                  <stop offset="100%" stopColor={FATIA[f.etapa][1]} />
+                  <stop offset="48%" stopColor={FATIA[f.etapa][1]} />
+                  <stop offset="100%" stopColor={FATIA[f.etapa][2]} />
                 </linearGradient>
               ))}
               <clipPath id="funil-forma">{fatias.map(f => <polygon key={f.etapa} points={f.pontos} />)}</clipPath>
+              <radialGradient id="funil-champanhe" cx="1" cy="0" r="1.1">
+                <stop offset="0%" stopColor="#D6B26E" stopOpacity="0.30" />
+                <stop offset="55%" stopColor="#D6B26E" stopOpacity="0" />
+              </radialGradient>
               <linearGradient id="funil-luz" x1="0" x2="1">
                 <stop offset="0%" stopColor="#fff" stopOpacity="0" />
                 <stop offset="50%" stopColor="#fff" stopOpacity="0.30" />
@@ -445,6 +453,8 @@ export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDia
 
             {/* um brilho atravessa a forma de tempos em tempos */}
             <g clipPath="url(#funil-forma)" aria-hidden pointerEvents="none">
+              {/* o brilho champanhe do canto, como no card da Meta de VGV */}
+              <rect x={0} y={0} width={W} height={altura} fill="url(#funil-champanhe)" />
               <rect className="funil-brilho" x={0} y={-20} width={110} height={altura + 40} fill="url(#funil-luz)" />
             </g>
           </svg>
@@ -453,7 +463,7 @@ export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDia
           {focada && (
             <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-[14px] bg-[#0F2759] px-4 py-3 text-white shadow-[0_18px_40px_-12px_rgba(15,39,89,0.55)] pulse-item-in whitespace-nowrap"
                  role="status">
-              <p className="text-[13px] font-semibold uppercase tracking-[0.14em]" style={{ color: FATIA[focada.etapa][0] }}>{focada.nome}</p>
+              <p className="text-[13px] font-semibold uppercase tracking-[0.14em]" style={{ color: focada.etapa === 'venda' ? '#E2C385' : 'rgba(255,255,255,0.72)' }}>{focada.nome}</p>
               <p className="mt-0.5 font-display text-[26px] font-extrabold leading-none tabular-nums">
                 {focada.n === null ? '—' : focada.n.toLocaleString('pt-BR')}
                 <span className="ml-1.5 text-[14px] font-medium text-white/70">
@@ -531,7 +541,7 @@ function EscadaDeConversao({ conversao, janelaDias, foco }: {
                 <span className="w-[104px] shrink-0 text-[14.5px] font-semibold text-t1">{d.nome}</span>
                 <span className="relative flex-1 h-3 rounded-full bg-white overflow-hidden">
                   <span className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700"
-                        style={{ width: `${Math.max(2, (Math.sqrt(d.n) / maxRaiz) * 100)}%`, background: `linear-gradient(90deg, ${FATIA[etapa][0]}, ${FATIA[etapa][1]})` }} />
+                        style={{ width: `${Math.max(2, (Math.sqrt(d.n) / maxRaiz) * 100)}%`, background: `linear-gradient(90deg, ${FATIA[etapa][0]}, ${FATIA[etapa][2]})` }} />
                 </span>
                 <span className="w-[52px] shrink-0 text-right font-display text-[20px] font-extrabold tabular-nums text-t1">{d.n.toLocaleString('pt-BR')}</span>
               </div>
