@@ -78,7 +78,7 @@ export function SlaRodizioSettings() {
     setSalvando('agenda')
     try {
       await save(config.enabled, Number(minutos), agenda)
-      toast.success('Prazo e agenda salvos')
+      toast.success('Prazo e agenda salvos — os leads em espera já estão com o prazo novo')
     } catch { /* erro já toastado pela camada db */ }
     finally { setSalvando(null) }
   }
@@ -183,7 +183,7 @@ export function SlaRodizioSettings() {
             <span>
               Lead que chega fora desses horários começa a contar no início da próxima janela.
               {ligado
-                ? ' Mudanças valem para os próximos prazos.'
+                ? ' Ao salvar, quem ainda espera o 1º contato ganha o prazo pela agenda nova; prazo que já venceu não muda.'
                 : ' Desligado: o prazo continua aparecendo no card como meta, mas ninguém perde o lead.'}
             </span>
           </p>
