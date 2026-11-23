@@ -149,6 +149,7 @@ interface DevelopmentRow {
   income_min: number | null; income_ideal: number | null
   down_payment_min: number | null; down_payment_ideal: number | null
   fgts_composes: boolean
+  commission_pct?: number | null
   accepts_resident: boolean; accepts_investor: boolean
   unit_types: string[]
   payment_plans: import('../types').PaymentPlan[]
@@ -327,6 +328,7 @@ function toDevelopment(r: DevelopmentRow): import('../types').Development {
     downPaymentMin: r.down_payment_min ?? undefined,
     downPaymentIdeal: r.down_payment_ideal ?? undefined,
     fgtsComposes: r.fgts_composes ?? false,
+    commissionPct: r.commission_pct != null ? Number(r.commission_pct) : 5,
     acceptsResident: r.accepts_resident ?? true,
     acceptsInvestor: r.accepts_investor ?? true,
     unitTypes: r.unit_types ?? [],
@@ -364,6 +366,7 @@ function fromDevelopment(d: import('../types').Development): DevelopmentRow {
     // FGTS compõe a entrada sem a obra ser associativa. Zerar aqui apagaria a
     // configuração no primeiro save feito pela tela.
     fgts_composes: d.fgtsComposes ?? false,
+    commission_pct: d.commissionPct ?? 5,
     accepts_resident: d.acceptsResident ?? true,
     accepts_investor: d.acceptsInvestor ?? true,
     unit_types: d.unitTypes ?? [],
@@ -375,6 +378,33 @@ function fromDevelopment(d: import('../types').Development): DevelopmentRow {
     notes: d.notes ?? null, thumbnail: d.thumbnail ?? null,
     created_by_id: d.createdById ?? getCurrentUserId(),
     created_at: d.createdAt, updated_at: d.updatedAt,
+  }
+}
+
+function toDevelopmentUnit(r: Record<string, unknown>): import('../types').DevelopmentUnit {
+  const num = (v: unknown) => (v == null ? undefined : Number(v))
+  return {
+    id: r.id as string,
+    developmentId: r.development_id as string,
+    name: r.name as string,
+    bedrooms: (r.bedrooms as number) ?? undefined,
+    suites: (r.suites as number) ?? undefined,
+    parking: (r.parking as number) ?? undefined,
+    areaSqm: num(r.area_sqm),
+    price: num(r.price),
+    priceMin: num(r.price_min),
+    priceMax: num(r.price_max),
+    incomeMin: num(r.income_min),
+    incomeIdeal: num(r.income_ideal),
+    downPaymentMin: num(r.down_payment_min),
+    downPaymentIdeal: num(r.down_payment_ideal),
+    paymentPlans: (r.payment_plans as import('../types').PaymentPlan[]) ?? [],
+    available: (r.available as boolean) ?? true,
+    unitsAvailable: (r.units_available as number) ?? undefined,
+    notes: (r.notes as string) ?? undefined,
+    displayOrder: (r.display_order as number) ?? 0,
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
   }
 }
 
@@ -598,6 +628,7 @@ interface LeadRow {
   origin: string; funnel_stage: string; followup_step: number
   discard_reason: string | null; discarded_at: string | null
   property_id: string | null; property_name: string | null; average_ticket: number | null
+  development_id?: string | null; development_unit_id?: string | null
   contact_id: string | null; converted_at: string | null; visita_task_id: string | null
   flagged: boolean | null
   notes: string | null
@@ -650,6 +681,8 @@ function toLead(r: LeadRow): Lead {
     discardedAt: r.discarded_at ?? undefined,
     propertyId: r.property_id ?? undefined, propertyName: r.property_name ?? undefined,
     averageTicket: r.average_ticket ?? undefined,
+    developmentId: r.development_id ?? undefined,
+    developmentUnitId: r.development_unit_id ?? undefined,
     contactId: r.contact_id ?? undefined, convertedAt: r.converted_at ?? undefined,
     visitaTaskId: r.visita_task_id ?? undefined,
     flagged: r.flagged ?? undefined,
@@ -692,6 +725,10 @@ function fromLead(l: Lead): LeadRow {
     discard_reason: l.discardReason ?? null, discarded_at: l.discardedAt ?? null,
     property_id: l.propertyId ?? null, property_name: l.propertyName ?? null,
     average_ticket: l.averageTicket ?? null,
+    // O banco completa a partir da tipologia (gatilho da migração 108):
+    // lançamento, nome do produto e, em aberto, o preço da tabela.
+    development_id: l.developmentId ?? null,
+    development_unit_id: l.developmentUnitId ?? null,
     contact_id: l.contactId ?? null, converted_at: l.convertedAt ?? null,
     visita_task_id: l.visitaTaskId ?? null,
     flagged: l.flagged ?? null,
@@ -1048,29 +1085,18 @@ export const db = {
         .order('display_order')
         .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
       if (error) { toast.error(`Erro ao carregar tipologias: ${error.message}`); throw error }
-      return (data as Record<string, unknown>[]).map(r => ({
-        id: r.id as string,
-        developmentId: r.development_id as string,
-        name: r.name as string,
-        bedrooms: (r.bedrooms as number) ?? undefined,
-        suites: (r.suites as number) ?? undefined,
-        parking: (r.parking as number) ?? undefined,
-        areaSqm: (r.area_sqm as number) ?? undefined,
-        price: (r.price as number) ?? undefined,
-        priceMin: (r.price_min as number) ?? undefined,
-        priceMax: (r.price_max as number) ?? undefined,
-        incomeMin: (r.income_min as number) ?? undefined,
-        incomeIdeal: (r.income_ideal as number) ?? undefined,
-        downPaymentMin: (r.down_payment_min as number) ?? undefined,
-        downPaymentIdeal: (r.down_payment_ideal as number) ?? undefined,
-        paymentPlans: (r.payment_plans as import('../types').PaymentPlan[]) ?? [],
-        available: (r.available as boolean) ?? true,
-        unitsAvailable: (r.units_available as number) ?? undefined,
-        notes: (r.notes as string) ?? undefined,
-        displayOrder: (r.display_order as number) ?? 0,
-        createdAt: r.created_at as string,
-        updatedAt: r.updated_at as string,
-      }))
+      return (data as Record<string, unknown>[]).map(toDevelopmentUnit)
+    },
+    /** Todas as tipologias da carteira — para escolher o produto do lead e da campanha. */
+    fetchAll: async (): Promise<import('../types').DevelopmentUnit[]> => {
+      const { data, error } = await supabase
+        .from('development_units')
+        .select('*')
+        .order('development_id')
+        .order('display_order')
+        .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
+      if (error) throw error
+      return (data as Record<string, unknown>[]).map(toDevelopmentUnit)
     },
   },
 
@@ -1304,11 +1330,13 @@ export const db = {
         form_id: string; form_name: string | null; broker_ids: string[] | null
         active: boolean; lead_count: number; updated_at: string
         product_name: string | null; product_ticket: number | null
+        development_unit_id: string | null
       }>).map(r => ({
         formId: r.form_id, formName: r.form_name ?? undefined,
         brokerIds: r.broker_ids ?? [], active: r.active, leadCount: r.lead_count,
         productName: r.product_name ?? undefined,
         productTicket: r.product_ticket ?? undefined,
+        developmentUnitId: r.development_unit_id ?? undefined,
         updatedAt: r.updated_at,
       }))
     },
@@ -1320,13 +1348,15 @@ export const db = {
         .eq('form_id', formId)
       if (error) { toast.error(`Erro ao salvar corretores: ${error.message}`); throw error }
     },
-    // Produto + ticket do formulário → herdados pelo lead (property_name / average_ticket)
-    setProduct: async (formId: string, productName: string | null, productTicket: number | null): Promise<void> => {
-      const { error } = await supabase
-        .from('meta_form_routing')
-        .update({ product_name: productName, product_ticket: productTicket, updated_at: new Date().toISOString() })
-        .eq('form_id', formId)
-      if (error) { toast.error(`Erro ao salvar produto: ${error.message}`); throw error }
+    /**
+     * Tipologia da carteira para a campanha (migração 108). O banco grava,
+     * fecha o elo com o lançamento e liga os leads em aberto do formulário que
+     * ainda não têm tipologia. Devolve quantos leads foram ligados.
+     */
+    setTipologia: async (formId: string, unitId: string): Promise<number> => {
+      const { data, error } = await supabase.rpc('definir_tipologia_da_campanha', { p_form_id: formId, p_unit_id: unitId })
+      if (error) { toast.error(`Produto da campanha não foi salvo: ${error.message}`); throw error }
+      return (data as number) ?? 0
     },
     setActive: async (formId: string, active: boolean): Promise<void> => {
       const { error } = await supabase

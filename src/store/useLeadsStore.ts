@@ -202,6 +202,8 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             propertyId: (incoming.property_id as string | null) ?? undefined,
             propertyName: (incoming.property_name as string | null) ?? undefined,
             averageTicket: (incoming.average_ticket as number | null) ?? undefined,
+            developmentId: (incoming.development_id as string | null) ?? undefined,
+            developmentUnitId: (incoming.development_unit_id as string | null) ?? undefined,
             contactId: (incoming.contact_id as string | null) ?? undefined,
             convertedAt: (incoming.converted_at as string | null) ?? undefined,
             flagged: (incoming.flagged as boolean | null) ?? undefined,
@@ -250,7 +252,12 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             discardReason: (r.discard_reason as LeadDiscardReason) ?? undefined,
             discardedAt: (r.discarded_at as string | null) ?? undefined,
             propertyId: (r.property_id as string | null) ?? undefined,
+            // o produto e o preço podem vir do banco (gatilho da carteira, migração 108):
+            // tabela nova muda o VGV, lançamento renomeado muda o nome
+            propertyName: (r.property_name as string | null) ?? undefined,
             averageTicket: (r.average_ticket as number | null) ?? undefined,
+            developmentId: (r.development_id as string | null) ?? undefined,
+            developmentUnitId: (r.development_unit_id as string | null) ?? undefined,
             contactId: (r.contact_id as string | null) ?? undefined,
             flagged: (r.flagged as boolean | null) ?? undefined,
             notes: (r.notes as string | null) ?? undefined,

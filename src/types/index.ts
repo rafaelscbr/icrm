@@ -329,6 +329,8 @@ export interface Development {
   status: DevelopmentStatus
   regime: DevelopmentRegime
   deliveryEstimate?: string // 'YYYY-MM'
+  /** comissão bruta da Souza sobre o VGV, em % (5 nos lançamentos; pronto pode ser 6) */
+  commissionPct: number
   // Faixa de valor das unidades
   valueMin?: number
   valueMax?: number
@@ -559,6 +561,13 @@ export interface Lead {
   propertyId?: string
   propertyName?: string       // nome livre quando imóvel não está cadastrado
   averageTicket?: number      // preenchido automaticamente pelo imóvel ou manualmente
+  /**
+   * Produto da carteira de lançamentos (migração 108). Com tipologia, o banco
+   * mantém `averageTicket` = preço da tabela vigente enquanto o lead está em
+   * aberto, e `propertyName` = nome do lançamento. Em Proposta/Venda congela.
+   */
+  developmentId?: string
+  developmentUnitId?: string
   contactId?: string          // preenchido ao converter lead em contato
   convertedAt?: string
   visitaTaskId?: string       // ID da tarefa de visita criada automaticamente
@@ -612,6 +621,8 @@ export interface MetaFormRouting {
   leadCount: number       // quantos leads esse formulário já recebeu
   productName?:   string  // produto que o formulário representa → vira property_name do lead
   productTicket?: number  // ticket do produto → vira average_ticket do lead (previsão de VGL)
+  /** tipologia da carteira (migração 108): o lead nasce ligado a ela e o VGV vem da tabela */
+  developmentUnitId?: string
   updatedAt: string
 }
 

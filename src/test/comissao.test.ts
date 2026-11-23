@@ -35,3 +35,23 @@ describe('comissão do Kanban', () => {
     expect(t.souza).toBeCloseTo(82_062 - 24_618.6, 6)
   })
 })
+
+describe('comissão por produto (migração 108)', () => {
+  it('produto pronto a 6%: a conta inteira acompanha', () => {
+    expect(comissaoBruta(600_000, 6)).toBe(36_000)
+    expect(comissaoLiquida(600_000, 6)).toBeCloseTo(36_000 * 0.97 * 0.94, 6)
+    const d = divisao(600_000, 50, 6)
+    expect(d.bruta).toBe(36_000)
+    expect(d.corretor).toBeCloseTo(36_000 * 0.97 * 0.94 * 0.5, 6)
+  })
+
+  it('totais somam lead a lead, cada um no % do seu produto', () => {
+    const t = totaisComissao(
+      [{ averageTicket: 600_000, brokerId: 'x', pct: 5 }, { averageTicket: 600_000, brokerId: 'x', pct: 6 }],
+      () => null,
+      l => l.pct,
+    )
+    expect(t.bruta).toBe(66_000)
+    expect(t.souza).toBeCloseTo(66_000 * 0.97 * 0.94, 6)
+  })
+})

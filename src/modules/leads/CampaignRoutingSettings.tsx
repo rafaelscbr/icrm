@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Check, Info, Loader2, RefreshCw } from 'lucide-react'
+import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
+import { formatCurrencyFull } from '../../lib/formatters'
 import { db } from '../../lib/db'
 import { useAuthStore } from '../../store/useAuthStore'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
@@ -15,12 +17,16 @@ import toast from 'react-hot-toast'
  * lead aparece sozinho na lista. Produto e ticket são herdados pelo lead que
  * entrar por aquele formulário.
  *
+ * Produto da campanha (23/11/2026, migração 108): o admin escolhe o lançamento
+ * e a TIPOLOGIA da carteira — sempre uma. O lead nasce ligado a ela e o VGV
+ * dele é o preço da tabela vigente; a tabela muda, o Kanban acompanha. Ao
+ * escolher, os leads em aberto do formulário que ainda não tinham tipologia
+ * são ligados também. O ticket digitado à mão saiu daqui.
+ *
  * Banco primeiro: o chip, o interruptor e os campos só mudam depois que o
  * banco confirma. Falha de leitura aparece como falha — antes a lista vazia
  * dizia "nenhuma campanha detectada" mesmo quando a consulta tinha dado erro.
  */
-
-const chave = (r: MetaFormRouting) => `${r.productName?.trim() ?? ''}|${r.productTicket ?? ''}`
 
 export function CampaignRoutingSettings() {
   const { allProfiles, fetchAllProfiles } = useAuthStore()
@@ -28,22 +34,22 @@ export function CampaignRoutingSettings() {
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState(false)
   const [savingId, setSavingId] = useState<string | null>(null)
-  /** produto|ticket como está no banco — para o blur não salvar o que não mudou */
-  const salvos = useRef<Record<string, string>>({})
+  /** lançamento escolhido na tela e ainda sem tipologia gravada, por formulário */
+  const [produtoEscolhido, setProdutoEscolhido] = useState<Record<string, string>>({})
+  const { developments, unidades, carregarCarteira, erroCarteira } = useDevelopmentsStore()
 
   const carregar = useCallback(async () => {
     setLoading(true)
     setErro(false)
     try {
-      const lista = await db.metaFormRouting.fetchAll()
-      salvos.current = Object.fromEntries(lista.map(r => [r.formId, chave(r)]))
+      const [lista] = await Promise.all([db.metaFormRouting.fetchAll(), carregarCarteira(true)])
       setRules(lista)
     } catch {
       setErro(true)   // aviso já disparado pela camada db
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [carregarCarteira])
 
   useEffect(() => {
     if (allProfiles.length === 0) void fetchAllProfiles()
@@ -80,31 +86,56 @@ export function CampaignRoutingSettings() {
     finally { setSavingId(null) }
   }
 
-  // O campo acompanha a digitação; o que vale é o que foi salvo ao sair dele.
-  function updateLocal(formId: string, patch: Partial<MetaFormRouting>) {
-    setRules(rs => rs.map(r => r.formId === formId ? { ...r, ...patch } : r))
+  // ── Produto da campanha pela carteira ────────────────────────────────────
+  const lancamentos = useMemo(
+    () => developments.filter(d => d.active).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+    [developments],
+  )
+  /** tipologias com tabela vigente — as únicas que a campanha pode usar */
+  const tipologiasDe = useCallback(
+    (devId: string) => unidades
+      .filter(u => u.developmentId === devId && u.available && (u.price ?? u.priceMin) != null)
+      .sort((a, b) => a.displayOrder - b.displayOrder),
+    [unidades],
+  )
+  /** o lançamento que a tela mostra: o escolhido agora, o da tipologia gravada ou o do formulário */
+  function lancamentoDa(rule: MetaFormRouting): string {
+    if (produtoEscolhido[rule.formId] !== undefined) return produtoEscolhido[rule.formId]
+    const u = rule.developmentUnitId ? unidades.find(x => x.id === rule.developmentUnitId) : undefined
+    if (u) return u.developmentId
+    return developments.find(d => d.metaFormIds.includes(rule.formId))?.id ?? ''
   }
 
-  async function saveProduct(rule: MetaFormRouting) {
-    if (salvos.current[rule.formId] === chave(rule)) return   // nada mudou: não salva nem avisa
+  async function salvarTipologia(rule: MetaFormRouting, unitId: string) {
+    const u = unidades.find(x => x.id === unitId)
+    if (!u) return
     setSavingId(rule.formId)
     try {
-      await db.metaFormRouting.setProduct(
-        rule.formId,
-        rule.productName?.trim() || null,
-        rule.productTicket != null && !Number.isNaN(rule.productTicket) ? rule.productTicket : null,
-      )
-      salvos.current[rule.formId] = chave(rule)
-      toast.success('Produto e ticket salvos')
+      const ligados = await db.metaFormRouting.setTipologia(rule.formId, unitId)
+      const dev = developments.find(d => d.id === u.developmentId)
+      setRules(rs => rs.map(r => r.formId === rule.formId
+        ? { ...r, developmentUnitId: unitId, productName: dev?.name, productTicket: u.price ?? u.priceMin }
+        : r))
+      setProdutoEscolhido(p => { const n = { ...p }; delete n[rule.formId]; return n })
+      toast.success(ligados > 0
+        ? `Produto salvo. ${ligados.toLocaleString('pt-BR')} ${ligados === 1 ? 'lead em aberto passou' : 'leads em aberto passaram'} a usar essa tipologia`
+        : 'Produto salvo')
     } catch { /* erro já toastado */ }
     finally { setSavingId(null) }
+  }
+
+  function escolherLancamento(rule: MetaFormRouting, devId: string) {
+    setProdutoEscolhido(p => ({ ...p, [rule.formId]: devId }))
+    // Uma tipologia só com tabela: não há o que escolher.
+    const tips = devId ? tipologiasDe(devId) : []
+    if (tips.length === 1) void salvarTipologia(rule, tips[0].id)
   }
 
   return (
     <SecaoConfig
       id="config-campanhas-titulo"
       titulo="Distribuição de *campanhas*"
-      descricao="Quem recebe os leads de cada formulário do Meta. Com mais de um corretor marcado, os leads alternam entre eles. Produto e ticket já entram preenchidos em cada lead do formulário."
+      descricao="Quem recebe os leads de cada formulário do Meta e de qual produto eles são. Com mais de um corretor marcado, os leads alternam entre eles. O VGV de cada lead vem da tabela da tipologia escolhida."
       lado={!loading && !erro && rules.length > 0
         ? <span className="text-[13px] text-t3 tabular-nums">{ativas} de {rules.length} ativas</span>
         : undefined}
@@ -134,6 +165,12 @@ export function CampaignRoutingSettings() {
               const nome = rule.formName ?? `Formulário ${rule.formId.slice(0, 8)}…`
               const saving = savingId === rule.formId
               const semCorretor = rule.brokerIds.length === 0
+              const devId = lancamentoDa(rule)
+              const tips = devId ? tipologiasDe(devId) : []
+              const tipologiaAtual = rule.developmentUnitId && unidades.find(u => u.id === rule.developmentUnitId)?.developmentId === devId
+                ? unidades.find(u => u.id === rule.developmentUnitId)
+                : undefined
+              const devAtual = developments.find(d => d.id === devId)
               return (
                 <li key={rule.formId} className="px-5 py-4">
                   <div className="flex items-center gap-3">
@@ -151,8 +188,8 @@ export function CampaignRoutingSettings() {
                   </div>
 
                   {rule.active && (
-                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,230px)_150px] gap-x-4 gap-y-3 mt-3.5 items-end">
-                      <div className="min-w-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-x-4 gap-y-3 mt-3.5 items-end">
+                      <div className="min-w-0 sm:col-span-2">
                         <p className="text-[12.5px] text-t4 mb-1.5">Quem recebe</p>
                         <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Corretores de ${nome}`}>
                           {brokers.map(b => {
@@ -189,36 +226,54 @@ export function CampaignRoutingSettings() {
 
                       <label className="flex flex-col gap-1.5 min-w-0">
                         <span className="text-[12.5px] text-t4">Produto</span>
-                        <input
-                          type="text"
-                          value={rule.productName ?? ''}
-                          onChange={e => updateLocal(rule.formId, { productName: e.target.value })}
-                          onBlur={() => void saveProduct(rule)}
-                          placeholder="Ex.: Greenview"
-                          className={`${CAMPO} w-full`}
-                        />
+                        <select
+                          value={devId}
+                          onChange={e => escolherLancamento(rule, e.target.value)}
+                          disabled={saving || !!erroCarteira}
+                          aria-label={`Produto de ${nome}`}
+                          className={`${CAMPO} w-full cursor-pointer`}
+                        >
+                          <option value="">Escolha o lançamento</option>
+                          {lancamentos.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
                       </label>
 
                       <label className="flex flex-col gap-1.5 min-w-0">
-                        <span className="text-[12.5px] text-t4">Ticket</span>
-                        <span className="relative flex items-center">
-                          <span className="absolute left-3 text-[13px] text-t3 select-none" aria-hidden>R$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={rule.productTicket != null ? rule.productTicket.toLocaleString('pt-BR') : ''}
-                            onChange={e => {
-                              const digits = e.target.value.replace(/\D/g, '')
-                              updateLocal(rule.formId, { productTicket: digits ? Number(digits) : undefined })
-                            }}
-                            onBlur={() => void saveProduct(rule)}
-                            placeholder="500.000"
-                            aria-label={`Ticket de ${nome}, em reais`}
-                            className={`${CAMPO} w-full pl-9 tabular-nums`}
-                          />
-                        </span>
+                        <span className="text-[12.5px] text-t4">Tipologia</span>
+                        <select
+                          value={tipologiaAtual?.id ?? ''}
+                          onChange={e => e.target.value && void salvarTipologia(rule, e.target.value)}
+                          disabled={saving || !devId || tips.length === 0}
+                          aria-label={`Tipologia de ${nome}`}
+                          className={`${CAMPO} w-full cursor-pointer`}
+                        >
+                          <option value="">{!devId ? '—' : tips.length === 0 ? 'Sem tabela cadastrada' : 'Escolha a tipologia'}</option>
+                          {tips.map(u => (
+                            <option key={u.id} value={u.id}>{u.name} · {formatCurrencyFull(u.price ?? u.priceMin ?? 0)}</option>
+                          ))}
+                        </select>
                       </label>
                     </div>
+                  )}
+
+                  {rule.active && tipologiaAtual && devAtual && (
+                    <p className="mt-2.5 text-[12.5px] text-t3 tabular-nums">
+                      Cada lead entra com <b className="text-t1 font-semibold">{formatCurrencyFull(tipologiaAtual.price ?? tipologiaAtual.priceMin ?? 0)}</b> de VGV,
+                      pela tabela vigente · comissão de {devAtual.commissionPct.toLocaleString('pt-BR')}%
+                    </p>
+                  )}
+
+                  {rule.active && !tipologiaAtual && (
+                    <p className="flex items-start gap-1.5 mt-3 text-[12.5px] text-warning">
+                      <Info size={13} strokeWidth={1.8} className="flex-shrink-0 mt-[2px]" aria-hidden />
+                      {devId && tips.length === 0
+                        ? `${devAtual?.name ?? 'Este lançamento'} ainda não tem tabela cadastrada: os leads entram ligados ao produto, mas sem preço da tabela.`
+                        : devId
+                          ? 'Escolha a tipologia: é ela que dá o VGV de cada lead.'
+                          : rule.productName
+                            ? `${rule.productName} não está na carteira de lançamentos: os leads entram com o ticket fixo${rule.productTicket ? ` de ${formatCurrencyFull(rule.productTicket)}` : ''}.`
+                            : 'Sem produto: os leads deste formulário entram sem VGV.'}
+                    </p>
                   )}
 
                   {rule.active && semCorretor && (

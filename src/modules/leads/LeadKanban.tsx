@@ -31,7 +31,8 @@ import { avisoReentrada } from './reentrada'
 import { useKanbanPrefs } from '../../store/useKanbanPrefs'
 import { useContagem } from '../../hooks/useContagem'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
-import { comissaoBruta, divisao } from './comissao'
+import { divisao, PCT_PADRAO } from './comissao'
+import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { JOIA, degradeJoiaClaro, fundoJoiaClaro } from '../../lib/paletaJoia'
 import { ORIGEM_META } from './origens'
 import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
@@ -56,7 +57,7 @@ const STAGES = FUNNEL_STAGES
  * A comissão nesta visão (comissao.ts). O admin vê as duas partes — a do
  * corretor e a da imobiliária; o corretor vê só a dele.
  */
-export interface Dinheiro { vgv: number; corretor: number; souza: number }
+export interface Dinheiro { vgv: number; bruta: number; corretor: number; souza: number }
 export interface VisaoComissao {
   /** admin: mostra corretor + imobiliária; corretor: só a parte dele */
   admin: boolean
@@ -302,7 +303,7 @@ function LeadCard({
       {!dense && din && comissao && (din.corretor > 0 || comissao.admin) && (
         <div className="mt-2.5 flex items-stretch rounded-[11px] bg-s2/70 overflow-hidden text-[12.5px]">
           <div className="flex-1 min-w-0 px-2.5 py-1.5 flex items-center justify-between gap-2"
-               title={comissao.admin ? 'Comissão líquida do corretor' : 'Sua comissão líquida (5% do VGV − 3% ISS − 6% Simples)'}>
+               title={comissao.admin ? 'Comissão líquida do corretor' : 'Sua comissão líquida (% do produto sobre o VGV − 3% ISS − 6% Simples)'}>
             <span className="text-[11.5px] font-medium text-success/80 truncate">
               {comissao.admin && responsavel ? responsavel.name.split(' ')[0] : comissao.rotuloCorretor}
             </span>
@@ -677,6 +678,10 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   const concludeLead = concludeId ? leads.find(l => l.id === concludeId) : null
   const { dense, sort, setDense } = useKanbanPrefs()
   const { isAdmin, profile, allProfiles, viewAsBrokerId } = useAuthStore()
+  // % de comissão de cada produto vem da carteira (migração 108)
+  const developments = useDevelopmentsStore(s => s.developments)
+  const carregarCarteira = useDevelopmentsStore(s => s.carregarCarteira)
+  useEffect(() => { void carregarCarteira() }, [carregarCarteira])
 
   // ── Comissão nesta visão (comissao.ts) ────────────────────────────────────
   // Admin vê, de cada lead, a parte do corretor dono e o que fica com a Souza
@@ -685,10 +690,12 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   const comissao = useMemo<VisaoComissao>(() => {
     const shareDe = (id: string | null | undefined) =>
       (id ? (id === profile?.id ? profile.commissionShare : allProfiles.find(p => p.id === id)?.commissionShare) : null) ?? null
+    const pctPorProduto = new Map(developments.map(d => [d.id, d.commissionPct]))
     const doLead = (l: Lead): Dinheiro => {
       const vgv = l.averageTicket ?? 0
-      const d = divisao(vgv, shareDe(l.brokerId))
-      return { vgv, corretor: d.corretor, souza: d.souza }
+      const pct = (l.developmentId && pctPorProduto.get(l.developmentId)) || PCT_PADRAO
+      const d = divisao(vgv, shareDe(l.brokerId), pct)
+      return { vgv, bruta: d.bruta, corretor: d.corretor, souza: d.souza }
     }
     const nomeVisto = isAdmin && viewAsBrokerId && viewAsBrokerId !== profile?.id
       ? allProfiles.find(p => p.id === viewAsBrokerId)?.name.split(' ')[0]
@@ -700,10 +707,10 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
       total: ls => ls.reduce<Dinheiro>((t, l) => {
         if (!l.averageTicket) return t
         const d = doLead(l)
-        return { vgv: t.vgv + d.vgv, corretor: t.corretor + d.corretor, souza: t.souza + d.souza }
-      }, { vgv: 0, corretor: 0, souza: 0 }),
+        return { vgv: t.vgv + d.vgv, bruta: t.bruta + d.bruta, corretor: t.corretor + d.corretor, souza: t.souza + d.souza }
+      }, { vgv: 0, bruta: 0, corretor: 0, souza: 0 }),
     }
-  }, [isAdmin, profile, allProfiles, viewAsBrokerId])
+  }, [isAdmin, profile, allProfiles, viewAsBrokerId, developments])
 
   // O Kanban baixava a tabela inteira de interações (~5,4 MB, e ainda cortada
   // em 1.000 linhas) só para saber a data do último contato de cada card.
@@ -865,7 +872,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
             <>
               <Placar rotulo="VGV" nota={`${resumo.ativos} leads em aberto`} valor={resumo.vgv} cor="var(--t1)"
                       fundo={degradeJoiaClaro('lead')} />
-              <Placar rotulo="Comissão geral" nota="5% do VGV" valor={comissaoBruta(resumo.vgv)} cor="var(--t1)"
+              <Placar rotulo="Comissão geral" nota={resumo.vgv ? `${(resumo.bruta / resumo.vgv * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% do VGV` : '5% do VGV'} valor={resumo.bruta} cor="var(--t1)"
                       fundo={degradeJoiaClaro('atendimento')}
                       titulo={`Bruta. Depois do ISS (3%) e do Simples (6%), sobra ${formatCurrencyRound(resumo.corretor + resumo.souza)} líquidos.`} />
               <Placar rotulo="Líquida Souza" valor={resumo.souza} cor="var(--brand-text)" destaque

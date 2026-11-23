@@ -10,6 +10,7 @@ import { useLeadsStore } from '../../store/useLeadsStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useContactSearch, useContactByPhone } from '../../hooks/useContactSearch'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { useCampaignLeadsStore } from '../../store/useCampaignLeadsStore'
 import { formatPhone, formatCurrencyFull, localDateStr } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -76,7 +77,13 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
   const [propertySearch, setPropertySearch] = useState('')
   const [propertyId, setPropertyId] = useState<string | undefined>()
   const [freePropertyName, setFreePropertyName] = useState('')  // free-text property
-  const [propertyMode, setPropertyMode] = useState<'search' | 'free' | 'selected'>('search')
+  // 'lancamento' = produto da carteira (migração 108): lançamento + tipologia.
+  // Com tipologia, o VGV é o preço da tabela e o banco mantém atualizado.
+  const [propertyMode, setPropertyMode] = useState<'search' | 'free' | 'selected' | 'lancamento'>('search')
+  const [devId, setDevId] = useState('')
+  const [unitId, setUnitId] = useState('')
+  const { developments, unidades, carregarCarteira } = useDevelopmentsStore()
+  useEffect(() => { if (isOpen) void carregarCarteira() }, [isOpen, carregarCarteira])
   const [averageTicket, setAverageTicket] = useState('')
   const [notes, setNotes] = useState('')
   const [entryDate, setEntryDate] = useState(localDateStr())   // retroactive date
@@ -99,7 +106,11 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       setAverageTicket(lead.averageTicket ? lead.averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '')
       setNotes(lead.notes ?? '')
       setEntryDate(lead.createdAt.split('T')[0])
-      if (lead.propertyId) {
+      setDevId(lead.developmentId ?? '')
+      setUnitId(lead.developmentUnitId ?? '')
+      if (lead.developmentId) {
+        setPropertyMode('lancamento')
+      } else if (lead.propertyId) {
         const p = properties.find(p => p.id === lead.propertyId)
         setPropertySearch(p?.name ?? '')
         setPropertyMode('selected')
@@ -118,6 +129,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       setOrigin('felicita'); setStage('lead')
       setPropertyId(undefined); setPropertySearch('')
       setFreePropertyName(''); setPropertyMode('search')
+      setDevId(''); setUnitId('')
       setAverageTicket(''); setNotes('')
       setEntryDate(localDateStr())
     }
@@ -144,6 +156,20 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     p.name.toLowerCase().includes(propertySearch.toLowerCase()) ||
     p.neighborhood.toLowerCase().includes(propertySearch.toLowerCase())
   ).slice(0, 6)
+
+  const busca = propertySearch.trim().toLowerCase()
+  const filteredLancamentos = busca
+    ? developments.filter(d => d.active && (d.name.toLowerCase().includes(busca) || (d.region ?? '').toLowerCase().includes(busca))).slice(0, 5)
+    : []
+  const lancamento = devId ? developments.find(d => d.id === devId) : undefined
+  /** tipologias com tabela vigente do lançamento escolhido */
+  const tipologias = unidades
+    .filter(u => u.developmentId === devId && u.available && (u.price ?? u.priceMin) != null)
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+  const tipologia = unitId ? unidades.find(u => u.id === unitId) : undefined
+  // Em Proposta/Venda o valor congela (migração 108): dá para ajustar à mão.
+  const congelado = !!lead && (lead.funnelStage === 'proposta' || lead.funnelStage === 'venda' || !!lead.closedAt)
+  const pelaTabela = propertyMode === 'lancamento' && !!tipologia && !(congelado && tipologia.id === lead?.developmentUnitId)
 
   const isRetroactive = entryDate < localDateStr()
 
@@ -173,6 +199,27 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
     setFreePropertyName('')
   }
 
+  function selectLancamento(id: string) {
+    const d = developments.find(x => x.id === id)
+    if (!d) return
+    setDevId(id)
+    setPropertyId(undefined)
+    setFreePropertyName('')
+    setPropertySearch(d.name)
+    setPropertyMode('lancamento')
+    const tips = unidades.filter(u => u.developmentId === id && u.available && (u.price ?? u.priceMin) != null)
+    if (tips.length === 1) selectTipologia(tips[0].id)
+    else setUnitId('')
+  }
+
+  function selectTipologia(id: string) {
+    const u = unidades.find(x => x.id === id)
+    if (!u) return
+    setUnitId(id)
+    const preco = u.price ?? u.priceMin
+    if (preco != null) setAverageTicket(preco.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }))
+  }
+
   function useFreeProperty() {
     setPropertyId(undefined)
     setFreePropertyName(propertySearch)
@@ -180,6 +227,7 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
   }
 
   function clearProperty() {
+    setDevId(''); setUnitId('')
     setPropertyId(undefined)
     setFreePropertyName('')
     setPropertySearch('')
@@ -238,7 +286,9 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
       discardReason: lead?.discardReason,
       discardedAt: lead?.discardedAt,
       propertyId: propertyMode === 'selected' ? propertyId : undefined,
-      propertyName: resolvedPropertyName,
+      propertyName: propertyMode === 'lancamento' ? lancamento?.name : resolvedPropertyName,
+      developmentId: propertyMode === 'lancamento' ? devId || undefined : undefined,
+      developmentUnitId: propertyMode === 'lancamento' ? unitId || undefined : undefined,
       averageTicket: averageTicket ? (parseFloat(averageTicket.replace(/\./g, '').replace(',', '.')) || undefined) : undefined,
       contactId: resolvedContactId,
       convertedAt: lead?.convertedAt,
@@ -442,6 +492,18 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
               />
               {propertySearch.length >= 1 && (
                 <div className="flex flex-col animate-in fade-in duration-150">
+                  {filteredLancamentos.map(d => (
+                    <button key={d.id} onClick={() => selectLancamento(d.id)}
+                      className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-[10px] hover:bg-s2 text-left transition-colors cursor-pointer">
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-medium text-t1 truncate">{d.name}</span>
+                        <span className="block text-[12px] text-t4">{d.region ? `${d.region} · ` : ''}Carteira de lançamentos</span>
+                      </span>
+                      {d.valueMin != null && (
+                        <span className="text-[12.5px] font-semibold text-t2 tabular-nums flex-shrink-0">a partir de {formatCurrencyFull(d.valueMin)}</span>
+                      )}
+                    </button>
+                  ))}
                   {filteredProperties.map(p => (
                     <button key={p.id} onClick={() => selectProperty(p.id)}
                       className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-[10px] hover:bg-s2 text-left transition-colors cursor-pointer">
@@ -462,11 +524,34 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
           ) : (
             <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] bg-s2">
               <span className="flex-1 min-w-0 text-[14px] font-medium text-t1 truncate">
-                {propertyMode === 'selected' ? propertySearch : freePropertyName}
+                {propertyMode === 'selected' ? propertySearch : propertyMode === 'lancamento' ? (lancamento?.name ?? lead?.propertyName ?? 'Lançamento') : freePropertyName}
                 {propertyMode === 'free' && <span className="text-t4 font-normal"> · sem cadastro</span>}
               </span>
               <button onClick={clearProperty} className="text-[13px] text-t3 hover:text-t1 cursor-pointer">Trocar</button>
             </div>
+          )}
+          {propertyMode === 'lancamento' && devId && (
+            tipologias.length > 0 ? (
+              <div className="flex flex-col gap-1.5 mt-1">
+                <span className="text-[12.5px] text-t4">Tipologia</span>
+                <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Tipologia">
+                  {tipologias.map(u => {
+                    const on = u.id === unitId
+                    return (
+                      <button key={u.id} type="button" role="radio" aria-checked={on} onClick={() => selectTipologia(u.id)}
+                        className={`flex flex-col items-start px-3 py-2 rounded-[10px] text-left cursor-pointer transition-colors
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+                          ${on ? 'bg-brand-tint text-brand-text ring-1 ring-brand/30' : 'bg-s2 text-t2 hover:bg-s3'}`}>
+                        <span className="text-[13px] font-semibold">{u.name}</span>
+                        <span className="text-[12px] tabular-nums opacity-80">{formatCurrencyFull(u.price ?? u.priceMin ?? 0)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="text-[12.5px] text-t4">{lancamento?.name ?? 'Este lançamento'} ainda não tem tabela cadastrada: informe o ticket abaixo.</p>
+            )
           )}
         </div>
 
@@ -482,9 +567,17 @@ export function LeadForm({ isOpen, onClose, lead }: LeadFormProps) {
               onChange={e => handleAverageTicketChange(e.target.value)}
               onBlur={handleAverageTicketBlur}
               placeholder="500.000"
-              className="w-full pl-10 pr-4 py-2.5 min-h-[44px] tabular-nums"
+              readOnly={pelaTabela}
+              className="w-full pl-10 pr-4 py-2.5 min-h-[44px] tabular-nums read-only:opacity-70"
             />
           </div>
+          {propertyMode === 'lancamento' && tipologia && (
+            <p className="text-[12px] text-t4">
+              {!pelaTabela
+                ? 'Valor congelado na proposta: a tabela nova não muda mais este lead.'
+                : 'Pela tabela vigente da tipologia: muda sozinho quando a tabela muda.'}
+            </p>
+          )}
           {propertyMode === 'selected' && propertyId && (
             <p className="text-[12px] text-t4">Preenchido com o valor do imóvel.</p>
           )}

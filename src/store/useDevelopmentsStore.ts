@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import toast from 'react-hot-toast'
-import { Development } from '../types'
+import { Development, DevelopmentUnit } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 import { mensagemDeErro } from '../lib/erros'
@@ -50,12 +50,37 @@ interface DevelopmentsStore {
   getById: (id: string) => Development | undefined
   /** Produto de um formulário do Meta — fecha o elo formulário → régua. */
   getByMetaForm: (formId: string) => Development | undefined
+
+  /**
+   * Carteira para escolher produto (lead e campanha, migração 108): os
+   * lançamentos e todas as tipologias. Carrega uma vez por sessão; `forcar`
+   * relê (depois de cadastrar tabela nova, por exemplo).
+   */
+  unidades: DevelopmentUnit[]
+  carteiraCarregada: boolean
+  erroCarteira: string | null
+  carregarCarteira: (forcar?: boolean) => Promise<void>
 }
 
 export const useDevelopmentsStore = create<DevelopmentsStore>((set, get) => ({
   developments: [],
   loading: false,
   erro: null,
+  unidades: [],
+  carteiraCarregada: false,
+  erroCarteira: null,
+
+  carregarCarteira: async (forcar = false) => {
+    if (get().carteiraCarregada && !forcar) return
+    set({ erroCarteira: null })
+    try {
+      const [developments, unidades] = await Promise.all([db.developments.fetchAll(), db.developmentUnits.fetchAll()])
+      set({ developments, unidades, carteiraCarregada: true })
+    } catch (err) {
+      console.error('[developments] carteira:', err)
+      set({ erroCarteira: mensagemDeErro(err) })
+    }
+  },
 
   load: async () => {
     set({ loading: true, erro: null })

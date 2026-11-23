@@ -22,6 +22,7 @@ import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { useLeadListsStore } from '../../store/useLeadListsStore'
 import { formatPhone, formatCurrencyFull, whatsappUrl } from '../../lib/formatters'
 import { divisao } from './comissao'
+import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
@@ -201,7 +202,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const dono = lead.brokerId
     ? (lead.brokerId === profile?.id ? profile : allProfiles.find(p => p.id === lead.brokerId))
     : undefined
-  const comissao = ticket ? divisao(ticket, dono?.commissionShare) : null
+  // % do produto da carteira (5%; pronto pode ser 6% — migração 108)
+  const pctProduto = useDevelopmentsStore(s => lead.developmentId ? s.developments.find(d => d.id === lead.developmentId)?.commissionPct : undefined)
+  const tipologia  = useDevelopmentsStore(s => lead.developmentUnitId ? s.unidades.find(u => u.id === lead.developmentUnitId) : undefined)
+  const carregarCarteira = useDevelopmentsStore(s => s.carregarCarteira)
+  useEffect(() => { void carregarCarteira() }, [carregarCarteira])
+  const comissao = ticket ? divisao(ticket, dono?.commissionShare, pctProduto) : null
 
   // Interactions
   const interactions  = getForLead(lead.id)
@@ -597,7 +603,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                     <dt>VGV</dt>
                     <dd className="tabular-nums text-t1">{ticket ? formatCurrencyFull(ticket) : '—'}</dd>
                   </div>
-                  <div title="5% do VGV − 3% ISS − 6% Simples">
+                  <div title={`${pctProduto ?? 5}% do VGV − 3% ISS − 6% Simples`}>
                     <dt>{comissao && comissao.corretor > 0
                       ? (isAdmin ? `Comissão ${dono?.name.split(' ')[0] ?? 'corretor'}` : 'Sua comissão')
                       : 'Comissão líquida'}</dt>
@@ -627,7 +633,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                       <p className="text-[13px] text-t4 truncate">
                         {property
                           ? `${property.neighborhood} · ${property.kind === 'off_plan' ? 'Lançamento' : 'Pronto'}${ticket ? ` · ${formatCurrencyFull(ticket)}` : ''}`
-                          : 'Imóvel de interesse'}
+                          : tipologia
+                            ? `${tipologia.name} · pela tabela`
+                            : lead.developmentId ? 'Lançamento da carteira · sem tipologia' : 'Imóvel de interesse'}
                       </p>
                     </div>
                   </div>

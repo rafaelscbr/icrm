@@ -50,6 +50,10 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
   const [status, setStatus]       = useState<DevelopmentStatus>(development?.status ?? 'lancamento')
   const [regime, setRegime]       = useState<DevelopmentRegime>(development?.regime ?? 'pos_chaves')
   const [delivery, setDelivery]   = useState(development?.deliveryEstimate ?? '')
+  // Comissão da Souza sobre o VGV (migração 108): 5% nos lançamentos; pronto
+  // pode ser 6%. Novo cadastro acompanha a fase até alguém escolher à mão.
+  const [comissaoPct, setComissaoPct] = useState<number>(development?.commissionPct ?? 5)
+  const [comissaoTocada, setComissaoTocada] = useState(Boolean(development))
 
   const [valueMin, setValueMin]   = useState<number | undefined>(development?.valueMin)
   const [valueMax, setValueMax]   = useState<number | undefined>(development?.valueMax)
@@ -135,6 +139,7 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
       incomeMin, incomeIdeal,
       downPaymentMin: downMin, downPaymentIdeal: downIdeal,
       fgtsComposes,
+      commissionPct: comissaoPct,
       acceptsResident: resident,
       acceptsInvestor: investor,
       unitTypes,
@@ -218,13 +223,24 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
               <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Fase da obra">
                 {(Object.keys(DEVELOPMENT_STATUS_LABEL) as DevelopmentStatus[]).map(st => (
                   <button key={st} type="button" role="radio" aria-checked={status === st}
-                    onClick={() => setStatus(st)} className={pilula(status === st)}>
+                    onClick={() => { setStatus(st); if (!comissaoTocada) setComissaoPct(st === 'pronto' ? 6 : 5) }} className={pilula(status === st)}>
                     {DEVELOPMENT_STATUS_LABEL[st]}
                   </button>
                 ))}
               </div>
             </div>
             <Input label="Entrega" type="month" value={delivery} onChange={e => setDelivery(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="rotulo-campo">Comissão sobre o VGV</span>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Comissão sobre o VGV">
+              {[5, 6].map(pct => (
+                <button key={pct} type="button" role="radio" aria-checked={comissaoPct === pct}
+                  onClick={() => { setComissaoPct(pct); setComissaoTocada(true) }} className={pilula(comissaoPct === pct)}>
+                  {pct}%
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
