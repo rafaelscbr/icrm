@@ -328,10 +328,10 @@ function LeadCard({
       <div className="mt-2.5 flex items-center gap-2 min-w-0">
         {next && NextIcon ? (
           <div
-            className={`flex-1 min-w-0 flex items-center gap-1.5 ${urgente ? `rounded-[9px] border px-2 py-1 ${nextStyle!.chip}` : ''}`}
+            className={`flex-1 min-w-0 flex items-center gap-1.5 ${urgente ? `kanban-aviso rounded-[9px] border px-2 py-1 ${nextStyle!.chip}` : ''}`}
             title={next.hint}
           >
-            <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
+            <NextIcon size={13} strokeWidth={1.8} className={`kanban-aviso-icone flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
             {next.urgency === 'none' ? (
               <p className="kanban-frase flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
             ) : (
