@@ -353,8 +353,7 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
   const shareDe = useMemo(() => (id: string | null) => (id ? porId.get(id)?.commissionShare ?? null : null), [porId])
   const pctDe = useMemo(() => (id: string | null) => (id ? pctProduto[id] : undefined), [pctProduto])
 
-  // `agora` anda a cada 30 s: um lead que passa de 24 h sem contato sobe sozinho
-  const colunas = useMemo(() => (cartoes ? colunasDaSala(cartoes, shareDe, pctDe, agora) : null), [cartoes, shareDe, pctDe, agora])
+  const colunas = useMemo(() => (cartoes ? colunasDaSala(cartoes, shareDe, pctDe) : null), [cartoes, shareDe, pctDe])
 
   // O placar do Kanban: o que está em jogo nos leads em aberto (fora Venda)
   const placar = useMemo(() => {
