@@ -55,6 +55,8 @@ export function LeadProfileEditor({
   onCancel: () => void
 }) {
   const ehFaixa = field === 'renda' || field === 'entrada'
+  const ehIdade = field === 'idade'
+  const [idade, setIdade] = useState(atual?.value && /^\d+$/.test(atual.value) ? atual.value : '')
   const [min, setMin] = useState<number | undefined>(atual?.min)
   const [max, setMax] = useState<number | undefined>(atual?.max)
   const [escolha, setEscolha] = useState<string | undefined>(atual?.value)
@@ -78,6 +80,12 @@ export function LeadProfileEditor({
   }
 
   function confirmar() {
+    if (ehIdade) {
+      const n = parseInt(idade, 10)
+      if (!(n >= 18 && n <= 100)) { toast.error('Informe a idade entre 18 e 100 anos'); return }
+      salvar({ value: String(n), label: `${n} anos` })
+      return
+    }
     if (ehFaixa) {
       if (min == null && max == null) { toast.error('Informe ao menos um valor'); return }
       if (min != null && max != null && max < min) { toast.error('O valor máximo precisa ser maior'); return }
@@ -99,7 +107,18 @@ export function LeadProfileEditor({
 
   return (
     <div className="rounded-[14px] border border-brand/30 bg-brand-tint/30 p-3 space-y-2.5">
-      {ehFaixa ? (
+      {ehIdade ? (
+        <>
+          <label className="flex flex-col gap-1.5 max-w-[200px]">
+            <span className="rotulo-campo">Idade do comprador mais velho</span>
+            <input inputMode="numeric" value={idade}
+                   onChange={e => setIdade(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                   onKeyDown={e => { if (e.key === 'Enter') confirmar() }}
+                   placeholder="42" className="campo h-10 px-3 tabular-nums" />
+          </label>
+          <p className="text-[11px] text-t4">A idade sobe sozinha com o tempo. Ela define o prazo máximo do financiamento.</p>
+        </>
+      ) : ehFaixa ? (
         <>
           <div className="grid grid-cols-2 gap-2">
             <MoneyInput label="De" value={min} onChange={setMin} placeholder="8.000" />

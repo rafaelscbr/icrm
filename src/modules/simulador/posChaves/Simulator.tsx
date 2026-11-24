@@ -68,6 +68,8 @@ export function PosChavesSimulator({ shared, onShared, corretor, inicial, onRela
       valorTotal: shared.valorTotal, entradaTotal: result.entradaTotal,
       parcelasQtd: base.parcelasQtd, parcelaValor: result.parcelaValor,
     }),
+    // Pós-chaves não tem data de entrega: o corretor informa no financiamento.
+    repasse: { valorImovel: shared.valorTotal, pagoAteChaves: result.valorAteChaves },
   })
 
   return (

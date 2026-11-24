@@ -56,6 +56,7 @@ export function DiretoSimulator({ shared, onShared, corretor, inicial, onRelato 
       valorTotal: shared.valorTotal, entradaTotal: result.entradaTotal,
       parcelasQtd: base.parcelasQtd, parcelaValor: result.parcelaValor,
     }),
+    repasse: null, // direto com a construtora: não há banco
   })
 
   return (

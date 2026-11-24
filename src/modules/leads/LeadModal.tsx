@@ -30,6 +30,7 @@ import { LeadTimeline } from './LeadTimeline'
 import { PerfilDeclarado, BaseConhecida, FormulariosPreenchidos } from './LeadProfilePanel'
 import { LeituraDoLead, ProdutosDoLead } from './LeadIntelPanel'
 import { useLeadProfile } from './useLeadProfile'
+import { RendaDoRepasse } from './RendaDoRepasse'
 import { useSlaInfo } from './SlaBadge'
 import { TransferirLead } from './TransferirLead'
 import { FluxosDoLead } from './fluxos/FluxosDoLead'
@@ -205,6 +206,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   // % do produto da carteira (5%; pronto pode ser 6% — migração 108)
   const pctProduto = useDevelopmentsStore(s => lead.developmentId ? s.developments.find(d => d.id === lead.developmentId)?.commissionPct : undefined)
   const tipologia  = useDevelopmentsStore(s => lead.developmentUnitId ? s.unidades.find(u => u.id === lead.developmentUnitId) : undefined)
+  const lancamento = useDevelopmentsStore(s => lead.developmentId ? s.developments.find(d => d.id === lead.developmentId) : undefined)
   const carregarCarteira = useDevelopmentsStore(s => s.carregarCarteira)
   useEffect(() => { void carregarCarteira() }, [carregarCarteira])
   const comissao = ticket ? divisao(ticket, dono?.commissionShare, pctProduto) : null
@@ -646,6 +648,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
                 {/* Quem é o cliente — o que ele declarou no formulário (ou o corretor apurou) */}
                 <PerfilDeclarado leadId={lead.id} perfil={perfil} />
+
+                {/* Passa no banco? — renda do repasse, automática pela tipologia (24/11/2026) */}
+                <RendaDoRepasse lead={lead} tipologia={tipologia} lancamento={lancamento} perfil={perfil.data} />
 
                 {/* Leitura do lead — temperatura, prioridade e o porquê */}
                 <LeituraDoLead lead={lead} onVerProdutos={() => setAba('produtos')} />

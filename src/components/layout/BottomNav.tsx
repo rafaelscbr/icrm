@@ -39,7 +39,7 @@ import { PausaLeads } from './nav/PausaLeads'
 const fixos = [
   { to: '/',          icon: LayoutDashboard, label: 'Início',    end: true,  chave: 'dashboard' },
   { to: '/leads',     icon: UserPlus,        label: 'Leads',     end: false, chave: 'leads' },
-  { to: '/simulador', icon: Calculator,      label: 'Simulador', end: false, chave: 'simulador' },
+  { to: '/simulador', icon: Calculator,      label: 'Simuladores', end: false, chave: 'simulador' },
 ]
 
 const naBarra = new Set(fixos.map(i => i.to))

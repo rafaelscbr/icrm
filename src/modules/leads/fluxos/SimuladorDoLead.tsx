@@ -14,6 +14,8 @@ import {
 import { PosChavesSimulator } from '../../simulador/posChaves/Simulator'
 import { DiretoSimulator } from '../../simulador/direto/Simulator'
 import { AssociativoSimulator } from '../../simulador/associativo/Simulator'
+import { AoLadoDoFluxo } from '../../simulador/financiamento/AoLadoDoFluxo'
+import type { EstadoFinanciamento, ResumoFinanciamento } from '../../simulador/financiamento/estado'
 
 /**
  * O simulador aberto de dentro do lead (19/11/2026).
@@ -70,8 +72,18 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
   const [relato, setRelato] = useState<RelatoDoSimulador<unknown> | null>(null)
   const aoRelatar = useCallback((r: RelatoDoSimulador<unknown>) => setRelato(r), [])
 
+  // O Simulador de financiamento ao lado: o estado vai junto na versão salva,
+  // e os números dele congelam no resumo como os do fluxo.
+  const [financiamento, setFinanciamento] = useState<{ e: EstadoFinanciamento; r: ResumoFinanciamento | null } | null>(null)
+  const aoMudarFinanciamento = useCallback((e: EstadoFinanciamento, r: ResumoFinanciamento | null) => setFinanciamento({ e, r }), [])
+  // Só conta para "salvar" quando o modo tem banco (no Direto o painel nem aparece).
+  const comBanco = !!relato && relato.repasse !== null
+  const financiamentoSalvo = comBanco && financiamento ? financiamento : null
+
   // "Sujo" = diferente do que está no banco (ou, no fluxo novo, do ponto de partida).
-  const assinatura = relato ? JSON.stringify({ nome: nome.trim(), modo, shared, estado: relato.estado }) : null
+  const assinatura = relato
+    ? JSON.stringify({ nome: nome.trim(), modo, shared, estado: relato.estado, financiamento: financiamentoSalvo?.e ?? null })
+    : null
   const [referencia, setReferencia] = useState<string | null>(null)
   useEffect(() => {
     if (referencia === null && assinatura !== null) setReferencia(assinatura)
@@ -94,8 +106,15 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
       if (precisaSalvar || !f) {
         f = await db.leadFluxos.salvar({
           leadId: lead.id, fluxoId: atual?.fluxoId ?? null, nome: nome.trim(), modo,
-          dados: { shared, estado: relato.estado } as LeadFluxo['dados'],
-          resumo: relato.resumo, mensagem: relato.mensagem,
+          dados: {
+            shared, estado: relato.estado,
+            ...(financiamentoSalvo ? { financiamento: financiamentoSalvo.e } : {}),
+          } as LeadFluxo['dados'],
+          resumo: {
+            ...relato.resumo,
+            ...(financiamentoSalvo?.r ? { financiamento: financiamentoSalvo.r } : {}),
+          },
+          mensagem: relato.mensagem,
         })
         // O banco confirmou a versão: a partir daqui é ela a referência.
         setAtual(f)
@@ -224,7 +243,18 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
       </header>
 
       <div className="flex-1 overflow-y-auto overscroll-contain">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6">
+        <div className="max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6">
+          <AoLadoDoFluxo
+            key={modo}
+            origem={relato?.repasse}
+            inicial={base?.dados.financiamento}
+            onEstado={aoMudarFinanciamento}
+            onSalvarNoLead={() => void gravar(false)}
+            salvando={salvando === 'salvar'}
+            cliente={shared.cliente}
+            empreendimento={shared.empreendimento}
+            corretor={corretor}
+          >
           {modo === 'pos_chaves' && (
             <PosChavesSimulator key="pos_chaves" shared={shared} onShared={onShared} corretor={corretor}
               inicial={inicial as EstadoPosChaves | undefined} onRelato={aoRelatar} />
@@ -237,6 +267,7 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
             <AssociativoSimulator key="associativo" shared={shared} onShared={onShared} corretor={corretor}
               inicial={inicial as EstadoAssociativo | undefined} onRelato={aoRelatar} />
           )}
+          </AoLadoDoFluxo>
         </div>
       </div>
     </div>,

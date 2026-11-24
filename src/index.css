@@ -2935,6 +2935,46 @@ button.pulse-pilula:hover { border-color: var(--line-strong); box-shadow: 0 10px
 /* O fundo do palco: a Folha com um véu Marinho, como antes, mais limpo. */
 .pulse-palco-hero { border-radius: 34px; }
 
+/* ── Régua (slider) do Simulador de financiamento — 24/11/2026 ─────────────
+   O trecho já percorrido em Champanhe (--regua-p vem do componente), o resto
+   na linha. Botão de 18px com anel de foco; alvo de toque pela altura de 24px. */
+.regua {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.regua::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--brand-fill) 0 var(--regua-p, 0%), var(--line-strong) var(--regua-p, 0%) 100%);
+}
+.regua::-moz-range-track {
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--brand-fill) 0 var(--regua-p, 0%), var(--line-strong) var(--regua-p, 0%) 100%);
+}
+.regua::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px; margin-top: -6.5px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--brand-fill-deep);
+  box-shadow: 0 1px 4px rgba(11, 26, 58, 0.25);
+  transition: transform 140ms ease;
+}
+.regua::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--brand-fill-deep);
+  box-shadow: 0 1px 4px rgba(11, 26, 58, 0.25);
+}
+.regua:active::-webkit-slider-thumb { transform: scale(1.12); }
+.regua:focus { outline: none; }
+.regua:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--brand-tint); }
+.regua:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--brand-tint); }
 .pulse-equipe-compacta { gap: 10px; padding: 6px 14px 6px 6px; }
 /* O holofote acende um halo champanhe em volta da pílula branca. */
 .pulse-equipe-foco {

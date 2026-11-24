@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { PagamentoBase, ReforcoAvulso, ReforcoModo, SharedFields, SimuladorModo } from './types'
 import type { Indice, Sistema, MesAno } from '../associativo/calc'
+import type { EstadoFinanciamento, RepasseDoFluxo, ResumoFinanciamento } from '../financiamento/estado'
 
 /**
  * Fluxo salvo — o formato em que uma simulação é guardada e reaberta.
@@ -62,6 +63,8 @@ export interface ResumoFluxo {
   saldoFinanciar?: number
   /** a frase pronta da lista: "R$ 600.000,00 · entrada R$ 60.000,00 · 36× de R$ 2.500,00" */
   linha: string
+  /** Simulador de financiamento salvo junto (24/11/2026) — congelado como o resto */
+  financiamento?: ResumoFinanciamento
 }
 
 /** O que um modo do simulador conta a quem o hospeda, a cada mudança. */
@@ -71,11 +74,18 @@ export interface RelatoDoSimulador<E> {
   /** texto do WhatsApp; vazio enquanto a simulação não fecha */
   mensagem: string
   resumo: ResumoFluxo
+  /**
+   * O que o Simulador de financiamento lê deste modo (24/11/2026). null = o
+   * modo não tem banco (Direto com a construtora). Só leitura.
+   */
+  repasse?: RepasseDoFluxo | null
 }
 
 export interface DadosDoFluxo<M extends SimuladorModo = SimuladorModo> {
   shared: SharedFields
   estado: EstadoPorModo[M]
+  /** estado do Simulador de financiamento ao lado, quando foi salvo junto */
+  financiamento?: EstadoFinanciamento
 }
 
 /** Uma versão salva de um fluxo, como o banco devolve (lead_fluxos_list). */

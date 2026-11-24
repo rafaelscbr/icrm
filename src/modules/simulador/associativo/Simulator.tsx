@@ -291,6 +291,12 @@ export function AssociativoSimulator({ shared, onShared, corretor, inicial, onRe
       parcelasQtd: cfg.parcelasQtd, parcelaValor: parcelaValorEf,
       saldoFinanciar: result.saldoFinanciar,
     }),
+    repasse: {
+      valorImovel: shared.valorTotal, pagoAteChaves: result.pagoNaObra,
+      entrega: cfg.entrega || undefined, indice: cfg.indice,
+      // sem taxa no fluxo, o financiamento usa a média de 12 meses do índice
+      indiceAnual: cfg.aplicarCorrecao && cfg.taxaIndiceAnual > 0 ? cfg.taxaIndiceAnual : undefined,
+    },
   })
 
   /** Balões anuais (12ª, 24ª… parcela) convertidos em lista editável com data. */

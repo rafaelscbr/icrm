@@ -28,14 +28,15 @@ const ROTULO: Record<LeadProfileField, string> = {
   objetivo: 'Objetivo', renda: 'Renda familiar', entrada: 'Entrada', fgts: 'FGTS',
   prazo: 'Quando', tipologia: 'Tipologia', capacidade: 'Capacidade',
   interesse_visita: 'Visita', regioes: 'Regiões', tipologias: 'Tipologias',
+  idade: 'Idade',
 }
 
 /** O corretor pode apurar estes; os demais só existem se o formulário perguntou. */
-const EDITAVEIS: LeadProfileField[] = ['objetivo', 'renda', 'entrada', 'fgts', 'prazo', 'tipologia']
+const EDITAVEIS: LeadProfileField[] = ['objetivo', 'renda', 'entrada', 'fgts', 'prazo', 'tipologia', 'idade']
 
 /** Ordem de leitura, em pares: por que compra / quando · quanto ganha / quanto tem · resto. */
 const ORDEM: LeadProfileField[] = [
-  'objetivo', 'prazo', 'renda', 'entrada', 'fgts', 'tipologia', 'capacidade', 'interesse_visita',
+  'objetivo', 'prazo', 'renda', 'entrada', 'idade', 'fgts', 'tipologia', 'capacidade', 'interesse_visita',
 ]
 
 /** Faixa curta e legível: "R$ 8 mil – 15 mil", "até R$ 25 mil", "R$ 30 mil ou mais". */
@@ -141,6 +142,9 @@ export function PerfilDeclarado({ leadId, perfil }: { leadId: string; perfil: Pe
 
   const campos = ORDEM.filter(c => data.profile[c])
   const ultimoForm = data.forms[0]
+  // Idade decide o prazo do financiamento: entra no "falta descobrir" (a RPC
+  // do perfil não a conhece como pendência).
+  const faltando: LeadProfileField[] = data.profile.idade ? data.missing : [...data.missing, 'idade']
   const prefs = ([
     { key: 'regioes'    as const, label: 'Procura em', vazio: 'Onde ele procura?' },
     { key: 'tipologias' as const, label: 'Tipologias', vazio: 'Quantos dormitórios?' },
@@ -209,11 +213,11 @@ export function PerfilDeclarado({ leadId, perfil }: { leadId: string; perfil: Pe
       </div>
 
       {/* O que falta descobrir — cada pendência abre o campo para preencher */}
-      {data.missing.length > 0 && (
+      {faltando.length > 0 && (
         <div className="mt-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[12.5px] text-t4 mr-0.5">Falta descobrir</span>
-            {data.missing.map(m => (
+            {faltando.map(m => (
               <button key={m} type="button" onClick={() => { setEditPref(null); setEditando(m) }}
                 className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[12.5px] font-medium text-t2
                            bg-surface shadow-[inset_0_0_0_1px_var(--line-strong)] hover:bg-s2 transition-colors">
@@ -221,7 +225,7 @@ export function PerfilDeclarado({ leadId, perfil }: { leadId: string; perfil: Pe
               </button>
             ))}
           </div>
-          {editando && data.missing.includes(editando) && (
+          {editando && faltando.includes(editando) && (
             <div className="mt-3">
               <LeadProfileEditor leadId={leadId} field={editando} onSaved={aposSalvar} onCancel={() => setEditando(null)} />
             </div>

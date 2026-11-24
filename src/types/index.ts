@@ -146,6 +146,8 @@ export type LeadProfileField =
    * lançamentos. Guardadas como { values: string[], labels: string[] }.
    */
   | 'regioes' | 'tipologias'
+  /** Idade do comprador mais velho (24/11/2026): define o prazo do financiamento. */
+  | 'idade'
 
 export interface LeadProfileValue {
   /** Valor canônico: 'morar' | 'investir' | 'sim' | 'imediato' | '2'… */
@@ -329,6 +331,8 @@ export interface Development {
   status: DevelopmentStatus
   regime: DevelopmentRegime
   deliveryEstimate?: string // 'YYYY-MM'
+  /** Índice que corrige o saldo até as chaves (migração 111). */
+  indiceCorrecao?: 'incc' | 'cub'
   /** comissão bruta da Souza sobre o VGV, em % (5 nos lançamentos; pronto pode ser 6) */
   commissionPct: number
   // Faixa de valor das unidades

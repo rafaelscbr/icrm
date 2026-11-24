@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Calculator, Key, Building2, Users } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Abas } from '../../components/shared/Abas'
@@ -7,6 +7,9 @@ import { SimuladorModo, SharedFields } from './shared/types'
 import { PosChavesSimulator } from './posChaves/Simulator'
 import { DiretoSimulator } from './direto/Simulator'
 import { AssociativoSimulator } from './associativo/Simulator'
+import { AoLadoDoFluxo } from './financiamento/AoLadoDoFluxo'
+import type { RepasseDoFluxo } from './financiamento/estado'
+import type { RelatoDoSimulador } from './shared/fluxo'
 
 // Shell do simulador: quadro comum das telas (PageLayout), seletor de modo e
 // renderização do modo ativo. Cada modo vive em sua própria pasta (calc.ts +
@@ -38,12 +41,17 @@ export function SimuladorPage() {
   })
   const onShared = (patch: Partial<SharedFields>) => setShared(prev => ({ ...prev, ...patch }))
 
+  // O Simulador de financiamento ao lado só LÊ o que o modo ativo relata.
+  const [repasse, setRepasse] = useState<RepasseDoFluxo | null | undefined>(undefined)
+  const aoRelatar = useCallback((r: RelatoDoSimulador<unknown>) => setRepasse(r.repasse), [])
+
   return (
     <PageLayout
       icon={Calculator}
       iconTom="marca"
       title="Simulador de *fluxo*"
       subtitle="Preencha os campos: a proposta sai em imagem e em texto pronto para o WhatsApp"
+      largura="quadro"
       band={
         <Abas
           abas={MODOS}
@@ -54,15 +62,22 @@ export function SimuladorPage() {
         />
       }
     >
-      {modo === 'pos_chaves' && (
-        <PosChavesSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} />
-      )}
-      {modo === 'direto' && (
-        <DiretoSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} />
-      )}
-      {modo === 'associativo' && (
-        <AssociativoSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} />
-      )}
+      <AoLadoDoFluxo
+        origem={repasse}
+        cliente={shared.cliente}
+        empreendimento={shared.empreendimento}
+        corretor={profile?.name ?? ''}
+      >
+        {modo === 'pos_chaves' && (
+          <PosChavesSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} onRelato={aoRelatar} />
+        )}
+        {modo === 'direto' && (
+          <DiretoSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} onRelato={aoRelatar} />
+        )}
+        {modo === 'associativo' && (
+          <AssociativoSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} onRelato={aoRelatar} />
+        )}
+      </AoLadoDoFluxo>
     </PageLayout>
   )
 }

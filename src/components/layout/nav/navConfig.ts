@@ -81,7 +81,7 @@ export const navSections: Array<{ label: string; items: NavEntry[] }> = [
           { key: 'ligacoes', to: '/prospeccao/ligacoes', icon: Phone, label: 'Ligações WhatsApp', end: false },
         ],
       },
-      { key: 'simulador',   to: '/simulador',    icon: Calculator,     label: 'Simulador',     end: false },
+      { key: 'simulador',   to: '/simulador',    icon: Calculator,     label: 'Simuladores',   end: false },
     ],
   },
   {

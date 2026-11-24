@@ -10,6 +10,7 @@ import { EstadoTela } from '../components/shared/EstadoTela'
 import { SecaoTitulo, Rotulo, Chip, IconeTom } from '../components/shared/visual'
 import { useAuthStore, Profile } from '../store/useAuthStore'
 import { mensagemDeErro } from '../lib/erros'
+import { BancosETaxas } from './admin/BancosETaxas'
 import toast from 'react-hot-toast'
 
 /**
@@ -42,7 +43,7 @@ const ALL_MENU_ITEMS = [
   { key: 'vendas',      label: 'Vendas',             section: 'Comercial' },
   { key: 'disparos',    label: 'Prospecção · Disparos WhatsApp', section: 'Comercial' },
   { key: 'ligacoes',    label: 'Prospecção · Ligações WhatsApp', section: 'Comercial' },
-  { key: 'simulador',   label: 'Simulador',          section: 'Comercial' },
+  { key: 'simulador',   label: 'Simuladores',        section: 'Comercial' },
   { key: 'performance', label: 'Performance',        section: 'Análise'   },
 ]
 
@@ -218,6 +219,8 @@ export function AdminPage() {
               </div>
             )}
           </section>
+
+          <BancosETaxas />
         </div>
       </EstadoTela>
 
