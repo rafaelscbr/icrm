@@ -3,7 +3,7 @@ import type { Fit, LeadIntel, Temperature } from '../../lib/intelligence'
 import type { KanbanSort } from '../../store/useKanbanPrefs'
 import { slaActive } from './SlaBadge'
 import { avisoReentrada, reentradaPrimeiro } from './reentrada'
-import { msSemContato, semContatoHaMaisDe } from './contato'
+import { msSemContato, semContatoHaMaisDe, tomDoContato } from './contato'
 
 /**
  * Filtros do funil — a regra, sem tela.
@@ -38,6 +38,11 @@ export interface FiltrosLead {
   sla: boolean
   /** voltou a se cadastrar e o dono ainda não viu */
   voltou: boolean
+  /**
+   * Followup atrasado: mais de 24h sem contato no funil aberto — a mesma régua
+   * da cor do cartão (contato.ts → tomDoContato). Filtrar pela cor que se vê.
+   */
+  atrasado: boolean
   semContato: JanelaContato | null
   entrada: PeriodoEntrada | null
   /** YYYY-MM-DD — só no período personalizado */
@@ -47,7 +52,7 @@ export interface FiltrosLead {
 
 export const FILTROS_VAZIOS: FiltrosLead = {
   busca: '', etapas: [], origens: [], temperaturas: [], encaixes: [], corretores: [], produtos: [],
-  prioridade: false, sla: false, voltou: false, semContato: null,
+  prioridade: false, sla: false, voltou: false, atrasado: false, semContato: null,
   entrada: null, entradaDe: '', entradaAte: '',
 }
 
@@ -195,6 +200,7 @@ export function passa(l: Lead, f: FiltrosLead, ctx: ContextoFiltro, exceto?: Fac
   if (usa('prioridade') && f.prioridade && !l.flagged) return false
   if (usa('sla') && f.sla && !slaActive(l)) return false
   if (usa('voltou') && f.voltou && !avisoReentrada(l)) return false
+  if (usa('atrasado') && f.atrasado && tomDoContato(l, agora) !== 'atrasado') return false
   if (usa('semContato') && f.semContato) {
     if (f.semContato === 'nunca') {
       if (l.lastContactAt) return false
@@ -227,6 +233,7 @@ export function contarFiltros(f: FiltrosLead, ctx: Pick<ContextoFiltro, 'ignorar
     + (f.prioridade ? 1 : 0)
     + (f.sla ? 1 : 0)
     + (f.voltou ? 1 : 0)
+    + (f.atrasado ? 1 : 0)
     + (f.semContato ? 1 : 0)
     + (f.entrada ? 1 : 0)
 }

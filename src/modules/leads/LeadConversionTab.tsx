@@ -274,7 +274,9 @@ function NumerosDaSafra({ c }: { c: Contagem }) {
     { chave: 'descarte',    rotulo: 'Descartados', valor: c.descartados, nota: `${pct(c.descartados, c.recebidos)} dos leads` },
   ]
   return (
-    <div className="rounded-[16px] border border-line bg-surface grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 overflow-hidden">
+    // 24/11/2026: faixa Marinho da dashboard — `.marinho` troca os tokens
+    // (texto branco, filetes claros, "viraram venda" em ouro).
+    <div className="marinho marinho-bloco grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 overflow-hidden">
       {itens.map((it, i) => (
         <div key={it.rotulo} className={`px-5 py-4 min-w-0 border-line ${i > 0 ? 'xl:border-l' : ''} ${i % 2 ? 'border-l md:border-l-0' : ''} ${i % 3 ? 'md:border-l' : ''} ${i >= 2 ? 'border-t md:border-t-0' : ''} ${i >= 3 ? 'md:border-t xl:border-t-0' : ''}`}>
           <p className="flex items-center gap-2 text-[12.5px] text-t3 truncate">

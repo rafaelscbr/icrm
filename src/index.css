@@ -2848,3 +2848,25 @@ button.perfil-celula:focus-visible { outline: 2px solid var(--brand); outline-of
 .list-surface.bento, html.light .list-surface.bento {
   box-shadow: 0 1px 2px rgba(15, 39, 89, 0.04), 0 24px 48px -32px rgba(15, 39, 89, 0.35);
 }
+
+/* ── Leads: o followup atrasado vira filtro de um toque (24/11/2026) ─────────
+   A cor do cartão, o número no cabeçalho da coluna, a legenda e o atalho da
+   barra ligam o MESMO filtro (leadFiltros → atrasado). */
+.kanban-atrasados { color: var(--error); }
+button.kanban-atrasados:hover, .kanban-atrasados-ativo { background-color: color-mix(in srgb, var(--error) 10%, var(--surface)); }
+.legenda-tom { border: 1px solid transparent; transition: background-color 150ms ease, border-color 150ms ease; }
+.legenda-tom:hover { background-color: color-mix(in srgb, var(--error) 7%, var(--surface)); }
+.legenda-tom-ativa, .legenda-tom-ativa:hover {
+  background-color: color-mix(in srgb, var(--error) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--error) 38%, transparent);
+  color: var(--t1);
+}
+/* Cartão com a ficha aberta: anel Marinho, como a linha escolhida da dashboard. */
+.kanban-card.kanban-card-aberto {
+  box-shadow: 0 0 0 2px #1D4396, 0 16px 32px -18px rgba(15, 39, 89, 0.7) !important;
+}
+/* Linha da lista de leads com followup atrasado: o mesmo rosado do cartão. */
+.lista-linha.kanban-tom:not(.lista-linha-ativa) {
+  background-color: color-mix(in srgb, var(--tom) 7%, var(--surface));
+  border-color: color-mix(in srgb, var(--tom) 26%, transparent) !important;
+}

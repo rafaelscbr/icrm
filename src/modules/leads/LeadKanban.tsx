@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  MessageCircle, GripVertical, Phone, Star, Snowflake, Loader2,
+  MessageCircle, GripVertical, Phone, Star, AlarmClock, Loader2,
   Wifi, WifiOff, Trophy, Rows2, Rows3,
   Inbox, RefreshCw, BadgeCheck, X, Sparkles,
 } from 'lucide-react'
@@ -35,7 +35,7 @@ import { divisao, PCT_PADRAO } from './comissao'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { JOIA, degradeJoiaClaro, fundoJoiaClaro } from '../../lib/paletaJoia'
 import { ORIGEM_META } from './origens'
-import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS, tomDoContato, TOM_CONTATO } from './contato'
+import { fraseContato, tomDoContato, TOM_CONTATO } from './contato'
 import type { TomContato } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
@@ -122,8 +122,10 @@ function orderBetween(above: Lead | null, below: Lead | null): number {
 // ─── Card sortável ────────────────────────────────────────────────────────────
 
 function LeadCard({
-  lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, comissao,
+  lead, onClick, onConclude, isOverlay = false, isSaving = false, dense = false, comissao, aberto = false,
 }: {
+  /** a ficha deste lead está aberta — o cartão fica marcado em Marinho */
+  aberto?: boolean
   /** quanto o lead vale de comissão nesta visão (ver VisaoComissao) */
   comissao?: VisaoComissao
   lead: Lead; onClick: () => void
@@ -235,6 +237,7 @@ function LeadCard({
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
         ${urgente ? 'kanban-card-alerta' : ''}
         ${tom && !isOverlay ? TOM_CONTATO[tom].classe : ''}
+        ${aberto && !isOverlay ? 'kanban-card-aberto' : ''}
         ${dense ? 'px-3 pt-2.5 pb-3' : 'px-3.5 pt-3 pb-3.5'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? '!shadow-modal kanban-card-prioridade' : ''}
@@ -473,8 +476,10 @@ function LeadCard({
 
 function KanbanColumn({
   stage, leads, total, onCardClick, onConclude, isActiveDragTarget, savingId, dense,
-  onFiltrarSemContato, filtroSemContatoAtivo, arrastando, comissao, primeira,
+  onFiltrarAtrasado, filtroAtrasadoAtivo, arrastando, comissao, primeira, abertoId,
 }: {
+  /** lead com a ficha aberta — o cartão fica marcado */
+  abertoId: string | null
   comissao: VisaoComissao
   /** a primeira seta da trilha não tem o entalhe à esquerda */
   primeira: boolean
@@ -489,20 +494,18 @@ function KanbanColumn({
   isActiveDragTarget: boolean
   savingId: string | null
   dense: boolean
-  onFiltrarSemContato?: () => void
-  filtroSemContatoAtivo: boolean
+  onFiltrarAtrasado?: () => void
+  filtroAtrasadoAtivo: boolean
 }) {
   const conf = STAGE_CONFIG[stage]
   const { isOver, setNodeRef } = useDroppable({ id: stage })
   const ids = leads.map(l => l.id)
 
   const totais = comissao.total(leads)
-  // Risco da coluna: leads em aberto sem contato além da janela de
-  // esfriamento. Mesma régua do filtro e da linha do card (contato.ts).
-  const coldCount = leads.filter(l =>
-    !l.discardReason && !l.closedAt && semContatoHaMaisDe(l, ESFRIANDO_DIAS)
-  ).length
-  const riskPct = leads.length > 0 ? Math.round((coldCount / leads.length) * 100) : 0
+  // Risco da coluna: os cartões em vermelho (followup atrasado, +24h sem
+  // contato). Mesma régua da cor, do atalho e da legenda (contato.ts).
+  const atrasados = leads.filter(l => tomDoContato(l) === 'atrasado').length
+  const riskPct = leads.length > 0 ? Math.round((atrasados / leads.length) * 100) : 0
 
   const alvo = isOver || isActiveDragTarget
   const vazia = leads.length === 0
@@ -548,28 +551,28 @@ function KanbanColumn({
             </div>
           </div>
 
-          {coldCount > 0 && (
+          {atrasados > 0 && (
             <div className="px-2 pt-1">
-              {onFiltrarSemContato ? (
+              {onFiltrarAtrasado ? (
                 <button
                   type="button"
-                  onClick={onFiltrarSemContato}
-                  aria-pressed={filtroSemContatoAtivo}
-                  title={filtroSemContatoAtivo
+                  onClick={onFiltrarAtrasado}
+                  aria-pressed={filtroAtrasadoAtivo}
+                  title={filtroAtrasadoAtivo
                     ? 'Mostrar todos os leads de novo'
-                    : `${coldCount} sem contato há mais de ${ESFRIANDO_DIAS} dias (${riskPct}%). Clique para ver só eles.`}
-                  className={`inline-flex items-center gap-1 px-1.5 h-6 -ml-1.5 rounded-md text-[12px] text-warning tabular-nums
-                    transition-colors hover:bg-warning-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-warning/40
-                    ${filtroSemContatoAtivo ? 'bg-warning-bg' : ''}`}
+                    : `${atrasados} com followup atrasado — mais de 24h sem contato (${riskPct}%). Clique para ver só eles.`}
+                  className={`kanban-atrasados inline-flex items-center gap-1 px-1.5 h-6 -ml-1.5 rounded-md text-[12px] font-semibold tabular-nums
+                    transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-error/40
+                    ${filtroAtrasadoAtivo ? 'kanban-atrasados-ativo' : ''}`}
                 >
-                  <Snowflake size={11} strokeWidth={1.8} aria-hidden />
-                  {coldCount} esfriando
-                  {filtroSemContatoAtivo && <X size={10} strokeWidth={2} aria-hidden />}
+                  <AlarmClock size={11} strokeWidth={2} aria-hidden />
+                  {atrasados} {atrasados === 1 ? 'atrasado' : 'atrasados'}
+                  {filtroAtrasadoAtivo && <X size={10} strokeWidth={2} aria-hidden />}
                 </button>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[12px] text-warning tabular-nums"
-                      title={`${coldCount} sem contato há mais de ${ESFRIANDO_DIAS} dias`}>
-                  <Snowflake size={11} strokeWidth={1.8} aria-hidden />{coldCount} esfriando
+                <span className="kanban-atrasados inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums"
+                      title={`${atrasados} com followup atrasado — mais de 24h sem contato`}>
+                  <AlarmClock size={11} strokeWidth={2} aria-hidden />{atrasados} {atrasados === 1 ? 'atrasado' : 'atrasados'}
                 </span>
               )}
             </div>
@@ -603,6 +606,7 @@ function KanbanColumn({
                 onClick={() => onCardClick(lead)}
                 onConclude={() => onConclude(lead)}
                 isSaving={savingId === lead.id}
+                aberto={abertoId === lead.id}
                 dense={dense} comissao={comissao}
               />
             ))}
@@ -647,18 +651,36 @@ function Placar({ rotulo, valor, cor, fundo, destaque = false, foto, nota, titul
 // ─── Legenda do destaque de contato ───────────────────────────────────────────
 
 /** As cores do cartão (hoje só o followup atrasado), com quantos há de cada. */
-export function LegendaContato({ porTom }: { porTom: Record<TomContato, number> }) {
-  const itens = (Object.keys(TOM_CONTATO) as TomContato[]).filter(t => porTom[t] > 0)
+export function LegendaContato({ porTom, onFiltrar, ativo = false }: {
+  porTom: Record<TomContato, number>
+  /** a legenda é também o atalho: clicar mostra só os cartões daquela cor */
+  onFiltrar?: () => void
+  ativo?: boolean
+}) {
+  const itens = (Object.keys(TOM_CONTATO) as TomContato[]).filter(t => porTom[t] > 0 || ativo)
   if (itens.length === 0) return null
   return (
     <div className="hidden sm:flex items-center gap-3 mr-2 text-[12px] text-t3" aria-label="Cores dos cartões">
-      {itens.map(t => (
-        <span key={t} className={`${TOM_CONTATO[t].classe} inline-flex items-center gap-1.5`} title={TOM_CONTATO[t].dica}>
-          <span className="kanban-tom-amostra w-3 h-3 rounded-[4px]" aria-hidden />
-          {TOM_CONTATO[t].rotulo}
-          <span className="font-semibold text-t2 tabular-nums">{porTom[t]}</span>
-        </span>
-      ))}
+      {itens.map(t => {
+        const corpo = (
+          <>
+            <span className="kanban-tom-amostra w-3 h-3 rounded-[4px]" aria-hidden />
+            {TOM_CONTATO[t].rotulo}
+            <span className="font-semibold text-t2 tabular-nums">{porTom[t]}</span>
+            {ativo && <X size={11} strokeWidth={2} aria-hidden />}
+          </>
+        )
+        return onFiltrar ? (
+          <button key={t} type="button" onClick={onFiltrar} aria-pressed={ativo}
+            title={ativo ? 'Mostrar todos os leads de novo' : `${TOM_CONTATO[t].dica} Clique para ver só eles.`}
+            className={`${TOM_CONTATO[t].classe} legenda-tom inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full cursor-pointer
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-error/40 ${ativo ? 'legenda-tom-ativa' : ''}`}>
+            {corpo}
+          </button>
+        ) : (
+          <span key={t} className={`${TOM_CONTATO[t].classe} inline-flex items-center gap-1.5`} title={TOM_CONTATO[t].dica}>{corpo}</span>
+        )
+      })}
     </div>
   )
 }
@@ -669,12 +691,12 @@ interface LeadKanbanProps {
   leads: Lead[]
   /** total por etapa sem filtro — só quando há recorte aplicado */
   totalPorEtapa?: Record<LeadFunnelStage, number>
-  /** liga/desliga o filtro "sem contato há +2d" a partir do cabeçalho da coluna */
-  onFiltrarSemContato?: () => void
-  filtroSemContatoAtivo?: boolean
+  /** liga/desliga o filtro "followup atrasado" pelo cabeçalho da coluna e pela legenda */
+  onFiltrarAtrasado?: () => void
+  filtroAtrasadoAtivo?: boolean
 }
 
-export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSemContatoAtivo = false }: LeadKanbanProps) {
+export function LeadKanban({ leads, totalPorEtapa, onFiltrarAtrasado, filtroAtrasadoAtivo = false }: LeadKanbanProps) {
   const { setStage, reorder } = useLeadsStore()
   const connected = useRealtimeStatusStore(s => s.connected)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -761,6 +783,22 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
       return acc
     }, {} as Record<LeadFunnelStage, Lead[]>)
   }, [leads, sort])
+
+  // Celular (24/11/2026): uma coluna por tela, e a primeira costuma ser
+  // "Leads", quase sempre vazia — o corretor abria o funil e via "Nada em
+  // leads". Na primeira carga o quadro já começa na primeira etapa com
+  // cartão. Só uma vez: depois disso o deslize é de quem está usando.
+  const quadroRef = useRef<HTMLDivElement>(null)
+  const posicionou = useRef(false)
+  useEffect(() => {
+    const el = quadroRef.current
+    if (posicionou.current || !el || leads.length === 0) return
+    posicionou.current = true
+    if (window.innerWidth >= 640 || el.scrollLeft > 0) return
+    const primeira = STAGES.find(st => sortedByStage[st].length > 0)
+    const coluna = primeira && primeira !== STAGES[0] ? document.getElementById(`coluna-${primeira}`) : null
+    if (coluna) el.scrollLeft += coluna.getBoundingClientRect().left - el.getBoundingClientRect().left - 4
+  }, [leads.length, sortedByStage])
 
   // Placar do topo — o que está em jogo nos leads em aberto (fora Venda).
   const resumo = useMemo(() => {
@@ -925,7 +963,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
           )}
         </div>
         <div className="ml-auto flex items-center gap-1">
-          <LegendaContato porTom={porTom} />
+          <LegendaContato porTom={porTom} onFiltrar={onFiltrarAtrasado} ativo={filtroAtrasadoAtivo} />
           <button
             onClick={() => setDense(!dense)}
             aria-pressed={dense}
@@ -952,15 +990,16 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-3 overflow-x-auto pb-4 px-1 items-stretch [justify-content:safe_center] snap-x snap-proximity scroll-px-1">
+        <div ref={quadroRef} className="flex gap-3 overflow-x-auto pb-4 px-1 items-stretch [justify-content:safe_center] snap-x snap-proximity scroll-px-1">
           {STAGES.map((stage, i) => (
             <KanbanColumn
               key={stage}
               stage={stage}
               leads={sortedByStage[stage]}
               total={totalPorEtapa?.[stage]}
-              onFiltrarSemContato={onFiltrarSemContato}
-              filtroSemContatoAtivo={filtroSemContatoAtivo}
+              onFiltrarAtrasado={onFiltrarAtrasado}
+              filtroAtrasadoAtivo={filtroAtrasadoAtivo}
+              abertoId={searchParams.get('lead')}
               onCardClick={setSelectedLead}
               onConclude={l => setConcludeId(l.id)}
               dense={dense}

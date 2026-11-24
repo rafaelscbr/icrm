@@ -74,10 +74,6 @@ export function PerformanceTab() {
           </p>
         </header>
 
-        <p className="flex items-start gap-2 rounded-[14px] border border-info-line bg-info-bg px-4 py-3 text-[13.5px] text-t1" role="note">
-          <Info size={16} strokeWidth={1.8} className="text-info flex-shrink-0 mt-px" aria-hidden />
-          <span>Ligações do 3C Plus não registradas no iCRM não aparecem aqui.</span>
-        </p>
 
         {erroOpcoes && (
           <p className="text-[13px] text-error" role="alert">
@@ -89,6 +85,12 @@ export function PerformanceTab() {
         <div className="flex items-start gap-2 justify-between flex-wrap">
           <div className="flex-1 min-w-0">
             <FiltrosBarra filtros={filtros} opcoes={opcoes} onChange={setFiltros} />
+            {/* 24/11/2026: era uma caixa azul fixa no topo, a primeira coisa da
+                aba; virou nota discreta junto dos filtros, onde ela explica. */}
+            <p className="flex items-center gap-1.5 mt-2 text-[12.5px] text-t4" role="note">
+              <Info size={13} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />
+              Ligações do 3C Plus não registradas no iCRM não aparecem aqui.
+            </p>
           </div>
           <BotaoPdf />
         </div>

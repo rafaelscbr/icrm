@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Plus, LayoutGrid, List, Gauge,
   MessageCircle, Users, UserPlus, UserX, ChevronRight, RefreshCw, Settings2,
-  Percent, Home, BadgeCheck, Snowflake, SearchX, Hourglass,
+  Percent, Home, BadgeCheck, AlarmClock, SearchX, Hourglass,
 } from 'lucide-react'
 import { avisoReentrada } from './reentrada'
 import toast from 'react-hot-toast'
@@ -39,7 +39,8 @@ import { SlaBadge } from './SlaBadge'
 import { useLeadInteractionsStore } from '../../store/useLeadInteractionsStore'
 import { LeadSettings } from './LeadSettings'
 import { ORIGEM_META } from './origens'
-import { diasSemContato, nivelContato, haQuantoTempo } from './contato'
+import { diasSemContato, haQuantoTempo, tomDoContato, TOM_CONTATO } from './contato'
+import { ListContainer } from '../../components/ui/ListContainer'
 import {
   ContextoFiltro, aplicarFiltros, contarFiltros, ordenar, chaveProduto,
 } from './leadFiltros'
@@ -75,8 +76,10 @@ function dataCurta(iso: string): string {
 
 // ─── LeadRow ──────────────────────────────────────────────────────────────────
 
-function LeadRow({ lead, onClick, mostrarEncaixe = true, agora }: {
+function LeadRow({ lead, onClick, mostrarEncaixe = true, agora, aberto = false }: {
   lead: Lead; onClick: () => void
+  /** a ficha deste lead está aberta — a linha fica em Marinho */
+  aberto?: boolean
   /** o chip de encaixe só informa quando a lista é mista — ver LeadsPage */
   mostrarEncaixe?: boolean
   agora: number
@@ -98,11 +101,10 @@ function LeadRow({ lead, onClick, mostrarEncaixe = true, agora }: {
   const conf         = STAGE_CONFIG[lead.funnelStage]
   const originConf   = ORIGEM_META[lead.origin]
   const isDiscarded  = !!lead.discardReason
-  // Tempo sem contato só é alerta no funil aberto. Descartado e ganho têm o
-  // silêncio que deveriam ter.
-  const emAberto     = !isDiscarded && !lead.closedAt
   const dias         = diasSemContato(lead, agora)
-  const nivel        = emAberto ? nivelContato(lead, agora) : 'em_dia'
+  // A mesma régua da cor do cartão no Kanban: +24h sem contato = atrasado.
+  // Descartado e ganho têm o silêncio que deveriam ter (tomDoContato devolve nulo).
+  const tom          = tomDoContato(lead, agora)
   const intel        = useIntelligenceStore(s => s.intel[lead.id])
   const aviso        = avisoReentrada(lead)
 
@@ -130,7 +132,9 @@ function LeadRow({ lead, onClick, mostrarEncaixe = true, agora }: {
       tabIndex={0}
       onKeyDown={aoTeclarAbrir(onClick)}
       aria-label={`Abrir lead ${displayName}`}
-      className={`lista-linha flex items-center gap-4 px-5 py-3.5 hover:bg-s3/50 transition-colors cursor-pointer border-b border-line last:border-0 group row-accent
+      className={`lista-linha flex items-center gap-4 px-5 py-3 cursor-pointer group
+        ${tom ? TOM_CONTATO[tom].classe : ''}
+        ${aberto ? 'lista-linha-ativa marinho' : ''}
         ${isDiscarded ? 'opacity-50' : ''}
       `}
     >
@@ -235,8 +239,8 @@ function LeadRow({ lead, onClick, mostrarEncaixe = true, agora }: {
           : `Nenhum contato registrado · entrou em ${new Date(lead.createdAt).toLocaleDateString('pt-BR')}`}
       >
         <span className={`inline-flex items-center gap-1 text-xs tabular-nums truncate
-          ${nivel === 'parado' ? 'text-error font-semibold' : nivel === 'esfriando' ? 'text-warning font-semibold' : 'text-t2'}`}>
-          {nivel !== 'em_dia' && <Snowflake size={11} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />}
+          ${tom ? 'kanban-frase' : 'text-t2'}`}>
+          {tom && <AlarmClock size={11} strokeWidth={2} className="flex-shrink-0" aria-hidden />}
           {lead.lastContactAt ? haQuantoTempo(dias) : 'sem contato'}
         </span>
         <span className="text-[11px] text-t4 tabular-nums truncate">entrou {dataCurta(lead.createdAt)}</span>
@@ -627,29 +631,31 @@ export function LeadsPage() {
             <LeadKanban
               leads={filtered}
               totalPorEtapa={totalPorEtapa}
-              filtroSemContatoAtivo={filtros.semContato === '2'}
-              // Descartado e ganho não esfriam: o atalho só existe no funil aberto.
-              onFiltrarSemContato={listView === 'active'
-                ? () => definir({ semContato: filtros.semContato === '2' ? null : '2' })
+              filtroAtrasadoAtivo={filtros.atrasado}
+              // Descartado e ganho não atrasam: o atalho só existe no funil aberto.
+              // Cabeçalho da coluna e legenda ligam o MESMO filtro do atalho.
+              onFiltrarAtrasado={listView === 'active'
+                ? () => definir({ atrasado: !filtros.atrasado })
                 : undefined}
             />
           ) : (
-            <div className="rounded-xl border border-line overflow-hidden list-surface stagger-children">
+            <ListContainer>
               {/* O cabeçalho espelha a linha: mesmas larguras, mesma ordem. */}
-              <div className="flex items-center gap-4 px-5 py-2.5 border-b border-line bg-s3/20 select-none">
+              <div className="lista-cabecalho flex items-center gap-4 px-5 pt-3 pb-1.5 select-none text-[12px] font-semibold text-t4" role="presentation">
                 <span className="w-8 flex-shrink-0" aria-hidden />
-                <span className="flex-1 min-w-0 md:max-w-[46%] font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Nome</span>
-                <span className="hidden md:block w-[150px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Produto</span>
-                <span className="hidden lg:block w-[92px] flex-shrink-0 text-right font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Valor</span>
-                <span className="hidden sm:block w-[112px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Contato</span>
-                <span className="hidden xl:block w-[104px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Origem</span>
-                <span className="w-[118px] flex-shrink-0 font-label text-[11px] font-bold uppercase tracking-[0.12em] text-t4">Etapa</span>
+                <span className="flex-1 min-w-0 md:max-w-[46%]">Nome</span>
+                <span className="hidden md:block w-[150px] flex-shrink-0">Produto</span>
+                <span className="hidden lg:block w-[92px] flex-shrink-0 text-right">Valor</span>
+                <span className="hidden sm:block w-[112px] flex-shrink-0">Contato</span>
+                <span className="hidden xl:block w-[104px] flex-shrink-0">Origem</span>
+                <span className="w-[118px] flex-shrink-0">Etapa</span>
                 <span className="ml-auto w-[52px] flex-shrink-0" aria-hidden />
               </div>
               {filtered.map(lead => (
-                <LeadRow key={lead.id} lead={lead} mostrarEncaixe={encaixeMisto} agora={agora} onClick={() => setSelectedLead(lead)} />
+                <LeadRow key={lead.id} lead={lead} mostrarEncaixe={encaixeMisto} agora={agora}
+                         aberto={openLeadId === lead.id} onClick={() => setSelectedLead(lead)} />
               ))}
-            </div>
+            </ListContainer>
           )}
         </>
       )}

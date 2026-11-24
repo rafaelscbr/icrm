@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
+  AlarmClock,
   Search, X, SlidersHorizontal, ArrowDownUp, Trophy, Trash2,
   Timer, Snowflake, Star, Thermometer, RefreshCw, CalendarPlus,
   Radar, CalendarRange, GitBranch, Target, Megaphone, Home, User,
@@ -18,7 +19,7 @@ import { Input } from '../../components/ui/Input'
 import { TOM, Tom, SecaoTitulo, Dica } from '../../components/shared/visual'
 import { slaActive } from './SlaBadge'
 import { avisoReentrada } from './reentrada'
-import { semContatoHaMaisDe, ESFRIANDO_DIAS } from './contato'
+import { semContatoHaMaisDe, tomDoContato } from './contato'
 import { ORIGEM_META, ORIGENS } from './origens'
 import {
   FiltrosLead, Faceta, ContextoFiltro, JanelaContato, PeriodoEntrada,
@@ -67,11 +68,14 @@ const ATALHOS: Atalho[] = [
     casa: l => slaActive(l),
   },
   {
-    id: 'esfriando', label: `Sem contato +${ESFRIANDO_DIAS}d`, icon: Snowflake, tom: 'atencao', faceta: 'semContato',
-    titulo: `Mais de ${ESFRIANDO_DIAS} dias sem WhatsApp, ligação ou tarefa concluída registrados`,
-    ativo: f => f.semContato === String(ESFRIANDO_DIAS),
-    alternar: on => ({ semContato: on ? (String(ESFRIANDO_DIAS) as JanelaContato) : null }),
-    casa: (l, _c, agora) => semContatoHaMaisDe(l, ESFRIANDO_DIAS, agora),
+    // 24/11/2026: no lugar do "Sem contato +2d". O atalho filtra pela MESMA
+    // régua da cor do cartão (24h, contato.ts) — o que está vermelho no quadro
+    // é exatamente o que aparece ao ligar. As janelas de 2, 7, 15 e 30 dias
+    // continuam no painel de filtros.
+    id: 'atrasado', label: 'Followup atrasado', icon: AlarmClock, tom: 'risco', faceta: 'atrasado',
+    titulo: 'Mais de 24 horas sem WhatsApp, ligação ou tarefa concluída — os cartões em vermelho',
+    ativo: f => f.atrasado, alternar: on => ({ atrasado: on }),
+    casa: (l, _c, agora) => tomDoContato(l, agora) === 'atrasado',
   },
   {
     id: 'prioridade', label: 'Prioridade', icon: Star, tom: 'marca', faceta: 'prioridade',
@@ -335,7 +339,7 @@ function descreverFiltros(
   if (!ctx.ignorarEtapa && f.etapas.length > 0) {
     out.push({ id: 'etapas', texto: `Etapa: ${listaCurta(f.etapas.map(e => STAGE_THEME[e].label))}`, limpar: { etapas: [] } })
   }
-  if (f.semContato && !atalho('esfriando')) {
+  if (f.semContato) {
     out.push({ id: 'semContato', texto: f.semContato === 'nunca' ? 'Nunca contatado' : `Sem contato: ${JANELA_LABEL[f.semContato].toLowerCase()}`, limpar: { semContato: null } })
   }
   if (f.entrada && !atalho('hoje')) {
@@ -388,7 +392,7 @@ export function PainelDeFiltros({
   // Base de cada faceta calculada uma vez por render do painel.
   const semFaceta = useMemo(() => {
     const facetas: Faceta[] = ['etapas', 'origens', 'temperaturas', 'encaixes', 'corretores', 'produtos',
-      'prioridade', 'sla', 'voltou', 'semContato', 'entrada']
+      'prioridade', 'sla', 'voltou', 'atrasado', 'semContato', 'entrada']
     const out = {} as Record<Faceta, Lead[]>
     if (!isOpen) return out
     for (const fa of facetas) out[fa] = aplicarFiltros(base, filtros, ctx, fa)
@@ -430,6 +434,9 @@ export function PainelDeFiltros({
           <Opcao ativo={filtros.sla} onClick={() => definir({ sla: !filtros.sla })}
                  icon={Timer} tom="risco" label="1º contato pendente"
                  count={conta('sla', l => slaActive(l))} />
+          <Opcao ativo={filtros.atrasado} onClick={() => definir({ atrasado: !filtros.atrasado })}
+                 icon={AlarmClock} tom="risco" label="Followup atrasado"
+                 count={conta('atrasado', l => tomDoContato(l, agora) === 'atrasado')} />
           <Opcao ativo={filtros.prioridade} onClick={() => definir({ prioridade: !filtros.prioridade })}
                  icon={Star} tom="marca" label="Prioridade"
                  count={conta('prioridade', l => !!l.flagged)} />

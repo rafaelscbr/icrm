@@ -117,7 +117,8 @@ export function LeadFollowupTab({ leads, onOpenLead }: Props) {
       </div>
 
       {/* ── O retrato: anel + níveis ──────────────────────────────────────── */}
-      <section className="bento p-5 lg:p-7 flex flex-col md:flex-row md:items-center gap-6 lg:gap-10" aria-label="Situação do followup">
+      {/* 24/11/2026: o retrato em bloco Marinho, como o perfil da dashboard. */}
+      <section className="marinho marinho-bloco p-5 lg:p-7 flex flex-col md:flex-row md:items-center gap-6 lg:gap-10" aria-label="Situação do followup">
         <Anel pct={resumo.pctEmDia} />
         <div className="min-w-0 flex-1">
           <p className="font-display text-[20px] lg:text-[22px] font-bold tracking-[-0.02em] text-t1 leading-snug" style={{ textWrap: 'balance' } as React.CSSProperties}>
