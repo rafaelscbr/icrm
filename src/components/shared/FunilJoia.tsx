@@ -51,10 +51,12 @@ const larguraTexto = (t: string, fs: number) => t.length * fs * 0.6
 /** Abaixo disto, as taxas vão para o vão entre as fatias. */
 const ESTREITO = 520
 
-export function FunilJoia({ etapas, compacto = false, rotulo }: {
+export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false }: {
   etapas: EtapaFunil[]
   /** versão de cartão: fatias mais baixas, mesma forma */
   compacto?: boolean
+  /** sobre fundo Marinho (painel da dashboard): taxas e rótulos claros */
+  escuro?: boolean
   /** descrição para leitor de tela */
   rotulo: string
 }) {
@@ -73,6 +75,12 @@ export function FunilJoia({ etapas, compacto = false, rotulo }: {
   }, [])
 
   const estreito = W > 0 && W < ESTREITO
+  // Cores das taxas: no claro, o tom médio da etapa; no Marinho, o claro
+  // clareado (o médio some no azul) e o fundo da etiqueta em branco translúcido.
+  const corTaxa = (j: LeadFunnelStage) => (escuro ? clarear(JOIA[j].claro, 0.55) : JOIA[j].medio)
+  const fundoTaxa = (j: LeadFunnelStage) => (escuro ? '#FFFFFF' : JOIA[j].medio)
+  const opFundoTaxa = escuro ? 0.09 : 0.12
+  const corLado = escuro ? 'rgba(255,255,255,0.62)' : 'var(--t4)'
 
   // Tipografia em px — igual em qualquer largura.
   const fsNome = compacto ? 12 : (estreito ? 14 : 15)
@@ -126,7 +134,7 @@ export function FunilJoia({ etapas, compacto = false, rotulo }: {
           {fatias.map(f => (
             <g key={f.chave} className="funil-fatia" style={{ animationDelay: `${f.i * 90}ms` }}>
               <polygon points={f.pontos} fill={`url(#${id}-${f.chave})`}
-                       stroke="rgba(255,255,255,0.7)" strokeWidth={1.5} strokeLinejoin="round" />
+                       stroke={escuro ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.7)'} strokeWidth={1.5} strokeLinejoin="round" />
               <text x={cx} y={f.y + H * 0.36} textAnchor="middle"
                     style={{ fill: 'rgba(255,255,255,0.95)', fontSize: fsNome, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                 {f.nome}
@@ -142,7 +150,7 @@ export function FunilJoia({ etapas, compacto = false, rotulo }: {
           {fatias.slice(1).map(f => {
             const anterior = etapas[f.i - 1]
             const meio = f.y - VAO / 2
-            const cor = JOIA[f.joia].medio
+            const cor = corTaxa(f.joia)
             const passoTxt = `↓ ${pct(f.n, anterior.n)}`
 
             if (estreito) {
@@ -152,11 +160,11 @@ export function FunilJoia({ etapas, compacto = false, rotulo }: {
               return (
                 <g key={`taxa-${f.chave}`} aria-hidden>
                   <rect x={cx - w / 2} y={meio - fsTaxa * 0.85} width={w} height={fsTaxa * 1.7} rx={fsTaxa * 0.85}
-                        fill={cor} fillOpacity={0.12} />
+                        fill={fundoTaxa(f.joia)} fillOpacity={opFundoTaxa} />
                   <text x={cx} y={meio + fsTaxa * 0.36} textAnchor="middle" className="tabular-nums">
                     <tspan style={{ fill: cor, fontSize: fsTaxa, fontWeight: 800 }}>{passoTxt}</tspan>
                     <tspan style={{ fill: cor, fontSize: fsTaxa, fontWeight: 600 }}> avançam</tspan>
-                    <tspan style={{ fill: 'var(--t4)', fontSize: fsLado, fontWeight: 600 }}>{total}</tspan>
+                    <tspan style={{ fill: corLado, fontSize: fsLado, fontWeight: 600 }}>{total}</tspan>
                   </text>
                 </g>
               )
@@ -168,13 +176,13 @@ export function FunilJoia({ etapas, compacto = false, rotulo }: {
             return (
               <g key={`taxa-${f.chave}`} aria-hidden>
                 <rect x={xd} y={meio - fsTaxa * 0.9} width={w} height={fsTaxa * 1.8} rx={fsTaxa * 0.9}
-                      fill={cor} fillOpacity={0.12} />
+                      fill={fundoTaxa(f.joia)} fillOpacity={opFundoTaxa} />
                 <text x={xd + w / 2} y={meio + fsTaxa * 0.36} textAnchor="middle" className="tabular-nums"
                       style={{ fill: cor, fontSize: fsTaxa, fontWeight: 800 }}>
                   {passoTxt}
                 </text>
                 <text x={xe} y={meio + fsLado * 0.36} textAnchor="end" className="tabular-nums"
-                      style={{ fill: 'var(--t4)', fontSize: fsLado, fontWeight: 600 }}>
+                      style={{ fill: corLado, fontSize: fsLado, fontWeight: 600 }}>
                   {pct(f.n, topo)} do total
                 </text>
               </g>

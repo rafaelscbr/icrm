@@ -1,34 +1,31 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowRight, Building2, RefreshCw } from 'lucide-react'
 import { destacar } from '../../components/shared/Destaque'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { FunilJoia } from '../../components/shared/FunilJoia'
 import type { EtapaFunil } from '../../components/shared/FunilJoia'
-import { Segmentado } from '../../components/shared/visual'
 import { useAuthStore } from '../../store/useAuthStore'
+import type { Profile } from '../../store/useAuthStore'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { db } from '../../lib/db'
 import { mensagemDeErro } from '../../lib/erros'
 import { formatCurrencyRound } from '../../lib/formatters'
-import { JOIA } from '../../lib/paletaJoia'
 import { fmtTaxa, taxa } from '../leads/conversao'
 import { normalizar } from '../leads/safra'
 import type { FunilSafra } from '../leads/safra'
 import type { Lead, LeadFunnelStage, Sale } from '../../types'
-import {
-  ETAPAS_ABERTAS, inicioDoPeriodo, montarFunis, PERIODOS,
-} from './funis'
-import type { Dinheiro, EtapaAberta, Periodo, Recorte } from './funis'
+import { inicioDoPeriodo, montarFunis, PERIODOS } from './funis'
+import type { Dinheiro, Periodo, Recorte } from './funis'
 
 /**
- * Funil comercial da dashboard principal (Rafael, 23/11/2026): o funil geral,
- * um por produto e um por corretor — conversão, VGV em andamento, VGV vendido,
- * comissão em pipeline e comissão recebida, dividida entre corretor e Souza.
+ * Funil comercial da dashboard principal — redesenho de 24/11/2026 inspirado
+ * na referência de "Invoices" que o Rafael mostrou: um painel branco com a
+ * LISTA à esquerda (a imobiliária inteira, cada produto, cada corretor com a
+ * foto) e o DETALHE em Marinho à direita (o funil e o dinheiro de quem está
+ * selecionado). Antes eram três grades de cartões, uma embaixo da outra.
  *
- * Fica logo abaixo da meta: é a resposta a "de onde vem o que falta".
- *
- * Os três tempos estão escritos na tela, porque misturá-los mente:
+ * Os três tempos continuam escritos na tela, porque misturá-los mente:
  *   conversão = safra do período · em andamento = agora · vendido = período.
  * A conta está em funis.ts; aqui é só desenho.
  */
@@ -42,21 +39,13 @@ const PASSOS: { chave: 'recebidos' | 'atendimento' | 'visita' | 'proposta' | 've
   { chave: 'venda',       nome: 'Vendas',      joia: 'venda' },
 ]
 
-/** As fatias do funil de um recorte, na régua da safra. */
 function etapasDoFunil(r: Recorte): EtapaFunil[] {
   return PASSOS.map(p => ({ chave: p.chave, nome: p.nome, n: r.safra[p.chave], joia: p.joia }))
 }
 
-const NOME_ABERTA: Record<EtapaAberta, string> = {
-  chegada: '1º contato', atendimento: 'Atendimento', visita: 'Visita', proposta: 'Proposta',
-}
-const JOIA_ABERTA: Record<EtapaAberta, LeadFunnelStage> = {
-  chegada: 'lead', atendimento: 'atendimento', visita: 'visita', proposta: 'proposta',
-}
-
 const CHAVE_PERIODO = 'icrm:dashboard:periodo-funil'
 
-function periodoSalvo(): Periodo {
+export function periodoSalvo(): Periodo {
   try {
     const v = localStorage.getItem(CHAVE_PERIODO)
     if (v && PERIODOS.some(p => p.value === v)) return v as Periodo
@@ -64,27 +53,33 @@ function periodoSalvo(): Periodo {
   return '3m'
 }
 
+export function salvarPeriodo(p: Periodo) {
+  try { localStorage.setItem(CHAVE_PERIODO, p) } catch { /* sem armazenamento */ }
+}
+
 const R = formatCurrencyRound
 
-// ─── Componente ───────────────────────────────────────────────────────────────
+// ─── Os dados ─────────────────────────────────────────────────────────────────
 
-export function FunisComerciais({ leads, sales, corretor, mostrarCorretores }: {
+export type Funis = ReturnType<typeof montarFunis>
+
+/**
+ * Lê a safra do período e monta os funis (geral, por produto, por corretor).
+ * Fica num hook porque a dashboard usa o resultado em dois lugares: o perfil
+ * no topo (o vendido do período) e o painel do funil.
+ */
+export function useFunisComerciais({ leads, sales, corretor, periodo }: {
   leads: Lead[]
   sales: Sale[]
-  /** corretor da visão; null = imobiliária inteira */
   corretor: string | null
-  /** a grade por corretor — só na visão global do admin */
-  mostrarCorretores: boolean
+  periodo: Periodo
 }) {
-  const { isAdmin, profile, allProfiles } = useAuthStore()
+  const { profile, allProfiles } = useAuthStore()
   const { developments, carregarCarteira } = useDevelopmentsStore()
-
-  const [periodo, setPeriodo] = useState<Periodo>(periodoSalvo)
   const [safra, setSafra] = useState<FunilSafra | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [tentativa, setTentativa] = useState(0)
-
   const inicio = inicioDoPeriodo(periodo)
 
   useEffect(() => { void carregarCarteira() }, [carregarCarteira])
@@ -99,11 +94,6 @@ export function FunisComerciais({ leads, sales, corretor, mostrarCorretores }: {
       .finally(() => { if (vivo) setCarregando(false) })
     return () => { vivo = false }
   }, [inicio, tentativa])
-
-  function escolherPeriodo(p: Periodo) {
-    setPeriodo(p)
-    try { localStorage.setItem(CHAVE_PERIODO, p) } catch { /* sem armazenamento */ }
-  }
 
   const perfis = useMemo(() => {
     const m = new Map(allProfiles.map(p => [p.id, p]))
@@ -122,300 +112,244 @@ export function FunisComerciais({ leads, sales, corretor, mostrarCorretores }: {
     })
   }, [safra, leads, sales, inicio, corretor, developments, perfis])
 
+  return { funis, erro, carregando, inicio, perfis, tentarDeNovo: () => setTentativa(t => t + 1) }
+}
+
+// ─── O painel ─────────────────────────────────────────────────────────────────
+
+type Aba = 'produtos' | 'corretores'
+
+export function FunisComerciais({ funis, erro, carregando, onTentarDeNovo, perfis, periodo, mostrarCorretores, admin }: {
+  funis: Funis | null
+  erro: string | null
+  carregando: boolean
+  onTentarDeNovo: () => void
+  perfis: Map<string, Profile>
+  periodo: Periodo
+  /** a aba por corretor — só na visão global do admin */
+  mostrarCorretores: boolean
+  admin: boolean
+}) {
+  const [aba, setAba] = useState<Aba>('produtos')
+  const [escolhido, setEscolhido] = useState<string>('geral')
   const descricao = PERIODOS.find(p => p.value === periodo)!.descricao
 
+  const abaReal: Aba = mostrarCorretores ? aba : 'produtos'
+  const lista: Recorte[] = funis ? [funis.geral, ...(abaReal === 'corretores' ? funis.porCorretor : funis.porProduto)] : []
+  const atual = lista.find(r => r.chave === escolhido) ?? lista[0]
+
+  function trocarAba(a: Aba) { setAba(a); setEscolhido('geral') }
+  // No celular o detalhe fica embaixo da lista: tocar numa linha leva até ele.
+  function escolher(chave: string) {
+    setEscolhido(chave)
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      requestAnimationFrame(() => document.getElementById('funil-detalhe')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    }
+  }
+
   return (
-    <section aria-labelledby="funis-titulo" className="mb-10">
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 mb-3.5 px-0.5">
+    <section aria-labelledby="funis-titulo" className="dash-painel-branco mb-10">
+      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 mb-5">
         <div className="min-w-0">
-          <h2 id="funis-titulo" className="font-display text-[18px] font-bold text-t1 tracking-[-0.02em]">
+          <h2 id="funis-titulo" className="font-display text-[22px] font-bold text-t1 tracking-[-0.025em]">
             {destacar('Funil *comercial*')}
           </h2>
-          <p className="text-[12.5px] text-t4 mt-0.5">
+          <p className="text-[13px] text-t4 mt-0.5">
             Conversão de quem chegou {descricao} · em andamento agora · vendido {descricao}
           </p>
         </div>
-        <Segmentado opcoes={PERIODOS.map(p => ({ value: p.value, label: p.label }))}
-                    valor={periodo} onChange={escolherPeriodo} rotulo="Período do funil" />
-      </div>
+        {mostrarCorretores && funis && (
+          <div className="dash-abas" role="tablist" aria-label="Recorte do funil">
+            {([['produtos', 'Produtos', funis.porProduto.length], ['corretores', 'Corretores', funis.porCorretor.length]] as const).map(([id, nome, n]) => (
+              <button key={id} type="button" role="tab" aria-selected={abaReal === id} onClick={() => trocarAba(id)}
+                      className={`dash-aba ${abaReal === id ? 'dash-aba-ativa' : ''}`}>
+                {nome}
+                <span className="dash-aba-conta">{n}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </header>
 
       {erro ? (
-        <div role="alert" className="bento px-5 py-4 flex items-center gap-3">
-          <p className="text-[13px] text-error flex-1">Não foi possível carregar o funil: {erro}</p>
-          <button type="button" onClick={() => setTentativa(t => t + 1)}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] bg-s2 text-[13px] font-medium text-t2 hover:text-t1 cursor-pointer">
+        <div role="alert" className="rounded-[20px] border border-error-line bg-error-bg px-5 py-4 flex items-center gap-3">
+          <p className="text-[13.5px] text-error flex-1">Não foi possível carregar o funil: {erro}</p>
+          <button type="button" onClick={onTentarDeNovo}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-surface border border-line text-[13px] font-medium text-t2 hover:text-t1 cursor-pointer">
             <RefreshCw size={13} aria-hidden /> Tentar de novo
           </button>
         </div>
-      ) : !funis ? (
-        <div className="grid lg:grid-cols-12 gap-4" aria-busy="true">
-          <div className="lg:col-span-7 h-[420px] rounded-[22px] shimmer" />
-          <div className="lg:col-span-5 h-[420px] rounded-[22px] shimmer" />
+      ) : !funis || !atual ? (
+        <div className="grid lg:grid-cols-12 gap-5" aria-busy="true">
+          <div className="lg:col-span-5 xl:col-span-4 h-[460px] rounded-[24px] shimmer" />
+          <div className="lg:col-span-7 xl:col-span-8 h-[460px] rounded-[28px] shimmer" />
         </div>
       ) : (
-        <div className={`flex flex-col gap-8 transition-opacity ${carregando ? 'opacity-60' : ''}`}>
-          <FunilGeral r={funis.geral} admin={isAdmin} descricao={descricao} />
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-5 items-start transition-opacity ${carregando ? 'opacity-60' : ''}`}>
+          {/* A lista */}
+          <ul className="lg:col-span-5 xl:col-span-4 flex flex-col gap-2.5" aria-label="Escolha o funil">
+            {lista.map(r => (
+              <li key={r.chave}>
+                <LinhaDaLista r={r} geral={r === funis.geral} ativo={r.chave === atual.chave}
+                              foto={abaReal === 'corretores' && r !== funis.geral ? perfis.get(r.chave) : undefined}
+                              onEscolher={() => escolher(r.chave)} />
+              </li>
+            ))}
+          </ul>
 
-          {funis.porProduto.length > 0 && (
-            <Grade titulo="Por *produto*" nota="do que mais tem dinheiro em jogo para o que menos tem">
-              {funis.porProduto.map(r => <CartaoFunil key={r.chave} r={r} admin={isAdmin} />)}
-            </Grade>
-          )}
-
-          {mostrarCorretores && funis.porCorretor.length > 0 && (
-            <Grade titulo="Por *corretor*" nota="parte de cada um na comissão, pela regra do perfil">
-              {funis.porCorretor.map(r => {
-                const p = perfis.get(r.chave)
-                return (
-                  <CartaoFunil key={r.chave} r={r} admin={isAdmin}
-                    foto={{ nome: r.nome, url: p?.avatarUrl, share: p?.commissionShare ?? null }} />
-                )
-              })}
-            </Grade>
-          )}
+          {/* O detalhe */}
+          <Detalhe r={atual} geral={atual === funis.geral} descricao={descricao} admin={admin}
+                   foto={abaReal === 'corretores' && atual !== funis.geral ? perfis.get(atual.chave) : undefined} />
         </div>
       )}
     </section>
   )
 }
 
-function Grade({ titulo, nota, children }: { titulo: string; nota: string; children: ReactNode }) {
-  return (
-    <div>
-      <div className="flex items-baseline gap-2.5 mb-3 px-0.5">
-        <h3 className="font-display text-[16px] font-bold text-t1 tracking-[-0.02em]">{destacar(titulo)}</h3>
-        <span className="text-[12px] text-t4 truncate">{nota}</span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">{children}</div>
-    </div>
-  )
+// ─── Linha da lista ───────────────────────────────────────────────────────────
+
+function iniciais(nome: string) {
+  const p = nome.replace(/[^\p{L}\s]/gu, '').trim().split(/\s+/)
+  return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
 }
 
-// ─── Funil geral ──────────────────────────────────────────────────────────────
-
-function FunilGeral({ r, admin, descricao }: { r: Recorte; admin: boolean; descricao: string }) {
-  const s = r.safra
-  const total = s.recebidos
-  const fim = taxa(s.venda, total)
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      {/* Conversão — o funil desenhado */}
-      <article className="bento surface-premium lg:col-span-7 xl:col-span-8 p-5 sm:p-6 flex flex-col" aria-label="Conversão do funil">
-        <header className="flex items-start justify-between gap-3 mb-5">
-          <div>
-            <p className="text-[12.5px] text-t4">Conversão</p>
-            <p className="font-display text-[15px] font-bold text-t1 mt-0.5">
-              {total.toLocaleString('pt-BR')} {total === 1 ? 'lead chegou' : 'leads chegaram'} {descricao}
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-[12.5px] text-t4">Lead → venda</p>
-            <p className="font-display font-extrabold tabular-nums text-[26px] leading-none mt-1 text-t3"
-               style={fim ? { color: JOIA.venda.medio } : undefined}>
-              {fmtTaxa(fim)}
-            </p>
-          </div>
-        </header>
-
-        <div className="flex-1 flex items-center justify-center">
-          <FunilJoia etapas={etapasDoFunil(r)} rotulo={`Funil de conversão, leads que chegaram ${descricao}`} />
-        </div>
-
-        <p className="mt-5 pt-4 border-t border-line text-[13px] text-t3">
-          {total > 0
-            ? <>De cada 100 leads que chegaram {descricao}, <b className="text-t1 font-semibold tabular-nums">{Math.round((s.venda / total) * 100)}</b> viraram venda até hoje e <b className="text-t1 font-semibold tabular-nums">{s.emAndamento.toLocaleString('pt-BR')}</b> seguem em andamento.</>
-            : <>Nenhum lead chegou {descricao}.</>}
-        </p>
-      </article>
-
-      {/* Dinheiro — em andamento e vendido */}
-      <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
-        <article className="bento surface-premium p-5 sm:p-6" aria-label="VGV em andamento">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[12.5px] text-t4">VGV em andamento · agora</p>
-              <p className="font-display font-extrabold tabular-nums text-[30px] leading-tight tracking-[-0.02em] text-t1 truncate">
-                {R(r.pipeline.vgv)}
-              </p>
-            </div>
-            <p className="text-[12.5px] text-t4 tabular-nums text-right shrink-0 mt-1">
-              {r.pipeline.n.toLocaleString('pt-BR')} {r.pipeline.n === 1 ? 'lead em aberto' : 'leads em aberto'}
-            </p>
-          </div>
-          <PipelinePorEtapa r={r} />
-          <Comissao rotulo="Comissão em pipeline" d={r.pipeline} admin={admin} />
-        </article>
-
-        <article className="bento surface-premium p-5 sm:p-6" aria-label="VGV vendido">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[12.5px] text-t4">VGV vendido · {descricao}</p>
-              <p className={`font-display font-extrabold tabular-nums text-[30px] leading-tight tracking-[-0.02em] truncate ${r.vendido.n ? 'text-success' : 'text-t1'}`}>
-                {R(r.vendido.vgv)}
-              </p>
-            </div>
-            <p className="text-[12.5px] text-t4 tabular-nums text-right shrink-0 mt-1">
-              {r.vendido.n.toLocaleString('pt-BR')} {r.vendido.n === 1 ? 'venda' : 'vendas'}
-            </p>
-          </div>
-          <Comissao rotulo="Comissão recebida" d={r.vendido} admin={admin} />
-        </article>
-      </div>
-    </div>
-  )
-}
-
-/** VGV aberto por etapa: uma barra dividida e a legenda com os valores. */
-function PipelinePorEtapa({ r }: { r: Recorte }) {
-  const total = r.pipeline.vgv
-  return (
-    <div className="mt-4">
-      <div className="flex h-2.5 rounded-full overflow-hidden bg-s3" aria-hidden>
-        {ETAPAS_ABERTAS.map(e => r.aberto[e].vgv > 0 && (
-          <div key={e} style={{ width: `${(r.aberto[e].vgv / total) * 100}%`, background: JOIA[JOIA_ABERTA[e]].claro }} />
-        ))}
-      </div>
-      <dl className="grid grid-cols-2 xl:grid-cols-1 gap-x-4 gap-y-2 mt-3">
-        {ETAPAS_ABERTAS.map(e => (
-          <div key={e} className="flex items-center gap-2 min-w-0">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: JOIA[JOIA_ABERTA[e]].claro }} aria-hidden />
-            <dt className="text-[12.5px] text-t3 truncate">
-              {NOME_ABERTA[e]} <span className="text-t4 tabular-nums">· {r.aberto[e].n}</span>
-            </dt>
-            <dd className="ml-auto text-[12.5px] font-semibold text-t1 tabular-nums whitespace-nowrap">{R(r.aberto[e].vgv)}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  )
-}
-
-/**
- * A comissão e para onde ela vai. Admin vê a divisão inteira (corretor, Souza,
- * impostos); o corretor vê só a parte dele, como no Kanban.
- */
-function Comissao({ rotulo, d, admin }: { rotulo: string; d: Dinheiro; admin: boolean }) {
-  const partes = [
-    { nome: 'Corretores', valor: d.corretor, cor: 'var(--info)' },
-    { nome: 'Souza',      valor: d.souza,    cor: 'var(--brand-fill)' },
-    { nome: 'Impostos',   valor: d.impostos, cor: 'var(--t5)' },
-  ]
-  if (!admin) {
-    return (
-      <div className="mt-4 pt-4 border-t border-line flex items-baseline justify-between gap-3">
-        <p className="text-[13px] text-t3">{rotulo} · sua parte</p>
-        <p className="font-display font-bold tabular-nums text-[18px] text-t1">{R(d.corretor)}</p>
-      </div>
-    )
-  }
-  return (
-    <div className="mt-4 pt-4 border-t border-line">
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-[13px] text-t3">{rotulo} <span className="text-t4">· bruta</span></p>
-        <p className="font-display font-bold tabular-nums text-[18px] text-t1">{R(d.bruta)}</p>
-      </div>
-      {d.bruta > 0 && (
-        <div className="flex h-1.5 rounded-full overflow-hidden bg-s3 mt-2.5" aria-hidden>
-          {partes.map(p => p.valor > 0 && (
-            <div key={p.nome} style={{ width: `${(p.valor / d.bruta) * 100}%`, background: p.cor }} />
-          ))}
-        </div>
-      )}
-      <dl className="grid grid-cols-3 gap-3 mt-2.5">
-        {partes.map(p => (
-          <div key={p.nome} className="min-w-0">
-            <dt className="flex items-center gap-1.5 text-[12px] text-t4">
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: p.cor }} aria-hidden />
-              {p.nome}
-            </dt>
-            <dd className="text-[13.5px] font-semibold text-t1 tabular-nums truncate">{R(p.valor)}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  )
-}
-
-// ─── Cartão de produto / corretor ─────────────────────────────────────────────
-
-function CartaoFunil({ r, admin, foto }: {
-  r: Recorte
-  admin: boolean
-  foto?: { nome: string; url?: string; share: number | null }
+function LinhaDaLista({ r, geral, ativo, foto, onEscolher }: {
+  r: Recorte; geral: boolean; ativo: boolean; foto?: Profile; onEscolher: () => void
 }) {
+  const fim = taxa(r.safra.venda, r.safra.recebidos)
+  return (
+    <button type="button" onClick={onEscolher} aria-pressed={ativo}
+            className={`dash-linha group ${ativo ? 'dash-linha-ativa' : ''}`}>
+      {foto ? (
+        <FotoPerfil nome={foto.name} url={foto.avatarUrl} tamanho={46} />
+      ) : (
+        <span className={`dash-monograma ${geral ? 'dash-monograma-geral' : ''}`} aria-hidden>
+          {geral ? <Building2 size={20} strokeWidth={1.8} /> : iniciais(r.nome)}
+        </span>
+      )}
+      <span className="flex-1 min-w-0 text-left">
+        <span className="block font-heading text-[15px] font-semibold truncate tracking-[-0.01em]">{geral ? 'Imobiliária inteira' : r.nome}</span>
+        <span className="dash-linha-sub block text-[12.5px] tabular-nums sm:truncate">
+          {r.safra.recebidos.toLocaleString('pt-BR')} {r.safra.recebidos === 1 ? 'lead' : 'leads'} · {fmtTaxa(fim)} → venda
+          <span className="sm:hidden"> · {R(r.pipeline.vgv)}</span>
+        </span>
+      </span>
+      <span className="hidden sm:block text-right shrink-0">
+        <span className="block font-display text-[16px] font-bold tabular-nums tracking-[-0.01em]">{R(r.pipeline.vgv)}</span>
+        <span className="dash-linha-sub block text-[11.5px]">em andamento</span>
+      </span>
+    </button>
+  )
+}
+
+// ─── Detalhe em Marinho ───────────────────────────────────────────────────────
+
+function Detalhe({ r, geral, descricao, admin, foto }: {
+  r: Recorte; geral: boolean; descricao: string; admin: boolean; foto?: Profile
+}) {
+  const navigate = useNavigate()
   const s = r.safra
   const fim = taxa(s.venda, s.recebidos)
 
   return (
-    <article className="bento surface-premium p-5 flex flex-col gap-4 min-w-0" aria-label={`Funil de ${r.nome}`}>
-      <header className="flex items-center gap-3 min-w-0">
-        {foto && <FotoPerfil nome={foto.nome} url={foto.url} tamanho={44} />}
-        <div className="min-w-0 flex-1">
-          <h4 className="font-display text-[16px] font-bold text-t1 truncate">{r.nome}</h4>
-          <p className="text-[12.5px] text-t4 tabular-nums truncate">
-            {s.recebidos.toLocaleString('pt-BR')} {s.recebidos === 1 ? 'lead chegou' : 'leads chegaram'}
-            {foto?.share ? ` · ${foto.share.toLocaleString('pt-BR')}% da líquida` : ''}
-          </p>
+    <article id="funil-detalhe" className="pulse-marinho dash-detalhe scroll-mt-20 lg:col-span-7 xl:col-span-8" aria-label={`Funil de ${geral ? 'toda a imobiliária' : r.nome}`}>
+      {/* Cabeçalho */}
+      <header className="relative flex flex-wrap items-start gap-x-8 gap-y-4">
+        <div className="min-w-0">
+          <p className="text-[13px]" style={{ color: 'var(--m-t3)' }}>Funil de</p>
+          <div className="flex flex-wrap items-center gap-3 mt-1 min-w-0">
+            <h3 className="font-display text-[clamp(1.6rem,2.6vw,2.2rem)] font-extrabold tracking-[-0.03em] leading-none sm:truncate" style={{ color: 'var(--m-t1)' }}>
+              {geral ? 'Imobiliária inteira' : r.nome}
+            </h3>
+            <span className="dash-pilula-escura shrink-0">{s.recebidos.toLocaleString('pt-BR')} leads</span>
+          </div>
         </div>
-        <div className="text-right shrink-0">
-          <p className="font-display font-extrabold tabular-nums text-[20px] leading-none text-t3"
-             style={fim ? { color: JOIA.venda.medio } : undefined}>
-            {fmtTaxa(fim)}
-          </p>
-          <p className="text-[11.5px] text-t4 mt-1">lead → venda</p>
+        <div className="ml-auto flex items-center gap-6">
+          <div className="text-right">
+            <p className="text-[13px]" style={{ color: 'var(--m-t3)' }}>Lead → venda</p>
+            <p className="font-display text-[30px] font-extrabold tabular-nums leading-none mt-1" style={{ color: 'var(--m-t1)' }}>{fmtTaxa(fim)}</p>
+          </div>
+          {foto && (
+            <div className="flex items-center gap-3">
+              <FotoPerfil nome={foto.name} url={foto.avatarUrl} tamanho={52} className="ring-2 ring-white/70" />
+              <div className="leading-tight">
+                <p className="text-[14px] font-semibold" style={{ color: 'var(--m-t1)' }}>{foto.name.split(' ')[0]}</p>
+                <p className="text-[12.5px]" style={{ color: 'var(--m-t3)' }}>
+                  {foto.commissionShare ? `${foto.commissionShare}% da líquida` : 'sem parte na comissão'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
-      <div>
-        <FunilJoia compacto etapas={etapasDoFunil(r)} rotulo={`Funil de ${r.nome}`} />
+      {/* Funil + dinheiro */}
+      <div className="relative mt-6 grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <div className="xl:col-span-7 dash-vidro p-5 flex flex-col">
+          <p className="text-[12.5px] mb-4" style={{ color: 'var(--m-t3)' }}>Conversão de quem chegou {descricao}</p>
+          <div className="flex-1 flex items-center">
+            <FunilJoia compacto escuro etapas={etapasDoFunil(r)} rotulo={`Funil de ${r.nome}, leads que chegaram ${descricao}`} />
+          </div>
+        </div>
+        <div className="xl:col-span-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3 content-start">
+          <Valor rotulo="VGV em andamento" nota={`${r.pipeline.n} ${r.pipeline.n === 1 ? 'lead em aberto' : 'leads em aberto'} · agora`} valor={r.pipeline.vgv} />
+          <Valor rotulo={admin ? 'Comissão em pipeline' : 'Sua comissão em jogo'} nota={admin ? 'bruta' : 'sua parte'} valor={admin ? r.pipeline.bruta : r.pipeline.corretor} />
+          <Valor rotulo={`VGV vendido`} nota={`${r.vendido.n} ${r.vendido.n === 1 ? 'venda' : 'vendas'} · ${descricao}`} valor={r.vendido.vgv} ganho={r.vendido.n > 0} />
+          <Valor rotulo={admin ? 'Comissão recebida' : 'Sua comissão recebida'} nota={admin ? 'bruta' : 'sua parte'} valor={admin ? r.vendido.bruta : r.vendido.corretor} ganho={r.vendido.n > 0} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-line mt-auto">
-        <Valores titulo="Em andamento" d={r.pipeline} n={r.pipeline.n} unidade={['lead', 'leads']} admin={admin} />
-        <Valores titulo="Vendido" d={r.vendido} n={r.vendido.n} unidade={['venda', 'vendas']} admin={admin} vendido />
-      </div>
+      {/* Rodapé: para onde vai a comissão recebida */}
+      <footer className="relative mt-5 dash-vidro dash-rodape">
+        {admin ? <Divisao d={r.vendido} /> : (
+          <div className="min-w-0">
+            <p className="text-[12.5px]" style={{ color: 'var(--m-t3)' }}>Sua parte do que está em jogo + recebido</p>
+            <p className="font-display text-[22px] font-bold tabular-nums" style={{ color: 'var(--m-t1)' }}>{R(r.pipeline.corretor + r.vendido.corretor)}</p>
+          </div>
+        )}
+        <button type="button" onClick={() => navigate('/leads')}
+                className="ml-auto inline-flex items-center gap-2 h-11 pl-5 pr-4 rounded-full bg-white text-[14px] font-bold cursor-pointer
+                           transition-transform hover:scale-[1.03] active:scale-[0.98] shrink-0"
+                style={{ color: '#143275' }}>
+          Abrir o Kanban <ArrowRight size={16} strokeWidth={2.2} aria-hidden />
+        </button>
+      </footer>
     </article>
   )
 }
 
-function Valores({ titulo, d, n, unidade, admin, vendido = false }: {
-  titulo: string
-  d: Dinheiro
-  n: number
-  unidade: [string, string]
-  admin: boolean
-  vendido?: boolean
-}) {
+function Valor({ rotulo, nota, valor, ganho = false }: { rotulo: string; nota: string; valor: number; ganho?: boolean }) {
   return (
-    <div className="min-w-0">
-      <p className="text-[12px] text-t4">
-        {titulo} <span className="tabular-nums">· {n} {n === 1 ? unidade[0] : unidade[1]}</span>
+    <div className="dash-vidro px-5 py-3.5 min-w-0">
+      <p className="text-[12.5px] font-medium truncate" style={{ color: 'var(--m-t2)' }}>
+        {rotulo} <span style={{ color: 'var(--m-t3)' }}>· {nota}</span>
       </p>
-      <p className={`font-display font-extrabold tabular-nums text-[19px] leading-tight truncate mt-0.5 ${vendido && n ? 'text-success' : 'text-t1'}`}>
-        {R(d.vgv)}
+      <p className="mt-0.5 font-display text-[24px] font-bold tabular-nums leading-tight tracking-[-0.02em]"
+         style={{ color: ganho ? 'var(--m-ok)' : 'var(--m-t1)' }}>
+        {R(valor)}
       </p>
-      <dl className="mt-1.5 flex flex-col gap-0.5 text-[12px] tabular-nums">
-        {admin ? (
-          <>
-            <Linha nome={vendido ? 'Comissão recebida' : 'Comissão'} valor={d.bruta} forte />
-            <Linha nome="Corretor" valor={d.corretor} />
-            <Linha nome="Souza" valor={d.souza} />
-            <Linha nome="Impostos" valor={d.impostos} />
-          </>
-        ) : (
-          <Linha nome="Sua parte" valor={d.corretor} forte />
-        )}
-      </dl>
     </div>
   )
 }
 
-function Linha({ nome, valor, forte = false }: { nome: string; valor: number; forte?: boolean }) {
+function Divisao({ d }: { d: Dinheiro }) {
+  const partes = [
+    { nome: 'Comissão recebida', valor: d.bruta },
+    { nome: 'Corretores', valor: d.corretor },
+    { nome: 'Souza', valor: d.souza },
+    { nome: 'Impostos', valor: d.impostos },
+  ]
   return (
-    <div className="flex items-baseline justify-between gap-2 min-w-0">
-      <dt className="text-t4 truncate">{nome}</dt>
-      <dd className={`whitespace-nowrap ${forte ? 'text-t1 font-semibold' : 'text-t2'}`}>{R(valor)}</dd>
-    </div>
+    <dl className="flex flex-wrap gap-x-8 gap-y-3 min-w-0">
+      {partes.map((p, i) => (
+        <div key={p.nome} className="min-w-0">
+          <dt className="text-[12.5px]" style={{ color: 'var(--m-t3)' }}>{p.nome}</dt>
+          <dd className="font-display text-[21px] font-bold tabular-nums tracking-[-0.02em]"
+              style={{ color: i === 2 ? 'var(--m-ouro)' : 'var(--m-t1)' }}>
+            {R(p.valor)}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }
