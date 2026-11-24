@@ -86,6 +86,24 @@ function useAltura<T extends HTMLElement>(): [RefObject<T | null>, number] {
   return [ref, h]
 }
 
+/**
+ * Largura e altura vivas de um contêiner. Mede uma vez na montagem (com o
+ * painel escondido o ResizeObserver não dispara) e depois acompanha.
+ */
+function useMedidas<T extends HTMLElement>(): [RefObject<T | null>, { w: number; h: number }] {
+  const ref = useRef<T>(null)
+  const [m, setM] = useState({ w: 0, h: 0 })
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    setM({ w: el.clientWidth, h: el.clientHeight })
+    const ro = new ResizeObserver(([e]) => setM({ w: Math.floor(e.contentRect.width), h: Math.floor(e.contentRect.height) }))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return [ref, m]
+}
+
 export type Urgencia = 'ok' | 'alerta' | 'risco' | 'parado'
 
 // ─── Meta do mês ──────────────────────────────────────────────────────────────
@@ -447,7 +465,20 @@ export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDia
   janelaDias: number
 }) {
   const [foco, setFoco] = useState<LeadFunnelStage | null>(null)
-  const W = 440, H = 66, VAO = 8, TOPO = 430, BASE = 150
+  // 24/11/2026: o funil acompanha a forma do espaço. Antes o desenho tinha
+  // proporção fixa (quase quadrada) e, numa coluna alta e estreita, ficava
+  // preso pela largura com um vão enorme em cima e embaixo. Agora a altura de
+  // cada fatia sai da proporção da área: o funil enche a coluna nas duas
+  // direções, e o texto cresce junto (ele é medido na mesma escala).
+  const [area, medidas] = useMedidas<HTMLDivElement>()
+  // Card mais alto que largo (TV em pé, janela estreita): lado a lado a
+  // coluna do funil fica fina demais. Aí o funil sobe em largura total e a
+  // escada de conversão desce para baixo dele.
+  const [card, cardMedidas] = useMedidas<HTMLDivElement>()
+  const emPe = empilhado || (cardMedidas.w > 0 && cardMedidas.h / cardMedidas.w > 1.05)
+  const W = 440, VAO = 8, TOPO = 430, BASE = 150
+  const proporcao = medidas.w > 0 && medidas.h > 0 ? medidas.h / medidas.w : 1
+  const H = Math.round(Math.max(56, Math.min(150, (W * proporcao - 8 + VAO) / ETAPAS_FUNIL.length - VAO)))
   const ativos = ETAPAS_FUNIL.filter(e => e !== 'venda').reduce((t, e) => t + (porEtapa[e] ?? 0), 0)
   const passo = (TOPO - BASE) / ETAPAS_FUNIL.length
   const altura = ETAPAS_FUNIL.length * (H + VAO) - VAO
@@ -466,13 +497,15 @@ export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDia
   const focada = fatias.find(f => f.etapa === foco)
 
   return (
-    <div className={`flex-1 min-h-0 grid ${empilhado ? 'gap-4 px-4 pb-4' : 'gap-2 px-6 pb-6'}`}
-         style={{ gridTemplateColumns: empilhado ? 'minmax(0, 1fr)' : 'minmax(0, 1.05fr) minmax(0, 1fr)' }}>
+    <div ref={card} className={`flex-1 min-h-0 grid ${empilhado ? 'gap-4 px-4 pb-4' : emPe ? 'gap-4 px-6 pb-6' : 'gap-2 px-6 pb-6'}`}
+         style={emPe
+           ? { gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: empilhado ? undefined : 'minmax(0, 1fr) auto' }
+           : { gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
       {/* ── agora ── */}
       <div className={`relative min-h-0 flex flex-col ${empilhado ? 'h-[340px]' : ''}`}>
         <p className="text-[13.5px] text-t3 mb-2">Agora · <span className="font-semibold text-t1 tabular-nums">{ativos.toLocaleString('pt-BR')}</span> leads ativos</p>
-        <div className="relative flex-1 min-h-0 flex items-center justify-center" role="presentation" onMouseLeave={() => setFoco(null)}>
-          <svg viewBox={`0 -4 ${W} ${altura + 8}`} className="h-full max-h-full w-auto max-w-full overflow-visible" role="img"
+        <div ref={area} className="relative flex-1 min-h-0 flex items-center justify-center" role="presentation" onMouseLeave={() => setFoco(null)}>
+          <svg viewBox={`0 -4 ${W} ${altura + 8}`} className="absolute inset-0 h-full w-full overflow-visible" role="img"
                aria-label={`Funil agora: ${fatias.map(f => `${f.nome} ${f.n ?? 'sem dado'}`).join(', ')}.`}>
             <defs>
               {fatias.map(f => (
@@ -508,13 +541,13 @@ export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDia
                     transition: 'transform 260ms cubic-bezier(.2,.8,.2,1), opacity 260ms ease',
                   }}>
                     <polygon points={f.pontos} fill={`url(#fatia-${f.etapa})`} stroke="rgba(255,255,255,0.6)" strokeWidth={1.5} strokeLinejoin="round" />
-                    <text x={cx} y={f.y + 23} textAnchor="middle" pointerEvents="none"
+                    <text x={cx} y={f.y + H / 2 - 10} textAnchor="middle" pointerEvents="none"
                           style={{ fill: 'rgba(255,255,255,0.9)', fontSize: 13.5, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                       {f.nome}
                     </text>
                     {f.n === null
-                      ? <text x={cx} y={f.y + 54} textAnchor="middle" pointerEvents="none" style={{ fill: '#fff', fontSize: 30, fontWeight: 800 }}>—</text>
-                      : <ContagemSvg valor={f.n} x={cx} y={f.y + 54} textAnchor="middle" pointerEvents="none" className="font-display tabular-nums"
+                      ? <text x={cx} y={f.y + H / 2 + 21} textAnchor="middle" pointerEvents="none" style={{ fill: '#fff', fontSize: 30, fontWeight: 800 }}>—</text>
+                      : <ContagemSvg valor={f.n} x={cx} y={f.y + H / 2 + 21} textAnchor="middle" pointerEvents="none" className="font-display tabular-nums"
                                      style={{ fill: '#fff', fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em' }} />}
                   </g>
                 </g>
