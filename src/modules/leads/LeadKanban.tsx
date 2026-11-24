@@ -35,7 +35,8 @@ import { divisao, PCT_PADRAO } from './comissao'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { JOIA, degradeJoiaClaro, fundoJoiaClaro } from '../../lib/paletaJoia'
 import { ORIGEM_META } from './origens'
-import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS } from './contato'
+import { semContatoHaMaisDe, fraseContato, ESFRIANDO_DIAS, tomDoContato, TOM_CONTATO } from './contato'
+import type { TomContato } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
 import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
@@ -202,6 +203,10 @@ function LeadCard({
 
   const din = comissao && lead.averageTicket ? comissao.doLead(lead) : null
 
+  // Destaque de contato (contato.ts): o cartão inteiro num tom pastel quando
+  // ninguém falou com o lead ou o último contato passou de 24 h.
+  const tom = tomDoContato(lead)
+
   // Reentrada ainda não vista pelo dono — o único destaque que pode competir
   // com a próxima ação, porque não é o sistema cobrando: é o lead chamando.
   const aviso = isOverlay ? null : avisoReentrada(lead)
@@ -229,6 +234,7 @@ function LeadCard({
         transition-[transform,box-shadow,background-color,border-color,opacity] duration-200
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
         ${urgente ? 'kanban-card-alerta' : ''}
+        ${tom && !isOverlay ? TOM_CONTATO[tom].classe : ''}
         ${dense ? 'px-3 pt-2.5 pb-3' : 'px-3.5 pt-3 pb-3.5'}
         ${isDragging && !isOverlay ? 'opacity-30 scale-95' : ''}
         ${isOverlay ? '!shadow-modal kanban-card-prioridade' : ''}
@@ -301,7 +307,7 @@ function LeadCard({
 
       {/* 2 · O dinheiro em jogo — por extenso */}
       {!dense && din && comissao && (din.corretor > 0 || comissao.admin) && (
-        <div className="mt-2.5 flex items-stretch rounded-[11px] bg-s2/70 overflow-hidden text-[12.5px]">
+        <div className="kanban-faixa mt-2.5 flex items-stretch rounded-[11px] bg-s2/70 overflow-hidden text-[12.5px]">
           <div className="flex-1 min-w-0 px-2.5 py-1.5 flex items-center justify-between gap-2"
                title={comissao.admin ? 'Comissão líquida do corretor' : 'Sua comissão líquida (% do produto sobre o VGV − 3% ISS − 6% Simples)'}>
             <span className="text-[11.5px] font-medium text-success/80 truncate">
@@ -327,7 +333,7 @@ function LeadCard({
           >
             <NextIcon size={13} strokeWidth={1.8} className={`flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
             {next.urgency === 'none' ? (
-              <p className="flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
+              <p className="kanban-frase flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
             ) : (
               <p className={`flex-1 min-w-0 truncate text-[12px] font-semibold ${nextStyle!.text}`}>{next.text}</p>
             )}
@@ -638,6 +644,25 @@ function Placar({ rotulo, valor, cor, fundo, destaque = false, foto, nota, titul
   )
 }
 
+// ─── Legenda do destaque de contato ───────────────────────────────────────────
+
+/** As três cores do cartão, com quantos há de cada — só as que aparecem. */
+export function LegendaContato({ porTom }: { porTom: Record<TomContato, number> }) {
+  const itens = (Object.keys(TOM_CONTATO) as TomContato[]).filter(t => porTom[t] > 0)
+  if (itens.length === 0) return null
+  return (
+    <div className="hidden sm:flex items-center gap-3 mr-2 text-[12px] text-t3" aria-label="Cores dos cartões">
+      {itens.map(t => (
+        <span key={t} className={`${TOM_CONTATO[t].classe} inline-flex items-center gap-1.5`} title={TOM_CONTATO[t].rotulo}>
+          <span className="kanban-tom-amostra w-3 h-3 rounded-[4px]" aria-hidden />
+          {TOM_CONTATO[t].rotulo}
+          <span className="font-semibold text-t2 tabular-nums">{porTom[t]}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // ─── Kanban principal ─────────────────────────────────────────────────────────
 
 interface LeadKanbanProps {
@@ -757,6 +782,13 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
   }, [leads, comissao, profile, allProfiles])
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null
+
+  // Legenda do destaque de contato, com quantos cartões há de cada tom
+  const porTom = useMemo(() => {
+    const n: Record<TomContato, number> = { nunca: 0, atrasado: 0, parado: 0 }
+    for (const l of leads) { const t = tomDoContato(l); if (t) n[t]++ }
+    return n
+  }, [leads])
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id))
@@ -893,6 +925,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
           )}
         </div>
         <div className="ml-auto flex items-center gap-1">
+          <LegendaContato porTom={porTom} />
           <button
             onClick={() => setDense(!dense)}
             aria-pressed={dense}

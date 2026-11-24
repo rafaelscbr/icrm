@@ -9,7 +9,7 @@ import { EstadoTela } from '../../components/shared/EstadoTela'
 import { CorretorComFoto } from '../../components/shared/CorretorComFoto'
 import { EsqueletoCards } from '../../components/shared/Esqueleto'
 import { ORIGEM_META } from './origens'
-import { fraseContato, nivelContato } from './contato'
+import { fraseContato, nivelContato, tomDoContato, TOM_CONTATO } from './contato'
 import { ordemEfetiva } from './leadFiltros'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { LeadSomenteLeitura } from './LeadSomenteLeitura'
@@ -149,14 +149,16 @@ function CartaoSomenteLeitura({ lead, agora, onAbrir }: { lead: Lead; agora: num
   const diasNaEtapa = Math.floor((agora - new Date(lead.stageChangedAt ?? lead.createdAt).getTime()) / DIA_MS)
   const nivel = nivelContato(lead, agora)
   const corContato = nivel === 'parado' ? 'text-error' : nivel === 'esfriando' ? 'text-warning' : 'text-t3'
+  // O mesmo destaque de contato do Kanban de Leads (contato.ts)
+  const tom = tomDoContato(lead, agora)
 
   return (
     // <div role="button">, como o cartão do Kanban: um <button> de verdade não
     // pode conter os parágrafos e blocos do cartão.
     <div role="button" tabIndex={0} onClick={onAbrir} onKeyDown={aoTeclarAbrir(onAbrir)}
          aria-label={`Ver detalhes de ${lead.name}`}
-         className="kanban-card relative border rounded-[14px] px-3.5 py-3 overflow-hidden cursor-pointer
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
+         className={`kanban-card ${tom ? TOM_CONTATO[tom].classe : ''} relative border rounded-[14px] px-3.5 py-3 overflow-hidden cursor-pointer
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand`}>
       <div className="flex items-baseline gap-2">
         <p className="font-heading text-[14px] font-bold text-t1 truncate leading-tight tracking-[-0.02em]">{lead.name}</p>
         <span className="self-center"><SinalDeFluxo quantos={lead.fluxosCount} /></span>
@@ -178,7 +180,7 @@ function CartaoSomenteLeitura({ lead, agora, onAbrir }: { lead: Lead; agora: num
       </div>
 
       <div className="flex items-start gap-2 mt-2">
-        <p className={`flex-1 min-w-0 text-xs font-semibold leading-snug ${corContato}`}>{fraseContato(lead, agora)}</p>
+        <p className={`kanban-frase flex-1 min-w-0 text-xs font-semibold leading-snug ${corContato}`}>{fraseContato(lead, agora)}</p>
         <span className="flex-shrink-0 font-label text-[11px] text-t3 tabular-nums"
               title={`${diasNaEtapa} ${diasNaEtapa === 1 ? 'dia' : 'dias'} nesta etapa`}>
           {diasNaEtapa}d

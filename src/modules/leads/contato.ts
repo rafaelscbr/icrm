@@ -65,5 +65,41 @@ export function fraseContato(lead: Lead, agora = Date.now()): string {
   if (!lead.lastContactAt) {
     return d <= 0 ? 'Sem contato ainda · entrou hoje' : `Nenhum contato em ${d} ${d === 1 ? 'dia' : 'dias'}`
   }
+  // Entre 24 e 48 h, em horas: "ontem" escondia que já passou de um dia.
+  if (d === 1) return `Último contato há ${Math.floor(msSemContato(lead, agora) / 3_600_000)} h`
   return `Último contato ${haQuantoTempo(d)}`
+}
+
+/**
+ * Destaque do cartão nos Kanbans (Rafael, 24/11/2026: "algo que chame atenção
+ * mas nada gritante", no estilo dos cartões coloridos que ele mostrou). O
+ * cartão em dia fica branco; quem pede contato ganha um tom pastel inteiro:
+ *
+ *   nunca    — ninguém falou com o lead ainda (lilás), desde a chegada
+ *   atrasado — o último contato foi há mais de 24 h (âmbar)
+ *   parado   — mais de 7 dias sem contato (coral)
+ *
+ * Venda, descartado e fechado não ganham cor. "Contato" é o mesmo de sempre:
+ * leads.last_contact_at (WhatsApp, ligação, tarefa — migração 074).
+ */
+export const DESTAQUE_HORAS = 24
+
+export type TomContato = 'nunca' | 'atrasado' | 'parado'
+
+export const TOM_CONTATO: Record<TomContato, { rotulo: string; classe: string }> = {
+  nunca:    { rotulo: 'Sem contato ainda',             classe: 'kanban-tom kanban-tom-nunca' },
+  atrasado: { rotulo: `+${DESTAQUE_HORAS}h sem contato`, classe: 'kanban-tom kanban-tom-atrasado' },
+  parado:   { rotulo: `+${PARADO_DIAS} dias sem contato`, classe: 'kanban-tom kanban-tom-parado' },
+}
+
+export function tomDoContato(
+  lead: { lastContactAt?: string | null; funnelStage: string; closedAt?: string | null; discardReason?: unknown },
+  agora = Date.now(),
+): TomContato | null {
+  if (lead.funnelStage === 'venda' || lead.closedAt || lead.discardReason) return null
+  if (!lead.lastContactAt) return 'nunca'
+  const ms = agora - new Date(lead.lastContactAt).getTime()
+  if (ms > PARADO_DIAS * DIA) return 'parado'
+  if (ms > DESTAQUE_HORAS * 3_600_000) return 'atrasado'
+  return null
 }

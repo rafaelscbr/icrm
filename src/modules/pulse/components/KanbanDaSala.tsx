@@ -10,7 +10,7 @@ import { formatCurrencyRound } from '../../../lib/formatters'
 import { FotoPerfil } from '../../../components/shared/FotoPerfil'
 import { destacar } from '../../../components/shared/Destaque'
 import { ORIGEM_META } from '../../leads/origens'
-import { ESFRIANDO_DIAS, haQuantoTempo } from '../../leads/contato'
+import { ESFRIANDO_DIAS, haQuantoTempo, tomDoContato, TOM_CONTATO } from '../../leads/contato'
 import { useRelogio } from '../useKiosk'
 import { colunasDaSala, dinheiroDoCartao, DINHEIRO_ZERO, somar } from '../kanbanDaSala'
 import type { CartaoSala, ColunaSala, DinheiroSala } from '../kanbanDaSala'
@@ -56,6 +56,7 @@ function fraseContato(c: CartaoSala, agora: number): string {
   const ref = c.ultimoContatoAt ?? c.criadoEm
   const d = Math.floor(Math.max(0, agora - new Date(ref).getTime()) / DIA)
   if (!c.ultimoContatoAt) return d <= 0 ? 'Sem contato ainda · entrou hoje' : `Nenhum contato em ${d} ${d === 1 ? 'dia' : 'dias'}`
+  if (d === 1) return `Último contato há ${Math.floor((agora - new Date(ref).getTime()) / 3_600_000)} h`
   return `Último contato ${haQuantoTempo(d)}`
 }
 
@@ -121,8 +122,10 @@ function Cartao({ c, dono, agora, pctDe }: { c: CartaoSala; dono?: Profile; agor
   const Origem = c.origem ? ORIGEM_META[c.origem] : undefined
   const share = dono?.commissionShare ?? null
   const din = c.vgv ? dinheiroDoCartao(c, () => share, pctDe) : null
+  // O mesmo destaque de contato do Kanban de Leads (contato.ts)
+  const tom = tomDoContato({ lastContactAt: c.ultimoContatoAt, funnelStage: c.etapa }, agora)
   return (
-    <div className={`kanban-card pulse-cartao relative shrink-0 border rounded-[16px] overflow-hidden px-3.5 pt-3 pb-3.5 ${vivo ? 'pulse-cartao-vivo' : ''}`}
+    <div className={`kanban-card pulse-cartao relative shrink-0 border rounded-[16px] overflow-hidden px-3.5 pt-3 pb-3.5 ${vivo ? 'pulse-cartao-vivo' : ''} ${tom ? TOM_CONTATO[tom].classe : ''}`}
          style={{ height: alturaDe(c), ['--etapa' as string]: JOIA[c.etapa].medio }}>
       {/* 1 · Dono · lead · VGV */}
       <div className="flex items-center gap-2.5 min-w-0">
@@ -144,7 +147,7 @@ function Cartao({ c, dono, agora, pctDe }: { c: CartaoSala; dono?: Profile; agor
 
       {/* 2 · O dinheiro em jogo */}
       {din ? (
-        <div className="mt-2.5 flex items-stretch rounded-[11px] bg-s2/70 overflow-hidden text-[12.5px]">
+        <div className="kanban-faixa mt-2.5 flex items-stretch rounded-[11px] bg-s2/70 overflow-hidden text-[12.5px]">
           <div className="flex-1 min-w-0 px-2.5 py-1.5 flex items-center justify-between gap-2">
             <span className="text-[11.5px] font-medium text-success/80 truncate">{dono ? dono.name.split(' ')[0] : 'Corretor'}</span>
             <span className="font-bold text-success tabular-nums whitespace-nowrap">{din.corretor > 0 ? rs(din.corretor) : '—'}</span>
@@ -161,7 +164,7 @@ function Cartao({ c, dono, agora, pctDe }: { c: CartaoSala; dono?: Profile; agor
       {/* 3 · Último contato · dias na etapa */}
       <div className="mt-2.5 flex items-center gap-2 min-w-0">
         <Clock size={13} strokeWidth={1.8} className="flex-shrink-0 text-t4" aria-hidden />
-        <p className="flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(c, agora)}</p>
+        <p className="kanban-frase flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(c, agora)}</p>
         {vivo
           ? <span className="flex-shrink-0 rounded-full px-1.5 text-[10.5px] leading-[16px] font-bold uppercase tracking-[0.08em] text-white" style={{ background: JOIA[c.etapa].medio }}>agora</span>
           : <span className="flex-shrink-0 text-[11px] text-t4 tabular-nums">{Math.max(0, dias)}d</span>}
