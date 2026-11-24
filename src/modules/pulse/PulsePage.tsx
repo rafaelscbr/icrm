@@ -429,9 +429,7 @@ export function PulsePage() {
             : <div className="mx-6 flex-1 mb-6 rounded-[12px] shimmer" aria-busy="true" />}
         </Painel>
 
-        <Painel titulo="Funil da *imobiliária*">
-          <FunilDaImobiliaria empilhado porEtapa={funil} vendasNoMes={vgl ? vgl.vendasMes : null} conversao={conversao} janelaDias={JANELA_CONVERSAO_DIAS} />
-        </Painel>
+        <FunilDaImobiliaria empilhado porEtapa={funil} conversao={conversao} janelaDias={JANELA_CONVERSAO_DIAS} />
 
         {/* O placar Marinho com o holofote, como na TV */}
         <section className="marinho marinho-bloco rounded-[24px] px-3 pt-4 pb-3">
@@ -540,9 +538,7 @@ export function PulsePage() {
         )}
 
         <div className="flex-1 min-h-0 grid gap-4" style={{ gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1.25fr) minmax(0, 0.95fr)' }}>
-          <Painel titulo="Funil da *imobiliária*" extra="passe o mouse nas etapas">
-            <FunilDaImobiliaria porEtapa={funil} vendasNoMes={vgl ? vgl.vendasMes : null} conversao={conversao} janelaDias={JANELA_CONVERSAO_DIAS} />
-          </Painel>
+          <FunilDaImobiliaria porEtapa={funil} conversao={conversao} janelaDias={JANELA_CONVERSAO_DIAS} />
 
           {/* O placar da equipe — o holofote segue quem acabou de registrar —
               e, embaixo, a chegada de leads */}

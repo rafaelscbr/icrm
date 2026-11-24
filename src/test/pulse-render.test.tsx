@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import type { RelatorioConversao } from '../modules/leads/conversao'
 import {
   AoVivo, Batimento, EquipeNoMarinho, FilaPrimeiroContato, FunilDaImobiliaria, MetaNoMarinho, NumerosNoMarinho,
@@ -190,33 +190,37 @@ describe('equipe, funil e registros', () => {
   }
   const PORETAPA = { lead: 6, followup: 91, atendimento: 35, visita: 2, proposta: 1 }
 
-  it('o funil diz cada etapa agora e as vendas do mês', () => {
-    render(<FunilDaImobiliaria porEtapa={PORETAPA} vendasNoMes={3} conversao={CONVERSAO} janelaDias={90} />)
-    const funil = screen.getByRole('img')
-    expect(funil.getAttribute('aria-label')).toMatch(/Followup 91/)
-    expect(funil.getAttribute('aria-label')).toMatch(/Vendas no mês 3/)
+  /** O FunilJoia mede a caixa para desenhar; no jsdom ela mede zero. */
+  function comCaixa<T>(fn: () => T): T {
+    const w = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+    const h = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 480 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => 520 })
+    try { return fn() } finally {
+      if (w) Object.defineProperty(HTMLElement.prototype, 'clientWidth', w)
+      if (h) Object.defineProperty(HTMLElement.prototype, 'clientHeight', h)
+    }
+  }
+
+  it('o funil traz a safra no desenho: cada etapa e a taxa de cada passo, iguais à aba Conversão', () => {
+    comCaixa(() => render(<FunilDaImobiliaria porEtapa={PORETAPA} conversao={CONVERSAO} janelaDias={90} />))
+    const rotulo = screen.getByRole('img').getAttribute('aria-label') ?? ''
+    expect(rotulo).toMatch(/Leads 529/)
+    expect(rotulo).toMatch(/Atendimento 62 \(12% da etapa anterior\)/)
+    expect(rotulo).toMatch(/Visita 12 \(19% da etapa anterior\)/)
+    expect(rotulo).toMatch(/Proposta 7 \(58% da etapa anterior\)/)
+    expect(rotulo).toMatch(/Vendas 5 \(71% da etapa anterior\)/)
   })
 
-  it('a escada traz a conversão de cada passo e a de ponta a ponta, iguais à aba Conversão', () => {
-    render(<FunilDaImobiliaria porEtapa={PORETAPA} vendasNoMes={3} conversao={CONVERSAO} janelaDias={90} />)
+  it('o destaque é a conversão de ponta a ponta, e o agora fica no cabeçalho', () => {
+    comCaixa(() => render(<FunilDaImobiliaria porEtapa={PORETAPA} conversao={CONVERSAO} janelaDias={90} />))
     expect(screen.getByText('0,9%')).toBeInTheDocument()          // 5 de 529
-    expect(screen.getByText('12%')).toBeInTheDocument()           // 62 de 529
-    expect(screen.getByText('19%')).toBeInTheDocument()           // 12 de 62
-    expect(screen.getByText('58%')).toBeInTheDocument()           // 7 de 12
-    expect(screen.getByText('71%')).toBeInTheDocument()           // 5 de 7
-    expect(screen.getByText('529')).toBeInTheDocument()
-  })
-
-  it('com o mouse na fatia, mostra quantos estão lá e quanto do funil ativo isso é', () => {
-    const { container } = render(<FunilDaImobiliaria porEtapa={PORETAPA} vendasNoMes={3} conversao={CONVERSAO} janelaDias={90} />)
-    const fatias = container.querySelectorAll('g.funil-fatia')
-    fireEvent.mouseEnter(fatias[1])                                // followup
-    expect(screen.getByRole('status')).toHaveTextContent('91')
-    expect(screen.getByRole('status')).toHaveTextContent('67% do funil ativo')   // 91 de 135
+    expect(screen.getByText('135')).toBeInTheDocument()           // leads ativos agora
+    expect(screen.queryByText(/Conversão ·/)).not.toBeInTheDocument()
   })
 
   it('sem a conversão, diz que a leitura falhou em vez de mostrar zero', () => {
-    render(<FunilDaImobiliaria porEtapa={PORETAPA} vendasNoMes={3} conversao={null} janelaDias={90} />)
+    render(<FunilDaImobiliaria porEtapa={PORETAPA} conversao={null} janelaDias={90} />)
     expect(screen.getByText(/Conversão indisponível/)).toBeInTheDocument()
   })
 

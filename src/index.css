@@ -768,12 +768,6 @@ html.light {
     from { opacity: 0; transform: scaleX(0.4) translateY(-10px); }
     to   { opacity: 1; transform: none; }
   }
-  /* Um brilho atravessa o funil de tempos em tempos */
-  .funil-brilho { animation: funil-brilho 9s ease-in-out 2.5s infinite; }
-  @keyframes funil-brilho {
-    0%       { transform: translateX(-220px) skewX(-18deg); }
-    35%, 100% { transform: translateX(820px) skewX(-18deg); }
-  }
   /* Número que acabou de mudar dá um pulo de luz */
   .pulse-acende { animation: pulse-acende 1.2s ease-out; }
   @keyframes pulse-acende {

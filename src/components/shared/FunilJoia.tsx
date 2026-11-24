@@ -22,6 +22,10 @@ import { JOIA } from '../../lib/paletaJoia'
  *             passagem e o acumulado (quanto do topo chegou) à esquerda
  *   estreito — os dois numa etiqueta só, centrada no vão entre as fatias,
  *             e o funil ocupa a largura toda
+ *
+ * `preencher` (TV do Pulse, 24/11/2026): o funil enche a caixa nas duas
+ * direções — a altura das fatias e a letra saem da altura disponível. Sem
+ * folga para nome em cima e número embaixo, os dois vão para a mesma linha.
  */
 
 export interface EtapaFunil {
@@ -51,8 +55,12 @@ const larguraTexto = (t: string, fs: number) => t.length * fs * 0.6
 /** Abaixo disto, as taxas vão para o vão entre as fatias. */
 const ESTREITO = 520
 
-export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false }: {
+const entre = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
+
+export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false, preencher = false }: {
   etapas: EtapaFunil[]
+  /** ocupa a altura da caixa (o pai dá a altura): fatias e letra crescem junto */
+  preencher?: boolean
   /** versão de cartão: fatias mais baixas, mesma forma */
   compacto?: boolean
   /** sobre fundo Marinho (painel da dashboard): taxas e rótulos claros */
@@ -63,11 +71,17 @@ export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false }: 
   const id = useId().replace(/:/g, '')
   const caixa = useRef<HTMLDivElement>(null)
   const [W, setW] = useState(0)
+  const [Hc, setHc] = useState(0)
 
   useEffect(() => {
     const el = caixa.current
     if (!el) return
-    const medir = () => setW(Math.round(el.getBoundingClientRect().width))
+    // Tamanho de layout, não o da tela: no Pulse o palco de 1600×900 é
+    // ampliado por transform, e o tamanho já ampliado seria ampliado de novo.
+    const medir = () => {
+      setW(el.clientWidth)
+      setHc(el.clientHeight)
+    }
     medir()
     const ro = new ResizeObserver(medir)
     ro.observe(el)
@@ -83,13 +97,35 @@ export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false }: 
   const corLado = escuro ? 'rgba(255,255,255,0.62)' : 'var(--t4)'
 
   // Tipografia em px — igual em qualquer largura.
-  const fsNome = compacto ? 12 : (estreito ? 14 : 15)
-  const fsNum  = compacto ? 26 : (estreito ? 30 : 40)
-  const fsTaxa = compacto ? 14 : 16
-  const fsLado = compacto ? 13 : 14
+  let fsNome = compacto ? 12 : (estreito ? 14 : 15)
+  let fsNum  = compacto ? 26 : (estreito ? 30 : 40)
+  let fsTaxa = compacto ? 14 : 16
+  let fsLado = compacto ? 13 : 14
 
-  const H   = compacto ? 58 : (estreito ? 72 : 92)
-  const VAO = estreito ? (compacto ? 32 : 36) : (compacto ? 12 : 14)
+  let H   = compacto ? 58 : (estreito ? 72 : 92)
+  let VAO = estreito ? (compacto ? 32 : 36) : (compacto ? 12 : 14)
+
+  // Enchendo a caixa: primeiro a letra das taxas (pela altura), depois o vão
+  // que ela pede, e o que sobra é das fatias.
+  const n = Math.max(1, etapas.length)
+  if (preencher && Hc > 0) {
+    fsTaxa = Math.round(entre(Hc / 34, 14, 19))
+    fsLado = fsTaxa - 1
+    VAO = estreito ? Math.round(fsTaxa * 1.6 + 10) : Math.round(entre(Hc / 40, 10, 18))
+    H = Math.round(entre((Hc - 8 - (n - 1) * VAO) / n, 40, 150))
+  }
+  const umaLinha = preencher && H < 66
+  if (preencher && Hc > 0) {
+    fsNum  = Math.round(umaLinha ? entre(H * 0.56, 20, 34) : entre(H * 0.42, 28, 60))
+    fsNome = Math.round(umaLinha ? entre(H * 0.26, 12, 14) : entre(H * 0.15, 13, 18))
+  }
+  // Nome e número: na caixa cheia, o par fica centrado na fatia; no padrão,
+  // as alturas de sempre. Numa linha só, os dois na linha do meio.
+  const bloco = fsNome + 8 + fsNum * 0.72
+  const yNome = (y: number) => umaLinha ? y + H / 2 + fsNome * 0.36
+    : preencher ? y + (H - bloco) / 2 + fsNome * 0.78 : y + H * 0.36
+  const yNum = (y: number) => umaLinha ? y + H / 2 + fsNum * 0.36
+    : preencher ? y + (H + bloco) / 2 : y + H * 0.8
 
   // Espaço lateral para as taxas (só no largo).
   const lado = estreito ? 0 : Math.max(
@@ -97,7 +133,7 @@ export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false }: 
     larguraTexto('99,9% do total', fsLado),
   ) + 16
   const cx = W / 2
-  const TOPO = Math.max(0, Math.min(W - 2 * lado, compacto ? 460 : 640))
+  const TOPO = Math.max(0, Math.min(W - 2 * lado, preencher ? 820 : compacto ? 460 : 640))
   const BASE = TOPO * 0.42
   const passo = (TOPO - BASE) / Math.max(1, etapas.length)
   const altura = etapas.length * (H + VAO) - VAO
@@ -114,9 +150,10 @@ export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false }: 
     `${e.nome} ${e.n.toLocaleString('pt-BR')}${i > 0 ? ` (${pct(e.n, etapas[i - 1].n)} da etapa anterior)` : ''}`).join(', ')}.`
 
   return (
-    <div ref={caixa} className="w-full">
-      {W > 0 && (
-        <svg width={W} height={altura + 8} viewBox={`0 -4 ${W} ${altura + 8}`} className="block overflow-visible"
+    <div ref={caixa} className={preencher ? 'relative w-full h-full min-h-0' : 'w-full'}>
+      {W > 0 && (!preencher || Hc > 0) && (
+        <svg width={W} height={altura + 8} viewBox={`0 -4 ${W} ${altura + 8}`} className={`block overflow-visible ${preencher ? 'absolute left-0' : ''}`}
+             style={preencher ? { top: Math.max(0, (Hc - altura - 8) / 2) } : undefined}
              role="img" aria-label={descricao}>
           <defs>
             {fatias.map(f => {
@@ -135,11 +172,12 @@ export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false }: 
             <g key={f.chave} className="funil-fatia" style={{ animationDelay: `${f.i * 90}ms` }}>
               <polygon points={f.pontos} fill={`url(#${id}-${f.chave})`}
                        stroke={escuro ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.7)'} strokeWidth={1.5} strokeLinejoin="round" />
-              <text x={cx} y={f.y + H * 0.36} textAnchor="middle"
+              <text x={umaLinha ? cx - 10 : cx} y={yNome(f.y)} textAnchor={umaLinha ? 'end' : 'middle'}
                     style={{ fill: 'rgba(255,255,255,0.95)', fontSize: fsNome, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                 {f.nome}
               </text>
-              <text x={cx} y={f.y + H * 0.8} textAnchor="middle" className="font-display tabular-nums"
+              <text x={umaLinha ? cx + 8 : cx} y={yNum(f.y)} textAnchor={umaLinha ? 'start' : 'middle'}
+                    className="font-display tabular-nums"
                     style={{ fill: '#fff', fontSize: fsNum, fontWeight: 800, letterSpacing: '-0.02em' }}>
                 {f.n.toLocaleString('pt-BR')}
               </text>

@@ -1,11 +1,7 @@
-import { JOIA } from '../../../lib/paletaJoia'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type React from 'react'
-import { useContagem } from '../../../hooks/useContagem'
 import type { ReactNode, RefObject } from 'react'
 import { CalendarX, CheckCircle2 } from 'lucide-react'
 import type { LeadFunnelStage, LeadPause } from '../../../types'
-import { STAGE_THEME } from '../../../lib/stageTheme'
 import { Grafico, eixoCategoria, eixoValor } from '../../../components/charts/Grafico'
 import type { CoresGrafico } from '../../../components/charts/Grafico'
 import { ETAPAS_FUNIL, fraseDoCorretor, rotuloDia } from '../../leads/dashboardLeads'
@@ -20,6 +16,8 @@ import { destacar } from '../../../components/shared/Destaque'
 import type { PulseTone } from '../pulseEvents'
 import type { PulseEvent, PulseTempos, PulseVgl } from '../types'
 import { fmtTaxa, passos, taxa } from '../../leads/conversao'
+import { FunilJoia } from '../../../components/shared/FunilJoia'
+import type { EtapaFunil } from '../../../components/shared/FunilJoia'
 import type { RelatorioConversao } from '../../leads/conversao'
 
 /**
@@ -84,24 +82,6 @@ function useAltura<T extends HTMLElement>(): [RefObject<T | null>, number] {
     return () => ro.disconnect()
   }, [])
   return [ref, h]
-}
-
-/**
- * Largura e altura vivas de um contêiner. Mede uma vez na montagem (com o
- * painel escondido o ResizeObserver não dispara) e depois acompanha.
- */
-function useMedidas<T extends HTMLElement>(): [RefObject<T | null>, { w: number; h: number }] {
-  const ref = useRef<T>(null)
-  const [m, setM] = useState({ w: 0, h: 0 })
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    setM({ w: el.clientWidth, h: el.clientHeight })
-    const ro = new ResizeObserver(([e]) => setM({ w: Math.floor(e.contentRect.width), h: Math.floor(e.contentRect.height) }))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-  return [ref, m]
 }
 
 export type Urgencia = 'ok' | 'alerta' | 'risco' | 'parado'
@@ -419,240 +399,72 @@ export function AoVivo({ feed, nomes, carregado }: {
 
 // ─── Funil ────────────────────────────────────────────────────────────────────
 
-/** Tons de cada fatia, do claro (topo) ao profundo — texto branco legível em todas. */
-// Paleta joia (lib/paletaJoia.ts): a receita do card da Meta de VGV em um
-// tom por etapa — claro → médio → fundo, texto branco legível em todas.
-const FATIA: Record<LeadFunnelStage, [string, string, string]> = {
-  lead:        [JOIA.lead.claro,        JOIA.lead.medio,        JOIA.lead.fundo],
-  followup:    [JOIA.followup.claro,    JOIA.followup.medio,    JOIA.followup.fundo],
-  atendimento: [JOIA.atendimento.claro, JOIA.atendimento.medio, JOIA.atendimento.fundo],
-  visita:      [JOIA.visita.claro,      JOIA.visita.medio,      JOIA.visita.fundo],
-  proposta:    [JOIA.proposta.claro,    JOIA.proposta.medio,    JOIA.proposta.fundo],
-  venda:       [JOIA.venda.claro,       JOIA.venda.medio,       JOIA.venda.fundo],
-}
+/** Os passos da safra, na régua da dashboard: chegaram → venda. */
+const JOIA_DO_PASSO: LeadFunnelStage[] = ['atendimento', 'visita', 'proposta', 'venda']
 
-/** Texto de número que sobe até o valor (700 ms) e acende quando muda. */
-function ContagemSvg({ valor, ...props }: { valor: number } & React.SVGProps<SVGTextElement>) {
-  const v = useContagem(valor)
-  const anterior = useRef(valor)
-  const [acende, setAcende] = useState(0)
-  useEffect(() => {
-    if (anterior.current !== valor) { anterior.current = valor; setAcende(a => a + 1) }
-  }, [valor])
-  return <text key={acende} className={acende ? 'pulse-acende' : undefined} {...props}>{Math.round(v).toLocaleString('pt-BR')}</text>
+export function etapasDaConversao(c: RelatorioConversao): EtapaFunil[] {
+  return [
+    { chave: 'recebidos', nome: 'Leads', n: c.received, joia: 'lead' },
+    ...passos(c).map((p, i) => ({
+      chave: JOIA_DO_PASSO[i] ?? p.para,
+      nome: p.para === 'Venda' ? 'Vendas' : p.para,
+      n: p.avancaram,
+      joia: JOIA_DO_PASSO[i] ?? 'venda',
+    })),
+  ]
 }
 
 /**
- * O funil da imobiliária, protagonista da tela, em duas leituras lado a lado:
- *
- *   • AGORA — quantos leads estão em cada etapa neste momento. É uma FORMA,
- *     não um gráfico de proporção (com 90 em followup e 1 em proposta, barras
- *     proporcionais virariam um traço).
- *   • CONVERSÃO — dos leads que chegaram nos últimos 90 dias, quantos chegaram
- *     a cada etapa e a taxa de cada passo. A mesma conta da aba Conversão
- *     (lead_conversion_report, modo safra), para os números baterem.
- *
- * Com o mouse: passar sobre uma fatia acende a fatia (as outras recuam) e
- * mostra o que ela é — quantos estão lá, quanto do funil ativo isso é e, na
- * escada ao lado, o passo de conversão correspondente.
+ * O funil da imobiliária — protagonista da TV. 24/11/2026 (Rafael: "quero o
+ * funil igual da dashboard, com os números no próprio funil"): o mesmo
+ * FunilJoia do detalhe da dashboard, num bloco Marinho, enchendo o card.
+ * Cada fatia traz quantos dos leads da janela chegaram ali; cada passagem, a
+ * taxa do passo e quanto do topo chegou. A conta é a da aba Conversão
+ * (lead_conversion_report, modo safra), para os números baterem. A escada de
+ * conversão ao lado e o funil "agora" por etapa saíram — o "agora" fica numa
+ * linha do cabeçalho.
  */
-export function FunilDaImobiliaria({ porEtapa, vendasNoMes, conversao, janelaDias, empilhado = false }: {
-  /** celular: o funil em cima e a escada embaixo, em vez de lado a lado */
+export function FunilDaImobiliaria({ porEtapa, conversao, janelaDias, empilhado = false }: {
+  /** celular: altura natural em vez de encher a coluna */
   empilhado?: boolean
   porEtapa: Partial<Record<LeadFunnelStage, number>>
-  vendasNoMes: number | null
   conversao: RelatorioConversao | null
   janelaDias: number
 }) {
-  const [foco, setFoco] = useState<LeadFunnelStage | null>(null)
-  // 24/11/2026: o funil acompanha a forma do espaço. Antes o desenho tinha
-  // proporção fixa (quase quadrada) e, numa coluna alta e estreita, ficava
-  // preso pela largura com um vão enorme em cima e embaixo. Agora a altura de
-  // cada fatia sai da proporção da área: o funil enche a coluna nas duas
-  // direções, e o texto cresce junto (ele é medido na mesma escala).
-  const [area, medidas] = useMedidas<HTMLDivElement>()
-  // Card mais alto que largo (TV em pé, janela estreita): lado a lado a
-  // coluna do funil fica fina demais. Aí o funil sobe em largura total e a
-  // escada de conversão desce para baixo dele.
-  const [card, cardMedidas] = useMedidas<HTMLDivElement>()
-  const emPe = empilhado || (cardMedidas.w > 0 && cardMedidas.h / cardMedidas.w > 1.05)
-  const W = 440, VAO = 8, TOPO = 430, BASE = 150
-  const proporcao = medidas.w > 0 && medidas.h > 0 ? medidas.h / medidas.w : 1
-  const H = Math.round(Math.max(56, Math.min(150, (W * proporcao - 8 + VAO) / ETAPAS_FUNIL.length - VAO)))
   const ativos = ETAPAS_FUNIL.filter(e => e !== 'venda').reduce((t, e) => t + (porEtapa[e] ?? 0), 0)
-  const passo = (TOPO - BASE) / ETAPAS_FUNIL.length
-  const altura = ETAPAS_FUNIL.length * (H + VAO) - VAO
-  const cx = W / 2
-  const fatias = ETAPAS_FUNIL.map((e, i) => {
-    const y = i * (H + VAO)
-    const a = TOPO - i * passo, b = TOPO - (i + 1) * passo
-    const pts = [[cx - a / 2, y], [cx + a / 2, y], [cx + b / 2, y + H], [cx - b / 2, y + H]]
-    return {
-      etapa: e, i, y,
-      nome: e === 'venda' ? 'Vendas no mês' : STAGE_THEME[e].columnLabel,
-      n: e === 'venda' ? vendasNoMes : (porEtapa[e] ?? 0),
-      pontos: pts.map(p => p.join(',')).join(' '),
-    }
-  })
-  const focada = fatias.find(f => f.etapa === foco)
+  const etapas = conversao ? etapasDaConversao(conversao) : null
+  const fim = conversao && etapas ? taxa(etapas[etapas.length - 1].n, conversao.received) : null
 
   return (
-    <div ref={card} className={`flex-1 min-h-0 grid ${empilhado ? 'gap-4 px-4 pb-4' : emPe ? 'gap-4 px-6 pb-6' : 'gap-2 px-6 pb-6'}`}
-         style={emPe
-           ? { gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: empilhado ? undefined : 'minmax(0, 1fr) auto' }
-           : { gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
-      {/* ── agora ── */}
-      <div className={`relative min-h-0 flex flex-col ${empilhado ? 'h-[340px]' : ''}`}>
-        <p className="text-[13.5px] text-t3 mb-2">Agora · <span className="font-semibold text-t1 tabular-nums">{ativos.toLocaleString('pt-BR')}</span> leads ativos</p>
-        <div ref={area} className="relative flex-1 min-h-0 flex items-center justify-center" role="presentation" onMouseLeave={() => setFoco(null)}>
-          <svg viewBox={`0 -4 ${W} ${altura + 8}`} className="absolute inset-0 h-full w-full overflow-visible" role="img"
-               aria-label={`Funil agora: ${fatias.map(f => `${f.nome} ${f.n ?? 'sem dado'}`).join(', ')}.`}>
-            <defs>
-              {fatias.map(f => (
-                <linearGradient key={f.etapa} id={`fatia-${f.etapa}`} x1="0" y1="0" x2="0.45" y2="1">
-                  <stop offset="0%" stopColor={FATIA[f.etapa][0]} />
-                  <stop offset="48%" stopColor={FATIA[f.etapa][1]} />
-                  <stop offset="100%" stopColor={FATIA[f.etapa][2]} />
-                </linearGradient>
-              ))}
-              <clipPath id="funil-forma">{fatias.map(f => <polygon key={f.etapa} points={f.pontos} />)}</clipPath>
-              <radialGradient id="funil-champanhe" cx="1" cy="0" r="1.1">
-                <stop offset="0%" stopColor="#D6B26E" stopOpacity="0.30" />
-                <stop offset="55%" stopColor="#D6B26E" stopOpacity="0" />
-              </radialGradient>
-              <linearGradient id="funil-luz" x1="0" x2="1">
-                <stop offset="0%" stopColor="#fff" stopOpacity="0" />
-                <stop offset="50%" stopColor="#fff" stopOpacity="0.30" />
-                <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-
-            {fatias.map(f => {
-              const recua = foco !== null && foco !== f.etapa
-              return (
-                <g key={f.etapa} className="funil-fatia cursor-pointer focus:outline-none" style={{ animationDelay: `${f.i * 110}ms` }}
-                   role="button" tabIndex={0} aria-label={`${f.nome}: ${f.n ?? 'sem dado'}`}
-                   onMouseEnter={() => setFoco(f.etapa)} onFocus={() => setFoco(f.etapa)} onBlur={() => setFoco(null)}
-                   onKeyDown={e => { if (e.key === 'Escape') setFoco(null) }}>
-                  <g style={{
-                    transformBox: 'fill-box', transformOrigin: 'center',
-                    transform: foco === f.etapa ? 'scale(1.045)' : 'none',
-                    opacity: recua ? 0.38 : 1,
-                    transition: 'transform 260ms cubic-bezier(.2,.8,.2,1), opacity 260ms ease',
-                  }}>
-                    <polygon points={f.pontos} fill={`url(#fatia-${f.etapa})`} stroke="rgba(255,255,255,0.6)" strokeWidth={1.5} strokeLinejoin="round" />
-                    <text x={cx} y={f.y + H / 2 - 10} textAnchor="middle" pointerEvents="none"
-                          style={{ fill: 'rgba(255,255,255,0.9)', fontSize: 13.5, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                      {f.nome}
-                    </text>
-                    {f.n === null
-                      ? <text x={cx} y={f.y + H / 2 + 21} textAnchor="middle" pointerEvents="none" style={{ fill: '#fff', fontSize: 30, fontWeight: 800 }}>—</text>
-                      : <ContagemSvg valor={f.n} x={cx} y={f.y + H / 2 + 21} textAnchor="middle" pointerEvents="none" className="font-display tabular-nums"
-                                     style={{ fill: '#fff', fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em' }} />}
-                  </g>
-                </g>
-              )
-            })}
-
-            {/* um brilho atravessa a forma de tempos em tempos */}
-            <g clipPath="url(#funil-forma)" aria-hidden pointerEvents="none">
-              {/* o brilho champanhe do canto, como no card da Meta de VGV */}
-              <rect x={0} y={0} width={W} height={altura} fill="url(#funil-champanhe)" />
-              <rect className="funil-brilho" x={0} y={-20} width={110} height={altura + 40} fill="url(#funil-luz)" />
-            </g>
-          </svg>
-
-          {/* o que a fatia sob o mouse é */}
-          {focada && (
-            <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-[14px] bg-[#0F2759] px-4 py-3 text-white shadow-[0_18px_40px_-12px_rgba(15,39,89,0.55)] pulse-item-in whitespace-nowrap"
-                 role="status">
-              <p className="text-[13px] font-semibold uppercase tracking-[0.14em]" style={{ color: focada.etapa === 'venda' ? '#E2C385' : 'rgba(255,255,255,0.72)' }}>{focada.nome}</p>
-              <p className="mt-0.5 font-display text-[26px] font-extrabold leading-none tabular-nums">
-                {focada.n === null ? '—' : focada.n.toLocaleString('pt-BR')}
-                <span className="ml-1.5 text-[14px] font-medium text-white/70">
-                  {focada.etapa === 'venda' ? 'vendas neste mês' : focada.n === 1 ? 'lead agora' : 'leads agora'}
-                </span>
-              </p>
-              {focada.etapa !== 'venda' && ativos > 0 && focada.n !== null && (
-                <p className="mt-1 text-[13.5px] text-white/75">{Math.round((focada.n / ativos) * 100)}% do funil ativo</p>
-              )}
-            </div>
-          )}
+    <section className={`pulse-marinho pulse-funil marinho-bloco relative flex flex-col min-w-0 overflow-hidden ${empilhado ? 'rounded-[24px] p-4' : 'rounded-[28px] min-h-0 px-6 pt-5 pb-6'}`}
+             aria-label="Funil da imobiliária">
+      <header className="relative flex flex-wrap items-end gap-x-4 gap-y-2 shrink-0">
+        <div className="min-w-0">
+          <h2 className={`font-display font-bold tracking-[-0.02em] whitespace-nowrap ${empilhado ? 'text-[18px]' : 'text-[22px]'}`} style={{ color: 'var(--m-t1)' }}>
+            {destacar('Funil da *imobiliária*')}
+          </h2>
+          <p className={`mt-1 leading-snug ${empilhado ? 'text-[13px]' : 'text-[14px]'}`} style={{ color: 'var(--m-t3)' }}>
+            Quem chegou nos últimos {janelaDias} dias<br />
+            <b className="tabular-nums" style={{ color: 'var(--m-t1)' }}>{ativos.toLocaleString('pt-BR')}</b> em andamento agora
+          </p>
         </div>
+        <div className="ml-auto text-right shrink-0">
+          <p className={`font-display leading-none font-extrabold tracking-[-0.04em] tabular-nums ${empilhado ? 'text-[34px]' : 'text-[46px]'}`} style={{ color: 'var(--m-ouro)' }}>
+            {fmtTaxa(fim)}
+          </p>
+          <p className="mt-1 text-[13px]" style={{ color: 'var(--m-t2)' }}>dos leads viram venda</p>
+        </div>
+      </header>
+
+      <div className={`dash-vidro relative mt-4 flex ${empilhado ? 'px-2 py-4' : 'flex-1 min-h-0 px-3 py-4'}`}>
+        {etapas
+          ? <FunilJoia escuro preencher={!empilhado} etapas={etapas}
+                       rotulo={`Funil da imobiliária, leads que chegaram nos últimos ${janelaDias} dias`} />
+          : <p className="m-auto px-4 text-center text-[15px]" style={{ color: 'var(--m-t2)' }}>
+              Conversão indisponível agora — a leitura do banco falhou.
+            </p>}
       </div>
-
-      {/* ── conversão ── */}
-      <EscadaDeConversao conversao={conversao} janelaDias={janelaDias} foco={foco} />
-    </div>
-  )
-}
-
-const ETAPA_DO_PASSO: Record<string, LeadFunnelStage> = {
-  Recebidos: 'lead', Atendimento: 'atendimento', Visita: 'visita', Proposta: 'proposta', Venda: 'venda',
-}
-
-/**
- * A escada de conversão: quantos dos leads que chegaram na janela chegaram a
- * cada etapa, e entre um degrau e outro, a taxa daquele passo. A conversão de
- * ponta a ponta (lead → venda) é o número grande do topo.
- */
-function EscadaDeConversao({ conversao, janelaDias, foco }: {
-  conversao: RelatorioConversao | null
-  janelaDias: number
-  foco: LeadFunnelStage | null
-}) {
-  if (!conversao) {
-    return (
-      <div className="min-h-0 flex flex-col justify-center rounded-[16px] bg-s2/60 px-5 text-[14px] text-t3">
-        Conversão indisponível agora — a leitura do banco falhou.
-      </div>
-    )
-  }
-  const ps = passos(conversao)
-  const recebidos = conversao.received
-  const vendas = ps[ps.length - 1]?.avancaram ?? 0
-  const total = taxa(vendas, recebidos)
-  const degraus = [{ nome: 'Recebidos', n: recebidos }, ...ps.map(p => ({ nome: p.para, n: p.avancaram }))]
-  const maxRaiz = Math.sqrt(Math.max(1, recebidos))
-
-  return (
-    <div className="min-h-0 flex flex-col rounded-[18px] bg-[#F4F6FB] px-5 py-4">
-      <p className="text-[13.5px] text-t3">Conversão · leads dos últimos {janelaDias} dias</p>
-      <p className="mt-1 flex items-baseline gap-2">
-        <span className="font-display text-[44px] leading-none font-extrabold tracking-[-0.04em] text-t1 tabular-nums">{fmtTaxa(total)}</span>
-        <span className="text-[14px] text-t2 leading-tight">dos leads<br />viram venda</span>
-      </p>
-
-      <ol className="mt-3 flex-1 min-h-0 flex flex-col justify-between">
-        {degraus.map((d, i) => {
-          const etapa = ETAPA_DO_PASSO[d.nome] ?? 'lead'
-          const ativo = foco === null || foco === etapa || (foco === 'followup' && etapa === 'lead')
-          const p = i > 0 ? ps[i - 1] : null
-          return (
-            <li key={d.nome} className="transition-opacity duration-200" style={{ opacity: ativo ? 1 : 0.35 }}>
-              {p && (
-                <div className="flex items-center gap-2 py-1 pl-1">
-                  <span className="text-t4 text-[14px]" aria-hidden>↓</span>
-                  <span className="rounded-full px-2.5 py-0.5 text-[13px] font-bold tabular-nums"
-                        style={{ background: `color-mix(in srgb, ${FATIA[etapa][1]} 14%, transparent)`, color: FATIA[etapa][1] }}>
-                    {fmtTaxa(p.taxa)}
-                  </span>
-                  <span className="text-[12.5px] text-t3">avançam</span>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <span className="w-[104px] shrink-0 text-[14.5px] font-semibold text-t1">{d.nome}</span>
-                <span className="relative flex-1 h-3 rounded-full bg-white overflow-hidden">
-                  <span className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700"
-                        style={{ width: `${Math.max(2, (Math.sqrt(d.n) / maxRaiz) * 100)}%`, background: `linear-gradient(90deg, ${FATIA[etapa][0]}, ${FATIA[etapa][2]})` }} />
-                </span>
-                <span className="w-[52px] shrink-0 text-right font-display text-[20px] font-extrabold tabular-nums text-t1">{d.n.toLocaleString('pt-BR')}</span>
-              </div>
-            </li>
-          )
-        })}
-      </ol>
-    </div>
+    </section>
   )
 }
 
