@@ -37,6 +37,9 @@ export interface BancoRow {
   tarifa: number
   atualizado_em: string | null
   atualizado_por: string | null
+  /** 'bcb_media' = taxa provisória que segue a média do BCB (migração 112) */
+  taxa_origem: 'balcao' | 'bcb_media'
+  taxa_media_mes: string | null
 }
 
 export type SerieIndice = 'incc_di' | 'incc_m' | 'tr' | 'cub_sc'
@@ -76,6 +79,8 @@ function lerBanco(r: Record<string, unknown>): BancoRow {
     dfi: Number(r.dfi ?? 0.01), tarifa: Number(r.tarifa ?? 25),
     atualizado_em: (r.atualizado_em as string | null) ?? null,
     atualizado_por: (r.atualizado_por as string | null) ?? null,
+    taxa_origem: r.taxa_origem === 'bcb_media' ? 'bcb_media' : 'balcao',
+    taxa_media_mes: (r.taxa_media_mes as string | null) ?? null,
   }
 }
 
@@ -89,6 +94,7 @@ export function bancoParaCalculo(b: BancoRow): ParametrosBanco | null {
     idadeMaximaMeses: b.idade_maxima_meses, comprometimento: b.comprometimento,
     mip: b.mip, dfi: b.dfi, tarifa: b.tarifa,
     atualizadoEm: b.atualizado_em, atualizadoPor: b.atualizado_por,
+    taxaOrigem: b.taxa_origem, taxaMediaMes: b.taxa_media_mes,
   }
 }
 
@@ -99,6 +105,14 @@ export function acumuladoDaSerie(indices: IndiceMensal[], serie: SerieIndice): {
   const valor = acumulado12Meses(ultimas.map(l => l.variacao))
   if (valor == null) return null
   return { valor, ate: ultimas[ultimas.length - 1].mes }
+}
+
+/** '2026-10' → 'out/26' */
+export function mesCurto(anoMes: string | null | undefined): string {
+  if (!anoMes) return ''
+  const [a, m] = anoMes.split('-').map(Number)
+  if (!a || !m) return ''
+  return `${new Date(a, m - 1, 1).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}/${String(a).slice(-2)}`
 }
 
 /** Dias desde uma data ISO. */

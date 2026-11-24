@@ -9,7 +9,7 @@ import { PreviewColumn } from '../shared/components'
 import {
   compararBancos, evolucaoParcela, IndiceObra, mesesAte, ParametrosBanco, simular, Sistema,
 } from './calc'
-import { acumuladoDaSerie, bancoParaCalculo, diasDesde, SERIE_DO_INDICE, useParametrosFinanciamento } from './dados'
+import { acumuladoDaSerie, bancoParaCalculo, diasDesde, mesCurto, SERIE_DO_INDICE, useParametrosFinanciamento } from './dados'
 import { ESTADO_INICIAL, EstadoFinanciamento, RepasseDoFluxo, ResumoFinanciamento } from './estado'
 import { mensagemFinanciamento } from './mensagem'
 import { Ajuda, brl, CampoDinheiro, CampoNumero, Contagem, Medidor, pct, Regua, RotuloCampo } from './pecas'
@@ -153,8 +153,10 @@ export function SimuladorFinanciamento({
     return <p className="p-5 text-[13px] text-t3">Nenhum banco ativo com taxa cadastrada. O admin cadastra em Admin › Bancos e taxas.</p>
   }
 
+  const provisoria = banco.taxaOrigem === 'bcb_media'
   const diasTaxa = diasDesde(linhaDoBanco?.atualizado_em ?? null)
-  const taxaVelha = diasTaxa != null && diasTaxa > 30 && e.taxaAnual == null
+  // A média do BCB é atualizada sozinha todo dia; o alerta de 30 dias é para a taxa de balcão digitada.
+  const taxaVelha = !provisoria && diasTaxa != null && diasTaxa > 30 && e.taxaAnual == null
   const dataTaxa = linhaDoBanco?.atualizado_em
     ? new Date(linhaDoBanco.atualizado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
     : null
@@ -197,6 +199,11 @@ export function SimuladorFinanciamento({
                     </span>
                     {e.taxaAnual != null
                       ? <span className="rounded-full px-2.5 py-1 bg-[rgba(255,255,255,0.10)]">taxa editada</span>
+                      : provisoria
+                        ? <span className="rounded-full px-2.5 py-1 bg-[rgba(214,178,110,0.25)]"
+                                title="Taxa provisória: a média praticada pelo banco que o Banco Central publica, não a taxa de balcão">
+                            média BCB {mesCurto(banco.taxaMediaMes)} · provisória
+                          </span>
                       : dataTaxa && (
                         <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-[rgba(255,255,255,0.10)]">
                           <CalendarClock size={11} aria-hidden /> atualizada em {dataTaxa}
@@ -341,7 +348,9 @@ export function SimuladorFinanciamento({
                   </span>
                   <span className={`block mt-2.5 text-[11.5px] ${ativo ? 'opacity-70' : 'text-t4'}`}>renda exigida</span>
                   <span className="block text-[16px] font-bold tabular-nums leading-tight">{renda != null ? brl(renda, 0) : '—'}</span>
-                  <span className={`block text-[11.5px] tabular-nums ${ativo ? 'opacity-70' : 'text-t4'}`}>{b.taxaSfh != null ? `${pct(b.taxaSfh)} a.a.` : ''}</span>
+                  <span className={`block text-[11.5px] tabular-nums ${ativo ? 'opacity-70' : 'text-t4'}`}>
+                    {b.taxaSfh != null ? `${pct(b.taxaSfh)} a.a.` : ''}{b.taxaOrigem === 'bcb_media' ? ' · média BCB' : ''}
+                  </span>
                   {melhor && (
                     <span className={`absolute top-3 right-3 text-[10.5px] font-bold rounded-full px-2 py-0.5
                                       ${ativo ? 'bg-[#D6B26E] text-[#0B1A3A]' : 'bg-success-bg text-success'}`}>menor</span>
@@ -362,8 +371,12 @@ export function SimuladorFinanciamento({
               </div>
             ))}
           </div>
-          {semTaxa.length > 0 && (
-            <p className="text-[12px] text-t4 -mt-2">Os bancos apagados entram assim que o admin cadastrar a taxa em Admin › Bancos e taxas.</p>
+          {(semTaxa.length > 0 || bancos.some(b => b.taxaOrigem === 'bcb_media')) && (
+            <p className="text-[12px] text-t4 -mt-2">
+              {bancos.some(b => b.taxaOrigem === 'bcb_media') && 'Os bancos com "média BCB" usam, por enquanto, a taxa média que o Banco Central publica e as regras da Caixa. '}
+              {semTaxa.length > 0 && 'Os apagados ainda não têm taxa. '}
+              Ajuste em Admin › Bancos e taxas.
+            </p>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

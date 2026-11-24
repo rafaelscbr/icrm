@@ -96,7 +96,8 @@ export function BancosETaxas() {
                   <span className="block text-[12px] text-t4">
                     {b.ativo ? 'Ativo' : 'Desligado'}
                     {b.atualizado_em && <> · atualizado em {dataHora(b.atualizado_em)}{nomeDe(b.atualizado_por) && ` por ${nomeDe(b.atualizado_por)}`}</>}
-                    {b.ativo && dias != null && dias > 30 && <span className="text-warning"> · há {dias} dias</span>}
+                    {b.taxa_origem === 'bcb_media' && <span className="text-brand-text font-semibold"> · média BCB, provisória</span>}
+                    {b.ativo && b.taxa_origem === 'balcao' && dias != null && dias > 30 && <span className="text-warning"> · há {dias} dias</span>}
                   </span>
                 </span>
                 <span className="text-right flex-shrink-0">
@@ -256,13 +257,23 @@ function EditarBanco({ banco, taxas, onFechar, onSalvo }: {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <CampoNum rotulo="Taxa SFH (balcão)" sufixo="% a.a." valor={b.taxa_sfh} onChange={v => muda({ taxa_sfh: v })} />
+            {/* Digitar a taxa = taxa de balcão (para de seguir a média do BCB). */}
+            <CampoNum rotulo="Taxa SFH (balcão)" sufixo="% a.a." valor={b.taxa_sfh} onChange={v => muda({ taxa_sfh: v, taxa_origem: 'balcao' })} />
             {ref && (
               <p className="text-[11.5px] text-t4 tabular-nums">
                 Média BCB {mesCurto(ref.ano_mes)}: {pct(ref.taxa_ano)}{' '}
-                <button type="button" onClick={() => muda({ taxa_sfh: ref.taxa_ano })}
+                <button type="button" onClick={() => muda({ taxa_sfh: ref.taxa_ano, taxa_origem: 'balcao' })}
                         className="font-semibold text-t1 underline underline-offset-2 cursor-pointer">usar essa taxa</button>
               </p>
+            )}
+            {ref && (
+              <label className="inline-flex items-start gap-2 text-[12.5px] text-t2 cursor-pointer">
+                <input type="checkbox" className="mt-0.5" checked={b.taxa_origem === 'bcb_media'}
+                       onChange={ev => muda(ev.target.checked
+                         ? { taxa_origem: 'bcb_media', taxa_sfh: ref.taxa_ano, taxa_media_mes: ref.ano_mes }
+                         : { taxa_origem: 'balcao' })} />
+                Seguir a média do BCB todo mês (provisório, até ter a taxa de balcão)
+              </label>
             )}
           </div>
           <CampoNum rotulo="Taxa SFI (acima de R$ 2,25 mi)" sufixo="% a.a." valor={b.taxa_sfi} onChange={v => muda({ taxa_sfi: v })} />

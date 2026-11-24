@@ -10,6 +10,9 @@
 // "buscar agora" do admin (RPC indices_bcb_buscar_agora). Implantar com
 // verify_jwt = false: a autenticação é o segredo do gancho, como na send-push.
 //
+// Depois da Olinda, os bancos com taxa provisória pela média do BCB (migração
+// 112) recebem a média nova (RPC bancos_aplicar_media_bcb).
+//
 // Se o BCB falhar, nada é apagado: a calculadora segue com o último valor salvo
 // e o admin vê o erro em indices_sync.
 
@@ -145,7 +148,11 @@ Deno.serve(async (req: Request) => {
 
   const erroSgs = await buscarSgs()
   await marcar('sgs', erroSgs)
-  const erroOlinda = await buscarOlinda()
+  let erroOlinda = await buscarOlinda()
+  // Bancos ligados provisoriamente pela média do BCB (migração 112) seguem a
+  // média nova. Os com taxa de balcão digitada no admin não mudam.
+  const { error: eMedia } = await supabase.rpc('bancos_aplicar_media_bcb')
+  if (eMedia) erroOlinda = [erroOlinda, `média nos bancos: ${eMedia.message}`].filter(Boolean).join(' · ')
   await marcar('olinda', erroOlinda)
 
   return json(200, { sgs: erroSgs ?? 'ok', olinda: erroOlinda ?? 'ok' })

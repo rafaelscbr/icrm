@@ -62,6 +62,10 @@ export interface ParametrosBanco {
   tarifa: number
   atualizadoEm: string | null
   atualizadoPor: string | null
+  /** 'bcb_media' = taxa provisória pela média do Banco Central (migração 112) */
+  taxaOrigem?: 'balcao' | 'bcb_media'
+  /** 'YYYY-MM' da média do BCB usada */
+  taxaMediaMes?: string | null
 }
 
 // ── Peças ────────────────────────────────────────────────────────────────────
