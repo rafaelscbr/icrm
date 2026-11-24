@@ -149,7 +149,7 @@ function CartaoSomenteLeitura({ lead, agora, onAbrir }: { lead: Lead; agora: num
   const diasNaEtapa = Math.floor((agora - new Date(lead.stageChangedAt ?? lead.createdAt).getTime()) / DIA_MS)
   const nivel = nivelContato(lead, agora)
   const corContato = nivel === 'parado' ? 'text-error' : nivel === 'esfriando' ? 'text-warning' : 'text-t3'
-  // O mesmo destaque de contato do Kanban de Leads (contato.ts)
+  // O mesmo destaque de followup atrasado do Kanban de Leads (contato.ts)
   const tom = tomDoContato(lead, agora)
 
   return (

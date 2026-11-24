@@ -12,7 +12,7 @@ import { destacar } from '../../../components/shared/Destaque'
 import { ORIGEM_META } from '../../leads/origens'
 import { ESFRIANDO_DIAS, haQuantoTempo, tomDoContato, TOM_CONTATO } from '../../leads/contato'
 import { useRelogio } from '../useKiosk'
-import { colunasDaSala, dinheiroDoCartao, DINHEIRO_ZERO, somar } from '../kanbanDaSala'
+import { colunasDaSala, dinheiroDoCartao, DINHEIRO_ZERO, somar, VIVO_MS } from '../kanbanDaSala'
 import type { CartaoSala, ColunaSala, DinheiroSala } from '../kanbanDaSala'
 
 /**
@@ -44,8 +44,6 @@ const CARTAO_H = 136
 const CARTAO_FOLLOWUP_H = 160
 const RODAPE_H = 46
 const VAO = 10
-/** quanto tempo o cartão que mexeu fica marcado como "agora" */
-const VIVO_MS = 2 * 60 * 1000
 const DIA = 86_400_000
 
 const rs = (v: number) => formatCurrencyRound(v)
@@ -122,8 +120,8 @@ function Cartao({ c, dono, agora, pctDe }: { c: CartaoSala; dono?: Profile; agor
   const Origem = c.origem ? ORIGEM_META[c.origem] : undefined
   const share = dono?.commissionShare ?? null
   const din = c.vgv ? dinheiroDoCartao(c, () => share, pctDe) : null
-  // O mesmo destaque de contato do Kanban de Leads (contato.ts)
-  const tom = tomDoContato({ lastContactAt: c.ultimoContatoAt, funnelStage: c.etapa }, agora)
+  // O mesmo destaque de followup atrasado do Kanban de Leads (contato.ts)
+  const tom = tomDoContato({ lastContactAt: c.ultimoContatoAt, createdAt: c.criadoEm, funnelStage: c.etapa }, agora)
   return (
     <div className={`kanban-card pulse-cartao relative shrink-0 border rounded-[16px] overflow-hidden px-3.5 pt-3 pb-3.5 ${vivo ? 'pulse-cartao-vivo' : ''} ${tom ? TOM_CONTATO[tom].classe : ''}`}
          style={{ height: alturaDe(c), ['--etapa' as string]: JOIA[c.etapa].medio }}>
@@ -355,7 +353,8 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
   const shareDe = useMemo(() => (id: string | null) => (id ? porId.get(id)?.commissionShare ?? null : null), [porId])
   const pctDe = useMemo(() => (id: string | null) => (id ? pctProduto[id] : undefined), [pctProduto])
 
-  const colunas = useMemo(() => (cartoes ? colunasDaSala(cartoes, shareDe, pctDe) : null), [cartoes, shareDe, pctDe])
+  // `agora` anda a cada 30 s: um lead que passa de 24 h sem contato sobe sozinho
+  const colunas = useMemo(() => (cartoes ? colunasDaSala(cartoes, shareDe, pctDe, agora) : null), [cartoes, shareDe, pctDe, agora])
 
   // O placar do Kanban: o que está em jogo nos leads em aberto (fora Venda)
   const placar = useMemo(() => {

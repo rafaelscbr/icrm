@@ -35,12 +35,28 @@ describe('Kanban da sala', () => {
     expect(k.map(c => c.id)).toEqual(['a'])
   })
 
+  it('na TV, o followup atrasado vem primeiro (contato mais antigo em cima); o que mexeu agora fica no topo', () => {
+    const agora = new Date('2026-11-24T15:00:00Z').getTime()
+    const h = (n: number) => new Date(agora - n * 3_600_000).toISOString()
+    const k = [
+      cartaoDaLinha(linha({ id: 'emdia', last_contact_at: h(2), stage_changed_at: h(1) }))!,
+      cartaoDaLinha(linha({ id: '24h', last_contact_at: h(30) }))!,
+      cartaoDaLinha(linha({ id: '24h-velho', last_contact_at: h(60) }))!,
+      cartaoDaLinha(linha({ id: 'parado', last_contact_at: h(24 * 10) }))!,
+      cartaoDaLinha(linha({ id: 'nunca', last_contact_at: null, created_at: h(48) }))!,
+      { ...cartaoDaLinha(linha({ id: 'vivo', last_contact_at: h(0) }))!, vivoAt: agora - 30_000 },
+    ]
+    const at = colunasDaSala(k, () => null, () => 5, agora)[2]
+    expect(at.cartoes.map(c => c.id)).toEqual(['vivo', 'parado', '24h-velho', 'nunca', '24h', 'emdia'])
+  })
+
   it('colunas: mais recente em cima e o dinheiro pela conta da casa', () => {
     const k = [
       cartaoDaLinha(linha({ id: '1', stage_changed_at: '2026-11-10T00:00:00Z' }))!,
       cartaoDaLinha(linha({ id: '2', stage_changed_at: '2026-11-22T00:00:00Z', broker_id: 'rafa' }))!,
     ]
-    const cols = colunasDaSala(k, id => (id === 'dio' ? 50 : null), () => 5)
+    // uma hora depois da chegada: ninguém atrasado, vale o mais recente em cima
+    const cols = colunasDaSala(k, id => (id === 'dio' ? 50 : null), () => 5, new Date('2026-11-01T13:00:00Z').getTime())
     expect(cols.map(c => c.etapa)).toEqual(['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda'])
     const at = cols[2]
     expect(at.cartoes.map(c => c.id)).toEqual(['2', '1'])

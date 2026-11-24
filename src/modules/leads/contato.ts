@@ -71,35 +71,33 @@ export function fraseContato(lead: Lead, agora = Date.now()): string {
 }
 
 /**
- * Destaque do cartão nos Kanbans (Rafael, 24/11/2026: "algo que chame atenção
- * mas nada gritante", no estilo dos cartões coloridos que ele mostrou). O
- * cartão em dia fica branco; quem pede contato ganha um tom pastel inteiro:
+ * Followup atrasado — o destaque do cartão nos Kanbans (Rafael, 24/11/2026).
+ * A cor vem de uma INFORMAÇÃO do lead, nunca da coluna: por enquanto só uma,
+ * o followup atrasado = mais de 24 h sem contato (desde a chegada, se nunca
+ * houve contato). O cartão inteiro ganha um tom pastel, "chama atenção mas
+ * nada gritante"; o resto fica branco. Venda, descartado e fechado não ganham
+ * cor. "Contato" é o de sempre: leads.last_contact_at (WhatsApp, ligação,
+ * tarefa — migração 074).
  *
- *   nunca    — ninguém falou com o lead ainda (lilás), desde a chegada
- *   atrasado — o último contato foi há mais de 24 h (âmbar)
- *   parado   — mais de 7 dias sem contato (coral)
- *
- * Venda, descartado e fechado não ganham cor. "Contato" é o mesmo de sempre:
- * leads.last_contact_at (WhatsApp, ligação, tarefa — migração 074).
+ * Outras informações podem ganhar o seu tom depois: TOM_CONTATO é a lista.
  */
 export const DESTAQUE_HORAS = 24
 
-export type TomContato = 'nunca' | 'atrasado' | 'parado'
+export type TomContato = 'atrasado'
 
-export const TOM_CONTATO: Record<TomContato, { rotulo: string; classe: string }> = {
-  nunca:    { rotulo: 'Sem contato ainda',             classe: 'kanban-tom kanban-tom-nunca' },
-  atrasado: { rotulo: `+${DESTAQUE_HORAS}h sem contato`, classe: 'kanban-tom kanban-tom-atrasado' },
-  parado:   { rotulo: `+${PARADO_DIAS} dias sem contato`, classe: 'kanban-tom kanban-tom-parado' },
+export const TOM_CONTATO: Record<TomContato, { rotulo: string; dica: string; classe: string }> = {
+  atrasado: {
+    rotulo: 'Followup atrasado',
+    dica: `Mais de ${DESTAQUE_HORAS} h sem contato (WhatsApp, ligação ou tarefa concluída)`,
+    classe: 'kanban-tom kanban-tom-atrasado',
+  },
 }
 
 export function tomDoContato(
-  lead: { lastContactAt?: string | null; funnelStage: string; closedAt?: string | null; discardReason?: unknown },
+  lead: { lastContactAt?: string | null; createdAt: string; funnelStage: string; closedAt?: string | null; discardReason?: unknown },
   agora = Date.now(),
 ): TomContato | null {
   if (lead.funnelStage === 'venda' || lead.closedAt || lead.discardReason) return null
-  if (!lead.lastContactAt) return 'nunca'
-  const ms = agora - new Date(lead.lastContactAt).getTime()
-  if (ms > PARADO_DIAS * DIA) return 'parado'
-  if (ms > DESTAQUE_HORAS * 3_600_000) return 'atrasado'
-  return null
+  const ref = lead.lastContactAt ?? lead.createdAt
+  return agora - new Date(ref).getTime() > DESTAQUE_HORAS * 3_600_000 ? 'atrasado' : null
 }

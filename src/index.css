@@ -2587,19 +2587,15 @@ button.perfil-celula:focus-visible { outline: 2px solid var(--brand); outline-of
 }
 
 /*
- * Destaque de contato no cartão (24/11/2026, contato.ts → tomDoContato).
- * Inspirado nos cartões coloridos que o Rafael mostrou: o cartão INTEIRO num
- * tom pastel, sem selo nem pisca — chama o olho sem gritar. O cartão em dia
- * continua branco. Vale no Kanban de Leads, no do gestor e no da TV.
- *   nunca    lilás  — ninguém falou com o lead ainda
- *   atrasado âmbar  — último contato há mais de 24 h
- *   parado   coral  — mais de 7 dias sem contato
- * Os tons misturam com --surface, então o tema escuro herda sozinho; a tinta
- * da frase mistura com --t1 (escura no claro, clara no escuro).
+ * Followup atrasado no cartão (24/11/2026, contato.ts → tomDoContato).
+ * A cor vem de uma informação do lead, não da coluna: hoje só uma, mais de
+ * 24 h sem contato. O cartão INTEIRO num tom pastel, sem selo nem pisca —
+ * chama o olho sem gritar (referência de Kanban colorido que o Rafael
+ * mostrou). Em dia continua branco. Vale no Kanban de Leads, no do gestor e
+ * no da TV. O tom mistura com --surface (o tema escuro herda sozinho) e a
+ * tinta da frase mistura com --t1 (escura no claro, clara no escuro).
  */
-.kanban-tom-nunca    { --tom: #8B6CF6; }
 .kanban-tom-atrasado { --tom: #F2A33A; }
-.kanban-tom-parado   { --tom: #EF7A68; }
 .kanban-tom { --tom-tinta: color-mix(in srgb, var(--tom) 48%, var(--t1)); }
 .kanban-card.kanban-tom {
   --kanban-card-bg:    color-mix(in srgb, var(--tom) 15%, var(--surface));

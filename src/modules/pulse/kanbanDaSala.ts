@@ -2,6 +2,7 @@ import type { LeadFunnelStage, LeadOrigin } from '../../types'
 import { MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { FUNNEL_STAGES } from '../../lib/stageTheme'
 import { divisao, PCT_PADRAO } from '../leads/comissao'
+import { tomDoContato } from '../leads/contato'
 
 /**
  * O Kanban da imobiliária inteira, na segunda tela do Pulse (23/11/2026).
@@ -143,16 +144,41 @@ export interface ColunaSala {
   dinheiro: DinheiroSala
 }
 
-/** As seis colunas, cada uma com o mais recente em cima e o dinheiro somado. */
+/** quanto tempo o cartão que mexeu ao vivo fica marcado como "agora" (e no topo) */
+export const VIVO_MS = 2 * 60 * 1000
+
+/**
+ * Ordem da coluna na TV (Rafael, 24/11/2026: os coloridos primeiro). Na TV só
+ * cabem uns 3 cartões por coluna; antes os do topo eram os mexidos por último
+ * — justamente os que acabaram de receber contato — e os de followup
+ * atrasado ficavam escondidos no "+ N leads". Agora:
+ *   1. o que mexeu ao vivo nos últimos 2 min (o "agora")
+ *   2. followup atrasado, o contato mais antigo primeiro
+ *   3. o resto, o mais recente em cima
+ */
+function rankDaTV(c: CartaoSala, agora: number): number {
+  if (c.vivoAt !== undefined && agora - c.vivoAt < VIVO_MS) return 0
+  return tomDoContato({ lastContactAt: c.ultimoContatoAt, createdAt: c.criadoEm, funnelStage: c.etapa }, agora) ? 1 : 2
+}
+
+/** As seis colunas, na ordem da TV (rankDaTV), com o dinheiro somado. */
 export function colunasDaSala(
   cartoes: CartaoSala[],
   shareDe: (brokerId: string | null) => number | null,
   pctDe: (devId: string | null) => number | undefined,
+  agora = Date.now(),
 ): ColunaSala[] {
   return FUNNEL_STAGES.map(etapa => {
     const daEtapa = cartoes
       .filter(c => c.etapa === etapa)
-      .sort((a, b) => (b.vivoAt ?? 0) - (a.vivoAt ?? 0) || b.desde.localeCompare(a.desde))
+      .map(c => ({ c, r: rankDaTV(c, agora) }))
+      .sort((a, b) => {
+        if (a.r !== b.r) return a.r - b.r
+        if (a.r === 0) return (b.c.vivoAt ?? 0) - (a.c.vivoAt ?? 0)
+        if (a.r === 1) return (a.c.ultimoContatoAt ?? a.c.criadoEm).localeCompare(b.c.ultimoContatoAt ?? b.c.criadoEm)
+        return b.c.desde.localeCompare(a.c.desde)
+      })
+      .map(x => x.c)
     return {
       etapa,
       cartoes: daEtapa,

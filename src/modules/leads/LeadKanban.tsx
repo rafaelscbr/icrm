@@ -203,8 +203,8 @@ function LeadCard({
 
   const din = comissao && lead.averageTicket ? comissao.doLead(lead) : null
 
-  // Destaque de contato (contato.ts): o cartão inteiro num tom pastel quando
-  // ninguém falou com o lead ou o último contato passou de 24 h.
+  // Followup atrasado (contato.ts): o cartão inteiro num tom pastel quando o
+  // lead está há mais de 24 h sem contato.
   const tom = tomDoContato(lead)
 
   // Reentrada ainda não vista pelo dono — o único destaque que pode competir
@@ -646,14 +646,14 @@ function Placar({ rotulo, valor, cor, fundo, destaque = false, foto, nota, titul
 
 // ─── Legenda do destaque de contato ───────────────────────────────────────────
 
-/** As três cores do cartão, com quantos há de cada — só as que aparecem. */
+/** As cores do cartão (hoje só o followup atrasado), com quantos há de cada. */
 export function LegendaContato({ porTom }: { porTom: Record<TomContato, number> }) {
   const itens = (Object.keys(TOM_CONTATO) as TomContato[]).filter(t => porTom[t] > 0)
   if (itens.length === 0) return null
   return (
     <div className="hidden sm:flex items-center gap-3 mr-2 text-[12px] text-t3" aria-label="Cores dos cartões">
       {itens.map(t => (
-        <span key={t} className={`${TOM_CONTATO[t].classe} inline-flex items-center gap-1.5`} title={TOM_CONTATO[t].rotulo}>
+        <span key={t} className={`${TOM_CONTATO[t].classe} inline-flex items-center gap-1.5`} title={TOM_CONTATO[t].dica}>
           <span className="kanban-tom-amostra w-3 h-3 rounded-[4px]" aria-hidden />
           {TOM_CONTATO[t].rotulo}
           <span className="font-semibold text-t2 tabular-nums">{porTom[t]}</span>
@@ -785,7 +785,7 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarSemContato, filtroSe
 
   // Legenda do destaque de contato, com quantos cartões há de cada tom
   const porTom = useMemo(() => {
-    const n: Record<TomContato, number> = { nunca: 0, atrasado: 0, parado: 0 }
+    const n: Record<TomContato, number> = { atrasado: 0 }
     for (const l of leads) { const t = tomDoContato(l); if (t) n[t]++ }
     return n
   }, [leads])
