@@ -375,7 +375,7 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
   }, [cartoes, shareDe, pctDe, porId])
 
   const faixa = (
-    <section className={`pulse-marinho relative shrink-0 overflow-hidden ${celular ? 'rounded-[24px] px-4 py-4' : 'rounded-[26px] px-8 py-5'}`}>
+    <section className={`pulse-marinho relative shrink-0 overflow-hidden ${celular ? 'rounded-[24px] px-4 py-4' : 'pulse-palco-hero px-9 py-5'}`}>
       <div className="pulse-luzes" aria-hidden />
       <div className="relative flex items-center gap-6 flex-wrap">
         <div className="flex items-center gap-3.5">

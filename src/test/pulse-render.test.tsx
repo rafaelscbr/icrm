@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import type { RelatorioConversao } from '../modules/leads/conversao'
 import {
-  AoVivo, Batimento, EquipeCompacta, FilaPrimeiroContato, FunilDaImobiliaria, MetaNoMarinho, NumerosNoMarinho,
-  PontosNoMarinho, PrazoNoMarinho, Resposta, curvaDoDia, mediaSemHoje, textoDaResposta, urgenciaDe,
+  AoVivo, Batimento, EquipeNoMarinho, FilaPrimeiroContato, FunilDaImobiliaria, MetaNoMarinho, NumerosNoMarinho,
+  PontosNoMarinho, PrazoNoMarinho, RespostaNoMarinho, curvaDoDia, mediaSemHoje, textoDaResposta, urgenciaDe,
 } from '../modules/pulse/components/Sala'
 import type { Corretor } from '../modules/pulse/components/Sala'
 import { etapaDoDescarte } from '../modules/pulse/usePulseStore'
@@ -152,7 +152,7 @@ describe('fila do 1º contato', () => {
 
 describe('equipe, funil e registros', () => {
   it('o placar do corretor mostra quem é, como está e o que fez', () => {
-    render(<EquipeCompacta corretores={[CORRETOR]} agora={AGORA} />)
+    render(<EquipeNoMarinho corretores={[CORRETOR]} agora={AGORA} foco={null} />)
     expect(screen.getByText('Dionata')).toBeInTheDocument()
     expect(screen.getByText('DA')).toBeInTheDocument()
     expect(screen.getByText('Em atividade · há 2 min')).toBeInTheDocument()
@@ -160,8 +160,22 @@ describe('equipe, funil e registros', () => {
     expect(screen.getByTitle('10 de 10 ligações hoje')).toBeInTheDocument()
   })
 
+  it('o holofote: quem acabou de registrar ganha a pílula branca e a frase do que fez', () => {
+    const { container } = render(<EquipeNoMarinho corretores={[CORRETOR]} agora={AGORA}
+      foco={{ id: CORRETOR.id, at: new Date(AGORA - 2 * 60_000).toISOString(), texto: 'Descartou Ana · há 2 min' }} />)
+    expect(container.querySelector('.pulse-equipe-foco')).not.toBeNull()
+    expect(screen.getByText('agora')).toBeInTheDocument()
+    expect(screen.getByText('Descartou Ana · há 2 min')).toBeInTheDocument()
+  })
+
+  it('sem registro há mais de 30 min, ninguém fica no holofote', () => {
+    const { container } = render(<EquipeNoMarinho corretores={[CORRETOR]} agora={AGORA}
+      foco={{ id: CORRETOR.id, at: new Date(AGORA - 31 * 60_000).toISOString(), texto: 'x' }} />)
+    expect(container.querySelector('.pulse-equipe-foco')).toBeNull()
+  })
+
   it('leads ainda sem a trilha viram traço', () => {
-    render(<EquipeCompacta corretores={[{ ...CORRETOR, leads: null }]} agora={AGORA} />)
+    render(<EquipeNoMarinho corretores={[{ ...CORRETOR, leads: null }]} agora={AGORA} foco={null} />)
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
@@ -237,7 +251,7 @@ describe('tempo de resposta', () => {
   })
 
   it('sem amostra não inventa número', () => {
-    render(<Resposta tempos={{
+    render(<RespostaNoMarinho tempos={{
       primeiroContato:  { mediaMin: 0, medianaMin: 0, amostra: 0, pctDentroSla: 0, slaMin: null },
       segundaTentativa: { mediaMin: 0, medianaMin: 0, amostra: 0 },
     }} />)
@@ -245,11 +259,11 @@ describe('tempo de resposta', () => {
   })
 
   it('mostra o prazo que o banco mandou', () => {
-    render(<Resposta tempos={{
+    render(<RespostaNoMarinho tempos={{
       primeiroContato:  { mediaMin: 91, medianaMin: 33, amostra: 176, pctDentroSla: 60, slaMin: 10 },
       segundaTentativa: { mediaMin: 2484, medianaMin: 1497, amostra: 153 },
     }} />)
-    expect(screen.getByText('no prazo')).toBeInTheDocument()
+    expect(screen.getByText(/no prazo/)).toBeInTheDocument()
     expect(screen.getByText('60%')).toBeInTheDocument()
   })
 })

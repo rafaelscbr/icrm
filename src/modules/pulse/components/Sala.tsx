@@ -16,6 +16,7 @@ import { formatCurrency } from '../../../lib/formatters'
 import { CorretorComFoto, useFotoDoCorretor } from '../../../components/shared/CorretorComFoto'
 import { FotoPerfil } from '../../../components/shared/FotoPerfil'
 import { agruparFeed, horaCurta } from '../pulseEvents'
+import { destacar } from '../../../components/shared/Destaque'
 import type { PulseTone } from '../pulseEvents'
 import type { PulseEvent, PulseTempos, PulseVgl } from '../types'
 import { fmtTaxa, passos, taxa } from '../../leads/conversao'
@@ -52,16 +53,19 @@ export const COR_DO_TOM: Record<PulseTone, string> = {
 // ─── Moldura ──────────────────────────────────────────────────────────────────
 
 /** Painel liso: branco sobre a Folha, um filete de borda, sem sombra. */
-export function Painel({ titulo, extra, children, className = '' }: {
+export function Painel({ titulo, extra, children, className = '', compacto = false }: {
+  /** cabeçalho baixo — para o painel que divide a coluna com outro */
+  compacto?: boolean
   titulo: string
   extra?: ReactNode
   children: ReactNode
   className?: string
 }) {
   return (
-    <section className={`pulse-card rounded-[20px] flex flex-col min-h-0 min-w-0 overflow-hidden ${className}`}>
-      <header className="flex items-baseline gap-3 px-6 pt-5 pb-3 shrink-0">
-        <h2 className="font-display text-[19px] font-bold tracking-[-0.02em] text-t1 whitespace-nowrap">{titulo}</h2>
+    // 24/11/2026: o painel branco da dashboard — canto largo e sombra macia.
+    <section className={`pulse-card rounded-[28px] flex flex-col min-h-0 min-w-0 overflow-hidden ${className}`}>
+      <header className={`flex items-baseline gap-3 px-6 shrink-0 ${compacto ? 'pt-3.5 pb-0' : 'pt-5 pb-3'}`}>
+        <h2 className="font-display text-[20px] font-bold tracking-[-0.02em] text-t1 whitespace-nowrap">{destacar(titulo)}</h2>
         {extra && <div className="ml-auto min-w-0 text-[14px] text-t3 truncate">{extra}</div>}
       </header>
       <div className="flex-1 min-h-0 flex flex-col">{children}</div>
@@ -110,60 +114,79 @@ export interface Corretor {
   herdados: number
 }
 
-/** Tons de identidade: cada pessoa uma cor pálida própria, longe da vizinha no círculo. */
-const IDENTIDADE = [
-  { fundo: 'color-mix(in srgb, var(--v-lead) 14%, var(--surface))',        tinta: 'var(--stage-lead)' },
-  { fundo: 'color-mix(in srgb, var(--v-visita) 16%, var(--surface))',      tinta: 'var(--stage-visita)' },
-  { fundo: 'color-mix(in srgb, var(--v-proposta) 18%, var(--surface))',    tinta: 'var(--stage-proposta)' },
-  { fundo: 'color-mix(in srgb, var(--v-followup) 14%, var(--surface))',    tinta: 'var(--stage-followup)' },
-  { fundo: 'color-mix(in srgb, var(--v-atendimento) 14%, var(--surface))', tinta: 'var(--stage-atendimento)' },
-]
-
 function iniciais(nome: string) {
   const partes = nome.trim().split(/\s+/)
   return ((partes[0]?.[0] ?? '') + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase()
 }
 
+// ─── Equipe no palco (24/11/2026) ─────────────────────────────────────────────
+
 /**
- * A equipe em formato de placar: uma linha por corretor, com o anel da meta
- * de ligações do dia em volta do avatar (enche conforme ele liga), o estado
- * agora e o que produziu. A linha do dia de cada um saiu: o batimento da
- * faixa Marinho já conta o dia da imobiliária.
+ * O placar da equipe em bloco Marinho, na pegada da dashboard: uma pílula de
+ * vidro por corretor, com a foto grande dentro do anel dourado da meta de
+ * ligações do dia.
+ *
+ * O HOLOFOTE: quem acabou de registrar alguma coisa ganha a pílula BRANCA —
+ * como a opção ativa das cápsulas e o cartão em destaque da previsão na
+ * dashboard. Quando outro corretor registra, o holofote pula para ele ao
+ * vivo. É o feed traduzido em gente: de longe, a sala vê quem está jogando.
+ * Sem registro nos últimos 30 min, ninguém fica em destaque (holofote não
+ * inventa movimento).
  */
-export function EquipeCompacta({ corretores, agora }: { corretores: Corretor[]; agora: number }) {
+export const HOLOFOTE_MS = 30 * 60_000
+
+export function EquipeNoMarinho({ corretores, agora, foco, compacto = false }: {
+  /** celular: foto e números menores, para caber em 375 px */
+  compacto?: boolean
+  corretores: Corretor[]
+  agora: number
+  /** quem fez o último registro e quando */
+  foco: { id: string; at: string; texto: string } | null
+}) {
+  const focoAtivo = foco && agora - new Date(foco.at).getTime() < HOLOFOTE_MS ? foco : null
   return (
-    <ul className="flex-1 min-h-0 overflow-hidden px-6 pb-4">
-      {corretores.map((c, i) => {
-        const id = IDENTIDADE[i % IDENTIDADE.length]
+    <ul className="flex flex-col gap-3 min-h-0">
+      {corretores.map(c => {
+        const emFoco = focoAtivo?.id === c.id
         const pct = c.metaLigacoes > 0 ? Math.min(1, c.ligacoes / c.metaLigacoes) : 0
-        const R = 27, C = 2 * Math.PI * R
-        const corAnel = pct >= 1 ? 'var(--v-ok)' : 'var(--v-lead)'
+        const R = 37, C = 2 * Math.PI * R
         return (
-          <li key={c.id} className="-mx-3 px-3 flex items-center gap-3 py-2.5 rounded-[12px] border-t border-line/70 first:border-t-0 pulse-item-in transition-colors hover:bg-s2 hover:border-transparent">
-            <span className="relative shrink-0 h-[62px] w-[62px]" title={`${c.ligacoes} de ${c.metaLigacoes} ligações hoje`}>
-              <svg viewBox="0 0 62 62" className="absolute inset-0 -rotate-90" aria-hidden>
-                <circle cx={31} cy={31} r={R} fill="none" stroke="var(--s3)" strokeWidth={4} />
-                <circle cx={31} cy={31} r={R} fill="none" stroke={corAnel} strokeWidth={4} strokeLinecap="round"
+          <li key={c.id} className={`pulse-equipe ${compacto ? 'pulse-equipe-compacta' : ''} ${emFoco ? 'pulse-equipe-foco' : ''}`}>
+            <span className={`relative shrink-0 ${compacto ? 'h-[60px] w-[60px]' : 'h-[76px] w-[76px]'}`} title={`${c.ligacoes} de ${c.metaLigacoes} ligações hoje`}>
+              <svg viewBox="0 0 84 84" className="absolute inset-0 -rotate-90" aria-hidden>
+                <defs>
+                  <linearGradient id={`anel-${c.id}`} x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#C9A35A" /><stop offset="100%" stopColor="#F1DDB0" />
+                  </linearGradient>
+                </defs>
+                <circle cx={42} cy={42} r={R} fill="none" stroke="var(--eq-trilho)" strokeWidth={5} />
+                <circle cx={42} cy={42} r={R} fill="none" stroke={pct >= 1 ? 'var(--m-ok)' : `url(#anel-${c.id})`} strokeWidth={5} strokeLinecap="round"
                         strokeDasharray={C} strokeDashoffset={C * (1 - pct)} style={{ transition: 'stroke-dashoffset 900ms cubic-bezier(.2,.8,.2,1)' }} />
               </svg>
               {c.foto ? (
-                <img src={c.foto} alt="" draggable={false} className="absolute inset-[7px] h-[48px] w-[48px] rounded-full object-cover" />
+                <img src={c.foto} alt="" draggable={false} className={`absolute rounded-full object-cover ${compacto ? 'inset-[6px] h-[48px] w-[48px]' : 'inset-[8px] h-[60px] w-[60px]'}`} />
               ) : (
-                <span className="absolute inset-[8px] flex items-center justify-center rounded-full font-display text-[16px] font-bold"
-                      style={{ background: id.fundo, color: id.tinta }} aria-hidden>{iniciais(c.nome)}</span>
+                <span className="absolute inset-[8px] flex items-center justify-center rounded-full font-display text-[22px] font-bold"
+                      style={{ background: 'var(--eq-vidro)', color: 'var(--eq-t1)' }} aria-hidden>{iniciais(c.nome)}</span>
               )}
-              <span className={`absolute right-0 bottom-0 h-4 w-4 rounded-full border-[3px] border-[color:var(--surface)] ${c.ativo && !c.pausa ? 'pulse-live-dot' : ''}`}
-                    style={{ background: c.pausa ? 'var(--v-alerta)' : c.ativo ? 'var(--v-ok)' : 'var(--v-neutro)' }} aria-hidden />
+              {emFoco ? (
+                // no holofote, a etiqueta "agora" pisca embaixo da foto
+                <span className="pulse-equipe-agora absolute -bottom-1.5 left-1/2 -translate-x-1/2">agora</span>
+              ) : (
+                <span className={`absolute right-1 bottom-1 h-[18px] w-[18px] rounded-full border-[3px] ${c.ativo && !c.pausa ? 'pulse-live-dot' : ''}`}
+                      style={{ borderColor: 'var(--eq-borda-ponto)', background: c.pausa ? 'var(--m-alerta)' : c.ativo ? 'var(--m-ok)' : 'rgba(255,255,255,0.35)' }} aria-hidden />
+              )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-display text-[18px] font-bold tracking-[-0.02em] text-t1">{c.nome.split(' ')[0]}</span>
-              <span className={`block truncate text-[13.5px] tabular-nums ${c.pausa ? 'text-warning font-medium' : c.ativo ? 'text-success font-medium' : 'text-t3'}`}>
-                {c.pausa ? `Em pausa · volta ${horaDaVolta(c.pausa.untilAt, agora)}` : c.status}
+              <span className={`block truncate font-display font-extrabold tracking-[-0.03em] ${compacto ? 'text-[19px]' : 'text-[24px]'}`} style={{ color: 'var(--eq-t1)' }}>{c.nome.split(' ')[0]}</span>
+              <span className="block truncate text-[14.5px] tabular-nums mt-0.5" style={{ color: c.pausa ? 'var(--eq-alerta)' : 'var(--eq-t3)' }}>
+                {emFoco ? focoAtivo!.texto
+                  : c.pausa ? `Em pausa · volta ${horaDaVolta(c.pausa.untilAt, agora)}` : c.status}
               </span>
             </span>
-            <Placar rotulo="atend." valor={c.atend} />
-            <Placar rotulo="leads" valor={c.leads} nota={c.herdados > 0 ? `+${n(c.herdados)}` : undefined} />
-            <Placar rotulo="lig." valor={c.ligacoes} meta={c.metaLigacoes} />
+            <PlacarNoMarinho compacto={compacto} rotulo="atend." valor={c.atend} />
+            <PlacarNoMarinho compacto={compacto} rotulo="leads" valor={c.leads} nota={c.herdados > 0 ? `+${n(c.herdados)}` : undefined} />
+            <PlacarNoMarinho compacto={compacto} rotulo={compacto ? 'lig.' : `lig. de ${c.metaLigacoes}`} valor={c.ligacoes} bateu={c.ligacoes >= c.metaLigacoes && c.metaLigacoes > 0} />
           </li>
         )
       })}
@@ -171,17 +194,38 @@ export function EquipeCompacta({ corretores, agora }: { corretores: Corretor[]; 
   )
 }
 
-function Placar({ rotulo, valor, meta, nota }: { rotulo: string; valor: number | null; meta?: number; nota?: string }) {
-  const bateu = meta !== undefined && valor !== null && valor >= meta
+function PlacarNoMarinho({ rotulo, valor, nota, bateu = false, compacto = false }: { rotulo: string; valor: number | null; nota?: string; bateu?: boolean; compacto?: boolean }) {
   return (
-    <span className="shrink-0 w-[46px] text-right">
-      <span className="block font-display text-[24px] leading-none font-extrabold tracking-[-0.03em] whitespace-nowrap">
-        {valor === null ? <span className="text-t4">—</span>
-          : <NumeroVivo valor={valor} className={bateu ? 'text-success' : valor === 0 ? 'text-t4' : 'text-t1'} />}
-        {nota && <span className="text-[13px] font-semibold text-t3 align-top ml-0.5">{nota}</span>}
+    <span className={`shrink-0 text-right ${compacto ? 'w-[38px]' : 'w-[58px]'}`}>
+      <span className={`block font-display leading-none ${compacto ? 'text-[22px]' : 'text-[32px]'} font-extrabold tracking-[-0.04em] whitespace-nowrap tabular-nums`}
+            style={{ color: valor === null || valor === 0 ? 'var(--eq-t4)' : bateu ? 'var(--eq-ok)' : 'var(--eq-t1)' }}>
+        {valor === null ? '—' : <NumeroVivo valor={valor} />}
+        {nota && <span className="text-[13px] font-semibold align-top ml-0.5" style={{ color: 'var(--eq-t3)' }}>{nota}</span>}
       </span>
-      <span className="block mt-1 text-[12.5px] text-t3">{rotulo}</span>
+      <span className="block mt-1.5 text-[12.5px] whitespace-nowrap" style={{ color: 'var(--eq-t3)' }}>{rotulo}</span>
     </span>
+  )
+}
+
+/** A resposta da equipe em três cartões de vidro, no pé do placar Marinho. */
+export function RespostaNoMarinho({ tempos }: { tempos: PulseTempos }) {
+  const p1 = tempos.primeiroContato, p2 = tempos.segundaTentativa
+  const sla = p1.amostra > 0 ? p1.pctDentroSla : null
+  const corSla = sla === null ? 'var(--m-t3)' : sla >= 80 ? 'var(--m-ok)' : sla >= 50 ? 'var(--m-alerta)' : 'var(--m-risco)'
+  const itens: [string, ReactNode, string?][] = [
+    ['1º contato', textoDaResposta(p1.medianaMin, p1.amostra)],
+    ['2ª tentativa', textoDaResposta(p2.medianaMin, p2.amostra)],
+    ['no prazo', sla === null ? '—' : `${sla}%`, corSla],
+  ]
+  return (
+    <div className="grid grid-cols-3 gap-2.5">
+      {itens.map(([rotulo, valor, cor]) => (
+        <div key={rotulo} className="dash-vidro !rounded-[20px] px-4 py-2.5 min-w-0">
+          <p className="text-[13px] truncate" style={{ color: 'var(--m-t3)' }}>{rotulo} <span className="opacity-70 max-md:hidden">· 30 d</span></p>
+          <p className="mt-1 font-display text-[26px] leading-none font-extrabold tracking-[-0.03em] tabular-nums" style={{ color: cor ?? 'var(--m-t1)' }}>{valor}</p>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -214,7 +258,7 @@ export function urgenciaDe(slaDueAt: string, agora: number, prazoMin: number | n
   return { urgencia: frac < 0.5 ? 'alerta' : 'ok', frac, faltaMs }
 }
 
-const FILA_MAX = 5
+const FILA_MAX = 4
 
 /** "seg 09:10" — o dia da semana sem ponto nem vírgula. */
 function diaEHora(iso: string): string {
@@ -236,10 +280,12 @@ export function FilaPrimeiroContato({ fila, agora, prazoMin }: { fila: Espera[];
 
   if (ordenada.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 pb-6 text-center">
-        <CheckCircle2 size={44} strokeWidth={1.6} style={{ color: 'var(--v-ok)' }} aria-hidden />
-        <p className="font-display text-[22px] font-bold tracking-[-0.02em] text-t1">Fila vazia</p>
-        <p className="text-[15px] text-t3">Todo lead novo já foi chamado.</p>
+      <div className="px-5 pb-5">
+        <p className="pulse-pilula flex items-center gap-3">
+          <CheckCircle2 size={26} strokeWidth={1.8} className="shrink-0" style={{ color: 'var(--v-ok)' }} aria-hidden />
+          <span className="font-display text-[18px] font-bold tracking-[-0.02em] text-t1">Fila vazia</span>
+          <span className="text-[14.5px] text-t3 truncate">todo lead novo já foi chamado</span>
+        </p>
       </div>
     )
   }
@@ -248,7 +294,7 @@ export function FilaPrimeiroContato({ fila, agora, prazoMin }: { fila: Espera[];
   const resto = ordenada.length - visiveis.length
 
   return (
-    <ul className="flex-1 min-h-0 overflow-hidden px-6 pb-4">
+    <ul className="flex-1 min-h-0 overflow-hidden px-5 pb-3">
       {visiveis.map(e => {
         const { urgencia, frac, faltaMs } = urgenciaDe(e.slaDueAt, agora, prazoMin)
         const texto = urgencia === 'risco' ? `venceu há ${textoDeMinutos(-faltaMs / 60_000)}`
@@ -256,9 +302,9 @@ export function FilaPrimeiroContato({ fila, agora, prazoMin }: { fila: Espera[];
           : `vence em ${textoDeMinutos(faltaMs / 60_000)}`
         const tomTexto = urgencia === 'risco' ? 'text-error' : urgencia === 'parado' ? 'text-t3' : urgencia === 'alerta' ? 'text-warning' : 'text-success'
         return (
-          <li key={e.id} className="-mx-3 border-t border-line/70 first:border-t-0 pulse-item-in">
+          <li key={e.id} className="mb-2 pulse-item-in">
             <button type="button" onClick={() => abrirLead(e.id)} title="Abrir a ficha do lead"
-                    className="block w-full text-left px-3 py-2.5 rounded-[12px] cursor-pointer transition-colors hover:bg-s2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40">
+                    className="pulse-pilula block w-full text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40">
             <div className="flex items-center justify-between gap-3 min-w-0">
               <span className="min-w-0 flex items-center gap-2 text-[17px] font-semibold text-t1">
                 <span className="min-w-0 truncate">{e.nome}</span>
@@ -291,7 +337,7 @@ const LINHAS_MAX = 24
 
 /** Linha do feed: um botão que abre a ficha quando o registro é de um lead; senão, só a linha. */
 function Linha({ leadId, children }: { leadId?: string; children: ReactNode }) {
-  const base = 'flex w-full items-start gap-3.5 px-3 py-2.5 rounded-[12px] text-left'
+  const base = 'flex w-full items-start gap-3 px-4 py-2.5 rounded-[22px] text-left'
   if (!leadId) return <div className={base}>{children}</div>
   return (
     <button type="button" onClick={() => abrirLead(leadId)} title="Abrir a ficha do lead"
@@ -324,16 +370,17 @@ export function AoVivo({ feed, nomes, carregado }: {
       ) : eventos.length === 0 ? (
         <p className="text-[16px] text-t3 px-6 py-10">Nenhum registro hoje ainda.</p>
       ) : (
-        <ul className="px-6" aria-live="polite" aria-label="Registros da equipe hoje">
-          {eventos.map(ev => {
+        <ul className="px-5" aria-live="polite" aria-label="Registros da equipe hoje">
+          {eventos.map((ev, i) => {
             const v = fraseDoCorretor(ev)
+            // O mais recente é a linha escolhida da dashboard: pílula Marinho.
             return (
-              <li key={ev.id} className="-mx-3 border-t border-line/70 first:border-t-0 pulse-item-in">
+              <li key={ev.id} className={`mb-2 pulse-item-in ${i === 0 ? 'marinho pulse-pilula-ultima' : 'pulse-pilula-feed'}`}>
                 <Linha leadId={ev.leadId}>
-                <span className="w-[48px] shrink-0 pt-[2px] text-[14px] text-t4 tabular-nums">{horaCurta(ev.at)}</span>
+                <span className="w-[44px] shrink-0 pt-[2px] text-[14px] text-t4 tabular-nums">{horaCurta(ev.at)}</span>
                 <span className="mt-[7px] h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: COR_DO_TOM[v.tone] }} aria-hidden />
                 {/* a foto de quem fez, ao lado do nome em negrito */}
-                {ev.brokerId && <FotoPerfil nome={nomes.get(ev.brokerId)} url={fotoDe(ev.brokerId)} tamanho={26} className="-mt-[2px]" />}
+                {ev.brokerId && <FotoPerfil nome={nomes.get(ev.brokerId)} url={fotoDe(ev.brokerId)} tamanho={30} className="-mt-[3px]" />}
                 <span className="min-w-0 flex-1">
                   <span className="block text-[16px] text-t1 leading-snug line-clamp-2">
                     {ev.brokerId && <span className="font-semibold">{nomes.get(ev.brokerId)} · </span>}
@@ -644,31 +691,6 @@ export function textoDaResposta(min: number, amostra: number): string {
   return `${(min / (24 * 60)).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} d`
 }
 
-/** Quanto a equipe demora para responder — mediana dos últimos 30 dias. */
-export function Resposta({ tempos }: { tempos: PulseTempos }) {
-  const p1 = tempos.primeiroContato, p2 = tempos.segundaTentativa
-  const sla = p1.amostra > 0 ? p1.pctDentroSla : null
-  const corSla = sla === null ? 'var(--t4)' : sla >= 80 ? 'var(--success)' : sla >= 50 ? 'var(--warning)' : 'var(--error)'
-  return (
-    <div className="shrink-0 grid grid-cols-3 gap-4 px-6 pt-4 pb-5 border-t border-line/70">
-      <div className="min-w-0">
-        <p className="text-[13.5px] text-t3 truncate">1º contato</p>
-        <p className="mt-1 font-display text-[28px] leading-none font-extrabold tracking-[-0.03em] text-t1 tabular-nums">{textoDaResposta(p1.medianaMin, p1.amostra)}</p>
-      </div>
-      <div className="min-w-0">
-        <p className="text-[13.5px] text-t3 truncate">2ª tentativa</p>
-        <p className="mt-1 font-display text-[28px] leading-none font-extrabold tracking-[-0.03em] text-t1 tabular-nums">{textoDaResposta(p2.medianaMin, p2.amostra)}</p>
-      </div>
-      <div className="min-w-0">
-        <p className="text-[13.5px] text-t3 truncate">no prazo</p>
-        <p className="mt-1 font-display text-[28px] leading-none font-extrabold tracking-[-0.03em] tabular-nums" style={{ color: corSla }}>
-          {sla === null ? '—' : `${sla}%`}
-        </p>
-      </div>
-    </div>
-  )
-}
-
 // ═══ Faixa Marinho ═══════════════════════════════════════════════════════════
 
 /** Um acontecimento do dia, para o batimento: quando e o que foi. */
@@ -722,8 +744,8 @@ function caminho(pts: [number, number][]): string {
  * que chegou, visita, venda) ficam como pontos sobre o trilho; o cursor
  * champanhe é o agora. O que ainda não aconteceu é só o trilho.
  */
-export function Batimento({ batidas, de, ate, agora }: { batidas: Batida[]; de: number; ate: number; agora: number }) {
-  const W = 1000, H = 52
+export function Batimento({ batidas, de, ate, agora, altura = 52 }: { batidas: Batida[]; de: number; ate: number; agora: number; altura?: number }) {
+  const W = 1000, H = altura
   const { y, bruto, ini, ateAgora } = useMemo(() => curvaDoDia(batidas, de, ate, agora), [batidas, de, ate, agora])
   const [sob, setSob] = useState<number | null>(null)
   const max = Math.max(1.5, ...y)
@@ -740,7 +762,7 @@ export function Batimento({ batidas, de, ate, agora }: { batidas: Batida[]; de: 
 
   return (
     <div className="relative">
-      <div className="relative h-[52px] cursor-crosshair" role="presentation"
+      <div className="relative cursor-crosshair" style={{ height: H }} role="presentation"
            onMouseMove={e => {
              const r = e.currentTarget.getBoundingClientRect()
              const i = Math.round(((e.clientX - r.left) / r.width) * (y.length - 1))
@@ -827,7 +849,7 @@ export function NumerosNoMarinho({ itens, meta }: { itens: NumeroMarinho[]; meta
       {itens.map((it, i) => (
         <div key={it.rotulo} className={`min-w-0 pr-5 ${i > 0 ? 'pl-5' : ''}`} style={i > 0 ? { borderLeft: '1px solid var(--m-line)' } : undefined}>
           <p className="font-label text-[12.5px] uppercase tracking-[0.14em] truncate" style={{ color: 'var(--m-t3)' }}>{it.rotulo}</p>
-          <p className="mt-1 font-display text-[44px] leading-[0.95] font-extrabold tracking-[-0.045em]"
+          <p className="mt-1 font-display text-[42px] leading-[0.95] font-extrabold tracking-[-0.045em]"
              style={{ color: it.cor ? COR_MARINHO[it.cor] : 'var(--m-t1)' }}>
             {it.valor === null ? <span style={{ color: 'var(--m-t3)' }}>—</span> : <NumeroVivo valor={it.valor} />}
           </p>
@@ -881,11 +903,12 @@ export function MetaNoMarinho({ vgl }: { vgl: PulseVgl | null }) {
         <p className="font-label text-[12.5px] uppercase tracking-[0.14em] truncate" style={{ color: 'var(--m-t3)' }}>
           VGL do mês · {pct}% de {formatCurrency(vgl.metaMes)}
         </p>
-        <p className="mt-1 font-display text-[44px] leading-[0.95] font-extrabold tracking-[-0.045em] tabular-nums whitespace-nowrap" style={{ color: 'var(--m-ouro)' }}>
+        <p className="mt-1 font-display text-[38px] leading-[0.95] font-extrabold tracking-[-0.045em] tabular-nums whitespace-nowrap" style={{ color: 'var(--m-ouro)' }}>
           {formatCurrency(vgl.realizadoMes)}
         </p>
-        <span className="mt-2.5 block h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }} aria-hidden>
-          {pct > 0 && <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #D6B26E, #E8CD94)' }} />}
+        {/* o trilho listrado da meta da dashboard */}
+        <span className="dash-trilho mt-2 block" aria-hidden>
+          {pct > 0 && <span className="dash-trilho-cheio" style={{ width: `${Math.max(pct, 4)}%` }} />}
         </span>
         <p className="mt-1.5 text-[14px] truncate tabular-nums" style={{ color: 'var(--m-t2)' }}>
           {vgl.faltaParaMeta <= 0 ? 'meta do mês batida'
@@ -899,7 +922,7 @@ export function MetaNoMarinho({ vgl }: { vgl: PulseVgl | null }) {
           <p className="mt-1.5 text-[14px] leading-tight" style={{ color: 'var(--m-t2)' }}>nenhuma<br />venda</p>
         ) : (
           <>
-            <p className="mt-1 font-display text-[40px] leading-none font-extrabold tabular-nums" style={{ color: corSeca }}>{seca}</p>
+            <p className="mt-1 font-display text-[36px] leading-none font-extrabold tabular-nums" style={{ color: corSeca }}>{seca}</p>
             <p className="mt-1 text-[14px] leading-tight" style={{ color: 'var(--m-t2)' }}>{seca === 1 ? 'dia' : 'dias'}<br />sem venda</p>
           </>
         )}

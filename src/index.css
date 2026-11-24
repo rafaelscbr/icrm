@@ -2870,3 +2870,74 @@ button.kanban-atrasados:hover, .kanban-atrasados-ativo { background-color: color
   background-color: color-mix(in srgb, var(--tom) 7%, var(--surface));
   border-color: color-mix(in srgb, var(--tom) 26%, transparent) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PULSE NA PEGADA DA DASHBOARD (24/11/2026)
+
+   O palco virou a dashboard: faixa Marinho grande, painéis brancos de canto
+   largo e listas em pílula. A assinatura é o HOLOFOTE: o placar da equipe é
+   um bloco Marinho com uma pílula de vidro por corretor (foto grande no anel
+   dourado da meta de ligações), e quem acabou de registrar algo ganha a
+   pílula BRANCA — a opção ativa das cápsulas. O holofote pula de corretor em
+   corretor conforme a equipe trabalha. Movimento só em transform/opacity.
+   ══════════════════════════════════════════════════════════════════════════════ */
+.pulse-equipe {
+  --eq-t1: #FFFFFF; --eq-t3: rgba(230, 236, 248, 0.78); --eq-t4: rgba(255, 255, 255, 0.42);
+  --eq-ok: var(--m-ok); --eq-alerta: var(--m-alerta);
+  --eq-trilho: rgba(255, 255, 255, 0.16); --eq-vidro: rgba(255, 255, 255, 0.12);
+  --eq-borda-ponto: #1D4396;
+  display: flex; align-items: center; gap: 16px;
+  padding: 8px 22px 8px 8px; border-radius: 999px;
+  background: linear-gradient(158deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: background-color 500ms ease, transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 500ms ease;
+}
+.pulse-equipe-foco {
+  --eq-t1: #143275; --eq-t3: #4A5F8C; --eq-t4: rgba(20, 50, 117, 0.35);
+  --eq-ok: #0E9F6E; --eq-alerta: #B7791F;
+  --eq-trilho: rgba(20, 50, 117, 0.10); --eq-vidro: #EAF0F8;
+  --eq-borda-ponto: #FFFFFF;
+  background: #FFFFFF; border-color: transparent;
+  box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.6);
+  transform: scale(1.025);
+  animation: pulse-holofote 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pulse-holofote {
+  0%   { transform: scale(0.97); opacity: 0.6; }
+  60%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1.025); opacity: 1; }
+}
+.pulse-equipe-agora {
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #143275; background: linear-gradient(140deg, #F1DDB0, #D6B26E);
+}
+.pulse-equipe-agora::before {
+  content: ''; width: 7px; height: 7px; border-radius: 999px; background: #143275;
+  animation: pulse-live 1.6s ease-in-out infinite;
+}
+@keyframes pulse-live { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* Pílulas das listas da sala (fila e feed), como as linhas da dashboard. */
+.pulse-pilula {
+  padding: 12px 18px; border-radius: 22px;
+  background: var(--surface); border: 1px solid var(--line);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s var(--ease-out);
+}
+button.pulse-pilula:hover { border-color: var(--line-strong); box-shadow: 0 10px 24px -18px rgba(15, 39, 89, 0.45); transform: translateY(-1px); }
+.pulse-pilula-feed { border-radius: 22px; border: 1px solid var(--line); background: var(--surface); }
+.pulse-pilula-ultima {
+  border-radius: 22px;
+  box-shadow: 0 16px 32px -18px rgba(15, 39, 89, 0.7);
+}
+.pulse-pilula-ultima button:hover, .pulse-pilula-feed button:hover { background: transparent; }
+
+/* O fundo do palco: a Folha com um véu Marinho, como antes, mais limpo. */
+.pulse-palco-hero { border-radius: 34px; }
+
+.pulse-equipe-compacta { gap: 10px; padding: 6px 14px 6px 6px; }
+/* O holofote acende um halo champanhe em volta da pílula branca. */
+.pulse-equipe-foco {
+  box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.6), 0 0 0 7px rgba(235, 208, 154, 0.22), 0 0 48px 4px rgba(235, 208, 154, 0.28);
+}
+.pulse-equipe-compacta .pulse-equipe-agora { height: 20px; padding: 0 7px; font-size: 10px; gap: 4px; }
