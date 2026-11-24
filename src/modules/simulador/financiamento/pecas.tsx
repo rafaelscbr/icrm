@@ -156,11 +156,12 @@ export function CampoNumero({ rotulo, valor, onChange, sufixo, casas = 2, ajuda,
   useEffect(() => { if (!focado.current) setTexto(formatado) }, [formatado])
   return (
     <div className="space-y-1.5">
-      <RotuloCampo htmlFor={id} ajuda={ajuda} solto={solto} onVoltar={onVoltar}>{rotulo}</RotuloCampo>
+      {(rotulo || solto) && <RotuloCampo htmlFor={id} ajuda={ajuda} solto={solto} onVoltar={onVoltar}>{rotulo}</RotuloCampo>}
       <div className="flex items-center gap-2">
         <div className="relative flex-1 flex items-center">
           <input
             id={id} inputMode="decimal" autoComplete="off" value={texto} placeholder={placeholder}
+            aria-label={rotulo ? undefined : sufixo}
             onFocus={() => { focado.current = true }}
             onBlur={() => { focado.current = false; setTexto(formatado) }}
             onChange={e => {

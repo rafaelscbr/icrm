@@ -460,9 +460,11 @@ type VisaoPreview = 'imagem' | 'texto'
  * os botões fora de alcance —, mas copiar e abrir o WhatsApp ficam a um toque
  * nas duas visões.
  */
-export function PreviewColumn({ valido, slugBase, renderCard, mensagem, telefone }: {
+export function PreviewColumn({ valido, slugBase, renderCard, mensagem, telefone, prefixoArquivo = 'fluxo' }: {
   valido: boolean
   slugBase: string
+  /** início do nome do PNG baixado: "fluxo-porto-velas.png" */
+  prefixoArquivo?: string
   renderCard: (ref: Ref<HTMLDivElement>) => ReactNode
   mensagem: string
   telefone: string
@@ -479,7 +481,7 @@ export function PreviewColumn({ valido, slugBase, renderCard, mensagem, telefone
       const slug = slugBase.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-') || 'simulacao'
       const url  = await toPng(cardRef.current, { pixelRatio: 3, cacheBust: true })
       const a    = document.createElement('a')
-      a.download = `fluxo-${slug}.png`
+      a.download = `${prefixoArquivo}-${slug}.png`
       a.href = url
       a.click()
       toast.success('Proposta baixada com sucesso!')
@@ -488,7 +490,7 @@ export function PreviewColumn({ valido, slugBase, renderCard, mensagem, telefone
     } finally {
       setExporting(false)
     }
-  }, [valido, slugBase])
+  }, [valido, slugBase, prefixoArquivo])
 
   return (
     <div className="flex flex-col items-center gap-4 xl:sticky xl:top-6">

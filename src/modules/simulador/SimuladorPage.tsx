@@ -98,6 +98,7 @@ export function SimuladorPage() {
           cliente={shared.cliente}
           empreendimento={shared.empreendimento}
           corretor={corretor}
+          telefone={shared.telefone}
         />
       </div>}
     </PageLayout>

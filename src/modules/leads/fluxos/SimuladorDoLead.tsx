@@ -280,6 +280,7 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
               cliente={shared.cliente}
               empreendimento={shared.empreendimento}
               corretor={corretor}
+              telefone={shared.telefone}
             />
           </div>}
         </div>
