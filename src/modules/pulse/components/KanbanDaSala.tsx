@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
-import { AlertTriangle, LayoutGrid, Activity, ArrowRight, Clock, AlarmClock, Sparkles } from 'lucide-react'
+import { AlertTriangle, LayoutGrid, Activity, ArrowRight, AlarmClock } from 'lucide-react'
 import type { LeadFunnelStage } from '../../../types'
 import { MAX_TENTATIVAS_FOLLOWUP } from '../../../types'
 import type { Profile } from '../../../store/useAuthStore'
-import { FUNNEL_STAGES, STAGE_THEME } from '../../../lib/stageTheme'
-import { JOIA, degradeJoiaClaro, fundoJoiaClaro } from '../../../lib/paletaJoia'
+import { STAGE_THEME } from '../../../lib/stageTheme'
+import { BRILHO_CHAMPANHE, JOIA, degradeJoia } from '../../../lib/paletaJoia'
 import { formatCurrencyRound } from '../../../lib/formatters'
 import { FotoPerfil } from '../../../components/shared/FotoPerfil'
 import { destacar } from '../../../components/shared/Destaque'
-import { ORIGEM_META } from '../../leads/origens'
-import { ESFRIANDO_DIAS, haQuantoTempo, tomDoContato, TOM_CONTATO } from '../../leads/contato'
+import { ESFRIANDO_DIAS, tomDoContato, TOM_CONTATO } from '../../leads/contato'
 import { useRelogio } from '../useKiosk'
 import { colunasDaSala, dinheiroDoCartao, DINHEIRO_ZERO, somar, VIVO_MS } from '../kanbanDaSala'
 import type { CartaoSala, ColunaSala, DinheiroSala } from '../kanbanDaSala'
@@ -19,44 +18,36 @@ import type { CartaoSala, ColunaSala, DinheiroSala } from '../kanbanDaSala'
  * A segunda tela do Pulse (23/11/2026): o Kanban da imobiliária inteira. Gira
  * com a sala a cada 5 minutos (PulsePage).
  *
- * DESENHO = O KANBAN DE LEADS (Rafael, 23/11/2026: "o mais parecido possível
- * com o kanban que já tem nos leads"). As mesmas peças, com as mesmas classes
- * (kanban-col, kanban-cabeca, kanban-trilha, kanban-card): o placar de chips em
- * cima, a coluna com a seta da etapa e o dinheiro, e o cartão — foto do dono,
- * lead, produto e VGV; a faixa Corretor | Souza; o último contato; os toques
- * do followup; a barra de progresso no pé. Fica de fora só o que é de clicar
- * (Chamar, atalhos, arrastar): a TV é para olhar. Mudou o cartão do Kanban de
- * Leads (LeadKanban.tsx)? Mude aqui também.
- *
- * As seis colunas do Kanban têm 22rem cada — não cabem lado a lado no palco
- * de 1600 px. Então o quadro é desenhado num palco maior (ESCALA_QUADRO) e
- * reduzido para caber: a TV mostra as seis etapas inteiras, com o cartão no
- * mesmo desenho.
+ * DESENHO (24/11/2026, "melhora o Kanban do Pulse, você já sabe como eu
+ * gosto"): a pegada da dashboard, feita para ler de longe.
+ *   • A faixa Marinho traz o dinheiro em jogo — VGV em aberto, comissão,
+ *     líquida Souza em ouro — e a parte de cada corretor com a foto.
+ *   • Cada coluna é um painel branco com a JOIA da etapa no topo (o degradê
+ *     da paleta joia + o brilho champanhe do card da meta): quantos, quanto
+ *     e quantos atrasados (a régua de 24 h do Kanban de Leads).
+ *   • O lead é uma PÍLULA: foto do dono, nome, VGV, o último contato (em
+ *     vermelho quando atrasado) e o produto; no followup, os toques sempre à
+ *     vista. Antes eram cartões de 136 px e cabiam três por coluna.
+ *   • Quem mexeu agora (VIVO_MS) vira pílula Marinho com "agora" — o
+ *     holofote da sala, no quadro.
+ *   • Coluna vazia continua aberta, só mais estreita (PESO_VAZIA): o espaço
+ *     vai para onde há leads. Nada de recolher coluna.
+ * Fica de fora o que é de clicar (Chamar, atalhos, arrastar): a TV é para
+ * olhar.
  *
  * Os dados vêm do store do Pulse (kanbanDaSala.ts): uma leitura e depois só
  * os eventos do canal. Esta tela não consulta nada.
  */
 
-/** o quadro é desenhado 1/0,82 maior e reduzido — ~300 px por coluna */
-const ESCALA_QUADRO = 0.82
-/** alturas fixas do cartão: a coluna sabe quantos cabem sem medir um a um */
-const CARTAO_H = 136
-const CARTAO_FOLLOWUP_H = 160
-const RODAPE_H = 46
-const VAO = 10
+/** alturas fixas da pílula: a coluna sabe quantas cabem sem medir uma a uma */
+const PILULA_H = 60
+const PILULA_FOLLOWUP_H = 74
+const RODAPE_H = 44
+const VAO = 8
 const DIA = 86_400_000
 
 const rs = (v: number) => formatCurrencyRound(v)
-const alturaDe = (c: CartaoSala) => (c.etapa === 'followup' ? CARTAO_FOLLOWUP_H : CARTAO_H)
-
-/** "Último contato hoje" / "Nenhum contato em 3 dias" — a frase do Kanban (contato.ts). */
-function fraseContato(c: CartaoSala, agora: number): string {
-  const ref = c.ultimoContatoAt ?? c.criadoEm
-  const d = Math.floor(Math.max(0, agora - new Date(ref).getTime()) / DIA)
-  if (!c.ultimoContatoAt) return d <= 0 ? 'Sem contato ainda · entrou hoje' : `Nenhum contato em ${d} ${d === 1 ? 'dia' : 'dias'}`
-  if (d === 1) return `Último contato há ${Math.floor((agora - new Date(ref).getTime()) / 3_600_000)} h`
-  return `Último contato ${haQuantoTempo(d)}`
-}
+const alturaDe = (c: CartaoSala) => (c.etapa === 'followup' ? PILULA_FOLLOWUP_H : PILULA_H)
 
 function esfriando(c: CartaoSala, agora: number): boolean {
   return agora - new Date(c.ultimoContatoAt ?? c.criadoEm).getTime() > ESFRIANDO_DIAS * DIA
@@ -111,88 +102,63 @@ export function GiroDasTelas({ tela, trocouEm, duracaoMs, onTrocar }: {
   )
 }
 
-// ─── Cartão — o mesmo do Kanban de Leads, sem os botões ───────────────────────
+// ─── Pílula — o lead, em uma linha e meia ─────────────────────────────────────
 
-function Cartao({ c, dono, agora, pctDe }: { c: CartaoSala; dono?: Profile; agora: number; pctDe: (id: string | null) => number | undefined }) {
+/** "Contato há 3 h" · "Sem contato há 2 dias" — curto, para caber na pílula. */
+function contatoCurto(c: CartaoSala, agora: number): string {
+  const ref = c.ultimoContatoAt ?? c.criadoEm
+  const ms = Math.max(0, agora - new Date(ref).getTime())
+  const h = Math.floor(ms / 3_600_000)
+  const d = Math.floor(ms / DIA)
+  const tempo = h < 1 ? 'agora' : h < 24 ? `há ${h} h` : `há ${d} ${d === 1 ? 'dia' : 'dias'}`
+  if (!c.ultimoContatoAt) return h < 1 ? 'Sem contato ainda' : `Sem contato ${tempo}`
+  return h < 1 ? 'Contato agora' : `Contato ${tempo}`
+}
+
+function Pilula({ c, dono, agora }: { c: CartaoSala; dono?: Profile; agora: number }) {
   const vivo = c.vivoAt !== undefined && agora - c.vivoAt < VIVO_MS
-  const passo = FUNNEL_STAGES.indexOf(c.etapa)
-  const dias = Math.floor((agora - new Date(c.desde).getTime()) / DIA)
-  const Origem = c.origem ? ORIGEM_META[c.origem] : undefined
-  const share = dono?.commissionShare ?? null
-  const din = c.vgv ? dinheiroDoCartao(c, () => share, pctDe) : null
-  // O mesmo destaque de followup atrasado do Kanban de Leads (contato.ts)
-  const tom = tomDoContato({ lastContactAt: c.ultimoContatoAt, createdAt: c.criadoEm, funnelStage: c.etapa }, agora)
+  const venda = c.etapa === 'venda'
+  // O mesmo destaque de followup atrasado do Kanban de Leads (contato.ts, +24h)
+  const tom = vivo ? null : tomDoContato({ lastContactAt: c.ultimoContatoAt, createdAt: c.criadoEm, funnelStage: c.etapa }, agora)
+  const dias = Math.max(0, Math.floor((agora - new Date(c.desde).getTime()) / DIA))
   return (
-    <div className={`kanban-card pulse-cartao relative shrink-0 border rounded-[16px] overflow-hidden px-3.5 pt-3 pb-3.5 ${vivo ? 'pulse-cartao-vivo' : ''} ${tom ? TOM_CONTATO[tom].classe : ''}`}
-         style={{ height: alturaDe(c), ['--etapa' as string]: JOIA[c.etapa].medio }}>
-      {/* 1 · Dono · lead · VGV */}
+    <div className={`pulse-kanban-pilula pulse-cartao relative shrink-0 flex flex-col justify-center px-3 ${vivo ? 'marinho pulse-cartao-vivo' : ''} ${tom ? TOM_CONTATO[tom].classe : ''}`}
+         style={{ height: alturaDe(c), ['--etapa' as string]: JOIA[c.etapa].claro }}>
       <div className="flex items-center gap-2.5 min-w-0">
-        <FotoPerfil nome={dono?.name ?? '?'} url={dono?.avatarUrl} tamanho={36} anel className="shadow-[0_2px_6px_-2px_rgba(15,39,89,.35)]" />
+        <FotoPerfil nome={dono?.name ?? '?'} url={dono?.avatarUrl} tamanho={34} anel={vivo} />
         <div className="flex-1 min-w-0">
-          <p className="font-heading text-[14.5px] font-semibold text-t1 truncate leading-tight tracking-[-0.015em]">{c.nome}</p>
-          <p className="mt-0.5 text-[12px] text-t3 truncate">
-            {Origem && <Origem.icon size={11} strokeWidth={1.6} className="inline-block align-[-1px] mr-1 text-t4" aria-label={Origem.label} />}
-            {c.produto ?? 'Sem produto'}
+          <div className="flex items-baseline gap-2 min-w-0">
+            <p className="flex-1 min-w-0 font-heading text-[14.5px] font-semibold text-t1 truncate leading-tight tracking-[-0.015em]">{c.nome}</p>
+            {c.vgv > 0 && <p className="shrink-0 text-[13px] font-bold text-t1 tabular-nums leading-tight">{rs(c.vgv)}</p>}
+          </div>
+          <p className="mt-[3px] flex items-center gap-1.5 min-w-0 text-[12px] leading-tight">
+            {vivo && <span className="pulse-equipe-agora pulse-kanban-agora shrink-0">agora</span>}
+            {venda
+              ? <span className="truncate text-t3">{c.produto ?? 'Sem produto'} · vendido há {dias} {dias === 1 ? 'dia' : 'dias'}</span>
+              : <>
+                  <span className="kanban-frase shrink-0 text-t2">{tom && <AlarmClock size={11} strokeWidth={2.2} className="inline-block align-[-1px] mr-0.5" aria-hidden />}{contatoCurto(c, agora)}</span>
+                  <span className="truncate text-t4">· {c.produto ?? 'sem produto'}</span>
+                </>}
           </p>
         </div>
-        {c.vgv > 0 && (
-          <div className="flex-shrink-0 text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-t4 leading-none">VGV</p>
-            <p className="mt-1 text-[13.5px] font-bold text-t1 tabular-nums leading-none">{rs(c.vgv)}</p>
-          </div>
-        )}
       </div>
 
-      {/* 2 · O dinheiro em jogo */}
-      {din ? (
-        <div className="kanban-faixa mt-2.5 flex items-stretch rounded-[11px] bg-s2/70 overflow-hidden text-[12.5px]">
-          <div className="flex-1 min-w-0 px-2.5 py-1.5 flex items-center justify-between gap-2">
-            <span className="text-[11.5px] font-medium text-success/80 truncate">{dono ? dono.name.split(' ')[0] : 'Corretor'}</span>
-            <span className="font-bold text-success tabular-nums whitespace-nowrap">{din.corretor > 0 ? rs(din.corretor) : '—'}</span>
-          </div>
-          <div className="flex-1 min-w-0 px-2.5 py-1.5 flex items-center justify-between gap-2 border-l border-line">
-            <span className="text-[11.5px] font-medium text-brand-text/80">Souza</span>
-            <span className="font-bold text-brand-text tabular-nums whitespace-nowrap">{rs(din.souza)}</span>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-2.5 h-[30px] rounded-[11px] bg-s2/50 flex items-center px-2.5 text-[11.5px] text-t4">Sem VGV na tabela</div>
-      )}
-
-      {/* 3 · Último contato · dias na etapa */}
-      <div className="mt-2.5 flex items-center gap-2 min-w-0">
-        <Clock size={13} strokeWidth={1.8} className="flex-shrink-0 text-t4" aria-hidden />
-        <p className="kanban-frase flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(c, agora)}</p>
-        {vivo
-          ? <span className="flex-shrink-0 rounded-full px-1.5 text-[10.5px] leading-[16px] font-bold uppercase tracking-[0.08em] text-white" style={{ background: JOIA[c.etapa].medio }}>agora</span>
-          : <span className="flex-shrink-0 text-[11px] text-t4 tabular-nums">{Math.max(0, dias)}d</span>}
-      </div>
-
-      {/* Toques do followup */}
+      {/* Os toques do followup, sempre à vista */}
       {c.etapa === 'followup' && (
-        <div className="flex items-center gap-1 mt-2" aria-label={`${c.passo} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
-          {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
-            <span key={step} className="flex-1 py-[5px]">
-              <span className={`block h-1 rounded-full ${step <= c.passo ? 'bg-brand' : 'bg-line-strong'}`} />
-            </span>
+        <div className="flex items-center gap-[3px] mt-2 pl-[44px]" aria-label={`${c.passo} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
+          {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, k) => k + 1).map(step => (
+            <span key={step} className="flex-1 h-[4px] rounded-full" style={{ background: step <= c.passo ? 'var(--etapa)' : 'var(--line-strong)' }} />
           ))}
-          <span className="flex-shrink-0 ml-1 text-[11px] text-t4 tabular-nums">{c.passo}/{MAX_TENTATIVAS_FOLLOWUP}</span>
+          <span className="shrink-0 ml-1.5 text-[11px] font-semibold text-t3 tabular-nums">{c.passo}/{MAX_TENTATIVAS_FOLLOWUP}</span>
         </div>
       )}
-
-      {/* Progresso no funil, no pé do cartão */}
-      <div className="absolute left-0 right-0 bottom-0 flex gap-[2px] px-3.5 pb-1.5" aria-hidden>
-        {FUNNEL_STAGES.map((st, i) => (
-          <span key={st} className="flex-1 h-[3px] rounded-full" style={{ background: i <= passo ? JOIA[st].medio : 'var(--s3)' }} />
-        ))}
-      </div>
     </div>
   )
 }
 
-// ─── Coluna — a mesma do Kanban de Leads ──────────────────────────────────────
+// ─── Coluna — a joia da etapa em cima, as pílulas embaixo ────────────────────
 
-/** Quantos cartões cabem na altura da coluna (TV); no celular, todos. */
+/** Quantas pílulas cabem na altura da coluna (TV); no celular, todas. */
 function useCapacidade(cartoes: CartaoSala[], ativo: boolean): [RefObject<HTMLDivElement | null>, number] {
   const ref = useRef<HTMLDivElement>(null)
   const [h, setH] = useState(0)
@@ -207,27 +173,23 @@ function useCapacidade(cartoes: CartaoSala[], ativo: boolean): [RefObject<HTMLDi
   }, [ativo])
   if (!ativo) return [ref, cartoes.length]
   if (h === 0) return [ref, 0]
-  // padding de 6 px em cima e embaixo (p-1.5)
-  const livre = h - 12
   let usado = 0, n = 0
   for (const c of cartoes) {
     const prox = usado + (n > 0 ? VAO : 0) + alturaDe(c)
-    if (prox > livre) break
+    if (prox > h) break
     usado = prox; n++
   }
   if (n === cartoes.length) return [ref, n]
   // Não cabe tudo: abre lugar para o rodapé "+ N leads".
-  while (n > 0 && usado + VAO + RODAPE_H > livre) {
+  while (n > 0 && usado + VAO + RODAPE_H > h) {
     n--
-    usado = cartoes.slice(0, n).reduce((t, c, i) => t + alturaDe(c) + (i > 0 ? VAO : 0), 0)
+    usado = cartoes.slice(0, n).reduce((t, c, k) => t + alturaDe(c) + (k > 0 ? VAO : 0), 0)
   }
   return [ref, n]
 }
 
-function Coluna({ col, primeira, perfis, agora, celular, pctDe }: {
-  pctDe: (id: string | null) => number | undefined
+function Coluna({ col, perfis, agora, celular }: {
   col: ColunaSala
-  primeira: boolean
   perfis: Map<string, Profile>
   agora: number
   celular: boolean
@@ -240,103 +202,84 @@ function Coluna({ col, primeira, perfis, agora, celular, pctDe }: {
   const restoVgv = resto.reduce((t, c) => t + c.vgv, 0)
   const venda = etapa === 'venda'
   const d: DinheiroSala = col.dinheiro
-  const frios = venda ? 0 : col.cartoes.filter(c => esfriando(c, agora)).length
+  const atrasados = venda ? 0 : col.cartoes.filter(c => esfriando(c, agora)).length
+  const vazia = col.cartoes.length === 0
 
   return (
-    <div className={`flex flex-col min-h-0 min-w-0 ${celular ? 'w-[86vw] shrink-0 snap-start' : ''}`}
-         style={{ ['--etapa' as string]: JOIA[etapa].medio, ['--etapa-fundo' as string]: fundoJoiaClaro(etapa, 120) }}>
-      <div className="flex flex-col flex-1 min-h-0 kanban-col">
-        {/* Cabeçalho: a seta da trilha e, embaixo, o dinheiro da coluna */}
-        <div className="kanban-cabeca kanban-col-bg shrink-0 pb-2 mb-1.5">
-          <div className={`kanban-trilha ${primeira ? 'kanban-trilha-primeira' : ''} flex items-center gap-2 h-10 pl-6 pr-7 text-white`}
-               style={primeira ? { paddingLeft: 14 } : undefined}>
-            <h3 className="text-[13.5px] font-semibold tracking-[0.01em] truncate">{venda ? 'Vendas do mês' : conf.columnLabel}</h3>
-            <span className="ml-auto inline-flex items-center justify-center min-w-[24px] h-[20px] px-1.5 rounded-full bg-white/25 text-[12px] font-bold tabular-nums">
-              {col.cartoes.length}
+    <section className={`pulse-card pulse-kanban-col flex flex-col min-h-0 min-w-0 p-2 ${celular ? 'w-[84vw] shrink-0 snap-start' : ''}`}
+             style={{ ['--etapa' as string]: JOIA[etapa].medio }} aria-label={`${venda ? 'Vendas do mês' : conf.columnLabel}: ${col.cartoes.length}`}>
+      {/* A joia da etapa: quantos, quanto e — se houver — quantos atrasados */}
+      <header className="pulse-kanban-joia shrink-0 px-4 pt-3 pb-3.5"
+              style={{ backgroundImage: `${BRILHO_CHAMPANHE}, ${degradeJoia(etapa)}` }}>
+        <div className="flex items-start gap-2">
+          <p className="min-w-0 text-[12.5px] font-bold uppercase tracking-[0.14em] leading-tight pulse-kanban-joia-titulo pt-1 line-clamp-2">{venda ? 'Vendas do mês' : conf.columnLabel}</p>
+          <p className="ml-auto font-display text-[34px] leading-none font-extrabold tracking-[-0.04em] text-white tabular-nums">{col.cartoes.length}</p>
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 min-w-0">
+          <p className="min-w-0 font-display text-[19px] font-bold leading-tight tracking-[-0.02em] text-white tabular-nums truncate">
+            {rs(d.vgv)} <span className="text-[12px] font-semibold tracking-normal pulse-kanban-joia-nota">{venda ? 'vendido' : 'VGV'}</span>
+          </p>
+          {atrasados > 0 && (
+            <span className="pulse-kanban-atrasados ml-auto shrink-0" title="Sem contato há mais de 24 horas">
+              <AlarmClock size={12} strokeWidth={2.2} aria-hidden />{atrasados} {atrasados === 1 ? 'atrasado' : 'atrasados'}
             </span>
-          </div>
-          <div className="px-2 pt-2.5">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-t4">{venda ? 'VGV vendido' : 'VGV'}</p>
-            <p className="font-display text-[19px] font-bold text-t1 leading-tight tracking-[-0.02em] tabular-nums">{rs(d.vgv)}</p>
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <div className="min-w-0">
-                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-success/80 truncate">Corretor</p>
-                <p className="text-[13.5px] font-bold text-success leading-tight tabular-nums">{rs(d.corretor)}</p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-brand-text/80 truncate">Souza</p>
-                <p className="text-[13.5px] font-bold text-brand-text leading-tight tabular-nums">{rs(d.souza)}</p>
-              </div>
-            </div>
-          </div>
-          {frios > 0 && (
-            <div className="px-2 pt-1">
-              {/* 24/11/2026: a mesma régua e o mesmo nome do Kanban de Leads (+24h). */}
-              <span className="kanban-atrasados inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums">
-                <AlarmClock size={11} strokeWidth={2} aria-hidden />{frios} {frios === 1 ? 'atrasado' : 'atrasados'}
-              </span>
-            </div>
           )}
         </div>
+        <p className="mt-0.5 text-[12px] tabular-nums truncate pulse-kanban-joia-nota">
+          Corretor {rs(d.corretor)} · Souza {rs(d.souza)}
+        </p>
+      </header>
 
-        {/* Os cartões */}
-        <div ref={ref} className={`rounded-[14px] p-1.5 flex flex-col ${celular ? 'max-h-[64vh] overflow-y-auto' : 'flex-1 min-h-0 overflow-hidden'}`}
-             style={{ gap: VAO }}>
-          {col.cartoes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-1.5 rounded-[12px] px-3 py-8">
-              <p className="text-xs text-t4 text-center leading-snug">
-                {venda ? 'Nenhuma venda no mês ainda' : `Nada em ${conf.columnLabel.toLowerCase()}`}
-              </p>
-            </div>
-          ) : (
-            <>
-              {visiveis.map(c => <Cartao key={c.id} c={c} dono={c.brokerId ? perfis.get(c.brokerId) : undefined} agora={agora} pctDe={pctDe} />)}
-              {resto.length > 0 && (
-                <div className="shrink-0 rounded-[12px] px-3 flex items-center justify-between gap-2 border border-dashed"
-                     style={{ height: RODAPE_H, borderColor: 'color-mix(in srgb, var(--etapa) 30%, transparent)', background: 'color-mix(in srgb, var(--etapa) 6%, transparent)' }}>
-                  <span className="text-[13px] font-bold tabular-nums" style={{ color: 'var(--etapa)' }}>
-                    + {resto.length.toLocaleString('pt-BR')} {resto.length === 1 ? 'lead' : 'leads'}
-                  </span>
-                  {restoVgv > 0 && <span className="text-[12.5px] font-semibold text-t2 tabular-nums">{rs(restoVgv)}</span>}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      {/* As pílulas */}
+      <div ref={ref} className={`mt-2 flex flex-col ${celular ? 'max-h-[62vh] overflow-y-auto pb-1' : 'flex-1 min-h-0 overflow-hidden'}`}
+           style={{ gap: VAO }}>
+        {vazia ? (
+          <div className="pulse-kanban-resto shrink-0 flex items-center justify-center px-3 text-center" style={{ height: PILULA_H }}>
+            <p className="text-[13px] text-t3 leading-snug">{venda ? 'Nenhuma venda no mês ainda' : `Ninguém em ${conf.columnLabel.toLowerCase()} agora`}</p>
+          </div>
+        ) : (
+          <>
+            {visiveis.map(c => <Pilula key={c.id} c={c} dono={c.brokerId ? perfis.get(c.brokerId) : undefined} agora={agora} />)}
+            {resto.length > 0 && (
+              <div className="pulse-kanban-resto shrink-0 flex items-center justify-between gap-2 px-4" style={{ height: RODAPE_H }}>
+                <span className="text-[13.5px] font-bold tabular-nums" style={{ color: 'var(--etapa)' }}>
+                  + {resto.length.toLocaleString('pt-BR')} {resto.length === 1 ? 'lead' : 'leads'}
+                </span>
+                {restoVgv > 0 && <span className="text-[13px] font-semibold text-t2 tabular-nums">{rs(restoVgv)}</span>}
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </div>
+    </section>
   )
 }
 
-// ─── Placar — os chips do topo do Kanban de Leads ─────────────────────────────
+// ─── O dinheiro em jogo, na faixa Marinho ─────────────────────────────────────
 
-function Placar({ rotulo, valor, cor, fundo, destaque = false, foto, nota }: {
-  rotulo: string; valor: number; cor: string; fundo?: string; destaque?: boolean
-  foto?: { nome: string; url?: string }
-  nota?: string
+function NumeroDaFaixa({ rotulo, valor, nota, ouro = false, celular }: {
+  rotulo: string; valor: string; nota?: string; ouro?: boolean; celular: boolean
 }) {
   return (
-    <div className="flex-shrink-0 flex items-center gap-3 rounded-[14px] border border-line bg-surface pl-2.5 pr-4 py-2">
-      {foto ? (
-        <FotoPerfil nome={foto.nome} url={foto.url} tamanho={36} />
-      ) : (
-        <span className="flex-shrink-0 w-9 h-9 rounded-[11px] flex items-center justify-center text-white" style={{ backgroundImage: fundo }} aria-hidden>
-          <Sparkles size={16} strokeWidth={2} />
-        </span>
-      )}
-      <div className="min-w-0">
-        <p className="text-[11.5px] font-medium text-t3 leading-tight truncate">
-          {rotulo}{nota && <span className="text-t4"> · {nota}</span>}
-        </p>
-        <p className={`font-display ${destaque ? 'text-[21px]' : 'text-[19px]'} font-bold leading-tight tracking-[-0.02em] tabular-nums`} style={{ color: cor }}>
-          {rs(valor)}
-        </p>
-      </div>
+    <div className="min-w-0">
+      <p className={`font-label uppercase tracking-[0.14em] truncate ${celular ? 'text-[11px]' : 'text-[12.5px]'}`} style={{ color: 'var(--m-t3)' }}>{rotulo}</p>
+      <p className={`mt-1 font-display leading-[0.95] font-extrabold tracking-[-0.04em] tabular-nums whitespace-nowrap ${celular ? 'text-[23px]' : 'text-[38px]'}`}
+         style={{ color: ouro ? 'var(--m-ouro)' : 'var(--m-t1)' }}>
+        {valor}
+      </p>
+      {nota && <p className={`mt-1.5 truncate ${celular ? 'text-[12px]' : 'text-[14px]'}`} style={{ color: 'var(--m-t2)' }}>{nota}</p>}
     </div>
   )
 }
 
 // ─── A tela ───────────────────────────────────────────────────────────────────
+
+/**
+ * Largura da coluna na TV: a etapa vazia continua aberta (com a joia e o
+ * aviso), só mais estreita — o espaço vai para onde há leads.
+ */
+const PESO_VAZIA = 0.72
+const PESO_CHEIA = 1.3
 
 export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita, giro, celular = false }: {
   cartoes: CartaoSala[] | null
@@ -356,7 +299,7 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
 
   const colunas = useMemo(() => (cartoes ? colunasDaSala(cartoes, shareDe, pctDe) : null), [cartoes, shareDe, pctDe])
 
-  // O placar do Kanban: o que está em jogo nos leads em aberto (fora Venda)
+  // O placar: o que está em jogo nos leads em aberto (fora Venda)
   const placar = useMemo(() => {
     if (!cartoes) return null
     const abertos = cartoes.filter(c => c.etapa !== 'venda')
@@ -374,8 +317,46 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
     return { n: abertos.length, total, corretores }
   }, [cartoes, shareDe, pctDe, porId])
 
+  const pctComissao = placar && placar.total.vgv
+    ? `${(placar.total.bruta / placar.total.vgv * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% do VGV`
+    : '5% do VGV'
+
+  const numeros = placar && (
+    <div className={`relative ${celular ? 'mt-3 pt-3 grid grid-cols-2 gap-x-4 gap-y-4' : 'mt-4 pt-4 flex items-stretch gap-0'}`}
+         style={{ borderTop: '1px solid var(--m-line)' }}>
+      {[
+        { rotulo: 'Em jogo', valor: rs(placar.total.vgv), nota: `VGV de ${placar.n} leads em aberto` },
+        { rotulo: 'Comissão geral', valor: rs(placar.total.bruta), nota: pctComissao },
+        { rotulo: 'Líquida Souza', valor: rs(placar.total.souza), nota: 'o que fica na casa', ouro: true },
+      ].map((n, k) => (
+        <div key={n.rotulo} className={celular ? `min-w-0 ${k === 0 ? 'col-span-2' : ''}` : `min-w-0 flex-1 pr-6 ${k > 0 ? 'pl-6' : ''}`}
+             style={!celular && k > 0 ? { borderLeft: '1px solid var(--m-line)' } : undefined}>
+          <NumeroDaFaixa {...n} celular={celular} />
+        </div>
+      ))}
+      {placar.corretores.length > 0 && (
+        <div className={celular ? 'col-span-2 grid grid-cols-2 gap-2' : 'flex items-stretch gap-3 pl-6'}
+             style={!celular ? { borderLeft: '1px solid var(--m-line)' } : undefined}>
+          {placar.corretores.map(x => (
+            <div key={x.p.id} className={`dash-vidro flex items-center gap-3 ${celular ? 'px-3 py-2.5' : 'px-4 py-3 min-w-[230px]'}`}>
+              <FotoPerfil nome={x.p.name} url={x.p.avatarUrl} tamanho={celular ? 38 : 50} className="dash-foto" />
+              <div className="min-w-0">
+                <p className={`truncate ${celular ? 'text-[12px]' : 'text-[13.5px]'}`} style={{ color: 'var(--m-t2)' }}>
+                  {x.p.name.split(' ')[0]}{x.p.commissionShare ? <span style={{ color: 'var(--m-t3)' }}> · {x.p.commissionShare}%</span> : null}
+                </p>
+                <p className={`font-display font-extrabold tracking-[-0.03em] tabular-nums leading-tight ${celular ? 'text-[19px]' : 'text-[26px]'}`} style={{ color: 'var(--m-ok)' }}>
+                  {rs(x.valor)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
   const faixa = (
-    <section className={`pulse-marinho relative shrink-0 overflow-hidden ${celular ? 'rounded-[24px] px-4 py-4' : 'pulse-palco-hero px-9 py-5'}`}>
+    <section className={`pulse-marinho relative shrink-0 overflow-hidden ${celular ? 'rounded-[24px] px-4 py-4' : 'pulse-palco-hero px-9 pt-5 pb-6'}`}>
       <div className="pulse-luzes" aria-hidden />
       <div className="relative flex items-center gap-6 flex-wrap">
         <div className="flex items-center gap-3.5">
@@ -392,21 +373,8 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
         {!celular && <div className="ml-4">{giro}</div>}
         <div className={celular ? 'w-full flex items-center gap-2' : 'ml-auto'}>{direita}</div>
       </div>
+      {numeros}
     </section>
-  )
-
-  const chips = placar && (
-    <div className={`flex items-stretch gap-2 ${celular ? 'overflow-x-auto -mx-3 px-3 pb-1' : 'flex-wrap'}`}>
-      <Placar rotulo="VGV" nota={`${placar.n} leads em aberto`} valor={placar.total.vgv} cor="var(--t1)" fundo={degradeJoiaClaro('lead')} />
-      <Placar rotulo="Comissão geral"
-              nota={placar.total.vgv ? `${(placar.total.bruta / placar.total.vgv * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% do VGV` : '5% do VGV'}
-              valor={placar.total.bruta} cor="var(--t1)" fundo={degradeJoiaClaro('atendimento')} />
-      <Placar rotulo="Líquida Souza" valor={placar.total.souza} cor="var(--brand-text)" destaque fundo={degradeJoiaClaro('proposta')} />
-      {placar.corretores.map(x => (
-        <Placar key={x.p.id} rotulo={`Líquida ${x.p.name.split(' ')[0]}`} nota={x.p.commissionShare ? `${x.p.commissionShare}%` : undefined}
-                valor={x.valor} cor="#16A34A" destaque foto={{ nome: x.p.name, url: x.p.avatarUrl }} />
-      ))}
-    </div>
   )
 
   const quadro = erro ? (
@@ -415,38 +383,21 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
       Não consegui ler o Kanban: {erro}
     </p>
   ) : !colunas ? (
-    <div className={celular ? 'h-[420px] rounded-[20px] shimmer' : 'flex-1 min-h-0 grid grid-cols-6 gap-3'} aria-busy="true">
-      {!celular && Array.from({ length: 6 }, (_, i) => <div key={i} className="rounded-[16px] shimmer" />)}
+    <div className={celular ? 'h-[420px] rounded-[24px] shimmer' : 'flex-1 min-h-0 grid grid-cols-6 gap-3'} aria-busy="true">
+      {!celular && Array.from({ length: 6 }, (_, k) => <div key={k} className="rounded-[26px] shimmer" />)}
     </div>
   ) : (
     <div className={celular
       ? 'flex items-start gap-3 overflow-x-auto snap-x snap-mandatory -mx-3 px-3 pb-2'
       : 'flex-1 min-h-0 grid gap-3'}
-         style={celular ? undefined : { gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' }}>
-      {colunas.map((col, i) => (
-        <Coluna key={col.etapa} col={col} primeira={i === 0} perfis={porId} agora={agora} celular={celular} pctDe={pctDe} />
+         style={celular ? undefined : {
+           gridTemplateColumns: colunas.map(c => `minmax(0, ${c.cartoes.length ? PESO_CHEIA : PESO_VAZIA}fr)`).join(' '),
+         }}>
+      {colunas.map(col => (
+        <Coluna key={col.etapa} col={col} perfis={porId} agora={agora} celular={celular} />
       ))}
     </div>
   )
 
-  if (celular) {
-    return <>{faixa}{chips}{quadro}</>
-  }
-
-  // TV: o quadro (placar + colunas) desenhado maior e reduzido para caber
-  return (
-    <>
-      {faixa}
-      <div className="relative flex-1 min-h-0">
-        <div className="absolute left-0 top-0 flex flex-col gap-3"
-             style={{
-               width: `${100 / ESCALA_QUADRO}%`, height: `${100 / ESCALA_QUADRO}%`,
-               transform: `scale(${ESCALA_QUADRO})`, transformOrigin: '0 0',
-             }}>
-          {chips}
-          {quadro}
-        </div>
-      </div>
-    </>
-  )
+  return <>{faixa}{quadro}</>
 }

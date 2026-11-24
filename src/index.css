@@ -2975,3 +2975,39 @@ button.pulse-pilula:hover { border-color: var(--line-strong); box-shadow: 0 10px
   box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.6), 0 0 0 7px rgba(235, 208, 154, 0.22), 0 0 48px 4px rgba(235, 208, 154, 0.28);
 }
 .pulse-equipe-compacta .pulse-equipe-agora { height: 20px; padding: 0 7px; font-size: 10px; gap: 4px; }
+
+/* ── Kanban do Pulse na pegada da dashboard (24/11/2026) ───────────────────
+   Coluna = painel branco (.pulse-card) com a joia da etapa no topo; o lead é
+   uma pílula; quem mexeu agora é pílula Marinho; atrasado (+24 h) é rosado,
+   como no Kanban de Leads. */
+.pulse-kanban-col { border-radius: 26px; }
+.pulse-kanban-joia {
+  border-radius: 20px; color: #fff;
+  box-shadow: 0 14px 28px -18px rgba(15, 39, 89, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.pulse-kanban-joia-nota { color: rgba(255, 255, 255, 0.78); }
+.pulse-kanban-atrasados {
+  display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px; border-radius: 999px;
+  background: #FFFFFF; color: #B42318; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.pulse-kanban-pilula:not(.marinho) {
+  background-color: var(--surface);
+}
+.pulse-kanban-pilula {
+  border-radius: 18px; border: 1px solid var(--line);
+}
+.pulse-kanban-pilula.kanban-tom:not(.marinho) {
+  background: color-mix(in srgb, var(--error) 6%, var(--surface));
+  border-color: color-mix(in srgb, var(--error) 24%, transparent);
+}
+.pulse-kanban-pilula.marinho {
+  border-color: transparent;
+  box-shadow: 0 16px 32px -16px rgba(15, 39, 89, 0.75);
+}
+.pulse-kanban-agora.pulse-equipe-agora { height: 17px; padding: 0 7px; font-size: 9.5px; gap: 4px; }
+.pulse-kanban-agora.pulse-equipe-agora::before { width: 5px; height: 5px; }
+.pulse-kanban-resto {
+  border-radius: 18px; border: 1px dashed color-mix(in srgb, var(--etapa) 35%, transparent);
+  background: color-mix(in srgb, var(--etapa) 6%, transparent);
+}
+.pulse-kanban-joia-titulo { color: rgba(255, 255, 255, 0.92); }
