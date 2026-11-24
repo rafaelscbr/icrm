@@ -43,9 +43,12 @@ export function Painel({ children, className = '', dourado = false, as: Tag = 's
   as?: 'section' | 'div' | 'article'
 }) {
   return (
+    // 24/11/2026: o painel "dourado" (dinheiro, meta, marca) virou o bloco
+    // Marinho da dashboard; o branco ganhou o canto e a sombra do painel branco.
     <Tag
-      className={`relative rounded-[18px] border border-line surface-premium shadow-card
-                  overflow-hidden ${dourado ? 'gold-edge gold-glow-tl' : ''} ${className}`}
+      className={dourado
+        ? `relative marinho marinho-bloco overflow-hidden ${className}`
+        : `relative rounded-[24px] border border-line surface-premium bento overflow-hidden ${className}`}
     >
       {children}
     </Tag>
@@ -262,26 +265,28 @@ export function FaixaNumeros({ itens, className = '' }: {
 }) {
   const cols = { 2: 'md:grid-cols-2', 3: 'md:grid-cols-3', 4: 'md:grid-cols-4', 5: 'md:grid-cols-5' }[itens.length] ?? 'md:grid-cols-4'
   return (
-    <div className={`bento faixa-numeros grid grid-cols-2 ${cols} overflow-hidden ${itens.length % 2 ? 'faixa-impar' : ''} ${className}`}>
+    // 24/11/2026: a faixa virou o bloco Marinho da dashboard. `.marinho` troca
+    // os tokens por dentro — o `tom` das telas (text-success…) já lê no azul.
+    <div className={`marinho marinho-bloco faixa-numeros faixa-marinho grid grid-cols-2 ${cols} ${itens.length % 2 ? 'faixa-impar' : ''} ${className}`}>
       {itens.map(i => {
         const corpo = (
           <>
-            <p className="text-[12.5px] text-t4 truncate">{i.rotulo}</p>
-            <p className={`font-display font-extrabold tabular-nums leading-tight tracking-[-0.02em] truncate mt-0.5
-                           ${i.destaque ? 'text-[26px]' : 'text-[20px]'} ${i.tom ?? 'text-t1'}`}>
+            <p className="text-[13px] text-t3 truncate">{i.rotulo}</p>
+            <p className={`font-display font-extrabold tabular-nums leading-tight tracking-[-0.02em] truncate mt-1
+                           ${i.destaque ? 'text-[28px] lg:text-[32px]' : 'text-[22px] lg:text-[26px]'} ${i.tom ?? (i.destaque ? 'marinho-ouro' : 'text-t1')}`}>
               {i.valor}
             </p>
-            {i.nota && <p className="text-[12px] text-t4 truncate mt-0.5">{i.nota}</p>}
+            {i.nota && <p className="text-[12.5px] text-t4 truncate mt-1">{i.nota}</p>}
           </>
         )
         return i.onClick ? (
           <button key={i.rotulo} type="button" onClick={i.onClick}
-            className="flex flex-col justify-start px-5 py-3.5 min-w-0 text-left transition-colors cursor-pointer hover:bg-[color-mix(in_srgb,var(--area,var(--t1))_6%,transparent)]
-                       focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40">
+            className="flex flex-col justify-start min-w-0 text-left transition-colors cursor-pointer hover:bg-white/[0.06]
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/50">
             {corpo}
           </button>
         ) : (
-          <div key={i.rotulo} className="px-5 py-3.5 min-w-0">{corpo}</div>
+          <div key={i.rotulo} className="min-w-0">{corpo}</div>
         )
       })}
     </div>
@@ -296,7 +301,7 @@ export function Segmentado<T extends string | null>({ opcoes, valor, onChange, r
   rotulo: string
 }) {
   return (
-    <div role="radiogroup" aria-label={rotulo} className="flex items-center gap-0.5 p-0.5 rounded-[10px] bg-s2 flex-shrink-0">
+    <div role="radiogroup" aria-label={rotulo} className="abas-marinho flex items-center gap-0.5 flex-shrink-0">
       {opcoes.map(o => {
         const ativo = o.value === valor
         return (
@@ -306,9 +311,9 @@ export function Segmentado<T extends string | null>({ opcoes, valor, onChange, r
             role="radio"
             aria-checked={ativo}
             onClick={() => onChange(o.value)}
-            className={`h-8 px-3 rounded-[8px] text-[13px] font-medium transition-colors cursor-pointer
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
-              ${ativo ? 'bg-surface text-t1 shadow-card' : 'text-t3 hover:text-t1'}`}
+            className={`h-8 px-3.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60
+              ${ativo ? 'bg-white shadow-sm' : ''}`}
           >
             {o.label}
           </button>

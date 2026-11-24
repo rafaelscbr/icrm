@@ -102,7 +102,7 @@ function TaskRow({ task: t, contacts, properties, allProfiles, currentUserId, is
   const delegatedByName = t.brokerId && t.brokerId !== currentUserId ? (allProfiles.find(p => p.id === t.brokerId)?.name ?? '') : ''
 
   return (
-    <div className={`lista-linha flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s3/50 group relative
+    <div className={`lista-linha lista-linha-alta flex items-start gap-4 px-5 py-4 transition-colors hover:bg-s3/50 group relative
       ${!isLast ? 'border-b border-line' : ''}
       ${isDone ? 'opacity-55' : ''}
       ${isToday && !isDone ? 'bg-indigo-500/3' : ''}
@@ -662,7 +662,7 @@ export function TasksPage() {
           valor={activeTab}
           onChange={setActiveTab}
           rotulo="Seções de tarefas"
-          variante="sublinhado"
+          variante="pilula"
         />
       }
     >
@@ -803,8 +803,10 @@ export function TasksPage() {
       </div>
 
       {!isEmpty && (
-        <aside className="hidden xl:flex flex-col gap-4 sticky top-[72px]" aria-label="Resumo do seu dia">
-          <div className="bento p-4">
+        // 24/11/2026: a coluna do dia é um bloco Marinho, como o painel do
+        // topo da dashboard; cada parte vira um cartão de vidro por dentro.
+        <aside className="hidden xl:flex flex-col gap-4 sticky top-[72px] marinho marinho-bloco p-4 self-start" aria-label="Resumo do seu dia">
+          <div className="p-1">
             <p className="text-[17px] font-semibold text-t1 mb-3 px-1">Seu <Destaque>dia</Destaque></p>
             <div className="grid grid-cols-2 gap-2" role="group" aria-label="Filtrar tarefas">
               {([
@@ -824,12 +826,12 @@ export function TasksPage() {
                     className={`flex flex-col items-start gap-2 rounded-[14px] border px-3.5 py-3 text-left transition-all cursor-pointer
                       disabled:opacity-45 disabled:cursor-not-allowed
                       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
-                      ${active ? 'border-transparent bg-brand-tint' : 'border-transparent bg-s2 hover:bg-s3'}`}
+                      ${active ? 'border-transparent bg-white' : 'border-line bg-s2 hover:bg-s3'}`}
                   >
-                    <f.icon size={15} strokeWidth={1.9} className={active ? 'text-brand-text' : f.tone} aria-hidden />
+                    <f.icon size={15} strokeWidth={1.9} className={active ? 'text-[#143275]' : f.tone} aria-hidden />
                     <span className="flex flex-col">
-                      <span className={`font-display text-[26px] font-extrabold leading-none tabular-nums ${active ? 'text-brand-text' : (f.value > 0 ? f.tone : 'text-t4')}`}>{f.value}</span>
-                      <span className={`text-[12px] mt-1 ${active ? 'text-t1 font-semibold' : 'text-t3'}`}>{f.label}</span>
+                      <span className={`font-display text-[26px] font-extrabold leading-none tabular-nums ${active ? 'text-[#143275]' : (f.value > 0 ? f.tone : 'text-t4')}`}>{f.value}</span>
+                      <span className={`text-[12px] mt-1 ${active ? 'text-[#143275] font-semibold' : 'text-t3'}`}>{f.label}</span>
                     </span>
                   </button>
                 )
@@ -863,7 +865,7 @@ export function TasksPage() {
             )
           })()}
 
-          <div className="bento p-4">
+          <div className="dash-vidro p-4">
             <div className="flex items-baseline justify-between mb-3">
               <p className="text-[15px] font-semibold text-t1">Concluídas na <Destaque>semana</Destaque></p>
               <span className="font-display text-[18px] font-extrabold tabular-nums text-t1">{semana.reduce((a, d) => a + d.n, 0)}</span>
@@ -872,7 +874,7 @@ export function TasksPage() {
               {semana.map(d => (
                 <div key={d.chave} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
                   <div className="w-full rounded-[5px] bg-s2 flex items-end overflow-hidden" style={{ height: '78%' }}>
-                    <div className="w-full rounded-[5px] bg-success transition-[height] duration-500" style={{ height: `${(d.n / tetoSemana) * 100}%` }} />
+                    <div className="w-full rounded-[5px] dash-trilho-cheio !relative transition-[height] duration-500" style={{ height: `${(d.n / tetoSemana) * 100}%` }} />
                   </div>
                   <span className={`text-[11px] ${d.hoje ? 'text-t1 font-semibold' : 'text-t4'}`}>{d.rotulo}</span>
                 </div>
@@ -881,7 +883,7 @@ export function TasksPage() {
           </div>
 
           {porTipo.length > 0 && (
-            <div className="bento p-4">
+            <div className="dash-vidro p-4">
               <p className="text-[15px] font-semibold text-t1 mb-2.5">Pendentes por tipo</p>
               <ul className="flex flex-col gap-2">
                 {porTipo.map(([cat, n]) => {

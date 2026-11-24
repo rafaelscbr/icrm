@@ -20,7 +20,7 @@ export function LinhaMetaDia({ hoje, meta, semana, mes, semDesfecho, acao, class
   const bateu  = hoje >= meta
   const faltam = Math.max(0, meta - hoje)
   return (
-    <div className={`bento flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3.5 ${className}`}>
+    <div className={`marinho marinho-bloco flex flex-wrap items-center gap-x-6 gap-y-3 px-6 py-4 ${className}`}>
       <div className="flex items-baseline gap-2 shrink-0">
         <span className="text-[12.5px] text-t4">Hoje</span>
         <span className={`font-display font-extrabold tabular-nums leading-none text-[26px] tracking-[-0.02em]

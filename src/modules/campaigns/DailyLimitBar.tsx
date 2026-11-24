@@ -20,7 +20,7 @@ export function DailyLimitBar({ count }: Props) {
   // v10 (01/11/2026): uma linha no padrão da meta de ligações — número,
   // barra fina e o aviso só quando existe.
   return (
-    <div className="bento flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3">
+    <div className="marinho marinho-bloco flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4">
       <div className="flex items-baseline gap-2 shrink-0">
         <span className="text-[12.5px] text-t4">Disparos hoje</span>
         <span className={`font-display font-extrabold tabular-nums leading-none text-[20px] tracking-[-0.02em] ${corNum}`}>

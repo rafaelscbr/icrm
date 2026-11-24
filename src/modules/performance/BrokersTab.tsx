@@ -2,6 +2,7 @@
  * BrokersTab — comparativo de performance entre corretores.
  * Dados: lead_interactions (via leads.broker_id), sales, disparo_logs.
  */
+import { Segmentado } from '../../components/shared/visual'
 import { useEffect, useMemo, useState } from 'react'
 import {
   MessageCircle, TrendingUp, TrendingDown, Minus,
@@ -222,22 +223,9 @@ export function BrokersTab() {
   return (
     <div className="flex flex-col gap-6">
 
-      {/* Seletor de período */}
-      <div className="flex items-center gap-1 p-1 rounded-xl border border-line bg-s2/40 w-fit">
-        {PERIODS.map(p => (
-          <button
-            key={p.id}
-            onClick={() => setPeriod(p.id)}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              period === p.id
-                ? 'bg-brand-fill text-brand-fill-text'
-                : 'text-t3 hover:text-t1 hover:bg-s3/60'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+      {/* Seletor de período — a cápsula Marinho do sistema (Segmentado). */}
+      <Segmentado rotulo="Período" valor={period} onChange={setPeriod}
+        opcoes={PERIODS.map(p => ({ value: p.id, label: p.label }))} />
 
       {/* Ranking geral */}
       {ranked.length > 1 && (

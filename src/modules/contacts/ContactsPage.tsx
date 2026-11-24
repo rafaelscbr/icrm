@@ -166,7 +166,7 @@ export function ContactsPage() {
       band={
         <Abas
           rotulo="Tipo de contato"
-          variante="sublinhado"
+          variante="pilula"
           valor={(activeTag ?? 'todos') as ContactTag | 'todos'}
           onChange={v => { setActiveTag(v === 'todos' ? null : v); setPage(1) }}
           abas={FILTER_OPTIONS.map(o => ({
@@ -225,8 +225,8 @@ export function ContactsPage() {
         )}
       >
         <ListContainer>
-          <CabecalhoLista colunas={COLUNAS_CONTATO} antes="w-10" depois="w-[132px]" className="hidden sm:flex" />
-          {paginated.map((c, i) => (
+          <CabecalhoLista colunas={COLUNAS_CONTATO} antes="w-10" depois="w-[132px]" className="hidden sm:flex lista-cabecalho" />
+          {paginated.map(c => (
             <div
               key={c.id}
               onClick={() => setViewContact(c)}
@@ -235,8 +235,8 @@ export function ContactsPage() {
               onKeyDown={aoTeclarAbrir(() => setViewContact(c))}
               aria-label={`Abrir ${c.name}`}
               className={`
-                lista-linha group flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-s3/50 row-accent cursor-pointer
-                ${i < paginated.length - 1 ? 'border-b border-line' : ''}
+                lista-linha group flex items-center gap-4 px-6 py-3 cursor-pointer
+                ${viewContact?.id === c.id ? 'lista-linha-ativa marinho' : ''}
               `}
             >
               <Avatar name={c.name} photoUrl={c.photoUrl} size="md" />

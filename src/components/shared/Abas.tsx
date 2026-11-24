@@ -128,7 +128,8 @@ export function Abas<T extends string>({
         role="tablist"
         aria-label={rotulo}
         className={pilula
-          ? 'relative flex items-center gap-1 bg-s2/70 border border-line rounded-[14px] p-1 w-fit'
+          // 24/11/2026: cápsula Marinho com a ativa em branco — as abas da dashboard.
+          ? 'abas-marinho relative flex items-center gap-1 w-fit max-w-full overflow-x-auto rolagem-limpa'
           : 'relative flex gap-0 border-b border-line flex-1 overflow-x-auto rolagem-limpa'}
       >
         {/* Indicador deslizante — só transform e largura de UM elemento, e a
@@ -137,7 +138,7 @@ export function Abas<T extends string>({
           <span
             aria-hidden
             className={pilula
-              ? 'absolute top-1 bottom-1 left-0 rounded-[10px] bg-surface border border-line shadow-card'
+              ? 'abas-marinho-indicador absolute top-1 bottom-1 left-0'
               : 'absolute bottom-0 left-0 h-[2.5px] rounded-full bg-[var(--aba-cor,var(--brand-fill))]'}
             style={{
               width: ind.w,
@@ -160,10 +161,9 @@ export function Abas<T extends string>({
               onClick={() => onChange(a.value)}
               onKeyDown={e => aoTeclar(e, i)}
               className={pilula
-                ? `relative z-[1] flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-semibold
-                   transition-colors duration-200 cursor-pointer min-h-[40px] whitespace-nowrap
-                   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
-                   ${ativo ? 'text-t1' : 'text-t3 hover:text-t1'}`
+                ? `relative z-[1] flex items-center gap-2 px-4 py-2 text-[13.5px] font-semibold
+                   transition-colors duration-200 cursor-pointer min-h-[38px] whitespace-nowrap
+                   focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60`
                 : `relative z-[1] flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold
                    transition-colors duration-200 cursor-pointer min-h-[40px] whitespace-nowrap
                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
@@ -173,7 +173,7 @@ export function Abas<T extends string>({
               {a.label}
               {a.badge !== undefined && (
                 <span className={`ml-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full tabular-nums
-                  ${ativo ? 'bg-brand-tint text-brand-text' : 'bg-s3/60 text-t3'}`}>
+                  ${pilula ? 'abas-marinho-conta' : ativo ? 'bg-brand-tint text-brand-text' : 'bg-s3/60 text-t3'}`}>
                   {a.badge.toLocaleString('pt-BR')}
                 </span>
               )}

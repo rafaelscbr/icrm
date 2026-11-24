@@ -297,7 +297,7 @@ function PerformanceHero({ tasks, period, brokerId }: {
   }[kpis.length] ?? 'md:grid-cols-4'
 
   return (
-    <div className={`bento faixa-metas grid grid-cols-2 ${colunas} overflow-hidden mb-7`}>
+    <div className={`marinho marinho-bloco faixa-metas grid grid-cols-2 ${colunas} overflow-hidden mb-7`}>
       <div className="col-span-full xl:col-span-1 flex items-center gap-3.5 px-5 py-3.5 min-w-0">
         <ScoreRing score={score} />
         <div className="min-w-0">
@@ -733,7 +733,7 @@ export function GoalsPage() {
           valor={tab}
           onChange={setTab}
           rotulo="Período"
-          variante="sublinhado"
+          variante="pilula"
         />
       }
     >

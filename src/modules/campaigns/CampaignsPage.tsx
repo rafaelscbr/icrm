@@ -111,7 +111,7 @@ export function CampaignsPage() {
           rotulo="Seções de campanhas"
           valor={pageTab}
           onChange={setPageTab}
-          variante="sublinhado"
+          variante="pilula"
           abas={[
             { value: 'campanhas',   label: 'Campanhas',   icon: Megaphone, badge: campaigns.length || undefined },
             { value: 'performance', label: 'Performance', icon: Zap },

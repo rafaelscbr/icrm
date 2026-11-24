@@ -14,7 +14,9 @@ export function ListContainer({ children, className = '', ...props }: ListContai
     <div
       // As primeiras linhas entram em escada (240 ms, uma vez): a lista
       // "chega" em vez de aparecer pronta. Ver .stagger-children.
-      className={`list-surface border border-line rounded-[14px] overflow-hidden stagger-children ${className}`}
+      // 24/11/2026: o painel branco da dashboard — canto largo, sombra macia —
+      // com as linhas (`.lista-linha`) em pílula por dentro.
+      className={`list-surface bento overflow-hidden stagger-children ${className}`}
       {...props}
     >
       {children}

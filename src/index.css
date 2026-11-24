@@ -2719,3 +2719,132 @@ button.perfil-celula:focus-visible { outline: 2px solid var(--brand); outline-of
 .dash-total { padding: 0 20px; border-left: 1px solid rgba(255, 255, 255, 0.14); }
 .dash-total:first-child { padding-left: 0; border-left: 0; }
 @media (max-width: 1023px) { .dash-total:nth-child(odd) { padding-left: 0; border-left: 0; } }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PEGADA MARINHO NO SISTEMA (24/11/2026)
+
+   O Rafael aprovou a dashboard nova (painel Marinho com cartões de vidro, lista
+   com a linha escolhida em destaque) e pediu o sistema inteiro nessa pegada.
+   A base é `.marinho`: a mesma faixa do Pulse (.pulse-marinho), mas que TROCA
+   os tokens do tema por dentro — texto, linha, superfície, estados e etapas.
+   Assim qualquer peça existente (text-t1, border-line, bg-s2, text-success,
+   var(--stage-x)) colocada num bloco Marinho já lê branco sobre azul, sem
+   reescrever a peça. Usos: faixa de números das telas, topo das fichas,
+   painéis de dinheiro/meta (Painel dourado), coluna do dia em Tarefas.
+
+   Fora do Marinho a pegada vem de três coisas: cantos mais redondos e sombra
+   larga e macia nos blocos brancos (.bento), linhas de lista em pílula com a
+   aberta em Marinho, e abas em cápsula Marinho com a ativa em branco.
+   ══════════════════════════════════════════════════════════════════════════════ */
+.marinho {
+  --m-t1:   #FFFFFF;
+  --m-t2:   #E6ECF8;
+  --m-t3:   #BCC8E4;
+  --m-line: rgba(255, 255, 255, 0.16);
+  --m-ouro: #EBD09A;
+  --t1: #FFFFFF;
+  --t2: #E6ECF8;
+  --t3: #C9D4EC;
+  --t4: #AFBEDF;
+  --t5: rgba(255, 255, 255, 0.34);
+  --line:        rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(255, 255, 255, 0.26);
+  --line-input:  rgba(255, 255, 255, 0.22);
+  --surface:   rgba(255, 255, 255, 0.07);
+  --surface-2: rgba(255, 255, 255, 0.10);
+  --surface-3: rgba(255, 255, 255, 0.15);
+  --brand:      #EBD09A;
+  --brand-text: #EBD09A;
+  --brand-tint: rgba(235, 208, 154, 0.18);
+  --destaque:   #EBD09A;
+  --success: #4ADE9B; --success-bg: rgba(74, 222, 155, 0.14);  --success-line: rgba(74, 222, 155, 0.34);
+  --warning: #FCD34D; --warning-bg: rgba(252, 211, 77, 0.14);  --warning-line: rgba(252, 211, 77, 0.34);
+  --error:   #FCA5A5; --error-bg:   rgba(252, 165, 165, 0.14); --error-line:   rgba(252, 165, 165, 0.34);
+  --info:    #7DD3FC; --info-bg:    rgba(125, 211, 252, 0.14); --info-line:    rgba(125, 211, 252, 0.34);
+  --stage-lead: #A5AEFF;        --stage-lead-bg: rgba(165, 174, 255, 0.16);        --stage-lead-line: rgba(165, 174, 255, 0.38);
+  --stage-followup: #C9AEFA;    --stage-followup-bg: rgba(201, 174, 250, 0.16);    --stage-followup-line: rgba(201, 174, 250, 0.38);
+  --stage-atendimento: #7DD3FC; --stage-atendimento-bg: rgba(125, 211, 252, 0.16); --stage-atendimento-line: rgba(125, 211, 252, 0.38);
+  --stage-visita: #5EEAD4;      --stage-visita-bg: rgba(94, 234, 212, 0.16);       --stage-visita-line: rgba(94, 234, 212, 0.38);
+  --stage-proposta: #EBD09A;    --stage-proposta-bg: rgba(235, 208, 154, 0.16);    --stage-proposta-line: rgba(235, 208, 154, 0.38);
+  --stage-venda: #4ADE9B;       --stage-venda-bg: rgba(74, 222, 155, 0.16);        --stage-venda-line: rgba(74, 222, 155, 0.38);
+  --shadow-card: none;
+  --grain: none;
+  --surface-sheen: none;
+  --area: #FFFFFF;
+  background-color: #1D4396;
+  background-image:
+    radial-gradient(900px 320px at 100% 0%, rgba(226, 195, 133, 0.24), transparent 70%),
+    linear-gradient(140deg, #2A57B5 0%, #1D4396 48%, #143275 100%);
+  color: var(--t1);
+}
+.marinho .destaque { color: var(--m-ouro); }
+.marinho-ouro { color: var(--m-ouro, #EBD09A); }
+
+/* Bloco Marinho solto (faixa de números, painel de dinheiro, cartão de indicador). */
+.marinho-bloco {
+  border-radius: 28px;
+  box-shadow: 0 1px 2px rgba(15, 39, 89, 0.10), 0 24px 48px -28px rgba(15, 39, 89, 0.55);
+}
+
+/* Blocos brancos: o canto e a sombra do painel branco da dashboard. */
+.bento {
+  border-radius: 26px;
+  box-shadow: 0 1px 2px rgba(15, 39, 89, 0.04), 0 24px 48px -32px rgba(15, 39, 89, 0.35);
+}
+
+/* Faixa de números Marinho (visual.tsx → FaixaNumeros). */
+.faixa-marinho { overflow: hidden; }
+.faixa-marinho > * { padding: 18px 22px; }
+@media (min-width: 1024px) { .faixa-marinho > * { padding: 22px 28px; } }
+
+/* Linhas de lista em pílula (padrão da lista do funil). O contêiner continua
+   branco; cada linha vira um cartão de canto redondo, com folga entre elas. */
+.lista-linha {
+  margin: 6px 8px;
+  border: 1px solid var(--line) !important;
+  border-radius: 999px;
+  background-color: var(--surface);
+  transition: background-color var(--dur-fast) ease, box-shadow 0.2s ease, transform 0.2s var(--ease-out), border-color 0.2s ease;
+}
+.lista-linha:first-child { margin-top: 8px; }
+.lista-linha:last-child  { margin-bottom: 8px; }
+.lista-linha:hover {
+  background-color: var(--surface);
+  border-color: var(--line-strong) !important;
+  box-shadow: 0 10px 24px -18px rgba(15, 39, 89, 0.45);
+  transform: translateY(-1px);
+}
+.lista-linha.lista-linha-alta { border-radius: 24px; }
+.lista-cabecalho { margin: 0 8px; }
+/* A linha aberta na ficha fica em Marinho, como a escolhida da dashboard. */
+.lista-linha.lista-linha-ativa,
+.lista-linha.lista-linha-ativa:hover {
+  border-color: transparent !important;
+  box-shadow: 0 16px 32px -18px rgba(15, 39, 89, 0.7);
+}
+.row-accent, .row-accent:hover { border-left-width: 1px !important; }
+
+/* Abas em cápsula Marinho com a ativa em branco (Abas.tsx, variante pílula). */
+.abas-marinho {
+  background: linear-gradient(140deg, #1D4396, #143275);
+  border-radius: 999px; padding: 4px;
+  box-shadow: 0 10px 24px -16px rgba(15, 39, 89, 0.6);
+}
+.abas-marinho-indicador { background: #FFFFFF; border-radius: 999px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18); }
+.abas-marinho [role="tab"], .abas-marinho [role="radio"] { color: rgba(255, 255, 255, 0.82); border-radius: 999px; }
+.abas-marinho [role="tab"]:hover, .abas-marinho [role="radio"]:hover { color: #FFFFFF; }
+.abas-marinho [role="tab"][aria-selected="true"], .abas-marinho [role="radio"][aria-checked="true"] { color: #143275; }
+.abas-marinho-conta { background: rgba(255, 255, 255, 0.16); color: #FFFFFF; }
+.abas-marinho [aria-selected="true"] .abas-marinho-conta { background: #143275; color: #FFFFFF; }
+/* No cabeçalho da tela a cápsula fica centrada na altura da barra. */
+.page-bar-abas .abas-marinho { align-self: center; height: auto; }
+.page-bar-abas .abas-marinho > button { height: 36px !important; min-height: 36px !important; }
+
+/* Topo da ficha lateral em Marinho, como o detalhe do funil. */
+.ficha-topo-marinho { margin: 12px 12px 0; padding: 16px 20px 20px; border-radius: 24px; }
+@media (min-width: 640px) { .ficha-topo-marinho { padding: 18px 24px 22px; } }
+.ficha-topo-marinho .ficha-icone:hover { background: rgba(255, 255, 255, 0.12); }
+@media (max-width: 1023.98px) { .page-bar > .page-bar-abas { padding-top: 4px; padding-bottom: 8px; } }
+.list-surface.bento, html.light .list-surface.bento {
+  box-shadow: 0 1px 2px rgba(15, 39, 89, 0.04), 0 24px 48px -32px rgba(15, 39, 89, 0.35);
+}

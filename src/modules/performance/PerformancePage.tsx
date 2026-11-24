@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from 'react'
 import { Users, Megaphone, TrendingUp, BarChart3} from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
+import { Abas } from '../../components/shared/Abas'
 import { BrokersTab } from './BrokersTab'
 import { CampaignsBaseTab } from './CampaignsBaseTab'
 // Aba com gráfico: o ECharts só baixa quando a aba abre, não junto com a tela.
@@ -23,25 +24,15 @@ export function PerformancePage() {
       iconTom="info"
       title="Análise *Comercial*"
       subtitle="Performance de corretores, campanhas e vendas"
+      band={
+        <Abas
+          abas={TABS.map(t => ({ value: t.id, label: t.label, icon: t.icon }))}
+          valor={tab}
+          onChange={setTab}
+          rotulo="Seções da análise"
+        />
+      }
     >
-      {/* Tab bar */}
-      <div className="flex gap-0 mb-8 border-b border-line">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`flex items-center gap-1.5 px-5 py-3 text-xs font-semibold border-b-2 -mb-px transition-all cursor-pointer
-              ${tab === id
-                ? 'border-brand text-t1'
-                : 'border-transparent text-t3 hover:text-t2 hover:border-line-strong'
-              }`}
-          >
-            <Icon size={13} />
-            {label}
-          </button>
-        ))}
-      </div>
-
       {tab === 'corretores' && <BrokersTab />}
       {tab === 'campanhas'  && <CampaignsBaseTab />}
       {tab === 'vendas'     && <Suspense fallback={<div className="h-64 rounded-[18px] shimmer" aria-hidden />}><SalesTab /></Suspense>}

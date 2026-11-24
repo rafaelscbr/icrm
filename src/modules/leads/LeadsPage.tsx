@@ -519,7 +519,7 @@ export function LeadsPage() {
           valor={tab}
           onChange={setTab}
           rotulo="Visões do funil"
-          variante="sublinhado"
+          variante="pilula"
         />
       }
     >

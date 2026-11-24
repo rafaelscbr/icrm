@@ -162,7 +162,7 @@ export function LeadListsPage() {
           valor={tab}
           onChange={setTab}
           rotulo="Situação das listas"
-          variante="sublinhado"
+          variante="pilula"
         />
       }
       actions={

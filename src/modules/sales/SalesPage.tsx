@@ -282,7 +282,7 @@ export function SalesPage() {
                   key={s.id}
                   type="button"
                   onClick={() => setVendoId(s.id)}
-                  className="lista-linha w-full flex items-center gap-3 px-4 py-3.5 text-left border-b border-line last:border-0"
+                  className={`lista-linha lista-linha-alta w-full flex items-center gap-3 px-4 py-3.5 text-left ${vendoId === s.id ? 'lista-linha-ativa marinho' : ''}`}
                 >
                   <span className="flex-1 min-w-0">
                     <span className="block text-[14.5px] font-semibold text-t1 truncate">{client?.name ?? '—'}</span>
@@ -306,8 +306,8 @@ export function SalesPage() {
 
           {/* ── Desktop table ──────────────────────────────────────────── */}
           <ListContainer className="hidden lg:block">
-            <CabecalhoLista colunas={COLUNAS} antes="w-8" depois="w-[76px]" />
-            {filtered.map((s, i) => {
+            <CabecalhoLista colunas={COLUNAS} antes="w-8" depois="w-[76px]" className="lista-cabecalho" />
+            {filtered.map(s => {
               const client     = contacts.find(c => c.id === s.clientId)
               const brokerName = isAdmin ? (allProfiles.find(p => p.id === s.brokerId)?.name ?? '—') : null
               const { label } = TYPE_CONFIG[s.type]
@@ -317,7 +317,7 @@ export function SalesPage() {
               return (
                 <div
                   key={s.id}
-                  className={`group flex items-center gap-4 px-6 py-3.5 hover:bg-s3/50 row-accent transition-colors ${i < filtered.length - 1 ? 'border-b border-line' : ''}`}
+                  className={`lista-linha group flex items-center gap-4 px-6 py-3 ${vendoId === s.id ? 'lista-linha-ativa marinho' : ''}`}
                 >
                   <Avatar name={client?.name ?? '?'} size="sm" />
 

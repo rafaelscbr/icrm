@@ -125,7 +125,7 @@ function NotificationItem({
   return (
     <button
       onClick={handleClick}
-      className={`lista-linha group relative w-full text-left flex items-start gap-4 rounded-[14px] px-4 py-4 min-h-[44px]
+      className={`lista-linha lista-linha-alta group relative w-full text-left flex items-start gap-4 px-4 py-4 min-h-[44px]
                   border transition-all cursor-pointer overflow-hidden
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
         ${naoLida
@@ -328,7 +328,7 @@ export function NotificationsPage() {
           valor={filtro}
           onChange={setFiltro}
           rotulo="Filtro de notificações"
-          variante="sublinhado"
+          variante="pilula"
           fim={
             unreadCount > 0 ? (
               <Button variant="secondary" onClick={handleMarkAll} className="gap-2 !text-xs">

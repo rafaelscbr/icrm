@@ -53,9 +53,14 @@ export function FichaPainel({ rotulo, onClose, topo, rodape, children, largura =
                    animate-in fade-in slide-in-from-right-4 duration-200"
         style={{ maxWidth: `min(100%, ${largura})` }}
       >
-        <header className="flex-shrink-0 px-6" style={{ paddingTop: 'calc(18px + env(safe-area-inset-top, 0px))' }}>
-          {topo}
-        </header>
+        {/* 24/11/2026: o cabeçalho é um bloco Marinho, como o detalhe do funil
+            na dashboard. `.marinho` troca os tokens — nome, régua, números e
+            botões do topo leem branco sobre azul sem mudar as peças. */}
+        <div className="flex-shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+          <header className="marinho ficha-topo-marinho">
+            {topo}
+          </header>
+        </div>
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5">{children}</div>
         {rodape && (
           <footer className="flex-shrink-0 px-6 pt-3 border-t border-line flex items-center gap-2"

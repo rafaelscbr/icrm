@@ -411,7 +411,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
         >
 
           {/* ── Cabeçalho ──────────────────────────────────────────────────── */}
-          <header className="flex-shrink-0 px-6" style={{ paddingTop: 'calc(18px + env(safe-area-inset-top, 0px))' }}>
+          {/* 24/11/2026: cabeçalho em bloco Marinho, como as outras fichas (Ficha.tsx). */}
+          <div className="flex-shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+          <header className="marinho ficha-topo-marinho">
             <div className="flex items-center justify-between gap-2 -mr-2 mb-3">
               <span className="text-[12.5px] text-t4 flex items-center gap-1.5 min-w-0">
                 <originConf.icon size={13} strokeWidth={1.8} aria-hidden />
@@ -492,6 +494,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               })}
             </ol>
           </header>
+          </div>
 
           {/* ── Abas ──────────────────────────────────────────────────────── */}
           <div className="flex-shrink-0 px-6 mt-4 border-b border-line">

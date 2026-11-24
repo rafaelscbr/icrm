@@ -87,7 +87,7 @@ export function LigacoesPage() {
           valor={tab}
           onChange={setTab}
           rotulo="Seções de ligações"
-          variante="sublinhado"
+          variante="pilula"
         />
       }
     >

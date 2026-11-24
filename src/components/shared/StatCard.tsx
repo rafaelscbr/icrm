@@ -45,12 +45,13 @@ export function StatCard({ label, value, sub, icon, accent = 'brand', trend, tre
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- cartão decorativo: a ação de verdade é o botão interno
     <div
+      // 24/11/2026: cartão Marinho, na pegada da dashboard (`.marinho` troca os
+      // tokens: o número fica branco e o chip do ícone acende no azul).
       className={`
-        relative bg-surface border border-line rounded-[14px] overflow-hidden
+        relative marinho marinho-bloco rounded-[24px] overflow-hidden
         transition-all duration-200
-        ${onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:border-line-strong hover:shadow-dropdown' : ''}
+        ${onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''}
       `}
-      style={{ boxShadow: 'var(--shadow-card)' }}
       onClick={onClick}
     >
       <div className="p-5">
