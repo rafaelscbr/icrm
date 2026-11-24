@@ -14,7 +14,8 @@ import {
 import { PosChavesSimulator } from '../../simulador/posChaves/Simulator'
 import { DiretoSimulator } from '../../simulador/direto/Simulator'
 import { AssociativoSimulator } from '../../simulador/associativo/Simulator'
-import { AoLadoDoFluxo } from '../../simulador/financiamento/AoLadoDoFluxo'
+import { SimuladorFinanciamento } from '../../simulador/financiamento/SimuladorFinanciamento'
+import { TrocaDeSimulador, TelaDoSimulador } from '../../simulador/financiamento/TrocaDeSimulador'
 import type { EstadoFinanciamento, ResumoFinanciamento } from '../../simulador/financiamento/estado'
 
 /**
@@ -72,16 +73,24 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
   const [relato, setRelato] = useState<RelatoDoSimulador<unknown> | null>(null)
   const aoRelatar = useCallback((r: RelatoDoSimulador<unknown>) => setRelato(r), [])
 
-  // O Simulador de financiamento ao lado: o estado vai junto na versão salva,
-  // e os números dele congelam no resumo como os do fluxo.
+  // O Simulador de financiamento, numa tela separada (troca no topo): o estado
+  // vai junto na versão salva, e os números dele congelam no resumo como os do fluxo.
+  const [tela, setTela] = useState<TelaDoSimulador>('fluxo')
+  // O financiamento só entra na versão se o corretor abriu essa tela (ou se a
+  // versão de partida já o trazia). Reabrir e salvar um fluxo não inventa dado.
+  const [viuFinanciamento, setViuFinanciamento] = useState(!!base?.dados.financiamento)
+  const trocarTela = (t: TelaDoSimulador) => { setTela(t); if (t === 'financiamento') setViuFinanciamento(true) }
   const [financiamento, setFinanciamento] = useState<{ e: EstadoFinanciamento; r: ResumoFinanciamento | null } | null>(null)
   const aoMudarFinanciamento = useCallback((e: EstadoFinanciamento, r: ResumoFinanciamento | null) => setFinanciamento({ e, r }), [])
   // Só conta para "salvar" quando o modo tem banco (no Direto o painel nem aparece).
   const comBanco = !!relato && relato.repasse !== null
-  const financiamentoSalvo = comBanco && financiamento ? financiamento : null
+  const financiamentoSalvo = comBanco && viuFinanciamento && financiamento ? financiamento : null
 
   // "Sujo" = diferente do que está no banco (ou, no fluxo novo, do ponto de partida).
-  const assinatura = relato
+  // Só compara depois que os dois relataram — senão o financiamento, chegando
+  // um instante depois, marcaria a versão recém-aberta como alterada.
+  const prontos = !!relato && (!comBanco || !viuFinanciamento || !!financiamento)
+  const assinatura = prontos && relato
     ? JSON.stringify({ nome: nome.trim(), modo, shared, estado: relato.estado, financiamento: financiamentoSalvo?.e ?? null })
     : null
   const [referencia, setReferencia] = useState<string | null>(null)
@@ -190,6 +199,8 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
               : situacao}
           </p>
 
+          <TrocaDeSimulador valor={tela} onChange={trocarTela} />
+
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               type="button"
@@ -235,7 +246,7 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
         )}
 
         {/* O tipo de simulação só se escolhe no fluxo novo: um fluxo salvo não muda de tipo. */}
-        {!atual && (
+        {!atual && tela === 'fluxo' && (
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto rolagem-limpa">
             <Abas abas={MODOS} valor={modo} onChange={setModo} rotulo="Tipo de simulação" variante="sublinhado" />
           </div>
@@ -243,18 +254,8 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
       </header>
 
       <div className="flex-1 overflow-y-auto overscroll-contain">
-        <div className="max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6">
-          <AoLadoDoFluxo
-            key={modo}
-            origem={relato?.repasse}
-            inicial={base?.dados.financiamento}
-            onEstado={aoMudarFinanciamento}
-            onSalvarNoLead={() => void gravar(false)}
-            salvando={salvando === 'salvar'}
-            cliente={shared.cliente}
-            empreendimento={shared.empreendimento}
-            corretor={corretor}
-          >
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6">
+          <div hidden={tela !== 'fluxo'}>
           {modo === 'pos_chaves' && (
             <PosChavesSimulator key="pos_chaves" shared={shared} onShared={onShared} corretor={corretor}
               inicial={inicial as EstadoPosChaves | undefined} onRelato={aoRelatar} />
@@ -267,7 +268,20 @@ export function SimuladorDoLead({ lead, base, nomeSugerido, onClose, onSalvo }: 
             <AssociativoSimulator key="associativo" shared={shared} onShared={onShared} corretor={corretor}
               inicial={inicial as EstadoAssociativo | undefined} onRelato={aoRelatar} />
           )}
-          </AoLadoDoFluxo>
+          </div>
+          {viuFinanciamento && <div hidden={tela !== 'financiamento'}>
+            <SimuladorFinanciamento
+              key={modo}
+              origem={relato?.repasse ?? undefined}
+              inicial={base?.dados.financiamento}
+              onEstado={aoMudarFinanciamento}
+              onSalvarNoLead={comBanco ? () => void gravar(false) : undefined}
+              salvando={salvando === 'salvar'}
+              cliente={shared.cliente}
+              empreendimento={shared.empreendimento}
+              corretor={corretor}
+            />
+          </div>}
         </div>
       </div>
     </div>,

@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Calculator, Key, Building2, Users } from 'lucide-react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Abas } from '../../components/shared/Abas'
@@ -7,7 +8,8 @@ import { SimuladorModo, SharedFields } from './shared/types'
 import { PosChavesSimulator } from './posChaves/Simulator'
 import { DiretoSimulator } from './direto/Simulator'
 import { AssociativoSimulator } from './associativo/Simulator'
-import { AoLadoDoFluxo } from './financiamento/AoLadoDoFluxo'
+import { SimuladorFinanciamento } from './financiamento/SimuladorFinanciamento'
+import { TrocaDeSimulador, TelaDoSimulador } from './financiamento/TrocaDeSimulador'
 import type { RepasseDoFluxo } from './financiamento/estado'
 import type { RelatoDoSimulador } from './shared/fluxo'
 
@@ -20,6 +22,11 @@ import type { RelatoDoSimulador } from './shared/fluxo'
 // Era a única tela (com Leads) fora do PageLayout: título sem ícone de área,
 // padding próprio e um terceiro estilo de aba. Agora entra no quadro comum,
 // e o seletor de modo usa as abas em pílula do sistema.
+//
+// 24/11/2026: são DOIS simuladores, em telas separadas — Simulador de fluxo e
+// Simulador de financiamento — trocados no topo. O Rafael achou confuso os dois
+// lado a lado. Os dois ficam montados (só um à vista) para nada se perder na
+// troca, e o de financiamento continua puxando os dados do fluxo.
 
 const MODOS: { value: SimuladorModo; label: string; icon: typeof Key }[] = [
   { value: 'pos_chaves',  label: 'Pós-chaves',                icon: Key       },
@@ -29,6 +36,13 @@ const MODOS: { value: SimuladorModo; label: string; icon: typeof Key }[] = [
 
 export function SimuladorPage() {
   const { profile } = useAuthStore()
+  const [params, setParams] = useSearchParams()
+  const tela: TelaDoSimulador = params.get('tela') === 'financiamento' ? 'financiamento' : 'fluxo'
+  const trocarTela = (t: TelaDoSimulador) => setParams(t === 'financiamento' ? { tela: t } : {}, { replace: true })
+  // Monta o financiamento na primeira vez que ele é aberto; depois fica montado
+  // (escondido) para não perder o que foi preenchido.
+  const [abriuFinanciamento, setAbriuFinanciamento] = useState(tela === 'financiamento')
+  useEffect(() => { if (tela === 'financiamento') setAbriuFinanciamento(true) }, [tela])
   const [modo, setModo] = useState<SimuladorModo>('pos_chaves')
 
   // Identificação e valor sobrevivem à troca de modo. Tudo começa vazio: o
@@ -41,18 +55,23 @@ export function SimuladorPage() {
   })
   const onShared = (patch: Partial<SharedFields>) => setShared(prev => ({ ...prev, ...patch }))
 
-  // O Simulador de financiamento ao lado só LÊ o que o modo ativo relata.
+  // O Simulador de financiamento só LÊ o que o modo ativo do fluxo relata.
   const [repasse, setRepasse] = useState<RepasseDoFluxo | null | undefined>(undefined)
   const aoRelatar = useCallback((r: RelatoDoSimulador<unknown>) => setRepasse(r.repasse), [])
+
+  const corretor = profile?.name ?? ''
 
   return (
     <PageLayout
       icon={Calculator}
       iconTom="marca"
-      title="Simulador de *fluxo*"
-      subtitle="Preencha os campos: a proposta sai em imagem e em texto pronto para o WhatsApp"
-      largura="quadro"
-      band={
+      title={tela === 'fluxo' ? 'Simulador de *fluxo*' : 'Simulador de *financiamento*'}
+      subtitle={tela === 'fluxo'
+        ? 'Preencha os campos: a proposta sai em imagem e em texto pronto para o WhatsApp'
+        : 'Renda, parcela do banco e saldo nas chaves'}
+      largura="painel"
+      actions={<TrocaDeSimulador valor={tela} onChange={trocarTela} />}
+      band={tela === 'fluxo' ? (
         <Abas
           abas={MODOS}
           valor={modo}
@@ -60,24 +79,27 @@ export function SimuladorPage() {
           rotulo="Tipo de simulação"
           variante="pilula"
         />
-      }
+      ) : undefined}
     >
-      <AoLadoDoFluxo
-        origem={repasse}
-        cliente={shared.cliente}
-        empreendimento={shared.empreendimento}
-        corretor={profile?.name ?? ''}
-      >
+      <div hidden={tela !== 'fluxo'}>
         {modo === 'pos_chaves' && (
-          <PosChavesSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} onRelato={aoRelatar} />
+          <PosChavesSimulator shared={shared} onShared={onShared} corretor={corretor} onRelato={aoRelatar} />
         )}
         {modo === 'direto' && (
-          <DiretoSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} onRelato={aoRelatar} />
+          <DiretoSimulator shared={shared} onShared={onShared} corretor={corretor} onRelato={aoRelatar} />
         )}
         {modo === 'associativo' && (
-          <AssociativoSimulator shared={shared} onShared={onShared} corretor={profile?.name ?? ''} onRelato={aoRelatar} />
+          <AssociativoSimulator shared={shared} onShared={onShared} corretor={corretor} onRelato={aoRelatar} />
         )}
-      </AoLadoDoFluxo>
+      </div>
+      {abriuFinanciamento && <div hidden={tela !== 'financiamento'}>
+        <SimuladorFinanciamento
+          origem={repasse ?? undefined}
+          cliente={shared.cliente}
+          empreendimento={shared.empreendimento}
+          corretor={corretor}
+        />
+      </div>}
     </PageLayout>
   )
 }
