@@ -2589,19 +2589,19 @@ button.perfil-celula:focus-visible { outline: 2px solid var(--brand); outline-of
 /*
  * Followup atrasado no cartão (24/11/2026, contato.ts → tomDoContato).
  * A cor vem de uma informação do lead, não da coluna: hoje só uma, mais de
- * 24 h sem contato. O cartão INTEIRO ganha um creme Champanhe — o dourado da
- * marca (#D6B26E, o mesmo da meta e dos destaques), bem diluído — e a frase
- * do contato vai no dourado de texto do sistema (--brand-text). Conversa com
- * a Folha e o Marinho, chama o olho sem gritar. A ordem da coluna não muda.
- * Vale no Kanban de Leads, no do gestor e no da TV. O tom mistura com
- * --surface, então o tema escuro herda sozinho.
+ * 24 h sem contato. O cartão INTEIRO ganha um rosado — o vermelho de alerta
+ * do próprio sistema (--error) bem diluído — e a frase do contato vai nesse
+ * vermelho. Diz "atrasado" sem gritar. (Antes foram âmbar e Champanhe; o
+ * Rafael escolheu o vermelho.) A ordem da coluna não muda. Vale no Kanban de
+ * Leads, no do gestor e no da TV. Tudo sai dos tokens, então o tema escuro
+ * herda sozinho.
  */
-.kanban-tom-atrasado { --tom: #D6B26E; }
-.kanban-tom { --tom-tinta: var(--brand-text); }
+.kanban-tom-atrasado { --tom: var(--error); }
+.kanban-tom { --tom-tinta: var(--error); }
 .kanban-card.kanban-tom {
-  --kanban-card-bg:    color-mix(in srgb, var(--tom) 17%, var(--surface));
-  --kanban-card-hover: color-mix(in srgb, var(--tom) 21%, var(--surface));
-  --kanban-card-line:  color-mix(in srgb, var(--tom) 42%, transparent);
+  --kanban-card-bg:    color-mix(in srgb, var(--tom) 9%, var(--surface));
+  --kanban-card-hover: color-mix(in srgb, var(--tom) 12%, var(--surface));
+  --kanban-card-line:  color-mix(in srgb, var(--tom) 32%, transparent);
   background-color: var(--kanban-card-bg);
 }
 .kanban-card.kanban-tom:hover { background-color: var(--kanban-card-hover); }
