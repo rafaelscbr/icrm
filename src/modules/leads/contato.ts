@@ -17,8 +17,12 @@ import { Lead } from '../../types'
 
 const DIA = 86_400_000
 
-/** Janela em que o lead começa a esfriar — o âmbar do funil. */
-export const ESFRIANDO_DIAS = 2
+/**
+ * Janela do followup atrasado: passou de 24h sem contato, atrasou. Era 2 dias
+ * até 24/11/2026; o Rafael alinhou com a cor do cartão no Kanban (24h,
+ * DESTAQUE_HORAS) para a aba Followup, o filtro e o cartão contarem igual.
+ */
+export const ESFRIANDO_DIAS = 1
 /** Janela em que o silêncio vira risco — o vermelho do funil. */
 export const PARADO_DIAS = 7
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
-import { AlertTriangle, LayoutGrid, Activity, ArrowRight, Clock, Snowflake, Sparkles } from 'lucide-react'
+import { AlertTriangle, LayoutGrid, Activity, ArrowRight, Clock, AlarmClock, Sparkles } from 'lucide-react'
 import type { LeadFunnelStage } from '../../../types'
 import { MAX_TENTATIVAS_FOLLOWUP } from '../../../types'
 import type { Profile } from '../../../store/useAuthStore'
@@ -271,8 +271,9 @@ function Coluna({ col, primeira, perfis, agora, celular, pctDe }: {
           </div>
           {frios > 0 && (
             <div className="px-2 pt-1">
-              <span className="inline-flex items-center gap-1 text-[12px] text-warning tabular-nums">
-                <Snowflake size={11} strokeWidth={1.8} aria-hidden />{frios} esfriando
+              {/* 24/11/2026: a mesma régua e o mesmo nome do Kanban de Leads (+24h). */}
+              <span className="kanban-atrasados inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums">
+                <AlarmClock size={11} strokeWidth={2} aria-hidden />{frios} {frios === 1 ? 'atrasado' : 'atrasados'}
               </span>
             </div>
           )}

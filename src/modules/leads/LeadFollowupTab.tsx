@@ -10,7 +10,7 @@ import { Destaque, destacar } from '../../components/shared/Destaque'
 import { TOM } from '../../components/shared/visual'
 import { CorretorComFoto, useFotoDoCorretor } from '../../components/shared/CorretorComFoto'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
-import { diasSemContato, nivelContato, ESFRIANDO_DIAS, PARADO_DIAS } from './contato'
+import { diasSemContato, nivelContato, PARADO_DIAS } from './contato'
 import type { NivelContato } from './contato'
 import {
   ETAPAS_FOLLOWUP, FAIXAS, ativosParaFollowup, filtrarFollowup, followupPorCorretor,
@@ -42,8 +42,8 @@ interface Props {
 }
 
 const NIVEL: Record<NivelContato, { rotulo: string; cor: string; texto: string; ponto: string; nota: string }> = {
-  em_dia:    { rotulo: 'Em dia',    cor: 'var(--success)', texto: 'text-success', ponto: 'bg-success', nota: `contato nos últimos ${ESFRIANDO_DIAS} dias` },
-  esfriando: { rotulo: 'Esfriando', cor: 'var(--warning)', texto: 'text-warning', ponto: 'bg-warning', nota: `de ${ESFRIANDO_DIAS} a ${PARADO_DIAS} dias sem contato` },
+  em_dia:    { rotulo: 'Em dia',    cor: 'var(--success)', texto: 'text-success', ponto: 'bg-success', nota: 'contato nas últimas 24h' },
+  esfriando: { rotulo: 'Atrasado',  cor: 'var(--warning)', texto: 'text-warning', ponto: 'bg-warning', nota: `de 24h a ${PARADO_DIAS} dias sem contato` },
   parado:    { rotulo: 'Parados',   cor: 'var(--error)',   texto: 'text-error',   ponto: 'bg-error',   nota: `${PARADO_DIAS} dias ou mais sem contato` },
 }
 
@@ -122,10 +122,12 @@ export function LeadFollowupTab({ leads, onOpenLead }: Props) {
         <Anel pct={resumo.pctEmDia} />
         <div className="min-w-0 flex-1">
           <p className="font-display text-[20px] lg:text-[22px] font-bold tracking-[-0.02em] text-t1 leading-snug" style={{ textWrap: 'balance' } as React.CSSProperties}>
-            {resumo.emDia.toLocaleString('pt-BR')} de {resumo.total.toLocaleString('pt-BR')} leads receberam contato nos últimos {ESFRIANDO_DIAS} dias.
+            {resumo.emDia.toLocaleString('pt-BR')} de {resumo.total.toLocaleString('pt-BR')} leads receberam contato nas últimas 24 horas.
           </p>
           <p className="text-[13.5px] text-t3 mt-1.5">
-            Maior silêncio: {textoDias(resumo.maiorSilencio)}
+            {/* atrasado + parado = os cartões em vermelho no Kanban */}
+            {(resumo.esfriando + resumo.parado).toLocaleString('pt-BR')} com followup atrasado (os cartões em vermelho no Kanban)
+            {' · '}Maior silêncio: {textoDias(resumo.maiorSilencio)}
             {resumo.valorParado > 0 && <> · {formatCurrency(resumo.valorParado)} em negociação parada</>}
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mt-5">

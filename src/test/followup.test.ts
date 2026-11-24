@@ -52,8 +52,9 @@ describe('followup · carteira', () => {
       lead({ semContatoHa: 20, funnelStage: 'proposta', averageTicket: 800_000 }),
       lead({ semContatoHa: 9, nunca: true, funnelStage: 'atendimento', averageTicket: 500_000 }),
     ], AGORA)
-    expect(r).toMatchObject({ total: 6, emDia: 2, esfriando: 1, parado: 3, nunca: 1, valorParado: 1_300_000, maiorSilencio: 20 })
-    expect(Math.round(r.pctEmDia!)).toBe(33)
+    // 24/11/2026: em dia é só quem teve contato nas últimas 24h — 1 dia já atrasou.
+    expect(r).toMatchObject({ total: 6, emDia: 1, esfriando: 2, parado: 3, nunca: 1, valorParado: 1_300_000, maiorSilencio: 20 })
+    expect(Math.round(r.pctEmDia!)).toBe(17)
     expect(r.medianaDias).toBe(6.5)
   })
 

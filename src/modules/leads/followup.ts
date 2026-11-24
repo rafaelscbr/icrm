@@ -13,7 +13,7 @@
  * Nada toca a rede: os leads já estão em memória no `useLeadsStore`.
  */
 import type { Lead, LeadFunnelStage } from '../../types'
-import { diasSemContato, nivelContato, msSemContato, ESFRIANDO_DIAS, PARADO_DIAS } from './contato'
+import { diasSemContato, nivelContato, msSemContato, PARADO_DIAS } from './contato'
 import type { NivelContato } from './contato'
 
 /** Etapas acompanhadas. Venda fechada não espera followup. */
@@ -21,11 +21,11 @@ export const ETAPAS_FOLLOWUP: LeadFunnelStage[] = ['lead', 'followup', 'atendime
 
 /**
  * Faixas de dias sem contato. Os cortes acompanham os níveis do funil:
- * até 1 dia = em dia · 2 a 6 = esfriando · 7 ou mais = parado.
+ * menos de 24h = em dia · de 24h a 6 dias = atrasado · 7 ou mais = parado.
  */
 export const FAIXAS = [
   { id: 'hoje',  curto: 'Hoje',   rotulo: 'contato hoje',            min: 0,  max: 0,        nivel: 'em_dia'    },
-  { id: '1',     curto: '1d',     rotulo: '1 dia sem contato',       min: 1,  max: 1,        nivel: 'em_dia'    },
+  { id: '1',     curto: '1d',     rotulo: '1 dia sem contato',       min: 1,  max: 1,        nivel: 'esfriando' },
   { id: '2-3',   curto: '2–3d',   rotulo: '2 a 3 dias sem contato',  min: 2,  max: 3,        nivel: 'esfriando' },
   { id: '4-6',   curto: '4–6d',   rotulo: '4 a 6 dias sem contato',  min: 4,  max: 6,        nivel: 'esfriando' },
   { id: '7-14',  curto: '7–14d',  rotulo: '7 a 14 dias sem contato', min: 7,  max: 14,       nivel: 'parado'    },
@@ -51,7 +51,7 @@ export interface ResumoFollowup {
   parado: number
   /** nenhum contato registrado desde que entrou */
   nunca: number
-  /** % da carteira com contato nos últimos ESFRIANDO_DIAS dias; null sem carteira */
+  /** % da carteira com contato nas últimas 24h; null sem carteira */
   pctEmDia: number | null
   /** soma do ticket dos leads parados em atendimento, visita ou proposta */
   valorParado: number
@@ -201,7 +201,7 @@ export function leiturasFollowup(
     const pct = Math.round(resumo.pctEmDia)
     out.push({
       tom: pct >= 70 ? 'sucesso' : 'neutro',
-      texto: `${n(resumo.emDia)} de ${n(resumo.total)} leads (${pct}%) receberam contato nos últimos ${ESFRIANDO_DIAS} dias` +
+      texto: `${n(resumo.emDia)} de ${n(resumo.total)} leads (${pct}%) receberam contato nas últimas 24 horas` +
              (resumo.medianaDias !== null ? `. Metade da carteira está há ${n(Math.round(resumo.medianaDias))} ${Math.round(resumo.medianaDias) === 1 ? 'dia' : 'dias'} ou mais sem contato.` : '.'),
     })
   }
