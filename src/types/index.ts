@@ -331,8 +331,6 @@ export interface Development {
   status: DevelopmentStatus
   regime: DevelopmentRegime
   deliveryEstimate?: string // 'YYYY-MM'
-  /** Índice que corrige o saldo até as chaves (migração 111). */
-  indiceCorrecao?: 'incc' | 'cub'
   /** comissão bruta da Souza sobre o VGV, em % (5 nos lançamentos; pronto pode ser 6) */
   commissionPct: number
   // Faixa de valor das unidades

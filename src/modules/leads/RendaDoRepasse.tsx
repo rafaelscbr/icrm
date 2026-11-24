@@ -3,17 +3,16 @@ import { BadgeCheck, CircleHelp, XCircle } from 'lucide-react'
 import type { Development, DevelopmentUnit, Lead, LeadProfile } from '../../types'
 import { Destaque } from '../../components/shared/Destaque'
 import { formatCurrencyFull } from '../../lib/formatters'
-import {
-  acumuladoDaSerie, bancoParaCalculo, SERIE_DO_INDICE, useParametrosFinanciamento,
-} from '../simulador/financiamento/dados'
+import { bancoParaCalculo, useParametrosFinanciamento } from '../simulador/financiamento/dados'
 import { calcularRepasse } from '../simulador/financiamento/repasse'
 
 /**
  * "Passa no banco?" — a renda do repasse na ficha do lead, sem simular nada.
  *
  * Pedido do Rafael em 24/11/2026: abrir a ficha e já saber se o cliente
- * financia o saldo na entrega das chaves, no pior cenário (piso da faixa de
- * renda declarada, SAC, saldo corrigido até a entrega). As regras moram em
+ * financia o saldo no banco, no pior cenário (piso da faixa de renda
+ * declarada, SAC). Como no Simulador de financiamento, a conta é de imóvel
+ * pronto, em valores de hoje, sem correção da obra. As regras moram em
  * simulador/financiamento/repasse.ts; aqui só se lê e mostra.
  *
  * Também mostra a renda da OBRA (30% do desembolso mensal, já cadastrada na
@@ -25,7 +24,7 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
   lancamento?: Development
   perfil: LeadProfile | null
 }) {
-  const { bancos, indices, carregado, carregar } = useParametrosFinanciamento()
+  const { bancos, carregado, carregar } = useParametrosFinanciamento()
   useEffect(() => { void carregar() }, [carregar])
 
   const banco = useMemo(() => {
@@ -35,19 +34,12 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
 
   if (!lead.developmentUnitId || !tipologia || !carregado || !banco) return null
 
-  const indice = lancamento?.indiceCorrecao ?? 'incc'
-  // CUB sem 12 meses lançados: cai no INCC e avisa, em vez de corrigir por zero.
-  const media = acumuladoDaSerie(indices, SERIE_DO_INDICE[indice]) ?? (indice === 'cub' ? acumuladoDaSerie(indices, 'incc_di') : null)
-  const indiceUsado = indice === 'cub' && !acumuladoDaSerie(indices, 'cub_sc') ? 'INCC (CUB sem dados)' : indice.toUpperCase()
-
   const renda = perfil?.profile.renda
   const idade = perfil?.profile.idade
   const idadeNum = idade?.value && /^\d+$/.test(idade.value) ? parseInt(idade.value, 10) : null
   const rep = calcularRepasse({
     preco: lead.averageTicket ?? tipologia.price ?? tipologia.priceMin,
     planos: tipologia.paymentPlans,
-    entrega: lancamento?.deliveryEstimate,
-    indiceAnual: media?.valor ?? 0,
     rendaPiso: renda?.min ?? null,
     idade: idadeNum,
     idadeInformadaEm: idade?.at ?? (idade?.source === 'formulario' ? lead.createdAt : null),
@@ -56,7 +48,7 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
   if (!rep) {
     return (
       <p className="text-[13px] text-t4">
-        Renda do repasse: a tabela de {tipologia.name} não informa o % financiado na entrega.
+        Renda do repasse: a tabela de {tipologia.name} não informa o % financiado no banco.
       </p>
     )
   }
@@ -82,7 +74,7 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
             <p className="text-[12.5px] text-t3">Renda bruta exigida</p>
             <p className="font-display text-[24px] font-extrabold text-t1 tabular-nums leading-tight">{formatCurrencyFull(exigida)}</p>
             <p className="text-[12px] text-t4 mt-0.5">
-              {decide === 'repasse' ? 'pela parcela do banco nas chaves' : 'pelo desembolso durante a obra'}
+              {decide === 'repasse' ? 'pela parcela do banco' : 'pelo desembolso durante a obra'}
             </p>
           </div>
           <div className="text-right">
@@ -108,7 +100,7 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
 
         <dl className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px]">
           <div><dt className="text-t4">Parcela no banco</dt><dd className="font-semibold text-t1 tabular-nums">{formatCurrencyFull(r.parcelaTotal)}</dd></div>
-          <div><dt className="text-t4">Saldo nas chaves</dt><dd className="font-semibold text-t1 tabular-nums">{formatCurrencyFull(r.saldoChaves)}</dd></div>
+          <div><dt className="text-t4">Valor financiado</dt><dd className="font-semibold text-t1 tabular-nums">{formatCurrencyFull(r.financiado)}</dd></div>
           <div><dt className="text-t4">Renda na obra</dt><dd className="font-semibold text-t1 tabular-nums">{rendaObra ? formatCurrencyFull(rendaObra) : '—'}</dd></div>
           <div><dt className="text-t4">Idade</dt><dd className="font-semibold text-t1 tabular-nums">{rep.idade ? `${rep.idade} anos` : 'não informada'}</dd></div>
         </dl>
@@ -120,7 +112,7 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
         )}
 
         <p className="mt-3 text-[11.5px] text-t4">
-          {rep.financiamentoPct}% financiado · {rep.meses > 0 ? `${rep.meses} meses de ${indiceUsado} a ${(media?.valor ?? 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% a.a.` : 'sem correção até a entrega'}
+          {rep.financiamentoPct}% financiado · valores de hoje, como imóvel pronto
           {r.cotaEstourada && ' · acima da cota do banco'}
           {' · '}Simulação de referência; aprovação depende da análise do banco.
         </p>

@@ -292,10 +292,8 @@ export function AssociativoSimulator({ shared, onShared, corretor, inicial, onRe
       saldoFinanciar: result.saldoFinanciar,
     }),
     repasse: {
+      // o financiamento simula como imóvel pronto: o pago na obra vira a entrada
       valorImovel: shared.valorTotal, pagoAteChaves: result.pagoNaObra,
-      entrega: cfg.entrega || undefined, indice: cfg.indice,
-      // sem taxa no fluxo, o financiamento usa a média de 12 meses do índice
-      indiceAnual: cfg.aplicarCorrecao && cfg.taxaIndiceAnual > 0 ? cfg.taxaIndiceAnual : undefined,
     },
   })
 

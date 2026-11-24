@@ -1,4 +1,4 @@
-import type { IndiceObra, Sistema } from './calc'
+import type { Sistema } from './calc'
 
 /**
  * O que o Simulador de fluxo conta ao Simulador de financiamento.
@@ -6,13 +6,8 @@ import type { IndiceObra, Sistema } from './calc'
  */
 export interface RepasseDoFluxo {
   valorImovel: number
-  /** tudo o que o cliente paga à construtora até as chaves (valor de hoje) */
+  /** tudo o que o cliente paga à construtora até as chaves — vira a ENTRADA do financiamento */
   pagoAteChaves: number
-  /** 'YYYY-MM' — ausente no pós-chaves, que não tem data de entrega */
-  entrega?: string
-  indice?: IndiceObra
-  /** % a.a. projetado no simulador de fluxo */
-  indiceAnual?: number
 }
 
 /**
@@ -24,10 +19,7 @@ export interface EstadoFinanciamento {
   bancoId: string | null
   sistema: Sistema
   valorImovel?: number
-  pagoAteChaves?: number
-  meses?: number
-  indice?: IndiceObra
-  indiceAnual?: number
+  entrada?: number
   idade?: number | null
   prazo?: number | null
   taxaAnual?: number | null
@@ -46,7 +38,7 @@ export interface ResumoFinanciamento {
   sistema: Sistema
   prazo: number
   taxaAnual: number
-  saldoChaves: number
+  entrada: number
   financiado: number
   parcelaTotal: number
   rendaNecessaria: number

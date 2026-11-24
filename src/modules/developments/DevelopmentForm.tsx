@@ -50,7 +50,6 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
   const [status, setStatus]       = useState<DevelopmentStatus>(development?.status ?? 'lancamento')
   const [regime, setRegime]       = useState<DevelopmentRegime>(development?.regime ?? 'pos_chaves')
   const [delivery, setDelivery]   = useState(development?.deliveryEstimate ?? '')
-  const [indice, setIndice]       = useState<'incc' | 'cub'>(development?.indiceCorrecao ?? 'incc')
   // Comissão da Souza sobre o VGV (migração 108): 5% nos lançamentos; pronto
   // pode ser 6%. Novo cadastro acompanha a fase até alguém escolher à mão.
   const [comissaoPct, setComissaoPct] = useState<number>(development?.commissionPct ?? 5)
@@ -136,7 +135,6 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
       city: city.trim() || 'Itajaí',
       status, regime,
       deliveryEstimate: delivery || undefined,
-      indiceCorrecao: indice,
       valueMin, valueMax,
       incomeMin, incomeIdeal,
       downPaymentMin: downMin, downPaymentIdeal: downIdeal,
@@ -232,17 +230,6 @@ export function DevelopmentForm({ isOpen, onClose, development }: DevelopmentFor
               </div>
             </div>
             <Input label="Entrega" type="month" value={delivery} onChange={e => setDelivery(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="rotulo-campo">Correção do saldo até as chaves</span>
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Índice de correção">
-              {(['incc', 'cub'] as const).map(i => (
-                <button key={i} type="button" role="radio" aria-checked={indice === i}
-                  onClick={() => setIndice(i)} className={pilula(indice === i)}>
-                  {i.toUpperCase()}
-                </button>
-              ))}
-            </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="rotulo-campo">Comissão sobre o VGV</span>

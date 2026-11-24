@@ -7,9 +7,9 @@ import { Grafico, eixoValor, CoresGrafico } from '../../../components/charts/Gra
 import { Segmentado } from '../../../components/shared/visual'
 import { PreviewColumn } from '../shared/components'
 import {
-  compararBancos, evolucaoParcela, IndiceObra, mesesAte, ParametrosBanco, simular, Sistema,
+  compararBancos, evolucaoParcela, ParametrosBanco, simular, Sistema,
 } from './calc'
-import { acumuladoDaSerie, bancoParaCalculo, diasDesde, mesCurto, SERIE_DO_INDICE, useParametrosFinanciamento } from './dados'
+import { bancoParaCalculo, diasDesde, mesCurto, useParametrosFinanciamento } from './dados'
 import { ESTADO_INICIAL, EstadoFinanciamento, RepasseDoFluxo, ResumoFinanciamento } from './estado'
 import { mensagemFinanciamento } from './mensagem'
 import { Ajuda, brl, CampoDinheiro, CampoNumero, Contagem, Medidor, pct, Regua, RotuloCampo } from './pecas'
@@ -21,30 +21,32 @@ import { ResumoCliente } from './ResumoCliente'
  * sendo desenhado ao vivo (imagem e texto do WhatsApp).
  *
  * Responde ao corretor, na hora: quanto de renda bruta o cliente precisa, quanto
- * fica a parcela do banco, quanto o saldo vale nas chaves depois do INCC/CUB e
- * se a renda dele passa (e o que fazer se não passar).
+ * fica a parcela do banco e se a renda dele passa (e o que fazer se não passar).
+ *
+ * Simula como se o imóvel estivesse PRONTO (24/11/2026): valor do imóvel,
+ * entrada e FGTS, em valores de hoje. Sem meses até a entrega e sem correção
+ * por INCC/CUB — o Rafael achou confuso. No lançamento, a entrada é o que o
+ * cliente paga à construtora até as chaves (vem do Simulador de fluxo).
  *
  * Só LÊ o Simulador de fluxo (`origem`). Campo que o corretor mexe aqui se solta
  * do fluxo e ganha o "usar o do fluxo" para voltar. Tudo recalcula a cada
  * mudança — não existe botão "calcular".
  */
 
-const NOME_INDICE: Record<IndiceObra, string> = { incc: 'INCC', cub: 'CUB' }
-
 const AJUDA = {
   renda:  { termo: 'Renda bruta', texto: 'o que a família ganha antes dos descontos. O banco deixa a parcela usar até 30% dela.' },
   sac:    { termo: 'SAC', texto: 'parcela começa mais alta e cai todo mês. É a que o banco usa para aprovar.' },
   price:  { termo: 'Price', texto: 'parcela igual do começo ao fim, mas paga mais juros no total.' },
-  incc:   { termo: 'INCC / CUB', texto: 'índices do custo da obra. Corrigem o saldo devedor até a entrega das chaves.' },
+  entrada: { termo: 'Entrada', texto: 'o que o cliente paga com dinheiro próprio. No lançamento, é tudo o que ele paga à construtora até as chaves.' },
   mip:    { termo: 'MIP', texto: 'seguro de vida do financiamento. Quanto mais velho o comprador, mais caro.' },
   dfi:    { termo: 'DFI', texto: 'seguro do imóvel contra danos físicos, cobrado junto da parcela.' },
-  fgts:   { termo: 'FGTS', texto: 'saldo do FGTS usado nas chaves abate direto o valor financiado.' },
+  fgts:   { termo: 'FGTS', texto: 'o saldo do FGTS usado na compra abate direto o valor financiado.' },
   prazo:  { termo: 'Prazo', texto: 'idade do mais velho + prazo não passa de 80 anos e 6 meses. A régua trava sozinha.' },
 }
 
 const mesAno = (d: Date) => {
   const m = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
-  return `${m}/${String(d.getFullYear()).slice(-2)}`
+  return `${m}/${d.getFullYear()}`
 }
 
 /** Bloco do formulário: ícone em caixinha, título e o conteúdo. */
@@ -80,7 +82,7 @@ export function SimuladorFinanciamento({
   /** só dígitos — com ele, o WhatsApp abre na conversa do cliente */
   telefone?: string
 }) {
-  const { bancos: linhas, indices, carregado, carregando, erro, carregar } = useParametrosFinanciamento()
+  const { bancos: linhas, carregado, carregando, erro, carregar } = useParametrosFinanciamento()
   useEffect(() => { void carregar() }, [carregar])
 
   const [e, setE] = useState<EstadoFinanciamento>(inicial ?? ESTADO_INICIAL)
@@ -99,16 +101,11 @@ export function SimuladorFinanciamento({
 
   // ── Valores efetivos: o que o corretor mexeu > o que vem do fluxo > padrão ──
   const valorImovel = e.valorImovel ?? origem?.valorImovel ?? 0
-  const pagoAteChaves = e.pagoAteChaves ?? origem?.pagoAteChaves ?? 0
-  const mesesDoFluxo = origem?.entrega ? mesesAte(origem.entrega) : undefined
-  const meses = e.meses ?? mesesDoFluxo ?? 0
-  const indice: IndiceObra = e.indice ?? origem?.indice ?? 'incc'
-  const media = acumuladoDaSerie(indices, SERIE_DO_INDICE[indice])
-  const indiceAnual = e.indiceAnual ?? origem?.indiceAnual ?? media?.valor ?? 0
+  const entradaCliente = e.entrada ?? origem?.pagoAteChaves ?? 0
   const rendaCliente = e.rendas.reduce((s, v) => s + (v || 0), 0)
 
   const entrada = {
-    valorImovel, pagoAteChaves, mesesAteEntrega: meses, indiceAnual,
+    valorImovel, entrada: entradaCliente,
     idade: e.idade ?? null, sistema: e.sistema, prazo: e.prazo ?? null,
     taxaAnual: e.taxaAnual ?? null, fgts: e.fgts, rendaCliente: rendaCliente || null,
   }
@@ -128,7 +125,7 @@ export function SimuladorFinanciamento({
   // ── Relato ao hospedeiro (o simulador do lead) ──
   const resumo: ResumoFinanciamento | null = r?.valido && banco ? {
     banco: banco.nome, sistema: e.sistema, prazo: r.prazo, taxaAnual: r.taxaAnual,
-    saldoChaves: r.saldoChaves, financiado: r.financiado, parcelaTotal: r.parcelaTotal,
+    entrada: entradaCliente, financiado: r.financiado, parcelaTotal: r.parcelaTotal,
     rendaNecessaria: r.rendaNecessaria,
     ...(r.inverso ? { rendaCliente: r.inverso.rendaCliente, passa: r.inverso.passa } : {}),
   } : null
@@ -161,14 +158,12 @@ export function SimuladorFinanciamento({
     ? new Date(linhaDoBanco.atualizado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
     : null
   const comprometimentoMax = banco.comprometimento / 100
-  const chaves = new Date(); chaves.setMonth(chaves.getMonth() + meses)
-  const fim = new Date(); fim.setMonth(fim.getMonth() + meses + (r?.prazo ?? 0))
+  const fim = new Date(); fim.setMonth(fim.getMonth() + (r?.prazo ?? 0))
   const inv = r?.valido ? r.inverso : null
 
   const mensagem = r?.valido ? mensagemFinanciamento({
     r, banco: banco.nome, sistema: e.sistema, indexador: banco.indexador,
-    valorImovel, pagoAteChaves, mesesAteEntrega: meses, indiceNome: NOME_INDICE[indice], indiceAnual,
-    fgts: e.fgts, cliente, empreendimento, corretor,
+    valorImovel, entrada: entradaCliente, fgts: e.fgts, cliente, empreendimento, corretor,
   }) : ''
 
   return (
@@ -224,28 +219,27 @@ export function SimuladorFinanciamento({
                   </div>
                 ) : (
                   <div className="sm:text-right">
-                    <p className="text-[12px] opacity-70">Valor financiado</p>
-                    <p className="text-[20px] font-bold tabular-nums"><Contagem valor={r.financiado} /></p>
-                    <p className="text-[12px] opacity-70 tabular-nums">{pct((r.financiado / valorImovel) * 100, 1)} do imóvel</p>
+                    <p className="text-[12px] opacity-70">Quitado em</p>
+                    <p className="text-[20px] font-bold tabular-nums">{mesAno(fim)}</p>
+                    <p className="text-[12px] opacity-70 tabular-nums">{(r.prazo / 12).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} anos</p>
                   </div>
                 )}
               </div>
 
-              {/* Linha do tempo: hoje → chaves → fim */}
-              <ol className="mt-6 grid grid-cols-3 rounded-[18px] bg-[rgba(255,255,255,0.07)] divide-x divide-[rgba(255,255,255,0.10)]"
-                  aria-label="Linha do tempo do saldo">
+              {/* A conta: imóvel − entrada (− FGTS) = financiado */}
+              <dl className="mt-6 grid grid-cols-3 rounded-[18px] bg-[rgba(255,255,255,0.07)] divide-x divide-[rgba(255,255,255,0.10)]">
                 {[
-                  { rotulo: 'Hoje', valor: r.saldoHoje, nota: 'saldo devedor' },
-                  { rotulo: `Chaves · ${mesAno(chaves)}`, valor: r.saldoChaves, nota: meses > 0 && indiceAnual > 0 ? `+ ${NOME_INDICE[indice]} ${pct(indiceAnual, 1)} a.a.` : 'sem correção' },
-                  { rotulo: `Fim · ${mesAno(fim)}`, valor: 0, nota: 'quitado' },
+                  { rotulo: 'Imóvel', valor: valorImovel, nota: 'valor de hoje' },
+                  { rotulo: 'Entrada', valor: entradaCliente + e.fgts, nota: e.fgts > 0 ? `com ${brl(e.fgts, 0)} de FGTS` : `${pct((entradaCliente / valorImovel) * 100, 1)} do imóvel` },
+                  { rotulo: 'Financiado', valor: r.financiado, nota: `${pct((r.financiado / valorImovel) * 100, 1)} do imóvel` },
                 ].map(p => (
-                  <li key={p.rotulo} className="px-3 sm:px-4 py-3">
-                    <p className="text-[11.5px] opacity-65">{p.rotulo}</p>
-                    <p className="text-[14.5px] sm:text-[16px] font-bold tabular-nums"><Contagem valor={p.valor} /></p>
-                    <p className="text-[11px] opacity-60">{p.nota}</p>
-                  </li>
+                  <div key={p.rotulo} className="px-3 sm:px-4 py-3">
+                    <dt className="text-[11.5px] opacity-65">{p.rotulo}</dt>
+                    <dd className="text-[14.5px] sm:text-[16px] font-bold tabular-nums"><Contagem valor={p.valor} /></dd>
+                    <dd className="text-[11px] opacity-60">{p.nota}</dd>
+                  </div>
                 ))}
-              </ol>
+              </dl>
             </div>
           ) : (
             <div className="relative">
@@ -267,14 +261,14 @@ export function SimuladorFinanciamento({
             {r?.valido && r.avisos.map(a => (
               <p key={a} className="flex items-start gap-2 rounded-[14px] bg-warning-bg border border-warning-line text-warning text-[13px] px-3.5 py-2.5" role="alert">
                 <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" aria-hidden />
-                <span>{a}{r.cotaEstourada && a.includes('cota') && <> Falta <strong className="tabular-nums">{brl(r.faltaEntradaCota)}</strong> de entrada nas chaves.</>}</span>
+                <span>{a}{r.cotaEstourada && a.includes('cota') && <> Falta <strong className="tabular-nums">{brl(r.faltaEntradaCota)}</strong> de entrada.</>}</span>
               </p>
             ))}
           </div>
         )}
 
-        {/* ── Imóvel e obra ── */}
-        <Bloco icon={Building2} titulo="Imóvel e obra"
+        {/* ── Imóvel e entrada ── */}
+        <Bloco icon={Building2} titulo="Imóvel e entrada"
                extra={origem ? <span className="hidden sm:inline text-[12px] text-t4">puxado do Simulador de fluxo</span> : undefined}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <CampoDinheiro
@@ -283,44 +277,13 @@ export function SimuladorFinanciamento({
               solto={e.valorImovel != null && origem != null} onVoltar={() => solta('valorImovel')}
             />
             <CampoDinheiro
-              rotulo="Total pago até as chaves" valor={pagoAteChaves} max={valorImovel || 1_000_000} step={1000}
-              onChange={v => muda({ pagoAteChaves: v })}
-              solto={e.pagoAteChaves != null && origem != null} onVoltar={() => solta('pagoAteChaves')}
-              nota={valorImovel > 0 ? `${pct((pagoAteChaves / valorImovel) * 100, 1)} do imóvel` : undefined}
+              rotulo="Entrada" valor={entradaCliente} max={valorImovel || 1_000_000} step={1000}
+              onChange={v => muda({ entrada: v })} ajuda={AJUDA.entrada}
+              solto={e.entrada != null && origem != null} onVoltar={() => solta('entrada')}
+              nota={valorImovel > 0
+                ? `${pct((entradaCliente / valorImovel) * 100, 1)} do imóvel${origem && e.entrada == null ? ' · o que ele paga até as chaves' : ''}`
+                : undefined}
             />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <RotuloCampo solto={e.meses != null && mesesDoFluxo != null} onVoltar={() => solta('meses')}>
-                Meses até a entrega <span className="text-t1 tabular-nums ml-1">{meses}</span>
-              </RotuloCampo>
-              <div className="h-10 flex items-center">
-                <Regua min={0} max={60} step={1} value={meses} onChange={v => muda({ meses: v })} rotulo="Meses até a entrega" />
-              </div>
-              <p className="text-[12px] text-t4">chaves em {chaves.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p>
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2 min-h-[20px]">
-                <span className="rotulo-campo inline-flex items-center gap-1">Correção da obra <Ajuda {...AJUDA.incc} /></span>
-                <Segmentado rotulo="Índice de correção" valor={indice}
-                            opcoes={[{ value: 'incc', label: 'INCC' }, { value: 'cub', label: 'CUB' }]}
-                            onChange={v => muda({ indice: v, indiceAnual: undefined })} />
-              </div>
-              <CampoNumero
-                rotulo="" sufixo="% a.a." valor={indiceAnual}
-                onChange={v => muda({ indiceAnual: v ?? 0 })}
-                solto={e.indiceAnual != null} onVoltar={() => solta('indiceAnual')}
-                acao={media && (
-                  <button type="button" onClick={() => muda({ indiceAnual: Number(media.valor.toFixed(2)) })}
-                          className="h-10 px-3 rounded-[10px] text-[12.5px] font-semibold bg-s2 hover:bg-s3 text-t1 whitespace-nowrap cursor-pointer
-                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-                          title="Usar o acumulado dos últimos 12 meses">
-                    12 meses: {pct(media.valor)}
-                  </button>
-                )}
-              />
-              {!media && <p className="text-[12px] text-t4">{indice === 'cub' ? 'CUB ainda sem 12 meses lançados no admin.' : 'Sem 12 meses de INCC salvos.'}</p>}
-            </div>
           </div>
         </Bloco>
 
@@ -448,7 +411,7 @@ export function SimuladorFinanciamento({
             <CampoNumero rotulo="Idade do comprador mais velho" sufixo="anos" casas={0} valor={e.idade ?? null}
                          onChange={v => muda({ idade: v == null ? null : Math.round(v) })} placeholder="não informada" />
           </div>
-          <CampoDinheiro rotulo="FGTS nas chaves (opcional)" valor={e.fgts} max={Math.max(100_000, e.fgts)} step={1000}
+          <CampoDinheiro rotulo="FGTS (opcional)" valor={e.fgts} max={Math.max(100_000, e.fgts)} step={1000}
                          onChange={v => muda({ fgts: v })} ajuda={AJUDA.fgts} />
 
           {inv && (
@@ -530,8 +493,7 @@ export function SimuladorFinanciamento({
           renderCard={ref => (
             <ResumoCliente
               ref={ref} r={r} banco={banco.nome} sistema={e.sistema} indexador={banco.indexador}
-              valorImovel={valorImovel} pagoAteChaves={pagoAteChaves} mesesAteEntrega={meses}
-              indiceNome={NOME_INDICE[indice]} indiceAnual={indiceAnual} fgts={e.fgts}
+              valorImovel={valorImovel} entrada={entradaCliente} fgts={e.fgts}
               cliente={cliente} empreendimento={empreendimento} corretor={corretor}
             />
           )}

@@ -13,10 +13,7 @@ export function mensagemFinanciamento(p: {
   sistema: Sistema
   indexador: string
   valorImovel: number
-  pagoAteChaves: number
-  mesesAteEntrega: number
-  indiceNome: string
-  indiceAnual: number
+  entrada: number
   fgts: number
   cliente: string
   empreendimento: string
@@ -25,18 +22,14 @@ export function mensagemFinanciamento(p: {
   const { r } = p
   if (!r.valido) return ''
   const pctA = (v: number) => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`
-  const corrigido = p.mesesAteEntrega > 0 && p.indiceAnual > 0
   const taxa = `${pctA(r.taxaAnual)} a.a.${p.indexador !== 'fixa' ? ` + ${p.indexador}` : ''}`
   return montar([
     saudacao(p.cliente),
-    `Segue a simulação do financiamento ${doEmpreendimento(p.empreendimento)} no banco, na entrega das chaves:`,
+    `Segue a simulação do financiamento ${doEmpreendimento(p.empreendimento)} no banco:`,
     [
       `• Valor do imóvel: ${fmtBRL(p.valorImovel)}`,
-      `• Pago até as chaves: ${fmtBRL(p.pagoAteChaves)}`,
-      corrigido
-        ? `• Saldo nas chaves: ${fmtBRL(r.saldoChaves)} _(corrigido pelo ${p.indiceNome} de ${pctA(p.indiceAnual)} a.a.)_`
-        : `• Saldo a financiar: ${fmtBRL(r.saldoChaves)}`,
-      p.fgts > 0 ? `• FGTS nas chaves: ${fmtBRL(p.fgts)}` : null,
+      `• Entrada: ${fmtBRL(p.entrada)}`,
+      p.fgts > 0 ? `• FGTS: ${fmtBRL(p.fgts)}` : null,
       `• *Valor financiado: ${fmtBRL(r.financiado)}*`,
     ].filter(Boolean).join('\n'),
     [

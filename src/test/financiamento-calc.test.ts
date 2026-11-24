@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  simular, taxaMensal, prazoMaximoPermitido, acumulado12Meses, idadeHoje, mesesAte,
+  simular, taxaMensal, prazoMaximoPermitido, idadeHoje,
   compararBancos, coefMip, totais, parcelaSac, parcelaPrice, ParametrosBanco, EntradaSimulacao,
 } from '../modules/simulador/financiamento/calc'
 
@@ -14,7 +14,7 @@ const CAIXA: ParametrosBanco = {
 }
 
 const BASE: EntradaSimulacao = {
-  valorImovel: 720_000, pagoAteChaves: 200_000, mesesAteEntrega: 0, indiceAnual: 0,
+  valorImovel: 720_000, entrada: 200_000,
   sistema: 'sac', prazo: 420,
 }
 
@@ -48,31 +48,35 @@ describe('caso base — Caixa, SAC, 420 meses, 11,49% a.a.', () => {
   })
 })
 
-describe('mesmo caso com INCC de 5,5% a.a. por 24 meses', () => {
-  const r = simular({ ...BASE, indiceAnual: 5.5, mesesAteEntrega: 24 }, CAIXA)
+describe('imóvel pronto: valor − entrada − FGTS, sem correção da obra', () => {
+  const r = simular(BASE, CAIXA)
 
-  it('saldo nas chaves ≈ R$ 578.700', () => expect(Math.abs(r.saldoChaves - 578_700)).toBeLessThan(150))
-  it('renda necessária ≈ R$ 23.000', () => expect(Math.abs(r.rendaNecessaria - 23_000)).toBeLessThan(100))
+  it('financiado = valor − entrada', () => {
+    expect(r.saldo).toBe(520_000)
+    expect(r.financiado).toBe(520_000)
+    expect(simular({ ...BASE, fgts: 20_000 }, CAIXA).financiado).toBe(500_000)
+  })
 
-  it('renda de R$ 21.000: fora da regra, com o que falta', () => {
-    const inv = simular({ ...BASE, indiceAnual: 5.5, mesesAteEntrega: 24, rendaCliente: 21_000 }, CAIXA).inverso!
+  it('renda de R$ 19.000: fora da regra, com o que falta', () => {
+    const inv = simular({ ...BASE, rendaCliente: 19_000 }, CAIXA).inverso!
     expect(inv.passa).toBe(false)
     expect(inv.comprometimentoAtual).toBeGreaterThan(0.3)
     expect(inv.diferenca).toBeLessThan(0)
     const renda = inv.sugestoes.find(s => s.tipo === 'renda')!
-    expect(renda.valor).toBeCloseTo(r.rendaNecessaria - 21_000, 2)
+    expect(renda.valor).toBeCloseTo(r.rendaNecessaria - 19_000, 2)
     // FGTS que zera o excesso: com ele, a renda passa
     const fgts = inv.sugestoes.find(s => s.tipo === 'fgts')!.valor
-    const comFgts = simular({ ...BASE, indiceAnual: 5.5, mesesAteEntrega: 24, rendaCliente: 21_000, fgts: fgts + 1 }, CAIXA)
+    const comFgts = simular({ ...BASE, rendaCliente: 19_000, fgts: fgts + 1 }, CAIXA)
     expect(comFgts.inverso!.passa).toBe(true)
-    // Entrada a mais (em dinheiro de hoje) também resolve
+    // Entrada a mais também resolve
     const entrada = inv.sugestoes.find(s => s.tipo === 'entrada')!.valor
-    const comEntrada = simular({ ...BASE, pagoAteChaves: 200_000 + entrada + 1, indiceAnual: 5.5, mesesAteEntrega: 24, rendaCliente: 21_000 }, CAIXA)
+    expect(entrada).toBeCloseTo(fgts, 6)
+    const comEntrada = simular({ ...BASE, entrada: 200_000 + entrada + 1, rendaCliente: 19_000 }, CAIXA)
     expect(comEntrada.inverso!.passa).toBe(true)
   })
 
   it('o saldo máximo da renda exigida é o próprio financiado', () => {
-    const inv = simular({ ...BASE, indiceAnual: 5.5, mesesAteEntrega: 24, rendaCliente: r.rendaNecessaria }, CAIXA).inverso!
+    const inv = simular({ ...BASE, rendaCliente: r.rendaNecessaria }, CAIXA).inverso!
     expect(inv.saldoMaximo).toBeCloseTo(r.financiado, 0)
     expect(inv.passa).toBe(true)
     expect(inv.comprometimentoAtual).toBeCloseTo(0.3, 6)
@@ -81,7 +85,7 @@ describe('mesmo caso com INCC de 5,5% a.a. por 24 meses', () => {
 
 describe('limites do banco', () => {
   it('Price com 72% financiado estoura a cota de 70%', () => {
-    const r = simular({ ...BASE, pagoAteChaves: 720_000 * 0.28, sistema: 'price' }, CAIXA)
+    const r = simular({ ...BASE, entrada: 720_000 * 0.28, sistema: 'price' }, CAIXA)
     expect(r.cotaEstourada).toBe(true)
     expect(r.faltaEntradaCota).toBeCloseTo(720_000 * 0.02, 2)
     expect(r.avisos.join(' ')).toMatch(/cota/)
@@ -100,10 +104,10 @@ describe('limites do banco', () => {
   })
 
   it('acima do teto do SFH vira SFI; sem taxa SFI cadastrada, não simula', () => {
-    const r = simular({ ...BASE, valorImovel: 3_000_000, pagoAteChaves: 1_000_000 }, CAIXA)
+    const r = simular({ ...BASE, valorImovel: 3_000_000, entrada: 1_000_000 }, CAIXA)
     expect(r.sfi).toBe(true)
     expect(r.valido).toBe(false)
-    const comSfi = simular({ ...BASE, valorImovel: 3_000_000, pagoAteChaves: 1_000_000 }, { ...CAIXA, taxaSfi: 12 })
+    const comSfi = simular({ ...BASE, valorImovel: 3_000_000, entrada: 1_000_000 }, { ...CAIXA, taxaSfi: 12 })
     expect(comSfi.valido).toBe(true)
     expect(comSfi.taxaAnual).toBe(12)
   })
@@ -138,20 +142,10 @@ describe('peças', () => {
     expect(coefMip([], 40)).toBe(0)
   })
 
-  it('acumulado de 12 meses do índice', () => {
-    expect(acumulado12Meses(Array(12).fill(0.5))).toBeCloseTo((Math.pow(1.005, 12) - 1) * 100, 6)
-    expect(acumulado12Meses([0.5, 0.4])).toBeNull()
-  })
-
   it('a idade envelhece sozinha a partir da data informada', () => {
     expect(idadeHoje(40, '2024-06-10', new Date(2026, 10, 24))).toBe(42)
     expect(idadeHoje(40, '2024-12-10', new Date(2026, 10, 24))).toBe(41)
     expect(idadeHoje(null, '2024-06-10')).toBeNull()
-  })
-
-  it('meses até a entrega', () => {
-    expect(mesesAte('2028-11', new Date(2026, 10, 24))).toBe(24)
-    expect(mesesAte('2020-01', new Date(2026, 10, 24))).toBe(0)
   })
 
   it('comparativo: só bancos ativos com taxa, da menor renda para a maior', () => {
@@ -171,25 +165,25 @@ describe('renda do repasse na ficha do lead (automática, pior cenário)', () =>
   const hoje = new Date(2026, 10, 24)
   const plano = [{ name: 'Fluxo da tabela', financingPct: 72 }]
 
-  it('sai da tipologia: preço × % financiado, corrigido até a entrega', () => {
-    const rep = calcularRepasse({ preco: 720_000, planos: plano, entrega: '2028-11', indiceAnual: 5.5, rendaPiso: 21_000, idade: null, hoje }, CAIXA)!
-    expect(rep.pagoAteChaves).toBeCloseTo(201_600, 2)
-    expect(rep.meses).toBe(24)
+  it('sai da tipologia: preço × % financiado, em valores de hoje', () => {
+    const rep = calcularRepasse({ preco: 720_000, planos: plano, rendaPiso: 19_000, idade: null, hoje }, CAIXA)!
+    expect(rep.entrada).toBeCloseTo(201_600, 2)
+    expect(rep.r.financiado).toBeCloseTo(518_400, 2)
     expect(rep.r.prazo).toBe(420)
-    expect(rep.r.inverso!.rendaCliente).toBe(21_000)
+    expect(rep.r.inverso!.rendaCliente).toBe(19_000)
     expect(rep.r.inverso!.passa).toBe(false)
   })
 
   it('a idade informada envelhece e encurta o prazo', () => {
-    const rep = calcularRepasse({ preco: 720_000, planos: plano, entrega: '2028-11', indiceAnual: 0, rendaPiso: null, idade: 58, idadeInformadaEm: '2024-11-01', hoje }, CAIXA)!
+    const rep = calcularRepasse({ preco: 720_000, planos: plano, rendaPiso: null, idade: 58, idadeInformadaEm: '2024-11-01', hoje }, CAIXA)!
     expect(rep.idade).toBe(60)
     expect(rep.r.prazo).toBe(246)
     expect(rep.r.inverso).toBeNull()
   })
 
   it('sem preço ou sem % financiado na tabela, não inventa', () => {
-    expect(calcularRepasse({ preco: 0, planos: plano, entrega: null, indiceAnual: 0, rendaPiso: null, idade: null }, CAIXA)).toBeNull()
-    expect(calcularRepasse({ preco: 500_000, planos: [{ name: 'x' }], entrega: null, indiceAnual: 0, rendaPiso: null, idade: null }, CAIXA)).toBeNull()
+    expect(calcularRepasse({ preco: 0, planos: plano, rendaPiso: null, idade: null }, CAIXA)).toBeNull()
+    expect(calcularRepasse({ preco: 500_000, planos: [{ name: 'x' }], rendaPiso: null, idade: null }, CAIXA)).toBeNull()
     expect(pctFinanciado([{ name: 'a' }, { name: 'b', financingPct: 70 }])).toBe(70)
   })
 })

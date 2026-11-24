@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertTriangle, Landmark, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { SidePanel } from '../../components/ui/SidePanel'
@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button'
 import { SecaoTitulo } from '../../components/shared/visual'
 import { useAuthStore } from '../../store/useAuthStore'
 import {
-  acumuladoDaSerie, BancoRow, diasDesde, financiamentoDb, useParametrosFinanciamento,
+  BancoRow, diasDesde, financiamentoDb, useParametrosFinanciamento,
 } from '../../modules/simulador/financiamento/dados'
 import type { Indexador } from '../../modules/simulador/financiamento/calc'
 
@@ -16,8 +16,7 @@ import type { Indexador } from '../../modules/simulador/financiamento/calc'
  *
  * Banco não publica taxa de balcão: quem preenche é o admin. Ao lado vai a taxa
  * MÉDIA praticada que o Banco Central publica (com 1 a 2 meses de atraso) — só
- * referência, com o botão "usar essa taxa". O CUB/SC não tem fonte automática e
- * é lançado aqui, um número por mês.
+ * referência, com o botão "usar essa taxa".
  */
 
 /** Modalidade do BCB que corresponde ao indexador do banco (taxas de mercado = balcão). */
@@ -41,7 +40,7 @@ function referenciaBcb(taxas: TaxaBcb[], b: Pick<BancoRow, 'cnpj8' | 'indexador'
 }
 
 export function BancosETaxas() {
-  const { bancos, indices, situacao, carregado, erro, carregar } = useParametrosFinanciamento()
+  const { bancos, situacao, carregado, erro, carregar } = useParametrosFinanciamento()
   const profiles = useAuthStore(s => s.allProfiles ?? [])
   const [taxas, setTaxas] = useState<TaxaBcb[]>([])
   const [editando, setEditando] = useState<BancoRow | null>(null)
@@ -51,8 +50,6 @@ export function BancosETaxas() {
   useEffect(() => { financiamentoDb.taxasBcb().then(setTaxas).catch(() => setTaxas([])) }, [])
 
   const nomeDe = (id: string | null) => profiles.find(p => p.id === id)?.name ?? null
-  const incc = acumuladoDaSerie(indices, 'incc_di')
-  const cub = acumuladoDaSerie(indices, 'cub_sc')
   const sgs = situacao.find(s => s.fonte === 'sgs')
   const olinda = situacao.find(s => s.fonte === 'olinda')
   const falhou = !!(sgs?.erro || olinda?.erro)
@@ -112,14 +109,11 @@ export function BancosETaxas() {
         </div>
       )}
 
-      {/* ── Índices ── */}
+      {/* ── Busca no Banco Central ── */}
       <div className="mt-5 rounded-[20px] border border-line bg-surface p-4 space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-[14px] font-semibold text-t1">Índices de correção</p>
-            <p className="text-[12.5px] text-t4 tabular-nums">
-              INCC (12 meses): {incc ? pct(incc.valor) : '—'} · CUB/SC (12 meses): {cub ? pct(cub.valor) : 'faltam meses'}
-            </p>
+            <p className="text-[14px] font-semibold text-t1">Taxas médias do Banco Central</p>
             <p className={`text-[12px] mt-1 ${falhou ? 'text-warning' : 'text-t4'}`}>
               {falhou
                 ? <span className="inline-flex items-start gap-1"><AlertTriangle size={13} className="mt-0.5" aria-hidden />Última busca no BCB falhou ({dataHora(sgs?.tentado_em ?? olinda?.tentado_em ?? null)}): {sgs?.erro || olinda?.erro}. Seguimos com o último valor salvo.</span>
@@ -130,64 +124,11 @@ export function BancosETaxas() {
             <RefreshCw size={14} className={buscando ? 'animate-spin' : ''} aria-hidden /> Buscar agora
           </Button>
         </div>
-        <LancarCub />
       </div>
 
       <EditarBanco banco={editando} taxas={taxas} onFechar={() => setEditando(null)}
                    onSalvo={() => { setEditando(null); void carregar(true) }} />
     </section>
-  )
-}
-
-/** CUB/SC: um número por mês (variação %). Sem fonte automática. */
-function LancarCub() {
-  const { indices, carregar } = useParametrosFinanciamento()
-  const meses = useMemo(() => indices.filter(i => i.serie === 'cub_sc').sort((a, b) => b.mes.localeCompare(a.mes)), [indices])
-  const hoje = new Date()
-  const [mes, setMes] = useState(`${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`)
-  const [texto, setTexto] = useState('')
-  const [salvando, setSalvando] = useState(false)
-
-  async function salvar() {
-    const v = parseFloat(texto.replace(',', '.'))
-    if (!mes || Number.isNaN(v)) { toast.error('Informe o mês e a variação do CUB'); return }
-    setSalvando(true)
-    try {
-      await financiamentoDb.salvarCub(`${mes}-01`, v)
-      setTexto('')
-      await carregar(true)
-      toast.success('CUB lançado')
-    } catch { /* aviso já dado */ } finally { setSalvando(false) }
-  }
-
-  return (
-    <div className="border-t border-line pt-3">
-      <p className="rotulo-campo mb-2">CUB/SC — variação do mês (Sinduscon)</p>
-      <div className="flex items-end gap-2 flex-wrap">
-        <label className="flex flex-col gap-1 text-[12px] text-t4">Mês
-          <input type="month" value={mes} onChange={e => setMes(e.target.value)} className="campo h-10 px-3" />
-        </label>
-        <label className="flex flex-col gap-1 text-[12px] text-t4">Variação (%)
-          <input inputMode="decimal" value={texto} onChange={e => setTexto(e.target.value.replace(/[^\d,.-]/g, ''))}
-                 placeholder="0,42" className="campo h-10 px-3 w-28 tabular-nums" />
-        </label>
-        <Button onClick={() => void salvar()} disabled={salvando} className="gap-1.5"><Plus size={14} aria-hidden /> Lançar</Button>
-      </div>
-      {meses.length > 0 && (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
-          {meses.slice(0, 18).map(m => (
-            <li key={m.mes} className="inline-flex items-center gap-1.5 rounded-full bg-s2 pl-3 pr-1 h-8 text-[12.5px] tabular-nums">
-              {mesCurto(m.mes.slice(0, 7))}: {pct(m.variacao)}
-              <button type="button" aria-label={`Apagar o CUB de ${mesCurto(m.mes.slice(0, 7))}`}
-                      onClick={() => void financiamentoDb.apagarCub(m.mes).then(() => carregar(true)).catch(() => {})}
-                      className="w-6 h-6 inline-flex items-center justify-center rounded-full text-t4 hover:text-error cursor-pointer">
-                <Trash2 size={12} aria-hidden />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   )
 }
 

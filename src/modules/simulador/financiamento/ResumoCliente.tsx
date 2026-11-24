@@ -50,10 +50,7 @@ export const ResumoCliente = forwardRef<HTMLDivElement, {
   sistema: Sistema
   indexador: string
   valorImovel: number
-  pagoAteChaves: number
-  mesesAteEntrega: number
-  indiceNome: string
-  indiceAnual: number
+  entrada: number
   fgts: number
   cliente?: string
   empreendimento?: string
@@ -62,7 +59,6 @@ export const ResumoCliente = forwardRef<HTMLDivElement, {
   const hoje = new Date().toLocaleDateString('pt-BR')
   const ok = !!p.r?.valido
   const r = p.r
-  const corrigido = p.mesesAteEntrega > 0 && p.indiceAnual > 0
   const inv = ok ? r!.inverso : null
 
   return (
@@ -105,9 +101,8 @@ export const ResumoCliente = forwardRef<HTMLDivElement, {
       {/* Detalhe */}
       <div style={{ padding: '6px 24px 4px' }}>
         <Linha rotulo="Valor do imóvel" valor={brl(p.valorImovel)} />
-        <Linha rotulo="Pago até as chaves" valor={brl(p.pagoAteChaves)} />
-        {ok && <Linha rotulo={corrigido ? `Saldo nas chaves (${p.indiceNome} ${pct(p.indiceAnual)} a.a.)` : 'Saldo a financiar'} valor={brl(r!.saldoChaves)} />}
-        {p.fgts > 0 && <Linha rotulo="FGTS nas chaves" valor={`− ${brl(p.fgts)}`} />}
+        <Linha rotulo="Entrada" valor={`− ${brl(p.entrada)}`} />
+        {p.fgts > 0 && <Linha rotulo="FGTS" valor={`− ${brl(p.fgts)}`} />}
         {ok && <Linha rotulo="Banco" valor={`${p.banco} · ${pct(r!.taxaAnual)} a.a.${p.indexador !== 'fixa' ? ` + ${p.indexador}` : ''}`} />}
         {ok && <Linha rotulo="Juros + amortização" valor={brl(r!.parcela1)} />}
         {ok && <Linha rotulo="Seguros e tarifa" valor={brl(r!.mip + r!.dfi + r!.tarifa)} />}

@@ -1,17 +1,18 @@
 /**
- * Simulador de financiamento — as contas do repasse (24/11/2026).
+ * Simulador de financiamento — as contas do financiamento bancário (24/11/2026).
  *
- * Lançamento: o cliente paga uma parte à construtora durante a obra (corrigida
- * pelo INCC ou pelo CUB) e, na entrega das chaves, financia o saldo no banco.
- * Aqui ficam só funções puras: o painel ao lado do Simulador de fluxo, a ficha
- * do lead e o comparativo entre bancos usam as mesmas contas.
+ * Simula como se o imóvel estivesse PRONTO: valor do imóvel − entrada − FGTS =
+ * valor financiado, em valores de hoje. Sem prazo de obra e sem correção por
+ * INCC/CUB (o Rafael tirou em 24/11/2026: confundia o corretor).
+ * Aqui ficam só funções puras: o Simulador de financiamento, a ficha do lead e
+ * o comparativo entre bancos usam as mesmas contas.
  *
  * Unidades: todo percentual entra como PERCENTUAL (11,49 = 11,49% a.a.;
  * 0,025 = 0,025% ao mês), exatamente como fica cadastrado no admin. A conversão
  * para fração acontece só aqui dentro.
  *
  * Regras combinadas com o Rafael (implementar exatamente assim):
- *   1. saldo nas chaves = (valor − pago até as chaves) × (1 + índice mensal)^meses; − FGTS
+ *   1. valor financiado = valor do imóvel − entrada − FGTS
  *   2. limites do banco: cota (SAC ≠ Price), prazo máximo, idade + prazo, teto do SFH
  *   3. taxa mensal = (1 + taxa anual)^(1/12) − 1
  *   4. SAC: amortização constante; Price: parcela fixa
@@ -22,7 +23,6 @@
 
 export type Sistema = 'sac' | 'price'
 export type Indexador = 'TR' | 'IPCA' | 'fixa'
-export type IndiceObra = 'incc' | 'cub'
 
 /** Teto do imóvel no SFH. Acima dele o financiamento é SFI, com a taxa SFI do banco. */
 export const TETO_SFH = 2_250_000
@@ -73,38 +73,6 @@ export interface ParametrosBanco {
 /** Taxa anual (%) → fração mensal equivalente. */
 export function taxaMensal(anualPct: number): number {
   return Math.pow(1 + anualPct / 100, 1 / 12) - 1
-}
-
-/**
- * Variação acumulada em 12 meses (% a.a.) a partir das variações mensais (%).
- * É o "usar média dos últimos 12 meses" do INCC e do CUB.
- */
-export function acumulado12Meses(variacoesMensaisPct: number[]): number | null {
-  const ultimas = variacoesMensaisPct.slice(-12)
-  if (ultimas.length < 12) return null
-  const fator = ultimas.reduce((f, v) => f * (1 + v / 100), 1)
-  return (fator - 1) * 100
-}
-
-/** Meses inteiros entre hoje e o mês de entrega ("YYYY-MM"); nunca negativo. */
-export function mesesAte(entrega: string, hoje: Date = new Date()): number {
-  const [ano, mes] = entrega.split('-').map(Number)
-  if (!ano || !mes) return 0
-  return Math.max(0, (ano * 12 + mes - 1) - (hoje.getFullYear() * 12 + hoje.getMonth()))
-}
-
-export interface SaldoNasChaves {
-  saldoHoje: number
-  /** fator de correção do índice até as chaves (1 = sem correção) */
-  fatorCorrecao: number
-  saldoChaves: number
-}
-
-/** Regra 1 — o saldo devedor de hoje corrigido pelo índice até a entrega. */
-export function saldoNasChaves(valorImovel: number, pagoAteChaves: number, indiceAnualPct: number, meses: number): SaldoNasChaves {
-  const saldoHoje = Math.max(0, valorImovel - pagoAteChaves)
-  const fatorCorrecao = Math.pow(1 + taxaMensal(indiceAnualPct), Math.max(0, meses))
-  return { saldoHoje, fatorCorrecao, saldoChaves: saldoHoje * fatorCorrecao }
 }
 
 /** Prazo máximo pelo banco e pela idade do comprador mais velho (em meses de idade). */
@@ -176,10 +144,8 @@ export function evolucaoParcela(sistema: Sistema, financiado: number, i: number,
 
 export interface EntradaSimulacao {
   valorImovel: number
-  pagoAteChaves: number
-  mesesAteEntrega: number
-  /** % a.a. do índice da obra (INCC ou CUB) */
-  indiceAnual: number
+  /** o que o cliente paga com recurso próprio (no lançamento, tudo o que vai à construtora até as chaves) */
+  entrada: number
   /** idade do comprador mais velho, em anos; ausente = não informada */
   idade?: number | null
   sistema: Sistema
@@ -202,7 +168,7 @@ export interface ResultadoInverso {
   rendaCliente: number
   /** fração (0,32 = 32%) */
   comprometimentoAtual: number
-  /** quanto essa renda financia, nas chaves */
+  /** quanto essa renda financia */
   saldoMaximo: number
   /** saldoMaximo − financiado: positivo = sobra, negativo = falta */
   diferenca: number
@@ -215,9 +181,8 @@ export interface ResultadoSimulacao {
   erro?: string
   avisos: string[]
 
-  saldoHoje: number
-  fatorCorrecao: number
-  saldoChaves: number
+  /** valor do imóvel − entrada (antes do FGTS) */
+  saldo: number
   financiado: number
 
   sfi: boolean
@@ -230,7 +195,7 @@ export interface ResultadoSimulacao {
 
   cotaPct: number
   cotaEstourada: boolean
-  /** quanto passa da cota, nas chaves — o que falta de entrada */
+  /** quanto passa da cota — o que falta de entrada */
   faltaEntradaCota: number
 
   amortizacao: number
@@ -250,7 +215,7 @@ export interface ResultadoSimulacao {
 }
 
 const VAZIO: Omit<ResultadoSimulacao, 'valido' | 'erro' | 'avisos'> = {
-  saldoHoje: 0, fatorCorrecao: 1, saldoChaves: 0, financiado: 0,
+  saldo: 0, financiado: 0,
   sfi: false, taxaAnual: 0, taxaBanco: null, i: 0, prazo: 0, prazoMaximo: 0,
   cotaPct: 0, cotaEstourada: false, faltaEntradaCota: 0,
   amortizacao: 0, juros1: 0, parcela1: 0, mip: 0, dfi: 0, tarifa: 0, parcelaTotal: 0,
@@ -275,12 +240,12 @@ export function simular(e: EntradaSimulacao, banco: ParametrosBanco): ResultadoS
   const falha = (erro: string): ResultadoSimulacao => ({ ...VAZIO, valido: false, erro, avisos })
 
   if (!(e.valorImovel > 0)) return falha('Informe o valor do imóvel.')
-  if (e.pagoAteChaves < 0) return falha('O valor pago até as chaves não pode ser negativo.')
-  if (e.pagoAteChaves >= e.valorImovel) return falha('O pago até as chaves cobre o imóvel inteiro: não há saldo para financiar.')
+  if (e.entrada < 0) return falha('A entrada não pode ser negativa.')
+  if (e.entrada >= e.valorImovel) return falha('A entrada cobre o imóvel inteiro: não há saldo para financiar.')
 
-  // 1. Saldo nas chaves
-  const s = saldoNasChaves(e.valorImovel, e.pagoAteChaves, e.indiceAnual, e.mesesAteEntrega)
-  const financiado = Math.max(0, s.saldoChaves - Math.max(0, e.fgts ?? 0))
+  // 1. Valor financiado
+  const saldo = e.valorImovel - e.entrada
+  const financiado = Math.max(0, saldo - Math.max(0, e.fgts ?? 0))
 
   // 2. Teto do SFH e taxa
   const { taxa: taxaBanco, sfi } = taxaDoBanco(banco, e.valorImovel)
@@ -289,7 +254,7 @@ export function simular(e: EntradaSimulacao, banco: ParametrosBanco): ResultadoS
     if (banco.taxaSfi == null) avisos.push(`${banco.nome} sem taxa SFI cadastrada.`)
   }
   const taxaAnual = e.taxaAnual ?? taxaBanco
-  if (taxaAnual == null) return { ...falha(`${banco.nome} ainda não tem taxa cadastrada.`), saldoHoje: s.saldoHoje, fatorCorrecao: s.fatorCorrecao, saldoChaves: s.saldoChaves, financiado, sfi }
+  if (taxaAnual == null) return { ...falha(`${banco.nome} ainda não tem taxa cadastrada.`), saldo, financiado, sfi }
   const i = taxaMensal(taxaAnual)
 
   // 2. Prazo pela idade e pelo banco
@@ -328,11 +293,9 @@ export function simular(e: EntradaSimulacao, banco: ParametrosBanco): ResultadoS
     const sugestoes: Sugestao[] = []
     if (!passa) {
       const excesso = -diferenca
-      // Entrada a mais paga até as chaves reduz o saldo de HOJE, que depois é corrigido.
-      const entrada = excesso / s.fatorCorrecao
-      sugestoes.push({ tipo: 'entrada', valor: entrada, texto: `Aumentar o pago até as chaves em ${fmtBRL(entrada)}` })
+      sugestoes.push({ tipo: 'entrada', valor: excesso, texto: `Aumentar a entrada em ${fmtBRL(excesso)}` })
       sugestoes.push({ tipo: 'renda', valor: rendaNecessaria - renda, texto: `Compor renda de mais ${fmtBRL(rendaNecessaria - renda)}` })
-      sugestoes.push({ tipo: 'fgts', valor: excesso, texto: `Usar ${fmtBRL(excesso)} de FGTS nas chaves` })
+      sugestoes.push({ tipo: 'fgts', valor: excesso, texto: `Usar ${fmtBRL(excesso)} de FGTS` })
       const n = menorPrazoQuePassa(e.sistema, financiado, i, prazo, prazoMaximo, mipCoef, dfi, tarifa, comprometimento * renda)
       if (n != null) sugestoes.push({ tipo: 'prazo', valor: n, texto: `Estender o prazo para ${n} meses` })
     }
@@ -341,7 +304,7 @@ export function simular(e: EntradaSimulacao, banco: ParametrosBanco): ResultadoS
 
   return {
     valido: true, avisos,
-    saldoHoje: s.saldoHoje, fatorCorrecao: s.fatorCorrecao, saldoChaves: s.saldoChaves, financiado,
+    saldo, financiado,
     sfi, taxaAnual, taxaBanco, i, prazo, prazoMaximo,
     cotaPct, cotaEstourada, faltaEntradaCota,
     amortizacao, juros1, parcela1, mip, dfi, tarifa, parcelaTotal, comprometimento, rendaNecessaria,

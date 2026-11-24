@@ -145,7 +145,6 @@ interface DevelopmentRow {
   id: string; name: string; builder: string | null; region: string | null
   city: string; status: string; regime: string
   delivery_estimate: string | null
-  indice_correcao?: string | null
   value_min: number | null; value_max: number | null
   income_min: number | null; income_ideal: number | null
   down_payment_min: number | null; down_payment_ideal: number | null
@@ -324,7 +323,6 @@ function toDevelopment(r: DevelopmentRow): import('../types').Development {
     status: r.status as import('../types').DevelopmentStatus,
     regime: r.regime as import('../types').DevelopmentRegime,
     deliveryEstimate: r.delivery_estimate ?? undefined,
-    indiceCorrecao: r.indice_correcao === 'cub' ? 'cub' : 'incc',
     valueMin: r.value_min ?? undefined, valueMax: r.value_max ?? undefined,
     incomeMin: r.income_min ?? undefined, incomeIdeal: r.income_ideal ?? undefined,
     downPaymentMin: r.down_payment_min ?? undefined,
@@ -360,7 +358,6 @@ function fromDevelopment(d: import('../types').Development): DevelopmentRow {
     builder: d.builder ?? null, region: d.region ?? null,
     city: d.city, status: d.status, regime: d.regime,
     delivery_estimate: d.deliveryEstimate ?? null,
-    indice_correcao: d.indiceCorrecao ?? 'incc',
     value_min: d.valueMin ?? null, value_max: d.valueMax ?? null,
     income_min: d.incomeMin ?? null, income_ideal: d.incomeIdeal ?? null,
     down_payment_min: d.downPaymentMin ?? null,

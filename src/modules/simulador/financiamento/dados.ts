@@ -1,17 +1,21 @@
 import { create } from 'zustand'
 import toast from 'react-hot-toast'
 import { supabase } from '../../../lib/supabase'
-import { acumulado12Meses, FaixaMip, IndiceObra, Indexador, ParametrosBanco } from './calc'
+import { FaixaMip, Indexador, ParametrosBanco } from './calc'
 
 /**
- * Dados do Simulador de financiamento — parâmetros dos bancos e índices.
+ * Dados do Simulador de financiamento — parâmetros dos bancos.
  *
  * Tudo vem do banco (migração 111). O BCB é consultado SÓ pelo servidor (Edge
  * Function indices-bcb, uma vez por dia); aqui se lê o que ela gravou. Se a
  * busca no BCB falhar, a última leitura salva continua valendo.
  *
- * Leitura única por sessão: são poucas linhas (sete bancos, ~100 meses de
- * índice) e mudam no máximo uma vez por dia. O admin recarrega ao salvar.
+ * Leitura única por sessão: são poucas linhas (sete bancos) e mudam no máximo
+ * uma vez por dia. O admin recarrega ao salvar.
+ *
+ * Desde 24/11/2026 o simulador não corrige mais o saldo pela obra (simula como
+ * imóvel pronto), então os índices (INCC, TR, CUB) não são lidos aqui. A busca
+ * diária no BCB continua gravando-os em indices_mensais.
  */
 
 /** A linha de bancos_parametros como o admin edita — com os vazios. */
@@ -42,25 +46,12 @@ export interface BancoRow {
   taxa_media_mes: string | null
 }
 
-export type SerieIndice = 'incc_di' | 'incc_m' | 'tr' | 'cub_sc'
-
-export interface IndiceMensal {
-  serie: SerieIndice
-  /** 'YYYY-MM-01' */
-  mes: string
-  variacao: number
-  fonte: string
-}
-
 export interface SituacaoBusca {
   fonte: 'sgs' | 'olinda'
   tentado_em: string | null
   ok_em: string | null
   erro: string | null
 }
-
-/** O índice "INCC" da obra é o INCC-DI da FGV (série 192 do BCB). */
-export const SERIE_DO_INDICE: Record<IndiceObra, SerieIndice> = { incc: 'incc_di', cub: 'cub_sc' }
 
 const num = (v: unknown): number | null => (v == null || v === '' ? null : Number(v))
 
@@ -98,15 +89,6 @@ export function bancoParaCalculo(b: BancoRow): ParametrosBanco | null {
   }
 }
 
-/** Variação acumulada em 12 meses (% a.a.) de uma série; null sem 12 meses seguidos. */
-export function acumuladoDaSerie(indices: IndiceMensal[], serie: SerieIndice): { valor: number; ate: string } | null {
-  const linhas = indices.filter(i => i.serie === serie).sort((a, b) => a.mes.localeCompare(b.mes))
-  const ultimas = linhas.slice(-12)
-  const valor = acumulado12Meses(ultimas.map(l => l.variacao))
-  if (valor == null) return null
-  return { valor, ate: ultimas[ultimas.length - 1].mes }
-}
-
 /** '2026-10' → 'out/26' */
 export function mesCurto(anoMes: string | null | undefined): string {
   if (!anoMes) return ''
@@ -125,7 +107,6 @@ export function diasDesde(iso: string | null, hoje: Date = new Date()): number |
 
 interface Estado {
   bancos: BancoRow[]
-  indices: IndiceMensal[]
   situacao: SituacaoBusca[]
   carregado: boolean
   carregando: boolean
@@ -134,26 +115,24 @@ interface Estado {
 }
 
 export const useParametrosFinanciamento = create<Estado>((set, get) => ({
-  bancos: [], indices: [], situacao: [],
+  bancos: [], situacao: [],
   carregado: false, carregando: false, erro: null,
 
   carregar: async (forcar = false) => {
     const s = get()
     if (s.carregando || (s.carregado && !forcar)) return
     set({ carregando: true, erro: null })
-    const [b, i, sit] = await Promise.all([
+    const [b, sit] = await Promise.all([
       supabase.from('bancos_parametros').select('*').order('ordem'),
-      supabase.from('indices_mensais').select('serie, mes, variacao, fonte').order('mes'),
       supabase.from('indices_sync').select('*'),
     ])
-    const erro = b.error ?? i.error ?? sit.error
+    const erro = b.error ?? sit.error
     if (erro) {
       set({ carregando: false, erro: erro.message })
       return
     }
     set({
       bancos: (b.data ?? []).map(lerBanco),
-      indices: (i.data ?? []).map(r => ({ ...r, variacao: Number(r.variacao) }) as IndiceMensal),
       situacao: (sit.data ?? []) as SituacaoBusca[],
       carregado: true, carregando: false,
     })
@@ -173,19 +152,6 @@ export const financiamentoDb = {
     }
     const { error } = await supabase.from('bancos_parametros').update(linha).eq('id', b.id)
     if (error) { toast.error(`Não salvou: ${error.message}`); throw error }
-  },
-
-  salvarCub: async (mes: string, variacao: number): Promise<void> => {
-    const { error } = await supabase.from('indices_mensais').upsert(
-      { serie: 'cub_sc', mes, variacao, fonte: 'admin', atualizado_em: new Date().toISOString() },
-      { onConflict: 'serie,mes' },
-    )
-    if (error) { toast.error(`CUB não salvo: ${error.message}`); throw error }
-  },
-
-  apagarCub: async (mes: string): Promise<void> => {
-    const { error } = await supabase.from('indices_mensais').delete().eq('serie', 'cub_sc').eq('mes', mes)
-    if (error) { toast.error(`Não apagou: ${error.message}`); throw error }
   },
 
   buscarAgora: async (): Promise<void> => {
