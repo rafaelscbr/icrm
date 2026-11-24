@@ -34,8 +34,8 @@ const RECENT_MAX             = 400
 const JANELA_CLIMA_MS        = 30 * 60 * 1000
 const RESNAPSHOT_COOLDOWN_MS = 10 * 60 * 1000
 const RECONNECT_DELAY_MS     = 4000
-/** A conversão do funil olha a safra dos últimos 90 dias: dos leads que chegaram, até onde foram. */
-export const JANELA_CONVERSAO_DIAS = 90
+/** A conversão do funil olha a safra dos últimos 30 dias (era 90 até 24/11/2026): dos leads que chegaram, até onde foram. */
+export const JANELA_CONVERSAO_DIAS = 30
 
 /** Taxa padrão de comissão do sistema — espelha o default de concludeSale. */
 const TAXA_COMISSAO = 0.05
@@ -89,7 +89,7 @@ interface PulseStore {
   /** a leitura da sala falhou — o resto do painel continua valendo */
   salaErro:        string | null
   /**
-   * Conversão da imobiliária: dos leads que chegaram nos últimos 90 dias, até
+   * Conversão da imobiliária: dos leads que chegaram nos últimos 30 dias, até
    * onde foram (lead_conversion_report, modo safra — a mesma conta da aba
    * Conversão). Lida com o snapshot; null se falhou.
    */
