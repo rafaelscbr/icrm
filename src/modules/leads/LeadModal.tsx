@@ -2,11 +2,11 @@ import { useState, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   X, MessageCircle, UserCheck, Building2,
-  Trash2, RotateCcw, Edit2, AlertTriangle, CheckCircle2,
+  Trash2, RotateCcw, Edit2, AlertTriangle,
   ClipboardList, Star, Search, Check,
-  StickyNote, PhoneCall,
+  PhoneCall,
   ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
-  Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight,
+  Megaphone, MapPin, Mail,
   RefreshCw, BadgeCheck, Copy,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
@@ -27,8 +27,8 @@ import { db } from '../../lib/db'
 import { LeadForm } from './LeadForm'
 import { TaskForm } from '../tasks/TaskForm'
 import { LeadTimeline } from './LeadTimeline'
-import { PerfilDeclarado, BaseConhecida, FormulariosPreenchidos } from './LeadProfilePanel'
-import { LeituraDoLead, ProdutosDoLead } from './LeadIntelPanel'
+import { FormulariosPreenchidos } from './LeadProfilePanel'
+import { RespostasDoLead } from './RespostasDoLead'
 import { useLeadProfile } from './useLeadProfile'
 import { RendaDoRepasse } from './RendaDoRepasse'
 import { useSlaInfo } from './SlaBadge'
@@ -37,10 +37,9 @@ import { FluxosDoLead } from './fluxos/FluxosDoLead'
 import { avisoReentrada } from './reentrada'
 import { ContactCampaignHistory } from '../lead-lists/ContactCampaignHistory'
 import { Abas } from '../../components/shared/Abas'
-import { Destaque } from '../../components/shared/Destaque'
 import toast from 'react-hot-toast'
 import { useSlaConfigStore } from '../../store/useSlaConfigStore'
-import { abrirSePrimeiraChamada, resumoPrimeiroContato } from './primeiroContato'
+import { abrirSePrimeiraChamada } from './primeiroContato'
 import { regiaoDoTelefone, rotuloDoDDD } from '../../lib/regiaoPorDDD'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -57,25 +56,9 @@ const ORIGIN_CONFIG: Record<string, { label: string; icon: typeof Sparkles }> = 
   campanha:  { label: 'Campanha',  icon: Megaphone  },
 }
 
-const INTERACTION_ICON: Record<string, typeof Phone> = {
-  ligacao: Phone, whatsapp: MessageCircle, email: Mail, visita: Home,
-  reuniao: Users, nota: StickyNote, stage_change: ArrowRight, discard: Trash2,
-  tarefa: CheckCircle2,
-}
-
 const REAL_INTERACTION_TYPES = new Set(['ligacao', 'whatsapp', 'email', 'visita', 'reuniao', 'nota', 'tarefa'])
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const h = diff / 3_600_000
-  if (h < 1)  return 'agora'
-  if (h < 24) return `${Math.floor(h)}h`
-  const d = Math.floor(h / 24)
-  if (d === 1) return 'ontem'
-  return `${d}d`
-}
 
 /** "hoje", "ontem", "há 5 dias" — para o número do último contato. */
 function haQuanto(iso: string): string {
@@ -157,11 +140,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [showAddToList,     setShowAddToList]     = useState(false)
   const [selectedListId,    setSelectedListId]    = useState('')
   const [addingToList,      setAddingToList]      = useState(false)
-  const [noteText,          setNoteText]          = useState('')
-  const [showNoteInput,     setShowNoteInput]     = useState(false)
   // Ciclo interação → tarefa: tipo da última interação registrada nesta sessão
   const [nextStepFor,       setNextStepFor]       = useState<LeadInteractionType | null>(null)
-  const [aba,               setAba]               = useState<'resumo' | 'produtos' | 'fluxos' | 'historico'>('resumo')
+  const [aba,               setAba]               = useState<'resumo' | 'fluxos' | 'historico'>('resumo')
   // O simulador aberto por cima cuida do próprio Esc — a ficha não pode fechar atrás dele.
   const [simuladorAberto,   setSimuladorAberto]   = useState(false)
 
@@ -224,7 +205,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
     .sort()
     .slice(-1)[0]
   const daysSince     = (Date.now() - new Date(ultimoContatoIso ?? lead.createdAt).getTime()) / 86_400_000
-  const recentItems   = interactions.slice(0, 3)
   const { message: nextMsg, urgent: nextUrgent } = lead.funnelStage !== 'venda'
     ? getNextAction(lead.funnelStage, lead.followupStep, daysSince)
     : { message: 'Venda realizada — manter relacionamento.', urgent: false }
@@ -272,16 +252,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       await addInteraction({ leadId: lead.id, type: 'ligacao', description: 'Ligação realizada', interactedAt: new Date().toISOString() })
       toast.success('Ligação registrada')
       setNextStepFor('ligacao')
-    } catch { /* erro já toastado */ }
-  }
-
-  async function handleSaveNote() {
-    if (!noteText.trim()) return
-    try {
-      await addInteraction({ leadId: lead.id, type: 'nota', description: noteText.trim(), interactedAt: new Date().toISOString() })
-      toast.success('Nota salva')
-      setNoteText('')
-      setShowNoteInput(false)
     } catch { /* erro já toastado */ }
   }
 
@@ -496,9 +466,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   <BadgeCheck size={14} strokeWidth={1.8} aria-hidden /> Qualificado
                 </span>
               )}
-              {resumoPrimeiroContato(lead) && (
-                <span className="text-[13px] text-t3" title="Resultado do primeiro contato">1º contato: {resumoPrimeiroContato(lead)}</span>
-              )}
               {isLinked && <span className="text-[13px] text-t4">No CRM</span>}
               {isDiscarded && <span className="text-[13px] font-medium text-error">Descartado</span>}
             </div>
@@ -540,7 +507,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               onChange={setAba}
               abas={[
                 { value: 'resumo'    as const, label: 'Resumo' },
-                { value: 'produtos'  as const, label: 'Produtos' },
                 { value: 'fluxos'    as const, label: 'Fluxos' },
                 { value: 'historico' as const, label: 'Histórico', badge: interactions.length || undefined },
               ]}
@@ -679,68 +645,11 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   </div>
                 )}
 
-                {/* Quem é o cliente — o que ele declarou no formulário (ou o corretor apurou) */}
-                <PerfilDeclarado leadId={lead.id} perfil={perfil} />
+                {/* O que ele respondeu no formulário + o 1º contato (ficha enxuta, 25/11/2026) */}
+                <RespostasDoLead lead={lead} perfil={perfil} />
 
                 {/* Passa no banco? — renda do repasse, automática pela tipologia (24/11/2026) */}
                 <RendaDoRepasse lead={lead} tipologia={tipologia} lancamento={lancamento} perfil={perfil.data} />
-
-                {/* Leitura do lead — temperatura, prioridade e o porquê */}
-                <LeituraDoLead lead={lead} onVerProdutos={() => setAba('produtos')} />
-
-                {/* Últimos toques */}
-                <section>
-                  <div className="flex items-baseline justify-between mb-2">
-                    <h3 className="text-[15px] font-semibold text-t1">Últimos <Destaque>toques</Destaque></h3>
-                    {interactions.length > 3 && (
-                      <button onClick={() => setAba('historico')} className="text-[13px] font-medium text-t3 hover:text-t1">
-                        Ver todos
-                      </button>
-                    )}
-                  </div>
-                  {recentItems.length === 0 ? (
-                    <p className="text-[13.5px] text-t4">Nenhum contato registrado ainda.</p>
-                  ) : (
-                    <ul className="flex flex-col">
-                      {recentItems.map(i => {
-                        const ItemIcon = INTERACTION_ICON[i.type] ?? StickyNote
-                        return (
-                          <li key={i.id} className="flex items-center gap-3 py-2">
-                            <ItemIcon size={15} strokeWidth={1.8} className="text-t4 flex-shrink-0" aria-hidden />
-                            <p className="flex-1 text-[14px] text-t2 truncate">{i.description ?? i.type}</p>
-                            <span className="text-[12.5px] text-t4 flex-shrink-0 tabular-nums">{relativeTime(i.interactedAt)}</span>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-
-                  {/* Nota rápida — sempre à mão, sem abrir nada */}
-                  {!isDiscarded && (
-                    showNoteInput ? (
-                      <div className="mt-2 flex flex-col gap-2">
-                        <label htmlFor="lead-quick-note" className="sr-only">Nota rápida</label>
-                        {/* eslint-disable-next-line jsx-a11y/no-autofocus -- aberta por clique dentro do painel já aberto */}
-                        <textarea autoFocus id="lead-quick-note" value={noteText} onChange={e => setNoteText(e.target.value)}
-                          placeholder="O que aconteceu? O que ficou combinado?" rows={3}
-                          className="campo w-full px-3.5 py-2.5 resize-none leading-relaxed" />
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => { setShowNoteInput(false); setNoteText('') }} className="h-9 px-3 rounded-[10px] text-[13.5px] text-t3 hover:text-t1 hover:bg-s2">
-                            Cancelar
-                          </button>
-                          <button onClick={handleSaveNote} disabled={!noteText.trim()} className="h-9 px-4 rounded-[10px] text-[13.5px] font-semibold bg-brand-fill text-brand-fill-text hover:bg-brand-fill-hover disabled:opacity-50">
-                            Salvar nota
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button onClick={() => setShowNoteInput(true)}
-                        className="mt-2 w-full flex items-center gap-2.5 h-11 px-3.5 rounded-[12px] bg-s2 text-[14px] text-t4 hover:text-t2 text-left transition-colors">
-                        <StickyNote size={15} strokeWidth={1.8} aria-hidden /> Escrever uma nota…
-                      </button>
-                    )
-                  )}
-                </section>
 
                 {/* Observações escritas por gente — o texto automático do Meta fica no Histórico */}
                 {lead.notes && !/^Meta Ads —/.test(lead.notes.trim()) && (
@@ -752,19 +661,14 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               </div>
             )}
 
-            {aba === 'produtos' && (
-              <div className="flex flex-col gap-8">
-                <ProdutosDoLead lead={lead} />
-                {perfil.data && <BaseConhecida lists={perfil.data.lists} />}
-              </div>
-            )}
-
             {aba === 'fluxos' && (
               <FluxosDoLead lead={lead} onSimulador={setSimuladorAberto} />
             )}
 
             {aba === 'historico' && (
               <div className="flex flex-col gap-8">
+                {/* A nota rápida saiu (ficha enxuta, 25/11/2026): o registro do
+                    Histórico já anota contato, visita, reunião e nota. */}
                 <LeadTimeline leadId={lead.id} />
 
                 <FormulariosPreenchidos

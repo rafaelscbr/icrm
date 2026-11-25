@@ -45,15 +45,11 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
     idadeInformadaEm: idade?.at ?? (idade?.source === 'formulario' ? lead.createdAt : null),
   }, banco)
 
-  if (!rep) {
-    return (
-      <p className="text-[13px] text-t4">
-        Renda do repasse: a tabela de {tipologia.name} não informa o % financiado no banco.
-      </p>
-    )
-  }
+  // Ficha enxuta (25/11/2026): sem o dado da tabela, o bloco não aparece —
+  // um aviso de que falta dado só ocupava espaço.
+  if (!rep) return null
   const { r } = rep
-  if (!r.valido) return <p className="text-[13px] text-t4">Renda do repasse: {r.erro}</p>
+  if (!r.valido) return null
 
   const rendaObra = tipologia.incomeMin ?? lancamento?.incomeMin
   const exigida = Math.max(r.rendaNecessaria, rendaObra ?? 0)
