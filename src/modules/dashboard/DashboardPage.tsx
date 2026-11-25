@@ -16,6 +16,9 @@ import { useAdminView } from '../../hooks/useAdminView'
 import { useAuthStore } from '../../store/useAuthStore'
 import { formatCurrencyRound } from '../../lib/formatters'
 import { supabase } from '../../lib/supabase'
+import { destacar } from '../../components/shared/Destaque'
+import { PrimeiroContatoResumo } from '../leads/PrimeiroContatoResumo'
+import { primeiroContato, primeiroContatoPorCorretor, SEM_FILTRO } from '../leads/safra'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SOUZA COMMAND CENTER — redesenho de 24/11/2026
@@ -124,7 +127,7 @@ export function DashboardPage() {
   }, [effectiveBrokerId])
 
   const corretor = isGlobalView ? null : (effectiveBrokerId ?? null)
-  const { funis, erro: erroFunis, carregando: carregandoFunis, inicio, perfis, tentarDeNovo } =
+  const { funis, safra, erro: erroFunis, carregando: carregandoFunis, inicio, perfis, tentarDeNovo } =
     useFunisComerciais({ leads, sales, corretor, periodo })
 
   function escolherPeriodo(p: Periodo) { setPeriodo(p); salvarPeriodo(p) }
@@ -240,6 +243,22 @@ export function DashboardPage() {
         mostrarCorretores={isGlobalView && isAdmin}
         admin={isAdmin}
       />
+
+      {/* Resultado do 1º contato (migração 114) — a mesma safra do funil acima */}
+      {safra && (
+        <section aria-labelledby="primeiro-contato-titulo" className="dash-painel-branco mb-10">
+          <header className="mb-5">
+            <h2 id="primeiro-contato-titulo" className="font-display text-[22px] font-bold text-t1 tracking-[-0.025em]">
+              {destacar('Primeiro *contato*')}
+            </h2>
+            <p className="text-[13px] text-t4 mt-0.5">O que aconteceu na 1ª chamada dos leads que chegaram {descricao}</p>
+          </header>
+          <PrimeiroContatoResumo
+            r={primeiroContato(safra, { corretor, produto: null })}
+            porCorretor={isGlobalView && isAdmin ? primeiroContatoPorCorretor(safra, SEM_FILTRO) : []}
+          />
+        </section>
+      )}
 
       <TaskForm isOpen={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
     </PageLayout>

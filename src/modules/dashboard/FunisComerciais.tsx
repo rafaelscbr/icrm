@@ -123,7 +123,7 @@ export function useFunisComerciais({ leads, sales, corretor, periodo }: {
     })
   }, [safra, leads, sales, inicio, corretor, developments, perfis])
 
-  return { funis, erro, carregando, inicio, perfis, tentarDeNovo: () => setTentativa(t => t + 1) }
+  return { funis, safra, erro, carregando, inicio, perfis, tentarDeNovo: () => setTentativa(t => t + 1) }
 }
 
 // ─── O painel ─────────────────────────────────────────────────────────────────

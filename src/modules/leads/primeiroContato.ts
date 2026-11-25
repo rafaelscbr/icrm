@@ -15,6 +15,8 @@
 
 import { create } from 'zustand'
 import type { CanalPrimeiroContato, Lead, PotencialLead, ResultadoPrimeiroContato } from '../../types'
+import { ORDEM_RESULTADO } from './safra'
+import type { ResumoContato } from './safra'
 
 export const NOME_CANAL: Record<CanalPrimeiroContato, string> = {
   ligacao: 'Ligação',
@@ -106,3 +108,12 @@ export function resumoPrimeiroContato(lead: Lead): string | null {
     lead.firstContactPotential ? NOME_POTENCIAL[lead.firstContactPotential] : null,
   ].filter(Boolean).join(' · ')
 }
+
+/** A cor de cada resultado nas barras (aba Conversão, dashboard e Pulse). */
+export const COR_RESULTADO: Record<ResultadoPrimeiroContato, string> = {
+  atendeu: 'bg-success', nao_atendeu: 'bg-t4', mensagem_texto: 'bg-brand',
+  mensagem_audio: 'bg-brand-fill', numero_invalido: 'bg-error',
+}
+
+export const totalDoCanal = (r: ResumoContato, canal: CanalPrimeiroContato) =>
+  ORDEM_RESULTADO.reduce((a, k) => a + r.porCanal[canal][k], 0)

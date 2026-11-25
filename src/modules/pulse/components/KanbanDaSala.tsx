@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
-import { AlertTriangle, LayoutGrid, Activity, ArrowRight, AlarmClock } from 'lucide-react'
+import { AlertTriangle, LayoutGrid, Activity, ArrowRight, AlarmClock, PhoneCall } from 'lucide-react'
 import type { LeadFunnelStage } from '../../../types'
 import { MAX_TENTATIVAS_FOLLOWUP } from '../../../types'
 import type { Profile } from '../../../store/useAuthStore'
@@ -55,7 +55,15 @@ function esfriando(c: CartaoSala, agora: number): boolean {
 
 // ─── O giro: qual tela está no ar e quando troca ──────────────────────────────
 
-export type TelaPulse = 'sala' | 'kanban'
+export type TelaPulse = 'sala' | 'kanban' | 'contato'
+
+/** A ordem do giro (25/11/2026: a terceira tela é o 1º contato). */
+export const TELAS_PULSE: TelaPulse[] = ['sala', 'kanban', 'contato']
+export const NOME_TELA: Record<TelaPulse, string> = { sala: 'A sala agora', kanban: 'O Kanban', contato: '1º contato' }
+export function proximaTela(t: TelaPulse, passo = 1): TelaPulse {
+  const i = TELAS_PULSE.indexOf(t)
+  return TELAS_PULSE[(i + passo + TELAS_PULSE.length) % TELAS_PULSE.length]
+}
 
 /**
  * O botão da troca, na faixa Marinho das duas telas (Rafael, 23/11/2026:
@@ -73,8 +81,8 @@ export function GiroDasTelas({ tela, trocouEm, duracaoMs, onTrocar }: {
   const passou = Math.min(1, Math.max(0, (agora - trocouEm) / duracaoMs))
   const falta = Math.max(0, Math.ceil((duracaoMs - (agora - trocouEm)) / 1000))
   const mm = Math.floor(falta / 60), ss = String(falta % 60).padStart(2, '0')
-  const outra: TelaPulse = tela === 'sala' ? 'kanban' : 'sala'
-  const Icone = outra === 'kanban' ? LayoutGrid : Activity
+  const outra = proximaTela(tela)
+  const Icone = outra === 'kanban' ? LayoutGrid : outra === 'contato' ? PhoneCall : Activity
   return (
     <div className="flex flex-col gap-2 w-[236px]">
       <button type="button" onClick={() => onTrocar(outra)}
@@ -86,7 +94,7 @@ export function GiroDasTelas({ tela, trocouEm, duracaoMs, onTrocar }: {
           <Icone size={19} strokeWidth={2.2} />
         </span>
         <span className="font-display text-[17px] font-bold tracking-[-0.01em] whitespace-nowrap">
-          {outra === 'kanban' ? 'Ver o Kanban' : 'Ver a sala'}
+          {outra === 'kanban' ? 'Ver o Kanban' : outra === 'contato' ? 'Ver o 1º contato' : 'Ver a sala'}
         </span>
         <ArrowRight size={19} strokeWidth={2.2} className="ml-auto transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
       </button>

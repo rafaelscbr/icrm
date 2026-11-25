@@ -18,11 +18,10 @@ import { Grafico, eixoCategoria, eixoValor } from '../../components/charts/Grafi
 import type { CoresGrafico } from '../../components/charts/Grafico'
 import { fmtDataCurta, fmtTaxa, montarRecorte, rotuloBalde, slugLegivel, taxa } from './conversao'
 import {
-  ETAPAS_SAFRA, NOME_ETAPA, ORDEM_POTENCIAL, ORDEM_RESULTADO, SEM, contar, cruzamentos, ladoALado, matriz, motivosSafra, normalizar,
+  ETAPAS_SAFRA, NOME_ETAPA, SEM, contar, cruzamentos, ladoALado, matriz, motivosSafra, normalizar,
   passosSafra, primeiroContato, primeiroContatoPorCorretor, serieSafra, tempoAteVisita,
 } from './safra'
-import { NOME_POTENCIAL, NOME_RESULTADO } from './primeiroContato'
-import type { ResultadoPrimeiroContato } from '../../types'
+import { PrimeiroContatoResumo } from './PrimeiroContatoResumo'
 import type { Contagem, Cruzamento, EtapaSafra, Fatia, Filtro, FunilSafra, PontoSafra } from './safra'
 import { FunilDesenhado, TOM, TOM_DESCARTE } from './FunilDesenhado'
 import type { ChaveFatia, FatiaDesenho } from './FunilDesenhado'
@@ -198,7 +197,10 @@ export function LeadConversionTab() {
 
             {total.recebidos > 0 && (
               <Cartao titulo="Primeiro *contato*" extra="o que aconteceu na 1ª chamada · desde 26/11/2026">
-                <PrimeiroContato dados={dados} filtro={filtro} admin={isAdmin} />
+                <PrimeiroContatoResumo
+                  r={primeiroContato(dados, filtro)}
+                  porCorretor={isAdmin && filtro.corretor === null ? primeiroContatoPorCorretor(dados, filtro) : []}
+                />
               </Cartao>
             )}
 
@@ -395,105 +397,6 @@ function Escada({ c, foco }: { c: Contagem; foco: ChaveFatia | null }) {
         )
       })}
     </ol>
-  )
-}
-
-// ─── Primeiro contato (migração 114) ──────────────────────────────────────────
-
-const COR_RESULTADO: Record<ResultadoPrimeiroContato, string> = {
-  atendeu: 'bg-success', nao_atendeu: 'bg-t4', mensagem_texto: 'bg-brand',
-  mensagem_audio: 'bg-brand-fill', numero_invalido: 'bg-error',
-}
-
-/**
- * De X leads que chegaram, o que aconteceu na 1ª chamada — e, nas ligações
- * atendidas, quantos têm potencial. O admin vê também cada corretor, para
- * comparar a taxa de atendimento e a qualidade do que ele encontra.
- */
-function PrimeiroContato({ dados, filtro, admin }: { dados: FunilSafra; filtro: Filtro; admin: boolean }) {
-  const r = primeiroContato(dados, filtro)
-  const porCorretor = admin && filtro.corretor === null ? primeiroContatoPorCorretor(dados, filtro) : []
-  if (r.registrados === 0) {
-    return (
-      <p className="text-[13.5px] text-t3 py-2">
-        Nenhum primeiro contato registrado neste recorte. O popup começou a registrar em 26/11/2026; os leads chamados antes ficam sem registro.
-      </p>
-    )
-  }
-  const maior = Math.max(1, ...ORDEM_RESULTADO.map(k => r.porResultado[k]))
-  return (
-    <div className="flex flex-col gap-5">
-      <p className="text-[13px] text-t3 tabular-nums">
-        <span className="font-semibold text-t1">{n(r.registrados)}</span> de {n(r.recebidos)} leads com o 1º contato registrado
-        {r.recebidos > r.registrados && <span className="text-t4"> · {n(r.recebidos - r.registrados)} sem registro</span>}
-      </p>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6">
-        <ul className="flex flex-col gap-2.5" aria-label="Resultado do primeiro contato">
-          {ORDEM_RESULTADO.map(k => (
-            <li key={k} className="flex items-center gap-3 min-w-0">
-              <span className="w-[170px] shrink-0 text-[13px] text-t2 truncate">{NOME_RESULTADO[k]}</span>
-              <span className="relative flex-1 h-1.5 rounded-full bg-s2 overflow-hidden">
-                <span className={`absolute inset-y-0 left-0 rounded-full ${COR_RESULTADO[k]}`}
-                      style={{ width: `${r.porResultado[k] > 0 ? Math.max(2, (r.porResultado[k] / maior) * 100) : 0}%` }} />
-              </span>
-              <span className="w-[44px] shrink-0 text-right font-display text-[16px] font-semibold tabular-nums text-t1">{n(r.porResultado[k])}</span>
-              <span className="w-[52px] shrink-0 text-right text-[12px] tabular-nums text-t4">{pct(r.porResultado[k], r.registrados)}</span>
-            </li>
-          ))}
-          <li className="text-[12px] text-t4 tabular-nums pt-1">
-            Ligação: {n(ORDEM_RESULTADO.reduce((a, k) => a + r.porCanal.ligacao[k], 0))} ·
-            WhatsApp: {n(ORDEM_RESULTADO.reduce((a, k) => a + r.porCanal.whatsapp[k], 0))}
-            {' '}· atendem por ligação {pct(r.porCanal.ligacao.atendeu, ORDEM_RESULTADO.reduce((a, k) => a + r.porCanal.ligacao[k], 0))}
-          </li>
-        </ul>
-
-        <div className="min-w-0">
-          <p className="text-[12.5px] text-t3 mb-2.5 tabular-nums">Nas {n(r.ligacoesAtendidas)} ligações atendidas</p>
-          <div className="grid grid-cols-3 gap-2">
-            {ORDEM_POTENCIAL.map(k => (
-              <div key={k} className="rounded-xl border border-line px-3 py-2.5 min-w-0">
-                <p className="text-[12px] text-t3 truncate">{NOME_POTENCIAL[k]}</p>
-                <p className="font-display text-[22px] leading-tight font-semibold tabular-nums text-t1">{n(r.potencial[k])}</p>
-                <p className="text-[11.5px] text-t4 tabular-nums">{pct(r.potencial[k], r.ligacoesAtendidas)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {porCorretor.length > 0 && (
-        <div className="overflow-x-auto -mx-1">
-          <table className="w-full min-w-[560px] text-[13px] tabular-nums">
-            <caption className="sr-only">Primeiro contato por corretor</caption>
-            <thead>
-              <tr className="text-left text-[12px] text-t4">
-                <th scope="col" className="font-medium px-1 py-1.5">Corretor</th>
-                <th scope="col" className="font-medium px-1 py-1.5 text-right">Registrados</th>
-                <th scope="col" className="font-medium px-1 py-1.5 text-right">Atendeu</th>
-                <th scope="col" className="font-medium px-1 py-1.5 text-right">Texto</th>
-                <th scope="col" className="font-medium px-1 py-1.5 text-right">Áudio</th>
-                <th scope="col" className="font-medium px-1 py-1.5 text-right">Nº não existe</th>
-                <th scope="col" className="font-medium px-1 py-1.5 text-right">Com potencial</th>
-              </tr>
-            </thead>
-            <tbody>
-              {porCorretor.map(({ chave, nome, r: c }) => (
-                <tr key={chave} className="border-t border-line">
-                  <th scope="row" className="font-medium text-t1 text-left px-1 py-2 truncate max-w-[180px]">{nome}</th>
-                  <td className="px-1 py-2 text-right text-t2">{n(c.registrados)} <span className="text-t4">de {n(c.recebidos)}</span></td>
-                  <td className="px-1 py-2 text-right text-t1 font-semibold">{pct(c.porResultado.atendeu, c.registrados)}</td>
-                  <td className="px-1 py-2 text-right text-t2">{pct(c.porResultado.mensagem_texto, c.registrados)}</td>
-                  <td className="px-1 py-2 text-right text-t2">{pct(c.porResultado.mensagem_audio, c.registrados)}</td>
-                  <td className="px-1 py-2 text-right text-t2">{pct(c.porResultado.numero_invalido, c.registrados)}</td>
-                  <td className="px-1 py-2 text-right text-t2">{pct(c.potencial.potencial, c.ligacoesAtendidas)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
   )
 }
 

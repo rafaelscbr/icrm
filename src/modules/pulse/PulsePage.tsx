@@ -10,7 +10,8 @@ import { DAILY_TARGETS } from '../../lib/metasConfig'
 import { usePulseStore, JANELA_CONVERSAO_DIAS } from './usePulseStore'
 import { useKiosk, useRelogio, useTickLento, useAntiBurnIn, useEscalaTV } from './useKiosk'
 import { SaleCelebration } from './components/SaleCelebration'
-import { GiroDasTelas, KanbanDaSala } from './components/KanbanDaSala'
+import { GiroDasTelas, KanbanDaSala, NOME_TELA, TELAS_PULSE, proximaTela } from './components/KanbanDaSala'
+import { PrimeiroContatoDaSala } from './components/PrimeiroContatoDaSala'
 import type { TelaPulse } from './components/KanbanDaSala'
 import {
   AoVivo, Batimento, ChegadaDeLeads, EquipeNoMarinho, FilaPrimeiroContato, FunilDaImobiliaria, LegendaDoBatimento, RespostaNoMarinho,
@@ -114,11 +115,13 @@ export function PulsePage() {
 
   const {
     connection, erro, desconectadoDesde, ultimoSnapshotAt,
-    hoje, funil, tempos, vgl, celebracao, sala, salaErro, conversao,
+    hoje, funil, tempos, vgl, celebracao, sala, salaErro, conversao, primeiroContato,
     corretores, brokerNames, feed, kanban, kanbanErro, pctProduto,
     bootstrap, subscribe, podar, encerrarCelebracao,
   } = usePulseStore()
   const carregado = ultimoSnapshotAt !== null
+  // undefined = ainda lendo; null = a leitura falhou
+  const primeiroContatoDados = carregado ? primeiroContato : undefined
 
   // Leituras pequenas, uma vez: quem está em pausa (relida quando alguém pausa
   // — ver o canal do store) e a agenda do expediente (prazo do 1º contato).
@@ -184,14 +187,15 @@ export function PulsePage() {
   // Na TV gira sozinho; no celular quem troca é o dedo.
   useEffect(() => {
     if (celular) return
-    const t = setTimeout(() => irPara(tela === 'sala' ? 'kanban' : 'sala'), Math.max(0, GIRO_MS - (Date.now() - trocouEm)))
+    const t = setTimeout(() => irPara(proximaTela(tela)), Math.max(0, GIRO_MS - (Date.now() - trocouEm)))
     return () => clearTimeout(t)
   }, [celular, tela, trocouEm, irPara])
 
   // Setas do teclado (ou do controle da TV) trocam na hora
   useEffect(() => {
     const f = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') irPara(tela === 'sala' ? 'kanban' : 'sala')
+      if (e.key === 'ArrowRight') irPara(proximaTela(tela))
+      if (e.key === 'ArrowLeft') irPara(proximaTela(tela, -1))
     }
     window.addEventListener('keydown', f)
     return () => window.removeEventListener('keydown', f)
@@ -366,15 +370,18 @@ export function PulsePage() {
       <div className="min-h-dvh pulse-fundo flex flex-col gap-3 px-3 pb-[calc(16px+env(safe-area-inset-bottom))] pt-[calc(10px+env(safe-area-inset-top))]">
         {/* As duas telas do Pulse — no celular, troca no toque */}
         <div className="flex items-center rounded-full p-1 bg-surface border border-line shadow-sm" role="tablist" aria-label="Telas do Pulse">
-          {(['sala', 'kanban'] as const).map(t => (
+          {TELAS_PULSE.map(t => (
             <button key={t} type="button" role="tab" aria-selected={tela === t} onClick={() => irPara(t)}
-                    className={`flex-1 h-10 rounded-full text-[15px] font-semibold transition-colors ${tela === t ? 'bg-brand-fill text-brand-fill-text' : 'text-t2'}`}>
-              {t === 'sala' ? 'A sala agora' : 'O Kanban'}
+                    className={`flex-1 h-10 rounded-full text-[14px] font-semibold transition-colors whitespace-nowrap ${tela === t ? 'bg-brand-fill text-brand-fill-text' : 'text-t2'}`}>
+              {NOME_TELA[t]}
             </button>
           ))}
         </div>
 
-        {tela === 'kanban' ? (
+        {tela === 'contato' ? (
+          <PrimeiroContatoDaSala celular dados={primeiroContatoDados} janelaDias={JANELA_CONVERSAO_DIAS}
+                                 giro={null} direita={<StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} />} />
+        ) : tela === 'kanban' ? (
           <KanbanDaSala celular cartoes={kanban} erro={kanbanErro} pctProduto={pctProduto} perfis={allProfiles} agora={agora}
                         giro={null} direita={<StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} />} />
         ) : (<>
@@ -468,7 +475,17 @@ export function PulsePage() {
         }}
       >
         <div key={tela} className="pulse-tela-entra flex-1 min-h-0 flex flex-col gap-4">
-        {tela === 'kanban' ? (
+        {tela === 'contato' ? (
+          <PrimeiroContatoDaSala dados={primeiroContatoDados} janelaDias={JANELA_CONVERSAO_DIAS}
+                                 giro={<GiroDasTelas tela={tela} trocouEm={trocouEm} duracaoMs={GIRO_MS} onTrocar={irPara} />}
+                                 direita={(
+                                   <div className="flex items-start gap-6">
+                                     <div className="pt-1.5"><StatusConexao connection={connection} desconectadoDesde={desconectadoDesde} agora={agora} /></div>
+                                     <span className="h-[56px] w-px" style={{ background: 'var(--m-line)' }} aria-hidden />
+                                     <Relogio />
+                                   </div>
+                                 )} />
+        ) : tela === 'kanban' ? (
           <KanbanDaSala cartoes={kanban} erro={kanbanErro} pctProduto={pctProduto} perfis={allProfiles} agora={agora}
                         giro={<GiroDasTelas tela={tela} trocouEm={trocouEm} duracaoMs={GIRO_MS} onTrocar={irPara} />}
                         direita={(

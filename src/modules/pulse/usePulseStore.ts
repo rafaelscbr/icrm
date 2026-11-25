@@ -9,6 +9,8 @@ import { isEventoRuido } from './pulseEvents'
 import { useAuthStore } from '../../store/useAuthStore'
 import { somarDias } from '../leads/conversao'
 import type { RelatorioConversao } from '../leads/conversao'
+import { normalizar } from '../leads/safra'
+import type { FunilSafra, FunilSafraBruto } from '../leads/safra'
 import { useLeadPauseStore } from '../../store/useLeadPauseStore'
 import { cartaoDaLinha, contato, entrar, mover, tirar, trocarDono } from './kanbanDaSala'
 import type { CartaoSala } from './kanbanDaSala'
@@ -94,6 +96,11 @@ interface PulseStore {
    * Conversão). Lida com o snapshot; null se falhou.
    */
   conversao:       RelatorioConversao | null
+  /**
+   * Terceira tela (25/11/2026): o resultado do 1º contato dos leads que
+   * chegaram nos últimos 30 dias (funil_por_safra, migração 114).
+   */
+  primeiroContato: FunilSafra | null
   /** timestamps dos últimos eventos — só para o cálculo do clima */
   recent:          number[]
   /**
@@ -159,6 +166,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   sala:            null,
   salaErro:        null,
   conversao:       null,
+  primeiroContato: null,
   recent:          [],
   kanban:          null,
   kanbanErro:      null,
@@ -184,7 +192,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
       // As três RPCs em paralelo — juntas somam ~40 kB, uma vez por sessão.
       const hoje = localDateStr()
       const ini = new Date(); ini.setDate(1); ini.setHours(0, 0, 0, 0)
-      const [snapRes, vglRes, salaRes, convRes, kanbanRes, pctRes] = await Promise.all([
+      const [snapRes, vglRes, salaRes, convRes, kanbanRes, pctRes, contatoRes] = await Promise.all([
         supabase.rpc('pulse_snapshot'),
         supabase.rpc('pulse_vgl'),
         supabase.rpc('pulse_sala'),
@@ -199,7 +207,12 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
           .is('discard_reason', null)
           .or(`closed_at.is.null,closed_at.gte.${ini.toISOString()}`),
         supabase.from('developments').select('id,commission_pct'),
+        // Terceira tela: o 1º contato da safra de 30 dias (~5 kB, uma vez).
+        supabase.rpc('funil_por_safra', {
+          p_start: somarDias(hoje, -(JANELA_CONVERSAO_DIAS - 1)), p_end: hoje, p_bucket: 'month',
+        }),
       ])
+      if (contatoRes.error) console.error('[pulse] 1º contato:', contatoRes.error)
       if (kanbanRes.error) console.error('[pulse] kanban:', kanbanRes.error)
       if (salaRes.error) console.error('[pulse] sala:', salaRes.error)
       if (convRes.error) console.error('[pulse] conversão:', convRes.error)
@@ -244,6 +257,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         sala:              salaRes.error ? null : (salaRes.data as PulseSala),
         salaErro:          salaRes.error ? salaRes.error.message : null,
         conversao:         convRes.error ? null : (convRes.data as RelatorioConversao),
+        primeiroContato:   contatoRes.error ? null : normalizar(contatoRes.data as FunilSafraBruto),
         // Falha só do Kanban: a segunda tela diz que falhou; nunca mostra o
         // quadro de antes como se fosse o de agora.
         kanban:            kanbanRes.error ? null
