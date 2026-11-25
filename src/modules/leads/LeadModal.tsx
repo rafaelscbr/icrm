@@ -41,6 +41,7 @@ import { Destaque } from '../../components/shared/Destaque'
 import toast from 'react-hot-toast'
 import { useSlaConfigStore } from '../../store/useSlaConfigStore'
 import { abrirSePrimeiraChamada, resumoPrimeiroContato } from './primeiroContato'
+import { regiaoDoTelefone, rotuloDoDDD } from '../../lib/regiaoPorDDD'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -366,6 +367,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   const currentIndex = STAGES.indexOf(lead.funnelStage)
   const telefone     = contact?.phone ?? lead.phone
+  const regiao       = regiaoDoTelefone(telefone)
   const entrouEm     = new Date(lead.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
   const ultimoToque  = ultimoContatoIso ? haQuanto(ultimoContatoIso) : null
   const diasParado   = Math.floor(daysSince)
@@ -456,11 +458,19 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
             {/* Telefone com o botão de copiar e, embaixo, o e-mail que o lead
                 preencheu no formulário (Rafael, 25/11/2026) */}
             <div className="mt-2 flex flex-col gap-0.5">
-              <div className="flex items-center gap-1 min-w-0">
+              <div className="flex items-center gap-x-1 gap-y-0.5 min-w-0 flex-wrap">
                 <a href={`tel:${telefone}`} className="text-[14px] text-t2 hover:text-t1 tabular-nums" aria-label={`Ligar para ${lead.name}`}>
                   {formatPhone(telefone)}
                 </a>
                 <BotaoCopiar valor={telefone} rotulo="telefone" />
+                {/* Sugestão pelo DDD: o formulário não pergunta a cidade */}
+                {regiao && (
+                  <span className="inline-flex items-center gap-1 text-[12.5px] text-t4 min-w-0"
+                        title={`Região provável pelo DDD ${regiao.ddd}. É de onde o número foi registrado, não necessariamente onde a pessoa mora.`}>
+                    <MapPin size={12} strokeWidth={1.8} aria-hidden className="shrink-0" />
+                    <span className="truncate">provável {rotuloDoDDD(regiao.ddd)}</span>
+                  </span>
+                )}
               </div>
               {lead.email && (
                 <div className="flex items-center gap-1 min-w-0">

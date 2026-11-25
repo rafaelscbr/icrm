@@ -50,6 +50,8 @@ export interface FunilSafraBruto {
    * Só leads com resultado registrado; quem não tem = recebidos − soma.
    */
   contatos?: LinhaContato[]
+  /** DDD do telefone (migração 115): [corretor, produto, ddd, leads] — 'ex' = fora do Brasil */
+  ddds?: [number, number, string, number][]
   /** [corretor, produto, motivo, leads] */
   motivos: [number, number, string, number][]
   /** [corretor, produto, dias da chegada até a 1ª visita] */
@@ -384,4 +386,22 @@ export function primeiroContatoPorCorretor(f: FunilSafra, filtro: Filtro = SEM_F
     .map((c, i) => ({ chave: c.chave, nome: c.nome, r: acc[i] }))
     .filter(x => x.r.registrados > 0)
     .sort((a, b) => b.r.registrados - a.r.registrados || a.nome.localeCompare(b.nome, 'pt-BR'))
+}
+
+// ── De onde vêm, pelo DDD (migração 115) ──────────────────────────────────────
+
+/** Os DDDs do recorte, mais leads primeiro, e o total com DDD lido. */
+export function dddsDoRecorte(f: FunilSafra, filtro: Filtro = SEM_FILTRO): { total: number; porDDD: { ddd: string; n: number }[] } {
+  const ok = passa(f, filtro)
+  const m = new Map<string, number>()
+  let total = 0
+  for (const [ci, pi, ddd, n] of f.ddds ?? []) {
+    if (!ok(ci, pi)) continue
+    m.set(ddd, (m.get(ddd) ?? 0) + n)
+    total += n
+  }
+  return {
+    total,
+    porDDD: [...m.entries()].map(([ddd, n]) => ({ ddd, n })).sort((a, b) => b.n - a.n || a.ddd.localeCompare(b.ddd)),
+  }
 }

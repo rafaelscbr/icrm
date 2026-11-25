@@ -19,9 +19,10 @@ import type { CoresGrafico } from '../../components/charts/Grafico'
 import { fmtDataCurta, fmtTaxa, montarRecorte, rotuloBalde, slugLegivel, taxa } from './conversao'
 import {
   ETAPAS_SAFRA, NOME_ETAPA, SEM, contar, cruzamentos, ladoALado, matriz, motivosSafra, normalizar,
-  passosSafra, primeiroContato, primeiroContatoPorCorretor, serieSafra, tempoAteVisita,
+  dddsDoRecorte, passosSafra, primeiroContato, primeiroContatoPorCorretor, serieSafra, tempoAteVisita,
 } from './safra'
 import { PrimeiroContatoResumo } from './PrimeiroContatoResumo'
+import { DeOndeVem } from './DeOndeVem'
 import type { Contagem, Cruzamento, EtapaSafra, Fatia, Filtro, FunilSafra, PontoSafra } from './safra'
 import { FunilDesenhado, TOM, TOM_DESCARTE } from './FunilDesenhado'
 import type { ChaveFatia, FatiaDesenho } from './FunilDesenhado'
@@ -201,6 +202,12 @@ export function LeadConversionTab() {
                   r={primeiroContato(dados, filtro)}
                   porCorretor={isAdmin && filtro.corretor === null ? primeiroContatoPorCorretor(dados, filtro) : []}
                 />
+              </Cartao>
+            )}
+
+            {total.recebidos > 0 && (
+              <Cartao titulo="De onde *vêm*" extra="região provável pelo DDD do telefone">
+                <DeOndeVem {...dddsDoRecorte(dados, filtro)} />
               </Cartao>
             )}
 
