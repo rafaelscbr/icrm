@@ -28,6 +28,7 @@ import { useSearchStore } from './store/useSearchStore'
 import { supabase } from './lib/supabase'
 import { syncPushSubscription } from './lib/push'
 import { carregadores } from './rotas'
+import { PrimeiroContatoHost } from './modules/leads/PrimeiroContatoModal'
 
 // ── Code splitting por rota ──────────────────────────────────────────────────
 // Cada página vira um chunk separado — o carregamento inicial baixa apenas a
@@ -295,6 +296,8 @@ function AppRoutes() {
       </div>
 
       <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      {/* Resultado do 1º contato com o lead (migração 114): popup em qualquer tela */}
+      <PrimeiroContatoHost />
     </>
   )
 }

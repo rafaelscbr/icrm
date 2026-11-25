@@ -535,6 +535,11 @@ export interface Goal {
 // centenas de leads gravados com ele. Só o rótulo mudou.
 export type LeadOrigin       = 'felicita' | 'meta_ads' | 'portal' | 'offline' | 'campanha'
                              | 'indicacao' | 'prospeccao_ligacao' | 'site'
+/** 1º contato com o lead (migração 114): por onde foi, o que aconteceu e — só na ligação atendida — o potencial. */
+export type CanalPrimeiroContato = 'ligacao' | 'whatsapp'
+export type ResultadoPrimeiroContato = 'atendeu' | 'nao_atendeu' | 'mensagem_texto' | 'mensagem_audio' | 'numero_invalido'
+export type PotencialLead = 'potencial' | 'sem_potencial' | 'curioso'
+
 export type LeadFunnelStage  = 'lead' | 'followup' | 'atendimento' | 'visita' | 'proposta' | 'venda'
 export type LeadDiscardReason = string
 export type LeadInteractionType  = 'ligacao' | 'whatsapp' | 'email' | 'visita' | 'reuniao' | 'nota' | 'stage_change' | 'discard' | 'tarefa'
@@ -609,6 +614,12 @@ export interface Lead {
   // Qualificação — gravada só pelo banco (set_lead_qualified); a tela lê.
   qualifiedAt?: string      // quando foi marcado como qualificado
   qualifiedBy?: string      // quem qualificou (profiles.id)
+  // Resultado do 1º contato (migração 114) — gravado só pela RPC
+  // registrar_primeiro_contato, uma vez por lead; a tela lê.
+  firstContactChannel?: CanalPrimeiroContato
+  firstContactResult?: ResultadoPrimeiroContato
+  firstContactPotential?: PotencialLead
+  firstContactResultAt?: string
   /** Quantos fluxos de pagamento guardados (não arquivados) o lead tem — mantido pelo banco (gatilho, migração 097). */
   fluxosCount?: number
   brokerId?:      string | null

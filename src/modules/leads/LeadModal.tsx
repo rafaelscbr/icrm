@@ -40,6 +40,7 @@ import { Abas } from '../../components/shared/Abas'
 import { Destaque } from '../../components/shared/Destaque'
 import toast from 'react-hot-toast'
 import { useSlaConfigStore } from '../../store/useSlaConfigStore'
+import { abrirSePrimeiraChamada, resumoPrimeiroContato } from './primeiroContato'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -253,6 +254,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   // Toast de sucesso só após confirmação do banco — erros já são toastados pela camada db
   async function handleWhatsApp() {
     window.open(whatsappUrl(contact?.phone ?? lead.phone), '_blank')
+    abrirSePrimeiraChamada(lead, 'whatsapp')
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, MAX_TENTATIVAS_FOLLOWUP)
     try {
       await advanceFollowup(lead.id)
@@ -264,6 +266,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
 
   async function handleCall() {
     window.open(`tel:${contact?.phone ?? lead.phone}`)
+    abrirSePrimeiraChamada(lead, 'ligacao')
     try {
       await addInteraction({ leadId: lead.id, type: 'ligacao', description: 'Ligação realizada', interactedAt: new Date().toISOString() })
       toast.success('Ligação registrada')
@@ -465,6 +468,9 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 <span className="inline-flex items-center gap-1 text-[13px] font-medium text-success" title={qualificadoTitulo}>
                   <BadgeCheck size={14} strokeWidth={1.8} aria-hidden /> Qualificado
                 </span>
+              )}
+              {resumoPrimeiroContato(lead) && (
+                <span className="text-[13px] text-t3" title="Resultado do primeiro contato">1º contato: {resumoPrimeiroContato(lead)}</span>
               )}
               {isLinked && <span className="text-[13px] text-t4">No CRM</span>}
               {isDiscarded && <span className="text-[13px] font-medium text-error">Descartado</span>}

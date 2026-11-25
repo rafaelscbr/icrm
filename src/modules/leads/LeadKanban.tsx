@@ -41,6 +41,7 @@ import { ordenar, ordemEfetiva } from './leadFiltros'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
 import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
 import toast from 'react-hot-toast'
+import { abrirSePrimeiraChamada } from './primeiroContato'
 
 // Re-export da fonte única — consumido por LeadsPage, o Pulse,
 // LeadsPerformance e TransferToFunnelModal. Cores vivem em lib/stageTheme.ts.
@@ -173,6 +174,7 @@ function LeadCard({
   async function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
     window.open(whatsappUrl(displayPhone), '_blank')
+    abrirSePrimeiraChamada(lead, 'whatsapp')   // 1ª chamada: o popup espera a volta do corretor
     const nextStep = lead.funnelStage === 'lead' ? 1 : Math.min(lead.followupStep + 1, MAX_TENTATIVAS_FOLLOWUP)
     try {
       await advanceFollowup(lead.id)
@@ -400,7 +402,7 @@ function LeadCard({
           </button>
           <a
             href={`tel:${displayPhone}`}
-            onClick={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); abrirSePrimeiraChamada(lead, 'ligacao') }}
             className="w-7 h-7 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             title={`Ligar — ${formatPhone(displayPhone)}`}
             aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}

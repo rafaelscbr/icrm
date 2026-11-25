@@ -668,6 +668,12 @@ interface LeadRow {
   // Qualificação: gravada só pela RPC set_lead_qualified. Entra em `toLead`,
   // NÃO entra em `fromLead` — o upsert do front não pode apagar.
   qualified_at?: string | null
+  // 1º contato: gravado só pela RPC registrar_primeiro_contato (114). Entra em
+  // `toLead`, NÃO entra em `fromLead`.
+  first_contact_channel?: string | null
+  first_contact_result?: string | null
+  first_contact_potential?: string | null
+  first_contact_result_at?: string | null
   fluxos_count?: number | null
   qualified_by?: string | null
   closed_at?: string | null
@@ -713,6 +719,10 @@ function toLead(r: LeadRow): Lead {
     reentrySeenAt: r.reentry_seen_at ?? undefined,
     returningFromLeadId: r.returning_from_lead_id ?? undefined,
     qualifiedAt: r.qualified_at ?? undefined,
+    firstContactChannel: (r.first_contact_channel as Lead['firstContactChannel']) ?? undefined,
+    firstContactResult: (r.first_contact_result as Lead['firstContactResult']) ?? undefined,
+    firstContactPotential: (r.first_contact_potential as Lead['firstContactPotential']) ?? undefined,
+    firstContactResultAt: r.first_contact_result_at ?? undefined,
     fluxosCount: r.fluxos_count ?? undefined,
     qualifiedBy: r.qualified_by ?? undefined,
     closedAt: r.closed_at ?? undefined,
@@ -1260,6 +1270,19 @@ export const db = {
      * Qualifica o lead ou desfaz. O banco grava quem e quando, e é ele que
      * enfileira o evento para o Meta (migração 086). Devolve o que ficou gravado.
      */
+    /** 1º contato (migração 114): grava uma vez; erro vira toast e sobe. */
+    registrarPrimeiroContato: async (p: {
+      leadId: string
+      canal: import('../types').CanalPrimeiroContato
+      resultado: import('../types').ResultadoPrimeiroContato
+      potencial: import('../types').PotencialLead | null
+    }): Promise<{ resultadoEm: string }> => {
+      const { data, error } = await supabase.rpc('registrar_primeiro_contato', {
+        p_lead_id: p.leadId, p_canal: p.canal, p_resultado: p.resultado, p_potencial: p.potencial,
+      })
+      if (error) { toast.error(`O contato não foi registrado: ${error.message}`); throw error }
+      return { resultadoEm: (data as { em: string }).em }
+    },
     setQualified: async (leadId: string, qualified: boolean): Promise<{ qualifiedAt?: string; qualifiedBy?: string }> => {
       const { data, error } = await supabase.rpc('set_lead_qualified', {
         p_lead_id: leadId, p_qualified: qualified,

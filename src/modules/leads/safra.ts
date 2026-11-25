@@ -18,6 +18,9 @@
 
 import { inicioDoBalde, proximoBalde, taxa } from './conversao'
 import type { Balde } from './conversao'
+import type { CanalPrimeiroContato, PotencialLead, ResultadoPrimeiroContato } from '../../types'
+
+export type LinhaContato = [number, number, CanalPrimeiroContato, ResultadoPrimeiroContato, PotencialLead | null, number]
 
 /** Sem corretor / sem produto viram uma chave de texto: o filtro não lida com null. */
 export const SEM = '__sem__'
@@ -42,6 +45,11 @@ export interface FunilSafraBruto {
    *  leads, produto fechado (-1 = não chegou a Venda)]
    */
   cubo: [number, number, string, number, number, number, number?][]
+  /**
+   * 1º contato (migração 114): [corretor, produto, canal, resultado, potencial, leads].
+   * Só leads com resultado registrado; quem não tem = recebidos − soma.
+   */
+  contatos?: LinhaContato[]
   /** [corretor, produto, motivo, leads] */
   motivos: [number, number, string, number][]
   /** [corretor, produto, dias da chegada até a 1ª visita] */
@@ -320,4 +328,60 @@ export function tempoAteVisita(f: FunilSafra, filtro: Filtro): TempoVisita {
   const m = dias.length
   const mediana = m === 0 ? null : m % 2 ? dias[(m - 1) / 2] : (dias[m / 2 - 1] + dias[m / 2]) / 2
   return { total: m, mediana: mediana === null ? null : Math.round(mediana * 10) / 10, faixas }
+}
+
+// ── Primeiro contato (migração 114) ───────────────────────────────────────────
+
+export const ORDEM_RESULTADO: ResultadoPrimeiroContato[] = ['atendeu', 'nao_atendeu', 'mensagem_texto', 'mensagem_audio', 'numero_invalido']
+export const ORDEM_POTENCIAL: PotencialLead[] = ['potencial', 'curioso', 'sem_potencial']
+
+export interface ResumoContato {
+  /** leads da safra no recorte */
+  recebidos: number
+  /** com o resultado do 1º contato registrado */
+  registrados: number
+  porResultado: Record<ResultadoPrimeiroContato, number>
+  porCanal: Record<CanalPrimeiroContato, Record<ResultadoPrimeiroContato, number>>
+  /** só ligações atendidas */
+  potencial: Record<PotencialLead, number>
+  ligacoesAtendidas: number
+}
+
+function resumoVazio(): ResumoContato {
+  const r = () => ({ atendeu: 0, nao_atendeu: 0, mensagem_texto: 0, mensagem_audio: 0, numero_invalido: 0 })
+  return {
+    recebidos: 0, registrados: 0, porResultado: r(), porCanal: { ligacao: r(), whatsapp: r() },
+    potencial: { potencial: 0, curioso: 0, sem_potencial: 0 }, ligacoesAtendidas: 0,
+  }
+}
+
+function somarContato(r: ResumoContato, canal: CanalPrimeiroContato, res: ResultadoPrimeiroContato, pot: PotencialLead | null, n: number) {
+  r.registrados += n
+  r.porResultado[res] = (r.porResultado[res] ?? 0) + n
+  if (r.porCanal[canal]) r.porCanal[canal][res] = (r.porCanal[canal][res] ?? 0) + n
+  if (canal === 'ligacao' && res === 'atendeu') {
+    r.ligacoesAtendidas += n
+    if (pot) r.potencial[pot] = (r.potencial[pot] ?? 0) + n
+  }
+}
+
+/** O 1º contato no recorte: de quantos leads que chegaram, o que aconteceu. */
+export function primeiroContato(f: FunilSafra, filtro: Filtro = SEM_FILTRO): ResumoContato {
+  const ok = passa(f, filtro)
+  const r = resumoVazio()
+  for (const [ci, pi, , , , n] of f.cubo) if (ok(ci, pi)) r.recebidos += n
+  for (const [ci, pi, canal, res, pot, n] of f.contatos ?? []) if (ok(ci, pi)) somarContato(r, canal, res, pot, n)
+  return r
+}
+
+/** O 1º contato de cada corretor (respeitando o filtro de produto) — para comparar desempenho. */
+export function primeiroContatoPorCorretor(f: FunilSafra, filtro: Filtro = SEM_FILTRO): { chave: string; nome: string; r: ResumoContato }[] {
+  const pi = indice(f.produtos, filtro.produto)
+  const acc = f.corretores.map(() => resumoVazio())
+  for (const [c, p, , , , n] of f.cubo) if (pi === null || pi === p) acc[c].recebidos += n
+  for (const [c, p, canal, res, pot, n] of f.contatos ?? []) if (pi === null || pi === p) somarContato(acc[c], canal, res, pot, n)
+  return f.corretores
+    .map((c, i) => ({ chave: c.chave, nome: c.nome, r: acc[i] }))
+    .filter(x => x.r.registrados > 0)
+    .sort((a, b) => b.r.registrados - a.r.registrados || a.nome.localeCompare(b.nome, 'pt-BR'))
 }

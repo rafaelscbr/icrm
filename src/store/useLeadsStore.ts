@@ -1,5 +1,6 @@
 import { create, type StoreApi } from 'zustand'
 import { Lead, LeadFunnelStage, LeadDiscardReason, LeadOrigin, MAX_TENTATIVAS_FOLLOWUP } from '../types'
+import type { CanalPrimeiroContato, PotencialLead, ResultadoPrimeiroContato } from '../types'
 import { generateId } from '../lib/formatters'
 import { db } from '../lib/db'
 import { mensagemDeErro } from '../lib/erros'
@@ -47,6 +48,12 @@ interface LeadsStore {
   ackReentry: (id: string) => Promise<void>
   // Qualifica/desfaz — o banco grava quem e quando e avisa o Meta se couber
   setQualified: (id: string, qualified: boolean) => Promise<void>
+  /** 1º contato (migração 114): banco primeiro, uma vez por lead. */
+  registrarPrimeiroContato: (id: string, r: {
+    canal: CanalPrimeiroContato
+    resultado: ResultadoPrimeiroContato
+    potencial: PotencialLead | null
+  }) => Promise<void>
   toggleFlag: (id: string) => Promise<void>
   reorder: (id: string, kanbanOrder: number) => Promise<void>
   search: (query: string) => Lead[]
@@ -228,6 +235,10 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             qualifiedAt: (incoming.qualified_at as string | null) ?? undefined,
             fluxosCount: (incoming.fluxos_count as number | null) ?? undefined,
             qualifiedBy: (incoming.qualified_by as string | null) ?? undefined,
+            firstContactChannel: (incoming.first_contact_channel as Lead['firstContactChannel'] | null) ?? undefined,
+            firstContactResult: (incoming.first_contact_result as Lead['firstContactResult'] | null) ?? undefined,
+            firstContactPotential: (incoming.first_contact_potential as Lead['firstContactPotential'] | null) ?? undefined,
+            firstContactResultAt: (incoming.first_contact_result_at as string | null) ?? undefined,
             closedAt: (incoming.closed_at as string | null) ?? undefined,
             wonValue: (incoming.won_value as number | null) ?? undefined,
             saleId: (incoming.sale_id as string | null) ?? undefined,
@@ -286,6 +297,10 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
             // salvar ou arquivar um fluxo muda a contagem no banco (gatilho): o sinal do cartão acompanha
             fluxosCount: (r.fluxos_count as number | null) ?? undefined,
             qualifiedBy: (r.qualified_by as string | null) ?? undefined,
+            firstContactChannel: (r.first_contact_channel as Lead['firstContactChannel'] | null) ?? undefined,
+            firstContactResult: (r.first_contact_result as Lead['firstContactResult'] | null) ?? undefined,
+            firstContactPotential: (r.first_contact_potential as Lead['firstContactPotential'] | null) ?? undefined,
+            firstContactResultAt: (r.first_contact_result_at as string | null) ?? undefined,
             closedAt: (r.closed_at as string | null) ?? undefined,
             wonValue: (r.won_value as number | null) ?? undefined,
             saleId: (r.sale_id as string | null) ?? undefined,
@@ -669,6 +684,22 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
   },
 
   // Banco primeiro: a tela só muda com o que a RPC devolveu.
+  registrarPrimeiroContato: async (id, { canal, resultado, potencial }) => {
+    const { resultadoEm } = await db.leads.registrarPrimeiroContato({ leadId: id, canal, resultado, potencial })
+    set(s => ({
+      leads: s.leads.map(l => l.id !== id ? l : {
+        ...l,
+        firstContactChannel: canal,
+        firstContactResult: resultado,
+        firstContactPotential: potencial ?? undefined,
+        firstContactResultAt: resultadoEm,
+        firstContactAt: l.firstContactAt ?? resultadoEm,
+        slaDueAt: undefined,
+        updatedAt: resultadoEm,
+      }),
+    }))
+  },
+
   setQualified: async (id, qualified) => {
     const r = await db.leads.setQualified(id, qualified)   // erro já toastado; propaga
     const now = new Date().toISOString()

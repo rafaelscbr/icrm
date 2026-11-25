@@ -47,6 +47,7 @@ import {
 import { BarraDeFiltros, PainelDeFiltros, OpcaoCatalogo } from './FiltrosDoFunil'
 import { PerformanceTab } from './performance/PerformanceTab'
 import { limparFiltros } from './performance/filtros'
+import { abrirSePrimeiraChamada } from './primeiroContato'
 
 const STAGES: LeadFunnelStage[] = ['lead', 'followup', 'atendimento', 'visita', 'proposta', 'venda']
 
@@ -113,6 +114,7 @@ function LeadRow({ lead, onClick, mostrarEncaixe = true, agora, aberto = false }
   async function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
     window.open(whatsappUrl(displayPhone), '_blank')
+    abrirSePrimeiraChamada(lead, 'whatsapp')
     try {
       await advanceFollowup(lead.id)
       await addInteraction({
