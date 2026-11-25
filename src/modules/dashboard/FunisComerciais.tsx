@@ -4,6 +4,7 @@ import { ArrowRight, Building2, RefreshCw } from 'lucide-react'
 import { destacar } from '../../components/shared/Destaque'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import { FunilJoia } from '../../components/shared/FunilJoia'
+import { JOIA } from '../../lib/paletaJoia'
 import type { EtapaFunil } from '../../components/shared/FunilJoia'
 import { useAuthStore } from '../../store/useAuthStore'
 import type { Profile } from '../../store/useAuthStore'
@@ -40,8 +41,18 @@ const PASSOS: { chave: 'recebidos' | 'atendimento' | 'visita' | 'proposta' | 've
 ]
 
 function etapasDoFunil(r: Recorte): EtapaFunil[] {
-  return PASSOS.map(p => ({ chave: p.chave, nome: p.nome, n: r.safra[p.chave], joia: p.joia }))
+  return PASSOS.map(p => ({
+    chave: p.chave, nome: p.nome, n: r.safra[p.chave], joia: p.joia,
+    cruzada: p.chave === 'venda' ? r.safra.vendaCruzada : undefined,
+  }))
 }
+
+/** As amostras da legenda: a fatia de Vendas (esmeralda) e o pedaço hachurado dela. */
+export const AMOSTRA_PROPRIA = JOIA.venda.claro
+export const AMOSTRA_CRUZADA =
+  `repeating-linear-gradient(45deg, rgba(255,255,255,0.75) 0 2px, transparent 2px 4px), ${JOIA.venda.claro}`
+
+const listaDe = (xs: { nome: string; n: number }[]) => xs.map(x => `${x.nome} ${x.n}`).join(' · ')
 
 const CHAVE_PERIODO = 'icrm:dashboard:periodo-funil'
 
@@ -290,6 +301,7 @@ function Detalhe({ r, geral, descricao, admin, foto }: {
           <div className="flex-1 flex items-center">
             <FunilJoia compacto escuro etapas={etapasDoFunil(r)} rotulo={`Funil de ${r.nome}, leads que chegaram ${descricao}`} />
           </div>
+          <VendaCruzada r={r} geral={geral} />
         </div>
         <div className="xl:col-span-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3 content-start">
           <Valor rotulo="VGV em andamento" nota={`${r.pipeline.n} ${r.pipeline.n === 1 ? 'lead em aberto' : 'leads em aberto'} · agora`} valor={r.pipeline.vgv} />
@@ -315,6 +327,42 @@ function Detalhe({ r, geral, descricao, admin, foto }: {
         </button>
       </footer>
     </article>
+  )
+}
+
+/**
+ * Legenda da camada de Vendas (migração 113): quantas fecharam o próprio
+ * produto e quantas fecharam outro — e, no funil de um produto, as vendas que
+ * vieram de leads de outras campanhas, que ficam FORA do trapézio porque
+ * esses leads nunca passaram pelo topo dele.
+ */
+function VendaCruzada({ r, geral }: { r: Recorte; geral: boolean }) {
+  const s = r.safra
+  if (s.vendaCruzada === 0 && s.vindas === 0) return null
+  return (
+    <div className="mt-4 flex flex-col gap-2 text-[12.5px] leading-snug tabular-nums">
+      {s.vendaCruzada > 0 && (
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--m-t2)' }}>
+            <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ background: AMOSTRA_PROPRIA }} aria-hidden />
+            {s.vendaPropria} {geral ? 'no produto do anúncio' : 'no próprio produto'}
+          </span>
+          <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--m-t2)' }}>
+            <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ background: AMOSTRA_CRUZADA }} aria-hidden />
+            <span>
+              {s.vendaCruzada} {s.vendaCruzada === 1 ? 'fechou' : 'fecharam'} outro
+              {r.cruzadas.para.length > 0 && <span style={{ color: 'var(--m-t3)' }}>: {listaDe(r.cruzadas.para)}</span>}
+            </span>
+          </span>
+        </p>
+      )}
+      {s.vindas > 0 && (
+        <p className="self-start rounded-full border border-dashed px-3 py-1" style={{ borderColor: 'var(--m-t3)', color: 'var(--m-t2)' }}>
+          + {s.vindas} {s.vindas === 1 ? 'venda vinda' : 'vendas vindas'} de outras campanhas
+          {r.cruzadas.de.length > 0 && <span style={{ color: 'var(--m-t3)' }}>: {listaDe(r.cruzadas.de)}</span>}
+        </p>
+      )}
+    </div>
   )
 }
 

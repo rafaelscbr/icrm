@@ -165,6 +165,7 @@ interface DevelopmentRow {
 interface SaleRow {
   id: string; client_id: string; property_id: string | null
   property_name: string; date: string; value: number; type: string
+  development_id?: string | null; development_unit_id?: string | null
   notes: string | null
   commission_pct: number | null; commission_fixed: number | null; broker_pct: number | null
   broker_id: string | null
@@ -434,6 +435,8 @@ function toSale(r: SaleRow): Sale {
   return {
     id: r.id, clientId: r.client_id, propertyId: r.property_id ?? undefined,
     propertyName: r.property_name, date: r.date, value: r.value,
+    developmentId: r.development_id ?? undefined,
+    developmentUnitId: r.development_unit_id ?? undefined,
     type: r.type as Sale['type'], notes: r.notes ?? undefined,
     commissionPct:   r.commission_pct   ?? undefined,
     commissionFixed: r.commission_fixed ?? undefined,
@@ -447,6 +450,8 @@ function fromSale(s: Sale): SaleRow {
   return {
     id: s.id, client_id: s.clientId, property_id: s.propertyId ?? null,
     property_name: s.propertyName, date: s.date, value: s.value,
+    development_id: s.developmentId ?? null,
+    development_unit_id: s.developmentUnitId ?? null,
     type: s.type, notes: s.notes ?? null,
     commission_pct:   s.commissionPct   ?? null,
     commission_fixed: s.commissionFixed ?? null,

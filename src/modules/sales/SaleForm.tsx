@@ -1,4 +1,4 @@
-import { useState, FormEvent, useMemo } from 'react'
+import { useState, FormEvent, useMemo, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { SidePanel } from '../../components/ui/SidePanel'
 import { Input } from '../../components/ui/Input'
@@ -8,6 +8,7 @@ import { useSalesStore } from '../../store/useSalesStore'
 import { useContactsStore } from '../../store/useContactsStore'
 import { useContactSearch } from '../../hooks/useContactSearch'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { ContactForm } from '../contacts/ContactForm'
 import { formatCurrencyFull } from '../../lib/formatters'
 import toast from 'react-hot-toast'
@@ -22,6 +23,8 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
   const { add, update } = useSalesStore()
   const { getById: getContact, mergeLocal } = useContactsStore()
   const { properties } = usePropertiesStore()
+  const { developments, carregarCarteira } = useDevelopmentsStore()
+  useEffect(() => { void carregarCarteira() }, [carregarCarteira])
 
   const isEditing = Boolean(sale)
   const today = new Date().toISOString().split('T')[0]
@@ -33,6 +36,15 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
   const [propertyId,   setPropertyId]   = useState(sale?.propertyId ?? '')
   const [propertyName, setPropertyName] = useState(sale?.propertyName ?? '')
   const [showPropDrop, setShowPropDrop] = useState(false)
+  // O lançamento da carteira (migração 113): é o que liga a venda ao funil do
+  // produto. Vale enquanto o texto começar pelo nome do lançamento — assim
+  // "Porto Velas - Torre C 605" continua sendo Porto Velas.
+  const [developmentId, setDevelopmentId] = useState(sale?.developmentId ?? '')
+  const lancamentoDoTexto = (t: string) => {
+    const v = t.trim().toLowerCase()
+    return v ? developments.find(d => v.startsWith(d.name.toLowerCase()))?.id ?? '' : ''
+  }
+  const lancamento = developments.find(d => d.id === developmentId)
 
   const [date,  setDate]  = useState(sale?.date ?? today)
   const [value, setValue] = useState(sale?.value ? String(sale.value) : '')
@@ -58,6 +70,10 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
   const filteredProps = propertyName.trim()
     ? properties.filter(p => p.name.toLowerCase().includes(propertyName.toLowerCase()))
     : properties.slice(0, 5)
+  const filteredDevs = (propertyName.trim()
+    ? developments.filter(d => d.name.toLowerCase().includes(propertyName.trim().toLowerCase()))
+    : developments.filter(d => d.active)
+  ).filter(d => d.id !== developmentId).slice(0, 6)
 
   function parseVal(v: string) { return Number(v.replace(/\D/g, '')) }
   function fmtInput(raw: string) {
@@ -97,6 +113,8 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
       clientId,
       propertyId:      propertyId || undefined,
       propertyName:    propertyName.trim(),
+      developmentId:   developmentId || undefined,
+      developmentUnitId: developmentId && developmentId === sale?.developmentId ? sale?.developmentUnitId : undefined,
       date,
       value:           parseVal(value),
       type,
@@ -218,7 +236,7 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
             <input
               id="venda-imovel"
               value={propertyName}
-              onChange={e => { setPropertyName(e.target.value); setPropertyId(''); setShowPropDrop(true) }}
+              onChange={e => { setPropertyName(e.target.value); setPropertyId(''); setDevelopmentId(lancamentoDoTexto(e.target.value)); setShowPropDrop(true) }}
               onFocus={() => setShowPropDrop(true)}
               onBlur={() => setTimeout(() => setShowPropDrop(false), 150)}
               placeholder="Buscar ou digitar o nome"
@@ -226,11 +244,28 @@ export function SaleForm({ isOpen, onClose, sale }: SaleFormProps) {
               className="w-full px-3.5 py-2.5 min-h-[44px]"
             />
             {errors.property && <p className="text-xs text-error">{errors.property}</p>}
-            {showPropDrop && filteredProps.length > 0 && (
+            {!errors.property && propertyName.trim() && (
+              <p className="text-[12px] text-t4">
+                {lancamento ? `Lançamento da carteira: ${lancamento.name}` : 'Fora da carteira de lançamentos'}
+              </p>
+            )}
+            {showPropDrop && (filteredProps.length > 0 || filteredDevs.length > 0) && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-xl shadow-dropdown z-10 overflow-hidden">
+                {filteredDevs.map(d => (
+                  <button key={d.id} type="button"
+                    onMouseDown={() => {
+                      setDevelopmentId(d.id); setPropertyId(''); setPropertyName(d.name); setShowPropDrop(false)
+                      if (!isEditing) { setCommMode('pct'); setCommPct(String(d.commissionPct)); setType(d.status === 'pronto' ? 'ready' : 'off_plan') }
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s2 transition-colors cursor-pointer"
+                  >
+                    {d.name}
+                    <span className="text-t4 ml-2 text-xs">lançamento</span>
+                  </button>
+                ))}
                 {filteredProps.map(p => (
                   <button key={p.id} type="button"
-                    onMouseDown={() => { setPropertyId(p.id); setPropertyName(p.name); setShowPropDrop(false) }}
+                    onMouseDown={() => { setPropertyId(p.id); setPropertyName(p.name); setDevelopmentId(lancamentoDoTexto(p.name)); setShowPropDrop(false) }}
                     className="w-full text-left px-4 py-2.5 text-sm text-t2 hover:bg-s2 transition-colors cursor-pointer"
                   >
                     {p.name}

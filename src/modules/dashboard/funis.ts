@@ -10,7 +10,9 @@
  *     concluída), com o VGV do Kanban (preço da tipologia) e a comissão pela
  *     regra de comissao.ts. Não depende do período: pipeline é o que está vivo.
  *   • Vendido — as vendas registradas no período (tabela sales), com a comissão
- *     gravada em cada venda (% sobre o valor e a parte do corretor).
+ *     gravada em cada venda (% sobre o valor e a parte do corretor). Vai para
+ *     o produto VENDIDO (o lançamento da venda, migração 113) — a conversão,
+ *     ao contrário, é do produto de ENTRADA, com a venda cruzada separada.
  *
  * Funções puras: é o que os testes cobrem.
  */
@@ -18,8 +20,8 @@
 import type { Lead, Sale } from '../../types'
 import { calcSaleCommissions } from '../../types'
 import { divisao, ISS, PCT_PADRAO, SIMPLES } from '../leads/comissao'
-import { contagemVazia, contar, SEM } from '../leads/safra'
-import type { Contagem, FunilSafra } from '../leads/safra'
+import { contagemVazia, contar, cruzamentos, SEM } from '../leads/safra'
+import type { Contagem, Cruzamento, FunilSafra } from '../leads/safra'
 
 // ── Período ───────────────────────────────────────────────────────────────────
 
@@ -150,8 +152,10 @@ export function etapaAberta(stage: Lead['funnelStage']): EtapaAberta | null {
 export interface Recorte {
   chave: string
   nome: string
-  /** conversão por safra no período */
+  /** conversão por safra no período (pelo produto de entrada) */
   safra: Contagem
+  /** vendas cruzadas: para onde foram os leads deste recorte, de onde vieram as laterais */
+  cruzadas: { para: Cruzamento[]; de: Cruzamento[] }
   /** leads em aberto agora, por etapa */
   aberto: Record<EtapaAberta, { n: number; vgv: number }>
   pipeline: Dinheiro & { n: number }
@@ -161,7 +165,7 @@ export interface Recorte {
 function recorteVazio(chave: string, nome: string): Recorte {
   const e = () => ({ n: 0, vgv: 0 })
   return {
-    chave, nome, safra: contagemVazia(),
+    chave, nome, safra: contagemVazia(), cruzadas: { para: [], de: [] },
     aberto: { chegada: e(), atendimento: e(), visita: e(), proposta: e() },
     pipeline: { ...dinheiroVazio(), n: 0 },
     vendido: { ...dinheiroVazio(), n: 0 },
@@ -222,14 +226,18 @@ export function montarFunis(e: EntradaFunis): Funis {
   if (e.safra) {
     const filtroCorretor = e.corretor
     geral.safra = contar(e.safra, { corretor: filtroCorretor, produto: null })
+    geral.cruzadas = cruzamentos(e.safra, { corretor: filtroCorretor, produto: null })
     for (const p of e.safra.produtos) {
-      doProduto(p.chave, p.nome).safra = contar(e.safra, { corretor: filtroCorretor, produto: p.chave })
+      const r = doProduto(p.chave, p.nome)
+      r.safra = contar(e.safra, { corretor: filtroCorretor, produto: p.chave })
+      r.cruzadas = cruzamentos(e.safra, { corretor: filtroCorretor, produto: p.chave })
     }
     for (const c of e.safra.corretores) {
       if (filtroCorretor !== null && c.chave !== filtroCorretor) continue
       const r = doCorretor(c.chave === SEM ? null : c.chave)
       r.nome = c.chave === SEM ? 'Sem corretor' : e.nomeDoCorretor(c.chave)
       r.safra = contar(e.safra, { corretor: c.chave, produto: null })
+      r.cruzadas = cruzamentos(e.safra, { corretor: c.chave, produto: null })
     }
   }
 
@@ -250,7 +258,10 @@ export function montarFunis(e: EntradaFunis): Funis {
     }
   }
 
-  // 3. Vendido — vendas registradas no período.
+  // 3. Vendido — vendas registradas no período, no produto VENDIDO: o
+  //    lançamento gravado na venda; sem ele, o produto do lead; sem lead, o
+  //    nome digitado contra os produtos conhecidos.
+  const chaveDoLancamento = new Map(e.lancamentos.map(d => [d.id, chaveProduto(d.nome)]))
   const produtoDoLeadDaVenda = new Map<string, string>()
   for (const l of e.leads) if (l.saleId) produtoDoLeadDaVenda.set(l.saleId, chaveProduto(l.propertyName))
   const candidatos: CandidatoProduto[] = [
@@ -264,7 +275,8 @@ export function montarFunis(e: EntradaFunis): Funis {
     if (!naVisao(s.brokerId)) continue
     const share = e.shareDe(s.brokerId)
     const d = dinheiroDaVenda(s, share != null && share > 0)
-    const chave = produtoDoLeadDaVenda.get(s.id) ?? produtoDaVenda(s.propertyName, candidatos)
+    const chave = (s.developmentId && chaveDoLancamento.get(s.developmentId))
+      || produtoDoLeadDaVenda.get(s.id) || produtoDaVenda(s.propertyName, candidatos)
     const nome = chave === OUTROS ? 'Outros imóveis' : produtos.get(chave)?.nome ?? nomeDoLancamento.get(chave) ?? s.propertyName
     for (const r of [geral, doProduto(chave, nome), doCorretor(s.brokerId)]) {
       r.vendido.n += 1
@@ -296,6 +308,8 @@ function juntar(a: Recorte, b: Recorte) {
   const s = a.safra, t = b.safra
   s.recebidos += t.recebidos; s.atendimento += t.atendimento; s.visita += t.visita
   s.proposta += t.proposta; s.venda += t.venda; s.descartados += t.descartados; s.emAndamento += t.emAndamento
+  s.vendaPropria += t.vendaPropria; s.vendaCruzada += t.vendaCruzada; s.vindas += t.vindas
+  a.cruzadas = { para: somarCruz(a.cruzadas.para, b.cruzadas.para), de: somarCruz(a.cruzadas.de, b.cruzadas.de) }
   for (const k of Object.keys(s.parouEm) as (keyof Contagem['parouEm'])[]) {
     s.parouEm[k].ativos += t.parouEm[k].ativos
     s.parouEm[k].descartados += t.parouEm[k].descartados
@@ -303,6 +317,16 @@ function juntar(a: Recorte, b: Recorte) {
   for (const k of ETAPAS_ABERTAS) { a.aberto[k].n += b.aberto[k].n; a.aberto[k].vgv += b.aberto[k].vgv }
   a.pipeline.n += b.pipeline.n; somarDinheiro(a.pipeline, b.pipeline)
   a.vendido.n += b.vendido.n; somarDinheiro(a.vendido, b.vendido)
+}
+
+function somarCruz(a: Cruzamento[], b: Cruzamento[]): Cruzamento[] {
+  const m = new Map(a.map(x => [x.chave, { ...x }]))
+  for (const x of b) {
+    const y = m.get(x.chave)
+    if (y) y.n += x.n
+    else m.set(x.chave, { ...x })
+  }
+  return [...m.values()].sort((p, q) => q.n - p.n || p.nome.localeCompare(q.nome, 'pt-BR'))
 }
 
 /** Mais dinheiro primeiro (vendido + em andamento), depois mais leads; o resto por último. */

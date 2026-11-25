@@ -26,6 +26,11 @@ import { JOIA } from '../../lib/paletaJoia'
  * `preencher` (TV do Pulse, 24/11/2026): o funil enche a caixa nas duas
  * direções — a altura das fatias e a letra saem da altura disponível. Sem
  * folga para nome em cima e número embaixo, os dois vão para a mesma linha.
+ *
+ * `cruzada` (24/11/2026, migração 113): parte da fatia que fechou OUTRO
+ * produto. A fatia se divide — o próprio produto na cor cheia à esquerda, a
+ * venda cruzada clara e hachurada à direita — e o número continua o total.
+ * A legenda com os nomes fica com quem usa o funil.
  */
 
 export interface EtapaFunil {
@@ -34,6 +39,8 @@ export interface EtapaFunil {
   n: number
   /** a cor da etapa na paleta joia */
   joia: LeadFunnelStage
+  /** quantos desta etapa fecharam outro produto (só na de vendas) */
+  cruzada?: number
 }
 
 /** Mistura com branco: 0 = a cor, 1 = branco. */
@@ -143,11 +150,23 @@ export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false, pr
     const y = i * (H + VAO)
     const a = TOPO - i * passo, b = TOPO - (i + 1) * passo
     const pts = [[cx - a / 2, y], [cx + a / 2, y], [cx + b / 2, y + H], [cx - b / 2, y + H]]
-    return { ...e, i, y, a, pontos: pts.map(p => p.join(',')).join(' ') }
+    // Venda cruzada: o pedaço da direita, na proporção, com o corte inclinado
+    // acompanhando as bordas do trapézio.
+    let cruz: string | null = null
+    let corte: [number, number, number, number] | null = null
+    const c = Math.min(e.cruzada ?? 0, e.n)
+    if (c > 0 && e.n > 0) {
+      const q = (e.n - c) / e.n
+      const xt = cx - a / 2 + a * q, xb = cx - b / 2 + b * q
+      cruz = [[xt, y], [cx + a / 2, y], [cx + b / 2, y + H], [xb, y + H]].map(p => p.join(',')).join(' ')
+      corte = [xt, y, xb, y + H]
+    }
+    return { ...e, i, y, a, pontos: pts.map(p => p.join(',')).join(' '), cruz, corte }
   })
 
   const descricao = `${rotulo}: ${etapas.map((e, i) =>
-    `${e.nome} ${e.n.toLocaleString('pt-BR')}${i > 0 ? ` (${pct(e.n, etapas[i - 1].n)} da etapa anterior)` : ''}`).join(', ')}.`
+    `${e.nome} ${e.n.toLocaleString('pt-BR')}${i > 0 ? ` (${pct(e.n, etapas[i - 1].n)} da etapa anterior)` : ''}` +
+    (e.cruzada ? `, das quais ${e.cruzada.toLocaleString('pt-BR')} fecharam outro produto` : '')).join(', ')}.`
 
   return (
     <div ref={caixa} className={preencher ? 'relative w-full h-full min-h-0' : 'w-full'}>
@@ -166,12 +185,22 @@ export function FunilJoia({ etapas, compacto = false, rotulo, escuro = false, pr
                 </linearGradient>
               )
             })}
+            <pattern id={`${id}-hachura`} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="7" stroke="#fff" strokeWidth="2.2" strokeOpacity="0.55" />
+            </pattern>
           </defs>
 
           {fatias.map(f => (
             <g key={f.chave} className="funil-fatia" style={{ animationDelay: `${f.i * 90}ms` }}>
               <polygon points={f.pontos} fill={`url(#${id}-${f.chave})`}
                        stroke={escuro ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.7)'} strokeWidth={1.5} strokeLinejoin="round" />
+              {f.cruz && f.corte && (
+                <>
+                  <polygon points={f.cruz} fill="#fff" fillOpacity={0.38} />
+                  <polygon points={f.cruz} fill={`url(#${id}-hachura)`} />
+                  <line x1={f.corte[0]} y1={f.corte[1]} x2={f.corte[2]} y2={f.corte[3]} stroke="#fff" strokeWidth={2} />
+                </>
+              )}
               <text x={umaLinha ? cx - 10 : cx} y={yNome(f.y)} textAnchor={umaLinha ? 'end' : 'middle'}
                     style={{ fill: 'rgba(255,255,255,0.95)', fontSize: fsNome, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                 {f.nome}

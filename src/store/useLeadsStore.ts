@@ -10,6 +10,7 @@ import { useLeadInteractionsStore } from './useLeadInteractionsStore'
 import { useRealtimeStatusStore } from './useRealtimeStatusStore'
 import { useSalesStore } from './useSalesStore'
 import { usePropertiesStore } from './usePropertiesStore'
+import { useDevelopmentsStore } from './useDevelopmentsStore'
 import toast from 'react-hot-toast'
 
 interface LeadsStore {
@@ -30,7 +31,14 @@ interface LeadsStore {
   setStage: (id: string, stage: LeadFunnelStage) => Promise<void>
   advanceFollowup: (id: string) => Promise<void>
   // Encerra um lead ganho: cria a venda em sales e tira o lead do funil ativo
-  concludeSale: (id: string, opts: { value: number; date: string }) => Promise<void>
+  concludeSale: (id: string, opts: {
+    value: number
+    date: string
+    /** o lançamento que foi vendido (pode não ser o de entrada: venda cruzada); null = fora da carteira */
+    developmentId: string | null
+    /** fora da carteira: o nome do imóvel vendido */
+    propertyName?: string
+  }) => Promise<void>
   discard: (id: string, reason: LeadDiscardReason) => Promise<void>
   restore: (id: string) => Promise<void>
   convertToContact: (id: string, contactId: string) => Promise<void>
@@ -476,7 +484,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
 
   // Banco primeiro: garante contato → cria a venda em sales → encerra o lead.
   // Lead ganho sai do funil ativo (closedAt) e vira faturamento real (saleId).
-  concludeSale: async (id, { value, date }) => {
+  concludeSale: async (id, { value, date, developmentId, propertyName: nomeLivre }) => {
     const now = new Date().toISOString()
     const lead = get().leads.find(l => l.id === id)
     if (!lead) return
@@ -499,11 +507,20 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       }
     }
 
-    // Nome do produto: imóvel cadastrado, nome livre ou o próprio lead
-    const property = lead.propertyId
+    // Produto vendido: o lançamento escolhido (migração 113 — pode ser outro
+    // que não o de entrada); fora da carteira, o imóvel do lead ou o nome
+    // digitado. Nunca o nome do cliente (era o que acontecia sem produto).
+    const lancamento = developmentId
+      ? useDevelopmentsStore.getState().developments.find(d => d.id === developmentId)
+      : undefined
+    const property = !developmentId && lead.propertyId
       ? usePropertiesStore.getState().properties.find(p => p.id === lead.propertyId)
       : undefined
-    const propertyName = property?.name ?? lead.propertyName ?? lead.name
+    const propertyName = lancamento?.name ?? nomeLivre?.trim() ?? property?.name ?? lead.propertyName?.trim() ?? ''
+    if (!propertyName) {
+      toast.error('Informe o produto vendido.')
+      throw new Error('produto vendido vazio')
+    }
 
     // Cria o registro de venda (entra no VGL do mês da data). Espera o banco:
     // o lead abaixo referencia a venda por FK.
@@ -512,12 +529,15 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     try {
       sale = await sales.create({
         clientId: contactId,
-        propertyId: lead.propertyId,
+        propertyId: lancamento ? undefined : property?.id,
         propertyName,
+        developmentId: lancamento?.id,
+        // a tipologia do lead só vale se for do mesmo lançamento
+        developmentUnitId: lancamento && lancamento.id === lead.developmentId ? lead.developmentUnitId : undefined,
         date,
         value,
-        type: 'off_plan',
-        commissionPct: 5,
+        type: lancamento?.status === 'pronto' || (!lancamento && property) ? 'ready' : 'off_plan',
+        commissionPct: lancamento?.commissionPct ?? 5,
         brokerPct: 40,
         brokerId: lead.brokerId ?? undefined,
       })

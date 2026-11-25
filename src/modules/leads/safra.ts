@@ -8,6 +8,12 @@
  *
  * Safra = os leads que CHEGARAM no período, e até onde foram até hoje.
  * Lead descartado conta. Crédito para o dono atual do lead.
+ *
+ * Produto = o de ENTRADA (o anúncio que trouxe o lead — migração 113). Quem
+ * chegou a Venda traz também o produto FECHADO: a venda se divide em própria
+ * (fechou o produto de entrada) e cruzada (fechou outro), e o produto que
+ * recebeu a venda cruzada a vê como "vinda de outra campanha" — fora do
+ * funil dele, porque esse lead nunca passou pelo topo.
  */
 
 import { inicioDoBalde, proximoBalde, taxa } from './conversao'
@@ -31,8 +37,11 @@ export interface FunilSafraBruto {
   bucket: Balde
   corretores: { id: string | null; nome: string }[]
   produtos: { chave: string | null; nome: string }[]
-  /** [corretor, produto, balde, etapa mais alta 0–5, descartado 0/1, leads] */
-  cubo: [number, number, string, number, number, number][]
+  /**
+   * [corretor, produto de entrada, balde, etapa mais alta 0–5, descartado 0/1,
+   *  leads, produto fechado (-1 = não chegou a Venda)]
+   */
+  cubo: [number, number, string, number, number, number, number?][]
   /** [corretor, produto, motivo, leads] */
   motivos: [number, number, string, number][]
   /** [corretor, produto, dias da chegada até a 1ª visita] */
@@ -79,6 +88,15 @@ export interface Contagem {
   visita: number
   proposta: number
   venda: number
+  /** vendas que fecharam o próprio produto de entrada (ou sem produto fechado conhecido) */
+  vendaPropria: number
+  /** vendas que fecharam OUTRO produto */
+  vendaCruzada: number
+  /**
+   * Só com filtro de produto: vendas DESTE produto que vieram de leads de
+   * outras campanhas — a entrada lateral, fora do funil.
+   */
+  vindas: number
   descartados: number
   /** ainda vivos e sem venda */
   emAndamento: number
@@ -89,17 +107,27 @@ export interface Contagem {
 export function contagemVazia(): Contagem {
   const p = () => ({ ativos: 0, descartados: 0 })
   return {
-    recebidos: 0, atendimento: 0, visita: 0, proposta: 0, venda: 0, descartados: 0, emAndamento: 0,
+    recebidos: 0, atendimento: 0, visita: 0, proposta: 0, venda: 0,
+    vendaPropria: 0, vendaCruzada: 0, vindas: 0, descartados: 0, emAndamento: 0,
     parouEm: { chegada: p(), atendimento: p(), visita: p(), proposta: p() },
   }
 }
 
-function somar(c: Contagem, alc: number, desc: number, n: number) {
+/** A venda desta linha do cubo fechou outro produto que não o de entrada? */
+function cruzada(pi: number, alc: number, fi: number | undefined): boolean {
+  return alc >= 5 && fi !== undefined && fi >= 0 && fi !== pi
+}
+
+function somar(c: Contagem, alc: number, desc: number, n: number, cruz = false) {
   c.recebidos += n
   if (alc >= 2) c.atendimento += n
   if (alc >= 3) c.visita += n
   if (alc >= 4) c.proposta += n
-  if (alc >= 5) c.venda += n
+  if (alc >= 5) {
+    c.venda += n
+    if (cruz) c.vendaCruzada += n
+    else c.vendaPropria += n
+  }
   if (desc) c.descartados += n
   if (alc < 5) {
     if (!desc) c.emAndamento += n
@@ -111,8 +139,45 @@ function somar(c: Contagem, alc: number, desc: number, n: number) {
 export function contar(f: FunilSafra, filtro: Filtro = SEM_FILTRO): Contagem {
   const ok = passa(f, filtro)
   const c = contagemVazia()
-  for (const [ci, pi, , alc, d, n] of f.cubo) if (ok(ci, pi)) somar(c, alc, d, n)
+  for (const [ci, pi, , alc, d, n, fi] of f.cubo) if (ok(ci, pi)) somar(c, alc, d, n, cruzada(pi, alc, fi))
+  // Entrada lateral: leads de outras campanhas que fecharam este produto.
+  const p = indice(f.produtos, filtro.produto)
+  if (p !== null && p >= 0) {
+    const doCorretor = passa(f, { corretor: filtro.corretor, produto: null })
+    for (const [ci, pi, , alc, , n, fi] of f.cubo) {
+      if (alc >= 5 && fi === p && pi !== p && doCorretor(ci, pi)) c.vindas += n
+    }
+  }
   return c
+}
+
+/** Um produto e quantas vendas, para o "fecharam outro produto" e o "vindas de". */
+export interface Cruzamento { chave: string; nome: string; n: number }
+
+/**
+ * As vendas cruzadas do recorte, por produto:
+ *   para — os produtos que os leads DESTE recorte fecharam no lugar do de entrada;
+ *   de   — com filtro de produto, as campanhas de onde vieram as vendas laterais.
+ * Mais vendas primeiro.
+ */
+export function cruzamentos(f: FunilSafra, filtro: Filtro = SEM_FILTRO): { para: Cruzamento[]; de: Cruzamento[] } {
+  const ok = passa(f, filtro)
+  const para = new Map<number, number>()
+  const de = new Map<number, number>()
+  for (const [ci, pi, , alc, , n, fi] of f.cubo) {
+    if (ok(ci, pi) && cruzada(pi, alc, fi)) para.set(fi!, (para.get(fi!) ?? 0) + n)
+  }
+  const p = indice(f.produtos, filtro.produto)
+  if (p !== null && p >= 0) {
+    const doCorretor = passa(f, { corretor: filtro.corretor, produto: null })
+    for (const [ci, pi, , alc, , n, fi] of f.cubo) {
+      if (alc >= 5 && fi === p && pi !== p && doCorretor(ci, pi)) de.set(pi, (de.get(pi) ?? 0) + n)
+    }
+  }
+  const lista = (m: Map<number, number>) => [...m.entries()]
+    .map(([i, n]) => ({ chave: f.produtos[i]?.chave ?? SEM, nome: f.produtos[i]?.nome ?? 'Sem produto', n }))
+    .sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome, 'pt-BR'))
+  return { para: lista(para), de: lista(de) }
 }
 
 export function alcancou(c: Contagem, e: EtapaSafra | 'chegada'): number {
@@ -153,10 +218,10 @@ export function ladoALado(f: FunilSafra, dim: 'corretor' | 'produto', filtro: Fi
   const itens = dim === 'corretor' ? f.corretores : f.produtos
   const fixo = dim === 'corretor' ? indice(f.produtos, filtro.produto) : indice(f.corretores, filtro.corretor)
   const acc = itens.map(() => contagemVazia())
-  for (const [ci, pi, , alc, d, n] of f.cubo) {
+  for (const [ci, pi, , alc, d, n, fi] of f.cubo) {
     const [meu, outro] = dim === 'corretor' ? [ci, pi] : [pi, ci]
     if (fixo !== null && fixo !== outro) continue
-    somar(acc[meu], alc, d, n)
+    somar(acc[meu], alc, d, n, cruzada(pi, alc, fi))
   }
   return itens
     .map((it, i) => ({ chave: it.chave, nome: it.nome, c: acc[i] }))
@@ -178,10 +243,11 @@ export function matriz(f: FunilSafra): Matriz {
   const cel = Array.from({ length: nc * np }, contagemVazia)
   const lin = Array.from({ length: nc }, contagemVazia)
   const col = Array.from({ length: np }, contagemVazia)
-  for (const [ci, pi, , alc, d, n] of f.cubo) {
-    somar(cel[ci * np + pi], alc, d, n)
-    somar(lin[ci], alc, d, n)
-    somar(col[pi], alc, d, n)
+  for (const [ci, pi, , alc, d, n, fi] of f.cubo) {
+    const cruz = cruzada(pi, alc, fi)
+    somar(cel[ci * np + pi], alc, d, n, cruz)
+    somar(lin[ci], alc, d, n, cruz)
+    somar(col[pi], alc, d, n, cruz)
   }
   const ic = new Map(f.corretores.map((c, i) => [c.chave, i]))
   const ip = new Map(f.produtos.map((p, i) => [p.chave, i]))

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  SEM, contar, ladoALado, matriz, motivosSafra, normalizar, passosSafra, serieSafra, tempoAteVisita,
+  SEM, contar, cruzamentos, ladoALado, matriz, motivosSafra, normalizar, passosSafra, serieSafra, tempoAteVisita,
 } from '../modules/leads/safra'
 import type { FunilSafraBruto } from '../modules/leads/safra'
 
@@ -102,5 +102,63 @@ describe('safra · tempo, saídas e série', () => {
     expect(t.mediana).toBe(3)
     expect(t.faixas.map(x => x.n)).toEqual([1, 3, 1, 0, 1])
     expect(tempoAteVisita(f, { corretor: 'ana', produto: null }).mediana).toBe(3.5)
+  })
+})
+
+// Venda cruzada (migração 113): o lead entra por um produto e fecha outro.
+describe('safra · venda cruzada', () => {
+  // San Pellegrino (0), Porto Velas (1), Itajaí Urban (2)
+  const cruzado = normalizar({
+    start: null, end: null, bucket: 'month',
+    corretores: [{ id: 'dio', nome: 'Dionata' }, { id: 'raf', nome: 'Rafael' }],
+    produtos: [
+      { chave: 'lago di san pellegrino', nome: 'Lago di San Pellegrino' },
+      { chave: 'porto velas', nome: 'Porto Velas' },
+      { chave: 'itajaí urban club', nome: 'Itajaí Urban Club' },
+    ],
+    cubo: [
+      // [corretor, entrada, balde, etapa, descartado, leads, fechado]
+      [0, 0, '2026-08-01', 1, 0, 300, -1],  // San Pellegrino: 300 no 1º contato
+      [0, 0, '2026-08-01', 5, 0, 2, 0],     //                 2 fecharam San Pellegrino
+      [0, 0, '2026-09-01', 5, 0, 3, 1],     //                 3 fecharam Porto Velas
+      [1, 1, '2026-09-01', 5, 0, 1, 1],     // Porto Velas: 1 fechou Porto Velas
+      [0, 2, '2026-07-01', 5, 0, 1, 1],     // Itajaí Urban: 1 fechou Porto Velas
+      [1, 2, '2026-06-01', 5, 0, 1, 2],     //               1 fechou Itajaí Urban
+      [1, 1, '2026-10-01', 5, 0, 1],        // linha antiga, sem a 7ª coluna: própria
+    ],
+    motivos: [], visitas: [], historySince: null,
+  })
+
+  it('o funil do produto de entrada divide a venda em própria e cruzada', () => {
+    const c = contar(cruzado, { corretor: null, produto: 'lago di san pellegrino' })
+    expect(c).toMatchObject({ recebidos: 305, venda: 5, vendaPropria: 2, vendaCruzada: 3, vindas: 0 })
+  })
+
+  it('o produto que recebeu a venda cruzada vê as vindas de fora, fora do funil', () => {
+    const c = contar(cruzado, { corretor: null, produto: 'porto velas' })
+    expect(c).toMatchObject({ recebidos: 2, venda: 2, vendaPropria: 2, vendaCruzada: 0, vindas: 4 })
+    const x = cruzamentos(cruzado, { corretor: null, produto: 'porto velas' })
+    expect(x.de).toEqual([
+      { chave: 'lago di san pellegrino', nome: 'Lago di San Pellegrino', n: 3 },
+      { chave: 'itajaí urban club', nome: 'Itajaí Urban Club', n: 1 },
+    ])
+    expect(x.para).toEqual([])
+  })
+
+  it('as vindas respeitam o filtro de corretor', () => {
+    expect(contar(cruzado, { corretor: 'raf', produto: 'porto velas' }).vindas).toBe(0)
+    expect(contar(cruzado, { corretor: 'dio', produto: 'porto velas' }).vindas).toBe(4)
+  })
+
+  it('na imobiliária inteira: total, cruzadas e para onde foram', () => {
+    const c = contar(cruzado)
+    expect(c).toMatchObject({ venda: 9, vendaPropria: 5, vendaCruzada: 4, vindas: 0 })
+    expect(cruzamentos(cruzado).para).toEqual([{ chave: 'porto velas', nome: 'Porto Velas', n: 4 }])
+  })
+
+  it('lado a lado e matriz também separam a cruzada', () => {
+    const porProduto = ladoALado(cruzado, 'produto', todos)
+    expect(porProduto.find(p => p.chave === 'lago di san pellegrino')!.c).toMatchObject({ vendaPropria: 2, vendaCruzada: 3 })
+    expect(matriz(cruzado).totalColuna('itajaí urban club')).toMatchObject({ vendaPropria: 1, vendaCruzada: 1 })
   })
 })

@@ -381,6 +381,9 @@ export interface Sale {
   clientId: string
   propertyId?: string
   propertyName: string
+  /** o lançamento da carteira que foi vendido (migração 113); fora da carteira, vazio */
+  developmentId?: string
+  developmentUnitId?: string
   date: string
   value: number
   type: SaleType

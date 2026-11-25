@@ -18,10 +18,10 @@ import { Grafico, eixoCategoria, eixoValor } from '../../components/charts/Grafi
 import type { CoresGrafico } from '../../components/charts/Grafico'
 import { fmtDataCurta, fmtTaxa, montarRecorte, rotuloBalde, slugLegivel, taxa } from './conversao'
 import {
-  ETAPAS_SAFRA, NOME_ETAPA, SEM, contar, ladoALado, matriz, motivosSafra, normalizar,
+  ETAPAS_SAFRA, NOME_ETAPA, SEM, contar, cruzamentos, ladoALado, matriz, motivosSafra, normalizar,
   passosSafra, serieSafra, tempoAteVisita,
 } from './safra'
-import type { Contagem, EtapaSafra, Fatia, Filtro, FunilSafra, PontoSafra } from './safra'
+import type { Contagem, Cruzamento, EtapaSafra, Fatia, Filtro, FunilSafra, PontoSafra } from './safra'
 import { FunilDesenhado, TOM, TOM_DESCARTE } from './FunilDesenhado'
 import type { ChaveFatia, FatiaDesenho } from './FunilDesenhado'
 
@@ -104,6 +104,7 @@ export function LeadConversionTab() {
   const nomeProduto = (k: string | null) => (k === null ? null : dados?.produtos.find(p => p.chave === k)?.nome ?? 'Produto')
 
   const total = useMemo(() => (dados ? contar(dados, filtro) : null), [dados, filtro])
+  const cruz = useMemo(() => (dados ? cruzamentos(dados, filtro) : null), [dados, filtro])
   const serie = useMemo(() => (dados ? serieSafra(dados, filtro, recorte.inicio, recorte.fim) : []), [dados, filtro, recorte])
 
   const opcoesProduto = useMemo(() => dados
@@ -161,7 +162,7 @@ export function LeadConversionTab() {
         </div>
       )}
 
-      {total && total.recebidos > 0 && <NumerosDaSafra c={total} />}
+      {total && total.recebidos > 0 && <NumerosDaSafra c={total} cruz={cruz} porProduto={produto !== null} />}
 
       <EstadoTela
         carregando={carregando && !dados}
@@ -265,7 +266,12 @@ function Vivo({ valor }: { valor: number }) {
  * isso é dos leads e uma barra na cor da etapa. O último é a conversão em
  * venda — o único dourado da tela.
  */
-function NumerosDaSafra({ c }: { c: Contagem }) {
+function NumerosDaSafra({ c, cruz, porProduto }: {
+  c: Contagem
+  cruz: { para: Cruzamento[]; de: Cruzamento[] } | null
+  porProduto: boolean
+}) {
+  const lista = (xs: Cruzamento[]) => xs.map(x => `${x.nome} ${x.n}`).join(' · ')
   const itens: { chave: ChaveFatia | 'descarte'; rotulo: string; valor: number; nota: string }[] = [
     { chave: 'chegada',     rotulo: 'Leads',       valor: c.recebidos,   nota: `${n(c.emAndamento)} em andamento` },
     { chave: 'atendimento', rotulo: 'Atendidos',   valor: c.atendimento, nota: `${pct(c.atendimento, c.recebidos)} dos leads` },
@@ -298,6 +304,20 @@ function NumerosDaSafra({ c }: { c: Contagem }) {
           {fmtTaxa(taxa(c.venda, c.recebidos))}
         </p>
         <p className="mt-1.5 text-[12px] text-t4 tabular-nums">{n(c.venda)} {c.venda === 1 ? 'venda' : 'vendas'} de {n(c.recebidos)}</p>
+        {/* Venda cruzada (migração 113): o produto de entrada fica com o funil,
+            mas a tela diz quantas fecharam outro produto e quantas vieram de fora. */}
+        {c.vendaCruzada > 0 && (
+          <p className="mt-1 text-[12px] text-t4 tabular-nums" title={cruz ? lista(cruz.para) : undefined}>
+            {n(c.vendaPropria)} {porProduto ? 'no próprio produto' : 'no produto do anúncio'} · {n(c.vendaCruzada)} em outro
+            {cruz && cruz.para.length > 0 && `: ${lista(cruz.para)}`}
+          </p>
+        )}
+        {c.vindas > 0 && (
+          <p className="mt-1 text-[12px] text-t4 tabular-nums">
+            + {n(c.vindas)} {c.vindas === 1 ? 'vinda' : 'vindas'} de outras campanhas
+            {cruz && cruz.de.length > 0 && `: ${lista(cruz.de)}`}
+          </p>
+        )}
       </div>
     </div>
   )

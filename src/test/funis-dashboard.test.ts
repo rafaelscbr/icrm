@@ -129,4 +129,38 @@ describe('montarFunis', () => {
     expect(f.geral.vendido.n).toBe(0)
     expect(f.porCorretor.map(c => c.chave)).toEqual(['ryan'])
   })
+  it('venda cruzada: vendido vai para o produto vendido, conversão fica no de entrada', () => {
+    const cruz: FunilSafra = {
+      start: null, end: null, bucket: 'month',
+      corretores: [{ chave: 'dio', nome: 'Dionata' }],
+      produtos: [{ chave: 'lago di san pellegrino', nome: 'Lago di San Pellegrino' }, { chave: 'porto velas', nome: 'Porto Velas' }],
+      cubo: [
+        [0, 0, '2026-11-01', 1, 0, 20, -1],
+        [0, 0, '2026-11-01', 5, 0, 1, 0],
+        [0, 0, '2026-11-01', 5, 0, 1, 1],
+      ],
+      motivos: [], visitas: [], historySince: null,
+    }
+    const f = montarFunis({
+      ...base, safra: cruz,
+      lancamentos: [{ id: 'dev-pv', nome: 'Porto Velas' }, { id: 'dev-sp', nome: 'Lago di San Pellegrino' }],
+      leads: [
+        lead({ brokerId: 'dio', funnelStage: 'venda', propertyName: 'Lago di San Pellegrino', saleId: 's1', closedAt: '2026-11-10' }),
+        lead({ brokerId: 'dio', funnelStage: 'venda', propertyName: 'Lago di San Pellegrino', saleId: 's2', closedAt: '2026-11-12' }),
+      ],
+      sales: [
+        venda({ id: 's1', brokerId: 'dio', propertyName: 'San Pelegrino', developmentId: 'dev-sp' }),
+        // o lead continua San Pellegrino, mas a venda é Porto Velas
+        venda({ id: 's2', brokerId: 'dio', propertyName: 'Porto Velas', developmentId: 'dev-pv' }),
+      ],
+    })
+    const sp = f.porProduto.find(p => p.chave === 'lago di san pellegrino')!
+    const pv = f.porProduto.find(p => p.chave === 'porto velas')!
+    expect(sp.safra).toMatchObject({ venda: 2, vendaPropria: 1, vendaCruzada: 1 })
+    expect(sp.cruzadas.para).toEqual([{ chave: 'porto velas', nome: 'Porto Velas', n: 1 }])
+    expect(sp.vendido.n).toBe(1)
+    expect(pv.safra).toMatchObject({ recebidos: 0, venda: 0, vindas: 1 })
+    expect(pv.cruzadas.de).toEqual([{ chave: 'lago di san pellegrino', nome: 'Lago di San Pellegrino', n: 1 }])
+    expect(pv.vendido.n).toBe(1)
+  })
 })
