@@ -301,10 +301,6 @@ function LeadCard({
             )}
             {property ? property.name : (lead.propertyName ?? 'Sem produto')}
           </p>
-          {/* E-mail que o lead preencheu no formulário (Rafael, 25/11/2026) */}
-          {!dense && lead.email && (
-            <p className="mt-0.5 text-[12px] text-t4 truncate" title={lead.email}>{lead.email}</p>
-          )}
         </div>
         {lead.averageTicket ? (
           <div className="flex-shrink-0 text-right">

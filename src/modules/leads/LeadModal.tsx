@@ -7,7 +7,7 @@ import {
   StickyNote, PhoneCall,
   ListPlus, Loader2, Sparkles, Smartphone, Globe, Handshake,
   Megaphone, MapPin, Phone, Mail, Home, Users, ArrowRight,
-  RefreshCw, BadgeCheck,
+  RefreshCw, BadgeCheck, Copy,
 } from 'lucide-react'
 import { Lead, LeadDiscardReason, LeadFunnelStage, LeadInteractionType, MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
@@ -453,10 +453,27 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               {lead.name}
             </h2>
 
+            {/* Telefone com o botão de copiar e, embaixo, o e-mail que o lead
+                preencheu no formulário (Rafael, 25/11/2026) */}
+            <div className="mt-2 flex flex-col gap-0.5">
+              <div className="flex items-center gap-1 min-w-0">
+                <a href={`tel:${telefone}`} className="text-[14px] text-t2 hover:text-t1 tabular-nums" aria-label={`Ligar para ${lead.name}`}>
+                  {formatPhone(telefone)}
+                </a>
+                <BotaoCopiar valor={telefone} rotulo="telefone" />
+              </div>
+              {lead.email && (
+                <div className="flex items-center gap-1 min-w-0">
+                  <Mail size={13} strokeWidth={1.8} className="text-t4 shrink-0" aria-hidden />
+                  <a href={`mailto:${lead.email}`} className="text-[13.5px] text-t3 hover:text-t1 truncate" title={lead.email}>
+                    {lead.email}
+                  </a>
+                  <BotaoCopiar valor={lead.email} rotulo="e-mail" />
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center gap-x-3 gap-y-1.5 mt-2 flex-wrap">
-              <a href={`tel:${telefone}`} className="text-[14px] text-t2 hover:text-t1 tabular-nums" aria-label={`Ligar para ${lead.name}`}>
-                {formatPhone(telefone)}
-              </a>
 
               {/* Corretor responsável e transferência — ver TransferirLead */}
               {(brokerName || isAdmin) && (
@@ -936,4 +953,47 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
       {showTaskForm && <TaskForm isOpen={showTaskForm} onClose={() => setShowTaskForm(false)} defaultContactId={lead.contactId} defaultLeadId={lead.id} />}
     </>
   , document.body)
+}
+
+/**
+ * Copia o texto. Primeiro pela API do navegador; se ela for negada (navegador
+ * embutido, página sem foco), pelo jeito antigo: um campo escondido + copiar.
+ */
+async function copiarTexto(texto: string) {
+  try {
+    await navigator.clipboard.writeText(texto)
+    return
+  } catch { /* cai no jeito antigo */ }
+  const campo = document.createElement('textarea')
+  campo.value = texto
+  campo.setAttribute('readonly', '')
+  campo.style.position = 'fixed'
+  campo.style.opacity = '0'
+  document.body.appendChild(campo)
+  campo.select()
+  const ok = document.execCommand('copy')
+  document.body.removeChild(campo)
+  if (!ok) throw new Error('cópia negada')
+}
+
+/** Copia para a área de transferência e mostra o "ok" por um instante. */
+function BotaoCopiar({ valor, rotulo }: { valor: string; rotulo: string }) {
+  const [copiou, setCopiou] = useState(false)
+  async function copiar() {
+    try {
+      await copiarTexto(valor)
+      setCopiou(true)
+      toast.success(`${rotulo[0].toUpperCase()}${rotulo.slice(1)} copiado`)
+      setTimeout(() => setCopiou(false), 1500)
+    } catch {
+      toast.error(`Não consegui copiar o ${rotulo}`)
+    }
+  }
+  return (
+    <button type="button" onClick={copiar} title={`Copiar ${rotulo}`} aria-label={`Copiar ${rotulo}`}
+            className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full text-t4 hover:text-t1 hover:bg-s2 transition-colors cursor-pointer
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40">
+      {copiou ? <Check size={14} strokeWidth={2} className="text-success" aria-hidden /> : <Copy size={14} strokeWidth={1.8} aria-hidden />}
+    </button>
+  )
 }
