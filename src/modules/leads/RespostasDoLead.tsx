@@ -1,4 +1,4 @@
-import type { Lead } from '../../types'
+import type { Lead, LeadProfileField } from '../../types'
 import { formatDateShort } from '../../lib/formatters'
 import type { PerfilDoLead } from './useLeadProfile'
 import { resumoPrimeiroContato } from './primeiroContato'
@@ -38,22 +38,38 @@ export function RespostasDoLead({ lead, perfil }: { lead: Lead; perfil: PerfilDo
           <span className="min-w-0 text-[12px] text-t4 truncate">{ultimo.formName} · {formatDateShort(ultimo.at)}</span>
         )}
       </div>
-      <dl className="flex flex-col gap-3">
+      {/* Uma linha por resposta: rótulo curto à esquerda, resposta à direita.
+          A pergunta inteira fica no passar do mouse. */}
+      <dl className="grid grid-cols-[minmax(0,9.5rem)_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13.5px] leading-snug">
         {respostas.map((a, i) => (
-          <div key={i}>
-            <dt className="text-[12.5px] text-t4 leading-snug">{primeiraMaiuscula(a.question)}</dt>
-            <dd className="text-[14px] text-t1 leading-snug mt-0.5">{primeiraMaiuscula(a.raw)}</dd>
+          <div key={i} className="contents">
+            <dt className="text-t4 truncate" title={primeiraMaiuscula(a.question)}>{rotuloCurto(a.field, a.question)}</dt>
+            <dd className="text-t1">{primeiraMaiuscula(a.raw)}</dd>
           </div>
         ))}
         {contato && (
-          <div>
-            <dt className="text-[12.5px] text-t4">1º contato</dt>
-            <dd className="text-[14px] text-t1 mt-0.5">{contato}</dd>
+          <div className="contents">
+            <dt className="text-t4">1º contato</dt>
+            <dd className="text-t1">{contato}</dd>
           </div>
         )}
       </dl>
     </section>
   )
+}
+
+/** Rótulos curtos dos campos que o sistema reconhece nas perguntas do formulário. */
+const ROTULO_CURTO: Record<LeadProfileField, string> = {
+  objetivo: 'Objetivo', renda: 'Renda', entrada: 'Entrada', fgts: 'FGTS', prazo: 'Quando',
+  tipologia: 'Tipologia', capacidade: 'Entrada e parcelas', interesse_visita: 'Visita',
+  regioes: 'Regiões', tipologias: 'Tipologias', idade: 'Idade',
+}
+
+/** O rótulo do campo; pergunta sem campo reconhecido vira o começo dela. */
+function rotuloCurto(campo: LeadProfileField | null, pergunta: string): string {
+  if (campo) return ROTULO_CURTO[campo] ?? campo
+  const p = primeiraMaiuscula(pergunta.split('?')[0])
+  return p.length > 24 ? `${p.slice(0, 22).trimEnd()}…` : p
 }
 
 function primeiraMaiuscula(s: string) {
