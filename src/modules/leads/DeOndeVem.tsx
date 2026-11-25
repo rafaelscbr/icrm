@@ -13,6 +13,7 @@ const pct = (a: number, b: number) => fmtTaxa(taxa(a, b))
 /** A Souza é de SC: o estado de casa vem destacado. */
 const UF_DE_CASA = 'SC'
 const MAX_LINHAS = 8
+const MAX_UFS = 6
 
 export function DeOndeVem({ total, porDDD }: { total: number; porDDD: { ddd: string; n: number }[] }) {
   if (total === 0) return <p className="text-[13.5px] text-t3 py-2">Nenhum telefone para ler neste recorte.</p>
@@ -20,11 +21,13 @@ export function DeOndeVem({ total, porDDD }: { total: number; porDDD: { ddd: str
   // Por estado
   const porUF = new Map<string, number>()
   for (const d of porDDD) {
-    const uf = d.ddd === DDD_EXTERIOR ? 'Exterior' : regiaoDoDDD(d.ddd)?.uf ?? '?'
+    const uf = d.ddd === DDD_EXTERIOR ? 'Exterior' : regiaoDoDDD(d.ddd)?.uf ?? 'DDD inválido'
     porUF.set(uf, (porUF.get(uf) ?? 0) + d.n)
   }
   const ufs = [...porUF.entries()].sort((a, b) => Number(b[0] === UF_DE_CASA) - Number(a[0] === UF_DE_CASA) || b[1] - a[1])
   const deCasa = porUF.get(UF_DE_CASA) ?? 0
+  const ufsVisiveis = ufs.slice(0, MAX_UFS)
+  const ufsResto = ufs.slice(MAX_UFS)
 
   const linhas = porDDD.slice(0, MAX_LINHAS)
   const resto = porDDD.slice(MAX_LINHAS).reduce((a, d) => a + d.n, 0)
@@ -38,12 +41,18 @@ export function DeOndeVem({ total, porDDD }: { total: number; porDDD: { ddd: str
       </p>
 
       <div className="flex flex-wrap gap-1.5" aria-label="Leads por estado">
-        {ufs.map(([uf, q]) => (
+        {ufsVisiveis.map(([uf, q]) => (
           <span key={uf} className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12.5px] tabular-nums ${
             uf === UF_DE_CASA ? 'bg-brand-fill text-brand-fill-text font-semibold' : 'bg-s2 text-t2'}`}>
             {uf} <span className={uf === UF_DE_CASA ? '' : 'text-t4'}>{n(q)}</span>
           </span>
         ))}
+        {ufsResto.length > 0 && (
+          <span className="inline-flex items-center h-7 px-2.5 rounded-full text-[12.5px] tabular-nums text-t4"
+                title={ufsResto.map(([uf, q]) => `${uf} ${q}`).join(' · ')}>
+            + {n(ufsResto.reduce((a, [, q]) => a + q, 0))} em {ufsResto.length} {ufsResto.length === 1 ? 'outro' : 'outros'}
+          </span>
+        )}
       </div>
 
       <ul className="flex flex-col gap-2.5" aria-label="Leads por região do DDD">

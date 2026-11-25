@@ -18,6 +18,7 @@ import { formatCurrencyRound } from '../../lib/formatters'
 import { supabase } from '../../lib/supabase'
 import { destacar } from '../../components/shared/Destaque'
 import { PrimeiroContatoResumo } from '../leads/PrimeiroContatoResumo'
+import { OrigemEDescartes } from './OrigemEDescartes'
 import { primeiroContato, primeiroContatoPorCorretor, SEM_FILTRO } from '../leads/safra'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -259,6 +260,9 @@ export function DashboardPage() {
           />
         </section>
       )}
+
+      {/* De onde vêm (DDD, migração 115) e por que saem — a mesma safra do funil */}
+      {safra && <OrigemEDescartes safra={safra} corretor={corretor} descricao={descricao} />}
 
       <TaskForm isOpen={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
     </PageLayout>

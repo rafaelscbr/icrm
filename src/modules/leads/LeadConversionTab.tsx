@@ -23,6 +23,7 @@ import {
 } from './safra'
 import { PrimeiroContatoResumo } from './PrimeiroContatoResumo'
 import { DeOndeVem } from './DeOndeVem'
+import { MotivosDeDescarte } from './MotivosDeDescarte'
 import type { Contagem, Cruzamento, EtapaSafra, Fatia, Filtro, FunilSafra, PontoSafra } from './safra'
 import { FunilDesenhado, TOM, TOM_DESCARTE } from './FunilDesenhado'
 import type { ChaveFatia, FatiaDesenho } from './FunilDesenhado'
@@ -225,7 +226,7 @@ export function LeadConversionTab() {
                   <SafraASafra serie={serie} balde={dados.bucket} />
                 </Cartao>
                 <Cartao titulo="Por que *saem*" extra={`${n(total.descartados)} descartados`}>
-                  <PorQueSaem dados={dados} filtro={filtro} total={total} nomeMotivo={nomeMotivo} />
+                  <MotivosDeDescarte lista={motivosSafra(dados, filtro)} descartados={total.descartados} nomeMotivo={nomeMotivo} />
                 </Cartao>
               </div>
             )}
@@ -461,28 +462,6 @@ function AteAVisita({ dados, filtro }: { dados: FunilSafra; filtro: Filtro }) {
         ))}
       </div>
     </div>
-  )
-}
-
-function PorQueSaem({ dados, filtro, total, nomeMotivo }: {
-  dados: FunilSafra; filtro: Filtro; total: Contagem; nomeMotivo: (slug: string) => string
-}) {
-  const lista = motivosSafra(dados, filtro)
-  if (lista.length === 0) return <p className="text-[14px] text-t4 py-2">Nenhum descarte.</p>
-  return (
-    <ul className="flex flex-col gap-3.5">
-      {lista.map(m => (
-        <li key={m.motivo}>
-          <div className="flex items-baseline justify-between gap-3 mb-1.5">
-            <span className="text-[13.5px] text-t2 truncate">{nomeMotivo(m.motivo)}</span>
-            <span className="text-[13px] text-t3 tabular-nums shrink-0"><b className="font-semibold text-t1">{n(m.n)}</b> · {pct(m.n, total.descartados)}</span>
-          </div>
-          <span className="block h-1.5 rounded-full bg-s2 overflow-hidden" aria-hidden>
-            <span className="block h-full rounded-full" style={{ width: `${Math.max(2, (m.n / lista[0].n) * 100)}%`, background: '#9AA6BD' }} />
-          </span>
-        </li>
-      ))}
-    </ul>
   )
 }
 
