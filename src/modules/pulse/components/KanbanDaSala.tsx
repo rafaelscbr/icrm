@@ -147,8 +147,9 @@ function Pilula({ c, dono, agora }: { c: CartaoSala; dono?: Profile; agora: numb
             {venda
               ? <span className="truncate text-t3">{c.produto ?? 'Sem produto'} · vendido há {dias} {dias === 1 ? 'dia' : 'dias'}</span>
               : <>
-                  <span className="kanban-frase shrink-0 text-t2">{estaAtrasado(tom) && <AlarmClock size={11} strokeWidth={2.2} className="inline-block align-[-1px] mr-0.5" aria-hidden />}{contatoCurto(c, agora)}</span>
-                  <span className="truncate text-t4">· {c.produto ?? 'sem produto'}</span>
+                  {/* Com a cor de contato, "Contato há 2 h" saiu: a cor já diz (26/11/2026) */}
+                  {!tom && <span className="kanban-frase shrink-0 text-t2">{contatoCurto(c, agora)}</span>}
+                  <span className="truncate text-t4">{tom ? '' : '· '}{c.produto ?? (tom ? 'Sem produto' : 'sem produto')}</span>
                 </>}
           </p>
         </div>

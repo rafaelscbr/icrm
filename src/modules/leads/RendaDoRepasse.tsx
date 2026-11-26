@@ -18,11 +18,16 @@ import { calcularRepasse } from '../simulador/financiamento/repasse'
  * Também mostra a renda da OBRA (30% do desembolso mensal, já cadastrada na
  * tipologia), porque o que decide é a maior das duas.
  */
-export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
+export function RendaDoRepasse({ lead, tipologia, lancamento, perfil, explicarFalta = false }: {
   lead: Lead
   tipologia?: DevelopmentUnit
   lancamento?: Development
   perfil: LeadProfile | null
+  /**
+   * Na aba Financiamento (26/11/2026) a falta de dado é dita em uma linha;
+   * em outros lugares o bloco simplesmente não aparece.
+   */
+  explicarFalta?: boolean
 }) {
   const { bancos, carregado, carregar } = useParametrosFinanciamento()
   useEffect(() => { void carregar() }, [carregar])
@@ -32,7 +37,13 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
     return linha ? bancoParaCalculo(linha) : null
   }, [bancos])
 
-  if (!lead.developmentUnitId || !tipologia || !carregado || !banco) return null
+  const falta = (texto: string) => explicarFalta
+    ? <p className="text-[13.5px] text-t3 leading-relaxed">{texto}</p>
+    : null
+
+  if (!lead.developmentUnitId || !tipologia) return falta('Escolha a tipologia do lead (em Editar) para calcular se ele passa no banco.')
+  if (!carregado) return falta('Carregando os bancos…')
+  if (!banco) return falta('Nenhum banco ativo. Cadastre um banco no Admin para calcular o financiamento.')
 
   const renda = perfil?.profile.renda
   const idade = perfil?.profile.idade
@@ -47,9 +58,9 @@ export function RendaDoRepasse({ lead, tipologia, lancamento, perfil }: {
 
   // Ficha enxuta (25/11/2026): sem o dado da tabela, o bloco não aparece —
   // um aviso de que falta dado só ocupava espaço.
-  if (!rep) return null
+  if (!rep) return falta(`A tabela de ${tipologia.name} não informa o % financiado no banco.`)
   const { r } = rep
-  if (!r.valido) return null
+  if (!r.valido) return falta(r.erro ?? 'Não foi possível calcular o financiamento com os dados deste lead.')
 
   const rendaObra = tipologia.incomeMin ?? lancamento?.incomeMin
   const exigida = Math.max(r.rendaNecessaria, rendaObra ?? 0)

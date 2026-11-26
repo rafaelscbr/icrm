@@ -30,7 +30,8 @@ describe('Kanban do Pulse', () => {
     const { container } = desenhar([cartao({ id: 'b', nome: 'Kauan', ultimoContatoAt: hAtras(30) })])
     expect(container.querySelector('.pulse-kanban-pilula')?.classList.contains('kanban-tom-24h')).toBe(true)
     expect(screen.getByText(/1 atrasado/)).toBeInTheDocument()
-    expect(screen.getByText('Contato há 1 dia')).toBeInTheDocument()
+    // com a cor, a frase "Contato há…" sai do cartão
+    expect(screen.queryByText('Contato há 1 dia')).toBeNull()
   })
 
   it('a legenda conta as quatro cores; reloginho só no atrasado', () => {

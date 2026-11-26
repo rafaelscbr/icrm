@@ -142,7 +142,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
   const [addingToList,      setAddingToList]      = useState(false)
   // Ciclo interação → tarefa: tipo da última interação registrada nesta sessão
   const [nextStepFor,       setNextStepFor]       = useState<LeadInteractionType | null>(null)
-  const [aba,               setAba]               = useState<'resumo' | 'fluxos' | 'historico'>('resumo')
+  const [aba,               setAba]               = useState<'resumo' | 'financiamento' | 'fluxos' | 'historico'>('resumo')
   // O simulador aberto por cima cuida do próprio Esc — a ficha não pode fechar atrás dele.
   const [simuladorAberto,   setSimuladorAberto]   = useState(false)
 
@@ -507,6 +507,7 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
               onChange={setAba}
               abas={[
                 { value: 'resumo'    as const, label: 'Resumo' },
+                { value: 'financiamento' as const, label: 'Financiamento' },
                 { value: 'fluxos'    as const, label: 'Fluxos' },
                 { value: 'historico' as const, label: 'Histórico', badge: interactions.length || undefined },
               ]}
@@ -648,8 +649,6 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                 {/* O que ele respondeu no formulário + o 1º contato (ficha enxuta, 25/11/2026) */}
                 <RespostasDoLead lead={lead} perfil={perfil} />
 
-                {/* Passa no banco? — renda do repasse, automática pela tipologia (24/11/2026) */}
-                <RendaDoRepasse lead={lead} tipologia={tipologia} lancamento={lancamento} perfil={perfil.data} />
 
                 {/* Observações escritas por gente — o texto automático do Meta fica no Histórico */}
                 {lead.notes && !/^Meta Ads —/.test(lead.notes.trim()) && (
@@ -659,6 +658,12 @@ export function LeadModal({ lead: initialLead, onClose }: LeadModalProps) {
                   </section>
                 )}
               </div>
+            )}
+
+            {/* Passa no banco? — a renda do repasse pela tipologia, na aba própria
+                desde 26/11/2026 (antes ficava no Resumo) */}
+            {aba === 'financiamento' && (
+              <RendaDoRepasse lead={lead} tipologia={tipologia} lancamento={lancamento} perfil={perfil.data} explicarFalta />
             )}
 
             {aba === 'fluxos' && (

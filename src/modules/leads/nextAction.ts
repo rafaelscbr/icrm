@@ -30,6 +30,11 @@ export interface NextAction {
   urgency: ActionUrgency
   /** Detalhe para tooltip/leitor de tela, quando houver. */
   hint?: string
+  /**
+   * O aviso é só tempo sem contato ("Último contato há 26 h"). No cartão com
+   * cor de contato (Followup e Atendimento) ele some: a cor já diz isso.
+   */
+  deContato?: boolean
 }
 
 const DAY = 86_400_000
@@ -98,6 +103,7 @@ export function computeNextAction(lead: Lead, tasks: Task[]): NextAction {
       text: fraseContato(lead),
       urgency: nivel === 'parado' ? 'critical' : 'attention',
       hint: 'Conta WhatsApp aberto pelo funil, ligação registrada e tarefa concluída.',
+      deContato: true,
     }
   }
 

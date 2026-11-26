@@ -217,6 +217,118 @@ function LeadCard({
   // com a próxima ação, porque não é o sistema cobrando: é o lead chamando.
   const aviso = isOverlay ? null : avisoReentrada(lead)
 
+  // Rodapé do cartão (26/11/2026): com a cor de contato, o aviso que só dizia
+  // o tempo sem contato e a frase "Último contato hoje" saíram — a cor já diz.
+  // Sem aviso de verdade (tarefa, SLA), os toques sobem para a linha do Chamar.
+  const avisoReal = !!next && !(tom && (next.urgency === 'none' || next.deContato))
+
+  const tracos = lead.funnelStage === 'followup' ? (
+    <div className="flex items-center gap-1" role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
+      {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
+        <button
+          key={step}
+          type="button"
+          onClick={async e => {
+            e.stopPropagation()
+            const next = lead.followupStep === step ? step - 1 : step
+            try {
+              await update(lead.id, { followupStep: next })
+              toast.success(`${next}ª tentativa marcada`)
+            } catch { /* erro já toastado */ }
+          }}
+          title={`Marcar ${step}ª tentativa`}
+          aria-label={`Marcar ${step}ª tentativa`}
+          // 4px de barra, mas 14px de área de clique (py transparente)
+          className="group/passo flex-1 py-[5px] cursor-pointer focus:outline-none"
+        >
+          <span className={`block h-1 rounded-full transition-colors duration-150
+            ${step <= lead.followupStep
+              ? 'bg-brand group-hover/passo:opacity-70'
+              : 'bg-line-strong group-hover/passo:bg-brand-tint'}
+            group-focus-visible/passo:ring-2 group-focus-visible/passo:ring-brand/50`} />
+        </button>
+      ))}
+      {/* A contagem mora aqui, junto dos traços — antes ia no botão ("· 2ª")
+          e espremia o rótulo na coluna estreita. */}
+      <span className="flex-shrink-0 ml-1 text-[11px] text-t4 tabular-nums"
+            title={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} toques`}>
+        {lead.followupStep}/{MAX_TENTATIVAS_FOLLOWUP}
+      </span>
+    </div>
+  ) : null
+
+  const acao = !isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
+      <button
+        onClick={e => { e.stopPropagation(); onConclude?.() }}
+        className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 text-[12px] font-bold text-brand-fill-text bg-brand-fill hover:bg-brand-fill-hover rounded-full transition-all duration-150 active:scale-[0.97]"
+        title="Concluir a venda e registrar no faturamento"
+      >
+        <Trophy size={12} strokeWidth={1.8} />
+        Concluir venda
+      </button>
+    ) : (
+      <button
+        onClick={handleWhatsApp}
+        className="flex-shrink-0 flex items-center gap-1.5 px-2.5 h-8 text-[12.5px] font-semibold text-success rounded-full
+                   transition-colors duration-150 active:scale-[0.97]
+                   hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)]
+                   focus-visible:bg-success-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
+        title={`${STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'} — abre o WhatsApp e registra o contato`}
+        aria-label={`${STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}: chamar ${displayName} no WhatsApp`}
+      >
+        <MessageCircle size={13} strokeWidth={1.8} className="flex-shrink-0" />
+        Chamar
+      </button>
+    )
+
+  // Atalhos — flutuam no canto do cartão, só no hover/foco do computador. No
+  // toque somem: tocar o cartão abre a ficha, que tem todos eles.
+  const atalhos = (
+    <div className={`absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-full border border-line bg-surface px-1 py-0.5 shadow-[0_6px_16px_-8px_rgba(15,39,89,.35)]
+                     opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 [@media(hover:none)]:hidden`}>
+      <button
+        onClick={async e => {
+          e.stopPropagation()
+          try { await toggleFlag(lead.id) } catch { /* erro já toastado */ }
+        }}
+        className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-brand-tint
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${lead.flagged ? 'text-brand' : 'text-t4 hover:text-brand'}`}
+        title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+        aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
+        aria-pressed={!!lead.flagged}
+      >
+        <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
+      </button>
+      <button
+        onClick={handleWhatsAppOpen}
+        className="w-7 h-7 flex items-center justify-center text-t4 hover:text-success hover:bg-success-bg rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        title="Só abrir WhatsApp, sem registrar"
+        aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
+      >
+        <MessageCircle size={13} strokeWidth={1.6} />
+      </button>
+      <a
+        href={`tel:${displayPhone}`}
+        onClick={e => { e.stopPropagation(); abrirSePrimeiraChamada(lead, 'ligacao') }}
+        className="w-7 h-7 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        title={`Ligar — ${formatPhone(displayPhone)}`}
+        aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
+      >
+        <Phone size={13} strokeWidth={1.6} />
+      </a>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
+      <div
+        {...listeners}
+        {...attributes}
+        onClick={e => e.stopPropagation()}
+        aria-label="Arrastar lead"
+        className="w-6 h-7 flex items-center justify-center text-t4 hover:text-t2 cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical size={13} strokeWidth={1.6} />
+      </div>
+    </div>
+  )
+
   // Progresso no funil: lead(0) → venda(5). Barra no pé do cartão — quanto
   // falta para a comissão (efeito de gradiente de meta: quanto mais perto,
   // mais vontade de empurrar).
@@ -332,7 +444,8 @@ function LeadCard({
       )}
 
       {/* 3 · O que fazer agora · chamada */}
-      <div className="mt-2.5 flex items-center gap-2 min-w-0">
+      {avisoReal ? (
+        <div className="mt-2.5 flex items-center gap-2 min-w-0">
         {next && NextIcon ? (
           <div
             className={`flex-1 min-w-0 flex items-center gap-1.5 ${urgente ? `kanban-aviso rounded-[9px] border px-2 py-1 ${nextStyle!.chip}` : ''}`}
@@ -357,115 +470,20 @@ function LeadCard({
           </div>
         ) : <div className="flex-1" />}
 
-        {!isOverlay && lead.funnelStage === 'venda' && !lead.closedAt ? (
-          <button
-            onClick={e => { e.stopPropagation(); onConclude?.() }}
-            className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 text-[12px] font-bold text-brand-fill-text bg-brand-fill hover:bg-brand-fill-hover rounded-full transition-all duration-150 active:scale-[0.97]"
-            title="Concluir a venda e registrar no faturamento"
-          >
-            <Trophy size={12} strokeWidth={1.8} />
-            Concluir venda
-          </button>
-        ) : (
-          <button
-            onClick={handleWhatsApp}
-            className="flex-shrink-0 flex items-center gap-1.5 px-2.5 h-8 text-[12.5px] font-semibold text-success rounded-full
-                       transition-colors duration-150 active:scale-[0.97]
-                       hover:!bg-success hover:!text-[var(--grad-call-text,#0F1730)]
-                       focus-visible:bg-success-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
-            title={`${STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'} — abre o WhatsApp e registra o contato`}
-            aria-label={`${STAGE_CTA[lead.funnelStage] ?? 'Registrar contato'}: chamar ${displayName} no WhatsApp`}
-          >
-            <MessageCircle size={13} strokeWidth={1.8} className="flex-shrink-0" />
-            Chamar
-          </button>
-        )}
-
-        {/* Atalhos — flutuam no canto do cartão, só no hover/foco do
-            computador. No toque somem: tocar o cartão abre a ficha, que tem
-            todos eles. */}
-        <div className={`absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-full border border-line bg-surface px-1 py-0.5 shadow-[0_6px_16px_-8px_rgba(15,39,89,.35)]
-                         opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 [@media(hover:none)]:hidden`}>
-          <button
-            onClick={async e => {
-              e.stopPropagation()
-              try { await toggleFlag(lead.id) } catch { /* erro já toastado */ }
-            }}
-            className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-brand-tint
-                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${lead.flagged ? 'text-brand' : 'text-t4 hover:text-brand'}`}
-            title={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
-            aria-label={lead.flagged ? 'Remover prioridade' : 'Marcar prioridade máxima'}
-            aria-pressed={!!lead.flagged}
-          >
-            <Star size={13} strokeWidth={1.6} fill={lead.flagged ? 'currentColor' : 'none'} />
-          </button>
-          <button
-            onClick={handleWhatsAppOpen}
-            className="w-7 h-7 flex items-center justify-center text-t4 hover:text-success hover:bg-success-bg rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-            title="Só abrir WhatsApp, sem registrar"
-            aria-label={`Abrir WhatsApp de ${displayName} sem registrar contato`}
-          >
-            <MessageCircle size={13} strokeWidth={1.6} />
-          </button>
-          <a
-            href={`tel:${displayPhone}`}
-            onClick={e => { e.stopPropagation(); abrirSePrimeiraChamada(lead, 'ligacao') }}
-            className="w-7 h-7 flex items-center justify-center text-t4 hover:text-t1 hover:bg-s3 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-            title={`Ligar — ${formatPhone(displayPhone)}`}
-            aria-label={`Ligar para ${displayName}, ${formatPhone(displayPhone)}`}
-          >
-            <Phone size={13} strokeWidth={1.6} />
-          </a>
-          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- invólucro que só contém a propagação do clique — quem age são os botões dentro */}
-          <div
-            {...listeners}
-            {...attributes}
-            onClick={e => e.stopPropagation()}
-            aria-label="Arrastar lead"
-            className="w-6 h-7 flex items-center justify-center text-t4 hover:text-t2 cursor-grab active:cursor-grabbing"
-          >
-            <GripVertical size={13} strokeWidth={1.6} />
-          </div>
+          {acao}
         </div>
-      </div>
-
-      {/* Toques do followup — só onde a cadência existe. Ficam à vista também
-          no modo compacto: o Rafael pediu que os toques continuem no cartão
-          (16/11/2026). Cada traço é um toque; clicar marca até ali. */}
-      {lead.funnelStage === 'followup' && (
-        <div className={`flex items-center gap-1 mt-2`} role="group" aria-label={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} tentativas`}>
-          {Array.from({ length: MAX_TENTATIVAS_FOLLOWUP }, (_, i) => i + 1).map(step => (
-            <button
-              key={step}
-              type="button"
-              onClick={async e => {
-                e.stopPropagation()
-                const next = lead.followupStep === step ? step - 1 : step
-                try {
-                  await update(lead.id, { followupStep: next })
-                  toast.success(`${next}ª tentativa marcada`)
-                } catch { /* erro já toastado */ }
-              }}
-              title={`Marcar ${step}ª tentativa`}
-              aria-label={`Marcar ${step}ª tentativa`}
-              // 4px de barra, mas 14px de área de clique (py transparente)
-              className="group/passo flex-1 py-[5px] cursor-pointer focus:outline-none"
-            >
-              <span className={`block h-1 rounded-full transition-colors duration-150
-                ${step <= lead.followupStep
-                  ? 'bg-brand group-hover/passo:opacity-70'
-                  : 'bg-line-strong group-hover/passo:bg-brand-tint'}
-                group-focus-visible/passo:ring-2 group-focus-visible/passo:ring-brand/50`} />
-            </button>
-          ))}
-          {/* A contagem mora aqui, junto dos traços — antes ia no botão ("· 2ª")
-              e espremia o rótulo na coluna estreita. */}
-          <span className="flex-shrink-0 ml-1 text-[11px] text-t4 tabular-nums"
-                title={`${lead.followupStep} de ${MAX_TENTATIVAS_FOLLOWUP} toques`}>
-            {lead.followupStep}/{MAX_TENTATIVAS_FOLLOWUP}
-          </span>
+      ) : (
+        <div className="mt-2.5 flex items-center gap-3 min-w-0">
+          {tracos
+            ? <div className="flex-1 min-w-0">{tracos}</div>
+            : <p className="flex-1 min-w-0 truncate text-[12px] text-t3">
+                {stageDays === 0 ? 'Entrou hoje em' : `${stageDays} ${stageDays === 1 ? 'dia' : 'dias'} em`} {STAGE_CONFIG[lead.funnelStage].label.toLowerCase()}
+              </p>}
+          {acao}
         </div>
       )}
+      {avisoReal && tracos && <div className="mt-2">{tracos}</div>}
+      {atalhos}
 
       {/* Progresso no funil, no pé do cartão — cada traço uma etapa, na cor
           dela, aceso até onde o lead chegou */}
