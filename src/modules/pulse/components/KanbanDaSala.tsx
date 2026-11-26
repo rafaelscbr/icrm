@@ -9,7 +9,8 @@ import { BRILHO_CHAMPANHE, JOIA, degradeJoia } from '../../../lib/paletaJoia'
 import { formatCurrencyRound } from '../../../lib/formatters'
 import { FotoPerfil } from '../../../components/shared/FotoPerfil'
 import { destacar } from '../../../components/shared/Destaque'
-import { ESFRIANDO_DIAS, tomDoContato, TOM_CONTATO } from '../../leads/contato'
+import { estaAtrasado, tomDoContato, TOM_CONTATO } from '../../leads/contato'
+import type { TomContato } from '../../leads/contato'
 import { useRelogio } from '../useKiosk'
 import { colunasDaSala, dinheiroDoCartao, DINHEIRO_ZERO, somar, VIVO_MS } from '../kanbanDaSala'
 import type { CartaoSala, ColunaSala, DinheiroSala } from '../kanbanDaSala'
@@ -49,8 +50,9 @@ const DIA = 86_400_000
 const rs = (v: number) => formatCurrencyRound(v)
 const alturaDe = (c: CartaoSala) => (c.etapa === 'followup' ? PILULA_FOLLOWUP_H : PILULA_H)
 
-function esfriando(c: CartaoSala, agora: number): boolean {
-  return agora - new Date(c.ultimoContatoAt ?? c.criadoEm).getTime() > ESFRIANDO_DIAS * DIA
+/** A cor de contato do cartão — a mesma régua do Kanban de Leads (contato.ts). */
+function tomDoCartao(c: CartaoSala, agora: number): TomContato | null {
+  return tomDoContato({ lastContactAt: c.ultimoContatoAt, createdAt: c.criadoEm, funnelStage: c.etapa }, agora)
 }
 
 // ─── O giro: qual tela está no ar e quando troca ──────────────────────────────
@@ -126,8 +128,9 @@ function contatoCurto(c: CartaoSala, agora: number): string {
 function Pilula({ c, dono, agora }: { c: CartaoSala; dono?: Profile; agora: number }) {
   const vivo = c.vivoAt !== undefined && agora - c.vivoAt < VIVO_MS
   const venda = c.etapa === 'venda'
-  // O mesmo destaque de followup atrasado do Kanban de Leads (contato.ts, +24h)
-  const tom = vivo ? null : tomDoContato({ lastContactAt: c.ultimoContatoAt, createdAt: c.criadoEm, funnelStage: c.etapa }, agora)
+  // As cores de contato do Kanban de Leads (contato.ts): azul hoje, amarelo,
+  // laranja 24 h, vermelho 48 h. Quem acabou de mexer fica em Marinho.
+  const tom = vivo ? null : tomDoCartao(c, agora)
   const dias = Math.max(0, Math.floor((agora - new Date(c.desde).getTime()) / DIA))
   return (
     <div className={`pulse-kanban-pilula pulse-cartao relative shrink-0 flex flex-col justify-center px-3 ${vivo ? 'marinho pulse-cartao-vivo' : ''} ${tom ? TOM_CONTATO[tom].classe : ''}`}
@@ -144,7 +147,7 @@ function Pilula({ c, dono, agora }: { c: CartaoSala; dono?: Profile; agora: numb
             {venda
               ? <span className="truncate text-t3">{c.produto ?? 'Sem produto'} · vendido há {dias} {dias === 1 ? 'dia' : 'dias'}</span>
               : <>
-                  <span className="kanban-frase shrink-0 text-t2">{tom && <AlarmClock size={11} strokeWidth={2.2} className="inline-block align-[-1px] mr-0.5" aria-hidden />}{contatoCurto(c, agora)}</span>
+                  <span className="kanban-frase shrink-0 text-t2">{estaAtrasado(tom) && <AlarmClock size={11} strokeWidth={2.2} className="inline-block align-[-1px] mr-0.5" aria-hidden />}{contatoCurto(c, agora)}</span>
                   <span className="truncate text-t4">· {c.produto ?? 'sem produto'}</span>
                 </>}
           </p>
@@ -210,7 +213,7 @@ function Coluna({ col, perfis, agora, celular }: {
   const restoVgv = resto.reduce((t, c) => t + c.vgv, 0)
   const venda = etapa === 'venda'
   const d: DinheiroSala = col.dinheiro
-  const atrasados = venda ? 0 : col.cartoes.filter(c => esfriando(c, agora)).length
+  const atrasados = venda ? 0 : col.cartoes.filter(c => estaAtrasado(tomDoCartao(c, agora))).length
   const vazia = col.cartoes.length === 0
 
   return (
@@ -228,7 +231,7 @@ function Coluna({ col, perfis, agora, celular }: {
             {rs(d.vgv)} <span className="text-[12px] font-semibold tracking-normal pulse-kanban-joia-nota">{venda ? 'vendido' : 'VGV'}</span>
           </p>
           {atrasados > 0 && (
-            <span className="pulse-kanban-atrasados ml-auto shrink-0" title="Sem contato há mais de 24 horas">
+            <span className="pulse-kanban-atrasados ml-auto shrink-0" title="Laranja e vermelho: mais de 24 horas sem contato">
               <AlarmClock size={12} strokeWidth={2.2} aria-hidden />{atrasados} {atrasados === 1 ? 'atrasado' : 'atrasados'}
             </span>
           )}
@@ -325,6 +328,26 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
     return { n: abertos.length, total, corretores }
   }, [cartoes, shareDe, pctDe, porId])
 
+  // A legenda das cores de contato, com quantos cartões há de cada
+  const porTom = useMemo(() => {
+    const n: Record<TomContato, number> = { hoje: 0, pendente: 0, h24: 0, h48: 0 }
+    for (const c of cartoes ?? []) { const t = tomDoCartao(c, agora); if (t) n[t]++ }
+    return n
+  }, [cartoes, agora])
+  const legenda = cartoes && (
+    <div className={`relative flex flex-wrap items-center ${celular ? 'mt-3 gap-2' : 'mt-4 gap-3'}`} aria-label="Cores dos cartões">
+      {(Object.keys(TOM_CONTATO) as TomContato[]).map(t => (
+        <span key={t} className={`${TOM_CONTATO[t].classe} pulse-legenda-tom inline-flex items-center gap-2 rounded-full ${celular ? 'h-8 px-3 text-[12.5px]' : 'h-10 px-4 text-[15px]'}`}
+              title={TOM_CONTATO[t].dica}>
+          <span className={`kanban-tom-amostra rounded-[4px] ${celular ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} aria-hidden />
+          <span style={{ color: 'var(--m-t2)' }}>{TOM_CONTATO[t].rotulo}</span>
+          <span className="font-display font-extrabold tabular-nums" style={{ color: 'var(--m-t1)' }}>{porTom[t]}</span>
+        </span>
+      ))}
+      <span className={celular ? 'text-[11.5px]' : 'text-[13px]'} style={{ color: 'var(--m-t3)' }}>Followup e Atendimento</span>
+    </div>
+  )
+
   const pctComissao = placar && placar.total.vgv
     ? `${(placar.total.bruta / placar.total.vgv * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% do VGV`
     : '5% do VGV'
@@ -382,6 +405,7 @@ export function KanbanDaSala({ cartoes, erro, pctProduto, perfis, agora, direita
         <div className={celular ? 'w-full flex items-center gap-2' : 'ml-auto'}>{direita}</div>
       </div>
       {numeros}
+      {legenda}
     </section>
   )
 

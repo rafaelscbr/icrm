@@ -33,6 +33,21 @@ describe('Kanban do Pulse', () => {
     expect(screen.getByText('Contato há 1 dia')).toBeInTheDocument()
   })
 
+  it('a legenda conta as quatro cores; reloginho só no atrasado', () => {
+    const { container } = desenhar([
+      cartao({ id: 'h', nome: 'Hoje', ultimoContatoAt: hAtras(1) }),
+      cartao({ id: 'v', nome: 'Velho', ultimoContatoAt: hAtras(60) }),
+      cartao({ id: 'p', nome: 'Proposta', etapa: 'proposta', ultimoContatoAt: hAtras(60) }),
+    ])
+    const legenda = container.querySelector('[aria-label="Cores dos cartões"]')!
+    expect(legenda.textContent).toContain('Em dia1')
+    expect(legenda.textContent).toContain('48 h sem contato1')
+    // Proposta não ganha cor
+    const pilulas = [...container.querySelectorAll('.pulse-kanban-pilula')]
+    expect(pilulas.find(p => p.textContent?.includes('Proposta'))?.classList.contains('kanban-tom')).toBe(false)
+    expect(pilulas.find(p => p.textContent?.includes('Velho'))?.classList.contains('kanban-tom-48h')).toBe(true)
+  })
+
   it('os toques do followup ficam à vista', () => {
     desenhar([cartao({ id: 'c', passo: 3 })])
     expect(screen.getByLabelText('3 de 10 tentativas')).toBeInTheDocument()

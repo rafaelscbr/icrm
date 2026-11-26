@@ -3004,6 +3004,11 @@ button.pulse-pilula:hover { border-color: var(--line-strong); box-shadow: 0 10px
 .pulse-kanban-pilula {
   border-radius: 18px; border: 1px solid var(--line);
 }
+/* Legenda das cores de contato na faixa Marinho do Kanban da TV */
+.pulse-legenda-tom {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--m-line);
+}
 .pulse-kanban-pilula.kanban-tom:not(.marinho) {
   background: color-mix(in srgb, var(--tom) var(--tom-forca), var(--surface));
   border-color: color-mix(in srgb, var(--tom) 65%, transparent);

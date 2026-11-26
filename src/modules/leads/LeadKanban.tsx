@@ -338,9 +338,14 @@ function LeadCard({
             className={`flex-1 min-w-0 flex items-center gap-1.5 ${urgente ? `kanban-aviso rounded-[9px] border px-2 py-1 ${nextStyle!.chip}` : ''}`}
             title={next.hint}
           >
-            <NextIcon size={13} strokeWidth={1.8} className={`kanban-aviso-icone flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
+            {!(next.urgency === 'none' && tom) && (
+              <NextIcon size={13} strokeWidth={1.8} className={`kanban-aviso-icone flex-shrink-0 ${nextStyle!.iconColor}`} aria-hidden />
+            )}
             {next.urgency === 'none' ? (
-              <p className="kanban-frase flex-1 min-w-0 truncate text-[12px] text-t3">{fraseContato(lead)}</p>
+              // Com a cor de contato (Followup e Atendimento), a frase "Último
+              // contato hoje" repetia o que a cor já diz — saiu (26/11/2026).
+              // Nas etapas sem cor ela continua.
+              <p className="kanban-frase flex-1 min-w-0 truncate text-[12px] text-t3">{tom ? '' : fraseContato(lead)}</p>
             ) : (
               <p className={`flex-1 min-w-0 truncate text-[12px] font-semibold ${nextStyle!.text}`}>{next.text}</p>
             )}
