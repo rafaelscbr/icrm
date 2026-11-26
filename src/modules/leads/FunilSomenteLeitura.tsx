@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { BadgeCheck, Eye, RefreshCw } from 'lucide-react'
+import { BadgeCheck, Eye, RefreshCw, Trash2 } from 'lucide-react'
 import type { Lead, LeadFunnelStage } from '../../types'
 import { MAX_TENTATIVAS_FOLLOWUP } from '../../types'
 import { db } from '../../lib/db'
@@ -14,8 +14,7 @@ import { ordemEfetiva } from './leadFiltros'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { LeadSomenteLeitura } from './LeadSomenteLeitura'
 import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
-import { DescartadosSomenteLeitura } from './DescartadosSomenteLeitura'
-import { Segmentado } from '../../components/shared/visual'
+import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 
 /**
  * O funil de OUTRO corretor, para o gestor acompanhar — somente leitura
@@ -33,36 +32,16 @@ import { Segmentado } from '../../components/shared/visual'
  * É um retrato do momento em que foi lido, não uma tela ao vivo — o banco não
  * entrega ao gestor os eventos em tempo real dos leads dos colegas. Por isso a
  * hora da leitura fica à vista, com o botão de atualizar.
+ *
+ * Descartados (26/11/2026, migração 116): o mesmo botão do Kanban do próprio
+ * gestor. Ligado, o quadro mostra os descartados do colega nas colunas da
+ * etapa em que pararam, com o motivo no cartão; o clique abre a ficha de
+ * leitura com o bloco do descarte. Desligado, volta ao funil aberto.
  */
 export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome: string }) {
-  // 26/11/2026 (migração 116): além do funil aberto, os descartados do colega.
-  const [escopo, setEscopo] = useState<'aberto' | 'descartados'>('aberto')
-  const [abertoDescartado, setAbertoDescartado] = useState<Lead | null>(null)
-  useEffect(() => { setAbertoDescartado(null) }, [brokerId])
-
-  return (
-    <div>
-      <div className="mb-4 flex">
-        <Segmentado
-          rotulo={`O que ver de ${nome}`}
-          valor={escopo}
-          onChange={setEscopo}
-          opcoes={[{ value: 'aberto', label: 'Funil aberto' }, { value: 'descartados', label: 'Descartados' }]}
-        />
-      </div>
-      {escopo === 'aberto'
-        ? <FunilAberto brokerId={brokerId} nome={nome} />
-        : <DescartadosSomenteLeitura brokerId={brokerId} nome={nome} onAbrir={setAbertoDescartado} />}
-      {abertoDescartado && (
-        <LeadSomenteLeitura leadId={abertoDescartado.id} nome={abertoDescartado.name} corretor={nome} corretorId={brokerId}
-                            onClose={() => setAbertoDescartado(null)} />
-      )}
-    </div>
-  )
-}
-
-function FunilAberto({ brokerId, nome }: { brokerId: string; nome: string }) {
-  const [leads, setLeads] = useState<Lead[] | null>(null)
+  const [abertos, setAbertos] = useState<Lead[] | null>(null)
+  const [descartadosLista, setDescartados] = useState<Lead[] | null>(null)
+  const [verDescartados, setVerDescartados] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [lidoEm, setLidoEm] = useState<Date | null>(null)
@@ -71,20 +50,29 @@ function FunilAberto({ brokerId, nome }: { brokerId: string; nome: string }) {
   const carregar = useCallback(async () => {
     setCarregando(true)
     try {
-      const lista = await db.leads.funilDaEquipe(brokerId)
-      setLeads(lista)
+      // As duas leituras juntas: o botão Descartados já mostra quantos são,
+      // como no Kanban do próprio gestor.
+      const [lista, descartados] = await Promise.all([
+        db.leads.funilDaEquipe(brokerId),
+        db.leads.descartadosDaEquipe(brokerId),
+      ])
+      setAbertos(lista)
+      setDescartados(descartados)
       setLidoEm(new Date())
       setErro(null)
     } catch (e) {
       // Falhou: não se mostra um funil velho como se fosse o de agora.
-      setLeads(null)
+      setAbertos(null)
+      setDescartados(null)
       setErro((e as { message?: string })?.message ?? 'Falha ao ler o funil')
     } finally {
       setCarregando(false)
     }
   }, [brokerId])
 
-  useEffect(() => { setLeads(null); setLidoEm(null); setAberto(null); void carregar() }, [carregar])
+  useEffect(() => { setAbertos(null); setDescartados(null); setLidoEm(null); setAberto(null); void carregar() }, [carregar])
+
+  const leads = verDescartados ? descartadosLista : abertos
 
   const porEtapa = useMemo(() => {
     const mapa = new Map<LeadFunnelStage, Lead[]>(FUNNEL_STAGES.map(e => [e, []]))
@@ -102,13 +90,21 @@ function FunilAberto({ brokerId, nome }: { brokerId: string; nome: string }) {
       <div className="mb-4 flex items-center gap-x-4 gap-y-2 flex-wrap rounded-[14px] border border-info-line bg-info-bg px-4 py-3" role="status">
         <Eye size={16} strokeWidth={1.8} className="text-info flex-shrink-0" aria-hidden />
         <p className="min-w-0 flex-1 text-[13.5px] text-t1">
-          Funil de <CorretorComFoto id={brokerId} nome={nome} tamanho={28} className="font-semibold" /> — somente leitura.
+          {verDescartados ? 'Descartados de' : 'Funil de'} <CorretorComFoto id={brokerId} nome={nome} tamanho={28} className="font-semibold" /> — somente leitura.
           <span className="text-t3"> Clique num lead para ver os detalhes. Nada pode ser alterado por aqui.</span>
         </p>
         <p className="text-[12.5px] text-t3 tabular-nums flex-shrink-0">
           {leads && <>{total} {total === 1 ? 'lead' : 'leads'}{pipeline > 0 && <> · {formatCurrency(pipeline)}</>}</>}
           {lidoEm && <> · lido às {lidoEm.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</>}
         </p>
+        {/* O mesmo botão do Kanban do gestor: liga e desliga os descartados */}
+        <button type="button" onClick={() => setVerDescartados(v => !v)} aria-pressed={verDescartados}
+                className={`inline-flex h-9 flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-[10px] px-3 text-[13px] whitespace-nowrap transition-colors
+                            focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
+                            ${verDescartados ? 'bg-error-bg text-error font-semibold' : 'border border-line bg-surface font-medium text-t2 hover:bg-s2 hover:text-t1'}`}>
+          <Trash2 size={14} strokeWidth={1.7} aria-hidden />
+          Descartados {descartadosLista && descartadosLista.length > 0 && <span className="tabular-nums">{descartadosLista.length.toLocaleString('pt-BR')}</span>}
+        </button>
         <button type="button" onClick={() => void carregar()} disabled={carregando}
                 className="inline-flex h-9 flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3
                            text-[13px] font-semibold text-t1 transition-colors hover:bg-s2 disabled:cursor-default disabled:opacity-60
@@ -124,11 +120,11 @@ function FunilAberto({ brokerId, nome }: { brokerId: string; nome: string }) {
         vazio={leads !== null && total === 0}
         onTentarDeNovo={() => void carregar()}
         icone={Eye}
-        titulo="Nenhum lead em aberto"
-        descricao={`${nome} não tem leads ativos no funil agora.`}
+        titulo={verDescartados ? 'Nenhum lead descartado' : 'Nenhum lead em aberto'}
+        descricao={verDescartados ? `${nome} não descartou nenhum lead.` : `${nome} não tem leads ativos no funil agora.`}
         esqueleto={<EsqueletoCards cards={6} colunas={3} />}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 items-start [justify-content:safe_center]" aria-label={`Funil de ${nome}, somente leitura`}>
+        <div className="flex gap-4 overflow-x-auto pb-4 items-start [justify-content:safe_center]" aria-label={`${verDescartados ? 'Descartados' : 'Funil'} de ${nome}, somente leitura`}>
           {FUNNEL_STAGES.map(etapa => {
             const conf = STAGE_THEME[etapa]
             const lista = porEtapa.get(etapa) ?? []
@@ -180,6 +176,12 @@ function CartaoSomenteLeitura({ lead, agora, onAbrir }: { lead: Lead; agora: num
   const corContato = nivel === 'parado' ? 'text-error' : nivel === 'esfriando' ? 'text-warning' : 'text-t3'
   // O mesmo destaque de followup atrasado do Kanban de Leads (contato.ts)
   const tom = tomDoContato(lead, agora)
+  // Descartado: no lugar do contato, o motivo e quando (o tom já é nulo).
+  const { getByType } = useLeadConfigStore()
+  const motivo = lead.discardReason
+    ? getByType('discard_reason').find(r => r.slug === lead.discardReason)?.label ?? lead.discardReason
+    : null
+  const diasDescartado = lead.discardedAt ? Math.floor((agora - new Date(lead.discardedAt).getTime()) / DIA_MS) : null
 
   return (
     // <div role="button">, como o cartão do Kanban: um <button> de verdade não
@@ -209,11 +211,27 @@ function CartaoSomenteLeitura({ lead, agora, onAbrir }: { lead: Lead; agora: num
       </div>
 
       <div className="flex items-start gap-2 mt-2">
-        <p className={`kanban-frase flex-1 min-w-0 text-xs font-semibold leading-snug ${corContato}`}>{fraseContato(lead, agora)}</p>
-        <span className="flex-shrink-0 font-label text-[11px] text-t3 tabular-nums"
-              title={`${diasNaEtapa} ${diasNaEtapa === 1 ? 'dia' : 'dias'} nesta etapa`}>
-          {diasNaEtapa}d
-        </span>
+        {motivo ? (
+          <>
+            <p className="kanban-frase flex-1 min-w-0 text-xs font-semibold leading-snug text-error">
+              <Trash2 size={11} strokeWidth={2} className="inline-block align-[-1px] mr-1" aria-hidden />{motivo}
+            </p>
+            {diasDescartado !== null && (
+              <span className="flex-shrink-0 font-label text-[11px] text-t3 tabular-nums"
+                    title={`Descartado em ${new Date(lead.discardedAt!).toLocaleDateString('pt-BR')}`}>
+                {diasDescartado <= 0 ? 'hoje' : `há ${diasDescartado}d`}
+              </span>
+            )}
+          </>
+        ) : (
+          <>
+            <p className={`kanban-frase flex-1 min-w-0 text-xs font-semibold leading-snug ${corContato}`}>{fraseContato(lead, agora)}</p>
+            <span className="flex-shrink-0 font-label text-[11px] text-t3 tabular-nums"
+                  title={`${diasNaEtapa} ${diasNaEtapa === 1 ? 'dia' : 'dias'} nesta etapa`}>
+              {diasNaEtapa}d
+            </span>
+          </>
+        )}
       </div>
 
       {lead.funnelStage === 'followup' && (
