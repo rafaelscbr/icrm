@@ -1305,6 +1305,16 @@ export const db = {
       return ((data ?? []) as LeadRow[]).map(toLead)
     },
     /**
+     * Os DESCARTADOS de outro corretor, para o gestor ver (migração 116), do
+     * mais recente para o mais antigo. Mesmo formato do quadro: sem telefone,
+     * e-mail, anotações e respostas do formulário. Sem toast: a tela mostra a falha.
+     */
+    descartadosDaEquipe: async (brokerId: string): Promise<Lead[]> => {
+      const { data, error } = await supabase.rpc('team_discarded_leads', { p_broker_id: brokerId })
+      if (error) throw error
+      return ((data ?? []) as LeadRow[]).map(toLead)
+    },
+    /**
      * A ficha de um lead de OUTRO corretor, para o gestor ler (migração 095).
      * Uma chamada devolve o lead inteiro (com telefone, e-mail e anotações), o
      * perfil declarado, o histórico e as tarefas em aberto. O banco só responde

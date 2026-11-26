@@ -14,6 +14,8 @@ import { ordemEfetiva } from './leadFiltros'
 import { aoTeclarAbrir } from '../../components/shared/lista'
 import { LeadSomenteLeitura } from './LeadSomenteLeitura'
 import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
+import { DescartadosSomenteLeitura } from './DescartadosSomenteLeitura'
+import { Segmentado } from '../../components/shared/visual'
 
 /**
  * O funil de OUTRO corretor, para o gestor acompanhar — somente leitura
@@ -33,6 +35,33 @@ import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
  * hora da leitura fica à vista, com o botão de atualizar.
  */
 export function FunilSomenteLeitura({ brokerId, nome }: { brokerId: string; nome: string }) {
+  // 26/11/2026 (migração 116): além do funil aberto, os descartados do colega.
+  const [escopo, setEscopo] = useState<'aberto' | 'descartados'>('aberto')
+  const [abertoDescartado, setAbertoDescartado] = useState<Lead | null>(null)
+  useEffect(() => { setAbertoDescartado(null) }, [brokerId])
+
+  return (
+    <div>
+      <div className="mb-4 flex">
+        <Segmentado
+          rotulo={`O que ver de ${nome}`}
+          valor={escopo}
+          onChange={setEscopo}
+          opcoes={[{ value: 'aberto', label: 'Funil aberto' }, { value: 'descartados', label: 'Descartados' }]}
+        />
+      </div>
+      {escopo === 'aberto'
+        ? <FunilAberto brokerId={brokerId} nome={nome} />
+        : <DescartadosSomenteLeitura brokerId={brokerId} nome={nome} onAbrir={setAbertoDescartado} />}
+      {abertoDescartado && (
+        <LeadSomenteLeitura leadId={abertoDescartado.id} nome={abertoDescartado.name} corretor={nome} corretorId={brokerId}
+                            onClose={() => setAbertoDescartado(null)} />
+      )}
+    </div>
+  )
+}
+
+function FunilAberto({ brokerId, nome }: { brokerId: string; nome: string }) {
   const [leads, setLeads] = useState<Lead[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)

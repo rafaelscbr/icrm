@@ -6,6 +6,7 @@ import { db } from '../../lib/db'
 import { STAGE_THEME, FUNNEL_STAGES } from '../../lib/stageTheme'
 import { formatCurrency, formatPhone } from '../../lib/formatters'
 import { usePropertiesStore } from '../../store/usePropertiesStore'
+import { useLeadConfigStore } from '../../store/useLeadConfigStore'
 import { useFotoDoCorretor } from '../../components/shared/CorretorComFoto'
 import { FotoPerfil } from '../../components/shared/FotoPerfil'
 import {
@@ -215,8 +216,24 @@ function Corpo({ lead, perfil, historico, tarefas }: {
       ? ['Carro', lead.permutaCarModel, lead.permutaCarValue ? formatCurrency(lead.permutaCarValue) : null]
       : null
 
+  const { getByType } = useLeadConfigStore()
+  const motivos = getByType('discard_reason')
+
   return (
     <div className="flex flex-col gap-7">
+      {/* Descartado (migração 116): o motivo e quando, como na ficha de trabalho */}
+      {lead.discardReason && (
+        <section className="ficha-agora" style={{ ['--tom' as string]: 'var(--error)' }}>
+          <p className="text-[12.5px] font-semibold text-error">
+            Descartado{lead.discardedAt ? ` em ${new Date(lead.discardedAt).toLocaleDateString('pt-BR')}` : ''}
+            {' '}· parou em {STAGE_THEME[lead.funnelStage]?.columnLabel.toLowerCase() ?? lead.funnelStage}
+          </p>
+          <p className="text-[16px] font-semibold text-t1 mt-1">
+            {motivos.find(r => r.slug === lead.discardReason)?.label ?? lead.discardReason}
+          </p>
+        </section>
+      )}
+
       {/* Em que pé está: prazo de 1º contato, quando ainda corre */}
       {prazoCorrendo && (
         <p className={`flex items-center gap-2 text-[13.5px] font-semibold ${prazoVencido ? 'text-error' : 'text-warning'}`} role="status">

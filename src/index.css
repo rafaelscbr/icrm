@@ -3025,3 +3025,22 @@ button.pulse-pilula:hover { border-color: var(--line-strong); box-shadow: 0 10px
   background: color-mix(in srgb, var(--etapa) 6%, transparent);
 }
 .pulse-kanban-joia-titulo { color: rgba(255, 255, 255, 0.92); }
+
+/* ── Descartados do colega, para o gestor (26/11/2026, migração 116) ──────
+   Os motivos em pílula com a contagem; o escolhido em Marinho. */
+.descarte-motivo {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--t2);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+.descarte-motivo:hover { border-color: var(--line-strong); color: var(--t1); }
+.descarte-motivo:focus-visible { outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 40%, transparent); }
+.descarte-motivo > span { color: var(--t1); font-weight: 700; }
+.descarte-motivo .descarte-motivo-pct { color: var(--t4); font-weight: 600; font-size: 12px; }
+.descarte-motivo-ativo, .descarte-motivo-ativo:hover {
+  border-color: transparent; color: #FFFFFF;
+  background: linear-gradient(140deg, #2A57B5 0%, #1D4396 48%, #143275 100%);
+}
+.descarte-motivo-ativo > span { color: #FFFFFF; }
+.descarte-motivo-ativo .descarte-motivo-pct { color: #BCC8E4; }
