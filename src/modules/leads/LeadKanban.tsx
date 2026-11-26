@@ -35,13 +35,14 @@ import { divisao, PCT_PADRAO } from './comissao'
 import { useDevelopmentsStore } from '../../store/useDevelopmentsStore'
 import { JOIA, degradeJoiaClaro, fundoJoiaClaro } from '../../lib/paletaJoia'
 import { ORIGEM_META } from './origens'
-import { fraseContato, tomDoContato, TOM_CONTATO } from './contato'
+import { estaAtrasado, fraseContato, tomDoContato, TOM_CONTATO } from './contato'
 import type { TomContato } from './contato'
 import { ordenar, ordemEfetiva } from './leadFiltros'
 import { ConcludeSaleModal } from './ConcludeSaleModal'
 import { SinalDeFluxo } from './fluxos/SinalDeFluxo'
 import toast from 'react-hot-toast'
 import { abrirSePrimeiraChamada } from './primeiroContato'
+import { useMinuto } from '../../hooks/useMinuto'
 
 // Re-export da fonte única — consumido por LeadsPage, o Pulse,
 // LeadsPerformance e TransferToFunnelModal. Cores vivem em lib/stageTheme.ts.
@@ -207,9 +208,10 @@ function LeadCard({
 
   const din = comissao && lead.averageTicket ? comissao.doLead(lead) : null
 
-  // Followup atrasado (contato.ts): o cartão inteiro num tom pastel quando o
-  // lead está há mais de 24 h sem contato.
-  const tom = tomDoContato(lead)
+  // As cores do contato (contato.ts): azul falou hoje, amarelo falta passar
+  // hoje, laranja 24 h, vermelho 48 h — em Followup e Atendimento.
+  const agora = useMinuto()
+  const tom = tomDoContato(lead, agora)
 
   // Reentrada ainda não vista pelo dono — o único destaque que pode competir
   // com a próxima ação, porque não é o sistema cobrando: é o lead chamando.
@@ -504,9 +506,10 @@ function KanbanColumn({
   const ids = leads.map(l => l.id)
 
   const totais = comissao.total(leads)
+  const agora = useMinuto()
   // Risco da coluna: os cartões em vermelho (followup atrasado, +24h sem
   // contato). Mesma régua da cor, do atalho e da legenda (contato.ts).
-  const atrasados = leads.filter(l => tomDoContato(l) === 'atrasado').length
+  const atrasados = leads.filter(l => estaAtrasado(tomDoContato(l, agora))).length
   const riskPct = leads.length > 0 ? Math.round((atrasados / leads.length) * 100) : 0
 
   const alvo = isOver || isActiveDragTarget
@@ -652,7 +655,10 @@ function Placar({ rotulo, valor, cor, fundo, destaque = false, foto, nota, titul
 
 // ─── Legenda do destaque de contato ───────────────────────────────────────────
 
-/** As cores do cartão (hoje só o followup atrasado), com quantos há de cada. */
+/**
+ * As cores do cartão, com quantos há de cada (contato.ts). Laranja e vermelho
+ * são o "followup atrasado": clicar neles mostra só esses cartões.
+ */
 export function LegendaContato({ porTom, onFiltrar, ativo = false }: {
   porTom: Record<TomContato, number>
   /** a legenda é também o atalho: clicar mostra só os cartões daquela cor */
@@ -672,7 +678,7 @@ export function LegendaContato({ porTom, onFiltrar, ativo = false }: {
             {ativo && <X size={11} strokeWidth={2} aria-hidden />}
           </>
         )
-        return onFiltrar ? (
+        return onFiltrar && estaAtrasado(t) ? (
           <button key={t} type="button" onClick={onFiltrar} aria-pressed={ativo}
             title={ativo ? 'Mostrar todos os leads de novo' : `${TOM_CONTATO[t].dica} Clique para ver só eles.`}
             className={`${TOM_CONTATO[t].classe} legenda-tom inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full cursor-pointer
@@ -824,11 +830,12 @@ export function LeadKanban({ leads, totalPorEtapa, onFiltrarAtrasado, filtroAtra
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null
 
   // Legenda do destaque de contato, com quantos cartões há de cada tom
+  const agora = useMinuto()
   const porTom = useMemo(() => {
-    const n: Record<TomContato, number> = { atrasado: 0 }
-    for (const l of leads) { const t = tomDoContato(l); if (t) n[t]++ }
+    const n: Record<TomContato, number> = { hoje: 0, pendente: 0, h24: 0, h48: 0 }
+    for (const l of leads) { const t = tomDoContato(l, agora); if (t) n[t]++ }
     return n
-  }, [leads])
+  }, [leads, agora])
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id))

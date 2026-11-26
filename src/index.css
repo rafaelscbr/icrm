@@ -2581,36 +2581,43 @@ button.perfil-celula:focus-visible { outline: 2px solid var(--brand); outline-of
 }
 
 /*
- * Followup atrasado no cartão (24/11/2026, contato.ts → tomDoContato).
- * A cor vem de uma informação do lead, não da coluna: hoje só uma, mais de
- * 24 h sem contato. O cartão INTEIRO ganha um rosado — o vermelho de alerta
- * do próprio sistema (--error) bem diluído — e a frase do contato vai nesse
- * vermelho. Diz "atrasado" sem gritar. (Antes foram âmbar e Champanhe; o
- * Rafael escolheu o vermelho.) A ordem da coluna não muda. Vale no Kanban de
- * Leads, no do gestor e no da TV. Tudo sai dos tokens, então o tema escuro
- * herda sozinho.
+ * As cores do contato no cartão (26/11/2026, contato.ts → tomDoContato).
+ * O ideal é passar por todos os leads todo dia: azul = falou hoje, amarelo =
+ * falta passar hoje (à meia-noite o azul de ontem vira amarelo), laranja =
+ * 24 h sem contato, vermelho = 48 h, gritante. Só em Followup e Atendimento.
+ * Fortes, a pedido do Rafael: o cartão inteiro tingido, uma faixa grossa na
+ * cor à esquerda e o contorno na mesma cor. Vale no Kanban de Leads, no do
+ * gestor, na lista e no da TV. --tom-tinta é a cor do texto sobre o tingido:
+ * misturada com --t1, escurece no tema claro e clareia no escuro.
  */
-.kanban-tom-atrasado { --tom: var(--error); }
-.kanban-tom { --tom-tinta: var(--error); }
+.kanban-tom-hoje     { --tom: #1D4396; --tom-forca: 14%; }
+.kanban-tom-pendente { --tom: #E0A800; --tom-forca: 22%; }
+.kanban-tom-24h      { --tom: #EA6A0C; --tom-forca: 20%; }
+.kanban-tom-48h      { --tom: #DC2626; --tom-forca: 24%; }
+.kanban-tom { --tom-tinta: color-mix(in srgb, var(--tom) 62%, var(--t1)); }
 .kanban-card.kanban-tom {
-  --kanban-card-bg:    color-mix(in srgb, var(--tom) 9%, var(--surface));
-  --kanban-card-hover: color-mix(in srgb, var(--tom) 12%, var(--surface));
-  --kanban-card-line:  color-mix(in srgb, var(--tom) 32%, transparent);
+  --kanban-card-bg:    color-mix(in srgb, var(--tom) var(--tom-forca), var(--surface));
+  --kanban-card-hover: color-mix(in srgb, var(--tom) calc(var(--tom-forca) + 6%), var(--surface));
+  --kanban-card-line:  color-mix(in srgb, var(--tom) 70%, transparent);
   background-color: var(--kanban-card-bg);
+  box-shadow: inset 5px 0 0 var(--tom), var(--kanban-card-shadow);
 }
 .kanban-card.kanban-tom:hover { background-color: var(--kanban-card-hover); }
-.kanban-tom .kanban-faixa { background-color: color-mix(in srgb, var(--surface) 62%, transparent) !important; }
+.kanban-card.kanban-tom-48h {
+  --kanban-card-line: var(--tom);
+  box-shadow: 0 0 0 1.5px var(--tom), inset 6px 0 0 var(--tom), 0 10px 22px -14px var(--tom);
+}
+.kanban-tom .kanban-faixa { background-color: color-mix(in srgb, var(--surface) 70%, transparent) !important; }
 .kanban-tom .kanban-frase { color: var(--tom-tinta) !important; font-weight: 600; }
-/* O aviso de próxima ação do cartão atrasado (ex.: "Último contato há 3 dias",
-   que era amarelo) vai no mesmo vermelho do cartão — uma cor só por cartão. */
+/* O aviso de próxima ação vai na mesma cor do cartão — uma cor só por cartão. */
 .kanban-tom .kanban-aviso {
-  background-color: color-mix(in srgb, var(--tom) 12%, var(--surface)) !important;
-  border-color: color-mix(in srgb, var(--tom) 38%, transparent) !important;
+  background-color: color-mix(in srgb, var(--tom) 14%, var(--surface)) !important;
+  border-color: color-mix(in srgb, var(--tom) 45%, transparent) !important;
 }
 .kanban-tom .kanban-aviso-icone { color: var(--tom-tinta) !important; }
 .kanban-tom-amostra {
-  background-color: color-mix(in srgb, var(--tom) 22%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--tom) 45%, transparent);
+  background-color: var(--tom);
+  border: 1px solid color-mix(in srgb, var(--tom) 70%, var(--t1));
 }
 
 /*
@@ -2849,20 +2856,21 @@ button.perfil-celula:focus-visible { outline: 2px solid var(--brand); outline-of
 .kanban-atrasados { color: var(--error); }
 button.kanban-atrasados:hover, .kanban-atrasados-ativo { background-color: color-mix(in srgb, var(--error) 10%, var(--surface)); }
 .legenda-tom { border: 1px solid transparent; transition: background-color 150ms ease, border-color 150ms ease; }
-.legenda-tom:hover { background-color: color-mix(in srgb, var(--error) 7%, var(--surface)); }
+.legenda-tom:hover { background-color: color-mix(in srgb, var(--tom) 10%, var(--surface)); }
 .legenda-tom-ativa, .legenda-tom-ativa:hover {
-  background-color: color-mix(in srgb, var(--error) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--error) 38%, transparent);
+  background-color: color-mix(in srgb, var(--tom) 16%, var(--surface));
+  border-color: color-mix(in srgb, var(--tom) 45%, transparent);
   color: var(--t1);
 }
 /* Cartão com a ficha aberta: anel Marinho, como a linha escolhida da dashboard. */
 .kanban-card.kanban-card-aberto {
   box-shadow: 0 0 0 2px #1D4396, 0 16px 32px -18px rgba(15, 39, 89, 0.7) !important;
 }
-/* Linha da lista de leads com followup atrasado: o mesmo rosado do cartão. */
+/* Linha da lista de leads: a mesma cor de contato do cartão, com a faixa à esquerda. */
 .lista-linha.kanban-tom:not(.lista-linha-ativa) {
-  background-color: color-mix(in srgb, var(--tom) 7%, var(--surface));
-  border-color: color-mix(in srgb, var(--tom) 26%, transparent) !important;
+  background-color: color-mix(in srgb, var(--tom) calc(var(--tom-forca) - 4%), var(--surface));
+  border-color: color-mix(in srgb, var(--tom) 55%, transparent) !important;
+  box-shadow: inset 4px 0 0 var(--tom);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -2997,8 +3005,9 @@ button.pulse-pilula:hover { border-color: var(--line-strong); box-shadow: 0 10px
   border-radius: 18px; border: 1px solid var(--line);
 }
 .pulse-kanban-pilula.kanban-tom:not(.marinho) {
-  background: color-mix(in srgb, var(--error) 6%, var(--surface));
-  border-color: color-mix(in srgb, var(--error) 24%, transparent);
+  background: color-mix(in srgb, var(--tom) var(--tom-forca), var(--surface));
+  border-color: color-mix(in srgb, var(--tom) 65%, transparent);
+  box-shadow: inset 5px 0 0 var(--tom);
 }
 .pulse-kanban-pilula.marinho {
   border-color: transparent;

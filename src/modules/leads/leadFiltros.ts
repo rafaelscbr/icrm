@@ -3,7 +3,7 @@ import type { Fit, LeadIntel, Temperature } from '../../lib/intelligence'
 import type { KanbanSort } from '../../store/useKanbanPrefs'
 import { slaActive } from './SlaBadge'
 import { avisoReentrada, reentradaPrimeiro } from './reentrada'
-import { msSemContato, semContatoHaMaisDe, tomDoContato } from './contato'
+import { estaAtrasado, msSemContato, semContatoHaMaisDe, tomDoContato } from './contato'
 
 /**
  * Filtros do funil — a regra, sem tela.
@@ -200,7 +200,7 @@ export function passa(l: Lead, f: FiltrosLead, ctx: ContextoFiltro, exceto?: Fac
   if (usa('prioridade') && f.prioridade && !l.flagged) return false
   if (usa('sla') && f.sla && !slaActive(l)) return false
   if (usa('voltou') && f.voltou && !avisoReentrada(l)) return false
-  if (usa('atrasado') && f.atrasado && tomDoContato(l, agora) !== 'atrasado') return false
+  if (usa('atrasado') && f.atrasado && !estaAtrasado(tomDoContato(l, agora))) return false
   if (usa('semContato') && f.semContato) {
     if (f.semContato === 'nunca') {
       if (l.lastContactAt) return false

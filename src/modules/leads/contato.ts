@@ -75,33 +75,70 @@ export function fraseContato(lead: Lead, agora = Date.now()): string {
 }
 
 /**
- * Followup atrasado — o destaque do cartão nos Kanbans (Rafael, 24/11/2026).
- * A cor vem de uma INFORMAÇÃO do lead, nunca da coluna: por enquanto só uma,
- * o followup atrasado = mais de 24 h sem contato (desde a chegada, se nunca
- * houve contato). O cartão inteiro ganha um tom pastel, "chama atenção mas
- * nada gritante"; o resto fica branco. Venda, descartado e fechado não ganham
- * cor. "Contato" é o de sempre: leads.last_contact_at (WhatsApp, ligação,
- * tarefa — migração 074).
+ * As cores do contato no cartão (Rafael, 26/11/2026). O ideal é o corretor
+ * passar por TODOS os leads TODO dia, sem esperar o ciclo de 24 h:
  *
- * Outras informações podem ganhar o seu tom depois: TOM_CONTATO é a lista.
+ *   azul      falou hoje (contato registrado desde a meia-noite)
+ *   amarelo   ainda não passou hoje — à meia-noite, quem foi contatado ontem
+ *             vira amarelo
+ *   laranja   24 h sem contato
+ *   vermelho  48 h sem contato — gritante
+ *
+ * Só em Followup e Atendimento; as outras etapas ficam brancas. O relógio
+ * corre todo dia, fim de semana inclusive. "Contato" é o de sempre:
+ * leads.last_contact_at (WhatsApp, ligação, tarefa concluída — migração 074);
+ * sem contato nenhum, conta desde a entrada no funil (e não fica azul).
+ * Antes (24/11) era uma cor só: o rosado de "followup atrasado" passadas 24 h.
  */
 export const DESTAQUE_HORAS = 24
+export const GRITANTE_HORAS = 48
 
-export type TomContato = 'atrasado'
+/** As etapas que ganham cor. */
+export const ETAPAS_COM_COR = ['followup', 'atendimento'] as const
+
+export type TomContato = 'hoje' | 'pendente' | 'h24' | 'h48'
 
 export const TOM_CONTATO: Record<TomContato, { rotulo: string; dica: string; classe: string }> = {
-  atrasado: {
-    rotulo: 'Followup atrasado',
-    dica: `Mais de ${DESTAQUE_HORAS} h sem contato (WhatsApp, ligação ou tarefa concluída)`,
-    classe: 'kanban-tom kanban-tom-atrasado',
+  hoje: {
+    rotulo: 'Em dia',
+    dica: 'Contato registrado hoje (WhatsApp, ligação ou tarefa concluída)',
+    classe: 'kanban-tom kanban-tom-hoje',
   },
+  pendente: {
+    rotulo: 'Falta passar hoje',
+    dica: `Ainda sem contato hoje, menos de ${DESTAQUE_HORAS} h desde o último`,
+    classe: 'kanban-tom kanban-tom-pendente',
+  },
+  h24: {
+    rotulo: `${DESTAQUE_HORAS} h sem contato`,
+    dica: `De ${DESTAQUE_HORAS} a ${GRITANTE_HORAS} h sem contato`,
+    classe: 'kanban-tom kanban-tom-24h',
+  },
+  h48: {
+    rotulo: `${GRITANTE_HORAS} h sem contato`,
+    dica: `Mais de ${GRITANTE_HORAS} h sem contato`,
+    classe: 'kanban-tom kanban-tom-48h',
+  },
+}
+
+/** Followup atrasado = laranja ou vermelho (mais de 24 h). É o que o filtro e o risco da coluna contam. */
+export function estaAtrasado(tom: TomContato | null): boolean {
+  return tom === 'h24' || tom === 'h48'
+}
+
+function mesmoDia(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
 export function tomDoContato(
   lead: { lastContactAt?: string | null; createdAt: string; funnelStage: string; closedAt?: string | null; discardReason?: unknown },
   agora = Date.now(),
 ): TomContato | null {
-  if (lead.funnelStage === 'venda' || lead.closedAt || lead.discardReason) return null
-  const ref = lead.lastContactAt ?? lead.createdAt
-  return agora - new Date(ref).getTime() > DESTAQUE_HORAS * 3_600_000 ? 'atrasado' : null
+  if (!(ETAPAS_COM_COR as readonly string[]).includes(lead.funnelStage) || lead.closedAt || lead.discardReason) return null
+  const ref = new Date(lead.lastContactAt ?? lead.createdAt)
+  const horas = (agora - ref.getTime()) / 3_600_000
+  if (horas > GRITANTE_HORAS) return 'h48'
+  if (horas > DESTAQUE_HORAS) return 'h24'
+  if (lead.lastContactAt && mesmoDia(ref, new Date(agora))) return 'hoje'
+  return 'pendente'
 }

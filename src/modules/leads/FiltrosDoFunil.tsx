@@ -19,7 +19,7 @@ import { Input } from '../../components/ui/Input'
 import { TOM, Tom, SecaoTitulo, Dica } from '../../components/shared/visual'
 import { slaActive } from './SlaBadge'
 import { avisoReentrada } from './reentrada'
-import { semContatoHaMaisDe, tomDoContato } from './contato'
+import { estaAtrasado, semContatoHaMaisDe, tomDoContato } from './contato'
 import { ORIGEM_META, ORIGENS } from './origens'
 import {
   FiltrosLead, Faceta, ContextoFiltro, JanelaContato, PeriodoEntrada,
@@ -75,7 +75,7 @@ const ATALHOS: Atalho[] = [
     id: 'atrasado', label: 'Followup atrasado', icon: AlarmClock, tom: 'risco', faceta: 'atrasado',
     titulo: 'Mais de 24 horas sem WhatsApp, ligação ou tarefa concluída — os cartões em vermelho',
     ativo: f => f.atrasado, alternar: on => ({ atrasado: on }),
-    casa: (l, _c, agora) => tomDoContato(l, agora) === 'atrasado',
+    casa: (l, _c, agora) => estaAtrasado(tomDoContato(l, agora)),
   },
   {
     id: 'prioridade', label: 'Prioridade', icon: Star, tom: 'marca', faceta: 'prioridade',
@@ -436,7 +436,7 @@ export function PainelDeFiltros({
                  count={conta('sla', l => slaActive(l))} />
           <Opcao ativo={filtros.atrasado} onClick={() => definir({ atrasado: !filtros.atrasado })}
                  icon={AlarmClock} tom="risco" label="Followup atrasado"
-                 count={conta('atrasado', l => tomDoContato(l, agora) === 'atrasado')} />
+                 count={conta('atrasado', l => estaAtrasado(tomDoContato(l, agora)))} />
           <Opcao ativo={filtros.prioridade} onClick={() => definir({ prioridade: !filtros.prioridade })}
                  icon={Star} tom="marca" label="Prioridade"
                  count={conta('prioridade', l => !!l.flagged)} />

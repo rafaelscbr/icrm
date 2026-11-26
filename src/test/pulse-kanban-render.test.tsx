@@ -26,9 +26,9 @@ describe('Kanban do Pulse', () => {
     expect(screen.getByText('agora')).toBeInTheDocument()
   })
 
-  it('followup sem contato há mais de 24 h fica rosado e conta como atrasado', () => {
+  it('followup sem contato há mais de 24 h fica laranja e conta como atrasado', () => {
     const { container } = desenhar([cartao({ id: 'b', nome: 'Kauan', ultimoContatoAt: hAtras(30) })])
-    expect(container.querySelector('.pulse-kanban-pilula')?.classList.contains('kanban-tom-atrasado')).toBe(true)
+    expect(container.querySelector('.pulse-kanban-pilula')?.classList.contains('kanban-tom-24h')).toBe(true)
     expect(screen.getByText(/1 atrasado/)).toBeInTheDocument()
     expect(screen.getByText('Contato há 1 dia')).toBeInTheDocument()
   })
